@@ -6,7 +6,7 @@
         <?php // Titre de l'article ******************************** ?>
         <h3>
             <?= $i + 1 ?>. <a
-                    href="/<?= $this->escape($doc['docid']); ?>"><?= htmlspecialchars(Episciences_Tools::decodeLatex(Episciences_Tools::getTitleFromIndexedPaper($doc, $locale))) ?></a>
+                    href="/<?= $this->escape($doc['docid']); ?>"><?= $this->escape(Episciences_Tools::getTitleFromIndexedPaper($doc, $locale)) ?></a>
         </h3>
 
         <?php // Noms des auteurs *********************************** ?>
@@ -33,7 +33,7 @@
                                     'action' => 'index',
                                     'q' => '*',
                                     'author_fullname_t' => $this->escape($authorName)], null, true);
-                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $this->escape($url), $this->escape($authorName));
                             }
                             $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
                         } else {
@@ -44,7 +44,7 @@
                                     'action' => 'index',
                                     'q' => '*',
                                     'author_fullname_t' => $this->escape($authorName)], null, true);
-                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $this->escape($url), $this->escape($authorName));
                             }
                             $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
                             if (substr($authorList, -1) != '.') {
@@ -62,7 +62,7 @@
         $abstract = Episciences_Tools::getAbstractFromIndexedPaper($doc, $locale);
         if ($abstract) {
             echo '<blockquote class="abstract">';
-            echo Episciences_Tools::decodeLatex(Ccsd_Tools_String::truncate(htmlspecialchars($abstract), ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]'));
+            echo $this->escape(Ccsd_Tools_String::truncate(Episciences_Tools::decodeLatex($abstract), ABSTRACT_MAX_LENGTH, "\u{00A0}[…]"));
             echo '</blockquote>';
         }
         ?>
@@ -71,7 +71,7 @@
         <?php $section = Episciences_Tools::getSectionFromIndexedPaper($doc, $locale); ?>
         <?php if ($section) : ?>
             <div class="small">
-                <span><?= $this->translate('Rubrique : ') ?></span> <span><?= $section ?></span>
+                <span><?= $this->translate('Rubrique : ') ?></span> <span><?= $this->escape($section) ?></span>
             </div>
         <?php endif; ?>
 

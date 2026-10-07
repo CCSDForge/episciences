@@ -1,6 +1,6 @@
 <script>
     var sender_uid = <?= Episciences_Auth::getUid() ?>;
-    var target = '<?= $this->target ?>';
+    var target = <?= json_encode((string)$this->target, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     var all_contacts = <?= $this->js_contacts ?>;
 
 

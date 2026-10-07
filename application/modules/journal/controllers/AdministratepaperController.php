@@ -1789,9 +1789,9 @@ class AdministratepaperController extends PaperDefaultController
 
         if (isset($post[Episciences_Mail_Send::ATTACHMENTS])) {
             $path = Episciences_Tools::getAttachmentsPath($paper->getDocid());
-            foreach ($post[Episciences_Mail_Send::ATTACHMENTS] as $attachment) {
-                $filepath = $path . $attachment;
-                if (file_exists($filepath)) {
+            foreach ((array)$post[Episciences_Mail_Send::ATTACHMENTS] as $attachment) {
+                $filepath = Episciences_Tools::resolveAttachmentPath($path, $attachment);
+                if ($filepath !== null) {
                     $mail->addAttachedFile($filepath);
                 }
             }
@@ -2293,7 +2293,7 @@ class AdministratepaperController extends PaperDefaultController
         $request = $this->getRequest();
         $docId = $request->getPost('docId');
         $from = $request->getPost('from');
-        $volume = Episciences_VolumesManager::find($request->getPost('vid'));
+        $volume = Episciences_VolumesManager::find($request->getPost('vid'), RVID);
         $paper = Episciences_PapersManager::get($docId);
 
         $htmlPosition = '';
@@ -2402,7 +2402,7 @@ class AdministratepaperController extends PaperDefaultController
         $editors = $this->getEditors($paper);
 
         if ($vid) {
-            $volume = Episciences_VolumesManager::find($vid);
+            $volume = Episciences_VolumesManager::find($vid, RVID);
 
             if ($volume) {
                 $editors = array_replace($editors, $volume->getEditors());
@@ -2471,7 +2471,7 @@ class AdministratepaperController extends PaperDefaultController
         $copyEditors = $this->getCopyEditors($paper);
 
         if ($vId) {
-            $volume = Episciences_VolumesManager::find($vId);
+            $volume = Episciences_VolumesManager::find($vId, RVID);
             if ($volume) {
                 $copyEditors = array_replace($copyEditors, $volume->getCopyEditors());
             }
@@ -2704,6 +2704,12 @@ class AdministratepaperController extends PaperDefaultController
             $oldVid = $paper->getVid();
             $vid = (int)$request->getPost('vid');
 
+            // the target volume must belong to the current journal (0 = no volume)
+            if ($vid > 0 && !Episciences_VolumesManager::find($vid, RVID)) {
+                echo false;
+                return;
+            }
+
             if ($vid !== $oldVid) {
 
                 if (
@@ -2779,6 +2785,10 @@ class AdministratepaperController extends PaperDefaultController
                 if ($vid <= 0 || $vid === (int) $paper->getVid()) {
                     continue;
                 }
+                // ignore volumes of other journals
+                if (!Episciences_VolumesManager::find($vid, RVID)) {
+                    continue;
+                }
                 $paper_volumes[] = new Episciences_Volume_Paper(['vid' => $vid, 'docid' => $docid]);
             }
 
@@ -2839,6 +2849,13 @@ class AdministratepaperController extends PaperDefaultController
 
             $oldSid = $paper->getSid();
             $sid = (int)$request->getPost('sid');
+
+            // the target section must belong to the current journal (0 = no section)
+            if ($sid > 0 && !Episciences_SectionsManager::find($sid, RVID)) {
+                echo false;
+                return;
+            }
+
             $paper->setSid($sid);
             $paper->save();
             $paper->log(
@@ -2871,8 +2888,8 @@ class AdministratepaperController extends PaperDefaultController
             if ($request->getPost('assignEditors')) {
 
                 // assign section editors to this article
-                $section = Episciences_SectionsManager::find($sid);
-                $sectionEditors = $section->getEditors();
+                $section = Episciences_SectionsManager::find($sid, RVID);
+                $sectionEditors = $section ? $section->getEditors() : [];
                 $paperEditors = $paper->getEditors(true, true);
 
                 // filter editors already assigned to this article (avoid reassignment)
@@ -4278,7 +4295,10 @@ class AdministratepaperController extends PaperDefaultController
 
         if (!empty($post[Episciences_Mail_Send::ATTACHMENTS])) {
             // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
-            $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
+            $attachments = Episciences_Tools::filterAttachmentNames(
+                Episciences_Tools::getAttachmentsPath(),
+                (array)$post[Episciences_Mail_Send::ATTACHMENTS]
+            );
 
             if ($comment) {
                 try {

@@ -1,5 +1,8 @@
 <?php
 
+use Episciences\Upload\PublicFileStore;
+use Episciences\Upload\UploadChecker;
+
 class WebsiteDefaultController extends Zend_Controller_Action
 {
     protected $_session = null;
@@ -124,11 +127,24 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
                 //Ajout d'un fichier
 
+                $uploadError = UploadChecker::firstPublicFileError(
+                    (string)$_FILES['file']['tmp_name'],
+                    (string)($_FILES['file']['name'] ?? ''),
+                    (int)($_FILES['file']['error'] ?? UPLOAD_ERR_OK)
+                );
+
+                if ($uploadError !== null) {
+                    // Flash messages are displayed as HTML and the message contains the name sent by the browser
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage(htmlspecialchars($uploadError, ENT_QUOTES));
+                    $this->_helper->redirector->goToUrl($request->getRequestUri());
+                    return;
+                }
+
                 $isOverwritten = isset($params['overwriteFile']) && $params['overwriteFile'] === 'on';
 
                 preg_match('/[^a-z0-9_\.-\/\\\\]/i', $_FILES['file']['name'], $matches);
 
-                $renamedFile = Ccsd_File::renameFile($_FILES['file']['name'], $dir, !$isOverwritten);
+                $renamedFile = Ccsd_File::renameFile(PublicFileStore::storedName((string)$_FILES['file']['name']), $dir, !$isOverwritten);
 
                 copy($_FILES['file']['tmp_name'], $dir . $renamedFile);
 
@@ -142,7 +158,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
                     $message .= ' ';
                     $message .= $translator->translate('car');
                     $message .= ' "';
-                    $message .= $_FILES['file']['name'];
+                    $message .= htmlspecialchars((string)$_FILES['file']['name'], ENT_QUOTES);
                     $message .= '" ';
                     $message .= empty($matches) ? $translator->translate('existe déjà.') : $translator->translate('contient des caractères non valides');
                 }
@@ -215,6 +231,9 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
                 $pageid = str_replace('pages_', '', $id);
 
+                // The file of a page only comes from an upload, never from a field of the form
+                unset($options['src']);
+
                 if (isset($_FILES[$id]['name']) && is_array($_FILES[$id]['name'])) {
                     $options = array_merge($options, $_FILES[$id]['name']);
                 }
@@ -224,10 +243,23 @@ class WebsiteDefaultController extends Zend_Controller_Action
                     $options['filter'] = implode(';', $options['filter']);
                 }
 
+                // The class of the page stored in session decides, never the type sent by the browser
+                $isFilePage = $this->_session->website->getPage($pageid) instanceof Episciences_Website_Navigation_Page_File;
+                $uploadError = $isFilePage ? Episciences_Website_Navigation_Page_File::validateUpload($_FILES[$id] ?? null) : null;
+
+                if ($uploadError !== null) {
+                    // Keep the file that was already attached to the page
+                    unset($options['src']);
+                }
+
                 $this->_session->website->setPage($pageid, $options);
                 $this->_session->website->getPage($pageid)->initForm();
 
-                if ($options['type'] !== 'Episciences_Website_Navigation_Page_File' && !$this->_session->website->getPage($pageid)->getForm($pageid)->isValid($options)) {
+                if ($uploadError !== null) {
+                    $this->_session->website->getPage($pageid)->setUploadError($uploadError);
+                    $pagesDisplay[$pageid] = true;
+                    $valid = false;
+                } elseif (!$isFilePage && !$this->_session->website->getPage($pageid)->getForm($pageid)->isValid($options)) {
                     $pagesDisplay[$pageid] = true;
                     $valid = false;
                 } else {

@@ -198,7 +198,7 @@ class Episciences_Mail_Reminder
     }
 
     /**
-     * @return bool true on success
+     * @return bool true on success; false when the reminder has an id but does not belong to its journal (RVID)
      * @throws Zend_Db_Adapter_Exception
      */
     public function save(): bool
@@ -217,7 +217,18 @@ class Episciences_Mail_Reminder
         // Enregistrement en base
         if ($this->getId()) {
             $edit = true;
-            $db->update(T_MAIL_REMINDERS, $values, array('ID = ?' => $this->getId()));
+
+            // An UPDATE reports 0 affected rows when nothing changed, so ownership is checked explicitly:
+            // nothing (database, templates, translations) is written for a reminder of another journal.
+            $owned = $db->fetchOne(
+                'SELECT 1 FROM ' . T_MAIL_REMINDERS . ' WHERE ID = ? AND RVID = ?',
+                [$this->getId(), $this->getRvid()]
+            );
+            if (!$owned) {
+                return false;
+            }
+
+            $db->update(T_MAIL_REMINDERS, $values, ['ID = ?' => $this->getId(), 'RVID = ?' => $this->getRvid()]);
         } else {
             $edit = false;
             $db->insert(T_MAIL_REMINDERS, $values);

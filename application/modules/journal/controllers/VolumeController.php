@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Upload\UploadChecker;
+
 class VolumeController extends Zend_Controller_Action
 {
     public const JSON_MIMETYPE = 'application/json';
@@ -108,7 +110,8 @@ class VolumeController extends Zend_Controller_Action
         $params = $request->getPost('params');
         $id = (int) $params['id'] ?? $request->getQuery('id');
 
-        $respond = Episciences_VolumesManager::delete($id);
+        // Only volumes of the current journal can be deleted
+        $respond = Episciences_VolumesManager::find($id, RVID) ? Episciences_VolumesManager::delete($id) : false;
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
@@ -149,7 +152,12 @@ class VolumeController extends Zend_Controller_Action
             return false;
         }
 
-        $volume = Episciences_VolumesManager::find($vid);
+        $volume = Episciences_VolumesManager::find($vid, RVID);
+        if (!$volume) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return false;
+        }
         $currentEditors = $volume->getEditors();
         $formData = Episciences_VolumesManager::getEditorsForm($currentEditors);
 
@@ -181,7 +189,10 @@ class VolumeController extends Zend_Controller_Action
             $editors = ($submittedEditors) ? array_map('intval', $submittedEditors) : [];
 
             // Rédacteurs déjà assignés
-            $volume = Episciences_VolumesManager::find($vid);
+            $volume = Episciences_VolumesManager::find($vid, RVID);
+            if (!$volume) {
+                return;
+            }
             $currentEditors = ($volume->getEditors()) ? array_keys($volume->getEditors()) : [];
 
             // Tri des rédacteurs ajoutés des rédacteurs supprimés
@@ -216,7 +227,12 @@ class VolumeController extends Zend_Controller_Action
         $params = $request->getPost();
         $vid = $params['vid'];
 
-        $volume = Episciences_VolumesManager::find($vid);
+        $volume = Episciences_VolumesManager::find($vid, RVID);
+        if (!$volume) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
         $editors = $volume->getEditors();
 
         $this->view->editors = $editors;
@@ -242,6 +258,19 @@ class VolumeController extends Zend_Controller_Action
 
         $upload = new Zend_File_Transfer_Adapter_Http();
         $file = $upload->getFileInfo();
+
+        $error = UploadChecker::firstPublicFileError(
+            (string)($file[0]['tmp_name'] ?? ''),
+            (string)($file[0]['name'] ?? ''),
+            (int)($file[0]['error'] ?? UPLOAD_ERR_NO_FILE)
+        );
+
+        if ($error !== null) {
+            $this->getResponse()->setHttpResponseCode(422);
+            echo Zend_Json::encode(['error' => 1, 'message' => $error]);
+            return;
+        }
+
         $response = ['file' => $file[0]];
         $newpath = tempnam(REVIEW_TMP_PATH, 'md_');
         if (!rename($file[0]['tmp_name'], $newpath)) {
@@ -339,7 +368,7 @@ class VolumeController extends Zend_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $vid = (int)$request->getParam('id');
-        $docId = $request->getParam('docid');
+        $docId = (int)$request->getParam('docid');
         $from = $request->getParam('from');
 
         if (!empty($from) && $from === 'view' && !empty($docId)) {

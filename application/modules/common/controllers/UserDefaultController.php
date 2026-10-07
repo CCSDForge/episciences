@@ -62,6 +62,7 @@ class UserDefaultController extends Zend_Controller_Action
         } else {
             $this->view->message = "Vous n'êtes pas connecté";
             $this->view->description = "<a href='/user/login'>Connectez-vous</a>, ou <a href='/user/create'>créez votre compte</a>.";
+            $this->view->descriptionIsHtml = true; // static markup, rendered unescaped by error.phtml
             $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }
@@ -1715,9 +1716,15 @@ class UserDefaultController extends Zend_Controller_Action
 
         //Retourne une liste de destinataires
         if ($request->isXmlHttpRequest()) {
-            $users = Episciences_User::filterUsers($query, false);
-            foreach ($users as &$user) {
-                $user['label'] = htmlentities($user['SCREENNAME'] . ' <' . $user['EMAIL'] . '>');
+            $users = [];
+            foreach (Episciences_User::filterUsers($query, false) ?? [] as $user) {
+                $name = $user['SCREEN_NAME'] !== '' ? $user['SCREEN_NAME'] : trim($user['FIRSTNAME'] . ' ' . $user['LASTNAME']);
+                $users[] = [
+                    'uid' => $user['UID'],
+                    'name' => $name,
+                    'mail' => $user['EMAIL'],
+                    'label' => htmlentities($name . ' <' . $user['EMAIL'] . '>'),
+                ];
             }
             echo Zend_Json::encode($users);
         }
@@ -1758,6 +1765,9 @@ class UserDefaultController extends Zend_Controller_Action
         $uid = $this->getParam('uid', 0);
         $size = $this->getParam('size', Ccsd_User_Models_User::IMG_NAME_NORMAL);
         $backgroundColor = $this->getParam('bgcolor');
+        if (!is_string($backgroundColor)) {
+            $backgroundColor = null; // e.g. ?bgcolor[]=x
+        }
 
         $photoPathName = false;
         $data = false;

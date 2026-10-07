@@ -856,7 +856,27 @@ class Episciences_Tools
         return trim($name);
     }
 
+    /** Elements kept in repository descriptions */
+    private const SAFE_DESCRIPTION_ELEMENTS = [
+        'a', 'b', 'blockquote', 'br', 'code', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'li', 'ol',
+        'p', 'pre', 's', 'span', 'strong', 'sub', 'sup', 'table', 'tbody', 'td', 'th', 'thead', 'tr', 'u', 'ul',
+    ];
+
+    /** Known HTML elements that are removed from repository descriptions */
+    private const DROPPED_DESCRIPTION_ELEMENTS = [
+        'script', 'style', 'img', 'iframe', 'object', 'embed', 'svg', 'math', 'form', 'input', 'button', 'link',
+        'meta', 'div', 'font', 'center', 'video', 'audio', 'base', 'frame', 'frameset', 'textarea', 'select',
+    ];
+
     public static function decodeLatex($string, $preserveLineBreaks = false): string
+    {
+        return self::decodeAmpersand(self::latexToUtf8((string)$string, (bool)$preserveLineBreaks));
+    }
+
+    /**
+     * Replace LaTeX sequences by UTF-8 characters and, optionally, line breaks by <br />
+     */
+    private static function latexToUtf8(string $string, bool $preserveLineBreaks): string
     {
         $result = str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
 
@@ -877,7 +897,34 @@ class Episciences_Tools
             $result = preg_replace('/\n/', '<br />', $result);
         }
 
-        return self::decodeAmpersand($result);
+        return $result;
+    }
+
+    /**
+     * Decode a repository description (abstract) and return HTML that is safe to print unescaped.
+     *
+     * Descriptions are plain text or light HTML supplied by the depositor: line breaks are kept,
+     * links are limited to http(s) and the markup is reduced to a restricted allow-list
+     * (no script, no image, no attribute except a.href).
+     * A "<" that does not start a known HTML tag (e.g. "n<m and m>k") is plain text and is kept.
+     */
+    public static function decodeLatexToSafeHtml(string $text): string
+    {
+        static $purifier = null;
+
+        if ($purifier === null) {
+            $purifier = new Episciences_HTMLPurifier([
+                'HTML.AllowedElements' => self::SAFE_DESCRIPTION_ELEMENTS,
+                'HTML.AllowedAttributes' => ['a.href'],
+                'URI.AllowedSchemes' => Episciences_HTMLPurifier::$URI_ALLOWED_SCHEMES,
+            ]);
+        }
+
+        // No decodeAmpersand() here: the purifier handles entities itself, a second decoding would alter the text
+        $knownTags = implode('|', array_merge(self::SAFE_DESCRIPTION_ELEMENTS, self::DROPPED_DESCRIPTION_ELEMENTS));
+        $text = preg_replace('#<(?!/?(?:' . $knownTags . ')(?:\s[^<>]*)?/?>)#i', '&lt;', $text) ?? $text;
+
+        return $purifier->purifyHtml(self::latexToUtf8($text, true));
     }
 
     /**
@@ -1771,6 +1818,53 @@ class Episciences_Tools
 
         return $path;
 
+    }
+
+    /**
+     * Resolve an attachment name inside the attachments directory.
+     *
+     * Only a flat file name is accepted. The resolved file must be a regular file
+     * located under $baseDir (symbolic links pointing outside are rejected).
+     * The returned path is built from $baseDir (not from realpath()) so that it keeps
+     * the same prefix as the other attachment paths of the application.
+     *
+     * @param string $baseDir attachments directory
+     * @param mixed $name name submitted by the client
+     * @return string|null full path, or null if the name is not acceptable
+     */
+    public static function resolveAttachmentPath(string $baseDir, mixed $name): ?string
+    {
+        if (!is_string($name) || $name === '' || $name === '.' || $name === '..'
+            || $name !== basename($name) || str_contains($name, "\0") || str_contains($name, '\\')) {
+            return null;
+        }
+
+        $baseDir = rtrim($baseDir, '/\\') . DIRECTORY_SEPARATOR;
+        $realBase = realpath($baseDir);
+        $realFile = realpath($baseDir . $name);
+
+        if ($realBase === false || $realFile === false || !is_file($realFile)) {
+            return null;
+        }
+
+        if (!str_starts_with($realFile, $realBase . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return $baseDir . $name;
+    }
+
+    /**
+     * Keep only the attachment names that resolve inside the attachments directory
+     * (see resolveAttachmentPath()). The list is re-indexed.
+     *
+     * @param string $baseDir attachments directory
+     * @param array<mixed> $names names submitted by the client
+     * @return array<string> accepted names
+     */
+    public static function filterAttachmentNames(string $baseDir, array $names): array
+    {
+        return array_values(array_filter($names, static fn($name) => self::resolveAttachmentPath($baseDir, $name) !== null));
     }
 
     public static function startsWithNumber(string $string): bool

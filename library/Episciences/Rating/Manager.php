@@ -191,7 +191,8 @@ class Episciences_Rating_Manager
                     'validators' => array(
                         'Count' => array(false, 1),
                         'Extension' => array(false, implode(',', $extensions)),
-                        'Size' => array(false, MAX_FILE_SIZE))));
+                        'Size' => array(false, MAX_FILE_SIZE),
+                        new Episciences_Form_Validate_MimeType())));
                 $form->getElement('file_' . $id)->getDecorator('Description')->setOption('escape', false);
                 $group[] = 'file_' . $id;
             }

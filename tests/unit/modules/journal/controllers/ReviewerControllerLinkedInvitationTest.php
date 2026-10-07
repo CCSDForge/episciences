@@ -4,160 +4,255 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences\User\UserNotFoundException;
+use Episciences_User;
+use Episciences_User_Assignment;
+use Episciences_User_Invitation;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
+use Zend_Auth;
+use Zend_Auth_Storage_NonPersistent;
+use Zend_Controller_Request_HttpTestCase;
+use Zend_Controller_Response_HttpTestCase;
+use Zend_Session_Namespace;
 
 /**
- * Regression tests for the "link invitation to account" logic in
- * ReviewerController (invitationAction / checkAndProcessLinkedInvitation /
- * processLinkDecision / linkToLoggedAccount), introduced/refactored in PR #1109.
+ * Linking of a reviewer invitation to the account of the logged-in user.
  *
- * Strategy: source-code pattern analysis (same approach as PaperControllerTest
- * and PaperDefaultControllerTest). ZF1 module controllers require the full
- * request/response/view stack to instantiate and cannot be unit-tested by
- * direct invocation, so the private methods below are exercised through their
- * source text instead.
+ * An invitation sent to an address can only be linked automatically to an account holding that
+ * very address; any other account has to confirm, and nothing is written before it does.
+ * checkAndProcessLinkedInvitation() is run for real with mocked invitation and assignment.
  */
 final class ReviewerControllerLinkedInvitationTest extends TestCase
 {
-    private string $source;
+    private const LOGGED_UID = 100;
+    private const INVITED_UID = 200;
+    private const SESSION = 'linked_invitation_test';
+
+    private mixed $previousAuthStorage;
+    private \ReviewerController $controller;
 
     protected function setUp(): void
     {
-        $this->source = (string) file_get_contents(
-            APPLICATION_PATH . '/modules/journal/controllers/ReviewerController.php'
+        require_once APPLICATION_PATH . '/modules/journal/controllers/ReviewerController.php';
+
+        $this->previousAuthStorage = Zend_Auth::getInstance()->getStorage();
+        Zend_Auth::getInstance()->setStorage(new Zend_Auth_Storage_NonPersistent());
+
+        (new Zend_Session_Namespace(self::SESSION))->unsetAll();
+
+        $this->controller = new class (
+            new Zend_Controller_Request_HttpTestCase(),
+            new Zend_Controller_Response_HttpTestCase()
+        ) extends \ReviewerController {
+            protected function getSession(): Zend_Session_Namespace
+            {
+                return new Zend_Session_Namespace('linked_invitation_test');
+            }
+        };
+    }
+
+    protected function tearDown(): void
+    {
+        Zend_Auth::getInstance()->setStorage($this->previousAuthStorage);
+        $_POST = []; // setPost() writes the global
+    }
+
+    private function logIn(string $email = 'logged@example.org'): void
+    {
+        Zend_Auth::getInstance()->getStorage()->write(
+            new Episciences_User(['UID' => self::LOGGED_UID, 'EMAIL' => $email])
         );
     }
 
-    private function extractMethod(string $methodName): string
+    /**
+     * @return MockObject&Episciences_User_Invitation
+     */
+    private function invitation(bool $expired = false, bool $answered = false, bool $cancelled = false)
     {
-        $start = strpos($this->source, 'function ' . $methodName . '(');
-        self::assertNotFalse($start, "Method $methodName not found in ReviewerController");
+        $invitation = $this->createMock(Episciences_User_Invitation::class);
+        $invitation->method('hasExpired')->willReturn($expired);
+        $invitation->method('isAnswered')->willReturn($answered);
+        $invitation->method('isCancelled')->willReturn($cancelled);
+        $invitation->method('getId')->willReturn(7);
 
-        $end = strpos($this->source, "\n    public function ", (int) $start + 1);
-        $end2 = strpos($this->source, "\n    protected function ", (int) $start + 1);
-        $end3 = strpos($this->source, "\n    private function ", (int) $start + 1);
-        $candidates = array_filter([$end, $end2, $end3], static fn($v) => $v !== false);
-        $stop = $candidates ? min($candidates) : strlen($this->source);
-
-        return substr($this->source, (int) $start, $stop - (int) $start);
+        return $invitation;
     }
 
-    public function testExpiredAnsweredOrCancelledInvitationShortCircuits(): void
+    /**
+     * @return MockObject&Episciences_User_Assignment
+     */
+    private function assignment(?Episciences_User $recipient = null, ?\Throwable $resolveError = null, int $uid = self::INVITED_UID)
     {
-        $method = $this->extractMethod('checkAndProcessLinkedInvitation');
+        $assignment = $this->createMock(Episciences_User_Assignment::class);
+        $assignment->method('getUid')->willReturn($uid);
+        $assignment->method('getFrom_uid')->willReturn(null);
+        if ($resolveError !== null) {
+            $assignment->method('resolveFromUser')->willThrowException($resolveError);
+        } elseif ($recipient !== null) {
+            $assignment->method('resolveFromUser')->willReturn($recipient);
+        }
 
-        self::assertStringContainsString('hasExpired()', $method);
-        self::assertStringContainsString('isAnswered()', $method);
-        self::assertStringContainsString('isCancelled()', $method);
+        return $assignment;
     }
 
-    public function testResolveFromUserCallIsGuardedAgainstException(): void
+    /**
+     * @return array<string, mixed>
+     */
+    private function check(Episciences_User_Invitation $invitation, Episciences_User_Assignment $assignment): array
     {
-        $method = $this->extractMethod('checkAndProcessLinkedInvitation');
+        $method = new ReflectionMethod(\ReviewerController::class, 'checkAndProcessLinkedInvitation');
+        $method->setAccessible(true);
 
-        $tryPos = strpos($method, 'try {');
-        $resolvePos = strpos($method, 'resolveFromUser()');
-        $catchPos = strpos($method, 'catch (Exception');
-
-        self::assertNotFalse($tryPos, 'resolveFromUser() must be called inside a try block');
-        self::assertNotFalse($resolvePos);
-        self::assertNotFalse($catchPos, 'checkAndProcessLinkedInvitation() must catch Exception from resolveFromUser() (covers Zend_Db_Statement_Exception and UserNotFoundException)');
-        self::assertTrue(
-            $tryPos < $resolvePos && $resolvePos < $catchPos,
-            'try { ... resolveFromUser() ... } catch (Exception must appear in that order'
-        );
+        return $method->invoke($this->controller, new Zend_Controller_Request_HttpTestCase(), $invitation, $assignment);
     }
 
-    public function testAutomaticLinkingRequiresExactEmailMatch(): void
+    public function testNothingHappensForAnonymousVisitors(): void
     {
-        $method = $this->extractMethod('checkAndProcessLinkedInvitation');
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'logged@example.org']));
+        $assignment->expects(self::never())->method('save');
 
-        self::assertStringContainsString('$fromUser->getEmail() === Episciences_Auth::getEmail()', $method,
-            'Automatic linking must require an exact match between the invitation recipient email and the logged-in user email'
-        );
+        self::assertSame([], $this->check($this->invitation(), $assignment));
     }
 
-    // -------------------------------------------------------------------------
-    // invitationAction() — loadAnswer() must run before isAnswered() is checked
-    // -------------------------------------------------------------------------
-
-    public function testInvitationActionLoadsAnswerAfterFetchingAssignment(): void
+    /**
+     * @return array<string, array{bool, bool, bool}>
+     */
+    public static function closedInvitationProvider(): array
     {
-        $method = $this->extractMethod('invitationAction');
-
-        $loadAnswerPos = strpos($method, '$invitation->loadAnswer();');
-        $findAssignmentPos = strpos($method, 'Episciences_User_AssignmentsManager::findById');
-
-        self::assertNotFalse($loadAnswerPos, 'invitationAction() must call $invitation->loadAnswer()');
-        self::assertNotFalse($findAssignmentPos);
-        self::assertGreaterThan(
-            $findAssignmentPos,
-            $loadAnswerPos,
-            'loadAnswer() must run before checkAndProcessLinkedInvitation() is reachable, '
-            . 'otherwise isAnswered() always evaluates against an unloaded answer'
-        );
+        return [
+            'expired' => [true, false, false],
+            'answered' => [false, true, false],
+            'cancelled' => [false, false, true],
+        ];
     }
 
-    // -------------------------------------------------------------------------
-    // processLinkDecision() — session cleanup must run for both decisions
-    // -------------------------------------------------------------------------
-
-    public function testProcessLinkDecisionAlwaysClearsTheSessionMarker(): void
+    /**
+     * @dataProvider closedInvitationProvider
+     */
+    public function testExpiredAnsweredOrCancelledInvitationIsNotLinked(bool $expired, bool $answered, bool $cancelled): void
     {
-        $method = $this->extractMethod('processLinkDecision');
+        $this->logIn();
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'logged@example.org']));
+        $assignment->expects(self::never())->method('save');
 
-        self::assertSame(
-            1,
-            substr_count($method, 'unset($session->linkedInvitationIds[$invitationId]);'),
-            'processLinkDecision() must clear the session "pre-linked" marker exactly once, '
-            . 'regardless of whether the decision was acceptToLink or declineToLink'
-        );
+        self::assertSame([], $this->check($this->invitation($expired, $answered, $cancelled), $assignment));
     }
 
-    public function testProcessLinkDecisionSendsFlashMessageOnlyOnAccept(): void
+    public function testInvitationOfTheLoggedAccountItselfIsLeftAlone(): void
     {
-        $method = $this->extractMethod('processLinkDecision');
+        $this->logIn();
+        $assignment = $this->assignment(null, null, self::LOGGED_UID);
+        $assignment->expects(self::never())->method('save');
 
-        $ifAcceptPos = strpos($method, "\$decision === 'acceptToLink'");
-        $flashMessengerPos = strpos($method, 'FlashMessenger');
-
-        self::assertNotFalse($ifAcceptPos);
-        self::assertNotFalse($flashMessengerPos);
-        self::assertLessThan(
-            $flashMessengerPos,
-            $ifAcceptPos,
-            'The success flash message must only be added inside the acceptToLink branch'
-        );
+        self::assertSame([], $this->check($this->invitation(), $assignment));
     }
 
-    // -------------------------------------------------------------------------
-    // linkToLoggedAccount() — save() failures must not bubble up as fatal errors
-    // -------------------------------------------------------------------------
-
-    public function testLinkToLoggedAccountCatchesDbAdapterException(): void
+    public function testRecipientThatCannotBeResolvedIsNeverLinked(): void
     {
-        $method = $this->extractMethod('linkToLoggedAccount');
+        $this->logIn();
+        $assignment = $this->assignment(null, new UserNotFoundException(self::INVITED_UID));
+        $assignment->expects(self::never())->method('save');
 
-        self::assertStringContainsString('try {', $method);
-        self::assertStringContainsString('catch (Zend_Db_Adapter_Exception', $method,
-            'linkToLoggedAccount() must catch Zend_Db_Adapter_Exception from $assignment->save()'
-        );
-        self::assertStringContainsString('$assignment->setFrom_uid($assignment->getUid());', $method,
-            'linkToLoggedAccount() must record the original recipient uid as FROM_UID before reassigning UID'
-        );
+        set_error_handler(static fn(): bool => true, E_USER_WARNING); // the failure is reported with a warning
+        try {
+            $result = $this->check($this->invitation(), $assignment);
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame(['isPreLinked' => false], $result);
     }
 
-    // -------------------------------------------------------------------------
-    // getSession() seam — used instead of instantiating Zend_Session_Namespace directly
-    // -------------------------------------------------------------------------
-
-    public function testCheckAndProcessLinkedInvitationUsesTheGetSessionSeam(): void
+    public function testExactEmailMatchLinksTheInvitationToTheLoggedAccount(): void
     {
-        $method = $this->extractMethod('checkAndProcessLinkedInvitation');
+        $this->logIn('same@example.org');
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'same@example.org']));
+        $assignment->expects(self::once())->method('setFrom_uid')->with(self::INVITED_UID);
+        $assignment->expects(self::once())->method('setUid')->with(self::LOGGED_UID);
+        $assignment->expects(self::once())->method('save')->willReturn(true);
 
-        self::assertStringContainsString('$this->getSession()', $method,
-            'checkAndProcessLinkedInvitation() must go through the getSession() seam instead of '
-            . 'instantiating Zend_Session_Namespace directly'
-        );
+        self::assertSame(['isAlreadyLinked' => true], $this->check($this->invitation(), $assignment));
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function nearlyMatchingEmailProvider(): array
+    {
+        return [
+            'different case' => ['Same@Example.org', 'same@example.org'],
+            'other address' => ['other@example.org', 'same@example.org'],
+            'empty invited address' => ['', 'same@example.org'],
+        ];
+    }
+
+    /**
+     * @dataProvider nearlyMatchingEmailProvider
+     */
+    public function testAnotherAddressNeverLinksAutomaticallyAndNeedsConfirmation(string $invitedEmail, string $loggedEmail): void
+    {
+        $this->logIn($loggedEmail);
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => $invitedEmail]));
+        $assignment->expects(self::never())->method('save');
+        $assignment->expects(self::never())->method('setUid');
+
+        $result = $this->check($this->invitation(), $assignment);
+
+        self::assertSame(['isPreLinked' => true, 'decision' => null], $result);
+        self::assertTrue((new Zend_Session_Namespace(self::SESSION))->linkedInvitationIds[7]['isPreLinked']);
+    }
+
+    private function confirmationRequest(): void
+    {
+        $this->logIn('logged@example.org');
+        $session = new Zend_Session_Namespace(self::SESSION);
+        $session->linkedInvitationIds = [7 => ['isPreLinked' => true]];
+    }
+
+    public function testAcceptedConfirmationLinksTheInvitationAndClearsTheMarker(): void
+    {
+        $this->confirmationRequest();
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'other@example.org']));
+        $assignment->expects(self::once())->method('setUid')->with(self::LOGGED_UID);
+        $assignment->expects(self::once())->method('save')->willReturn(true);
+
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod('POST')->setPost(['linkInvitation' => 'acceptToLink']);
+        $method = new ReflectionMethod(\ReviewerController::class, 'checkAndProcessLinkedInvitation');
+        $method->setAccessible(true);
+        $result = $method->invoke($this->controller, $request, $this->invitation(), $assignment);
+
+        self::assertSame('acceptToLink', $result['decision']);
+        self::assertArrayNotHasKey(7, (array)(new Zend_Session_Namespace(self::SESSION))->linkedInvitationIds);
+    }
+
+    public function testNoDecisionKeepsTheInvitationUnlinkedAndTheMarker(): void
+    {
+        $this->confirmationRequest();
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'other@example.org']));
+        $assignment->expects(self::never())->method('save');
+
+        $result = $this->check($this->invitation(), $assignment);
+
+        self::assertNull($result['decision']);
+        self::assertArrayHasKey(7, (array)(new Zend_Session_Namespace(self::SESSION))->linkedInvitationIds);
+    }
+
+    public function testDatabaseFailureWhileLinkingIsReportedAsNotLinked(): void
+    {
+        $this->logIn('same@example.org');
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'same@example.org']));
+        $assignment->method('save')->willThrowException(new \Zend_Db_Adapter_Exception('boom'));
+
+        set_error_handler(static fn(): bool => true);
+        try {
+            $result = $this->check($this->invitation(), $assignment);
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame(['isAlreadyLinked' => false], $result);
     }
 }

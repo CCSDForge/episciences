@@ -298,7 +298,8 @@ class Episciences_CommentsManager
             'validators' => array(
                 'Count' => array(false, 1),
                 'Extension' => array(false, $descriptions['extensions']),
-                'Size' => array(false, MAX_FILE_SIZE))));
+                'Size' => array(false, MAX_FILE_SIZE),
+                new Episciences_Form_Validate_MimeType())));
 
         if (!$modal) {
             $translator = Zend_Registry::get('Zend_Translate');
@@ -383,7 +384,8 @@ class Episciences_CommentsManager
                 'validators' => [
                     'Count' => [false, 1],
                     'Extension' => [false, $descriptions['extensions']],
-                    'Size' => [false, MAX_FILE_SIZE]
+                    'Size' => [false, MAX_FILE_SIZE],
+                    new Episciences_Form_Validate_MimeType()
                 ]
             ]);
 
@@ -442,7 +444,8 @@ class Episciences_CommentsManager
                 'validators' => [
                     'Count' => [false, 1],
                     'Extension' => [false, $descriptions['extensions']],
-                    'Size' => [false, MAX_FILE_SIZE]
+                    'Size' => [false, MAX_FILE_SIZE],
+                    new Episciences_Form_Validate_MimeType()
                 ]
             ]
         );
@@ -577,7 +580,8 @@ class Episciences_CommentsManager
                 'validators' => [
                     'Count' => [false, 1],
                     'Extension' => [false, $descriptions['extensions']],
-                    'Size' => [false, MAX_FILE_SIZE]
+                    'Size' => [false, MAX_FILE_SIZE],
+                    new Episciences_Form_Validate_MimeType()
                 ]
             ]);
 

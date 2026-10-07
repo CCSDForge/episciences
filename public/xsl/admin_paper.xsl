@@ -5,10 +5,10 @@
                 xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/">
 
     <xsl:import href="abandon_continue_publication_process_button.xsl"/>
-
+    
     <!-- Key for grouping subjects by language -->
     <xsl:key name="subjects-by-lang" match="metadata/oai_dc:dc/dc:subject[@xml:lang]" use="@xml:lang"/>
-
+    
     <xsl:output method="html" encoding="utf-8" indent="yes"/>
 
     <xsl:template match="/record">
@@ -17,15 +17,12 @@
             <!-- Modal -->
             <form id="post-orcid-author" action="/paper/postorcidauthor" method="POST">
                 <!-- Accessibility logic: Added aria-modal="true" to trap screen reader focus and fixed aria-labelledby to point to the correct title ID -->
-                <div class="modal fade" id="author-modal-orcid" tabindex="-1" role="dialog"
-                     aria-labelledby="author-modal-orcid-label-title" aria-modal="true" aria-hidden="true">
+                <div class="modal fade" id="author-modal-orcid" tabindex="-1" role="dialog" aria-labelledby="author-modal-orcid-label-title" aria-modal="true" aria-hidden="true">
                     <div class="modal-dialog modal-orcid" role="document">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="author-modal-orcid-label-title">
-                                    <xsl:value-of
-                                            select="php:function('Ccsd_Tools::translate', 'Ajouter les ORCID aux auteurs')"/>
-                                </h5>
+                                <h5 class="modal-title" id="author-modal-orcid-label-title">  <xsl:value-of
+                                        select="php:function('Ccsd_Tools::translate', 'Ajouter les ORCID aux auteurs')"/></h5>
                             </div>
                             <div id="modal-body-authors" class="modal-body">
                                 <input class='hidden' id='modal-called' value='0'></input>
@@ -39,12 +36,8 @@
                     </div>
                 </div>
             </form>
-            <div class="hidden" id="paperid-for-author">
-                <xsl:value-of select="episciences/paperId"/>
-            </div>
-            <div class="hidden" id="docid-for-author">
-                <xsl:value-of select="episciences/id"/>
-            </div>
+            <div class="hidden" id="paperid-for-author"><xsl:value-of select="episciences/paperId"/></div>
+            <div class="hidden" id="docid-for-author"><xsl:value-of select="episciences/id"/></div>
         </xsl:if>
 
         <xsl:variable name="client_language" select="php:function('Episciences_Tools::getLocale')"/>
@@ -77,20 +70,18 @@
                             <xsl:when test="count(metadata/oai_dc:dc/dc:creator) = 6">
                                 <!-- Exactly 6 authors: show all 6, no et al. -->
                                 <xsl:for-each select="metadata/oai_dc:dc/dc:creator">
-                                    <xsl:value-of
-                                            select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
-                                    <xsl:if test="position() != last()">;</xsl:if>
+                                    <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
+                                    <xsl:if test="position() != last()"> ; </xsl:if>
                                 </xsl:for-each>
                             </xsl:when>
                             <xsl:otherwise>
                                 <!-- 5 or fewer, or 7+: show first 5 -->
                                 <xsl:for-each select="metadata/oai_dc:dc/dc:creator[position() &lt;= 5]">
-                                    <xsl:value-of
-                                            select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
-                                    <xsl:if test="position() != last()">;</xsl:if>
+                                    <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
+                                    <xsl:if test="position() != last()"> ; </xsl:if>
                                 </xsl:for-each>
                                 <xsl:if test="count(metadata/oai_dc:dc/dc:creator) &gt; 6">
-                                    <i>et al.</i>
+                                    <i> et al.</i>
                                 </xsl:if>
                             </xsl:otherwise>
                         </xsl:choose>
@@ -99,7 +90,7 @@
 
                     <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string($title))"/>
 
-                    <xsl:if test="episciences/doi and episciences/doi != ''">
+                       <xsl:if test="episciences/doi and episciences/doi != ''">
                         -
                         <a rel="noopener" target="_blank">
                             <xsl:attribute name="href">
@@ -130,9 +121,7 @@
                 <strong>
                     <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string($title))"/>
                 </strong>
-                <span class="label label-default pull-right">
-                    <xsl:value-of select="php:function('Ccsd_Tools::translate',string(episciences/submissionType))"/>
-                </span>
+                <span class="label label-default pull-right"><xsl:value-of select="php:function('Ccsd_Tools::translate',string(episciences/submissionType))"/></span>
 
                 <p>
                     <i>
@@ -144,9 +133,8 @@
                                 </xsl:when>
                                 <xsl:otherwise>
                                     <xsl:for-each select="metadata/oai_dc:dc/dc:creator">
-                                        <xsl:value-of
-                                                select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
-                                        <xsl:if test="position() != last()">;</xsl:if>
+                                        <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
+                                        <xsl:if test="position() != last()"> ; </xsl:if>
                                     </xsl:for-each>
                                 </xsl:otherwise>
                             </xsl:choose>
@@ -165,6 +153,7 @@
                 </xsl:call-template>
 
                 <hr/>
+
 
 
                 <div class="paper-actions" style="margin-bottom: 10px;">
@@ -190,8 +179,7 @@
                                     <xsl:if test="episciences/hasMainPaperUrl/text() = '1'">
                                         <button class="btn btn-primary btn" style="margin-right: 5px">
                                             <span class="fas fa-file-download" style="margin-right: 5px"/>
-                                            <xsl:value-of
-                                                    select="php:function('Ccsd_Tools::translate', &quot;Télécharger l'article&quot;)"/>
+                                            <xsl:value-of select="php:function('Ccsd_Tools::translate', &quot;Télécharger l'article&quot;)"/>
                                         </button>
                                     </xsl:if>
                                 </a>
@@ -211,6 +199,8 @@
                         </xsl:choose>
                     </xsl:if>
                 </div>
+
+
 
 
                 <xsl:if test="episciences/doi and episciences/doi != ''">
@@ -256,17 +246,11 @@
                     <xsl:when test="episciences/status = 16 and episciences/publication_date">
                         <div class="small">
                             <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Publié le : ')"/>
-                            <span id="publication-date">
-                                <xsl:value-of
-                                        select="php:function('Episciences_View_Helper_Date::Date', string(episciences/publication_date))"/>
-                            </span>
-                            <xsl:if test="episciences/isImported = ''">
-                                <button id="publication-date-action"
-                                        class="btn btn-default btn-xs popover-link edit-publication-date"
-                                        style="margin-left: 5px">
+                            <span id="publication-date"><xsl:value-of select="php:function('Episciences_View_Helper_Date::Date', string(episciences/publication_date))"/></span>
+                            <xsl:if test="episciences/isImported = ''" >
+                                <button id="publication-date-action" class="btn btn-default btn-xs popover-link edit-publication-date" style="margin-left: 5px">
                                     <xsl:attribute name="onclick">
-                                        <xsl:value-of
-                                                select="concat('getPublicationDateForm(this, ', episciences/id,')')"/>
+                                        <xsl:value-of select="concat('getPublicationDateForm(this, ', episciences/id,')')"/>
                                     </xsl:attribute>
                                     <span class="fas fa-calendar" style="margin-right: 5px"/>
                                     <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Modifier')"/>
@@ -278,8 +262,7 @@
                 </xsl:choose>
 
                 <xsl:choose>
-                    <xsl:when
-                            test="episciences/submission_date and episciences/submission_date != '' and episciences/isImported/text() = '1'">
+                    <xsl:when test="episciences/submission_date and episciences/submission_date != '' and episciences/isImported/text() = '1'">
                         <div class="small">
                             <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Importé le : ')"/>
                             <xsl:value-of
@@ -292,8 +275,7 @@
                         <xsl:if test="episciences/acceptance_date/text()">
                             <div class="small">
                                 <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Accepté le : ')"/>
-                                <xsl:value-of
-                                        select="php:function('Episciences_View_Helper_Date::Date', string(episciences/acceptance_date))"/>
+                                <xsl:value-of select="php:function('Episciences_View_Helper_Date::Date', string(episciences/acceptance_date))"/>
                             </div>
                         </xsl:if>
 
@@ -319,12 +301,13 @@
                 <xsl:choose>
                     <xsl:when test="episciences/paperLicence/text() != ''">
                         <div class="small">
-
                             <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
                             <a rel="noopener" target="_blank" id='paper-license-link'>
-                                <xsl:attribute name="href">
-                                    <xsl:value-of select="episciences/paperLicence/text()"/>
-                                </xsl:attribute>
+                                <xsl:if test="(starts-with(episciences/paperLicence/text(), 'http://') or starts-with(episciences/paperLicence/text(), 'https://'))">
+                                    <xsl:attribute name="href">
+                                        <xsl:value-of select="episciences/paperLicence/text()"/>
+                                    </xsl:attribute>
+                                </xsl:if>
                                 <xsl:value-of
                                         select="php:function('Ccsd_Tools::translateLicense', string(episciences/paperLicence))"/>
                             </a>
@@ -344,18 +327,15 @@
                             <xsl:variable name="doc_rights" select="."/>
                             <xsl:if test="not (contains($doc_rights, 'info:eu-repo/semantics/'))">
                                 <div class="small">
-
                                     <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
                                     <a rel="noopener" target="_blank" id='paper-license-link'>
-                                        <xsl:if test="contains($doc_rights, 'href=') and not(contains($doc_rights, '[CC_NO]'))">
+                                        <xsl:if test="not(contains($doc_rights, '[CC_NO]')) and (starts-with($doc_rights, 'http://') or starts-with($doc_rights, 'https://'))">
                                             <xsl:attribute name="href">
                                                 <xsl:value-of select="$doc_rights"/>
                                             </xsl:attribute>
                                         </xsl:if>
-                                        <xsl:value-of
-                                                select="php:function('Ccsd_Tools::translate', string($doc_rights))"/>
+                                        <xsl:value-of select="php:function('Ccsd_Tools::translate', string($doc_rights))"/>
                                     </a>
-
                                 </div>
                             </xsl:if>
                         </xsl:for-each>
@@ -371,34 +351,32 @@
 
                 <!-- Only show HR if there are admin buttons to display -->
                 <xsl:if test="episciences and (not(episciences/tmp/text() = '1') or episciences/reassign_button)">
-                    <hr/>
+                    <hr />
                 </xsl:if>
                 <xsl:if test="episciences">
                     <div id='record-loading' style="display:none"/>
-                    <xsl:if test="not(episciences/tmp/text() = '1')">
-                        <button id="update_metadata" class="btn btn-default btn-sm" style="margin-left: 5px">
-                            <xsl:attribute name="onclick">
-                                <xsl:value-of select="concat('updateMetaData(this, ', episciences/id,')')"/>
-                            </xsl:attribute>
-                            <span class="fas fa-sync-alt" style="margin-right: 5px"/>
-                            <xsl:value-of
-                                    select="php:function('Ccsd_Tools::translate', 'Mettre à jour les métadonnées')"/>
-                        </button>
-                        <xsl:if test="$rightOrcid = '1'">
-                            <button id="update_orcid_author" class="btn btn-default btn-sm" style="margin-left: 5px"
-                                    data-toggle="modal" data-target="#author-modal-orcid">
+                         <xsl:if test="not(episciences/tmp/text() = '1')">
+                            <button id="update_metadata" class="btn btn-default btn-sm" style="margin-left: 5px">
                                 <xsl:attribute name="onclick">
-                                    <xsl:value-of select="'updateOrcidAuthors()'"/>
+                                    <xsl:value-of select="concat('updateMetaData(this, ', episciences/id,')')"/>
                                 </xsl:attribute>
-                                <span class="fab fa-orcid" style="margin-right: 5px"></span>
+                                <span class="fas fa-sync-alt" style="margin-right: 5px"/>
                                 <xsl:value-of
-                                        select="php:function('Ccsd_Tools::translate', 'Mettre à jour les ORCID')"/>
+                                        select="php:function('Ccsd_Tools::translate', 'Mettre à jour les métadonnées')"/>
                             </button>
-                            <div id="rightOrcid" style="display:none;">
-                                <xsl:value-of select="$rightOrcid"/>
-                            </div>
-                        </xsl:if>
-                    </xsl:if>
+                            <xsl:if test="$rightOrcid = '1'">
+                                <button id="update_orcid_author" class="btn btn-default btn-sm" style="margin-left: 5px" data-toggle="modal" data-target="#author-modal-orcid">
+                                    <xsl:attribute name="onclick">
+                                        <xsl:value-of select="'updateOrcidAuthors()'"/>
+                                    </xsl:attribute>
+                                    <span class="fab fa-orcid" style="margin-right: 5px"></span>
+                                    <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mettre à jour les ORCID')"/>
+                                </button>
+                                <div id="rightOrcid" style="display:none;">
+                                    <xsl:value-of select="$rightOrcid"/>
+                                </div>
+                            </xsl:if>
+                 </xsl:if>
 
                     <xsl:if test="episciences/reassign_button">
                         <a class="modal-opener" data-callback="submit" data-width="50%">
@@ -459,7 +437,7 @@
                         <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
                             <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
                         </xsl:if>
-                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatexToSafeHtml', string(.))" disable-output-escaping="yes"/>
                     </p>
                 </xsl:when>
                 <xsl:otherwise>
@@ -478,7 +456,7 @@
                         <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
                             <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
                         </xsl:if>
-                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatexToSafeHtml', string(.))" disable-output-escaping="yes"/>
                     </p>
                 </xsl:otherwise>
             </xsl:choose>
@@ -489,44 +467,42 @@
     <xsl:template name="process-subjects">
         <!-- Count total subjects -->
         <xsl:variable name="subject_count" select="count(metadata/oai_dc:dc/dc:subject)"/>
-
+        
         <!-- Only add language prefixes if there are multiple subjects -->
         <xsl:choose>
             <xsl:when test="$subject_count > 1">
                 <!-- Group subjects by language -->
-
+                
                 <!-- First, display subjects without language -->
                 <xsl:variable name="subjects_no_lang" select="metadata/oai_dc:dc/dc:subject[not(@xml:lang)]"/>
                 <xsl:if test="$subjects_no_lang">
                     <xsl:for-each select="$subjects_no_lang">
                         <xsl:value-of select="."/>
-                        <xsl:if test="position() != last()">,</xsl:if>
+                        <xsl:if test="position() != last()">, </xsl:if>
                     </xsl:for-each>
-                    <xsl:if test="metadata/oai_dc:dc/dc:subject[@xml:lang]">,</xsl:if>
+                    <xsl:if test="metadata/oai_dc:dc/dc:subject[@xml:lang]">, </xsl:if>
                 </xsl:if>
-
+                
                 <!-- Then, group by language -->
-                <xsl:for-each
-                        select="metadata/oai_dc:dc/dc:subject[@xml:lang][generate-id() = generate-id(key('subjects-by-lang', @xml:lang)[1])]">
+                <xsl:for-each select="metadata/oai_dc:dc/dc:subject[@xml:lang][generate-id() = generate-id(key('subjects-by-lang', @xml:lang)[1])]">
                     <xsl:sort select="@xml:lang"/>
                     <xsl:variable name="current_lang" select="@xml:lang"/>
-
-                    <strong>[<xsl:value-of select="$current_lang"/>]
-                    </strong>
-
+                    
+                    <strong>[<xsl:value-of select="$current_lang"/>] </strong>
+                    
                     <xsl:for-each select="key('subjects-by-lang', $current_lang)">
                         <xsl:value-of select="."/>
-                        <xsl:if test="position() != last()">,</xsl:if>
+                        <xsl:if test="position() != last()">, </xsl:if>
                     </xsl:for-each>
-
-                    <xsl:if test="position() != last()">;</xsl:if>
+                    
+                    <xsl:if test="position() != last()">; </xsl:if>
                 </xsl:for-each>
             </xsl:when>
             <xsl:otherwise>
                 <!-- Single subject: no language prefix, just comma-separated -->
                 <xsl:for-each select="metadata/oai_dc:dc/dc:subject">
                     <xsl:value-of select="."/>
-                    <xsl:if test="position() != last()">,</xsl:if>
+                    <xsl:if test="position() != last()">, </xsl:if>
                 </xsl:for-each>
             </xsl:otherwise>
         </xsl:choose>

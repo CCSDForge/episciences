@@ -7,6 +7,14 @@ require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultControl
 class ReviewerController extends PaperDefaultController
 {
     /**
+     * Fields of the account form accepted when creating an account from an invitation
+     */
+    private const ACCOUNT_CREATION_FIELDS = [
+        'USERNAME', 'PASSWORD', 'FIRSTNAME', 'LASTNAME', 'EMAIL', 'SCREEN_NAME', 'ORCID',
+        'AFFILIATIONS', 'SOCIAL_MEDIAS', 'WEB_SITES', 'BIOGRAPHY', 'LANGUEID',
+    ];
+
+    /**
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -328,8 +336,25 @@ class ReviewerController extends PaperDefaultController
     }
 
     /**
+     * Keeps only the fields of the account form (keys are matched case-insensitively)
+     *
+     * @param array<array-key, mixed> $data
+     * @return array<array-key, mixed>
+     */
+    public static function filterAccountCreationData(array $data): array
+    {
+        $allowedFields = array_flip(self::ACCOUNT_CREATION_FIELDS);
+
+        return array_filter(
+            $data,
+            static fn($key): bool => isset($allowedFields[strtoupper((string)$key)]),
+            ARRAY_FILTER_USE_KEY
+        );
+    }
+
+    /**
      *  create new user (don't have an account yet)
-     * @param array $data
+     * @param array<string, mixed> $data
      * @return Episciences_Reviewer
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
@@ -338,9 +363,17 @@ class ReviewerController extends PaperDefaultController
      */
     private function createNewReviewerWithoutAccountProcessing(array $data): Episciences_Reviewer
     {
+        // Only fields of the account form may reach the model: never let request data set UID, VALID, etc.
+        $data = self::filterAccountCreationData($data);
+
         $user = new Episciences_Reviewer($data);
         $user->setTime_registered();
         $user->setValid(1);
+
+        if ($user->getUid()) { // must always be an INSERT
+            throw new RuntimeException('Unexpected UID while creating a new reviewer account');
+        }
+
         $uid = $user->save();
         $user->setUid($uid);
 
@@ -448,10 +481,13 @@ class ReviewerController extends PaperDefaultController
 
             $refused = (array_key_exists('submitrefuse', $request->getPost()));
 
+            // the refusal form is validated and filtered (tags stripped, trimmed) before anything is stored
+            $refusedFormIsValid = $refused && $refuse_form->isValid($request->getPost());
+
             if ($accepted || $refused) {
 
                 if (
-                    $refused ||
+                    $refusedFormIsValid ||
                     (
                         $accepted &&
                         (
@@ -463,10 +499,17 @@ class ReviewerController extends PaperDefaultController
 
                     $data = $request->isPost() ? $request->getPost() : ['is-accepted' => $accepted];
 
+                    if ($refusedFormIsValid) {
+                        $data = array_merge($data, $refuse_form->getValues());
+                    }
+
                     $this->saveanswer($invitation, $assignment, $paper, $data);
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($this->view->translate("Votre réponse a bien été enregistrée."));
 
 
+                } elseif ($refused) {
+                    // reopen the refusal form: it now displays its own validation errors
+                    $this->view->invalid_refuse_form = true;
                 } else {
                     $this->view->invalid_form = true;
                 }

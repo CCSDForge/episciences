@@ -252,10 +252,19 @@ class AdministratemailController extends Zend_Controller_Action
             $id = (int)$request->getParam('id');
             $oMail = new Episciences_Mail('UTF-8');
 
-            $mail = $oMail->find($id) ? $oMail->toArray(true) : [];
+            // same scope as the history list (journal, allowed documents, conflicts of interest)
+            $review = Episciences_ReviewsManager::find(RVID);
+            $review->loadSettings();
+            $options = [];
+            $docIds = $this->historyProcessing($review, $options);
 
-            $this->view->mail = $mail;
+            if (!$oMail->isInHistory($id, $docIds, $options) || !$oMail->find($id)) {
+                $this->getResponse()->setHttpResponseCode(404);
+                $this->view->mail = [];
+                return;
+            }
 
+            $this->view->mail = $oMail->toArray(true);
 
         } else {
             $this->getResponse()?->setHttpResponseCode(404);
@@ -516,8 +525,8 @@ class AdministratemailController extends Zend_Controller_Action
             $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
             $path = Episciences_Tools::getAttachmentsPath();
             foreach ($attachments as $attachment) {
-                $filepath = $path . $attachment;
-                if (file_exists($filepath)) {
+                $filepath = Episciences_Tools::resolveAttachmentPath($path, $attachment);
+                if ($filepath !== null) {
                     $mail->addAttachedFile($filepath);
                 }
             }
@@ -684,7 +693,13 @@ class AdministratemailController extends Zend_Controller_Action
         $id = $request->getParam('id');
 
         if ($id) {
-            $reminder = Episciences_Mail_RemindersManager::find($id);
+            // Only reminders of the current journal can be edited
+            $reminder = Episciences_Mail_RemindersManager::find((int)$id, RVID);
+            if (!$reminder) {
+                $this->_helper->viewRenderer->setNoRender();
+                $this->getResponse()->setHttpResponseCode(403);
+                return;
+            }
         } else {
             $reminder = null;
         }
@@ -706,18 +721,32 @@ class AdministratemailController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
+
+        if (!$this->isValidReminderWriteRequest($request)) {
+            return;
+        }
+
         $recipient = $request->getParam('recipient');
         $type = $request->getParam('type');
         $templates = Episciences_Mail_RemindersManager::getTemplates();
-        $isExistTemplateForThisRecipient = array_key_exists($recipient, $templates[$type]);
 
-        if (!$isExistTemplateForThisRecipient) {
-            trigger_error('reminder (type = ' . $type . ') not saved: no template defined for ' . $recipient . 'recipient');
+        if (!is_string($type) || !is_string($recipient)
+            || !array_key_exists($type, $templates)
+            || !array_key_exists($recipient, $templates[$type])
+        ) {
+            $this->getResponse()->setHttpResponseCode(400);
+            return;
+        }
+
+        // Only reminders of the current journal can be modified
+        $id = $request->getParam('id');
+        if ($id && !Episciences_Mail_RemindersManager::find((int)$id, RVID)) {
+            $this->getResponse()->setHttpResponseCode(403);
             return;
         }
 
         $options = [
-            'id' => $request->getParam('id'),
+            'id' => $id ? (int)$id : null,
             'rvid' => RVID,
             'type' => $request->getParam('type'),
             'recipient' => $request->getParam('recipient'),
@@ -735,8 +764,13 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         $reminder = new Episciences_Mail_Reminder($options);
-        // save() returns a bool; echo it (as "1"/"0") to preserve the AJAX response body.
-        echo (int)$reminder->save();
+        if (!$reminder->save()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        // Success body preserved for the AJAX caller
+        echo 1;
     }
 
     /**
@@ -749,12 +783,33 @@ class AdministratemailController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
+
+        if (!$this->isValidReminderWriteRequest($request)) {
+            return false;
+        }
+
         $id = $request->getParam('id');
 
-        if (Episciences_Mail_RemindersManager::delete($id)) {
+        // Only reminders of the current journal can be deleted
+        if ($id && Episciences_Mail_RemindersManager::delete((int)$id, RVID)) {
             return true;
         }
 
+        $this->getResponse()->setHttpResponseCode(403);
+        return false;
+    }
+
+    /**
+     * Reminder changes must come from a POST request carrying the per-session request token (CSRF);
+     * otherwise the request is answered with HTTP 403.
+     */
+    private function isValidReminderWriteRequest(Zend_Controller_Request_Http $request): bool
+    {
+        if ($request->isPost() && Episciences_Csrf_Helper::validateRequestToken($request)) {
+            return true;
+        }
+
+        $this->getResponse()->setHttpResponseCode(403);
         return false;
     }
 
@@ -1002,16 +1057,10 @@ class AdministratemailController extends Zend_Controller_Action
 
     private function allDocIds(Episciences_Review $journal): array
     {
+        // Only the identifiers are needed: do not hydrate every paper of the journal (memory)
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()->from(T_PAPERS, ['DOCID'])->where('RVID = ?', $journal->getRvid());
 
-        $docIds = [];
-
-        try {
-            $docIds = array_keys($journal->getPapers());
-        } catch (Zend_Db_Select_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
-        return $docIds;
-
+        return array_map('intval', $db->fetchCol($select));
     }
 }

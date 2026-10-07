@@ -6,6 +6,7 @@ use Episciences_Mail;
 use Episciences_Mail_Tags;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use Zend_Db_Table_Abstract;
 
 /**
  * Unit tests for Episciences_Mail.
@@ -492,6 +493,37 @@ final class Episciences_MailTest extends TestCase
         );
     }
 
+    /**
+     * Regression: the DataTable search term must be bound (quoted by the adapter),
+     * never interpolated into the WHERE clause.
+     */
+    public function testDataTableMailsSearchQueryQuotesSearchTerm(): void
+    {
+        $sql = $this->buildSearchSql("'; DROP TABLE users; --");
+
+        // The quote is escaped by the adapter, so the term stays inside the string literal
+        self::assertStringContainsString("'%\\'; DROP TABLE users; --%'", $sql);
+        self::assertSame(5, substr_count($sql, 'LIKE'));
+    }
+
+    /**
+     * LIKE wildcards typed by the user must be matched literally.
+     */
+    public function testDataTableMailsSearchQueryEscapesLikeWildcards(): void
+    {
+        $sql = $this->buildSearchSql('50%_off');
+
+        self::assertSame(5, substr_count($sql, "'%50\\\\%\\\\_off%'"));
+    }
+
+    private function buildSearchSql(string $word): string
+    {
+        $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from('MAIL_LOG');
+        $method = new ReflectionMethod(Episciences_Mail::class, 'dataTableMailsSearchQuery');
+
+        return $method->invoke($this->mail, $select, $word)->assemble();
+    }
+
     // =========================================================================
     // Sanitisation logic (pure, no DB)
     // =========================================================================
@@ -673,5 +705,144 @@ final class Episciences_MailTest extends TestCase
         self::assertSame($baseUrl . '/42', $tags[Episciences_Mail_Tags::TAG_PAPER_VIEW_URL]);
         self::assertSame($baseUrl . '/administratepaper/view/id/42', $tags[Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL]);
         self::assertSame($baseUrl . '/paper/rating/id/42', $tags[Episciences_Mail_Tags::TAG_PAPER_RATING_URL]);
+    }
+
+    // =========================================================================
+    // isInHistory: a single mail log entry is scoped like the history list
+    // =========================================================================
+
+    public function testIsInHistoryRejectsNonPositiveIdWithoutQuerying(): void
+    {
+        self::assertFalse($this->mail->isInHistory(0, [1, 2]));
+        self::assertFalse($this->mail->isInHistory(-5, [1, 2]));
+    }
+
+    private function assembleHistoryEntryQuery(int $id, array $docIds, array $options = []): string
+    {
+        $this->mail->setRvid(3);
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getHistoryEntryQuery');
+        $method->setAccessible(true);
+        return $method->invoke($this->mail, $id, $docIds, $options)->assemble();
+    }
+
+    public function testHistoryEntryQueryIsScopedByIdAndJournal(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10, 11]);
+
+        self::assertStringContainsString('(ID = 42)', $sql);
+        self::assertStringContainsString('(RVID = 3)', $sql);
+        self::assertStringContainsString('DOCID IN (10,11)', $sql);
+    }
+
+    public function testHistoryEntryQueryStrictModeExcludesMailsWithoutDocument(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10], ['strict' => true]);
+
+        self::assertStringNotContainsString('DOCID IS NULL', $sql);
+        self::assertStringContainsString('DOCID IN (10)', $sql);
+    }
+
+    public function testHistoryEntryQueryWithoutAllowedDocumentsOnlyKeepsOwnOrGeneralMails(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, []);
+
+        self::assertStringNotContainsString('DOCID IN', $sql);
+        self::assertStringContainsString('DOCID IS NULL OR UID', $sql);
+    }
+
+    public function testHistoryEntryQueryIgnoresSearchFilter(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10], ['search' => 'anything']);
+
+        self::assertStringNotContainsString('LIKE', $sql);
+    }
+
+    // =========================================================================
+    // Credential-bearing links must not reach the mail log
+    // =========================================================================
+
+    public function testLoggableBodyMasksTokenLink(): void
+    {
+        $url = 'https://example.org/user/resetpassword/token/abc123';
+        $this->mail->setRawBody('Reset: ' . Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $url);
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+        $logged = $method->invoke($this->mail);
+
+        self::assertStringNotContainsString('abc123', $logged);
+        self::assertStringContainsString('Reset:', $logged);
+        // The mail actually sent still carries the real link
+        self::assertStringContainsString('abc123', $this->mail->getBody());
+    }
+
+    public function testLoggableBodyMasksUsernameList(): void
+    {
+        $this->mail->setRawBody('Logins: ' . Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST, '- jdoe');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+
+        self::assertStringNotContainsString('jdoe', $method->invoke($this->mail));
+    }
+
+    public function testLoggableBodyUnchangedWithoutTokenTag(): void
+    {
+        $this->mail->setRawBody('Hello');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+
+        self::assertSame('Hello', $method->invoke($this->mail));
+    }
+
+    public function testLoggableBodyMasksUsernameAndInvitationLinks(): void
+    {
+        $this->mail->setRawBody(sprintf(
+            '%s %s %s',
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+            Episciences_Mail_Tags::TAG_INVITATION_URL,
+            Episciences_Mail_Tags::TAG_INVITATION_LINK
+        ));
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME, 'jdoe');
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_URL, 'https://example.org/inv/secret1');
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_LINK, 'https://example.org/inv/secret2');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+        $logged = $method->invoke($this->mail);
+
+        self::assertStringNotContainsString('jdoe', $logged);
+        self::assertStringNotContainsString('secret1', $logged);
+        self::assertStringNotContainsString('secret2', $logged);
+    }
+
+    public function testLogDataContentIsMasked(): void
+    {
+        $url = 'https://example.org/user/reset/token/abc123';
+        $this->mail->setRawBody('Reset: ' . Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $url);
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'buildLogData');
+        $method->setAccessible(true);
+        $data = $method->invoke($this->mail, 1, 'a@example.org', 'a@example.org', 'b@example.org', null, null, null);
+
+        self::assertStringNotContainsString('abc123', $data['CONTENT']);
+        self::assertStringContainsString('Reset:', $data['CONTENT']);
+    }
+
+    public function testFailureDetailsBodyIsMasked(): void
+    {
+        $this->mail->setRawBody('Reset: ' . Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, 'https://example.org/user/reset/token/abc123');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'buildFailureDetails');
+        $method->setAccessible(true);
+        $details = $method->invoke($this->mail);
+
+        self::assertStringNotContainsString('abc123', $details['body']);
+        self::assertStringContainsString('Reset:', $details['body']);
     }
 }
