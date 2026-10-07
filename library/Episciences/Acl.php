@@ -120,7 +120,6 @@ class Episciences_Acl extends Ccsd_Acl
         'user-photo',
         'volume-all',
         'doi-settings', // only root
-        'administratelinkeddata-ajaxgetldform',
     ];
 
     /** @var bool[][] */
