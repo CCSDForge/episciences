@@ -1422,8 +1422,26 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
                                     $target
                                         .text(parsed.name)
                                         .attr("href", parsed.href);
-                                } else if (parsed.reloadPage) {
-                                    location.reload();
+                                }
+
+                                // Update (or remove) the info-license-box with the freshly rendered block
+                                if (typeof parsed.html === 'string') {
+                                    const $box = $('.info-license-box');
+                                    if (parsed.html.trim() === '') {
+                                        $box.remove();
+                                    } else {
+                                        $box.replaceWith(parsed.html);
+                                    }
+                                }
+
+                                // Update the paper-license-link block
+                                if (typeof parsed.linkHtml === 'string') {
+                                    const $linkBlock = $('#paper-license-link').closest('.small');
+                                    if ($linkBlock.length) {
+                                        $linkBlock.replaceWith(parsed.linkHtml);
+                                    } else {
+                                        location.reload();
+                                    }
                                 }
                             } else {
                                 bootbox.setDefaults({ locale: locale });

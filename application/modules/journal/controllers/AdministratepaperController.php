@@ -4723,7 +4723,8 @@ class AdministratepaperController extends PaperDefaultController
                 $license = [
                         'href' => $paper->getLicence(),
                         'name' => $spdxLicense->getName(),
-                        'reloadPage' => true // todo Do this if necessary; see when this applies
+                        'html' => $this->view->partial('paper/info-license-box.phtml', ['paper' => $paper]),
+                        'linkHtml' => $this->view->partial('paper/license-link.phtml', ['paper' => $paper])
                 ];
 
                 $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'previousLicense' => $oldLicense, 'newLicense' => $newLicense];
