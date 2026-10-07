@@ -4354,6 +4354,9 @@ class AdministratepaperController extends PaperDefaultController
      */
     public function saverefusedmonitoringAction(): void
     {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $docId = $request->getQuery('id'); // params en GET
@@ -4374,7 +4377,6 @@ class AdministratepaperController extends PaperDefaultController
                 try {
                     if ($this->applyEditorRefusedMonitoring($paper, $post['refused_monitoring_comment'])) {
                         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
-                        $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'view' => self::ACTION_ASSIGNED]));
                     }
 
                 } catch (Exception $e) {
@@ -4383,6 +4385,9 @@ class AdministratepaperController extends PaperDefaultController
 
             }
         }
+
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => self::ACTION_ASSIGNED]));
+
     }
 
     /**
