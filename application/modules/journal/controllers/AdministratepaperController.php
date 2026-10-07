@@ -4377,6 +4377,7 @@ class AdministratepaperController extends PaperDefaultController
                 try {
                     if ($this->applyEditorRefusedMonitoring($paper, $post['refused_monitoring_comment'])) {
                         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
+
                     }
 
                 } catch (Exception $e) {
