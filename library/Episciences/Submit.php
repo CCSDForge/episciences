@@ -2395,6 +2395,7 @@ class Episciences_Submit
         $formValues['old_paperid'] = (int)$storedPaper->getPaperid();
         $formValues['old_paper_vid'] = (int)$storedPaper->getVid();
         $formValues['old_paper_sid'] = (int)$storedPaper->getSid();
+        $formValues['old_submissiondate'] = $storedPaper->getSubmission_date();
 
         return $formValues;
     }

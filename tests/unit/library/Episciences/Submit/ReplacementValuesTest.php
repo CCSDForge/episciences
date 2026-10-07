@@ -24,6 +24,7 @@ final class ReplacementValuesTest extends TestCase
             'status' => Episciences_Paper::STATUS_SUBMITTED,
             'vid' => 3,
             'sid' => 4,
+            'submission_date' => '2020-01-02 03:04:05',
         ]);
     }
 
@@ -36,6 +37,7 @@ final class ReplacementValuesTest extends TestCase
             'old_paperid' => '888',
             'old_paper_vid' => '777',
             'old_paper_sid' => '666',
+            'old_submissiondate' => '1999-01-01 00:00:00',
             'old_identifier' => 'forged',
             'old_repoid' => '2',
             'old_conceptIdentifier' => 'forged-concept',
@@ -50,6 +52,7 @@ final class ReplacementValuesTest extends TestCase
         self::assertSame(20, $values['old_paperid']);
         self::assertSame(3, $values['old_paper_vid']);
         self::assertSame(4, $values['old_paper_sid']);
+        self::assertSame('2020-01-02 03:04:05', $values['old_submissiondate']);
         self::assertArrayNotHasKey('old_identifier', $values);
         self::assertArrayNotHasKey('old_repoid', $values);
         self::assertArrayNotHasKey('old_conceptIdentifier', $values);
