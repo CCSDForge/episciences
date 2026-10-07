@@ -139,7 +139,7 @@ final class RemindersTranslationsTest extends TestCase
         $source = (string)file_get_contents(self::SCRIPT);
 
         self::assertStringContainsString("die('ERROR: MISSING RVCODE'", $source);
-        self::assertStringContainsString("\$settings = ['is' => ['code' => \$opts->rvcode]];", $source);
+        self::assertStringContainsString("Episciences_ReviewsManager::getList(['is' => ['code' => \$opts->rvcode]]);", $source);
         self::assertStringContainsString("if ((int)\$data['RVID'] !== \$review->getRvid()) {", $source);
     }
 
