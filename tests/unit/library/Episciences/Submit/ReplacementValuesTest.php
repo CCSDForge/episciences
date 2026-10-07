@@ -158,15 +158,4 @@ final class ReplacementValuesTest extends TestCase
             }
         }
     }
-
-    public function testPaperReadyToPublishIsReplacedInPlace(): void
-    {
-        $values = Episciences_Submit::applyStoredPaperToReplacement(
-            ['can_replace' => 1],
-            $this->storedPaper(Episciences_Paper::STATUS_CE_READY_TO_PUBLISH)
-        );
-
-        self::assertSame(Episciences_Paper::STATUS_CE_READY_TO_PUBLISH, $values['old_paper_status']);
-        self::assertNull(Episciences_Submit::getReplacementError($this->storedPaper(Episciences_Paper::STATUS_CE_READY_TO_PUBLISH), self::OWNER_UID, false));
-    }
 }

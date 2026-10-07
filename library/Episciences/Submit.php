@@ -2355,9 +2355,7 @@ class Episciences_Submit
             $oldStatus = $data['old_paper_status'] ?? null;
             $isUpdatable = in_array($oldStatus, [
                 Episciences_Paper::STATUS_SUBMITTED,
-                Episciences_Paper::STATUS_OK_FOR_REVIEWING,
-                Episciences_Paper::STATUS_CE_READY_TO_PUBLISH,
-                Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION
+                Episciences_Paper::STATUS_OK_FOR_REVIEWING
             ], true);
 
             if (isset($data['old_docid']) && $isUpdatable) {
