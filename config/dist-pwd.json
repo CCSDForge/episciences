@@ -142,7 +142,7 @@
   },
   "OPENCITATIONS": {
     "TOKEN" : "YOUR-OPENCITATIONS-ACCESS-TOKEN",
-    "APIURL": "https://opencitations.net/index/api/v1/citations/"
+    "APIURL": "https://api.opencitations.net/index/v2/citations/"
   },
   "OPENALEX": {
     "MAILTO": "YOUR-MAIL-TO",
