@@ -38,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Avoid suggesting that an invitation be linked to another account if it has already been accepted, has expired or has been cancelled.
 
 ### Changed
+- OpenCitations client migrated to API v2 (DOI sent with its `doi:` scheme, throttling and retry on HTTP 429).
+  **Deployment**: set `OPENCITATIONS.APIURL` to `https://api.opencitations.net/index/v2/citations/` in
+  `config/pwd.json` (a warning is logged while the v1 URL is still configured).
 - The continuous integration workflows now generate the configuration and the database the PHPUnit
   bootstrap requires. The test suite was aborting before its first test and reporting success: no
   PHP test had ever actually run on CI.
