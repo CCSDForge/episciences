@@ -24,6 +24,9 @@ final class ReplacementLookupTest extends TestCase
     protected function setUp(): void
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if (!$db instanceof Zend_Db_Adapter_Abstract) {
+            self::markTestSkipped('No database adapter available.');
+        }
         $this->db = $db;
         $this->db->beginTransaction();
     }

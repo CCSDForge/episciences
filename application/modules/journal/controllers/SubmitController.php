@@ -296,10 +296,12 @@ class SubmitController extends DefaultController
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    private function handlePaperReplacement(array &$formValues): array
+    private function handlePaperReplacement(array $formValues): array
     {
         // The paper to replace is never described by the client: it is loaded from the database
-        $storedPaper = Episciences_PapersManager::partialGet((int)($formValues['old_docid'] ?? 0), RVID);
+        $postedDocId = $formValues['old_docid'] ?? null;
+        $oldDocId = is_scalar($postedDocId) && ctype_digit((string)$postedDocId) ? (int)$postedDocId : 0;
+        $storedPaper = Episciences_PapersManager::partialGet($oldDocId, RVID);
 
         $review = Episciences_ReviewsManager::find(RVID);
         $error = Episciences_Submit::getReplacementError(
@@ -321,11 +323,6 @@ class SubmitController extends DefaultController
         }
 
         $formValues = Episciences_Submit::applyStoredPaperToReplacement($formValues, $storedPaper);
-
-        if (!$storedPaper->canBeReplaced()) {
-            // A refused paper is resubmitted as a new one: it has no concept identifier to compare with
-            $storedPaper->setConcept_identifier();
-        }
 
         $result = $storedPaper->updatePaper($formValues);
         $message = '<strong>' . $result['message'] . '</strong>';

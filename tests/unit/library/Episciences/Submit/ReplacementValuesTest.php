@@ -125,4 +125,48 @@ final class ReplacementValuesTest extends TestCase
     {
         self::assertNull(Episciences_Submit::getReplacementError($this->storedPaper(), self::OWNER_UID, false));
     }
+
+    public function testRefusedPaperWithConceptIdentifierIsComparedOnItsConcept(): void
+    {
+        $previousTranslator = \Zend_Registry::isRegistered('Zend_Translate') ? \Zend_Registry::get('Zend_Translate') : null;
+        \Zend_Registry::set('Zend_Translate', new \Zend_Translate(['adapter' => 'array', 'content' => ['k' => 'v'], 'locale' => 'en']));
+
+        try {
+            $refused = new Episciences_Paper([
+                'docid' => 10,
+                'identifier' => 'zenodo-version-1',
+                'version' => 1,
+                'repoId' => (int)\Episciences_Repositories::ZENODO_REPO_ID,
+                'status' => Episciences_Paper::STATUS_REFUSED,
+                'concept_identifier' => 'zenodo-concept',
+            ]);
+
+            // Another version of the same concept: the identifier of the version itself differs
+            $result = $refused->updatePaper([
+                'search_doc' => [
+                    'docId' => 'zenodo-version-2',
+                    'version' => 1,
+                    'repoId' => (int)\Episciences_Repositories::ZENODO_REPO_ID,
+                ],
+                'concept_identifier' => 'zenodo-concept',
+            ]);
+
+            self::assertStringNotContainsString("l'identifiant de l'article a changé", $result['message']);
+        } finally {
+            if ($previousTranslator !== null) {
+                \Zend_Registry::set('Zend_Translate', $previousTranslator);
+            }
+        }
+    }
+
+    public function testPaperReadyToPublishIsReplacedInPlace(): void
+    {
+        $values = Episciences_Submit::applyStoredPaperToReplacement(
+            ['can_replace' => 1],
+            $this->storedPaper(Episciences_Paper::STATUS_CE_READY_TO_PUBLISH)
+        );
+
+        self::assertSame(Episciences_Paper::STATUS_CE_READY_TO_PUBLISH, $values['old_paper_status']);
+        self::assertNull(Episciences_Submit::getReplacementError($this->storedPaper(Episciences_Paper::STATUS_CE_READY_TO_PUBLISH), self::OWNER_UID, false));
+    }
 }
