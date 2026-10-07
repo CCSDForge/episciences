@@ -1426,7 +1426,8 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
                                     location.reload();
                                 }
                             } else {
-                                console.error(parsed.error);
+                                bootbox.setDefaults({ locale: locale });
+                                bootbox.alert(translate(parsed.error));
                             }
 
                         } else if (typeof response === 'string') {

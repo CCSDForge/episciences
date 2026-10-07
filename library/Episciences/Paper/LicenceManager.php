@@ -380,14 +380,21 @@ class Episciences_Paper_LicenceManager
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = self::getLicenceByDocIdQuery($docId, ['licence', 'source_id']);
 
-        $sql->joinLeft(['c' => T_PAPER_LICENSE_CODE], 'c.docid = pl.docid', ['c.code']);
+        // The license may be stored as an SPDX code in T_PAPER_LICENSE_CODE,
+        // even when there is no raw licence row in T_PAPER_LICENCES.
+        $sql = $db->select()
+            ->from(['c' => T_PAPER_LICENSE_CODE], ['c.code'])
+            ->joinLeft(['pl' => T_PAPER_LICENCES], 'pl.docid = c.docid', ['pl.licence'])
+            ->where('c.docid = ?', $docId);
         $result = $db->fetchRow($sql);
 
         if (isset($result['code'])) {
             return (new LicenseCode(['code' => $result['code']]))->getReference();
         }
+
+        // Fall back to the raw licence stored in T_PAPER_LICENCES
+        $result = $db->fetchRow(self::getLicenceByDocIdQuery($docId, ['licence']));
 
         return $result['licence'] ?? '';
 
@@ -424,7 +431,7 @@ class Episciences_Paper_LicenceManager
         $sql = self::getLicenceByDocIdQuery($docId);
         $result = $db?->fetchAll($sql)[0] ?? [];
 
-        return new Episciences_Paper_Licence($result);
+        return !empty($result) ? new Episciences_Paper_Licence($result) : null;
 
     }
 

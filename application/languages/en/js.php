@@ -318,4 +318,9 @@ return [
     'Une erreur est survenue, veuillez réessayer.' => 'An error occurred, please try again.',
     'Enregistrement en cours…' => 'Saving…',
     'Voulez-vous supprimer cette illustration ?' => 'Do you want to delete this illustration?',
+
+    // License save errors
+    "Échec de l'enregistrement de la licence." => 'Failed to save the licence.',
+    "Échec de l'enregistrement de la licence : aucun code de licence fourni." => 'Failed to save the licence: no licence code provided.',
+    "Échec de l'enregistrement de la licence : code SPDX invalide." => 'Failed to save the licence: invalid SPDX code.',
 ];

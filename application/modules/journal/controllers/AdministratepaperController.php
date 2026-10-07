@@ -4672,6 +4672,11 @@ class AdministratepaperController extends PaperDefaultController
             // spdx license code
             $currentSpdxCode = $request->getPost('license');
 
+            if ($currentSpdxCode === null || trim((string)$currentSpdxCode) === '') {
+                $this->sendJsonError("Échec de l'enregistrement de la licence : aucun code de licence fourni.");
+                return;
+            }
+
             $oldLicense = LicenseCodeManager::getCode($paper->getDocid());
 
             if (
@@ -4681,8 +4686,8 @@ class AdministratepaperController extends PaperDefaultController
 
                 $isCurrentSpdxCodeValid = (new LicenseSpdxResolver())->isValid($currentSpdxCode);
 
-                if (!isset($isCurrentSpdxCodeValid)) {
-                    echo "Failed to save new licence: invalid SPDX code: $currentSpdxCode";
+                if (!$isCurrentSpdxCodeValid) {
+                    $this->sendJsonError("Échec de l'enregistrement de la licence : code SPDX invalide.");
                     return;
                 }
 
@@ -4695,6 +4700,7 @@ class AdministratepaperController extends PaperDefaultController
                         $oldLicense = $paperLicenceObject->getLicence();
                     }
 
+                    $paperLicenceObject->setDocid($paper->getDocid());
                     $paperLicenceObject->setUid(Episciences_Auth::getUid());
                     $paperLicenceObject->save();
                 }
@@ -4727,11 +4733,25 @@ class AdministratepaperController extends PaperDefaultController
                     $paper->log(Episciences_Paper_Logger::CODE_LICENSE_UPDATED, Episciences_Auth::getUid(), $details);
                 } catch (JsonException|Zend_Db_Adapter_Exception $e) {
                     trigger_error($e->getMessage());
-                    echo 'Failed to save new licence.';
+                    $this->sendJsonError("Échec de l'enregistrement de la licence.");
                 }
             }
         }
 
+    }
+
+    /**
+     * Send a JSON error response to the client.
+     * @param string $message
+     * @return void
+     * @throws JsonException
+     */
+    private function sendJsonError(string $message): void
+    {
+        echo json_encode(
+            ['error' => $message],
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
     }
 
     /**
