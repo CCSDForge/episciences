@@ -297,26 +297,27 @@ class SubmitController extends DefaultController
      */
     private function handlePaperReplacement(array &$formValues): array
     {
+        // The paper to replace is never described by the client: it is loaded from the database
+        $storedPaper = Episciences_PapersManager::partialGet((int)($formValues['old_docid'] ?? 0), RVID);
 
-        $formValues['old_paper_status'] = (int)$formValues['old_paper_status'];
-        $formValues['old_version'] = (float)$formValues['old_version'];
-        $formValues['old_repoid'] = (int)$formValues['old_repoid'];
-        $formValues['old_docid'] = (int)$formValues['old_docid'];
+        if ($storedPaper === null || !$storedPaper->isOwner()) {
+            $result = [
+                'code' => 0,
+                'message' => $this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article.")
+            ];
+            return [$result, '<strong>' . $result['message'] . '</strong>'];
+        }
+
+        $formValues = Episciences_Submit::applyStoredPaperToReplacement($formValues, $storedPaper);
 
         $selfPaper = new Episciences_Paper([
-            'docid' => $formValues['old_docid'],
-            'identifier' => $formValues['old_identifier'] ?? '',
-            'version' => $formValues['old_version'],
-            'repoId' => $formValues['old_repoid'],
-            'status' => $formValues['old_paper_status'],
-            'concept_identifier' => $formValues['old_conceptIdentifier'] ?? null
+            'docid' => $storedPaper->getDocid(),
+            'identifier' => $storedPaper->getIdentifier(),
+            'version' => (float)$storedPaper->getVersion(),
+            'repoId' => (int)$storedPaper->getRepoid(),
+            'status' => (int)$storedPaper->getStatus(),
+            'concept_identifier' => $storedPaper->getConcept_identifier()
         ]);
-
-        unset(
-            $formValues['old_identifier'],
-            $formValues['old_repoid'],
-            $formValues['old_conceptIdentifier']
-        );
 
         $result = $selfPaper->updatePaper($formValues);
         $message = '<strong>' . $result['message'] . '</strong>';

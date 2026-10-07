@@ -2378,6 +2378,28 @@ class Episciences_Submit
 
 
     /**
+     * Overwrite the "old_*" values of a replacement with those of the stored paper.
+     * These values come from hidden inputs: they must never be trusted as posted.
+     *
+     * @param array<string, mixed> $formValues
+     * @param Episciences_Paper $storedPaper the paper to replace, as stored in the database
+     * @return array<string, mixed>
+     */
+    public static function applyStoredPaperToReplacement(array $formValues, Episciences_Paper $storedPaper): array
+    {
+        unset($formValues['old_identifier'], $formValues['old_repoid'], $formValues['old_conceptIdentifier']);
+
+        $formValues['old_docid'] = (int)$storedPaper->getDocid();
+        $formValues['old_paper_status'] = (int)$storedPaper->getStatus();
+        $formValues['old_version'] = (float)$storedPaper->getVersion();
+        $formValues['old_paperid'] = (int)$storedPaper->getPaperid();
+        $formValues['old_paper_vid'] = (int)$storedPaper->getVid();
+        $formValues['old_paper_sid'] = (int)$storedPaper->getSid();
+
+        return $formValues;
+    }
+
+    /**
      * @param array $post
      * @return array
      */
