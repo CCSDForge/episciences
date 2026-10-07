@@ -4679,6 +4679,12 @@ class AdministratepaperController extends PaperDefaultController
 
             $oldLicense = LicenseCodeManager::getCode($paper->getDocid());
 
+            // If the license to save is the same as the current one, warn the user
+            if ($oldLicense === $currentSpdxCode && Episciences_Auth::isSecretary()) {
+                echo json_encode(['warning' => 'La licence actuelle est déjà définie.'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                return;
+            }
+
             if (
                     (!$oldLicense || $oldLicense !== $currentSpdxCode) &&
                     Episciences_Auth::isSecretary()
