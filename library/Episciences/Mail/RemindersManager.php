@@ -34,6 +34,22 @@ class Episciences_Mail_RemindersManager
             Episciences_Acl::ROLE_EDITOR
         );
 
+        // Unanswered reviewer invitation (chief editor copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_CHIEF_EDITOR_VERSION,
+            Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION,
+            Episciences_Acl::ROLE_CHIEF_EDITOR
+        );
+
+        // Unanswered reviewer invitation (secretary copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_SECRETARY_VERSION,
+            Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION,
+            Episciences_Acl::ROLE_SECRETARY
+        );
+
         // rappel avant deadline de relecture (copie relecteur)
         self::addReminderTemplate(
             $templates,
@@ -43,13 +59,29 @@ class Episciences_Mail_RemindersManager
         );
 
         // rappel avant deadline de relecture (copie rédacteur)
-        // !!! TODO : check construction de la constante sur Reminder.php (sur reminder before deadline / before rating deadline)
         self::addReminderTemplate(
             $templates,
             Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION,
             Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE,
             Episciences_Acl::ROLE_EDITOR
         );
+
+        // Reminder before reviewing deadline (chief editor copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_CHIEF_EDITOR_VERSION,
+            Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE,
+            Episciences_Acl::ROLE_CHIEF_EDITOR
+        );
+
+        // Reminder before reviewing deadline (secretary copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_SECRETARY_VERSION,
+            Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE,
+            Episciences_Acl::ROLE_SECRETARY
+        );
+
 
         // relance après deadline de relecture (copie relecteur)
         self::addReminderTemplate(
@@ -65,6 +97,22 @@ class Episciences_Mail_RemindersManager
             Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION,
             Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE,
             Episciences_Acl::ROLE_EDITOR
+        );
+
+        // Reminder after reviewing deadline (chief editor copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_CHIEF_EDITOR_VERSION,
+            Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE,
+            Episciences_Acl::ROLE_CHIEF_EDITOR
+        );
+
+        // Reminder after reviewing deadline (secretary copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_SECRETARY_VERSION,
+            Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE,
+            Episciences_Acl::ROLE_SECRETARY
         );
 
         // rappel avant deadline de modification (copie auteur)

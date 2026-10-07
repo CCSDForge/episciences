@@ -41,9 +41,9 @@ class Episciences_Mail_Reminder
     ];
 
     public const MAPPING_REMINDER_RECIPIENTS = [
-        self::TYPE_UNANSWERED_INVITATION => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
-        self::TYPE_BEFORE_REVIEWING_DEADLINE => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
-        self::TYPE_AFTER_REVIEWING_DEADLINE => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
+        self::TYPE_UNANSWERED_INVITATION => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR,Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR,Episciences_Acl::ROLE_SECRETARY => Episciences_Acl::ROLE_SECRETARY],
+        self::TYPE_BEFORE_REVIEWING_DEADLINE => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR,Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR,Episciences_Acl::ROLE_SECRETARY => Episciences_Acl::ROLE_SECRETARY],
+        self::TYPE_AFTER_REVIEWING_DEADLINE => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR,Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR,Episciences_Acl::ROLE_SECRETARY => Episciences_Acl::ROLE_SECRETARY],
         self::TYPE_BEFORE_REVISION_DEADLINE => [Episciences_Acl::ROLE_AUTHOR => Episciences_Acl::ROLE_AUTHOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
         self::TYPE_AFTER_REVISION_DEADLINE => [Episciences_Acl::ROLE_AUTHOR => Episciences_Acl::ROLE_AUTHOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
         self::TYPE_NOT_ENOUGH_REVIEWERS => [Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
@@ -1640,4 +1640,180 @@ class Episciences_Mail_Reminder
         return $repetition > 0 && ($intervalDays % $repetition) === 0;
     }
 
+    /**
+     *
+     * Excludes:
+     * - Author of the paper
+     * - Co-authors of the paper
+     * - The reviewer targeted by the reminder (by UID if not temp, and by email)
+     * - Users without confirmed "no conflict" declaration (if COI enabled)
+     *
+     * @param array $supervisors Array of [uid => email] pairs
+     * @param int $authorUid Author UID
+     * @param array $coAuthorUids Array of co-author UIDs
+     * @param int|null $reviewerUid Reviewer UID (null if TMP_USER)
+     * @param string|null $reviewerEmail Reviewer email for fallback check
+     * @param array|null $uidsWithoutConflict UIDs that declared "no conflict" (null = COI disabled)
+     * @return array Filtered supervisors [uid => email]
+     */
+    public static function filterSupervisors(
+        array $supervisors,
+        int $authorUid,
+        array $coAuthorUids,
+        ?int $reviewerUid,
+        ?string $reviewerEmail,
+        ?array $uidsWithoutConflict
+    ): array {
+        if (empty($supervisors)) {
+            return [];
+        }
+
+        $filtered = [];
+        $reviewerEmailLower = $reviewerEmail !== null ? strtolower($reviewerEmail) : null;
+
+        foreach ($supervisors as $uid => $email) {
+            // Exclude author
+            if ($uid === $authorUid) {
+                continue;
+            }
+
+            // Exclude co-authors
+            if (in_array($uid, $coAuthorUids, true)) {
+                continue;
+            }
+
+            // Exclude reviewer by UID (only for non-temp users)
+            if ($reviewerUid !== null && $uid === $reviewerUid) {
+                continue;
+            }
+
+            // Exclude reviewer by email (case-insensitive)
+            if ($reviewerEmailLower !== null && strtolower($email) === $reviewerEmailLower) {
+                continue;
+            }
+
+            // COI check: only include if confirmed "no conflict"
+            // $uidsWithoutConflict === null means COI is disabled
+            if ($uidsWithoutConflict !== null && !in_array($uid, $uidsWithoutConflict, false)) {
+                continue;
+            }
+
+            $filtered[$uid] = $email;
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * Filter supervisors (chief_editor, secretary) for a paper.
+     * Excludes:
+     * - Author of the paper
+     * - Co-authors of the paper
+     * - The reviewer targeted by the reminder (by UID if not temp, and by email)
+     * - Users without confirmed "no conflict" declaration (if COI enabled)
+     *
+     * @param array $supervisors Array of Episciences_User objects keyed by UID
+     * @param Episciences_Paper $paper
+     * @param Episciences_Review $review
+     * @param int|null $reviewerUid Reviewer UID (null if TMP_USER)
+     * @param string|null $reviewerEmail Reviewer email for fallback check
+     * @param bool $isTmpUser Whether the reviewer is a temporary user
+     * @return array Filtered supervisors [uid => Episciences_User]
+     */
+    private function filterSupervisorsForPaper(
+        array $supervisors,
+        Episciences_Paper $paper,
+        Episciences_Review $review,
+        ?int $reviewerUid,
+        ?string $reviewerEmail,
+        bool $isTmpUser = false
+    ): array {
+        if (empty($supervisors)) {
+            return [];
+        }
+
+        $authorUid = $paper->getUid();
+
+        // Load co-author UIDs once
+        $coAuthorUids = [];
+        try {
+            $coAuthors = $paper->getCoAuthors();
+            $coAuthorUids = array_keys($coAuthors);
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        // Check if COI is enabled and get UIDs without conflict
+        $uidsWithoutConflict = null; // null means COI disabled
+
+        $review->loadSettings();
+        if ((int)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) === 1) {
+            // Get UIDs that have declared "no conflict" for this paper
+            $uidsWithoutConflict = Episciences_Paper_ConflictsManager::fetchSelectedCol(
+                'by',
+                [
+                    'answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'],
+                    'paper_id' => $paper->getPaperid()
+                ]
+            );
+        }
+
+        // Build [uid => email] array for static filter
+        $supervisorEmails = [];
+        foreach ($supervisors as $uid => $supervisor) {
+            $supervisorEmails[$uid] = $supervisor->getEmail();
+        }
+
+        // When reviewer is a temp user, don't exclude by UID (temp IDs are unrelated to account UIDs)
+        $effectiveReviewerUid = $isTmpUser ? null : $reviewerUid;
+
+        // Use static filter
+        $filteredUids = self::filterSupervisors(
+            $supervisorEmails,
+            $authorUid,
+            $coAuthorUids,
+            $effectiveReviewerUid,
+            $reviewerEmail,
+            $uidsWithoutConflict
+        );
+
+        // Return filtered Episciences_User objects
+        $filtered = [];
+        foreach ($filteredUids as $uid => $email) {
+            $filtered[$uid] = $supervisors[$uid];
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * Get supervisors (chief_editors or secretaries) based on recipient role.
+     *
+     * @return array Array of Episciences_User objects keyed by UID
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function getSupervisors(): array
+    {
+        $recipient = $this->getRecipient();
+
+        if ($recipient === Episciences_Acl::ROLE_CHIEF_EDITOR) {
+            return Episciences_Review::getChiefEditors();
+        }
+
+        if ($recipient === Episciences_Acl::ROLE_SECRETARY) {
+            return Episciences_Review::getSecretaries();
+        }
+
+        return [];
+    }
+
+    /**
+     * Check if the current recipient role is a supervisor (chief_editor or secretary).
+     */
+    private function isSupervisorRecipient(): bool
+    {
+        $recipient = $this->getRecipient();
+        return $recipient === Episciences_Acl::ROLE_CHIEF_EDITOR
+            || $recipient === Episciences_Acl::ROLE_SECRETARY;
+    }
 }
