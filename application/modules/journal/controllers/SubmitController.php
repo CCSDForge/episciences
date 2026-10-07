@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\AppRegistry;
 use Episciences\Submit\SubmittedRecord;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
@@ -298,28 +299,35 @@ class SubmitController extends DefaultController
     private function handlePaperReplacement(array &$formValues): array
     {
         // The paper to replace is never described by the client: it is loaded from the database
-        $storedPaper = Episciences_PapersManager::partialGet((int)($formValues['old_docid'] ?? 0), RVID);
+        $storedPaper = Episciences_PapersManager::partialGet((int)($formValues['old_docid'] ?? 0));
 
-        if ($storedPaper === null || !$storedPaper->isOwner()) {
-            $result = [
-                'code' => 0,
-                'message' => $this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article.")
-            ];
+        $review = Episciences_ReviewsManager::find(RVID);
+        $error = Episciences_Submit::getReplacementError(
+            $storedPaper,
+            (int)Episciences_Auth::getUid(),
+            $review instanceof Episciences_Review
+                && (bool)$review->getSetting(Episciences_Review::SETTING_CAN_RESUBMIT_REFUSED_PAPER)
+        );
+
+        if ($error !== null) {
+            AppRegistry::getMonoLogger()?->warning('Paper replacement rejected', [
+                'old_docid' => $formValues['old_docid'] ?? null,
+                'uid' => Episciences_Auth::getUid(),
+                'reason' => $error,
+            ]);
+
+            $result = ['code' => 0, 'message' => $this->view->translate($error)];
             return [$result, '<strong>' . $result['message'] . '</strong>'];
         }
 
         $formValues = Episciences_Submit::applyStoredPaperToReplacement($formValues, $storedPaper);
 
-        $selfPaper = new Episciences_Paper([
-            'docid' => $storedPaper->getDocid(),
-            'identifier' => $storedPaper->getIdentifier(),
-            'version' => (float)$storedPaper->getVersion(),
-            'repoId' => (int)$storedPaper->getRepoid(),
-            'status' => (int)$storedPaper->getStatus(),
-            'concept_identifier' => $storedPaper->getConcept_identifier()
-        ]);
+        if (!$storedPaper->canBeReplaced()) {
+            // A refused paper is resubmitted as a new one: it has no concept identifier to compare with
+            $storedPaper->setConcept_identifier();
+        }
 
-        $result = $selfPaper->updatePaper($formValues);
+        $result = $storedPaper->updatePaper($formValues);
         $message = '<strong>' . $result['message'] . '</strong>';
 
         return [$result, $message];

@@ -13,15 +13,18 @@ use PHPUnit\Framework\TestCase;
  */
 final class ReplacementValuesTest extends TestCase
 {
-    private function storedPaper(): Episciences_Paper
+    private const OWNER_UID = 42;
+
+    private function storedPaper(int $status = Episciences_Paper::STATUS_SUBMITTED, int $uid = self::OWNER_UID): Episciences_Paper
     {
         return new Episciences_Paper([
             'docid' => 10,
             'paperid' => 20,
+            'uid' => $uid,
             'identifier' => 'stored-identifier',
             'version' => 1,
             'repoId' => 1,
-            'status' => Episciences_Paper::STATUS_SUBMITTED,
+            'status' => $status,
             'vid' => 3,
             'sid' => 4,
             'submission_date' => '2020-01-02 03:04:05',
@@ -65,5 +68,61 @@ final class ReplacementValuesTest extends TestCase
 
         self::assertSame(10, $values['old_docid']);
         self::assertSame(20, $values['old_paperid']);
+    }
+
+    public function testResubmittedRefusedPaperKeepsNoSubmissionDate(): void
+    {
+        $values = Episciences_Submit::applyStoredPaperToReplacement(
+            ['old_submissiondate' => '1999-01-01 00:00:00'],
+            $this->storedPaper(Episciences_Paper::STATUS_REFUSED)
+        );
+
+        self::assertArrayNotHasKey('old_submissiondate', $values);
+        self::assertSame(Episciences_Paper::STATUS_REFUSED, $values['old_paper_status']);
+        self::assertSame(20, $values['old_paperid']);
+    }
+
+    public function testMissingPaperIsReported(): void
+    {
+        self::assertSame(
+            Episciences_Submit::REPLACEMENT_ERROR_NOT_FOUND,
+            Episciences_Submit::getReplacementError(null, self::OWNER_UID, false)
+        );
+    }
+
+    public function testPaperOfSomeoneElseIsReported(): void
+    {
+        self::assertSame(
+            Episciences_Submit::REPLACEMENT_ERROR_NOT_OWNER,
+            Episciences_Submit::getReplacementError($this->storedPaper(), self::OWNER_UID + 1, false)
+        );
+    }
+
+    public function testPaperInProgressCannotBeReplaced(): void
+    {
+        self::assertSame(
+            Episciences_Submit::REPLACEMENT_ERROR_NOT_REPLACEABLE,
+            Episciences_Submit::getReplacementError(
+                $this->storedPaper(Episciences_Paper::STATUS_BEING_REVIEWED),
+                self::OWNER_UID,
+                true
+            )
+        );
+    }
+
+    public function testRefusedPaperDependsOnTheJournalSetting(): void
+    {
+        $refused = $this->storedPaper(Episciences_Paper::STATUS_REFUSED);
+
+        self::assertSame(
+            Episciences_Submit::REPLACEMENT_ERROR_NOT_REPLACEABLE,
+            Episciences_Submit::getReplacementError($refused, self::OWNER_UID, false)
+        );
+        self::assertNull(Episciences_Submit::getReplacementError($refused, self::OWNER_UID, true));
+    }
+
+    public function testOwnerCanReplaceASubmittedPaper(): void
+    {
+        self::assertNull(Episciences_Submit::getReplacementError($this->storedPaper(), self::OWNER_UID, false));
     }
 }

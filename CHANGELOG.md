@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1009](https://github.com/CCSDForge/episciences/pull/1009): remove redundant account linking confirmation when emails match
 - Avoid suggesting that an invitation be linked to another account if it has already been accepted, has expired or has been cancelled.
 - Replacing a submitted paper by a new version now relies on the stored paper instead of the values posted by the form.
+  Only the author can replace a paper, the submission date is kept only for a real replacement, and each rejection gives an explicit, translated message.
 
 ### Changed
 - The continuous integration workflows now generate the configuration and the database the PHPUnit
