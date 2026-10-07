@@ -45,7 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so a cron or a CI job is no longer told it succeeded.
 
 ### Added
+- [zbJATS] Add caching for downloaded PDF and XML files using Symfony Cache (`FilesystemAdapter`) in `ZbjatsZipperCommand`, with support for new front-end URLs (`/articles/{paperId}/download|zbjats`) and `--remove-cache` CLI option.
 
+- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Redesign the "Manage the journal" dashboard panel as a four-quadrant grid (evaluation, revisions & suggestions, copy-editing & publication, archives), with a compact paper search box moved into each panel header.
+- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Add a "decision suggestion" filter (acceptance / refusal / revision) to the paper list, and show the number of papers with a pending suggestion on the dashboard. A suggestion stops being counted as pending once the editor in chief has ruled, whether by accepting the paper or by requesting revisions. The filter is restricted to users allowed to manage papers.
 - [#1216](https://github.com/CCSDForge/episciences/pull/1216) Paper illustration (graphical abstract): required text alternative (WCAG 1.1.1) and optional free-text license, stored as `graphical_abstract_alt` and `graphical_abstract_license` next to `graphical_abstract_file` in `PAPERS.DOCUMENT` and exposed in the JSON v2 export; the license is shown as the image caption.
 - [#865](https://github.com/CCSDForge/episciences/issues/865), [#1208](https://github.com/CCSDForge/episciences/pull/1208) Allow administrators and chief editors to change the contributor (owner) of a paper. A modal dialog lets users search for and select a new contributor, with an option to add the former contributor as co-author (checked by default) so they continue receiving notifications. Both the new and former contributors receive email notifications. The action is logged with full details (old/new contributor, co-author status) and displayed in the paper history timeline.
 - [#1168](https://github.com/CCSDForge/episciences/pull/1168) Add `journal:create` CLI command (`scripts/CreateJournalCommand.php`, `make create-journal`) to create a new journal — inserting its `REVIEW` row, cloning settings/menu/pages/appearance from a template journal (excluding editorial identity, outgoing notifications and secrets), creating its `data/<rvcode>/` directory tree, and granting an existing user the administrator role. Business logic lives in `Episciences\Journal\Provisioning\{JournalSpec,ReviewRowWriter,SettingsCloner,DataDirectoryProvisioner,WebsiteCloner,ClonableWebsiteStyle,ClonableWebsiteHeader,PagesCloner,AdminRoleAssigner,Report,JournalCreator}`. See `docs/journal-provisioning.md`.
@@ -89,6 +92,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1204](https://github.com/CCSDForge/episciences/pull/1204) Build the CLI translators (`Script::initTranslator()`, `reminders.php`, `inbox:process`, `solr:*`, `UpdatePapersDocumentCommand`) with the same `TranslatorFactory` as the web: same dictionary order, e-mail templates no longer included, journal dictionaries loaded last. The locale each script used is unchanged.
 
 ### Fixed
+[#793](https://github.com/CCSDForge/episciences/issues/793) [arXiv] Keep only the first `<dc:description>` tag as paper abstract during record harvest in `Episciences_Paper::setMetadata()` and `Episciences_Submit`.
+- [#1132](https://github.com/CCSDForge/episciences/pull/1132) [Zenodo] Pass `previousVersion` context to `hookVersion()` in `savenewpostedversionAction()` to prevent overwriting `VERSION` with the raw Zenodo identifier when creating a new posted version.
+- [zbJATS] Define `RVID` constant in `ZbjatsZipperCommand` CLI bootstrap to fix uncaught "Undefined constant RVID" error during volume processing.
+- Fix editor-to-author message notifications being lost or reported as sent when they were not: a plain exception while notifying another assigned editor no longer skips the author email, the author send result is checked, and the editor is warned when a notification could not be queued (`PaperDefaultController::newCommentNotifyManager()`, `AuthorEditorCommunicationControllerTrait`).
+- Fix paper status/revision emails sent from modals being logged as `CODE_MAIL_SENT` in the paper history even when `writeMail()` failed (`PaperDefaultController::sendMailFromModal()`).
+- Fix submission acknowledgment never reaching the author (and co-authors) when no editorial committee member is left to notify, e.g. a chief editor submitting to their own journal (`Episciences_Submit::sendNotifications()`, regression from v1.0.54).
+- Fix conflict-of-interest filtering of submission recipients comparing UIDs against list positions instead of UID values (`Episciences_Submit::filterConflictRecipients()`).
+
+- [#1118](https://github.com/CCSDForge/episciences/issues/1118) Add missing French and English translations for intra-work relationship types and group headers in linked data forms.
+
 
 - [#1216](https://github.com/CCSDForge/episciences/pull/1216) Paper illustration (graphical abstract): every error now returns a JSON response with a proper HTTP status (the "file too large" case returned nothing), the result of `move_uploaded_file()` is checked, and the illustration is carried over to new versions (temporary version, new version, COAR Notify new version) instead of being lost.
 - [#1208](https://github.com/CCSDForge/episciences/pull/1208) Fix change contributor modal: bind listeners once and release document event listeners on close, prevent race condition when closing modal quickly, close on Escape and backdrop click, and restore focus to the trigger button (WCAG 2.4.3).
@@ -177,7 +190,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1178](https://github.com/CCSDForge/episciences/pull/1178) Extract available repository version lookup into `Episciences\Paper\RepositoryVersionsService`, make collaborators injectable, distinguish Dataverse major and minor versions, and handle Guzzle exceptions on bioRxiv and Dataverse API calls.
 
 ### Changed
-
+- Update dependencies.
 - Language names now come from CLDR through Symfony Intl (`Ccsd_Locale::getLanguageName()`) instead of the `lang_*` keys of the Zend dictionaries (`application/languages/{en,fr}/Zend.php`), which are removed. Used by the BibTeX export, `Ccsd_Form_Validate_RequiredLang` and `Ccsd_Form_Trait_Populate`. Nine rare English labels change in the BibTeX `language` field: `bn` Bangla, `ff` Fula, `ht` Haitian Creole, `ky` Kyrgyz, `mi` Māori, `or` Odia, `rm` Romansh, `to` Tongan, `ug` Uyghur.
 - Update dependencies.
 - [#1205](https://github.com/CCSDForge/episciences/pull/1205) Store the board role labels (`editorial_board`, `technical_board`, ..., `former_member`) as plain text in `views.php`, like in `js.php`; the tag icon is now added by `Episciences_Acl::getRoleLabelHtml()` in the role badges (user lists, contacts, mailing lists, permissions, role editing), which also escapes the label. The users-by-role chart on the stats page no longer strips HTML from the labels.
@@ -187,15 +200,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [CLOCKSS] Additional article URLs, published ahead of the actual switch to ease harvesting during the transition period: `/articles/{paperid}` and `/articles/{paperid}/download`, both also accepting an optional `en`, `fr` or `es` language prefix (e.g. `/en/articles/{paperid}`). They are addressed by paper id — the canonical reference, as used by the new interfaces — and answer `200` with the published version, without redirecting to its docid: `Episciences_ArticleAlias_Plugin` resolves the paper id at routing time. A docid is still accepted, and the historical `/{docid}` and `/{docid}/pdf` URLs are unchanged.
-- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Redesign the "Manage the journal" dashboard panel as a four-quadrant grid (evaluation, revisions & suggestions, copy-editing & publication, archives), with a compact paper search box moved into each panel header.
-- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Add a "decision suggestion" filter (acceptance / refusal / revision) to the paper list, and show the number of papers with a pending suggestion on the dashboard. A suggestion stops being counted as pending once the editor in chief has ruled, whether by accepting the paper or by requesting revisions. The filter is restricted to users allowed to manage papers.
 
 ### Fixed
 
 - Allow paper authors to download review report attachments after an editorial decision by aligning authorization checks in `FileController::reportAction()`.
 - Fix XML export corruption during Solr indexing by checking `isRegistered()` in `AppRegistry::getMonoLogger()` instead of catching exceptions.
 - Fix `TypeError` in `ZbjatsTools` and `BiblioRefApiClient` by normalizing CSL response parsing to accept both array and JSON-encoded string formats from the bibliographic reference API.
-- [#1118](https://github.com/CCSDForge/episciences/issues/1118) Add missing French and English translations for intra-work relationship types and group headers in linked data forms.
 
 ### Changed
 
@@ -272,7 +282,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Avoid repeated `REVIEW_SETTING` queries in a single request by caching loaded review settings on the current review object and sharing cached review instances between `RVID` and `RVCODE` lookups.
 
 ### Fixed
-
+- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Improve report attachment access control: allow paper authors to download, block users with declared COI.
 - Fix PHP 8 compatibility by explicitly declaring `Ccsd_Website_Header::$_langDir` as `string` to prevent fatal type variance errors in subclasses.
 - Fix deprecation warning "Implicit conversion from float to int loses precision" when updating metadata.
 - Fix missing translation caused by a curly apostrophe character (`’`) in templates.
@@ -323,7 +333,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix history filter date popover sizing, correct jQuery UI datepicker positioning/z-index, and fix calendar-icon click interaction in the paper administration view.
 - Fix multiple bugs and potential XSS issues found during a public JavaScript audit (including strict tooltip option defaults, escaping regex patterns in search inputs, and removing incorrect JSON dataType requirements).
 - Improve `Episciences_Paper_FilesManager::syncFiles()`: generate unique self-link hashes to prevent database collisions when file links are empty or set to `#`, resolve argument order in file difference checking, and clean up paper file deletion logic.
-- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Improve report attachment access control: allow paper authors to download, block users with declared COI.
 ### Deprecated
 
 - Deprecate obsolete `Ccsd_Form_Element_Thesaurus` form element (scheduled for removal).

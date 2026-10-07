@@ -4448,7 +4448,8 @@ class AdministratepaperController extends PaperDefaultController
             }
         }
 
-        $this->_helper->redirector->gotoUrl(sprintf('/%s/%s',  self::ADMINISTRATE_PAPER_CONTROLLER,self::ACTION_ASSIGNED));
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => self::ACTION_ASSIGNED]));
+
     }
 
     /**

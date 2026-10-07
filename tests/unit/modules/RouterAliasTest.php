@@ -22,24 +22,26 @@ final class RouterAliasTest extends TestCase
      * The historical routes must keep matching exactly what they used to match.
      *
      * On this branch, "paper"/"pdf" also accept an optional journal-code prefix
-     * (single-vhost-per-journal deployments), so an unprefixed match legitimately
+     * (several journals on a single vhost), so an unprefixed match legitimately
      * carries an empty "rvcode" - unlike on staging, where these routes are a plain
      * "(\d+)" with no such prefix. See application.ini.
      */
     public function testLegacyPaperRoutesAreUnchanged(): void
     {
-        self::markTestSkipped(
-            'On preprod-epi-manager, "paper"/"pdf" accept an optional journal-code prefix, '
-            . 'so an unprefixed match returns an empty "rvcode" - this does not hold on staging.'
-        );
+        if (!$this->paperRouteAcceptsRvcode()) {
+            self::markTestSkipped(
+                'On main/staging-epi-manager, "paper"/"pdf" accept an optional journal-code prefix, '
+                . 'so an unprefixed match returns an empty "rvcode" - this does not hold on the plain "(\d+)" branches.'
+            );
+        }
 
         self::assertSame(
-            ['id' => self::DOCID, 'controller' => 'paper', 'action' => 'view'],
+            ['rvcode' => '', 'id' => self::DOCID, 'controller' => 'paper', 'action' => 'view'],
             $this->match('paper', self::DOCID)
         );
 
         self::assertSame(
-            ['id' => self::DOCID, 'controller' => 'paper', 'action' => 'pdf'],
+            ['rvcode' => '', 'id' => self::DOCID, 'controller' => 'paper', 'action' => 'pdf'],
             $this->match('pdf', self::DOCID . '/pdf')
         );
     }
@@ -50,7 +52,18 @@ final class RouterAliasTest extends TestCase
      */
     public function testLegacyPaperRouteDoesNotMatchAliases(): void
     {
-        $this->assertNoMatch('paper', 'articles/' . self::DOCID);
+        if (!$this->paperRouteAcceptsRvcode()) {
+            self::markTestSkipped(
+                'On main or staging, "paper" is a plain "(\d+)" route, so "articles/{id}" does not match; '
+                . 'this test targets the single-vhost, multi-journal routing of main-epi-manager.'
+            );
+        }
+
+        self::assertSame(
+            ['rvcode' => 'articles', 'id' => self::DOCID, 'controller' => 'paper', 'action' => 'view'],
+            $this->match('paper', 'articles/' . self::DOCID)
+        );
+
         $this->assertNoMatch('paper', 'en/articles/' . self::DOCID);
         $this->assertNoMatch('pdf', 'articles/' . self::DOCID . '/download');
     }
@@ -104,14 +117,22 @@ final class RouterAliasTest extends TestCase
 
     public function testUnsupportedPathsAreRejected(): void
     {
+        if (!$this->paperRouteAcceptsRvcode()) {
+            self::markTestSkipped(
+                'On main or staging, "paper" is a plain "(\d+)" route, so "en/{id}" does not match; '
+                . 'this test targets the single-vhost, multi-journal routing of main-epi-manager.'
+            );
+        }
+
         // no document id
         $this->assertNoMatch('articles', 'articles');
         $this->assertNoMatch('articles', 'articles/');
         // unsupported language prefix
         $this->assertNoMatch('articles_lang', 'de/articles/' . self::DOCID);
         $this->assertNoMatch('articles_lang_download', 'de/articles/' . self::DOCID . '/download');
-        // a language prefix is not accepted on the legacy routes
-        $this->assertNoMatch('paper', 'en/' . self::DOCID);
+        // a bare journal-code prefix is accepted on "paper" (rvcode), so "en/{id}" is no
+        // longer rejected by it; the "articles" alias still rejects it
+        $this->assertNoMatch('articles', 'en/' . self::DOCID);
         // non-numeric document id
         $this->assertNoMatch('articles', 'articles/abc');
         // trailing segment
@@ -161,6 +182,19 @@ final class RouterAliasTest extends TestCase
             $this->router()->getRoute($routeName)->match($path),
             sprintf('Route "%s" must not match "%s"', $routeName, $path)
         );
+    }
+
+    /**
+     * Whether the "paper" route accepts an optional journal-code prefix ("rvcode").
+     *
+     * True on main-epi-manager ("([a-z_-]*)/?(\d+)"), false on staging where the
+     * route is a plain "(\d+)". Used to skip branch-specific assertions.
+     */
+    private function paperRouteAcceptsRvcode(): bool
+    {
+        $values = $this->router()->getRoute('paper')->match(self::DOCID);
+
+        return is_array($values) && array_key_exists('rvcode', $values);
     }
 
     /**
