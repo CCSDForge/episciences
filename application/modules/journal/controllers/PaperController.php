@@ -2,6 +2,7 @@
 
 use Episciences\Files\Uploader;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
+use Episciences\Submit\SubmittedRecord;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
@@ -1834,6 +1835,14 @@ class PaperController extends PaperDefaultController
             return;
         }
 
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->redirectWithError(
+                "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre nouvelle version n'a pas été enregistrée. Merci de recharger cette page puis de soumettre à nouveau votre nouvelle version.",
+                $paper
+            );
+            return;
+        }
+
         $form = $this->buildNewVersionForm($paper);
 
         // Validate cover letter requirement before form validation
@@ -1883,7 +1892,23 @@ class PaperController extends PaperDefaultController
         $copyEditors = $paper->getCopyEditors(true, true);
         $coAuthors = $paper->getCoAuthors();
 
-        $newPaper = $this->initializeNewPaper($paper, $post, $currentVersion, $reassignReviewers, $isAlreadyAccepted);
+        // Never trust the record posted by the form: use the one of the searched document
+        $record = SubmittedRecord::resolve(
+            (string)($post[self::SEARCH_DOC_STR]['h_repoId'] ?? ''),
+            (string)($post[self::SEARCH_DOC_STR]['h_docId'] ?? ''),
+            $currentVersion,
+            (int)$paper->getDocid() ?: null
+        );
+
+        if ($record === null) {
+            $this->redirectWithError(
+                "Une erreur s'est produite pendant l'enregistrement de votre article.",
+                $paper
+            );
+            return;
+        }
+
+        $newPaper = $this->initializeNewPaper($paper, $post, $currentVersion, $reassignReviewers, $isAlreadyAccepted, $record);
 
         if ($newPaper->alreadyExists()) {
             $this->redirectWithError(
@@ -2103,6 +2128,7 @@ class PaperController extends PaperDefaultController
      * @param float $currentVersion
      * @param bool|null $reassignReviewers
      * @param bool|null $isAlreadyAccepted
+     * @param string $record Record of the searched document, never the one posted by the form
      * @return Episciences_Paper
      * @throws JsonException
      * @throws Zend_Db_Statement_Exception
@@ -2113,7 +2139,8 @@ class PaperController extends PaperDefaultController
         array             $post,
         float             $currentVersion,
         ?bool             $reassignReviewers,
-        ?bool             $isAlreadyAccepted
+        ?bool             $isAlreadyAccepted,
+        string            $record
     ): Episciences_Paper
     {
         $paperId = $paper->getPaperid() ?: $paper->getDocid();
@@ -2132,7 +2159,7 @@ class PaperController extends PaperDefaultController
         $newPaper->setRepoid($post[self::SEARCH_DOC_STR]['h_repoId']);
 
         try {
-            $newPaper->setRecord($post['xml']);
+            $newPaper->setRecord($record);
         } catch (DOMException|Zend_Db_Statement_Exception $e) {
             trigger_error($e->getMessage());
         }

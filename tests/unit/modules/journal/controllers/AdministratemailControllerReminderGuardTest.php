@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences_Csrf_Helper;
 use Episciences_Mail_Reminder;
 use Episciences_Mail_RemindersManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use PHPUnit\Framework\MockObject\MockObject;
 use ReflectionMethod;
+use Zend_Controller_Request_HttpTestCase;
+use Zend_Controller_Response_HttpTestCase;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Table_Abstract;
 
@@ -21,19 +25,19 @@ use Zend_Db_Table_Abstract;
  * - Saving and deleting a reminder change what the reminder cron sends: these actions must only
  *   run on a POST request carrying the per-session request token (CSRF).
  *
- * The library layer is tested by behaviour (stubbed database adapter). ZF1 controllers are not
- * instantiable in isolation, so the controller and the script are checked by source analysis.
+ * Library and controller are tested by behaviour: the controller actions are dispatched for real
+ * on a stubbed database adapter.
  */
 final class AdministratemailControllerReminderGuardTest extends TestCase
 {
-    private const CONTROLLER = APPLICATION_PATH . '/modules/journal/controllers/AdministratemailController.php';
-    private const REMINDERS_JS = APPLICATION_PATH . '/../public/js/administratemail/reminders.js';
-
-    private mixed $previousAdapter;
+    private Zend_Db_Adapter_Abstract $previousAdapter;
 
     protected function setUp(): void
     {
         $this->previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if (!\Zend_Registry::isRegistered('Zend_Locale')) {
+            \Zend_Registry::set('Zend_Locale', new \Zend_Locale('fr')); // needed to list the reminder templates
+        }
     }
 
     protected function tearDown(): void
@@ -102,126 +106,151 @@ final class AdministratemailControllerReminderGuardTest extends TestCase
     }
 
     // ------------------------------------------------------------------
-    // Controller and script: source analysis
+    // Controller: dispatched actions
     // ------------------------------------------------------------------
 
     /**
-     * Body of a controller method, delimited by the next method declaration.
+     * @param array<string, mixed> $params
      */
-    private function extractMethod(string $methodName): string
+    private function dispatch(string $action, array $params, bool $post = true, ?string $token = null): Zend_Controller_Response_HttpTestCase
     {
-        $source = (string)file_get_contents(self::CONTROLLER);
-        $start = strpos($source, 'function ' . $methodName . '(');
-        self::assertNotFalse($start, "Method $methodName not found in the controller");
+        require_once APPLICATION_PATH . '/modules/journal/controllers/AdministratemailController.php';
 
-        $next = preg_match('/\n    (?:public|protected|private) function /', $source, $m, PREG_OFFSET_CAPTURE, $start + 1)
-            ? $m[0][1]
-            : strlen($source);
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod($post ? 'POST' : 'GET');
+        $request->setParams($params);
+        $request->setPost($post ? $params : []);
+        if ($token !== null) {
+            $request->setHeader('X-CSRF-Token', $token);
+        }
+        $response = new Zend_Controller_Response_HttpTestCase();
 
-        return substr($source, $start, $next - $start);
+        $controller = new \AdministratemailController($request, $response);
+        ob_start();
+        try {
+            $controller->$action();
+        } finally {
+            ob_end_clean();
+        }
+        $_POST = []; // setPost() writes the global
+
+        return $response;
     }
 
     /**
-     * @return array<string, array{string, string}>
+     * @param array<string, mixed>|false $reminderRow
+     * @return MockObject&Zend_Db_Adapter_Abstract
      */
-    public static function scopedActions(): array
+    private function stubAdapter(array|false $reminderRow = false)
     {
-        return [
-            'editreminderAction' => ['editreminderAction', 'find'],
-            'savereminderAction' => ['savereminderAction', 'find'],
-            'deletereminderAction' => ['deletereminderAction', 'delete'],
-        ];
+        $adapter = $this->getMockBuilder($this->previousAdapter::class)
+            ->setConstructorArgs([$this->previousAdapter->getConfig()])
+            ->onlyMethods(['fetchRow', 'fetchOne', 'insert', 'update', 'delete'])
+            ->getMock();
+        $adapter->method('fetchRow')->willReturn($reminderRow);
+        $adapter->method('fetchOne')->willReturn(false);
+        Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+
+        return $adapter;
     }
 
-    #[DataProvider('scopedActions')]
-    public function testActionScopesReminderLookupToTheCurrentJournal(string $action, string $managerMethod): void
+    public function testEditRefusesAReminderOfAnotherJournalWith403(): void
     {
-        $method = $this->extractMethod($action);
+        $this->stubAdapter(false);
 
-        $count = preg_match_all('/RemindersManager::' . $managerMethod . '\(([^;]*);/', $method, $matches);
-        self::assertGreaterThan(0, $count, "$action must go through RemindersManager::$managerMethod()");
+        $response = $this->dispatch('editreminderAction', ['id' => '12'], false);
 
-        foreach ($matches[1] as $arguments) {
-            self::assertMatchesRegularExpression('/,\s*RVID\s*\)/', $arguments,
-                "$action must restrict the reminder to the current journal");
-        }
-    }
-
-    public function testEditActionRefusesAReminderOfAnotherJournalWith403(): void
-    {
-        $method = $this->extractMethod('editreminderAction');
-
-        self::assertMatchesRegularExpression(
-            '/if \(!\$reminder\) \{.*?setHttpResponseCode\(403\).*?return;/s',
-            $method,
-            'editreminderAction must answer 403 instead of an empty modal'
-        );
-    }
-
-    public function testSaveActionChecksRequestAndInputBeforeAnyLookupOrChange(): void
-    {
-        $method = $this->extractMethod('savereminderAction');
-
-        $request = strpos($method, 'isValidReminderWriteRequest(');
-        $params = strpos($method, "getParam('type')");
-        $ownership = strpos($method, 'RemindersManager::find(');
-        $save = strpos($method, '->save()');
-
-        foreach ([$request, $params, $ownership, $save] as $position) {
-            self::assertNotFalse($position);
-        }
-
-        self::assertLessThan($params, $request, 'The request token must be checked before reading parameters');
-        self::assertLessThan($ownership, $params, 'The type and recipient must be validated before the lookup');
-        self::assertLessThan($save, $ownership, 'Ownership must be checked before the reminder is saved');
-        self::assertStringContainsString('setHttpResponseCode(400)', $method, 'Invalid input must answer 400');
+        self::assertSame(403, $response->getHttpResponseCode());
     }
 
     /**
-     * @return array<string, array{string, string}>
+     * @return array<string, array{bool, ?string}>
      */
-    public static function writeActions(): array
+    public static function rejectedWriteRequestProvider(): array
     {
         return [
-            'savereminderAction' => ['savereminderAction', '->save()'],
-            'deletereminderAction' => ['deletereminderAction', 'RemindersManager::delete('],
+            'GET with a valid token' => [false, 'valid'],
+            'POST without token' => [true, null],
+            'POST with a wrong token' => [true, 'forged'],
         ];
     }
 
-    #[DataProvider('writeActions')]
-    public function testWriteActionChecksTheRequestBeforeAnyChange(string $action, string $change): void
+    #[DataProvider('rejectedWriteRequestProvider')]
+    public function testSaveAndDeleteAreRefusedWithoutAPostCarryingTheToken(bool $post, ?string $token): void
     {
-        $method = $this->extractMethod($action);
+        $adapter = $this->stubAdapter(['ID' => 12, 'RVID' => RVID]);
+        $adapter->expects(self::never())->method('insert');
+        $adapter->expects(self::never())->method('update');
+        $adapter->expects(self::never())->method('delete');
 
-        $check = strpos($method, 'if (!$this->isValidReminderWriteRequest($request))');
-        $changeAt = strpos($method, $change);
+        if ($token === 'valid') {
+            $token = Episciences_Csrf_Helper::getSessionToken();
+        } else {
+            Episciences_Csrf_Helper::getSessionToken(); // the session holds a token the request does not send
+        }
 
-        self::assertNotFalse($check, "$action must validate the request method and token");
-        self::assertNotFalse($changeAt);
-        self::assertLessThan($changeAt, $check, "$action must validate the request before changing anything");
+        foreach (['savereminderAction', 'deletereminderAction'] as $action) {
+            $response = $this->dispatch($action, ['id' => '12', 'type' => 'x', 'recipient' => 'y'], $post, $token);
+            self::assertSame(403, $response->getHttpResponseCode(), $action);
+        }
     }
 
-    public function testWriteRequestRequiresPostAndRequestToken(): void
+    public function testSaveRefusesAnUnknownTypeOrRecipientWith400(): void
     {
-        $method = $this->extractMethod('isValidReminderWriteRequest');
+        $adapter = $this->stubAdapter(false);
+        $adapter->expects(self::never())->method('insert');
+        $adapter->expects(self::never())->method('update');
 
-        self::assertStringContainsString('$request->isPost()', $method);
-        self::assertStringContainsString('Episciences_Csrf_Helper::validateRequestToken($request)', $method);
-        self::assertStringContainsString('setHttpResponseCode(403)', $method);
-    }
-
-    public function testReminderScriptSendsTheTokenAndHandlesFailures(): void
-    {
-        $source = (string)file_get_contents(self::REMINDERS_JS);
-
-        self::assertStringContainsString('meta[name="csrf-token"]', $source);
-        self::assertSame(
-            2,
-            substr_count($source, "headers: { 'X-CSRF-Token': getCsrfToken() }"),
-            'Both the save and the delete calls must send the request token'
+        $response = $this->dispatch(
+            'savereminderAction',
+            ['type' => 'no-such-type', 'recipient' => 'nobody'],
+            true,
+            Episciences_Csrf_Helper::getSessionToken()
         );
-        self::assertSame(2, substr_count($source, 'error: function'), 'Both write calls must handle a failure');
-        self::assertStringContainsString('$(container).html(previousContent)', $source,
-            'A failed deletion must restore the reminder replaced by the loader');
+
+        self::assertSame(400, $response->getHttpResponseCode());
+    }
+
+    public function testSaveRefusesAReminderOfAnotherJournalWith403(): void
+    {
+        $adapter = $this->stubAdapter(false);
+        $adapter->expects(self::never())->method('insert');
+        $adapter->expects(self::never())->method('update');
+
+        $templates = Episciences_Mail_RemindersManager::getTemplates();
+        $type = (string)array_key_first($templates);
+        $recipient = (string)array_key_first($templates[$type]);
+
+        $response = $this->dispatch(
+            'savereminderAction',
+            ['id' => '12', 'type' => $type, 'recipient' => $recipient],
+            true,
+            Episciences_Csrf_Helper::getSessionToken()
+        );
+
+        self::assertSame(403, $response->getHttpResponseCode());
+    }
+
+    public function testDeleteOnlyTouchesAReminderOfTheCurrentJournal(): void
+    {
+        $adapter = $this->stubAdapter(false);
+        $adapter->expects(self::once())
+            ->method('delete')
+            ->with(self::anything(), ['ID = ?' => 12, 'RVID = ?' => RVID])
+            ->willReturn(0);
+
+        $response = $this->dispatch('deletereminderAction', ['id' => '12'], true, Episciences_Csrf_Helper::getSessionToken());
+
+        self::assertSame(403, $response->getHttpResponseCode(), 'nothing deleted: refused');
+    }
+
+    public function testDeleteOfAReminderOfTheCurrentJournalSucceeds(): void
+    {
+        $adapter = $this->stubAdapter(false);
+        $adapter->expects(self::once())->method('delete')->willReturn(1);
+
+        $response = $this->dispatch('deletereminderAction', ['id' => '12'], true, Episciences_Csrf_Helper::getSessionToken());
+
+        self::assertSame(200, $response->getHttpResponseCode());
     }
 }

@@ -10,5 +10,5 @@
         <?= $this->Date($this->newDeadline, Episciences_Tools::getLocale()) ?>
     </time>
     <?= ' > ' ?>
-    <span class="log-user-name"><?= $this->screenName ?></span>
+    <span class="log-user-name"><?= $this->escape((string)$this->screenName) ?></span>
 </span>

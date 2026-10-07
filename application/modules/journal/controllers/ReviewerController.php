@@ -336,6 +336,23 @@ class ReviewerController extends PaperDefaultController
     }
 
     /**
+     * Keeps only the fields of the account form (keys are matched case-insensitively)
+     *
+     * @param array<array-key, mixed> $data
+     * @return array<array-key, mixed>
+     */
+    public static function filterAccountCreationData(array $data): array
+    {
+        $allowedFields = array_flip(self::ACCOUNT_CREATION_FIELDS);
+
+        return array_filter(
+            $data,
+            static fn($key): bool => isset($allowedFields[strtoupper((string)$key)]),
+            ARRAY_FILTER_USE_KEY
+        );
+    }
+
+    /**
      *  create new user (don't have an account yet)
      * @param array<string, mixed> $data
      * @return Episciences_Reviewer
@@ -347,12 +364,7 @@ class ReviewerController extends PaperDefaultController
     private function createNewReviewerWithoutAccountProcessing(array $data): Episciences_Reviewer
     {
         // Only fields of the account form may reach the model: never let request data set UID, VALID, etc.
-        $allowedFields = array_flip(self::ACCOUNT_CREATION_FIELDS);
-        $data = array_filter(
-            $data,
-            static fn($key): bool => isset($allowedFields[strtoupper((string)$key)]),
-            ARRAY_FILTER_USE_KEY
-        );
+        $data = self::filterAccountCreationData($data);
 
         $user = new Episciences_Reviewer($data);
         $user->setTime_registered();
@@ -469,10 +481,13 @@ class ReviewerController extends PaperDefaultController
 
             $refused = (array_key_exists('submitrefuse', $request->getPost()));
 
+            // the refusal form is validated and filtered (tags stripped, trimmed) before anything is stored
+            $refusedFormIsValid = $refused && $refuse_form->isValid($request->getPost());
+
             if ($accepted || $refused) {
 
                 if (
-                    $refused ||
+                    $refusedFormIsValid ||
                     (
                         $accepted &&
                         (
@@ -484,10 +499,17 @@ class ReviewerController extends PaperDefaultController
 
                     $data = $request->isPost() ? $request->getPost() : ['is-accepted' => $accepted];
 
+                    if ($refusedFormIsValid) {
+                        $data = array_merge($data, $refuse_form->getValues());
+                    }
+
                     $this->saveanswer($invitation, $assignment, $paper, $data);
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($this->view->translate("Votre réponse a bien été enregistrée."));
 
 
+                } elseif ($refused) {
+                    // reopen the refusal form: it now displays its own validation errors
+                    $this->view->invalid_refuse_form = true;
                 } else {
                     $this->view->invalid_form = true;
                 }

@@ -366,7 +366,7 @@ class DefaultController extends Episciences_Controller_Action
             foreach ($val as $v) {
                 $v = is_array($v) ? implode(' ', array_values($v)) : $v;
                 $validationErrors .= '<li>';
-                $validationErrors .= '<code>' . $this->view->translate($v) . '</code>';
+                $validationErrors .= '<code>' . $this->view->escape($this->view->translate($v)) . '</code>';
                 $validationErrors .= '</li>';
             }
         }

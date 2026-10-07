@@ -30,6 +30,10 @@
             } else {
                 $section = '';
             }
+
+            // Solr dynamic fields may be multivalued: keep the first value only
+            $volume = is_array($volume) ? (string)reset($volume) : (string)$volume;
+            $section = is_array($section) ? (string)reset($section) : (string)$section;
             ?>
             <div class="article-block">
                 <div class="article-title"><a
@@ -58,7 +62,7 @@
                                     'action' => 'index',
                                     'q' => '*',
                                     'author_fullname_t' => $this->escape($authorName)), null, TRUE);
-                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $this->escape($url), $this->escape($authorName));
                             }
                             $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
                         } else {
@@ -69,7 +73,7 @@
                                     'action' => 'index',
                                     'q' => '*',
                                     'author_fullname_t' => $this->escape($authorName)), null, true);
-                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $this->escape($url), $this->escape($authorName));
                             }
                             $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
                             if (mb_substr($authorList, -1) !== '.') {
@@ -85,7 +89,7 @@
                     <?php
                     if ($abstract !== '') {
                         echo '<br/><blockquote><small>';
-                        echo Ccsd_Tools_String::truncate($this->escape($abstract), ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]');
+                        echo $this->escape(Ccsd_Tools_String::truncate($abstract, ABSTRACT_MAX_LENGTH, "\u{00A0}[…]"));
                         echo '</small></blockquote>';
                     }
                     ?>
@@ -94,16 +98,16 @@
                 <?php if ($volume) : ?>
                     <div class="volume">
                         <?php if (isset($doc['volume_id_i'])) : ?>
-                            <a href="<?= $this->url(['controller' => 'volume', 'action' => 'view', 'id' => $this->escape($doc['volume_id_i'])]) ?>"><?php echo $volume; ?></a>
+                            <a href="<?= $this->url(['controller' => 'volume', 'action' => 'view', 'id' => $this->escape($doc['volume_id_i'])]) ?>"><?php echo $this->escape($volume); ?></a>
                         <?php else : ?>
-                            <?php echo $volume; ?>
+                            <?php echo $this->escape($volume); ?>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
 
                 <?php if ($section) : ?>
                     <div class="section">
-                        <a href="<?= $this->url(['controller' => 'section', 'action' => 'view', 'id' => $this->escape($doc['section_id_i'])])?>"><?php echo $section; ?></a>
+                        <a href="<?= $this->url(['controller' => 'section', 'action' => 'view', 'id' => $this->escape($doc['section_id_i'])])?>"><?php echo $this->escape($section); ?></a>
                     </div>
                 <?php endif; ?>
                 <?php if (array_key_exists('publication_date_tdate', $doc)) : ?>

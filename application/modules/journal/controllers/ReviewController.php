@@ -114,7 +114,15 @@ class ReviewController extends Episciences_Controller_Action
             if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
                 $intervals = ['invitation_deadline', 'rating_deadline', 'rating_deadline_min', 'rating_deadline_max'];
                 foreach ($intervals as $interval_name) {
-                    $defaults[$interval_name] = $defaults[$interval_name] . ' ' . $defaults[$interval_name . '_unit'];
+                    $unit = $defaults[$interval_name . '_unit'] ?? null;
+                    if (!\Episciences\Form\Validate\DeadlineUnit::isKnownUnit($unit)) {
+                        // never echo back an unexpected unit: fall back to the saved one, then to the default
+                        $unit = $reviewDefaults[$interval_name . '_unit'] ?? null;
+                        if (!\Episciences\Form\Validate\DeadlineUnit::isKnownUnit($unit)) {
+                            $unit = Episciences_Review::DEADLINE_UNITS[0];
+                        }
+                    }
+                    $defaults[$interval_name] = trim((string)($defaults[$interval_name] ?? '')) . ' ' . $unit;
                 }
             }
             $form->setDefaults($defaults);

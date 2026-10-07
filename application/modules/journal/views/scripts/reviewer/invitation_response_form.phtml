@@ -44,4 +44,10 @@
         </script>
     <?php endif; ?>
 
+    <?php if ($this->invalid_refuse_form) : ?>
+        <script>
+            refuseInvitation();
+        </script>
+    <?php endif; ?>
+
 <?php endif; // endif (!hasExpired && !isAnswered) ?>

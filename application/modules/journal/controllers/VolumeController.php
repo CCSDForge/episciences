@@ -1,5 +1,5 @@
 <?php
-
+use Episciences\Upload\UploadChecker;
 class VolumeController extends Episciences_Controller_Action
 {
     public const JSON_MIMETYPE = 'application/json';
@@ -113,9 +113,6 @@ class VolumeController extends Episciences_Controller_Action
         $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
     }
-
-
-
 
     /**
      * @return false|void
@@ -258,6 +255,19 @@ class VolumeController extends Episciences_Controller_Action
 
         $upload = new Zend_File_Transfer_Adapter_Http();
         $file = $upload->getFileInfo();
+
+        $error = UploadChecker::firstPublicFileError(
+            (string)($file[0]['tmp_name'] ?? ''),
+            (string)($file[0]['name'] ?? ''),
+            (int)($file[0]['error'] ?? UPLOAD_ERR_NO_FILE)
+        );
+
+        if ($error !== null) {
+            $this->getResponse()->setHttpResponseCode(422);
+            echo Zend_Json::encode(['error' => 1, 'message' => $error]);
+            return;
+        }
+
         $response = ['file' => $file[0]];
         $newpath = tempnam(REVIEW_TMP_PATH, 'md_');
         if (!rename($file[0]['tmp_name'], $newpath)) {
@@ -354,7 +364,7 @@ class VolumeController extends Episciences_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $vid = (int)$request->getParam('id');
-        $docId = $request->getParam('docid');
+        $docId = (int)$request->getParam('docid');
         $from = $request->getParam('from');
 
         if (!empty($from) && $from === 'view' && !empty($docId)) {
@@ -520,7 +530,7 @@ class VolumeController extends Episciences_Controller_Action
     {
         $request = $this->getRequest();
         $vid = $request->getParam('id');
-        
+
         if (!$vid || !is_numeric($vid)) {
             $errorMessage = "Identifiant du volume absent ou incorrect.";
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');

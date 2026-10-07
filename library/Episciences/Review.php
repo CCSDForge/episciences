@@ -12,6 +12,11 @@ class Episciences_Review
     public const STATUS_NOTVALID = 0;
     public const STATUS_VALID = 1;
     public const STATUS_REFUSED = 2;
+    /** Units accepted for the deadline settings (see the date/time relative formats of strtotime()) */
+    public const DEADLINE_UNITS = ['day', 'week', 'month'];
+    /** Upper bound of the numeric part of a deadline setting (keeps strtotime() computations sane) */
+    public const DEADLINE_VALUE_MAX = 999;
+
     public const DEFAULT_INVITATION_DEADLINE = '1 month';
     public const DEFAULT_RATING_DEADLINE = '2 month';
     public const DEFAULT_RATING_DEADLINE_MIN = '2 month';
@@ -1011,6 +1016,22 @@ class Episciences_Review
     }
 
     /**
+     * Validators of the numeric part of a deadline setting (a positive integer, at most DEADLINE_VALUE_MAX, with a known unit)
+     *
+     * @param string $unitKey name of the posted field holding the unit
+     * @return array
+     */
+    private static function getDeadlineValueValidators(string $unitKey): array
+    {
+        return [
+            new \Episciences\Form\Validate\DeadlineUnit($unitKey),
+            ['Digits', true],
+            ['GreaterThan', true, ['min' => 0]],
+            ['LessThan', true, ['max' => self::DEADLINE_VALUE_MAX + 1]],
+        ];
+    }
+
+    /**
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
@@ -1441,7 +1462,8 @@ class Episciences_Review
                 'label' => "Délai avant expiration d'une invitation",
                 'style' => 'width: 40px',
                 'required' => true,
-                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]]
+                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
+                'validators' => self::getDeadlineValueValidators(self::SETTING_INVITATION_DEADLINE_UNIT)
             ]
         );
 
@@ -1454,7 +1476,7 @@ class Episciences_Review
                 'style' => 'width: 40px',
                 'required' => true,
                 'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
-                'validators' => [new Episciences_Form_Validate_CheckDefaultRatingDeadline()]
+                'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_UNIT), [new Episciences_Form_Validate_CheckDefaultRatingDeadline()])
             ]
         );
 
@@ -1467,7 +1489,7 @@ class Episciences_Review
                 'style' => 'width: 40px',
                 'required' => true,
                 'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
-                'validators' => [new Episciences_Form_Validate_CheckMinimumDeadlineDelay()]
+                'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_MIN_UNIT), [new Episciences_Form_Validate_CheckMinimumDeadlineDelay()])
             ]
         );
 
@@ -1480,7 +1502,7 @@ class Episciences_Review
                 'style' => 'width: 40px',
                 'required' => true,
                 'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
-                'validators' => [new Episciences_Form_Validate_CheckMaximumDeadlineDelay()]
+                'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_MAX_UNIT), [new Episciences_Form_Validate_CheckMaximumDeadlineDelay()])
             ]
         );
 

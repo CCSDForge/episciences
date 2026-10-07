@@ -17,6 +17,7 @@ class Episciences_Submit
     use UrlBuilder;
     public const SUBMIT_DOCUMENT_LABEL = 'Proposer un document';
 
+    public const CSRF_TOKEN_ELEMENT_NAME = 'csrf_token';
     public const COVER_LETTER_FILE_ELEMENT_NAME = 'file_comment_author';
     public const COVER_LETTER_COMMENT_ELEMENT_NAME = 'author_comment';
     public const DD_FILE_ELEMENT_NAME = 'file_data_descriptor';
@@ -368,7 +369,8 @@ class Episciences_Submit
                 'validators' => [
                     'Count' => [false, 1],
                     'Extension' => [false, $implode_extensions],
-                    'Size' => [false, MAX_FILE_SIZE]
+                    'Size' => [false, MAX_FILE_SIZE],
+                    new Episciences_Form_Validate_MimeType()
                 ]
             ];
 
@@ -441,12 +443,7 @@ class Episciences_Submit
         $group[] = 'submitPaper';
 
 
-        $form->addDisplayGroup($group, 'submitDoc');
-        $form->getDisplayGroup('submitDoc')->setDecorators([
-            'FormElements',
-            [['wrapper2' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel-body']],
-            [['wrapper1' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel panel-default', 'style' => 'display: none', 'id' => 'submitForm']]
-        ]);
+        self::addSubmitDocGroup($form, $group);
 
 
         if ($defaults) {
@@ -702,7 +699,7 @@ class Episciences_Submit
             $xml->setDecorators(['ViewHelper']);
             $form->addElement($xml);
             $group[] = 'xml';
-
+    
             $form->addElement('hidden', 'h_enrichment',
                 ['decorators' => [
                     'ViewHelper',
@@ -756,7 +753,8 @@ class Episciences_Submit
                     'validators' => [
                         'Count' => [false, 1],
                         'Extension' => [false, $implode_extensions],
-                        'Size' => [false, MAX_FILE_SIZE]
+                        'Size' => [false, MAX_FILE_SIZE],
+                        new Episciences_Form_Validate_MimeType()
                     ]
                 ]);
 
@@ -828,12 +826,7 @@ class Episciences_Submit
             ]);
             $group[] = 'searchAgain';
 
-            $form->addDisplayGroup($group, 'submitDoc');
-            $form->getDisplayGroup('submitDoc')->setDecorators([
-                'FormElements',
-                [['wrapper2' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel-body']],
-                [['wrapper1' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel panel-default', 'style' => 'display: none', 'id' => 'submitForm']]
-            ]);
+            self::addSubmitDocGroup($form, $group);
 
             if (isset($defaults['version'], $defaults['docId'], $defaults['repoId'])) {
                 //#git 259 : Laisser le champ version vide quand on en soumet une nouvelle
@@ -849,6 +842,31 @@ class Episciences_Submit
             return null;
         }
 
+    }
+
+    /**
+     * Build the (initially hidden) "submitDoc" display group shared by the submission and new version forms.
+     * The hidden request token checked by the submission actions (see Episciences_Csrf_Helper) is added here,
+     * so that no form using this group can omit it.
+     *
+     * @param Zend_Form $form
+     * @param string[] $group Names of the elements of the submission display group
+     * @throws Zend_Form_Exception
+     */
+    private static function addSubmitDocGroup(Zend_Form $form, array $group): void
+    {
+        $token = new Zend_Form_Element_Hidden(self::CSRF_TOKEN_ELEMENT_NAME);
+        $token->setValue(Episciences_Csrf_Helper::getSessionToken());
+        $token->setDecorators(['ViewHelper']);
+        $form->addElement($token);
+        $group[] = self::CSRF_TOKEN_ELEMENT_NAME;
+
+        $form->addDisplayGroup($group, 'submitDoc');
+        $form->getDisplayGroup('submitDoc')->setDecorators([
+            'FormElements',
+            [['wrapper2' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel-body']],
+            [['wrapper1' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel panel-default', 'style' => 'display: none', 'id' => 'submitForm']]
+        ]);
     }
 
     /**
@@ -2845,7 +2863,8 @@ class Episciences_Submit
             'validators' => [
                 'Count' => [false, 1],
                 'Extension' => [false, implode(',', $availableExtensions)],
-                'Size' => [false, MAX_FILE_SIZE]
+                'Size' => [false, MAX_FILE_SIZE],
+                new Episciences_Form_Validate_MimeType()
             ]
         ]);
 

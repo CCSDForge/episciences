@@ -63,7 +63,8 @@ class UserDefaultController extends Episciences_Controller_Action
             $identity = Episciences_Auth::getInstance()->getIdentity()->toArray();
         } else {
             $this->view->message = "Vous n'êtes pas connecté";
-            $this->view->description = sprintf('<a href="%s">Connectez-vous</a>, ou <a href="%s">créez votre compte</a>.', $this->url(['controller' => 'user', 'action'=> 'login']), $this->url(['controller' => 'user', 'action' => 'create']));
+            $this->view->description = "<a href='<?= $this->url(['controller' => 'user', 'action'=> 'login']) ?>'>Connectez-vous</a>, ou <a href='<?= $this->url(['controller' => 'user', 'action' => 'create']) ?>'>créez votre compte</a>.";
+            $this->view->descriptionIsHtml = true; // static markup, rendered unescaped by error.phtml
             $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }
@@ -1776,6 +1777,9 @@ class UserDefaultController extends Episciences_Controller_Action
         $uid = $this->getParam('uid', 0);
         $size = $this->getParam('size', Ccsd_User_Models_User::IMG_NAME_NORMAL);
         $backgroundColor = $this->getParam('bgcolor');
+        if (!is_string($backgroundColor)) {
+            $backgroundColor = null; // e.g. ?bgcolor[]=x
+        }
 
         $photoPathName = false;
         $data = false;

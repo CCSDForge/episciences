@@ -1,9 +1,22 @@
 <?php
+
 use Episciences\AppRegistry;
 use Episciences\Trait\UrlBuilder;
 
 class Episciences_Mail extends Zend_Mail
 {
+    /** Placeholder stored in the mail log instead of account credentials or identifiers */
+    private const LOG_REDACTED_VALUE = '[not stored in the log]';
+
+    /** Tags whose values must never be stored in the mail log (readable by journal staff) */
+    private const LOG_REDACTED_TAGS = [
+        Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK,
+        Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_INVITATION_URL,
+        Episciences_Mail_Tags::TAG_INVITATION_LINK,
+    ];
+
     use UrlBuilder;
     /**
      * We're fine
@@ -57,7 +70,6 @@ class Episciences_Mail extends Zend_Mail
      * Episciences_Mail constructor.
      * @param null $charset
      * @throws Zend_Mail_Exception
-     * @throws Exception
      */
     public function __construct($charset = null, $rvCode = RVCODE)
     {
@@ -82,7 +94,7 @@ class Episciences_Mail extends Zend_Mail
         if (defined('RVNAME')) {
             $this->addTag(Episciences_Mail_Tags::TAG_REVIEW_NAME, RVNAME);
         }
-        if (PHP_SAPI !== 'cli' && Episciences_Auth::isLogged()) {
+        if (php_sapi_name() !== 'cli' && Episciences_Auth::isLogged()) {
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME, Episciences_Auth::getScreenName());
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_EMAIL, Episciences_Auth::getEmail());
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_FULL_NAME, Episciences_Auth::getFullName());
@@ -109,7 +121,7 @@ class Episciences_Mail extends Zend_Mail
      * @param string $path
      * @throws Exception
      */
-    public function setPath(string $path = ''): void
+    public function setPath($path = '')
     {
         if ($path) {
             $this->path = $path;
@@ -121,7 +133,7 @@ class Episciences_Mail extends Zend_Mail
      * check if application folders exist, and create them if they don't
      * @throws Exception
      */
-    private function checkAppDirectory(): void
+    private function checkAppDirectory()
     {
         $folders = [
             $this->path,
@@ -148,16 +160,16 @@ class Episciences_Mail extends Zend_Mail
      * set reply-to header : noreply@episciences.org
      * @throws Zend_Mail_Exception
      */
-    public function setFromReview($rvCode = RVCODE): void
+    public function setFromReview($rvCode = RVCODE)
     {
         $this->setFrom($rvCode . '@' . DOMAIN, $rvCode);
         $this->setReplyTo('noreply@' . DOMAIN);
     }
 
     /**
-     * set a unique recipient from an Episciences_User, and set recipient tags
+     * set an unique recipient from an Episciences_User, and set recipient tags
      * @param Episciences_User $recipient
-     * @param array $options
+     * @param array|false|string|null $rvCode
      * @return bool
      */
     public function setTo(Episciences_User $recipient, array $options = []): bool
@@ -185,17 +197,17 @@ class Episciences_Mail extends Zend_Mail
     }
 
     /**
-     * @param array|false|string|null $rvCode
-     * @param int $rvId
+     * @param string $rvCode
      * @param bool $debug
      * @return bool
      * @throws Zend_Mail_Exception
+     * @throws Exception
      */
     public function writeMail($rvCode = RVCODE, int $rvId = RVID, bool $debug = false): bool
     {
 
         if (!$this->getFrom()) {
-            if (PHP_SAPI !== 'cli' && Episciences_Auth::isLogged()) {
+            if (php_sapi_name() !== 'cli' && Episciences_Auth::isLogged()) {
                 $this->setFromWithTags(Episciences_Auth::getUser(), $rvCode);
             } else {
                 $this->setFrom($rvCode . '@' . DOMAIN, $rvCode);
@@ -213,13 +225,7 @@ class Episciences_Mail extends Zend_Mail
         try {
             $this->write($debug);
         } catch (Exception $e) {
-            $details = [
-                'headers' => $this->getHeaders(),
-                'subject' => $this->getSubject(),
-                'body' => ($this->hasATemplate())
-                    ? $this->renderTemplate($this->getTemplatePath(), $this->getTemplateName())
-                    : $this->replaceTags($this->getRawBody())];
-            $message = $e->getCode() . ' - ' . $e->getMessage() . ' - ' . Zend_Json::encode($details);
+            $message = $e->getCode() . ' - ' . $e->getMessage() . ' - ' . Zend_Json::encode($this->buildFailureDetails());
             Ccsd_Log::message($message, false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . $rvCode . '.mail');
             return false;
         }
@@ -238,13 +244,26 @@ class Episciences_Mail extends Zend_Mail
     }
 
     /**
+     * Details written to the exceptions log when a mail cannot be written (body masked like in the mail log)
+     * @return array<string, mixed>
+     */
+    private function buildFailureDetails(): array
+    {
+        return [
+            'headers' => $this->getHeaders(),
+            'subject' => $this->getSubject(),
+            'body' => $this->getLoggableBody(),
+        ];
+    }
+
+    /**
      * set an unique sender from an Episciences_User, set reply-tp, and set sender tags
      * @param Episciences_User $sender
      * @param string $rvCode
      * @return bool
      * @throws Zend_Mail_Exception
      */
-    public function setFromWithTags(Episciences_User $sender, $rvCode = RVCODE): bool
+    public function setFromWithTags(Episciences_User $sender, $rvCode = RVCODE)
     {
         if (empty($sender->getEmail())) {
             return false;
@@ -274,9 +293,9 @@ class Episciences_Mail extends Zend_Mail
      * @return bool
      * @throws Exception
      */
-    public function write($debug = false): bool
+    public function write($debug = false)
     {
-        if (null === $this->path) {
+        if (null == $this->path) {
             throw new Exception('Invalid working directory', self::STATUS_FAILED_INVALID_DIR);
         }
 
@@ -374,7 +393,7 @@ class Episciences_Mail extends Zend_Mail
      * @param string $path
      * @return bool|string
      */
-    private function createMailDirectory(string $path): bool|string
+    private function createMailDirectory(string $path)
     {
         $mailDirectory = uniqid(gethostname() . '_', true);
         // Standard concurrency-tolerant guard: fail only when mkdir() failed AND the
@@ -391,7 +410,7 @@ class Episciences_Mail extends Zend_Mail
      * @param $fieldname
      * @return string
      */
-    private function extractSingle($value, $fieldname): string
+    private function extractSingle($value, $fieldname)
     {
         $value = $value[$fieldname][0];
         $xmlString = "\t";
@@ -408,7 +427,7 @@ class Episciences_Mail extends Zend_Mail
         return $xmlString . PHP_EOL;
     }
 
-    private function extractList($array, $fieldname): string
+    private function extractList($array, $fieldname)
     {
         $xmlString = "\t<" . strtolower($fieldname) . '_list>' . PHP_EOL;
         $tmpString = '';
@@ -431,7 +450,7 @@ class Episciences_Mail extends Zend_Mail
         return $xmlString . "\t</" . strtolower($fieldname) . '_list>' . PHP_EOL;
     }
 
-    public function getDecodedSubject(): bool|string
+    public function getDecodedSubject()
     {
         return iconv_mime_decode($this->getSubject(), 0, 'UTF-8');
     }
@@ -596,7 +615,24 @@ class Episciences_Mail extends Zend_Mail
             $attachments = null;
         }
 
-        $data = [
+        $data = $this->buildLogData($rvId, $from, $replyto, $to, $cc, $bcc, $attachments);
+
+        if ($db->insert(T_MAIL_LOG, $data)) {
+            return $db->lastInsertId();
+        }
+
+        error_log('Logging email in db failed.');
+        $message = "Database logging failed - " . Zend_Json::encode($data);
+        throw new Exception($message, self::STATUS_FAILED_DB_LOG);
+    }
+
+    /**
+     * Row inserted in the mail log (the body is masked, see getLoggableBody())
+     * @return array<string, mixed>
+     */
+    private function buildLogData(int $rvId, string $from, string $replyto, string $to, ?string $cc, ?string $bcc, ?string $attachments): array
+    {
+        return [
             'UID' => $this->getUid(),
             'RVID' => $rvId ?: $this->getRvid(),
             'DOCID' => $this->getDocid(),
@@ -606,18 +642,30 @@ class Episciences_Mail extends Zend_Mail
             'CC' => $cc,
             'BCC' => $bcc,
             'SUBJECT' => $this->getDecodedSubject(),
-            'CONTENT' => $this->getDecodedBody(),
+            'CONTENT' => $this->getLoggableBody(),
             'FILES' => $attachments,
             'WHEN' => new Zend_DB_Expr('NOW()')
         ];
+    }
 
-        if ($db->insert(T_MAIL_LOG, $data)) {
-            return $db->lastInsertId();
+    /**
+     * Body stored in the mail log: credential-bearing links and account identifiers are masked,
+     * since the log is readable by journal staff. The mail actually sent is unaffected.
+     */
+    private function getLoggableBody(): string
+    {
+        $sensitiveTags = array_intersect(self::LOG_REDACTED_TAGS, array_keys($this->tags));
+
+        if ($sensitiveTags === []) {
+            return (string)$this->getDecodedBody();
         }
 
-        error_log('Logging email in db failed.');
-        $message = "Database logging failed - " . Zend_Json::encode($data);
-        throw new Exception($message, self::STATUS_FAILED_DB_LOG);
+        $copy = clone $this;
+        foreach ($sensitiveTags as $tag) {
+            $copy->tags[$tag] = self::LOG_REDACTED_VALUE;
+        }
+
+        return (string)$copy->getDecodedBody();
     }
 
     public function getAttachments()

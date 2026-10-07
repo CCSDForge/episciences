@@ -168,24 +168,68 @@ class Episciences_ToolsTest extends TestCase
         }
     }
 
-    public function testMailAttachmentCallersUseResolveAttachmentPath(): void
+    /**
+     * A sibling directory sharing the prefix of the base directory ("base" and "base2") must not
+     * be taken for a part of it: this is what the separator in the prefix check is for.
+     */
+    public function testResolveAttachmentPathRejectsSymlinkToSiblingDirectorySharingThePrefix(): void
     {
-        $root = dirname(__DIR__, 4) . '/application/modules/';
-        foreach ([
-            'journal/controllers/AdministratemailController.php',
-            'common/controllers/PaperDefaultController.php',
-            'journal/controllers/AdministratepaperController.php',
-        ] as $file) {
-            $source = file_get_contents($root . $file);
-            self::assertStringContainsString('Episciences_Tools::resolveAttachmentPath(', $source, $file);
-            self::assertStringNotContainsString('$filepath = $path . $attachment;', $source, $file);
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            mkdir($root . '/base2');
+            file_put_contents($root . '/base2/other.txt', 'other');
+            symlink($root . '/base2/other.txt', $base . 'sibling.txt');
+
+            self::assertNull(Episciences_Tools::resolveAttachmentPath($base, 'sibling.txt'));
+        } finally {
+            $this->removeSandbox($root);
         }
     }
 
-    public function testCopyEditingAttachmentsAreFilteredBeforeUse(): void
+    public function testResolveAttachmentPathAcceptsSymlinkToAFileInsideTheBase(): void
     {
-        $source = file_get_contents(dirname(__DIR__, 4) . '/application/modules/journal/controllers/AdministratepaperController.php');
-        self::assertStringContainsString('$attachments = Episciences_Tools::filterAttachmentNames(', $source);
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            symlink($base . 'report 1.pdf', $base . 'alias.pdf');
+
+            self::assertSame($base . 'alias.pdf', Episciences_Tools::resolveAttachmentPath($base, 'alias.pdf'));
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    public function testResolveAttachmentPathDoesNotFollowADirectorySymlinkOutsideTheBase(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            symlink($root, $base . 'up');
+
+            self::assertNull(Episciences_Tools::resolveAttachmentPath($base, 'up'), 'a directory is not a file');
+            self::assertNull(Episciences_Tools::resolveAttachmentPath($base, 'up/secret.txt'), 'not a flat name');
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    public function testResolveAttachmentPathIsNotFooledByTrailingDotsAndSpaces(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            foreach (['report 1.pdf ', 'report 1.pdf.', './report 1.pdf', 'sub/../report 1.pdf'] as $name) {
+                self::assertNull(Episciences_Tools::resolveAttachmentPath($base, $name), $name);
+            }
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    public function testFilterAttachmentNamesReindexesTheKeptNames(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            self::assertSame(['é.txt'], Episciences_Tools::filterAttachmentNames($base, [3 => '../secret.txt', 7 => 'é.txt']));
+        } finally {
+            $this->removeSandbox($root);
+        }
     }
 }
-

@@ -27,6 +27,8 @@ $(document).ready(function () {
             values.tmpfile = JSON.stringify(serverFile);
             $mTmpData.val(JSON.stringify(values));
             $('#mFile_content')
+                .removeClass('text-danger')
+                .removeAttr('role')
                 .empty()
                 .append(
                     formatFileLabel(
@@ -37,6 +39,14 @@ $(document).ready(function () {
                     )
                 );
             $('#value_mFile').val('');
+        }, function (message) {
+            // The server refused the file: show why, and forget the selection
+            var feedback = document.getElementById('mFile_content');
+            feedback.textContent =
+                message || 'The file could not be uploaded, please try again.';
+            feedback.setAttribute('role', 'alert');
+            feedback.classList.add('text-danger');
+            event.target.value = '';
         });
     });
 
@@ -46,6 +56,15 @@ $(document).ready(function () {
         if (!file) {
             return;
         }
+
+        var coverFeedback = document.getElementById('cover-feedback');
+        coverFeedback.hidden = true;
+        coverFeedback.textContent = '';
+        coverFeedback.removeAttribute('role');
+
+        // Kept to restore the current cover if the new image is refused
+        var previousSrc = $coverPreview.attr('src');
+        var hadPreview = previousSrc !== undefined && previousSrc !== '';
 
         var reader = new FileReader();
         reader.onload = function (e) {
@@ -62,6 +81,16 @@ $(document).ready(function () {
                     tmpfile: JSON.stringify(serverFile),
                 })
             );
+        }, function (message) {
+            // The server refused the image: show why and go back to the previous state
+            coverFeedback.textContent =
+                message || 'The file could not be uploaded, please try again.';
+            coverFeedback.setAttribute('role', 'alert');
+            coverFeedback.hidden = false;
+            $coverPreview.attr('src', hadPreview ? previousSrc : '');
+            $coverPreviewContainer.toggle(hadPreview);
+            $coverUploadZone.toggle(!hadPreview);
+            $coverFile.val('');
         });
     });
 
@@ -85,7 +114,7 @@ $(document).ready(function () {
     }
 });
 
-function uploadFileToServer(file, callback) {
+function uploadFileToServer(file, callback, onError) {
     var data = new FormData();
     data.append('0', file);
     $.ajax({
@@ -97,6 +126,17 @@ function uploadFileToServer(file, callback) {
         contentType: false,
         success: function (response) {
             callback(JSON.parse(response).file);
+        },
+        error: function (xhr) {
+            var message = '';
+            try {
+                message = JSON.parse(xhr.responseText).message || '';
+            } catch (e) {
+                // The response is not the JSON error of the server
+            }
+            if (typeof onError === 'function') {
+                onError(message);
+            }
         },
     });
 }
