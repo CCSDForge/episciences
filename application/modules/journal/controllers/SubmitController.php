@@ -299,7 +299,7 @@ class SubmitController extends DefaultController
     private function handlePaperReplacement(array &$formValues): array
     {
         // The paper to replace is never described by the client: it is loaded from the database
-        $storedPaper = Episciences_PapersManager::partialGet((int)($formValues['old_docid'] ?? 0));
+        $storedPaper = Episciences_PapersManager::partialGet((int)($formValues['old_docid'] ?? 0), RVID);
 
         $review = Episciences_ReviewsManager::find(RVID);
         $error = Episciences_Submit::getReplacementError(
