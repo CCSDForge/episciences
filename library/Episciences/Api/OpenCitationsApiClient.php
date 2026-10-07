@@ -33,23 +33,32 @@ class OpenCitationsApiClient extends AbstractApiClient
      */
     public function fetchCitingDois(string $doi): ?array
     {
-        $trimDoi = trim($doi);
-        $key = sha1($trimDoi) . self::CACHE_KEY_SUFFIX;
+        $trimDoi = self::normalizeDoi($doi);
+        $key = sha1(strtolower($trimDoi)) . self::CACHE_KEY_SUFFIX;
 
         $cached = $this->getCached($key);
         if ($cached !== null) {
-            $this->logger->info('OpenCitations data from cache for DOI ' . $trimDoi);
-            return json_decode($cached, true, self::JSON_MAX_DEPTH, JSON_THROW_ON_ERROR);
+            $decodedCache = $this->decodeRows($cached, $trimDoi);
+            if ($decodedCache !== null) {
+                $this->logger->info('OpenCitations data from cache for DOI ' . $trimDoi);
+                return $decodedCache;
+            }
+            // Corrupted cache entry: ignore it and query the API again (the entry is overwritten below)
         }
 
         $this->logger->info('Fetching OpenCitations data for DOI ' . $trimDoi);
 
         // OpenCitations v2 requires the ID parameter to have a scheme prefix (e.g. "doi:10.xxx/yyy")
-        $apiId = str_starts_with($trimDoi, 'doi:') ? $trimDoi : 'doi:' . $trimDoi;
+        // The DOI is percent-encoded (it may contain "#", "?", "%"...) but its "/" separators are kept readable.
+        $apiId = 'doi:' . str_replace('%2F', '/', rawurlencode($trimDoi));
+
+        if (str_contains(OPENCITATIONS_APIURL, '/v1/')) {
+            $this->logger->warning('OPENCITATIONS.APIURL still points to the OpenCitations API v1: update config/pwd.json to the v2 URL (see config/dist-pwd.json)');
+        }
 
         $headers = $this->defaultHeaders();
-        if (defined('OPENCITATIONS_TOKEN') && OPENCITATIONS_TOKEN !== '') {
-            $headers['authorization'] = OPENCITATIONS_TOKEN;
+        if (defined('OPENCITATIONS_TOKEN') && (string) constant('OPENCITATIONS_TOKEN') !== '') {
+            $headers['authorization'] = constant('OPENCITATIONS_TOKEN');
         }
 
         $attempt = 0;
@@ -102,15 +111,48 @@ class OpenCitationsApiClient extends AbstractApiClient
             return null;
         }
 
-        try {
-            $decoded = json_decode($body, true, self::JSON_MAX_DEPTH, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            $this->logger->error('OpenCitations API error decoding JSON for DOI ' . $trimDoi . ': ' . $e->getMessage());
+        $decoded = $this->decodeRows($body, $trimDoi);
+        if ($decoded === null) {
             return null;
         }
 
         $this->saveToCache($key, $body);
         $this->logger->info('OpenCitations data cached for DOI ' . $trimDoi);
+
+        return $decoded;
+    }
+
+    /**
+     * Reduce any accepted spelling of a DOI to the bare DOI ("10.x/y"):
+     * surrounding spaces, "doi:" scheme (any case) and doi.org URLs are removed.
+     */
+    private static function normalizeDoi(string $doi): string
+    {
+        $doi = trim($doi);
+        $doi = (string) preg_replace('~^https?://(?:dx\.)?doi\.org/~i', '', $doi);
+
+        return trim((string) preg_replace('~^doi:~i', '', $doi));
+    }
+
+    /**
+     * Decode a JSON body into a list of citation rows.
+     * Returns null (and logs) when the body is not valid JSON or not a JSON array/object.
+     *
+     * @return array<int, array<string, string>>|null
+     */
+    private function decodeRows(string $body, string $doi): ?array
+    {
+        try {
+            $decoded = json_decode($body, true, self::JSON_MAX_DEPTH, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            $this->logger->error('OpenCitations API error decoding JSON for DOI ' . $doi . ': ' . $e->getMessage());
+            return null;
+        }
+
+        if (!is_array($decoded)) {
+            $this->logger->error('OpenCitations API unexpected JSON payload (not an array) for DOI ' . $doi);
+            return null;
+        }
 
         return $decoded;
     }
@@ -151,11 +193,13 @@ class OpenCitationsApiClient extends AbstractApiClient
                 }
             }
 
-            // Format B: plain DOI with no prefix (current OpenCitations API format)
+            // Format B: plain DOI with no prefix (legacy API v1 format, may still be in cache)
             // e.g. "10.4000/lisa.8913"
             if (str_starts_with($raw, '10.')) {
                 return (string) preg_replace('/;.*$/', '', $raw);
             }
+
+            $this->logger->info('OpenCitations citing row without DOI ignored: ' . $raw);
 
             return '';
         }, $rows);
