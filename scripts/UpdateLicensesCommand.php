@@ -490,7 +490,8 @@ class UpdateLicensesCommand extends AbstractCommand
                 []
         );
 
-        $this->joinPapersReview($query, $rvCode); // ignored if $rvCode is null
+        // Join on pl.docid: plc.docid is always NULL here (unmatched rows only)
+        $this->joinPapersReview($query, $rvCode, 'pl.docid'); // ignored if $rvCode is null
 
         $query->where('plc.docid IS NULL');
 
@@ -499,7 +500,7 @@ class UpdateLicensesCommand extends AbstractCommand
     }
 
 
-    private function joinPapersReview(Zend_Db_Select $query, string $rvCode = null): void
+    private function joinPapersReview(Zend_Db_Select $query, string $rvCode = null, string $docIdColumn = 'plc.docid'): void
     {
         if(!$rvCode){
             return;
@@ -507,7 +508,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
         $query->join(
                 ['p' => T_PAPERS],
-                'p.DOCID = plc.docid',
+                'p.DOCID = ' . $docIdColumn,
                 [],
         );
 
