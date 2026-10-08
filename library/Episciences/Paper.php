@@ -2398,6 +2398,8 @@ class Episciences_Paper
 
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_WARNING);
+                // never fall back to storing the clear-text value
+                $paperPassword = null;
 
             }
         }
