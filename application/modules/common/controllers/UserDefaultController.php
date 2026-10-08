@@ -729,7 +729,16 @@ class UserDefaultController extends Zend_Controller_Action
         $userUid = !$request->isPost() ? (int)$request->getParam('userid') : (int)$request->getPost('UID');
 
         $user = new Episciences_User();
-        $userId = (!empty($userUid) && Episciences_Auth::isSecretary()) ? $userUid : Episciences_Auth::getUid();
+        $userId = Episciences_Auth::getUid();
+
+        if (!empty($userUid) && $userUid !== $userId) {
+            if (!$this->canSecretaryManageUser($userUid)) {
+                $this->_helper->FlashMessenger->setNamespace('danger')->addMessage('No user');
+                $this->_helper->redirector('list', 'user');
+                return;
+            }
+            $userId = $userUid;
+        }
 
         // Données par défaut du compte CAS
         $ccsdUserMapper = new Ccsd_User_Models_UserMapper();
@@ -1152,15 +1161,21 @@ class UserDefaultController extends Zend_Controller_Action
             return $self;
         }
 
+        return $this->canSecretaryManageUser($requested) ? $requested : 0;
+    }
+
+    /**
+     * Whether the current user may act on another account: a secretary may
+     * only target an account holding a role in the current review, unless
+     * they are an administrator.
+     */
+    private function canSecretaryManageUser(int $uid): bool
+    {
         if (!Episciences_Auth::isSecretary()) {
-            return 0;
+            return false;
         }
 
-        if (Episciences_Auth::isAdministrator()) {
-            return $requested;
-        }
-
-        return (new Episciences_User())->hasRoles($requested, RVID) ? $requested : 0;
+        return Episciences_Auth::isAdministrator() || (new Episciences_User())->hasRoles($uid, RVID);
     }
 
     /**

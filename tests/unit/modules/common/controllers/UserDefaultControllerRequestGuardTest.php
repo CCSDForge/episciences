@@ -210,7 +210,10 @@ final class UserDefaultControllerRequestGuardTest extends TestCase
 
     public function testResolveEmailChangeTargetUidScopesSecretariesToTheirReview(): void
     {
-        $method = $this->extractMethod('resolveEmailChangeTargetUid');
+        $method = $this->extractMethod('canSecretaryManageUser');
+        self::assertStringContainsString('canSecretaryManageUser(', $this->extractMethod('resolveEmailChangeTargetUid'));
+        self::assertStringContainsString('canSecretaryManageUser(', $this->extractMethod('editAction'),
+            'editAction must apply the same target scoping as the email change flow');
         self::assertStringContainsString('isSecretary()', $method,
             'resolveEmailChangeTargetUid must require the secretary role to target another account (D8)');
         self::assertStringContainsString('hasRoles(', $method,
