@@ -63,11 +63,11 @@ class ImportSpdxLicenseListCommand extends AbstractCommand
             return Command::FAILURE;
         }
 
-        $sql = $this->buildSqlDump($licenses, $count);
+        $upserts = $this->buildUpsertStatements($licenses);
 
         if ($isDryRun) {
             $filePath = sprintf('%s/license_list_dump-%s.sql', rtrim($outputDir, '/'), date('Y-m-d-H-i-s'));
-            file_put_contents($filePath, $sql);
+            file_put_contents($filePath, $this->buildSqlDump($upserts, $count));
             $io->success(sprintf('Dry-run: SQL dump written to %s', $filePath));
             $io->writeln(sprintf('Total licenses found (SPDX base): %d', $count));
             $io->writeln(sprintf('Total licenses processed: %d', $count));
@@ -75,8 +75,19 @@ class ImportSpdxLicenseListCommand extends AbstractCommand
         }
 
         try {
+            // CREATE TABLE causes an implicit commit in MySQL: run it before the transaction
+            // so that rollBack() can undo all the upserts on failure
+            $this->db->query($this->buildCreateTableStatement());
+        } catch (Exception $e) {
+            $message = 'Import failed (table creation): ' . $e->getMessage();
+            $this->logger->critical($message);
+            $io->error($message);
+            return Command::FAILURE;
+        }
+
+        try {
             $this->db->beginTransaction();
-            $this->db->query($sql);
+            $this->db->query($upserts);
             $this->db->commit();
         } catch (Exception $e) {
             $this->db->rollBack();
@@ -102,21 +113,34 @@ class ImportSpdxLicenseListCommand extends AbstractCommand
         return $response->getBody()->getContents();
     }
 
-    private function buildSqlDump(array $licenses, int $count): string
+    private function buildCreateTableStatement(): string
     {
-        $date = date('Y-m-d H:i:s');
         $tableName = self::TABLE_NAME;
 
-        $sqlDump = <<<SQL
---
--- Table structure
---
-
+        return <<<SQL
 CREATE TABLE IF NOT EXISTS `$tableName` (
   `code` varchar(64) COLLATE utf8mb4_general_ci NOT NULL PRIMARY KEY,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `recommended` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+SQL;
+    }
+
+    /**
+     * Standalone dump (dry-run): table structure followed by the upserts
+     */
+    private function buildSqlDump(string $upserts, int $count): string
+    {
+        $date = date('Y-m-d H:i:s');
+        $createTable = $this->buildCreateTableStatement();
+        $upserts = ltrim($upserts);
+
+        return <<<SQL
+--
+-- Table structure
+--
+
+$createTable
 
 --
 --  [$date] Dumping data from the SPDX base (official JSON: https://spdx.org/licenses/licenses.json)
@@ -125,7 +149,13 @@ CREATE TABLE IF NOT EXISTS `$tableName` (
 
 -- Data export
 
+$upserts
 SQL;
+    }
+
+    private function buildUpsertStatements(array $licenses): string
+    {
+        $sqlDump = '';
 
         foreach ($licenses as $licenseInfo) {
             $rawCode = (string) ($licenseInfo['licenseId'] ?? '');
