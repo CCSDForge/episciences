@@ -5,7 +5,6 @@ namespace scripts\Command;
 use Episciences_Paper_MetaDataSourcesManager;
 use Exception;
 use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\NullHandler;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -127,20 +126,15 @@ class Bootstrapper
                 true,
                 0664
         );
+        $handler->setFormatter(new LineFormatter(null, null, false, true));
+        $logger->pushHandler($handler);
 
         // Console Handler (Conditional based on verbosity level)
-        // If --quiet (-q) is passed, OutputInterface::VERBOSITY_QUIET is active
-        // Do NOT add a console handler, or use NullHandler.
+        // If --quiet (-q) is passed, OutputInterface::VERBOSITY_QUIET is active:
+        // no console handler is added, the logs only go to the file handler above.
+        // Do NOT add a NullHandler here: it stops the propagation and the file handler would receive nothing.
 
-        if ($io?->isQuiet()) {
-            // Quiet mode: A NullHandler is added to consume the logs without displaying anything.
-            // DEBUG level to ensure that even critical errors are silently “swallowed.”
-            // Note: If you want to display critical errors even in quiet mode, use StreamHandler(‘php://stderr’, Logger::CRITICAL) instead.
-            $nullHandler = new NullHandler(Logger::DEBUG);
-            $logger->pushHandler($nullHandler);
-            // CRITICAL errors are still displayed in the console even in quiet mode:            //$criticalHandler = new StreamHandler('php://stderr', Logger::CRITICAL);
-            //$logger->pushHandler($criticalHandler);
-        } else {
+        if (!$io?->isQuiet()) {
             // Normal or Verbose Mode
             // Setting the console log level
             $logLevel = Logger::INFO; // Par défaut
@@ -151,9 +145,6 @@ class Bootstrapper
                 $logLevel = Logger::DEBUG;
             }
 
-            $formatter = new LineFormatter(null, null, false, true);
-            $handler->setFormatter($formatter);
-            $logger->pushHandler($handler);
             $logger->pushHandler(new StreamHandler('php://stdout', $logLevel));
         }
 
