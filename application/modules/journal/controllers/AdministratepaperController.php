@@ -4692,7 +4692,8 @@ class AdministratepaperController extends PaperDefaultController
             // spdx license code
             $currentSpdxCode = $request->getPost('license');
 
-            if ($currentSpdxCode === null || trim((string)$currentSpdxCode) === '') {
+            // Reject missing and non-scalar values (e.g. license[]=MIT) before using the code as a string
+            if (!is_string($currentSpdxCode) || trim($currentSpdxCode) === '') {
                 $this->sendJsonError("Échec de l'enregistrement de la licence : aucun code de licence fourni.");
                 return;
             }
