@@ -364,8 +364,35 @@ class UserDefaultController extends Zend_Controller_Action
         Zend_Session::regenerateId();
     }
 
+    /**
+     * Guard for the user lookup endpoints (names, usernames and e-mail addresses):
+     * the caller must be allowed to manage papers in the current journal.
+     * Answers 403 with an empty JSON body when it is not.
+     *
+     * @return bool true when the request has been denied (the action must stop)
+     */
+    private function denyUserLookup(): bool
+    {
+        if (Episciences_Auth::isLogged() && Episciences_Auth::isAllowedToManagePaper()) {
+            return false;
+        }
+
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender(true);
+        $this->getResponse()
+            ->setHttpResponseCode(403)
+            ->setHeader('Content-Type', 'application/json', true);
+        $this->getResponse()->setBody('[]');
+
+        return true;
+    }
+
     public function findcasusersAction()
     {
+        if ($this->denyUserLookup()) {
+            return;
+        }
+
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
 
@@ -444,6 +471,11 @@ class UserDefaultController extends Zend_Controller_Action
 
     public function listAction()
     {
+        if (!Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor()) {
+            $this->_helper->redirector->gotoUrl('/error/deny');
+            return;
+        }
+
         $usersList = Episciences_UsersManager::getAllUsers();
 
         if ($this->_helper->getHelper('FlashMessenger')->getMessages()) {
@@ -1386,6 +1418,10 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function findusersAction(): void
     {
+        if ($this->denyUserLookup()) {
+            return;
+        }
+
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
@@ -1424,6 +1460,10 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function ajaxfindusersbymailAction(): void
     {
+        if ($this->denyUserLookup()) {
+            return;
+        }
+
         $result = '';
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -1463,6 +1503,10 @@ class UserDefaultController extends Zend_Controller_Action
 
     public function findusersbyfirstnameandnameAction(): void
     {
+        if ($this->denyUserLookup()) {
+            return;
+        }
+
         $result = [];
 
         $this->_helper->layout()->disableLayout();
@@ -1491,6 +1535,10 @@ class UserDefaultController extends Zend_Controller_Action
 
     public function ajaxfindcasuserAction(): void
     {
+        if ($this->denyUserLookup()) {
+            return;
+        }
+
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
         $user = null;
@@ -1708,6 +1756,10 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function getmailsAction()
     {
+        if ($this->denyUserLookup()) {
+            return;
+        }
+
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
