@@ -1395,10 +1395,15 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
             'submit',
             function () {
                 let $target = $('#' + targetToRefreshId);
+                // CSRF token expected by the post action
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = csrfMeta ? csrfMeta.content : '';
                 // Traitement AJAX du formulaire
                 let sRequest = ajaxRequest(
                     postAction,
-                    $(this).serialize() + '&docid=' + docId,
+                    $(this).serialize() +
+                        '&docid=' + docId +
+                        '&csrf_token=' + encodeURIComponent(csrfToken),
                     'POST',
                     'json'
                 );
@@ -1467,6 +1472,15 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
                             alert(translate('Veuillez indiquer une date valide'));
                         }
 
+                    }
+                });
+                // Rejected requests (e.g. 403: role or CSRF token) return a JSON error
+                sRequest.fail(function (xhr) {
+                    $(button).popover('destroy');
+                    const error = xhr.responseJSON && xhr.responseJSON.error;
+                    if (error) {
+                        bootbox.setDefaults({ locale: locale });
+                        bootbox.alert(translate(error));
                     }
                 });
                 return false;
