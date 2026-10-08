@@ -61,6 +61,28 @@ final class ErrorDefaultControllerTest extends TestCase
         self::assertSame('***', $out['Secret']);
     }
 
+    public function testKeysContainingSensitiveFragmentsAreMasked(): void
+    {
+        $in = [
+            'PASSWORD_VERIFY' => 'a',
+            'API_PASSWORD_VERIFY' => 'b',
+            'paperPassword' => 'c',
+            'search_doc' => ['paperPassword' => 'd', 'title' => 'T'],
+            'csrf' => 'e',
+            'keywords' => 'kept',
+        ];
+
+        $out = $this->controller->redactSensitiveParams($in);
+
+        self::assertSame('***', $out['PASSWORD_VERIFY']);
+        self::assertSame('***', $out['API_PASSWORD_VERIFY']);
+        self::assertSame('***', $out['paperPassword']);
+        self::assertSame('***', $out['search_doc']['paperPassword']);
+        self::assertSame('T', $out['search_doc']['title']);
+        self::assertSame('***', $out['csrf']);
+        self::assertSame('kept', $out['keywords']);
+    }
+
     public function testNestedParametersAreMasked(): void
     {
         $in = ['form' => ['email' => 'a@b.c', 'password' => 'secret']];
