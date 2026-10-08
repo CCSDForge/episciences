@@ -66,23 +66,25 @@ class DeadlineUnit extends Zend_Validate_Abstract
     }
 
     /**
-     * Parses a stored deadline setting ("2 month", legacy plural units accepted) into its safe parts.
+     * Parses a stored deadline setting ("2 month", legacy plural or upper-case units accepted) into its safe parts.
      * Anything else (including values saved before the input was validated) yields null.
      *
      * @return array{0: int, 1: string}|null [value, unit]
      */
     public static function parseStoredInterval(mixed $stored): ?array
     {
-        if (!is_string($stored) || preg_match('/^\s*(\d{1,3})\s+([a-z]+?)s?\s*$/', $stored, $matches) !== 1) {
+        if (!is_string($stored) || preg_match('/^\s*(\d+)\s+([a-z]+?)s?\s*$/i', $stored, $matches) !== 1) {
             return null;
         }
 
         $value = (int)$matches[1];
+        // MySQL accepted any case before the setting was validated ("2 WEEK"): keep honouring such values
+        $unit = strtolower($matches[2]);
 
-        if ($value < 1 || !self::isKnownUnit($matches[2])) {
+        if ($value < 1 || $value > Episciences_Review::DEADLINE_VALUE_MAX || !self::isKnownUnit($unit)) {
             return null;
         }
 
-        return [$value, $matches[2]];
+        return [$value, $unit];
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Form\Validate\DeadlineUnit;
+
 class Episciences_User_Invitation
 {
     // CONSTANTES *****************************************************************
@@ -100,14 +102,26 @@ class Episciences_User_Invitation
 
         $rvId = !defined('RVID') ? Episciences_Review::$_currentReviewId : RVID;
 
-        // Délai avant expiration de l'invitation (en jours)
+        // Invitation expiration delay (e.g. "1 month")
         $review = Episciences_ReviewsManager::find($rvId);
         $review->loadSettings();
         // The stored setting is never trusted: only an integer and an allow-listed unit reach the SQL expression
-        [$delayValue, $delayUnit] = \Episciences\Form\Validate\DeadlineUnit::parseStoredInterval($review->getSetting('invitation_deadline'))
-            ?? \Episciences\Form\Validate\DeadlineUnit::parseStoredInterval(Episciences_Review::DEFAULT_INVITATION_DEADLINE);
+        $storedDelay = $review->getSetting('invitation_deadline');
+        $delay = DeadlineUnit::parseStoredInterval($storedDelay);
 
-        // Préparation des valeurs à insérer
+        if ($delay === null) {
+            if (!empty($storedDelay)) {
+                trigger_error(
+                    sprintf('Invalid invitation_deadline setting "%s" for review #%s: falling back to "%s"', $storedDelay, $rvId, Episciences_Review::DEFAULT_INVITATION_DEADLINE),
+                    E_USER_WARNING
+                );
+            }
+            $delay = DeadlineUnit::parseStoredInterval(Episciences_Review::DEFAULT_INVITATION_DEADLINE);
+        }
+
+        [$delayValue, $delayUnit] = $delay;
+
+        // Values to insert
         $values = [
             'SENDING_DATE' => new Zend_Db_Expr('NOW()'),
             'EXPIRATION_DATE' => new Zend_Db_Expr(sprintf('DATE_ADD(NOW(), INTERVAL %d %s)', $delayValue, strtoupper($delayUnit)))
