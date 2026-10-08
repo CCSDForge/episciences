@@ -514,9 +514,7 @@ class AdministratemailController extends Zend_Controller_Action
             $mail->setDocid($paper->getDocid());
         }
 
-        if (isset($post['sender'])) {
-            $mail->setUid($post['sender']);
-        }
+        $mail->setUid(Episciences_Auth::getUid());
 
         if (isset($post[Episciences_Mail_Send::ATTACHMENTS])) {
             // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
