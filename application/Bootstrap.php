@@ -98,7 +98,8 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         $sessionOptions = [
             'name' => SESSION_NAMESPACE,
             'cookie_httponly' => $options['resources']['session']['cookie_httponly'],
-            'cookie_secure' => $options['resources']['session']['cookie_secure']
+            'cookie_secure' => $options['resources']['session']['cookie_secure'],
+            'cookie_samesite' => $options['resources']['session']['cookie_samesite'] ?? 'Lax'
         ];
         Zend_Session::setOptions($sessionOptions);
         Zend_Session::start();

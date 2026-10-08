@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
+- The session cookie is now sent with the `SameSite=Lax` attribute (configurable with `resources.session.cookie_samesite`).
 [RT#293890]:
 - Sorting by invitation status does not reflect the actual situation:
     A reviewer’s report is categorised as an "Additional reviewer’s report",
