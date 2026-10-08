@@ -2,6 +2,7 @@
 
 <div class="form-actions">
      <form action="/website/public" method="post" id="form" class="form" enctype="multipart/form-data">
+         <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>" />
          <input type="hidden" name="method" id="method" value="" />
          <input type="hidden" name="name" id="name" value="" />
          <input type="file" name="file" id="file" style="display:none;"/>
