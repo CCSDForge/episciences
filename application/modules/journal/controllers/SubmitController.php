@@ -297,20 +297,24 @@ class SubmitController extends DefaultController
      */
     private function handlePaperReplacement(array &$formValues): array
     {
+        // The previous paper is never described by the client: load it from the database,
+        // restricted to the current journal and to its owner.
+        $oldPaper = Episciences_PapersManager::get((int)($formValues['old_docid'] ?? 0), false);
 
-        $formValues['old_paper_status'] = (int)$formValues['old_paper_status'];
-        $formValues['old_version'] = (float)$formValues['old_version'];
-        $formValues['old_repoid'] = (int)$formValues['old_repoid'];
-        $formValues['old_docid'] = (int)$formValues['old_docid'];
+        if (!$oldPaper instanceof Episciences_Paper || $oldPaper->getRvid() !== RVID || !$oldPaper->isOwner()) {
+            $translator = Zend_Registry::get('Zend_Translate');
+            $result = ['code' => 0, 'message' => $translator->translate("Aucune modification n'a été enregistrée")];
+            return [$result, '<strong>' . $result['message'] . '</strong>'];
+        }
 
-        $selfPaper = new Episciences_Paper([
-            'docid' => $formValues['old_docid'],
-            'identifier' => $formValues['old_identifier'] ?? '',
-            'version' => $formValues['old_version'],
-            'repoId' => $formValues['old_repoid'],
-            'status' => $formValues['old_paper_status'],
-            'concept_identifier' => $formValues['old_conceptIdentifier'] ?? null
-        ]);
+        $formValues['old_docid'] = $oldPaper->getDocid();
+        $formValues['old_paperid'] = $oldPaper->getPaperid();
+        $formValues['old_paper_status'] = $oldPaper->getStatus();
+        $formValues['old_version'] = $oldPaper->getVersion();
+        $formValues['old_paper_vid'] = $oldPaper->getVid();
+        $formValues['old_paper_sid'] = $oldPaper->getSid();
+
+        $selfPaper = $oldPaper;
 
         unset(
             $formValues['old_identifier'],

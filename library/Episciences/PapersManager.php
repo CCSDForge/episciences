@@ -3119,10 +3119,11 @@ class Episciences_PapersManager
      * renome l'identifiant d'un article
      * @param $old
      * @param $new
+     * @param int|null $rvId restrict the renaming to a journal
      * @return bool|int
      */
 
-    public static function renameIdentifier($old, $new)
+    public static function renameIdentifier($old, $new, ?int $rvId = null)
     {
         try {
             if (!is_string($old) || !is_string($new)) {
@@ -3131,6 +3132,9 @@ class Episciences_PapersManager
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $data['IDENTIFIER'] = $new;
             $where['IDENTIFIER = ?'] = (string)$old;
+            if ($rvId !== null) {
+                $where['RVID = ?'] = $rvId;
+            }
             return $db->update(T_PAPERS, $data, $where);
         } catch (Exception $e) {
             return false;
