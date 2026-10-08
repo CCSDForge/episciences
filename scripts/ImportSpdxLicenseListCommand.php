@@ -128,12 +128,14 @@ CREATE TABLE IF NOT EXISTS `$tableName` (
 SQL;
 
         foreach ($licenses as $licenseInfo) {
-            $code = htmlspecialchars((string) ($licenseInfo['licenseId'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $name = htmlspecialchars((string) ($licenseInfo['name'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $isRecommended = (int) $this->isRecommended($code);
+            $rawCode = (string) ($licenseInfo['licenseId'] ?? '');
+            // SQL-quote the values with the adapter (keeps the original text, unlike HTML escaping)
+            $code = $this->db->quote($rawCode);
+            $name = $this->db->quote((string) ($licenseInfo['name'] ?? ''));
+            $isRecommended = (int) $this->isRecommended($rawCode);
 
             $sqlDump .= "\n";
-            $sqlDump .= "INSERT INTO `" . self::TABLE_NAME . "` (`code`, `name`, `recommended`) VALUES ('$code', '$name', $isRecommended) ON DUPLICATE KEY UPDATE `name` = '$name', `recommended` = $isRecommended;";
+            $sqlDump .= "INSERT INTO `" . self::TABLE_NAME . "` (`code`, `name`, `recommended`) VALUES ($code, $name, $isRecommended) ON DUPLICATE KEY UPDATE `name` = $name, `recommended` = $isRecommended;";
         }
 
         return $sqlDump;
