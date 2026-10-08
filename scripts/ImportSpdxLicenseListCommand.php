@@ -67,7 +67,16 @@ class ImportSpdxLicenseListCommand extends AbstractCommand
 
         if ($isDryRun) {
             $filePath = sprintf('%s/license_list_dump-%s.sql', rtrim($outputDir, '/'), date('Y-m-d-H-i-s'));
-            file_put_contents($filePath, $this->buildSqlDump($upserts, $count));
+            $sqlDump = $this->buildSqlDump($upserts, $count);
+            $written = @file_put_contents($filePath, $sqlDump);
+
+            if ($written !== strlen($sqlDump)) {
+                $message = sprintf('Dry-run: unable to write the SQL dump to %s', $filePath);
+                $this->logger->critical($message);
+                $io->error($message);
+                return Command::FAILURE;
+            }
+
             $io->success(sprintf('Dry-run: SQL dump written to %s', $filePath));
             $io->writeln(sprintf('Total licenses found (SPDX base): %d', $count));
             $io->writeln(sprintf('Total licenses processed: %d', $count));
