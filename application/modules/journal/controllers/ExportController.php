@@ -2,11 +2,13 @@
 
 use Episciences\Paper\Export;
 
+require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
+
 /**
  * Class ExportController
  * Export formats of a paper
  */
-class ExportController extends Zend_Controller_Action
+class ExportController extends DefaultController
 {
     const TEXT_XML_CHARSET_UTF_8 = 'text/xml; charset=utf-8';
 
@@ -43,7 +45,7 @@ class ExportController extends Zend_Controller_Action
         /** @var Episciences_Paper $paper */
         $paper = Episciences_PapersManager::get($docId, false);
 
-        if (!$paper || $paper->getRvid() != RVID || $paper->getRepoid() == 0) {
+        if (!$paper || $paper->getRvid() != RVID || $paper->getRepoid() == 0 || $paper->isDeleted() || $paper->isRemoved()) {
             $this->getResponse()?->setHttpResponseCode(404);
             $this->renderScript('index/notfound.phtml');
             echo $this->getResponse()->getBody();
@@ -55,30 +57,35 @@ class ExportController extends Zend_Controller_Action
     }
 
     /**
-     * redirige vers la page de l'article s'il est publié, sinon vers la page de l'authenfification
+     * Restricts the export of an unpublished paper to the users allowed to see it
+     * (same rule as the paper page): redirects to the published version if there is one,
+     * to the login page for anonymous visitors, and to the home page otherwise.
      * @param Zend_Controller_Request_Http $request
      * @param Episciences_Paper $paper
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
-    private function redirectIfNotPublished(Zend_Controller_Request_Http $request, Episciences_Paper $paper)
+    private function redirectIfNotPublished(Zend_Controller_Request_Http $request, Episciences_Paper $paper): void
     {
+        if (!$this->isRestrictedAccess($paper)) {
+            return;
+        }
 
-        if (!$paper->isPublished() && !Episciences_Auth::isLogged()) {
-            $paperId = $paper->getPaperid() ?: $paper->getDocid();
-            $id = Episciences_PapersManager::getPublishedPaperId($paperId);
+        $paperId = $paper->getPaperid() ?: $paper->getDocid();
+        $id = Episciences_PapersManager::getPublishedPaperId($paperId);
 
-            if ($id != 0) {
-                // redirection vers la version publiée
-                $this->redirect('/' . $id . '/' . $request->getActionName());
-                exit;
+        if ($id !== 0) {
+            // redirect to the published version
+            $this->redirect('/' . $id . '/' . $request->getActionName());
+            exit;
+        }
 
-            }
-
-            // redirection vers la page d'authentification
+        if (!Episciences_Auth::isLogged()) {
             $this->redirect('/user/login/forward-controller/' . $request->getControllerName() . '/id/' . $paper->getDocid() . '/forward-action/' . $request->getActionName());
             exit;
         }
 
+        $this->redirectsIfHaveNotEnoughPermissions($paper);
     }
 
     public function jsonv2Action(): void
