@@ -27,17 +27,17 @@ class Bootstrapper
     private ?Zend_Db_Adapter_Abstract $db;
     private LoggerInterface $logger;
     private string $logFile;
-    private string $env;
+    private ?string $env;
 
     private int $verbosityLevel;
 
     /**
-     * @param string $env
+     * @param string|null $env application.ini section; resolved from the environment when null
      * @throws Zend_Application_Exception
      * @throws Zend_Db_Exception
      */
 
-    public function __construct(string $env = 'production')
+    public function __construct(?string $env = null)
     {
         $this->env = $env;
         $this->bootstrap();
@@ -68,6 +68,9 @@ class Bootstrapper
 
         require_once __DIR__ . '/../../public/const.php';
         require_once __DIR__ . '/../../public/bdd_const.php';
+
+        // const.php loads the .env files but does not define APPLICATION_ENV for CLI requests
+        $this->env ??= self::resolveEnvironment();
 
         defineProtocol();
         defineSimpleConstants();
@@ -169,6 +172,26 @@ class Bootstrapper
     public function getEnvironment(): string
     {
         return $this->env;
+    }
+
+    /**
+     * Resolve the CLI environment: APPLICATION_ENV (constant or variable), then APP_ENV (.env files), then production
+     */
+    private static function resolveEnvironment(): string
+    {
+        $candidates = [
+                defined('APPLICATION_ENV') ? (string)APPLICATION_ENV : '',
+                (string)getenv('APPLICATION_ENV'),
+                (string)($_ENV['APP_ENV'] ?? ''),
+        ];
+
+        foreach ($candidates as $env) {
+            if ($env !== '') {
+                return $env;
+            }
+        }
+
+        return 'production';
     }
 
 }
