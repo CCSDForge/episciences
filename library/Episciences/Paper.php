@@ -4331,7 +4331,7 @@ class Episciences_Paper
             } elseif ($paper->getVersion() > $this->getVersion()) {
                 if (
                     $this->canBeReplaced() ||
-                    ($status === self::STATUS_REFUSED && Episciences_PapersManager::renameIdentifier($this->getIdentifier(), $this->getIdentifier() . '-REFUSED'))) {
+                    ($status === self::STATUS_REFUSED && Episciences_PapersManager::renameIdentifier($this->getIdentifier(), $this->getIdentifier() . '-REFUSED', $this->getRvid()))) {
 
                     if (isset($values['isEpiNotify']) && $values['isEpiNotify']) {
                         return ['code' => 1, 'message' => 'Okay for the update...'];
