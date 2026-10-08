@@ -103,12 +103,14 @@ class Episciences_User_Invitation
         // Délai avant expiration de l'invitation (en jours)
         $review = Episciences_ReviewsManager::find($rvId);
         $review->loadSettings();
-        $expiration_delay = ($review->getSetting('invitation_deadline')) ?: Episciences_Review::DEFAULT_INVITATION_DEADLINE;
+        // The stored setting is never trusted: only an integer and an allow-listed unit reach the SQL expression
+        [$delayValue, $delayUnit] = \Episciences\Form\Validate\DeadlineUnit::parseStoredInterval($review->getSetting('invitation_deadline'))
+            ?? \Episciences\Form\Validate\DeadlineUnit::parseStoredInterval(Episciences_Review::DEFAULT_INVITATION_DEADLINE);
 
         // Préparation des valeurs à insérer
         $values = [
             'SENDING_DATE' => new Zend_Db_Expr('NOW()'),
-            'EXPIRATION_DATE' => new Zend_Db_Expr('DATE_ADD(NOW(), INTERVAL ' . $expiration_delay . ')')
+            'EXPIRATION_DATE' => new Zend_Db_Expr(sprintf('DATE_ADD(NOW(), INTERVAL %d %s)', $delayValue, strtoupper($delayUnit)))
         ];
         if ($this->getAid()) {
             $values['AID'] = $this->getAid();

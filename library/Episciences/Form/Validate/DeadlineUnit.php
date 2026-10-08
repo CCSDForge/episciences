@@ -64,4 +64,25 @@ class DeadlineUnit extends Zend_Validate_Abstract
 
         return trim((string)$value) . ' ' . $unit;
     }
+
+    /**
+     * Parses a stored deadline setting ("2 month", legacy plural units accepted) into its safe parts.
+     * Anything else (including values saved before the input was validated) yields null.
+     *
+     * @return array{0: int, 1: string}|null [value, unit]
+     */
+    public static function parseStoredInterval(mixed $stored): ?array
+    {
+        if (!is_string($stored) || preg_match('/^\s*(\d{1,3})\s+([a-z]+?)s?\s*$/', $stored, $matches) !== 1) {
+            return null;
+        }
+
+        $value = (int)$matches[1];
+
+        if ($value < 1 || !self::isKnownUnit($matches[2])) {
+            return null;
+        }
+
+        return [$value, $matches[2]];
+    }
 }
