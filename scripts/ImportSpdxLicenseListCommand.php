@@ -30,6 +30,10 @@ class ImportSpdxLicenseListCommand extends AbstractCommand
 
     private const TABLE_NAME = 'license_spdx';
 
+    // Seconds: an unresponsive SPDX endpoint must make the command fail instead of hanging
+    private const HTTP_CONNECT_TIMEOUT = 10;
+    private const HTTP_TIMEOUT = 60;
+
     private const RECOMMENDED_REGEX = '#^CC-BY(?:-NC)?(?:-(?:ND|SA))?-4\.0$#i';
 
     protected function configure(): void
@@ -117,7 +121,10 @@ class ImportSpdxLicenseListCommand extends AbstractCommand
      */
     private function getLicenses(string $url): string
     {
-        $client = new Client();
+        $client = new Client([
+                'connect_timeout' => self::HTTP_CONNECT_TIMEOUT,
+                'timeout' => self::HTTP_TIMEOUT,
+        ]);
         $response = $client->get($url);
         return $response->getBody()->getContents();
     }
