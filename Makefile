@@ -432,11 +432,11 @@ licenses: ## Manage paper licenses via papers:licenses — normalize to an SPDX 
 		echo "Error: resolve=1 and update=1 are mutually exclusive."; \
 		exit 1; \
 	fi
-	@if [ "$(update)" = "1" ] && [ -z "$(license)" ]; then \
+	@if [ "$(update)" = "1" ] && [ -z $(call shell_quote,$(license)) ]; then \
 		echo "Error: update requires license=CODE (existing license code or unnormalized URL)."; \
 		exit 1; \
 	fi
-	@if [ "$(update)" = "1" ] && [ -z "$(new-license)" ]; then \
+	@if [ "$(update)" = "1" ] && [ -z $(call shell_quote,$(new-license)) ]; then \
 		echo "Error: update requires new-license=NEW (valid SPDX identifier)."; \
 		exit 1; \
 	fi
@@ -444,10 +444,10 @@ licenses: ## Manage paper licenses via papers:licenses — normalize to an SPDX 
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php papers:licenses \
 		$(if $(filter 1,$(resolve)),--resolve,--update) \
-		$(if $(license),--license=$(license)) \
-		$(if $(new-license),--new-license=$(new-license)) \
-		$(if $(rvcode),--rvcode=$(rvcode)) \
-		$(if $(document),--document=$(document)) \
+		$(if $(license),--license=$(call shell_quote,$(license))) \
+		$(if $(new-license),--new-license=$(call shell_quote,$(new-license))) \
+		$(if $(rvcode),--rvcode=$(call shell_quote,$(rvcode))) \
+		$(if $(document),--document=$(call shell_quote,$(document))) \
 		$(if $(filter 1,$(force)),--force) \
 		$(if $(filter 1,$(verbose)),-v) \
 		$(if $(filter 0,$(dry-run)),,--dry-run)
