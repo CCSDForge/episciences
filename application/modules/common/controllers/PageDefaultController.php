@@ -45,6 +45,11 @@ class PageDefaultController extends Zend_Controller_Action
                 if (isset($params['method']) && $params['method'] == "edit") {
                     $this->view->mode = 'edit';
                     $this->view->form = $page->getContentForm();
+                } elseif (isset($pageContent) && !Episciences_Csrf_Helper::validateRequestToken($this->getRequest())) {
+                    // Nothing is saved: show the edit form again
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage($this->view->translate('Votre session a expiré, veuillez réessayer.'));
+                    $this->view->mode = 'edit';
+                    $this->view->form = $page->getContentForm();
                 } elseif (isset($pageContent)) {
                     $pageCode = $this->_page;
                     $titles = [];

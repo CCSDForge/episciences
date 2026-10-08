@@ -155,6 +155,8 @@ function initReorderableDataTable({ $table, dt, sortUrl }) {
                 // ZF1's isXmlHttpRequest() check requires this header; without it,
                 // actions not listed in acl.ini are redirected to the notfound page.
                 'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-Token':
+                    document.querySelector('meta[name="csrf-token"]')?.content || '',
             },
             body,
         })
