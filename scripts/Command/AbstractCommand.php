@@ -26,13 +26,6 @@ abstract class AbstractCommand extends Command
     protected string $logFile;
     protected string $env;
 
-    public function __construct()
-    {
-        $this->bootstrapper = new Bootstrapper();
-        // The name is defined in configure(), so we pass null here or use getName()
-        parent::__construct();
-    }
-
     /**
      * Context initialization (called automatically before "execute")
      * Configure the logger based on the console's verbosity level
@@ -43,6 +36,8 @@ abstract class AbstractCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
         $commandName = $this->getName();
         $this->toSafeName($commandName);
+        // Bootstrap lazily: registering the command (list, help, other commands) must not need the application or the database
+        $this->bootstrapper = new Bootstrapper();
         $this->bootstrapper->initialize($input, $output, $commandName);
         $this->logger = $this->bootstrapper->getLogger();
         $this->db = $this->bootstrapper->getDb();
