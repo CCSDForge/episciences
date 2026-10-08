@@ -222,15 +222,20 @@ class Episciences_Paper_LicenceManager
         ]);
 
         // Insert also into "paper_license_code" if the license code has an SPDX equivalent
-        $resolved = (new LicenseSpdxResolver())->resolve($licenceData['licence']);
+        // A failure here must not abort the paper submission: the paper row is already saved
+        try {
+            $resolved = (new LicenseSpdxResolver())->resolve($licenceData['licence']);
 
-        if ($resolved !== LicenseSpdxResolver::NO_ASSERTION) {
+            if ($resolved !== LicenseSpdxResolver::NO_ASSERTION) {
 
-            (new LicenseCode([
-                    'code' => $resolved,
-                    'docid' => $docId
-            ]))->save();
+                (new LicenseCode([
+                        'code' => $resolved,
+                        'docid' => $docId
+                ]))->save();
 
+            }
+        } catch (Throwable $e) {
+            trigger_error(sprintf('SPDX license resolution failed for docid %d: %s', $docId, $e->getMessage()), E_USER_WARNING);
         }
 
         return $paperLicenseResult;
