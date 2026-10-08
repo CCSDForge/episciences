@@ -1148,6 +1148,40 @@ class Episciences_Mail_Reminder
                         'deadline' => $data['INVITATION_DATE']
                     ];
                 }
+            } elseif ($this->isSupervisorRecipient()){
+                // Supervisor recipients (chief_editor, secretary)
+                $supervisors = $this->getSupervisors();
+                $isTmpUser = (int)$data['TMP_USER'] === 1;
+                $reviewerUid = $isTmpUser ? null : (int)$data['UID'];
+
+                $filteredSupervisors = $this->filterSupervisorsForPaper(
+                    $supervisors,
+                    $paper,
+                    $review,
+                    $reviewerUid,
+                    $user->getEmail(),
+                    $isTmpUser
+                );
+
+                foreach ($filteredSupervisors as $supervisor) {
+                    $supervisorTags = array_merge($tags, [
+                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($supervisor->getLangueid(), true),
+                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $fullname,
+                        Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $user->getEmail(),
+                        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $supervisor->getScreenName(),
+                        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $supervisor->getFullName(),
+                        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $supervisor->getUsername()
+                    ]);
+
+                    $recipients[] = [
+                        'uid' => $supervisor->getUid(),
+                        'fullname' => $supervisor->getFullName(),
+                        'email' => $supervisor->getEmail(),
+                        'lang' => $supervisor->getLangueid(true),
+                        'tags' => $supervisorTags,
+                        'deadline' => $data['INVITATION_DATE']
+                    ];
+                }
             } else {
 
                 $tags = array_merge($tags, [
@@ -1278,6 +1312,50 @@ class Episciences_Mail_Reminder
                         'fullname' => $editor->getFullName(),
                         'email' => $editor->getEmail(),
                         'lang' => $editor->getLangueid(true),
+                        'tags' => $tags,
+                        'deadline' => $data['DEADLINE']
+                    ];
+                }
+            }
+        } elseif ($this->isSupervisorRecipient()) {
+            // Supervisor recipients (chief_editor, secretary)
+            foreach ($tmp as $data) {
+                $paper = Episciences_PapersManager::get($data['DOCID']);
+                if (!$paper || $this->isPaperNotNeedToReminders($paper, $filters)) {
+                    continue;
+                }
+
+                $reviewer = new Episciences_User;
+                $reviewer->findWithCAS($data['UID']);
+
+                $supervisors = $this->getSupervisors();
+                $filteredSupervisors = $this->filterSupervisorsForPaper(
+                    $supervisors,
+                    $paper,
+                    $review,
+                    (int)$data['UID'],
+                    $reviewer->getEmail(),
+                    false // not a temp user (accepted invitations only)
+                );
+
+                foreach ($filteredSupervisors as $supervisor) {
+                    $tags = [
+                        Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($supervisor->getLangueid(), true),
+                        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $supervisor->getUsername(),
+                        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $supervisor->getScreenName(),
+                        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $supervisor->getFullName(),
+                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getScreenName(),
+                        Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewer->getEmail(),
+                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
+                    ];
+
+                    $recipients[] = [
+                        'uid' => $supervisor->getUid(),
+                        'fullname' => $supervisor->getFullName(),
+                        'email' => $supervisor->getEmail(),
+                        'lang' => $supervisor->getLangueid(true),
                         'tags' => $tags,
                         'deadline' => $data['DEADLINE']
                     ];
@@ -1423,6 +1501,50 @@ class Episciences_Mail_Reminder
                         'fullname' => $editor->getFullName(),
                         'email' => $editor->getEmail(),
                         'lang' => $editor->getLangueid(true),
+                        'tags' => $tags,
+                        'deadline' => $data['DEADLINE']
+                    ];
+                }
+            }
+        } elseif ($this->isSupervisorRecipient()) {
+            // Supervisor recipients (chief_editor, secretary)
+            foreach ($tmp as $data) {
+                $paper = Episciences_PapersManager::get($data['DOCID']);
+                if (!$paper || $this->isPaperNotNeedToReminders($paper, $filters)) {
+                    continue;
+                }
+
+                $reviewer = new Episciences_User;
+                $reviewer->findWithCAS($data['UID']);
+
+                $supervisors = $this->getSupervisors();
+                $filteredSupervisors = $this->filterSupervisorsForPaper(
+                    $supervisors,
+                    $paper,
+                    $review,
+                    (int)$data['UID'],
+                    $reviewer->getEmail(),
+                    false //not a temp user (accepted invitations only)
+                );
+
+                foreach ($filteredSupervisors as $supervisor) {
+                    $tags = [
+                        Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($supervisor->getLangueid(), true),
+                        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $supervisor->getUsername(),
+                        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $supervisor->getScreenName(),
+                        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $supervisor->getFullName(),
+                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getScreenName(),
+                        Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewer->getEmail(),
+                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
+                    ];
+
+                    $recipients[] = [
+                        'uid' => $supervisor->getUid(),
+                        'fullname' => $supervisor->getFullName(),
+                        'email' => $supervisor->getEmail(),
+                        'lang' => $supervisor->getLangueid(true),
                         'tags' => $tags,
                         'deadline' => $data['DEADLINE']
                     ];
