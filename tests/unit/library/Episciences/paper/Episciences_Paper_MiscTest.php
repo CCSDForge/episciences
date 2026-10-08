@@ -138,6 +138,27 @@ final class Episciences_Paper_MiscTest extends TestCase
         self::assertSame('secret123', $this->paper->getPassword());
     }
 
+    public function testSetPasswordNeverKeepsPlainTextWhenEncryptionFails(): void
+    {
+        $encryptionFailed = false;
+        set_error_handler(static function (int $errno) use (&$encryptionFailed): bool {
+            $encryptionFailed = ($errno === E_USER_WARNING);
+            return true;
+        });
+
+        try {
+            $this->paper->setPassword('secret123', true);
+        } finally {
+            restore_error_handler();
+        }
+
+        if ($encryptionFailed) {
+            self::assertNull($this->paper->getPassword());
+        } else {
+            self::assertNotSame('secret123', $this->paper->getPassword());
+        }
+    }
+
     public function testSetPasswordNullResultsInNullPassword(): void
     {
         $this->paper->setPassword(null);
