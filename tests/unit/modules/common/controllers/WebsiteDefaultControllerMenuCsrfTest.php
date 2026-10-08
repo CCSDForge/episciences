@@ -34,6 +34,8 @@ class WebsiteDefaultControllerMenuCsrfTest extends TestCase
 
     /**
      * Runs menuAction() on a POST and returns the navigation double it was able to reach.
+     *
+     * @param array<string, mixed> $post
      */
     private function postMenu(array $post): object
     {
@@ -41,7 +43,10 @@ class WebsiteDefaultControllerMenuCsrfTest extends TestCase
         $website = new class {
             public int $calls = 0;
 
-            public function __call(string $name, array $arguments)
+            /**
+             * @param array<int, mixed> $arguments
+             */
+            public function __call(string $name, array $arguments): mixed
             {
                 $this->calls++;
                 return null;
@@ -51,6 +56,9 @@ class WebsiteDefaultControllerMenuCsrfTest extends TestCase
         $controller = new class (new Zend_Controller_Request_HttpTestCase(), new Zend_Controller_Response_HttpTestCase()) extends WebsiteDefaultController {
             public bool $redirected = false;
 
+            /**
+             * @param array<string, mixed> $options
+             */
             public function redirect($url, array $options = []): void
             {
                 $this->redirected = true;
