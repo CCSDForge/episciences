@@ -136,11 +136,14 @@
     <div id="grid-actions">
         <?php if ($this->defaultGrid) : ?>
         <?php if ($this->defaultGrid->getId() != $this->grid->getId()) : ?>
-            <a href="/grid/copy?from=<?php echo $this->defaultGrid->getId(); ?>&amp;to=<?php echo $this->grid->getId(); ?>">
-                <button type="button" class="btn btn-default">
+            <form action="/grid/copy" method="post" style="display:inline">
+                <input type="hidden" name="csrf_token" value="<?= $this->escape(Episciences_Csrf_Helper::getSessionToken()) ?>">
+                <input type="hidden" name="from" value="<?= (int)$this->defaultGrid->getId() ?>">
+                <input type="hidden" name="to" value="<?= (int)$this->grid->getId() ?>">
+                <button type="submit" class="btn btn-default">
                     <?php echo $this->translate('Copier grille par défaut'); ?>
                 </button>
-            </a>
+            </form>
             <?php endif; ?>
         <?php endif; ?>
 

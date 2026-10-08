@@ -689,6 +689,10 @@ class Episciences_VolumesManager
 
         self::getProceedingForm($form, $volume);
 
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
+        // The form script wraps each element in a row, hide the one of the token
+        $form->getElement('csrf_token')->setAttrib('data-none', true);
+
         return $form;
     }
 
