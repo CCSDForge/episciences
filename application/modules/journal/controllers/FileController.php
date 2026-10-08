@@ -59,6 +59,15 @@ class FileController extends DefaultController
             $file .= '.' . $extension;
         }
 
+        // The folder allow-list would be pointless if a segment could climb out of it (e.g. "../reports")
+        if (
+            !Episciences_Volume_Metadata::isBareFileName($file) ||
+            (null !== $parentCommentId && !preg_match('/^\d+$/D', (string)$parentCommentId))
+        ) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         // Trusted base: the document directory. The folder / parentCommentId / file
         // segments are user-influenced and confined under it by resolveSafePath().
         $relativePath = $folder . '/';

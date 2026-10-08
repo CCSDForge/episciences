@@ -95,4 +95,29 @@ final class FileControllerDocfilesFolderTest extends TestCase
         self::assertCount(1, $delivered);
         self::assertSame($relativePath, $delivered[0][1]);
     }
+
+    /**
+     * @return array<string, array{array<string, string>}>
+     */
+    public static function climbingSegmentsProvider(): array
+    {
+        return [
+            'file name climbs out of the folder' => [['filename' => '../reports/7/report', 'extension' => 'xml']],
+            'file name is a parent directory' => [['filename' => '..', 'extension' => '']],
+            'comment id climbs out of the folder' => [['parentCommentId' => '../reports/7']],
+            'comment id is not a number' => [['parentCommentId' => 'abc']],
+        ];
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @dataProvider climbingSegmentsProvider
+     */
+    public function testSegmentsCannotLeaveTheFolder(array $params): void
+    {
+        [$code, $delivered] = $this->runDocfilesAction($params + ['folder' => 'comments']);
+
+        self::assertSame(404, $code);
+        self::assertSame([], $delivered, 'no file must be delivered');
+    }
 }
