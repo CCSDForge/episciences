@@ -372,5 +372,48 @@ class Episciences_VolumeTest extends TestCase
         $this->assertSame('2026', $result['vol_year']);
         $this->assertSame('3', $result['vol_num']);
     }
-}
 
+    public function testDiscardForeignMetadataIdKeepsOwnedId(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => 7, 'title' => ['en' => 'T']]);
+
+        $this->assertSame(7, $result['id']);
+        $this->assertSame(['en' => 'T'], $result['title']);
+    }
+
+    public function testDiscardForeignMetadataIdDropsIdOfAnotherVolume(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => 8, 'title' => ['en' => 'T']]);
+
+        $this->assertArrayNotHasKey('id', $result);
+        $this->assertSame(['en' => 'T'], $result['title']);
+    }
+
+    public function testDiscardForeignMetadataIdDropsIdWhenVolumeHasNoMetadata(): void
+    {
+        $result = $this->invokeDiscardForeignMetadataId(new Episciences_Volume(), ['id' => 1]);
+
+        $this->assertArrayNotHasKey('id', $result);
+    }
+
+    public function testDiscardForeignMetadataIdDropsNonScalarId(): void
+    {
+        $result = $this->invokeDiscardForeignMetadataId(new Episciences_Volume(), ['id' => ['x']]);
+
+        $this->assertArrayNotHasKey('id', $result);
+    }
+
+    private function invokeDiscardForeignMetadataId(Episciences_Volume $volume, array $values): array
+    {
+        $method = new ReflectionMethod(Episciences_Volume::class, 'discardForeignMetadataId');
+        $method->setAccessible(true);
+
+        return $method->invoke($volume, $values);
+    }
+}

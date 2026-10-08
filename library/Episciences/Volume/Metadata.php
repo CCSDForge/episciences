@@ -374,7 +374,7 @@ class Episciences_Volume_Metadata
 
         if ($this->getId()) {
             try {
-                $this->_db->update(T_VOLUME_METADATAS, $values, ['ID = ?' => $this->getId()]);
+                $this->_db->update(T_VOLUME_METADATAS, $values, ['ID = ?' => $this->getId(), 'VID = ?' => $this->getVid()]);
             } catch (Zend_Db_Adapter_Exception $exception) {
                 error_log($exception->getMessage());
                 return false;
