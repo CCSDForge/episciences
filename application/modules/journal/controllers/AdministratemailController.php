@@ -121,7 +121,14 @@ class AdministratemailController extends Zend_Controller_Action
             throw new Zend_Exception("Ce template n'existe pas");
         }
 
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti !");
+            $this->_helper->redirector->gotoUrl('/administratemail/templates');
+            return;
+        }
+
         $post = $request->getPost();
+        unset($post['csrf_token']);
         $options = [];
         foreach ($post as $lang => $data) {
             foreach ($data as $field => $value) {
@@ -309,6 +316,22 @@ class AdministratemailController extends Zend_Controller_Action
             !array_key_exists('ajax', $post)
             && (isset($post['submit']) || isset($post['docid'])) // Le changement de langue du site Web entraînera la resoumission du formulaire.
         ) {
+
+            if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+                $message = '<p><strong>' . $this->view->translate("Votre message n'a pas pu être envoyé :") . '</strong></p>'
+                    . '<div>' . $this->view->translate('Votre session a expiré, veuillez réessayer.') . '</div>';
+
+                if (isset($post['in_modal'])) {
+                    $this->_helper->layout->disableLayout();
+                    $this->_helper->viewRenderer->setNoRender();
+                    echo $message;
+                    return;
+                }
+
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                $this->_helper->redirector->gotoUrl('/administratemail/send');
+                return;
+            }
 
             $post['sender'] = Episciences_Auth::getUid();
 

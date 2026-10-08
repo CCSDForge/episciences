@@ -336,6 +336,8 @@ class Episciences_SectionsManager
             'style' => 'width:300px'
         ));
 
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
+
         // Boutons : Valider et Annuler
         $form->setActions(true)->createSubmitButton('submit', array(
             'label' => 'Valider',

@@ -33,7 +33,7 @@ class SectionController extends Zend_Controller_Action
 
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
 
-            if ($form->isValid($request->getPost())) {
+            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($request->getPost())) {
 
                 $formValues = $form->getValues();
                 $section = new Episciences_Section($formValues);
@@ -93,7 +93,7 @@ class SectionController extends Zend_Controller_Action
 
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
 
-            if ($form->isValid($request->getPost())) {
+            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($request->getPost())) {
 
                 $values = $form->getValues();
                 $section->setOptions($values);
@@ -152,7 +152,7 @@ class SectionController extends Zend_Controller_Action
         $respond = false;
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $isAjax = $request->isPost() && $request->getPost('ajax');
+        $isAjax = $request->isPost() && $request->getPost('ajax') && Episciences_Csrf_Helper::validateRequestToken($request);
 
         if ($isAjax){
             $params = $request->getPost('params');
@@ -173,11 +173,16 @@ class SectionController extends Zend_Controller_Action
     public function sortAction()
     {
         $request = $this->getRequest();
-        $params = $request->getPost();
-        $params['rvid'] = RVID;
-
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
+
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        $params = $request->getPost();
+        $params['rvid'] = RVID;
 
         Episciences_VolumesAndSectionsManager::sort($params, 'SID');
         $this->_helper->viewRenderer->setNoRender();
@@ -215,7 +220,7 @@ class SectionController extends Zend_Controller_Action
         $request = $this->getRequest();
         $sid = ($request->getPost('sid')) ? $request->getPost('sid') : $request->getParam('sid');
 
-        if ($request->isPost()) {
+        if ($request->isPost() && Episciences_Csrf_Helper::validateRequestToken($request)) {
 
             // Rédacteurs nouvellement assignés
             $submittedEditors = $request->getPost('editors');

@@ -134,6 +134,11 @@ class GridController extends Zend_Controller_Action
         $this->_helper->getHelper('layout')->disableLayout();
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            echo '<strong>' . $this->view->translate('Votre session a expiré, veuillez réessayer.') . '</strong>';
+            return;
+        }
+
         /** @var array $params */
         $params = $request->getPost('params');
         $rgid =(int) $params['rgid'];
@@ -471,7 +476,13 @@ class GridController extends Zend_Controller_Action
         $this->_helper->getHelper('layout')->disableLayout();
 
         $request = $this->getRequest();
-        $params = $request->getParam('params');
+
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            echo $this->view->translate('Votre session a expiré, veuillez réessayer.');
+            return;
+        }
+
+        $params = $request->getPost('params');
 
 
         $rgid = filter_var($params['rgid'], FILTER_SANITIZE_NUMBER_INT);
@@ -499,12 +510,18 @@ class GridController extends Zend_Controller_Action
     public function sortcriterionAction()
     {
         $request = $this->getRequest();
+        $this->_helper->viewRenderer->setNoRender();
+        $this->_helper->getHelper('layout')->disableLayout();
+
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         $params = $request->getPost();
         $params['rvid'] = RVID;
 
         $respond = Episciences_GridsManager::sortCriterion($params);
-        $this->_helper->viewRenderer->setNoRender();
-        $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
     }
 

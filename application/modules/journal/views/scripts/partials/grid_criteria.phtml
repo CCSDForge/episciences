@@ -111,6 +111,7 @@
                     $.ajax({
                         url: "/grid/sortcriterion",
                         type: 'POST',
+                        headers: {'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''},
                         data: {sorted: $(this).sortable("toArray"), rgid: <?php echo $this->grid->getId(); ?>},
                         dataType: "json",
                         success: function (result) {
