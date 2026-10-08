@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so a cron or a CI job is no longer told it succeeded.
 
 ### Added
-- [#893](https://github.com/CCSDForge/episciences/issues/893) Allow to select the license of the document use spdx.
+- [#893](https://github.com/CCSDForge/episciences/issues/893) Allow users to select and normalize the licence of a paper using SPDX identifiers.
 
 - [#1216](https://github.com/CCSDForge/episciences/pull/1216) Paper illustration (graphical abstract): required text alternative (WCAG 1.1.1) and optional free-text license, stored as `graphical_abstract_alt` and `graphical_abstract_license` next to `graphical_abstract_file` in `PAPERS.DOCUMENT` and exposed in the JSON v2 export; the license is shown as the image caption.
 - [#865](https://github.com/CCSDForge/episciences/issues/865), [#1208](https://github.com/CCSDForge/episciences/pull/1208) Allow administrators and chief editors to change the contributor (owner) of a paper. A modal dialog lets users search for and select a new contributor, with an option to add the former contributor as co-author (checked by default) so they continue receiving notifications. Both the new and former contributors receive email notifications. The action is logged with full details (old/new contributor, co-author status) and displayed in the paper history timeline.
