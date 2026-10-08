@@ -126,6 +126,22 @@ class Episciences_Paper_ConflictsManager
     }
 
     /**
+     * Deletes a conflict only if it belongs to the given paper
+     * @param int $id conflict id
+     * @param int $paperId PAPERID owning the conflict
+     * @return bool
+     */
+    public static function deleteByIdAndPaperId(int $id, int $paperId): bool
+    {
+        if ($id < 1 || $paperId < 1) {
+            return false;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        return ($db->delete(self::TABLE, ['cid = ?' => $id, 'paper_id = ?' => $paperId]) > 0);
+    }
+
+    /**
      * @param string $col
      * @param bool $distinct
      * @param array $option // default: answer = no (without conflicts)
