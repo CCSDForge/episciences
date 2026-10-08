@@ -10,6 +10,7 @@ use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Throwable;
 use Zend_Db_Adapter_Abstract;
 
 /**
@@ -56,9 +57,13 @@ abstract class AbstractCommand extends Command
 
             return $this->runLogic($input, $output);
 
-        } catch (Exception $e) {
-
-            $this->logger->critical($e->getMessage());
+        } catch (Throwable $e) {
+            // The logger is not initialized yet if the bootstrap failed: fall back to the console
+            if (isset($this->logger)) {
+                $this->logger->critical($e->getMessage());
+            } else {
+                $this->io->error($e->getMessage());
+            }
 
             if ($this->io->isVerbose()) {
                 $this->io->text($e->getTraceAsString());
