@@ -426,11 +426,9 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         $validator = new Zend_Validate_EmailAddress();
-        // set from & reply-to
-        $default_from = Episciences_Auth::getFullName() . ' <' . RVCODE . '@' . DOMAIN . '>';
-        $default_replyto = Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>';
-        $from = Ccsd_Tools::ifsetor($post['from'], $default_from);
-        $replyto = Ccsd_Tools::ifsetor($post['replyto'], $default_replyto);
+        // set from & reply-to: always built server-side, client-supplied values are ignored
+        $from = Episciences_Auth::getFullName() . ' <' . RVCODE . '@' . DOMAIN . '>';
+        $replyto = Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>';
 
         // Récupération des destinataires
         $to = $checkedRecipients['recipients']['to'];
