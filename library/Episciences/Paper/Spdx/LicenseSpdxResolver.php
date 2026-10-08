@@ -43,7 +43,8 @@ final class LicenseSpdxResolver
         $spdxCode = self::urlToSpdxCode($input);
 
         if ($spdxCode !== '') {
-            return $spdxCode;
+            // Validate the code extracted from the URL against the SPDX index and return its canonical form
+            return $this->matchSpdx($spdxCode) ?? self::NO_ASSERTION;
         }
 
         $norm = $this->normalize($input);

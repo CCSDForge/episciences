@@ -90,6 +90,8 @@ class LicenseSpdxResolverTest extends TestCase
             // Official SPDX URL
                 ['https://spdx.org/licenses/MIT.html', 'MIT'],
                 ['https://spdx.org/licenses/Apache-2.0.html', 'Apache-2.0'],
+                ['https://spdx.org/licenses/mit.html', 'MIT'], // canonical case
+                ['https://spdx.org/licenses/INVALID-License.html', LicenseSpdxResolver::NO_ASSERTION], // unknown SPDX code
 
             //  Creative Commons
                 ['https://creativecommons.org/licenses/by/4.0/', 'CC-BY-4.0'],
