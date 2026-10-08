@@ -8,6 +8,8 @@ class AdministratemailController extends Zend_Controller_Action
      */
     private $_allowedToEdit;
 
+    private const DELETE_TEMPLATE_CSRF = 'delete_template';
+
     public function init(): void
     {
         $isAllowed = Episciences_Auth::isSecretary() || Episciences_Auth::isWebmaster();
@@ -41,6 +43,7 @@ class AdministratemailController extends Zend_Controller_Action
     {
         $this->view->templates = Episciences_Mail_TemplatesManager::getList([], RVID);
         $this->view->editorsCanEditTmplates = $this->isAllowedToEdit();
+        $this->view->deleteTemplateCsrfToken = Episciences_Csrf_Helper::generateToken(self::DELETE_TEMPLATE_CSRF);
     }
 
     /**
@@ -158,11 +161,21 @@ class AdministratemailController extends Zend_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $id = (int)$request->getQuery('id');
+
+        if (
+            !$request->isPost() ||
+            !Episciences_Csrf_Helper::validateToken(self::DELETE_TEMPLATE_CSRF, (string)$request->getPost(self::DELETE_TEMPLATE_CSRF, ''))
+        ) {
+            $this->_helper->redirector->gotoUrl('/error/deny');
+            return;
+        }
+
+        $id = (int)$request->getPost('id');
 
         $template = new Episciences_Mail_Template();
 
-        if ($template->find($id) && $template->delete()) { // to avoid this type of exception : Syntax error or access violation: error in your SQL : DELETE FROM `MAIL_TEMPLATE` WHERE (ID = )
+        // only a custom template of the current journal can be deleted
+        if ($template->findCustom($id, RVID) && $template->delete()) {
             $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Le template par défaut a été restauré');
         } else {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('La suppression du template personnalisé a échoué');
