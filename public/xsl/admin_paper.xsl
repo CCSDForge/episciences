@@ -312,13 +312,7 @@
                                         select="php:function('Ccsd_Tools::translateLicense', string(episciences/paperLicence))"/>
                             </a>
 
-                            <button class="btn btn-default btn-xs popover-link edit-license" style="margin-left: 5px">
-                                <xsl:attribute name="onclick">
-                                    <xsl:value-of select="concat('getLicensesForm(this, ', episciences/id,')')"/>
-                                </xsl:attribute>
-                                <span class="fa-solid fa-pen-to-square" style="margin-right: 5px"/>
-                                <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Modifier')"/>
-                            </button>
+                            <xsl:call-template name="license-edit-button"/>
                         </div>
 
                     </xsl:when>
@@ -339,6 +333,13 @@
                                 </div>
                             </xsl:if>
                         </xsl:for-each>
+                        <!-- No SPDX licence yet (missing or legacy rights only): the licence must still be editable -->
+                        <div class="small">
+                            <xsl:if test="not(metadata/oai_dc:dc/dc:rights[not(contains(., 'info:eu-repo/semantics/'))])">
+                                <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
+                            </xsl:if>
+                            <xsl:call-template name="license-edit-button"/>
+                        </div>
                     </xsl:otherwise>
                 </xsl:choose>
 
@@ -464,6 +465,16 @@
     </xsl:template>
 
     <!-- Template for processing subjects with language grouping -->
+    <xsl:template name="license-edit-button">
+        <button type="button" class="btn btn-default btn-xs popover-link edit-license" style="margin-left: 5px">
+            <xsl:attribute name="onclick">
+                <xsl:value-of select="concat('getLicensesForm(this, ', episciences/id,')')"/>
+            </xsl:attribute>
+            <span class="fa-solid fa-pen-to-square" style="margin-right: 5px"/>
+            <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Modifier')"/>
+        </button>
+    </xsl:template>
+
     <xsl:template name="process-subjects">
         <!-- Count total subjects -->
         <xsl:variable name="subject_count" select="count(metadata/oai_dc:dc/dc:subject)"/>
