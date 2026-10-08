@@ -1325,7 +1325,7 @@ class PaperController extends PaperDefaultController
                 // update paper status & paper password
 
                 if ($this->dataProcessing($post)['isValid']) {
-                    $paper->setPassword($post['paperPassword']);
+                    $paper->setPassword($post['paperPassword'], true);
                 }
 
                 if ($paper->getStatus() !== $newStatus) {
