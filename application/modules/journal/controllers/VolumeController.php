@@ -48,7 +48,7 @@ class VolumeController extends Zend_Controller_Action
         }
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
 
-            if ($form->isValid($request->getPost())) {
+            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($request->getPost())) {
 
                 $oVolume = new Episciences_Volume();
 
@@ -463,7 +463,7 @@ class VolumeController extends Zend_Controller_Action
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
             $post = $request->getPost();
 
-            if ($form->isValid($post)) {
+            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($post)) {
                 // Backend protection: Restore original titles if volume has published papers
                 if ($hasPublishedPapers) {
                     $originalTitles = $volume->getTitles();
