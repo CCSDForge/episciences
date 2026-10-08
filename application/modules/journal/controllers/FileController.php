@@ -2,6 +2,7 @@
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Episciences\Upload\SafeFileName;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
@@ -61,7 +62,7 @@ class FileController extends DefaultController
 
         // The folder allow-list would be pointless if a segment could climb out of it (e.g. "../reports")
         if (
-            !Episciences_Volume_Metadata::isBareFileName($file) ||
+            !SafeFileName::isBare($file) ||
             (null !== $parentCommentId && !preg_match('/^\d+$/D', (string)$parentCommentId))
         ) {
             $this->getResponse()->setHttpResponseCode(404);

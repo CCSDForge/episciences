@@ -2,6 +2,7 @@
 
 use Episciences\AppRegistry;
 use Episciences\Upload\PublicFileStore;
+use Episciences\Upload\SafeFileName;
 use Episciences\Upload\UploadChecker;
 
 class Episciences_Volume_Metadata
@@ -272,22 +273,8 @@ class Episciences_Volume_Metadata
      */
     public function setFile($file)
     {
-        $this->_file = self::isBareFileName($file) ? $file : null;
+        $this->_file = SafeFileName::isBare($file) ? $file : null;
         return $this;
-    }
-
-    /**
-     * True for a plain file name, i.e. without any directory part.
-     */
-    public static function isBareFileName(mixed $name): bool
-    {
-        return is_string($name)
-            && $name !== ''
-            && $name !== '.'
-            && $name !== '..'
-            && !str_contains($name, '/')
-            && !str_contains($name, '\\')
-            && !str_contains($name, "\0");
     }
 
     public function getFilePath()
