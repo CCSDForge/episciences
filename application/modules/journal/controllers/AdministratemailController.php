@@ -310,28 +310,29 @@ class AdministratemailController extends Zend_Controller_Action
 
         $form = Episciences_Mail_Send::getForm(null, $button_enabled, $to_enabled, $docId);
 
-        // process form (send mail)
-        if (
-            $post &&
-            !array_key_exists('ajax', $post)
-            && (isset($post['submit']) || isset($post['docid'])) // Le changement de langue du site Web entraînera la resoumission du formulaire.
-        ) {
+        $isSendRequest = $post
+            && !array_key_exists('ajax', $post)
+            && (isset($post['submit']) || isset($post['docid'])); // Le changement de langue du site Web entraînera la resoumission du formulaire.
 
-            if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
-                $message = '<p><strong>' . $this->view->translate("Votre message n'a pas pu être envoyé :") . '</strong></p>'
-                    . '<div>' . $this->view->translate('Votre session a expiré, veuillez réessayer.') . '</div>';
+        $isTokenRefused = $isSendRequest && !Episciences_Csrf_Helper::validateRequestToken($request);
 
-                if (isset($post['in_modal'])) {
-                    $this->_helper->layout->disableLayout();
-                    $this->_helper->viewRenderer->setNoRender();
-                    echo $message;
-                    return;
-                }
+        if ($isTokenRefused) {
+            $message = '<p><strong>' . $this->view->translate("Votre message n'a pas pu être envoyé :") . '</strong></p>'
+                . '<div>' . $this->view->translate('Votre session a expiré, veuillez réessayer.') . '</div>';
 
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-                $this->_helper->redirector->gotoUrl('/administratemail/send');
+            if (isset($post['in_modal'])) {
+                // Not a success status: the modal keeps the text typed by the user
+                $this->_helper->layout->disableLayout();
+                $this->_helper->viewRenderer->setNoRender();
+                $this->getResponse()->setHttpResponseCode(403);
+                echo $message;
                 return;
             }
+
+            // Nothing is sent: show the form again with what was typed
+            $form->setDefaults($post);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+        } elseif ($isSendRequest) {
 
             $post['sender'] = Episciences_Auth::getUid();
 
