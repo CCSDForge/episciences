@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
+- Saving the roles of a user only affects the roles the current user is allowed to edit
 [RT#293890]:
 - Sorting by invitation status does not reflect the actual situation:
     A reviewer’s report is categorised as an "Additional reviewer’s report",
