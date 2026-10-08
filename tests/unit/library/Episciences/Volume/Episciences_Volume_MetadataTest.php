@@ -87,6 +87,43 @@ class Episciences_Volume_MetadataTest extends TestCase
         self::assertInstanceOf(Episciences_Volume_Metadata::class, $this->meta->setFile('f.pdf'));
     }
 
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function unsafeFileNamesProvider(): array
+    {
+        return [
+            'parent directory' => ['../../other/file.pdf'],
+            'sub directory' => ['sub/file.pdf'],
+            'absolute path' => ['/etc/passwd'],
+            'backslash' => ['..\\file.pdf'],
+            'null byte' => ["file.pdf\0.png"],
+            'dot' => ['.'],
+            'double dot' => ['..'],
+            'empty' => [''],
+            'not a string' => [['a.pdf']],
+        ];
+    }
+
+    /**
+     * @dataProvider unsafeFileNamesProvider
+     */
+    public function testSetFileDropsNamesThatAreNotBareFileNames(mixed $name): void
+    {
+        $this->meta->setFile($name);
+
+        self::assertNull($this->meta->getFile());
+        self::assertSame(0, $this->meta->hasFile());
+        self::assertNull($this->meta->getFilePath());
+    }
+
+    public function testFileNameFromBrowserOptionsIsDropped(): void
+    {
+        $meta = new Episciences_Volume_Metadata(['vid' => 3, 'file' => '../../1/files/secret.pdf']);
+
+        self::assertNull($meta->getFile());
+    }
+
     // =========================================================================
     // hasFile — returns 1 or 0 (not bool)
     // =========================================================================

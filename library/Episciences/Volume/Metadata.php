@@ -266,10 +266,28 @@ class Episciences_Volume_Metadata
         return $this->_file;
     }
 
+    /**
+     * The name can come back from the browser (hidden form field) and is later joined to the volume directory
+     * (unlink, download): anything that is not a bare file name is dropped.
+     */
     public function setFile($file)
     {
-        $this->_file = $file;
+        $this->_file = self::isBareFileName($file) ? $file : null;
         return $this;
+    }
+
+    /**
+     * True for a plain file name, i.e. without any directory part.
+     */
+    public static function isBareFileName(mixed $name): bool
+    {
+        return is_string($name)
+            && $name !== ''
+            && $name !== '.'
+            && $name !== '..'
+            && !str_contains($name, '/')
+            && !str_contains($name, '\\')
+            && !str_contains($name, "\0");
     }
 
     public function getFilePath()

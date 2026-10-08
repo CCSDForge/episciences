@@ -8,6 +8,8 @@ require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.p
 class FileController extends DefaultController
 {
     /** Content types the browser may display instead of downloading */
+    /** Sub-directories of a document that docfilesAction may serve: comments, copy-editing sources, data descriptor */
+    private const DOCFILES_FOLDERS = ['comments', Episciences_CommentsManager::COPY_EDITING_SOURCES, 'dd'];
     private const INLINE_CONTENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
     public function indexAction(): void
@@ -38,7 +40,14 @@ class FileController extends DefaultController
         $this->_helper->viewRenderer->setNoRender();
         $params = $this->getRequest()->getParams();
 
-        $folder = ($params['folder'] === 'ce') ? Episciences_CommentsManager::COPY_EDITING_SOURCES : $params['folder'];
+        $folder = (($params['folder'] ?? '') === 'ce') ? Episciences_CommentsManager::COPY_EDITING_SOURCES : $params['folder'];
+
+        // Other sub-directories of the document (reports, ratings, tmp...) have their own access rules
+        if (!in_array($folder, self::DOCFILES_FOLDERS, true)) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         $parentCommentId = $params['parentCommentId'] ?? null;
         $docId = (int)$params['docId'];
         $filename = $params['filename'];
