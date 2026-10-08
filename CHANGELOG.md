@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A refused paper resubmitted through the inbox (COAR Notify) keeps the submission date of the refused paper,
   which is shared by all the versions of a paper, instead of getting the current date.
 - The website settings (menu, style, languages), the page content, the mail templates, the mailing form, the rating grids, and the volume and section management actions now check the form token before saving or deleting.
+- The website public resources page now checks the form token before adding or removing a file.
 
 [RT#301096]:
 - An editor (or guest editor) assigned to a paper could not access its previous versions:
