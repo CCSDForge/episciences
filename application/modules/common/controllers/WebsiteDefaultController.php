@@ -219,6 +219,13 @@ class WebsiteDefaultController extends Zend_Controller_Action
             $this->_session->website->load();
         }
 
+        if ($request->isPost() && !$this->_validateCsrf()) {
+            // Nothing is read from the submitted pages, saved or written to the navigation files
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage(Zend_Registry::get('Zend_Translate')->translate('Votre session a expiré, veuillez réessayer.'));
+            $this->redirect('/website/menu');
+            return;
+        }
+
         if ($request->isPost()) {
             $valid = true;
             $pagesDisplay = [];
