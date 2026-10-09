@@ -69,22 +69,43 @@ class ErrorDefaultController extends Zend_Controller_Action
     /**
      * Replace the value of credential-like parameters before they reach the logs.
      *
+     * A parameter is masked when its lowercased name contains one of the sensitive
+     * fragments (e.g. PASSWORD_VERIFY, API_PASSWORD_VERIFY, paperPassword, csrf_token).
+     *
      * @param array $params
      * @return array
      */
     public function redactSensitiveParams(array $params): array
     {
-        $sensitive = ['password', 'passwd', 'pwd', 'previous_password', 'api_password', 'token', 'secret', 'csrf_token'];
+        $sensitive = ['password', 'passwd', 'pwd', 'token', 'secret', 'csrf', 'api_key', 'apikey'];
 
         foreach ($params as $key => $value) {
-            if (is_array($value)) {
-                $params[$key] = $this->redactSensitiveParams($value);
-            } elseif (in_array(strtolower((string)$key), $sensitive, true)) {
+            if (self::isSensitiveKey((string)$key, $sensitive)) {
                 $params[$key] = '***';
+            } elseif (is_array($value)) {
+                $params[$key] = $this->redactSensitiveParams($value);
             }
         }
 
         return $params;
+    }
+
+    /**
+     * @param string $key
+     * @param string[] $fragments
+     * @return bool
+     */
+    private static function isSensitiveKey(string $key, array $fragments): bool
+    {
+        $key = strtolower($key);
+
+        foreach ($fragments as $fragment) {
+            if (str_contains($key, $fragment)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getLog()
