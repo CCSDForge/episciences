@@ -48,7 +48,7 @@ class VolumeController extends Zend_Controller_Action
         }
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
 
-            if ($form->isValid($request->getPost())) {
+            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($request->getPost())) {
 
                 $oVolume = new Episciences_Volume();
 
@@ -107,11 +107,16 @@ class VolumeController extends Zend_Controller_Action
     {
         $request = $this->getRequest();
 
-        $params = $request->getPost('params');
-        $id = (int) $params['id'] ?? $request->getQuery('id');
+        $respond = false;
 
-        // Only volumes of the current journal can be deleted
-        $respond = Episciences_VolumesManager::find($id, RVID) ? Episciences_VolumesManager::delete($id) : false;
+        if ($request->isPost() && Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $params = $request->getPost('params');
+            $id = (int) $params['id'] ?? $request->getQuery('id');
+
+            // Only volumes of the current journal can be deleted
+            $respond = Episciences_VolumesManager::find($id, RVID) ? Episciences_VolumesManager::delete($id) : false;
+        }
+
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
@@ -124,7 +129,7 @@ class VolumeController extends Zend_Controller_Action
     public function sortAction()
     {
         $request = $this->getRequest();
-        if (!$request->isXmlHttpRequest()) {
+        if (!$request->isXmlHttpRequest() || !$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
             return false;
         }
 
@@ -182,7 +187,7 @@ class VolumeController extends Zend_Controller_Action
         $request = $this->getRequest();
         $vid = ($request->getPost('vid')) ? $request->getPost('vid') : $request->getParam('vid');
 
-        if ($request->isPost()) {
+        if ($request->isPost() && Episciences_Csrf_Helper::validateRequestToken($request)) {
 
             // Rédacteurs nouvellement assignés
             $submittedEditors = $request->getPost('editors');
@@ -458,7 +463,7 @@ class VolumeController extends Zend_Controller_Action
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
             $post = $request->getPost();
 
-            if ($form->isValid($post)) {
+            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($post)) {
                 // Backend protection: Restore original titles if volume has published papers
                 if ($hasPublishedPapers) {
                     $originalTitles = $volume->getTitles();

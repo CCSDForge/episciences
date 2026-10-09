@@ -84,6 +84,8 @@ class Episciences_GridsManager
                     'style' => 'width:300px'
                 ]);
 
+                Episciences_Csrf_Helper::addSessionTokenElement($form);
+
                 $form->setActions(true)->createSubmitButton('submit', [
                     'label' => 'Créer la grille',
                     'class' => 'btn btn-primary'
@@ -395,6 +397,8 @@ class Episciences_GridsManager
             [['div' => 'HtmlTag'], ['tag' => 'div', 'class' => 'form-group row']]
         ]);
 
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
+
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Valider',
             'class' => 'btn btn-primary'
@@ -454,6 +458,8 @@ class Episciences_GridsManager
                 'public' => 'Publique',
                 'contributor' => 'Contributeur',
                 'editors' => 'Rédacteurs']]);
+
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
 
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Valider',

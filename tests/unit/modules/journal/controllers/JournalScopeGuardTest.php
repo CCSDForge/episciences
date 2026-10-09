@@ -135,8 +135,19 @@ final class JournalScopeGuardTest extends TestCase
      * @param class-string $class
      * @param array<string, mixed> $post
      */
-    private function dispatchAction(string $class, string $action, array $post): string
+    private function dispatchAction(string $class, string $action, array $post, bool $withToken = true): string
     {
+        // The scope checks come after the form token one: send a valid token
+        \Zend_Session::$_unitTestEnabled = true;
+        $session = new \Zend_Session_Namespace(SESSION_NAMESPACE);
+        $session->csrfToken = 'scope-guard-token';
+        if ($withToken) {
+            $post['csrf_token'] = 'scope-guard-token';
+        }
+
+        // The test request keeps what an earlier one posted
+        $_POST = [];
+
         $request = new Zend_Controller_Request_HttpTestCase();
         $request->setMethod('POST')->setPost($post);
         $response = new Zend_Controller_Response_HttpTestCase();
@@ -218,5 +229,38 @@ final class JournalScopeGuardTest extends TestCase
         foreach ($this->selects as $sql) {
             self::assertMatchesRegularExpression('/\bRVID = ' . RVID . '\b/', $sql);
         }
+    }
+
+    /**
+     * @return array<string, array{class-string, string, array<string, mixed>}>
+     */
+    public static function writeActionsProvider(): array
+    {
+        return [
+            'volume delete' => [\VolumeController::class, 'deleteAction', ['params' => ['id' => '7']]],
+            'section delete' => [\SectionController::class, 'deleteAction', ['ajax' => '1', 'params' => ['id' => '7']]],
+            'volume save editors' => [\VolumeController::class, 'saveeditorsAction', ['vid' => '7', 'editors' => ['1']]],
+            'section save editors' => [\SectionController::class, 'saveeditorsAction', ['sid' => '7', 'editors' => ['1']]],
+        ];
+    }
+
+    /**
+     * Without the form token nothing is looked up, written or deleted.
+     *
+     * @param class-string $class
+     * @param array<string, mixed> $post
+     * @dataProvider writeActionsProvider
+     */
+    public function testWriteActionsRefuseARequestWithoutToken(string $class, string $action, array $post): void
+    {
+        $this->captureSelects('fetchRow', ['VID' => 7, 'SID' => 7, 'RVID' => RVID]);
+        $this->adapter->expects(self::never())->method('delete');
+        $this->adapter->expects(self::never())->method('insert');
+        $this->adapter->expects(self::never())->method('update');
+
+        $output = $this->dispatchAction($class, $action, $post, false);
+
+        self::assertSame('', $output);
+        self::assertSame([], $this->selects);
     }
 }

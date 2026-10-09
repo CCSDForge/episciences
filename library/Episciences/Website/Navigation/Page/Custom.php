@@ -277,6 +277,8 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
 
         $form->getElement('content')->getDecorator('HtmlTag')->setOption('class', 'col-md-12');
 
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
+
         $form->setActions(true)->createSubmitButton('submit');
 
         return $form;

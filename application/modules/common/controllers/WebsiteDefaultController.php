@@ -35,7 +35,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
     {
         $common = new Ccsd_Website_Common(RVID, ['languages' => Episciences_Translation_Plugin::getAvailableLanguages()]);
         $form = $common->getForm();
-        if ($this->getRequest()->isPost() && $form->isValid($this->getRequest()->getPost())) {
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
+        if ($this->getRequest()->isPost() && !$this->_validateCsrf()) {
+            $this->addCsrfError();
+        } elseif ($this->getRequest()->isPost() && $form->isValid($this->getRequest()->getPost())) {
             $common->save($form->getValues());
             unset($this->_session->website);
             Zend_Registry::set('languages', $form->getValue('languages'));
@@ -51,7 +54,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
     public function styleAction()
     {
         $styles = new Episciences_Website_Style();
-        if ($this->getRequest()->isPost() && $styles->getForm()->isValid($this->getRequest()->getParams())) {
+        Episciences_Csrf_Helper::addSessionTokenElement($styles->getForm());
+        if ($this->getRequest()->isPost() && !$this->_validateCsrf()) {
+            $this->addCsrfError();
+        } elseif ($this->getRequest()->isPost() && $styles->getForm()->isValid($this->getRequest()->getParams())) {
             $styles->save($styles->getForm()->getValues());
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
         }
@@ -179,6 +185,14 @@ class WebsiteDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * Flash the message shown when a form is submitted with a missing or wrong token
+     */
+    private function addCsrfError(): void
+    {
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage(Zend_Registry::get('Zend_Translate')->translate('Votre session a expiré, veuillez réessayer.'));
+    }
+
+    /**
      * Valide le jeton CSRF pour les requêtes AJAX et POST
      * @return bool
      */
@@ -219,7 +233,9 @@ class WebsiteDefaultController extends Zend_Controller_Action
             $this->_session->website->load();
         }
 
-        if ($request->isPost()) {
+        if ($request->isPost() && !$this->_validateCsrf()) {
+            $this->addCsrfError();
+        } elseif ($request->isPost()) {
             $valid = true;
             $pagesDisplay = [];
 

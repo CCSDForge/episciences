@@ -990,6 +990,11 @@ function ajaxRequest(url, jData, type = 'POST', dataType = null) {
         data: jData,
     };
 
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) {
+        params.headers = { 'X-CSRF-Token': csrfMeta.content };
+    }
+
     if (dataType) {
         params.dataType = dataType;
     }
