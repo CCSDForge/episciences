@@ -1160,6 +1160,7 @@ return array(
     'copie destinée au relecteur' => "reviewer's copy",
     'copie destinée au auteur' => "author's copy",
     'copie destinée au rédacteur en chef' => "chief editor's copy",
+    'copie destinée au secrétaire de rédaction' => "editorial secretary's copy",
     "Répétition" => "Repetition",
     "Jamais" => "Never",
     "Quotidienne" => "Daily",

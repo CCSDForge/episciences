@@ -71,6 +71,20 @@ class Episciences_Mail_Reminder
     protected $_defaultLanguage = 'en';
 
     /**
+     * Supervisors (chief editors / secretaries) keyed by recipient role,
+     * loaded once per instance instead of once per invitation row
+     * @var array<string, Episciences_User[]>
+     */
+    private array $_supervisorsCache = [];
+
+    /**
+     * Per-paper filtering context (author, co-authors, supervisors without conflict)
+     * keyed by recipient role then docid, shared by all reviewers of the same paper
+     * @var array<string, array<int, array{authorUid: int, coAuthorUids: array, supervisors: Episciences_User[]}>>
+     */
+    private array $_supervisorFilterContextCache = [];
+
+    /**
      * Episciences_Mail_Reminder constructor.
      * @param array|null $options
      * @throws Zend_Exception
@@ -1148,40 +1162,12 @@ class Episciences_Mail_Reminder
                         'deadline' => $data['INVITATION_DATE']
                     ];
                 }
-            } elseif ($this->isSupervisorRecipient()){
-                // Supervisor recipients (chief_editor, secretary)
-                $supervisors = $this->getSupervisors();
-                $isTmpUser = (int)$data['TMP_USER'] === 1;
-                $reviewerUid = $isTmpUser ? null : (int)$data['UID'];
-
-                $filteredSupervisors = $this->filterSupervisorsForPaper(
-                    $supervisors,
-                    $paper,
-                    $review,
-                    $reviewerUid,
-                    $user->getEmail(),
-                    $isTmpUser
-                );
-
-                foreach ($filteredSupervisors as $supervisor) {
-                    $supervisorTags = array_merge($tags, [
-                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($supervisor->getLangueid(), true),
-                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $fullname,
-                        Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $user->getEmail(),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $supervisor->getScreenName(),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $supervisor->getFullName(),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $supervisor->getUsername()
-                    ]);
-
-                    $recipients[] = [
-                        'uid' => $supervisor->getUid(),
-                        'fullname' => $supervisor->getFullName(),
-                        'email' => $supervisor->getEmail(),
-                        'lang' => $supervisor->getLangueid(true),
-                        'tags' => $supervisorTags,
-                        'deadline' => $data['INVITATION_DATE']
-                    ];
-                }
+            } elseif ($this->isSupervisorRecipient()) {
+                // a temporary reviewer has no account UID
+                $reviewerUid = (int)$data['TMP_USER'] === 1 ? null : (int)$data['UID'];
+                array_push($recipients, ...$this->getSupervisorRecipients(
+                    $paper, $reviewerUid, $user->getEmail(), $fullname, $tags, $data['INVITATION_DATE']
+                ));
             } else {
 
                 $tags = array_merge($tags, [
@@ -1318,7 +1304,6 @@ class Episciences_Mail_Reminder
                 }
             }
         } elseif ($this->isSupervisorRecipient()) {
-            // Supervisor recipients (chief_editor, secretary)
             foreach ($tmp as $data) {
                 $paper = Episciences_PapersManager::get($data['DOCID']);
                 if (!$paper || $this->isPaperNotNeedToReminders($paper, $filters)) {
@@ -1328,38 +1313,15 @@ class Episciences_Mail_Reminder
                 $reviewer = new Episciences_User;
                 $reviewer->findWithCAS($data['UID']);
 
-                $supervisors = $this->getSupervisors();
-                $filteredSupervisors = $this->filterSupervisorsForPaper(
-                    $supervisors,
-                    $paper,
-                    $review,
-                    (int)$data['UID'],
-                    $reviewer->getEmail(),
-                    false // not a temp user (accepted invitations only)
-                );
+                $tags = [
+                    Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                    Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
+                ];
 
-                foreach ($filteredSupervisors as $supervisor) {
-                    $tags = [
-                        Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($supervisor->getLangueid(), true),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $supervisor->getUsername(),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $supervisor->getScreenName(),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $supervisor->getFullName(),
-                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getScreenName(),
-                        Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewer->getEmail(),
-                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
-                    ];
-
-                    $recipients[] = [
-                        'uid' => $supervisor->getUid(),
-                        'fullname' => $supervisor->getFullName(),
-                        'email' => $supervisor->getEmail(),
-                        'lang' => $supervisor->getLangueid(true),
-                        'tags' => $tags,
-                        'deadline' => $data['DEADLINE']
-                    ];
-                }
+                array_push($recipients, ...$this->getSupervisorRecipients(
+                    $paper, (int)$data['UID'], $reviewer->getEmail(), $reviewer->getScreenName(), $tags, $data['DEADLINE']
+                ));
             }
         } else {
             foreach ($tmp as $data) {
@@ -1507,7 +1469,6 @@ class Episciences_Mail_Reminder
                 }
             }
         } elseif ($this->isSupervisorRecipient()) {
-            // Supervisor recipients (chief_editor, secretary)
             foreach ($tmp as $data) {
                 $paper = Episciences_PapersManager::get($data['DOCID']);
                 if (!$paper || $this->isPaperNotNeedToReminders($paper, $filters)) {
@@ -1517,38 +1478,15 @@ class Episciences_Mail_Reminder
                 $reviewer = new Episciences_User;
                 $reviewer->findWithCAS($data['UID']);
 
-                $supervisors = $this->getSupervisors();
-                $filteredSupervisors = $this->filterSupervisorsForPaper(
-                    $supervisors,
-                    $paper,
-                    $review,
-                    (int)$data['UID'],
-                    $reviewer->getEmail(),
-                    false //not a temp user (accepted invitations only)
-                );
+                $tags = [
+                    Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                    Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
+                ];
 
-                foreach ($filteredSupervisors as $supervisor) {
-                    $tags = [
-                        Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($supervisor->getLangueid(), true),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $supervisor->getUsername(),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $supervisor->getScreenName(),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $supervisor->getFullName(),
-                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getScreenName(),
-                        Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewer->getEmail(),
-                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
-                    ];
-
-                    $recipients[] = [
-                        'uid' => $supervisor->getUid(),
-                        'fullname' => $supervisor->getFullName(),
-                        'email' => $supervisor->getEmail(),
-                        'lang' => $supervisor->getLangueid(true),
-                        'tags' => $tags,
-                        'deadline' => $data['DEADLINE']
-                    ];
-                }
+                array_push($recipients, ...$this->getSupervisorRecipients(
+                    $paper, (int)$data['UID'], $reviewer->getEmail(), $reviewer->getScreenName(), $tags, $data['DEADLINE']
+                ));
             }
         } else {
             foreach ($tmp as $data) {
@@ -1763,19 +1701,20 @@ class Episciences_Mail_Reminder
     }
 
     /**
+     * Filter supervisors (chief_editor, secretary) - pure logic, no database access.
      *
      * Excludes:
      * - Author of the paper
      * - Co-authors of the paper
      * - The reviewer targeted by the reminder (by UID if not temp, and by email)
-     * - Users without confirmed "no conflict" declaration (if COI enabled)
+     *
+     * Conflicts of interest are handled upstream by Episciences_PapersManager::keepOnlyUsersWithoutConflict().
      *
      * @param array $supervisors Array of [uid => email] pairs
      * @param int $authorUid Author UID
      * @param array $coAuthorUids Array of co-author UIDs
      * @param int|null $reviewerUid Reviewer UID (null if TMP_USER)
      * @param string|null $reviewerEmail Reviewer email for fallback check
-     * @param array|null $uidsWithoutConflict UIDs that declared "no conflict" (null = COI disabled)
      * @return array Filtered supervisors [uid => email]
      */
     public static function filterSupervisors(
@@ -1783,8 +1722,7 @@ class Episciences_Mail_Reminder
         int $authorUid,
         array $coAuthorUids,
         ?int $reviewerUid,
-        ?string $reviewerEmail,
-        ?array $uidsWithoutConflict
+        ?string $reviewerEmail
     ): array {
         if (empty($supervisors)) {
             return [];
@@ -1814,12 +1752,6 @@ class Episciences_Mail_Reminder
                 continue;
             }
 
-            // COI check: only include if confirmed "no conflict"
-            // $uidsWithoutConflict === null means COI is disabled
-            if ($uidsWithoutConflict !== null && !in_array($uid, $uidsWithoutConflict, false)) {
-                continue;
-            }
-
             $filtered[$uid] = $email;
         }
 
@@ -1827,89 +1759,109 @@ class Episciences_Mail_Reminder
     }
 
     /**
-     * Filter supervisors (chief_editor, secretary) for a paper.
-     * Excludes:
-     * - Author of the paper
-     * - Co-authors of the paper
-     * - The reviewer targeted by the reminder (by UID if not temp, and by email)
-     * - Users without confirmed "no conflict" declaration (if COI enabled)
+     * Build the reminder recipients for supervisors (chief_editor, secretary) about a reviewer of a paper.
      *
-     * @param array $supervisors Array of Episciences_User objects keyed by UID
      * @param Episciences_Paper $paper
-     * @param Episciences_Review $review
-     * @param int|null $reviewerUid Reviewer UID (null if TMP_USER)
-     * @param string|null $reviewerEmail Reviewer email for fallback check
-     * @param bool $isTmpUser Whether the reviewer is a temporary user
-     * @return array Filtered supervisors [uid => Episciences_User]
+     * @param int|null $reviewerUid Reviewer UID (null if TMP_USER: temp IDs are unrelated to account UIDs)
+     * @param string|null $reviewerEmail
+     * @param string $reviewerFullName
+     * @param array $tags Tags shared by all supervisors
+     * @param string|null $deadline
+     * @return array
      */
-    private function filterSupervisorsForPaper(
-        array $supervisors,
+    private function getSupervisorRecipients(
         Episciences_Paper $paper,
-        Episciences_Review $review,
         ?int $reviewerUid,
         ?string $reviewerEmail,
-        bool $isTmpUser = false
+        string $reviewerFullName,
+        array $tags,
+        ?string $deadline
     ): array {
+        $context = $this->getSupervisorFilterContext($paper);
+        $supervisors = $context['supervisors'];
+
         if (empty($supervisors)) {
             return [];
         }
 
-        $authorUid = $paper->getUid();
-
-        // Load co-author UIDs once
-        $coAuthorUids = [];
-        try {
-            $coAuthors = $paper->getCoAuthors();
-            $coAuthorUids = array_keys($coAuthors);
-        } catch (Zend_Db_Statement_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
-        // Check if COI is enabled and get UIDs without conflict
-        $uidsWithoutConflict = null; // null means COI disabled
-
-        $review->loadSettings();
-        if ((int)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED) === 1) {
-            // Get UIDs that have declared "no conflict" for this paper
-            $uidsWithoutConflict = Episciences_Paper_ConflictsManager::fetchSelectedCol(
-                'by',
-                [
-                    'answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'],
-                    'paper_id' => $paper->getPaperid()
-                ]
-            );
-        }
-
-        // Build [uid => email] array for static filter
         $supervisorEmails = [];
         foreach ($supervisors as $uid => $supervisor) {
             $supervisorEmails[$uid] = $supervisor->getEmail();
         }
 
-        // When reviewer is a temp user, don't exclude by UID (temp IDs are unrelated to account UIDs)
-        $effectiveReviewerUid = $isTmpUser ? null : $reviewerUid;
-
-        // Use static filter
-        $filteredUids = self::filterSupervisors(
+        $keptUids = array_keys(self::filterSupervisors(
             $supervisorEmails,
-            $authorUid,
-            $coAuthorUids,
-            $effectiveReviewerUid,
-            $reviewerEmail,
-            $uidsWithoutConflict
-        );
+            $context['authorUid'],
+            $context['coAuthorUids'],
+            $reviewerUid,
+            $reviewerEmail
+        ));
 
-        // Return filtered Episciences_User objects
-        $filtered = [];
-        foreach ($filteredUids as $uid => $email) {
-            $filtered[$uid] = $supervisors[$uid];
+        $recipients = [];
+
+        foreach ($keptUids as $uid) {
+            /** @var Episciences_User $supervisor */
+            $supervisor = $supervisors[$uid];
+
+            $recipients[] = [
+                'uid' => $supervisor->getUid(),
+                'fullname' => $supervisor->getFullName(),
+                'email' => $supervisor->getEmail(),
+                'lang' => $supervisor->getLangueid(true),
+                'tags' => array_merge($tags, [
+                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($supervisor->getLangueid(), true),
+                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $supervisor->getUsername(),
+                    Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $supervisor->getScreenName(),
+                    Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $supervisor->getFullName(),
+                    Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewerFullName,
+                    Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewerEmail,
+                ]),
+                'deadline' => $deadline
+            ];
         }
 
-        return $filtered;
+        return $recipients;
     }
 
     /**
-     * Get supervisors (chief_editors or secretaries) based on recipient role.
+     * Author, co-authors and supervisors without conflict of interest for a paper,
+     * loaded once per recipient role and paper (shared by all reviewers of the paper).
+     *
+     * @param Episciences_Paper $paper
+     * @return array{authorUid: int, coAuthorUids: array, supervisors: Episciences_User[]}
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function getSupervisorFilterContext(Episciences_Paper $paper): array
+    {
+        $role = $this->getRecipient();
+        $docId = (int)$paper->getDocid();
+
+        if (isset($this->_supervisorFilterContextCache[$role][$docId])) {
+            return $this->_supervisorFilterContextCache[$role][$docId];
+        }
+
+        $coAuthorUids = [];
+        try {
+            $coAuthorUids = array_keys($paper->getCoAuthors());
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        $supervisors = $this->getSupervisors();
+
+        if (!empty($supervisors)) {
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict((int)$paper->getPaperid(), $supervisors, (int)$this->getRvid());
+        }
+
+        return $this->_supervisorFilterContextCache[$role][$docId] = [
+            'authorUid' => (int)$paper->getUid(),
+            'coAuthorUids' => $coAuthorUids,
+            'supervisors' => $supervisors,
+        ];
+    }
+
+    /**
+     * Get supervisors (chief_editors or secretaries) based on recipient role, loaded once per instance.
      *
      * @return array Array of Episciences_User objects keyed by UID
      * @throws Zend_Db_Statement_Exception
@@ -1918,15 +1870,17 @@ class Episciences_Mail_Reminder
     {
         $recipient = $this->getRecipient();
 
-        if ($recipient === Episciences_Acl::ROLE_CHIEF_EDITOR) {
-            return Episciences_Review::getChiefEditors();
+        if (!isset($this->_supervisorsCache[$recipient])) {
+            if ($recipient === Episciences_Acl::ROLE_CHIEF_EDITOR) {
+                $this->_supervisorsCache[$recipient] = Episciences_Review::getChiefEditors();
+            } elseif ($recipient === Episciences_Acl::ROLE_SECRETARY) {
+                $this->_supervisorsCache[$recipient] = Episciences_Review::getSecretaries();
+            } else {
+                $this->_supervisorsCache[$recipient] = [];
+            }
         }
 
-        if ($recipient === Episciences_Acl::ROLE_SECRETARY) {
-            return Episciences_Review::getSecretaries();
-        }
-
-        return [];
+        return $this->_supervisorsCache[$recipient];
     }
 
     /**
