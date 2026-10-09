@@ -2,7 +2,9 @@
 
 use Episciences\AppRegistry;
 use Episciences\Upload\PublicFileStore;
+use Episciences\Upload\SafeFileName;
 use Episciences\Upload\UploadChecker;
+use Psr\Log\LogLevel;
 
 class Episciences_Volume_Metadata
 {
@@ -266,9 +268,27 @@ class Episciences_Volume_Metadata
         return $this->_file;
     }
 
+    /**
+     * The name can come back from the browser (hidden form field) and is later joined to the volume directory
+     * (unlink, download): anything that is not a bare file name is dropped.
+     */
     public function setFile($file)
     {
-        $this->_file = $file;
+        if (SafeFileName::isBare($file)) {
+            $this->_file = $file;
+            return $this;
+        }
+
+        if ($file !== null && $file !== '') {
+            // The stored reference is lost on the next save: keep a trace to find the orphan file
+            Episciences_View_Helper_Log::log(
+                'Volume metadata file name rejected',
+                LogLevel::WARNING,
+                ['file' => is_scalar($file) ? (string)$file : gettype($file), 'vid' => $this->getVid()]
+            );
+        }
+
+        $this->_file = null;
         return $this;
     }
 
