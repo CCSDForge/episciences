@@ -36,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without any identity, which made the paper page fail.
 - [#1009](https://github.com/CCSDForge/episciences/pull/1009): remove redundant account linking confirmation when emails match
 - Avoid suggesting that an invitation be linked to another account if it has already been accepted, has expired or has been cancelled.
+- Replacing a submitted paper by a new version now relies on the stored paper instead of the values posted by the form.
+  Only the author can replace a paper, the submission date shared by all the versions of a paper is taken from the stored paper (never from the form), and each rejection gives an explicit, translated message.
 
 ### Changed
 - OpenCitations client migrated to API v2 (DOI sent with its `doi:` scheme, throttling and retry on HTTP 429).

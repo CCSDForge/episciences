@@ -2327,7 +2327,7 @@ class Episciences_Submit
 
         // Default submission status and date
         $values['STATUS'] = Episciences_Paper::STATUS_SUBMITTED;
-        $values['SUBMISSION_DATE'] = $data['old_submissiondate'] ?? date("Y-m-d H:i:s");
+        $values['SUBMISSION_DATE'] = date("Y-m-d H:i:s");
 
         // Metadata
         $values['RECORD'] = $data['xml'];
@@ -2363,6 +2363,11 @@ class Episciences_Submit
                 $values['STATUS'] = (int)Ccsd_Tools::ifsetor($oldStatus, $values['STATUS']);
             }
 
+            // The submission date is shared by all the versions of a paper (set from the stored paper)
+            if (!empty($data['old_submissiondate'])) {
+                $values['SUBMISSION_DATE'] = $data['old_submissiondate'];
+            }
+
             $values['PAPERID'] = (int)Ccsd_Tools::ifsetor($data['old_paperid'], 0);
             $values['VID'] = (int)Ccsd_Tools::ifsetor($data['old_paper_vid'], $values['VID']);
             $values['SID'] = (int)Ccsd_Tools::ifsetor($data['old_paper_sid'], $values['SID']);
@@ -2376,6 +2381,63 @@ class Episciences_Submit
         return $values;
     }
 
+
+    public const REPLACEMENT_ERROR_NOT_FOUND = "Le document que vous souhaitez remplacer est introuvable. Merci de relancer la recherche de votre document.";
+    public const REPLACEMENT_ERROR_NOT_OWNER = "Seul l'auteur d'un document peut en déposer une nouvelle version. Si vous êtes l'auteur, merci de vous connecter avec le compte utilisé lors de la première soumission.";
+    public const REPLACEMENT_ERROR_NOT_REPLACEABLE = "Le processus de publication de cet article est en cours, vous ne pourrez donc pas le remplacer.";
+
+    /**
+     * Tell why a stored paper cannot be replaced by a new version.
+     *
+     * @param Episciences_Paper|null $storedPaper the paper to replace, as stored in the database
+     * @param int $uid the user who submits the new version
+     * @param bool $canResubmitRefused whether the journal accepts a new submission of a refused paper
+     * @return string|null a translatable message, or null if the paper can be replaced
+     */
+    public static function getReplacementError(?Episciences_Paper $storedPaper, int $uid, bool $canResubmitRefused): ?string
+    {
+        if ($storedPaper === null) {
+            return self::REPLACEMENT_ERROR_NOT_FOUND;
+        }
+
+        if ((int)$storedPaper->getUid() !== $uid) {
+            return self::REPLACEMENT_ERROR_NOT_OWNER;
+        }
+
+        $isResubmittable = $canResubmitRefused && $storedPaper->getStatus() === Episciences_Paper::STATUS_REFUSED;
+
+        return ($storedPaper->canBeReplaced() || $isResubmittable) ? null : self::REPLACEMENT_ERROR_NOT_REPLACEABLE;
+    }
+
+    /**
+     * Overwrite the "old_*" values of a replacement with those of the stored paper.
+     * These values come from hidden inputs: they must never be trusted as posted.
+     * The submission date is shared by all the versions of a paper: the new version (including the one
+     * that follows a refused paper, which keeps the same paper id) keeps the date of the stored paper.
+     *
+     * @param array<string, mixed> $formValues
+     * @param Episciences_Paper $storedPaper the paper to replace, as stored in the database
+     * @return array<string, mixed>
+     */
+    public static function applyStoredPaperToReplacement(array $formValues, Episciences_Paper $storedPaper): array
+    {
+        unset(
+            $formValues['old_identifier'],
+            $formValues['old_repoid'],
+            $formValues['old_conceptIdentifier'],
+            $formValues['old_submissiondate']
+        );
+
+        $formValues['old_docid'] = (int)$storedPaper->getDocid();
+        $formValues['old_paper_status'] = $storedPaper->getStatus();
+        $formValues['old_version'] = $storedPaper->getVersion();
+        $formValues['old_paperid'] = $storedPaper->getPaperid();
+        $formValues['old_paper_vid'] = $storedPaper->getVid();
+        $formValues['old_paper_sid'] = $storedPaper->getSid();
+        $formValues['old_submissiondate'] = $storedPaper->getSubmission_date();
+
+        return $formValues;
+    }
 
     /**
      * @param array $post

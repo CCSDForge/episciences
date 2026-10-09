@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\AppRegistry;
 use Episciences\Submit\SubmittedRecord;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
@@ -295,30 +296,35 @@ class SubmitController extends DefaultController
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    private function handlePaperReplacement(array &$formValues): array
+    private function handlePaperReplacement(array $formValues): array
     {
+        // The paper to replace is never described by the client: it is loaded from the database
+        $postedDocId = $formValues['old_docid'] ?? null;
+        $oldDocId = is_scalar($postedDocId) && ctype_digit((string)$postedDocId) ? (int)$postedDocId : 0;
+        $storedPaper = Episciences_PapersManager::partialGet($oldDocId, RVID);
 
-        $formValues['old_paper_status'] = (int)$formValues['old_paper_status'];
-        $formValues['old_version'] = (float)$formValues['old_version'];
-        $formValues['old_repoid'] = (int)$formValues['old_repoid'];
-        $formValues['old_docid'] = (int)$formValues['old_docid'];
-
-        $selfPaper = new Episciences_Paper([
-            'docid' => $formValues['old_docid'],
-            'identifier' => $formValues['old_identifier'] ?? '',
-            'version' => $formValues['old_version'],
-            'repoId' => $formValues['old_repoid'],
-            'status' => $formValues['old_paper_status'],
-            'concept_identifier' => $formValues['old_conceptIdentifier'] ?? null
-        ]);
-
-        unset(
-            $formValues['old_identifier'],
-            $formValues['old_repoid'],
-            $formValues['old_conceptIdentifier']
+        $review = Episciences_ReviewsManager::find(RVID);
+        $error = Episciences_Submit::getReplacementError(
+            $storedPaper,
+            (int)Episciences_Auth::getUid(),
+            $review instanceof Episciences_Review
+                && (bool)$review->getSetting(Episciences_Review::SETTING_CAN_RESUBMIT_REFUSED_PAPER)
         );
 
-        $result = $selfPaper->updatePaper($formValues);
+        if ($error !== null) {
+            AppRegistry::getMonoLogger()?->warning('Paper replacement rejected', [
+                'old_docid' => $formValues['old_docid'] ?? null,
+                'uid' => Episciences_Auth::getUid(),
+                'reason' => $error,
+            ]);
+
+            $result = ['code' => 0, 'message' => $this->view->translate($error)];
+            return [$result, '<strong>' . $result['message'] . '</strong>'];
+        }
+
+        $formValues = Episciences_Submit::applyStoredPaperToReplacement($formValues, $storedPaper);
+
+        $result = $storedPaper->updatePaper($formValues);
         $message = '<strong>' . $result['message'] . '</strong>';
 
         return [$result, $message];
