@@ -108,8 +108,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
     private function resolveLicenses(array $options = []): int
     {
-        $tableName = T_PAPER_LICENSE_CODE;
-        $sqlDump = '';
+        $codesByDocId = [];
         $isVerbose = $options['verbose'];
         $isDryRun = $options['dry-run'];
 
@@ -137,8 +136,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
                 if ($isResolved) {
                     $resolvedLicences[$resolved][] = $docId;
-                    $sqlDump .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$resolved') ON DUPLICATE KEY UPDATE `code`= '$resolved';";
-                    $sqlDump .= PHP_EOL;
+                    $codesByDocId[$docId] = $resolved;
                 } else {
                     $noAssertion[$url][] = $docId;
                 }
@@ -159,12 +157,12 @@ class UpdateLicensesCommand extends AbstractCommand
             $this->io->info('The relevant documents:');
             $this->io->info('Building query: ' . $query->__toString());
 
-            if ($sqlDump === '') {
-                $this->io->info('The SQL script for normalization is empty: there is no match with the SPDX standard.');
+            if (empty($codesByDocId)) {
+                $this->io->info('Nothing to normalize: there is no match with the SPDX standard.');
             }
         }
 
-        $res = $this->applyTransaction($isDryRun, $sqlDump);
+        $res = $this->applyTransaction($isDryRun, $codesByDocId);
 
         if ($isProgressBarStarted) {
             $this->io->progressFinish();
@@ -349,8 +347,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
     private function updateLicences(array $options = []): int
     {
-        $tableName = T_PAPER_LICENSE_CODE;
-        $sqlDump = '';
+        $codesByDocId = [];
         $isVerbose = $options['verbose'];
         $isDryRun = $options['dry-run'];
         $rvCode = $options['rvcode'];
@@ -394,13 +391,12 @@ class UpdateLicensesCommand extends AbstractCommand
         if ($isProgressBarStarted) {
             $this->io->progressStart($count);
             foreach ($docIds as $docId) {
-                $sqlDump .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$newLicense') ON DUPLICATE KEY UPDATE `code`= '$newLicense';";
-                $sqlDump .= PHP_EOL;
+                $codesByDocId[$docId] = $newLicense;
                 $this->io->progressAdvance();
             }
         }
 
-        $res = $this->applyTransaction($isDryRun, $sqlDump);
+        $res = $this->applyTransaction($isDryRun, $codesByDocId);
 
         if ($isProgressBarStarted) {
             $this->io->progressFinish();
@@ -427,21 +423,41 @@ class UpdateLicensesCommand extends AbstractCommand
     }
 
 
-    private function applyTransaction(bool $isDryRun = false, string $sql = ''): ?int
+    /**
+     * Upsert the SPDX codes in a single transaction, with one prepared statement executed per document
+     * @param array $codesByDocId [docid => SPDX code]
+     */
+    private function applyTransaction(bool $isDryRun = false, array $codesByDocId = []): ?int
     {
 
-        if ($isDryRun || $sql === '') {
+        if ($isDryRun || empty($codesByDocId)) {
             return Command::SUCCESS;
         }
 
+        $tableName = T_PAPER_LICENSE_CODE;
+
         try {
             $this->db->beginTransaction();
-            $this->db->query($sql);
+            $statement = $this->db->prepare(
+                    "INSERT INTO `$tableName` (`docid`, `code`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `code` = ?"
+            );
+
+            foreach ($codesByDocId as $docId => $code) {
+                $statement->execute([(int)$docId, $code, $code]);
+            }
+
             $this->db->commit();
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $message = 'Transaction failed: ' . $e->getMessage();
-            $this->db->rollBack();
+
+            // A rollback failure must not hide the original error
+            try {
+                $this->db->rollBack();
+            } catch (\Exception $rollBackException) {
+                $message .= ' (rollback failed: ' . $rollBackException->getMessage() . ')';
+            }
+
             $this->logger->error($message);
             $this->io->error($message);
             return Command::FAILURE;

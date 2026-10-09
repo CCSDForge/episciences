@@ -1395,10 +1395,15 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
             'submit',
             function () {
                 let $target = $('#' + targetToRefreshId);
+                // CSRF token expected by the post action
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = csrfMeta ? csrfMeta.content : '';
                 // Traitement AJAX du formulaire
                 let sRequest = ajaxRequest(
                     postAction,
-                    $(this).serialize() + '&docid=' + docId,
+                    new URLSearchParams(new FormData(this)).toString() +
+                        '&docid=' + docId +
+                        '&csrf_token=' + encodeURIComponent(csrfToken),
                     'POST',
                     'json'
                 );
@@ -1438,11 +1443,11 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
                                         }
                                     }
 
-                                    // Update the paper-license-link block
+                                    // Replace the whole licence block, so that no stale rights entry remains
                                     if (typeof parsed.linkHtml === 'string') {
-                                        const $linkBlock = $('#paper-license-link').closest('.small');
-                                        if ($linkBlock.length) {
-                                            $linkBlock.replaceWith(parsed.linkHtml);
+                                        const licenseBlock = document.getElementById('paper-license-block');
+                                        if (licenseBlock) {
+                                            licenseBlock.innerHTML = parsed.linkHtml;
                                         } else {
                                             location.reload();
                                         }
@@ -1468,6 +1473,15 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
                         }
 
                     }
+                });
+                // Rejected requests (e.g. 403: role or CSRF token) return a JSON error
+                sRequest.fail(function (xhr) {
+                    $(button).popover('destroy');
+                    const error =
+                        (xhr.responseJSON && xhr.responseJSON.error) ||
+                        'Une erreur est survenue, veuillez réessayer.';
+                    bootbox.setDefaults({ locale: locale });
+                    bootbox.alert(translate(error));
                 });
                 return false;
             }

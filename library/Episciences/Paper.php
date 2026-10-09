@@ -984,9 +984,9 @@ class Episciences_Paper
      * @return $this
      * @throws Exception
      */
-    public function setXslt($xml, string $theme = 'full_paper'): self
+    public function setXslt($xml, string $theme = 'full_paper', array $params = []): self
     {
-        $this->_xslt = Ccsd_Tools::xslt($xml, APPLICATION_PUBLIC_PATH . '/xsl/' . $theme . '.xsl');
+        $this->_xslt = Ccsd_Tools::xslt($xml, APPLICATION_PUBLIC_PATH . '/xsl/' . $theme . '.xsl', $params);
         return $this;
     }
 

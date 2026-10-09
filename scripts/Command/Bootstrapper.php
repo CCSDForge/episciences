@@ -5,7 +5,6 @@ namespace scripts\Command;
 use Episciences_Paper_MetaDataSourcesManager;
 use Exception;
 use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\NullHandler;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -28,17 +27,17 @@ class Bootstrapper
     private ?Zend_Db_Adapter_Abstract $db;
     private LoggerInterface $logger;
     private string $logFile;
-    private string $env;
+    private ?string $env;
 
     private int $verbosityLevel;
 
     /**
-     * @param string $env
+     * @param string|null $env application.ini section; resolved from the environment when null
      * @throws Zend_Application_Exception
      * @throws Zend_Db_Exception
      */
 
-    public function __construct(string $env = 'production')
+    public function __construct(?string $env = null)
     {
         $this->env = $env;
         $this->bootstrap();
@@ -69,6 +68,9 @@ class Bootstrapper
 
         require_once __DIR__ . '/../../public/const.php';
         require_once __DIR__ . '/../../public/bdd_const.php';
+
+        // const.php loads the .env files but does not define APPLICATION_ENV for CLI requests
+        $this->env ??= self::resolveEnvironment();
 
         defineProtocol();
         defineSimpleConstants();
@@ -127,20 +129,15 @@ class Bootstrapper
                 true,
                 0664
         );
+        $handler->setFormatter(new LineFormatter(null, null, false, true));
+        $logger->pushHandler($handler);
 
         // Console Handler (Conditional based on verbosity level)
-        // If --quiet (-q) is passed, OutputInterface::VERBOSITY_QUIET is active
-        // Do NOT add a console handler, or use NullHandler.
+        // If --quiet (-q) is passed, OutputInterface::VERBOSITY_QUIET is active:
+        // no console handler is added, the logs only go to the file handler above.
+        // Do NOT add a NullHandler here: it stops the propagation and the file handler would receive nothing.
 
-        if ($io?->isQuiet()) {
-            // Quiet mode: A NullHandler is added to consume the logs without displaying anything.
-            // DEBUG level to ensure that even critical errors are silently “swallowed.”
-            // Note: If you want to display critical errors even in quiet mode, use StreamHandler(‘php://stderr’, Logger::CRITICAL) instead.
-            $nullHandler = new NullHandler(Logger::DEBUG);
-            $logger->pushHandler($nullHandler);
-            // CRITICAL errors are still displayed in the console even in quiet mode:            //$criticalHandler = new StreamHandler('php://stderr', Logger::CRITICAL);
-            //$logger->pushHandler($criticalHandler);
-        } else {
+        if (!$io?->isQuiet()) {
             // Normal or Verbose Mode
             // Setting the console log level
             $logLevel = Logger::INFO; // Par défaut
@@ -151,9 +148,6 @@ class Bootstrapper
                 $logLevel = Logger::DEBUG;
             }
 
-            $formatter = new LineFormatter(null, null, false, true);
-            $handler->setFormatter($formatter);
-            $logger->pushHandler($handler);
             $logger->pushHandler(new StreamHandler('php://stdout', $logLevel));
         }
 
@@ -178,6 +172,28 @@ class Bootstrapper
     public function getEnvironment(): string
     {
         return $this->env;
+    }
+
+    /**
+     * Resolve the CLI environment: APPLICATION_ENV (constant or variable), then APP_ENV (.env files or process environment), then production
+     */
+    private static function resolveEnvironment(): string
+    {
+        // $_ENV is not guaranteed to contain the process environment (variables_order), hence the getenv() fallbacks
+        $candidates = [
+                defined('APPLICATION_ENV') ? (string)APPLICATION_ENV : '',
+                (string)getenv('APPLICATION_ENV'),
+                (string)($_ENV['APP_ENV'] ?? ''),
+                (string)getenv('APP_ENV'),
+        ];
+
+        foreach ($candidates as $env) {
+            if ($env !== '') {
+                return $env;
+            }
+        }
+
+        return 'production';
     }
 
 }

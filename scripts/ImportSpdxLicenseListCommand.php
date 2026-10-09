@@ -30,6 +30,10 @@ class ImportSpdxLicenseListCommand extends AbstractCommand
 
     private const TABLE_NAME = 'license_spdx';
 
+    // Seconds: an unresponsive SPDX endpoint must make the command fail instead of hanging
+    private const HTTP_CONNECT_TIMEOUT = 10;
+    private const HTTP_TIMEOUT = 60;
+
     private const RECOMMENDED_REGEX = '#^CC-BY(?:-NC)?(?:-(?:ND|SA))?-4\.0$#i';
 
     protected function configure(): void
@@ -67,7 +71,16 @@ class ImportSpdxLicenseListCommand extends AbstractCommand
 
         if ($isDryRun) {
             $filePath = sprintf('%s/license_list_dump-%s.sql', rtrim($outputDir, '/'), date('Y-m-d-H-i-s'));
-            file_put_contents($filePath, $this->buildSqlDump($upserts, $count));
+            $sqlDump = $this->buildSqlDump($upserts, $count);
+            $written = @file_put_contents($filePath, $sqlDump);
+
+            if ($written !== strlen($sqlDump)) {
+                $message = sprintf('Dry-run: unable to write the SQL dump to %s', $filePath);
+                $this->logger->critical($message);
+                $io->error($message);
+                return Command::FAILURE;
+            }
+
             $io->success(sprintf('Dry-run: SQL dump written to %s', $filePath));
             $io->writeln(sprintf('Total licenses found (SPDX base): %d', $count));
             $io->writeln(sprintf('Total licenses processed: %d', $count));
@@ -108,7 +121,10 @@ class ImportSpdxLicenseListCommand extends AbstractCommand
      */
     private function getLicenses(string $url): string
     {
-        $client = new Client();
+        $client = new Client([
+                'connect_timeout' => self::HTTP_CONNECT_TIMEOUT,
+                'timeout' => self::HTTP_TIMEOUT,
+        ]);
         $response = $client->get($url);
         return $response->getBody()->getContents();
     }

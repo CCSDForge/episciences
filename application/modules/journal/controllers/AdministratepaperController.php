@@ -678,7 +678,8 @@ class AdministratepaperController extends PaperDefaultController
             $this->checkPermissions($review, $paper);
         }
 
-        $paper->setXslt($paper->getXml(), 'admin_paper');
+        // Only secretaries can save a licence (see savespdxlicenseAction)
+        $paper->setXslt($paper->getXml(), 'admin_paper', ['canEditLicense' => Episciences_Auth::isSecretary() ? '1' : '0']);
 
         // load all volumes
         $volumes = $review->getVolumes();
@@ -4677,6 +4678,18 @@ class AdministratepaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
+        // Check the request, the role and the CSRF token before loading anything
+        if (
+                !$request->isPost() ||
+                !$request->isXmlHttpRequest() ||
+                !Episciences_Auth::isSecretary() ||
+                !Episciences_Csrf_Helper::validateRequestToken($request)
+        ) {
+            $this->getResponse()->setHttpResponseCode(403);
+            $this->sendJsonError("Échec de l'enregistrement de la licence : action non autorisée.");
+            return;
+        }
+
         $docId = ($request->getPost('docid')) ?: $request->getParam('docid');
 
         $paper = Episciences_PapersManager::get($docId);
@@ -4686,85 +4699,75 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
-        if ($request->isPost() && $request->isXmlHttpRequest()) {
+        // spdx license code
+        $currentSpdxCode = $request->getPost('license');
 
-
-            // spdx license code
-            $currentSpdxCode = $request->getPost('license');
-
-            if ($currentSpdxCode === null || trim((string)$currentSpdxCode) === '') {
-                $this->sendJsonError("Échec de l'enregistrement de la licence : aucun code de licence fourni.");
-                return;
-            }
-
-            $oldLicense = LicenseCodeManager::getCode($paper->getDocid());
-
-            // If the license to save is the same as the current one, warn the user
-            if ($oldLicense === $currentSpdxCode && Episciences_Auth::isSecretary()) {
-                echo json_encode(['warning' => 'La licence actuelle est déjà définie.'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                return;
-            }
-
-            if (
-                    (!$oldLicense || $oldLicense !== $currentSpdxCode) &&
-                    Episciences_Auth::isSecretary()
-            ) {
-
-                $isCurrentSpdxCodeValid = (new LicenseSpdxResolver())->isValid($currentSpdxCode);
-
-                if (!$isCurrentSpdxCodeValid) {
-                    $this->sendJsonError("Échec de l'enregistrement de la licence : code SPDX invalide.");
-                    return;
-                }
-
-                // Old license retrieved from the repository or via an enrichment script
-                $paperLicenceObject = Episciences_Paper_LicenceManager::getLicenceObjectByDocId($paper->getDocid());
-
-                if ($paperLicenceObject) {
-
-                    if (!$oldLicense) {
-                        $oldLicense = $paperLicenceObject->getLicence();
-                    }
-
-                    $paperLicenceObject->setDocid($paper->getDocid());
-                    $paperLicenceObject->setUid(Episciences_Auth::getUid());
-                    $paperLicenceObject->save();
-                }
-
-                $spdxLicense = new LicenseCode([
-                        'code' => $currentSpdxCode,
-                        'docid' => $docId
-                ]);
-
-                $spdxLicense->save();
-
-                try {
-                    $paper->save();
-                } catch (InvalidArgumentExceptionAlias|Zend_Db_Adapter_Exception  $e) {
-                    Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
-                }
-
-                $newLicense = $paper->getLicence();
-
-                $license = [
-                        'href' => $paper->getLicence(),
-                        'name' => $spdxLicense->getName(),
-                        'html' => $this->view->partial('paper/info-license-box.phtml', ['paper' => $paper]),
-                        'linkHtml' => $this->view->partial('paper/license-link.phtml', ['paper' => $paper])
-                ];
-
-                $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'previousLicense' => $oldLicense, 'newLicense' => $newLicense];
-
-                try {
-                    echo json_encode($license, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                    $paper->log(Episciences_Paper_Logger::CODE_LICENSE_UPDATED, Episciences_Auth::getUid(), $details);
-                } catch (JsonException|Zend_Db_Adapter_Exception $e) {
-                    trigger_error($e->getMessage());
-                    $this->sendJsonError("Échec de l'enregistrement de la licence.");
-                }
-            }
+        // Reject missing and non-scalar values (e.g. license[]=MIT) before using the code as a string
+        if (!is_string($currentSpdxCode) || trim($currentSpdxCode) === '') {
+            $this->sendJsonError("Échec de l'enregistrement de la licence : aucun code de licence fourni.");
+            return;
         }
 
+        $oldLicense = LicenseCodeManager::getCode($paper->getDocid());
+
+        // If the license to save is the same as the current one, warn the user
+        if ($oldLicense === $currentSpdxCode) {
+            echo json_encode(['warning' => 'La licence actuelle est déjà définie.'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return;
+        }
+
+        $isCurrentSpdxCodeValid = (new LicenseSpdxResolver())->isValid($currentSpdxCode);
+
+        if (!$isCurrentSpdxCodeValid) {
+            $this->sendJsonError("Échec de l'enregistrement de la licence : code SPDX invalide.");
+            return;
+        }
+
+        // Old license retrieved from the repository or via an enrichment script
+        $paperLicenceObject = Episciences_Paper_LicenceManager::getLicenceObjectByDocId($paper->getDocid());
+
+        if ($paperLicenceObject) {
+
+            if (!$oldLicense) {
+                $oldLicense = $paperLicenceObject->getLicence();
+            }
+
+            $paperLicenceObject->setDocid($paper->getDocid());
+            $paperLicenceObject->setUid(Episciences_Auth::getUid());
+            $paperLicenceObject->save();
+        }
+
+        $spdxLicense = new LicenseCode([
+                'code' => $currentSpdxCode,
+                'docid' => $docId
+        ]);
+
+        $spdxLicense->save();
+
+        try {
+            $paper->save();
+        } catch (InvalidArgumentExceptionAlias|Zend_Db_Adapter_Exception  $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+        }
+
+        $newLicense = $paper->getLicence();
+
+        $license = [
+                'href' => $paper->getLicence(),
+                'name' => $spdxLicense->getName(),
+                'html' => $this->view->partial('paper/info-license-box.phtml', ['paper' => $paper]),
+                'linkHtml' => $this->view->partial('paper/license-link.phtml', ['paper' => $paper])
+        ];
+
+        $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'previousLicense' => $oldLicense, 'newLicense' => $newLicense];
+
+        try {
+            echo json_encode($license, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $paper->log(Episciences_Paper_Logger::CODE_LICENSE_UPDATED, Episciences_Auth::getUid(), $details);
+        } catch (JsonException|Zend_Db_Adapter_Exception $e) {
+            trigger_error($e->getMessage());
+            $this->sendJsonError("Échec de l'enregistrement de la licence.");
+        }
     }
 
     /**

@@ -10,6 +10,7 @@ use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Throwable;
 use Zend_Db_Adapter_Abstract;
 
 /**
@@ -26,13 +27,6 @@ abstract class AbstractCommand extends Command
     protected string $logFile;
     protected string $env;
 
-    public function __construct()
-    {
-        $this->bootstrapper = new Bootstrapper();
-        // The name is defined in configure(), so we pass null here or use getName()
-        parent::__construct();
-    }
-
     /**
      * Context initialization (called automatically before "execute")
      * Configure the logger based on the console's verbosity level
@@ -43,6 +37,8 @@ abstract class AbstractCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
         $commandName = $this->getName();
         $this->toSafeName($commandName);
+        // Bootstrap lazily: registering the command (list, help, other commands) must not need the application or the database
+        $this->bootstrapper = new Bootstrapper();
         $this->bootstrapper->initialize($input, $output, $commandName);
         $this->logger = $this->bootstrapper->getLogger();
         $this->db = $this->bootstrapper->getDb();
@@ -61,9 +57,13 @@ abstract class AbstractCommand extends Command
 
             return $this->runLogic($input, $output);
 
-        } catch (Exception $e) {
-
-            $this->logger->critical($e->getMessage());
+        } catch (Throwable $e) {
+            // The logger is not initialized yet if the bootstrap failed: fall back to the console
+            if (isset($this->logger)) {
+                $this->logger->critical($e->getMessage());
+            } else {
+                $this->io->error($e->getMessage());
+            }
 
             if ($this->io->isVerbose()) {
                 $this->io->text($e->getTraceAsString());
