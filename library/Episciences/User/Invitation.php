@@ -110,7 +110,7 @@ class Episciences_User_Invitation
         $delay = DeadlineUnit::parseStoredInterval($storedDelay);
 
         if ($delay === null) {
-            if (!empty($storedDelay)) {
+            if (!empty($storedDelay) || (int)$storedDelay === 0) {
                 trigger_error(
                     sprintf('Invalid invitation_deadline setting "%s" for review #%s: falling back to "%s"', $storedDelay, $rvId, Episciences_Review::DEFAULT_INVITATION_DEADLINE),
                     E_USER_WARNING
