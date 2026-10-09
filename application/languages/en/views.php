@@ -2633,4 +2633,22 @@ return array(
     'New contributor not found' => 'New contributor not found',
     'The new contributor is assigned to this paper (editor/reviewer/copy editor)' => 'The new contributor is assigned to this paper (editor/reviewer/copy editor)',
     'Failed to update contributor' => 'Failed to update contributor',
+
+    // Switch user & Account protection
+    "Pour des raisons de sécurité et de traçabilité, cette session de changement d'identité est enregistrée (votre compte, le compte cible, la revue, votre adresse IP, votre navigateur et l'horodatage). Conformément aux règles de sécurité, vous ne pouvez pas modifier le compte de cet utilisateur." => "For security and accountability purposes, this impersonation session is logged (your account, target account, journal, IP address, user agent, timestamp). According to security policy, modifying this user's account is strictly prohibited.",
+    "Vous ne pouvez pas modifier le compte d'un utilisateur lorsque vous utilisez la fonctionnalité de changement d'identité." => "You cannot modify a user's account while impersonating another user.",
+    "Vous n'êtes pas autorisé à modifier le compte d'un autre utilisateur." => "You are not authorized to modify another user's account.",
+    "Vous ne pouvez pas modifier l'adresse email d'un utilisateur lorsque vous utilisez la fonctionnalité de changement d'identité." => "You cannot change a user's email address while impersonating another user.",
+    "Vous n'êtes pas autorisé à modifier l'adresse email d'un autre utilisateur." => "You are not authorized to change another user's email address.",
+    "Modification de compte interdite sous switch-user." => "Account modification is forbidden while impersonating another user.",
+    "Modifier mon compte." => "Edit my account.",
+    "Session de changement d'identité active :" => "Impersonation session active:",
+    "Vous naviguez en tant que %s (votre compte : %s)." => "You are browsing as %s (your account: %s).",
+    "Reprendre mon compte" => "Switch back to my account",
+    "Changement d'identité actif" => "Impersonation active",
+    "Compte d'origine :" => "Original account:",
+    "Modifications désactivées" => "Modifications disabled",
+    "Session sous switch-user" => "Session under switch-user",
+    "Switch-User" => "Switch-User",
+    "Vous avez repris votre compte principal (%s)." => "You have switched back to your primary account (%s).",
 );

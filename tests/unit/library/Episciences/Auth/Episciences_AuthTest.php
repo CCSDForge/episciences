@@ -611,4 +611,31 @@ class Episciences_AuthTest extends TestCase
 
         self::assertFalse(isset($session->currentAttachmentsPath));
     }
+
+    // ==================== isImpersonating ====================
+
+    public function testIsImpersonatingReturnsFalseWhenNotLogged(): void
+    {
+        self::assertFalse(Episciences_Auth::isImpersonating());
+    }
+
+    public function testIsImpersonatingReturnsFalseWhenLoggedAndNotImpersonating(): void
+    {
+        $user = $this->createMockUser(42, [Episciences_Acl::ROLE_MEMBER]);
+        $this->loginUser($user);
+
+        self::assertFalse(Episciences_Auth::isImpersonating());
+    }
+
+    public function testIsImpersonatingReturnsTrueWhenImpersonating(): void
+    {
+        $admin = $this->createMockUser(99, [Episciences_Acl::ROLE_ADMIN]);
+        $target = $this->createMockUser(42, [Episciences_Acl::ROLE_AUTHOR]);
+
+        $this->loginUser($admin);
+        Episciences_Auth::saveRealIdentity();
+        $this->loginUser($target);
+
+        self::assertTrue(Episciences_Auth::isImpersonating());
+    }
 }

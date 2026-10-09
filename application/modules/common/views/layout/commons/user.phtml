@@ -1,12 +1,35 @@
 <ul class="nav navbar-nav navbar-ri">
     <li class="dropdown">
-        <a href="#" class="dropdown-toggle" data-toggle="dropdown"><img class="user-photo-thumb"
-                                                                        src="/user/photo/size/thumb?v=<?= Episciences_Auth::getPhotoVersion() ?>"
-                                                                        alt="<?= $this->translate('Ma photo') ?>"/>
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            <?php if (Episciences_Auth::isImpersonating()): ?>
+                <span class="badge" style="background-color: #ffc107; color: #212529; font-weight: bold; margin-right: 4px;" title="<?= $this->translate("Changement d'identité actif") ?>">
+                    <i class="fas fa-user-secret" style="color: #212529;"></i> SU
+                </span>
+            <?php endif; ?>
+            <img class="user-photo-thumb"
+                 src="/user/photo/size/thumb?v=<?= Episciences_Auth::getPhotoVersion() ?>"
+                 alt="<?= $this->translate('Ma photo') ?>"/>
             &nbsp;<?= $this->escape(Episciences_Auth::getScreenName()) ?>
             <b class="caret"></b>
         </a>
         <ul class="dropdown-menu pull-right">
+            <?php if (Episciences_Auth::isImpersonating()): ?>
+                <?php
+                $origUser = Episciences_Auth::getOriginalIdentity();
+                $origScreenName = $origUser ? $origUser->getScreenName() : '';
+                ?>
+                <li style="padding: 6px 12px; margin-bottom: 6px; background-color: #fff3cd; border-bottom: 1px solid #ffeeba; color: #856404; font-size: 12px;">
+                    <div style="font-weight: bold;">
+                        <i class="fas fa-user-secret"></i> <?= $this->translate("Changement d'identité actif") ?>
+                    </div>
+                    <div style="margin-top: 2px;">
+                        <?= $this->translate("Compte d'origine :") ?> <strong><?= $this->escape($origScreenName) ?></strong>
+                    </div>
+                    <div class="text-muted" style="font-size: 11px; margin-top: 2px;">
+                        <i class="fas fa-info-circle"></i> <?= $this->translate("Modifications désactivées") ?>
+                    </div>
+                </li>
+            <?php endif; ?>
             <li style="padding:0 10px;">
                 <table>
                     <tr>
@@ -25,19 +48,28 @@
                             <br>
                             <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => Episciences_Auth::getUser()->getWebSites(), 'socialMedias' => (array)Episciences_Auth::getUser()->getSocialMedias(), 'height' => 16]) ?>
                             <br>
+                            <?php if (!Episciences_Auth::isImpersonating()): ?>
                             <a href="/user/edit"
                                class="btn btn-primary btn-xs"><?= $this->translate("Modifier mon profil") ?></a>
                             <a href="/user/changepassword"
                                class="btn btn-primary btn-xs"><?= $this->translate("Modifier mon mot de passe") ?></a>
                             <a href="/user/reset_api_password" style="margin-top: 5px;"
                                class="btn btn-default btn-xs"><?= $this->translate("Réinitialiser mon mot de passe API") ?></a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <tr>
                         <td colspan="2">
                             <span class="nav-header"><?= $this->translate("rôles") ?></span>
                             <?php if (is_array(Episciences_Auth::getRoles()) && count(Episciences_Auth::getRoles())) : ?>
-                                <div><?= $this->partial('user/roles_only_tags.phtml', ['roles' => Episciences_Auth::getRoles()]) ?></div>
+                                <div>
+                                    <?= $this->partial('user/roles_only_tags.phtml', ['roles' => Episciences_Auth::getRoles()]) ?>
+                                    <?php if (Episciences_Auth::isImpersonating()): ?>
+                                        <span class="label" style="background-color: #ffc107; color: #212529; font-weight: bold;" title="<?= $this->translate("Session sous switch-user") ?>">
+                                            <i class="fas fa-user-secret" style="color: #212529;"></i> <?= $this->translate("Switch-User") ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -45,6 +77,11 @@
             </li>
             <li class="divider"></li>
             <li style="padding:0 10px 10px; text-align:center;">
+                <?php if (Episciences_Auth::isImpersonating()): ?>
+                    <a href="/user/unsu" class="btn btn-warning btn-xs" style="margin-bottom: 6px; font-weight: bold; width: 100%;">
+                        <i class="fas fa-arrow-left"></i>&nbsp;<?= $this->translate("Reprendre mon compte") ?>
+                    </a>
+                <?php endif; ?>
                 <span><a href="/user/logout" class="btn btn-default btn-xs"><i
                                 class="fas fa-sign-out-alt"></i>&nbsp;<?= $this->translate("Déconnexion") ?></a></span>
             </li>

@@ -123,6 +123,13 @@ final class CommonModuleAclCoverageTest extends TestCase
         self::assertNotContains('guest', $roles, "'$resource' must not be declared for guest");
     }
 
+    public function testUserUnsuIsDeclaredUnderMember(): void
+    {
+        $roles = $this->rolesFor('user-unsu');
+        self::assertContains('member', $roles, "'user-unsu' must be declared for 'member' in acl.ini");
+        self::assertNotContains('guest', $roles, "'user-unsu' must not be declared for 'guest'");
+    }
+
     /**
      * @return iterable<string, array{string, list<string>}>
      */

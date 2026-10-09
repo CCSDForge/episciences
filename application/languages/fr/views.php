@@ -481,4 +481,22 @@ return [
   copie)',
     'Failed to update contributor' => 'Échec de la mise à jour du contributeur',
 
+    // Switch user & Account protection
+    "Pour des raisons de sécurité et de traçabilité, cette session de changement d'identité est enregistrée (votre compte, le compte cible, la revue, votre adresse IP, votre navigateur et l'horodatage). Conformément aux règles de sécurité, vous ne pouvez pas modifier le compte de cet utilisateur." => "Pour des raisons de sécurité et de traçabilité, cette session de changement d'identité est enregistrée (votre compte, le compte cible, la revue, votre adresse IP, votre navigateur et l'horodatage). Conformément aux règles de sécurité, vous ne pouvez pas modifier le compte de cet utilisateur.",
+    "Vous ne pouvez pas modifier le compte d'un utilisateur lorsque vous utilisez la fonctionnalité de changement d'identité." => "Vous ne pouvez pas modifier le compte d'un utilisateur lorsque vous utilisez la fonctionnalité de changement d'identité.",
+    "Vous n'êtes pas autorisé à modifier le compte d'un autre utilisateur." => "Vous n'êtes pas autorisé à modifier le compte d'un autre utilisateur.",
+    "Vous ne pouvez pas modifier l'adresse email d'un utilisateur lorsque vous utilisez la fonctionnalité de changement d'identité." => "Vous ne pouvez pas modifier l'adresse email d'un utilisateur lorsque vous utilisez la fonctionnalité de changement d'identité.",
+    "Vous n'êtes pas autorisé à modifier l'adresse email d'un autre utilisateur." => "Vous n'êtes pas autorisé à modifier l'adresse email d'un autre utilisateur.",
+    "Modification de compte interdite sous switch-user." => "Modification de compte interdite sous switch-user.",
+    "Modifier mon compte." => "Modifier mon compte.",
+    "Session de changement d'identité active :" => "Session de changement d'identité active :",
+    "Vous naviguez en tant que %s (votre compte : %s)." => "Vous naviguez en tant que %s (votre compte : %s).",
+    "Reprendre mon compte" => "Reprendre mon compte",
+    "Changement d'identité actif" => "Changement d'identité actif",
+    "Compte d'origine :" => "Compte d'origine :",
+    "Modifications désactivées" => "Modifications désactivées",
+    "Session sous switch-user" => "Session sous switch-user",
+    "Switch-User" => "Switch-User",
+    "Vous avez repris votre compte principal (%s)." => "Vous avez repris votre compte principal (%s).",
+
 ];

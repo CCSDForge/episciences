@@ -274,6 +274,15 @@ class Episciences_Auth extends Ccsd_Auth
     }
 
     /**
+     * Check if the current session is impersonating another user (via suAction).
+     * @return bool
+     */
+    public static function isImpersonating(): bool
+    {
+        return self::isLogged() && !self::hasRealIdentity();
+    }
+
+    /**
      * @return Episciences_User | null
      */
     public static function getOriginalIdentity(): ?Episciences_User
