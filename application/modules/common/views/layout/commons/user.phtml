@@ -2,7 +2,7 @@
     <li class="dropdown">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
             <?php if (Episciences_Auth::isImpersonating()): ?>
-                <span class="text-bg-warning su-session-badge" title="<?= $this->translate("Changement d'identité actif") ?>">
+                <span class="label role-switch-user su-session-badge" title="<?= $this->translate("Changement d'identité actif") ?>">
                     <i class="fas fa-user-secret" aria-hidden="true"></i> SU
                 </span>
             <?php endif; ?>
@@ -65,7 +65,7 @@
                                 <div>
                                     <?= $this->partial('user/roles_only_tags.phtml', ['roles' => Episciences_Auth::getRoles()]) ?>
                                     <?php if (Episciences_Auth::isImpersonating()): ?>
-                                        <span class="text-bg-warning" title="<?= $this->translate("Session sous switch-user") ?>">
+                                        <span class="label role-switch-user" title="<?= $this->translate("Session sous switch-user") ?>">
                                             <i class="fas fa-user-secret" aria-hidden="true"></i> <?= $this->translate("Switch-User") ?>
                                         </span>
                                     <?php endif; ?>

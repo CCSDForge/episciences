@@ -78,3 +78,9 @@
 .role-guest {
   background-color: $light-grey;
 }
+
+// Not a role: marks a switch user (su) session next to the role tags and in the navbar
+.role-switch-user {
+  background-color: #6f42c1;
+  color: #fff;
+}
