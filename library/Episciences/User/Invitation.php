@@ -119,6 +119,10 @@ class Episciences_User_Invitation
             $delay = DeadlineUnit::parseStoredInterval(Episciences_Review::DEFAULT_INVITATION_DEADLINE);
         }
 
+        if (!$delay) {
+            return false;
+        }
+
         [$delayValue, $delayUnit] = $delay;
 
         // Values to insert
