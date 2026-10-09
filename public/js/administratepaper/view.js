@@ -1477,11 +1477,11 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
                 // Rejected requests (e.g. 403: role or CSRF token) return a JSON error
                 sRequest.fail(function (xhr) {
                     $(button).popover('destroy');
-                    const error = xhr.responseJSON && xhr.responseJSON.error;
-                    if (error) {
-                        bootbox.setDefaults({ locale: locale });
-                        bootbox.alert(translate(error));
-                    }
+                    const error =
+                        (xhr.responseJSON && xhr.responseJSON.error) ||
+                        'Une erreur est survenue, veuillez réessayer.';
+                    bootbox.setDefaults({ locale: locale });
+                    bootbox.alert(translate(error));
                 });
                 return false;
             }
