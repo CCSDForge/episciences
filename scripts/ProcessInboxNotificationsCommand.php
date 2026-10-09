@@ -752,6 +752,8 @@ class ProcessInboxNotificationsCommand extends Command
         ?LoggerInterface   $logger
     ): bool {
         $paper->setPaperid($context->getPaperid());
+        // Same paper id: the submission date is shared by all the versions of a paper
+        $paper->setSubmission_date($context->getSubmission_date());
 
         $isAdded = $this->getFirstSubmissionResult($paper, $journal, $data, [
             'canBeReplaced' => true,
