@@ -1443,11 +1443,11 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
                                         }
                                     }
 
-                                    // Update the paper-license-link block
+                                    // Replace the whole licence block, so that no stale rights entry remains
                                     if (typeof parsed.linkHtml === 'string') {
-                                        const $linkBlock = $('#paper-license-link').closest('.small');
-                                        if ($linkBlock.length) {
-                                            $linkBlock.replaceWith(parsed.linkHtml);
+                                        const licenseBlock = document.getElementById('paper-license-block');
+                                        if (licenseBlock) {
+                                            licenseBlock.innerHTML = parsed.linkHtml;
                                         } else {
                                             location.reload();
                                         }

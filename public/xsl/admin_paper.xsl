@@ -299,8 +299,8 @@
                     </div>
                 </xsl:if>
 
-                <!-- licenses -->
-
+                <!-- licenses: single container, replaced as a whole after a licence save -->
+                <div id="paper-license-block">
                 <xsl:choose>
                     <xsl:when test="episciences/paperLicence/text() != ''">
                         <div class="small">
@@ -347,6 +347,7 @@
                         </xsl:if>
                     </xsl:otherwise>
                 </xsl:choose>
+                </div>
 
                 <xsl:if test="episciences/funding/text() != ''">
                     <div class="small">
