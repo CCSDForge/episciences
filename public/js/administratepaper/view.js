@@ -1401,7 +1401,7 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
                 // Traitement AJAX du formulaire
                 let sRequest = ajaxRequest(
                     postAction,
-                    $(this).serialize() +
+                    new URLSearchParams(new FormData(this)).toString() +
                         '&docid=' + docId +
                         '&csrf_token=' + encodeURIComponent(csrfToken),
                     'POST',
