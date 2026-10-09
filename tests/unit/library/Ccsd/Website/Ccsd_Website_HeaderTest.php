@@ -54,6 +54,50 @@ class Ccsd_Website_HeaderTest extends TestCase
         self::assertStringContainsString('&lt;script&gt;', $html);
     }
 
+    public function testExistingEntitiesAndLineBreaksInLabelsAreKept(): void
+    {
+        $html = $this->render([
+            'type' => 'text',
+            'align' => 'center',
+            'text' => ['en' => 'Revue d&apos;&eacute;tudes<br/>A &amp; B & C'],
+            'text_class' => '',
+            'text_style' => '',
+        ]);
+
+        self::assertStringContainsString('>Revue d&apos;&eacute;tudes<br>A &amp; B &amp; C</span>', $html);
+        self::assertStringContainsString('<td align="center">', $html);
+    }
+
+    public function testUnknownAlignmentFallsBackToLeft(): void
+    {
+        $html = $this->render([
+            'type' => 'text',
+            'align' => 'left" onmouseover="x',
+            'text' => ['en' => 'x'],
+            'text_class' => '',
+            'text_style' => '',
+        ]);
+
+        self::assertStringContainsString('<td align="left">', $html);
+    }
+
+    public function testRelativeAndMailtoLinksAreKept(): void
+    {
+        foreach (['/page/about', 'mailto:contact@example.org', '//example.org/'] as $href) {
+            $html = $this->render([
+                'type' => 'img',
+                'align' => 'left',
+                'img' => 'logo.png',
+                'img_href' => $href,
+                'img_width' => '',
+                'img_height' => '',
+                'img_alt' => '',
+            ]);
+
+            self::assertStringContainsString('href="' . $href . '"', $html);
+        }
+    }
+
     public function testImageLogoAttributesAreEscaped(): void
     {
         $html = $this->render([

@@ -23,6 +23,12 @@ class Ccsd_Website_Header
      * @var string
      */
     const FORM_INI = 'Ccsd/Website/Form/configs/header-logo.ini';
+
+    /**
+     * Alignments offered by the form (the first one is the fallback)
+     */
+    private const ALIGNMENTS = ['left', 'center', 'right'];
+
     /**
      * Tableau des logos de l'en-tête du site
      * @var array
@@ -171,7 +177,6 @@ class Ccsd_Website_Header
                     if ($logo['type'] == self::LOGO_IMG) {
                         //Logo de type image
                         if (!($logo['img_tmp'] != '' || (isset($files[$logoid]['name']['img']) && $files[$logoid]['name']['img'] != ''))) {
-                            echo $logoid;
                             $errors[$logoid] = 'img';
                         }
                     } else {
@@ -272,6 +277,24 @@ class Ccsd_Website_Header
     }
 
     /**
+     * Escape a label: entities already typed by the user are kept as is, and line breaks stay allowed
+     */
+    private static function escText(mixed $value): string
+    {
+        $escaped = htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8', false);
+        return preg_replace('#&lt;br\s*/?&gt;#i', '<br>', $escaped) ?? $escaped;
+    }
+
+    /**
+     * Restrict the alignment to the values offered by the form
+     */
+    private static function safeAlign(mixed $value): string
+    {
+        $value = (string)$value;
+        return in_array($value, self::ALIGNMENTS, true) ? $value : self::ALIGNMENTS[0];
+    }
+
+    /**
      * Escape a link target, dropping any scheme other than http(s) and mailto
      */
     private static function safeHref(mixed $value): string
@@ -293,7 +316,7 @@ class Ccsd_Website_Header
         foreach ($this->_languages as $lang) {
             $content = "<table width=\"100%\" cellpadding=\"0\" style=\"position:relative;\">\n<tr>\n";
             foreach ($this->_logos as $logo) {
-                $content .= "<td align=\"" . self::esc($logo['align']) . "\">";
+                $content .= "<td align=\"" . self::safeAlign($logo['align'] ?? '') . "\">";
                 if ($logo['type'] == self::LOGO_IMG) {
                     if ($logo['img_href'] != "") {
                         $content .= "<a href=\"" . self::safeHref($logo['img_href']) . "\" border=\"0\" target=\"_self\">";
@@ -324,7 +347,7 @@ class Ccsd_Website_Header
                     if ($logo['text_style'] != "") {
                         $content .= " style=\"" . self::esc($logo['text_style']) . "\"";
                     }
-                    $content .= ">" . self::esc($logo['text'][$lang] ?? '') . "</span>";
+                    $content .= ">" . self::escText($logo['text'][$lang] ?? '') . "</span>";
                 }
                 $content .= "</td>\n";
             }
