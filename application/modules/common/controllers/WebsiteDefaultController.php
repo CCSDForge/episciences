@@ -426,7 +426,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
             // Delete
             if ($this->getRequest()->getPost('action') === 'delete') {
                 $delId = (int) ($post['newsid'] ?? 0);
-                if ($delId > 0) {
+                if ($newsObj->belongsToSite($delId)) {
                     $newsObj->delete($delId);
                     Episciences_JournalNews::deleteByLegacyId($delId);
                     $this->_helper->FlashMessenger
@@ -439,9 +439,13 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
             // Add / edit
             $newsid = (int) ($post['newsid'] ?? 0);
+            if ($newsid > 0 && !$newsObj->belongsToSite($newsid)) {
+                $this->redirect('/website/news');
+                return;
+            }
             $form   = $newsObj->getForm($newsid);
             if ($form->isValid($post)) {
-                $newsObj->save(array_merge($form->getValues(), ['uid' => Episciences_Auth::getUid()]));
+                $newsObj->save(array_merge($form->getValues(), ['newsid' => $newsid, 'uid' => Episciences_Auth::getUid()]));
                 $this->_helper->FlashMessenger
                     ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)
                     ->addMessage("Les modifications ont bien été enregistrées.");
