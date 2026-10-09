@@ -159,6 +159,24 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_CHIEF_EDITOR_VERSION = 'reminder_article_blocked_in_accepted_state_editor_version';
     public const TYPE_REMINDER_REVIEWED_ARTICLE_CHIEF_EDITOR_VERSION = 'reminder_reviewed_article_editors_copy';
     public const TYPE_REMINDER_SUBMITTED_ARTICLE_CHIEF_EDITOR_VERSION = 'reminder_submitted_article_editors_copy';
+
+    /**
+     * Template aliases for chief_editor and secretary review reminders.
+     * These point to existing editor templates.
+     * Used dynamically @see Episciences_Mail_Reminder::loadTranslations()
+     */
+
+    // Unanswered invitation - supervisor versions (chief_editor and secretary)
+    public const TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_CHIEF_EDITOR_VERSION = 'reminder_unanswered_reviewer_invitation_editor_version';
+    public const TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_SECRETARY_VERSION = 'reminder_unanswered_reviewer_invitation_editor_version';
+
+    // Before rating deadline - supervisor versions (chief_editor and secretary)
+    public const TYPE_REMINDER_BEFORE_RATING_DEADLINE_CHIEF_EDITOR_VERSION = 'reminder_before_deadline_editor_version';
+    public const TYPE_REMINDER_BEFORE_RATING_DEADLINE_SECRETARY_VERSION = 'reminder_before_deadline_editor_version';
+
+    // After rating deadline - supervisor versions (chief_editor and secretary)
+    public const TYPE_REMINDER_AFTER_RATING_DEADLINE_CHIEF_EDITOR_VERSION = 'reminder_after_deadline_editor_version';
+    public const TYPE_REMINDER_AFTER_RATING_DEADLINE_SECRETARY_VERSION = 'reminder_after_deadline_editor_version';
     /**
      * END Of /!\
      */

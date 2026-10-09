@@ -132,6 +132,8 @@ try {
         // journal settings
         $website = new Ccsd_Website_Common($review->getRvid(), ['sidField' => 'SID']);
         $review->loadSettings();
+        // read by Episciences_PapersManager::keepOnlyUsersWithoutConflict()
+        Zend_Registry::set('reviewSettings', $review->getSettings());
 
         $languages = $website->getLanguages();
         if (empty($languages)) {

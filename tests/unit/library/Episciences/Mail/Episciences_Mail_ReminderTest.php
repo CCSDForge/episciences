@@ -4,6 +4,7 @@ namespace unit\library\Episciences\Mail;
 
 use Episciences_Mail_Reminder;
 use Episciences_Mail_RemindersManager;
+use Episciences_Mail_TemplatesManager;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
@@ -146,6 +147,91 @@ final class Episciences_Mail_ReminderTest extends TestCase
         }
     }
 
+    public function testMappingIncludesChiefEditorForReviewReminders(): void
+    {
+        $types = [
+            Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION,
+            Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE,
+            Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE,
+        ];
+
+        foreach ($types as $type) {
+            self::assertArrayHasKey(
+                \Episciences_Acl::ROLE_CHIEF_EDITOR,
+                Episciences_Mail_Reminder::MAPPING_REMINDER_RECIPIENTS[$type],
+                "Type $type must include chief_editor as a valid recipient"
+            );
+        }
+    }
+
+    public function testMappingIncludesSecretaryForReviewReminders(): void
+    {
+        $types = [
+            Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION,
+            Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE,
+            Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE,
+        ];
+
+        foreach ($types as $type) {
+            self::assertArrayHasKey(
+                \Episciences_Acl::ROLE_SECRETARY,
+                Episciences_Mail_Reminder::MAPPING_REMINDER_RECIPIENTS[$type],
+                "Type $type must include secretary as a valid recipient"
+            );
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Template constants for supervisor roles
+    // -------------------------------------------------------------------------
+
+    public function testSupervisorTemplateConstantsAreDefined(): void
+    {
+        $constants = [
+            'TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_CHIEF_EDITOR_VERSION',
+            'TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_SECRETARY_VERSION',
+            'TYPE_REMINDER_BEFORE_RATING_DEADLINE_CHIEF_EDITOR_VERSION',
+            'TYPE_REMINDER_BEFORE_RATING_DEADLINE_SECRETARY_VERSION',
+            'TYPE_REMINDER_AFTER_RATING_DEADLINE_CHIEF_EDITOR_VERSION',
+            'TYPE_REMINDER_AFTER_RATING_DEADLINE_SECRETARY_VERSION',
+        ];
+
+        foreach ($constants as $const) {
+            self::assertTrue(
+                defined("Episciences_Mail_TemplatesManager::$const"),
+                "Constant $const must be defined in TemplatesManager"
+            );
+        }
+    }
+
+    public function testSupervisorTemplateConstantsPointToEditorTemplates(): void
+    {
+        // All supervisor versions should alias to the editor version
+        self::assertSame(
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_CHIEF_EDITOR_VERSION
+        );
+        self::assertSame(
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_SECRETARY_VERSION
+        );
+        self::assertSame(
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_CHIEF_EDITOR_VERSION
+        );
+        self::assertSame(
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_SECRETARY_VERSION
+        );
+        self::assertSame(
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_CHIEF_EDITOR_VERSION
+        );
+        self::assertSame(
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_SECRETARY_VERSION
+        );
+    }
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
@@ -538,9 +624,248 @@ final class Episciences_Mail_ReminderTest extends TestCase
         );
     }
 
+    //-------------------------------------------------------------------------
+    // filterSupervisors() — pure filtering logic (no database)
+    // -------------------------------------------------------------------------
+
+    /**
+     * @dataProvider filterSupervisorsDataProvider
+     */
+    public function testFilterSupervisors(
+        array $supervisors,
+        int $authorUid,
+        array $coAuthorUids,
+        ?int $reviewerUid,
+        ?string $reviewerEmail,
+        array $expectedUids,
+        string $message
+    ): void {
+        $result = Episciences_Mail_Reminder::filterSupervisors(
+            $supervisors,
+            $authorUid,
+            $coAuthorUids,
+            $reviewerUid,
+            $reviewerEmail
+        );
+
+        self::assertSame($expectedUids, array_keys($result), $message);
+    }
+
+    public static function filterSupervisorsDataProvider(): array
+    {
+        return [
+            // Basic cases
+            'empty supervisors' => [
+                'supervisors' => [],
+                'authorUid' => 100,
+                'coAuthorUids' => [],
+                'reviewerUid' => 200,
+                'reviewerEmail' => 'reviewer@example.com',
+                'expectedUids' => [],
+                'message' => 'Empty supervisors should return empty array'
+            ],
+            'nobody excluded' => [
+                'supervisors' => [1 => 'chief@example.com', 2 => 'secretary@example.com'],
+                'authorUid' => 100,
+                'coAuthorUids' => [],
+                'reviewerUid' => 200,
+                'reviewerEmail' => 'reviewer@example.com',
+                'expectedUids' => [1, 2],
+                'message' => 'Supervisors unrelated to the paper should all pass'
+            ],
+
+            // Author exclusion
+            'exclude author' => [
+                'supervisors' => [100 => 'author@example.com', 2 => 'secretary@example.com'],
+                'authorUid' => 100,
+                'coAuthorUids' => [],
+                'reviewerUid' => 200,
+                'reviewerEmail' => 'reviewer@example.com',
+                'expectedUids' => [2],
+                'message' => 'Author should be excluded'
+            ],
+
+            // Co-author exclusion
+            'exclude co-author' => [
+                'supervisors' => [1 => 'chief@example.com', 50 => 'coauthor@example.com'],
+                'authorUid' => 100,
+                'coAuthorUids' => [50, 60],
+                'reviewerUid' => 200,
+                'reviewerEmail' => 'reviewer@example.com',
+                'expectedUids' => [1],
+                'message' => 'Co-authors should be excluded'
+            ],
+
+            // Reviewer exclusion by UID
+            'exclude reviewer by UID' => [
+                'supervisors' => [1 => 'chief@example.com', 200 => 'reviewer@example.com'],
+                'authorUid' => 100,
+                'coAuthorUids' => [],
+                'reviewerUid' => 200,
+                'reviewerEmail' => 'reviewer@example.com',
+                'expectedUids' => [1],
+                'message' => 'Reviewer should be excluded by UID'
+            ],
+
+            // Reviewer exclusion by email (case-insensitive)
+            'exclude reviewer by email - case insensitive' => [
+                'supervisors' => [1 => 'chief@example.com', 2 => 'REVIEWER@EXAMPLE.COM'],
+                'authorUid' => 100,
+                'coAuthorUids' => [],
+                'reviewerUid' => 200, // different UID
+                'reviewerEmail' => 'reviewer@example.com',
+                'expectedUids' => [1],
+                'message' => 'Reviewer should be excluded by email (case-insensitive)'
+            ],
+
+            // Temp reviewer - UID should NOT be used for exclusion
+            'temp reviewer - UID not excluded' => [
+                'supervisors' => [999 => 'chief@example.com', 2 => 'secretary@example.com'],
+                'authorUid' => 100,
+                'coAuthorUids' => [],
+                'reviewerUid' => null, // null means temp user
+                'reviewerEmail' => 'temp-reviewer@example.com',
+                'expectedUids' => [999, 2],
+                'message' => 'When reviewerUid is null (temp user), supervisor with matching USER_TMP ID should NOT be excluded'
+            ],
+        ];
+    }
+
+    // -------------------------------------------------------------------------
+    // Supervisor caches (avoid one DB load per invitation row)
+    // -------------------------------------------------------------------------
+
+    public function testGetSupervisorFilterContextReturnsCachedContextWithoutReloadingPaperData(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+        $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
+        $cachedContext = [
+            'authorUid' => 100,
+            'coAuthorUids' => [50],
+            'supervisors' => [],
+        ];
+        $this->setPrivateProperty($reminder, '_supervisorFilterContextCache', [
+            \Episciences_Acl::ROLE_CHIEF_EDITOR => [42 => $cachedContext],
+        ]);
+
+        $paper = $this->createMock(\Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(42);
+        $paper->expects($this->never())->method('getCoAuthors');
+        $paper->expects($this->never())->method('getPaperid');
+
+        $context = $this->invokePrivateMethod($reminder, 'getSupervisorFilterContext', [$paper]);
+
+        $this->assertSame($cachedContext, $context);
+    }
+
+    public function testGetSupervisorFilterContextCachesPerPaper(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+        $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
+        // no chief editor: no database load, nothing to check for conflicts
+        $this->setPrivateProperty($reminder, '_supervisorsCache', [\Episciences_Acl::ROLE_CHIEF_EDITOR => []]);
+
+        $paper = $this->createMock(\Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(7);
+        $paper->method('getUid')->willReturn(100);
+        $paper->method('getPaperid')->willReturn(7);
+        // loaded only once for several reviewers of the same paper
+        $paper->expects($this->once())->method('getCoAuthors')->willReturn([50 => 'co-author']);
+
+        $first = $this->invokePrivateMethod($reminder, 'getSupervisorFilterContext', [$paper]);
+        $second = $this->invokePrivateMethod($reminder, 'getSupervisorFilterContext', [$paper]);
+
+        $expected = ['authorUid' => 100, 'coAuthorUids' => [50], 'supervisors' => []];
+        $this->assertSame($expected, $first);
+        $this->assertSame($expected, $second);
+    }
+
+    public function testGetSupervisorRecipientsExcludesAuthorCoAuthorAndReviewer(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+        $reminder->setRecipient(\Episciences_Acl::ROLE_SECRETARY);
+
+        $supervisors = [
+            1 => $this->createSupervisorMock(1, 'kept@example.com'),
+            100 => $this->createSupervisorMock(100, 'author@example.com'),
+            50 => $this->createSupervisorMock(50, 'coauthor@example.com'),
+            200 => $this->createSupervisorMock(200, 'reviewer@example.com'),
+        ];
+        $this->setPrivateProperty($reminder, '_supervisorFilterContextCache', [
+            \Episciences_Acl::ROLE_SECRETARY => [7 => [
+                'authorUid' => 100,
+                'coAuthorUids' => [50],
+                'supervisors' => $supervisors,
+            ]],
+        ]);
+
+        $paper = $this->createMock(\Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(7);
+        $paper->method('getTitle')->willReturn('Title');
+
+        $recipients = $this->invokePrivateMethod($reminder, 'getSupervisorRecipients', [
+            $paper, 200, 'reviewer@example.com', 'Reviewer Name', ['shared' => 'tag'], '2026-10-01',
+        ]);
+
+        $this->assertCount(1, $recipients);
+        $this->assertSame(1, $recipients[0]['uid']);
+        $this->assertSame('kept@example.com', $recipients[0]['email']);
+        $this->assertSame('2026-10-01', $recipients[0]['deadline']);
+        $this->assertSame('tag', $recipients[0]['tags']['shared']);
+        $this->assertSame('Reviewer Name', $recipients[0]['tags'][\Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME]);
+        $this->assertSame('reviewer@example.com', $recipients[0]['tags'][\Episciences_Mail_Tags::TAG_REVIEWER_MAIL]);
+        $this->assertSame('Title', $recipients[0]['tags'][\Episciences_Mail_Tags::TAG_ARTICLE_TITLE]);
+    }
+
+    public function testGetSupervisorsReturnsCachedListForEachRecipientRole(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+        $chiefEditors = [1 => 'chief editor'];
+        $secretaries = [2 => 'secretary'];
+        $this->setPrivateProperty($reminder, '_supervisorsCache', [
+            \Episciences_Acl::ROLE_CHIEF_EDITOR => $chiefEditors,
+            \Episciences_Acl::ROLE_SECRETARY => $secretaries,
+        ]);
+
+        $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
+        $this->assertSame($chiefEditors, $this->invokePrivateMethod($reminder, 'getSupervisors'));
+
+        // switching role must not return the other role's list
+        $reminder->setRecipient(\Episciences_Acl::ROLE_SECRETARY);
+        $this->assertSame($secretaries, $this->invokePrivateMethod($reminder, 'getSupervisors'));
+    }
+
+    public function testGetSupervisorsReturnsEmptyArrayForNonSupervisorRole(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+        $reminder->setRecipient(\Episciences_Acl::ROLE_EDITOR);
+
+        $this->assertSame([], $this->invokePrivateMethod($reminder, 'getSupervisors'));
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private function createSupervisorMock(int $uid, string $email): \Episciences_User
+    {
+        $supervisor = $this->createMock(\Episciences_User::class);
+        $supervisor->method('getUid')->willReturn($uid);
+        $supervisor->method('getEmail')->willReturn($email);
+        return $supervisor;
+    }
+
+    private function setPrivateProperty(object $object, string $property, mixed $value): void
+    {
+        $rp = new \ReflectionProperty($object, $property);
+        $rp->setValue($object, $value);
+    }
+
+    private function invokePrivateMethod(object $object, string $method, array $args = []): mixed
+    {
+        $rm = new \ReflectionMethod($object, $method);
+        return $rm->invokeArgs($object, $args);
+    }
 
     /** Returns all TYPE_* int constants defined on Episciences_Mail_Reminder. */
     private function getAllTypeConstants(): array
