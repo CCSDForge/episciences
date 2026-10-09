@@ -70,16 +70,53 @@ final class ReplacementValuesTest extends TestCase
         self::assertSame(20, $values['old_paperid']);
     }
 
-    public function testResubmittedRefusedPaperKeepsNoSubmissionDate(): void
+    public function testResubmittedRefusedPaperKeepsTheStoredSubmissionDate(): void
     {
         $values = Episciences_Submit::applyStoredPaperToReplacement(
             ['old_submissiondate' => '1999-01-01 00:00:00'],
             $this->storedPaper(Episciences_Paper::STATUS_REFUSED)
         );
 
-        self::assertArrayNotHasKey('old_submissiondate', $values);
+        // Same paper id, so same submission date as the previous versions
+        self::assertSame('2020-01-02 03:04:05', $values['old_submissiondate']);
         self::assertSame(Episciences_Paper::STATUS_REFUSED, $values['old_paper_status']);
         self::assertSame(20, $values['old_paperid']);
+    }
+
+    public function testPostedSubmissionDateIsIgnoredOnANewSubmission(): void
+    {
+        $values = $this->buildValuesToPopulatePaper([
+            'old_submissiondate' => '1999-01-01 00:00:00',
+        ]);
+
+        self::assertNotSame('1999-01-01 00:00:00', $values['SUBMISSION_DATE']);
+    }
+
+    public function testStoredSubmissionDateIsKeptOnAReplacement(): void
+    {
+        $values = $this->buildValuesToPopulatePaper([
+            'can_replace' => '1',
+            'old_submissiondate' => '2020-01-02 03:04:05',
+        ]);
+
+        self::assertSame('2020-01-02 03:04:05', $values['SUBMISSION_DATE']);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function buildValuesToPopulatePaper(array $data): array
+    {
+        $data += [
+            'search_doc' => ['docId' => 'identifier', 'repoId' => 1, 'version' => 1],
+            'xml' => '',
+        ];
+
+        $method = new \ReflectionMethod(Episciences_Submit::class, 'buildValuesToPopulatePaper');
+        $method->setAccessible(true);
+
+        return $method->invoke(new Episciences_Submit(), $data);
     }
 
     public function testMissingPaperIsReported(): void
@@ -128,8 +165,24 @@ final class ReplacementValuesTest extends TestCase
 
     public function testRefusedPaperWithConceptIdentifierIsComparedOnItsConcept(): void
     {
-        $previousTranslator = \Zend_Registry::isRegistered('Zend_Translate') ? \Zend_Registry::get('Zend_Translate') : null;
+        $registry = \Zend_Registry::getInstance();
+        $hadTranslator = $registry->offsetExists('Zend_Translate');
+        $previousTranslator = $hadTranslator ? $registry->offsetGet('Zend_Translate') : null;
+        $hadSources = $registry->offsetExists('metadataSources');
+        $previousSources = $hadSources ? $registry->offsetGet('metadataSources') : null;
+
         \Zend_Registry::set('Zend_Translate', new \Zend_Translate(['adapter' => 'array', 'content' => ['k' => 'v'], 'locale' => 'en']));
+        // Zenodo must be known so that its hook (which exposes concept identifiers) is resolved without the database
+        \Zend_Registry::set('metadataSources', [
+            (int)\Episciences_Repositories::ZENODO_REPO_ID => [
+                \Episciences_Repositories::REPO_LABEL => 'Zenodo',
+                \Episciences_Repositories::REPO_TYPE => \Episciences_Repositories::TYPE_PAPERS_REPOSITORY,
+                'identifier' => null,
+                'base_url' => 'https://zenodo.org/',
+                'api_url' => 'https://zenodo.org/api/',
+            ],
+        ]);
+        $this->resetRepositoriesCache();
 
         try {
             $refused = new Episciences_Paper([
@@ -153,9 +206,24 @@ final class ReplacementValuesTest extends TestCase
 
             self::assertStringNotContainsString("l'identifiant de l'article a changé", $result['message']);
         } finally {
-            if ($previousTranslator !== null) {
+            if ($hadTranslator) {
                 \Zend_Registry::set('Zend_Translate', $previousTranslator);
+            } else {
+                $registry->offsetUnset('Zend_Translate');
             }
+            if ($hadSources) {
+                \Zend_Registry::set('metadataSources', $previousSources);
+            } else {
+                $registry->offsetUnset('metadataSources');
+            }
+            $this->resetRepositoriesCache();
         }
+    }
+
+    private function resetRepositoriesCache(): void
+    {
+        $prop = new \ReflectionProperty(\Episciences_Repositories::class, '_repositories');
+        $prop->setAccessible(true);
+        $prop->setValue(null, []);
     }
 }

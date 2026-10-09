@@ -109,6 +109,7 @@ final class ReplacementLookupTest extends TestCase
 
         self::assertSame($docId, $values['old_docid']);
         self::assertSame(Episciences_Paper::STATUS_REFUSED, $values['old_paper_status']);
-        self::assertArrayNotHasKey('old_submissiondate', $values);
+        // The submission date is shared by all the versions of a paper
+        self::assertSame('2020-01-02 03:04:05', $values['old_submissiondate']);
     }
 }

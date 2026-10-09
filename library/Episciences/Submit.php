@@ -2327,7 +2327,7 @@ class Episciences_Submit
 
         // Default submission status and date
         $values['STATUS'] = Episciences_Paper::STATUS_SUBMITTED;
-        $values['SUBMISSION_DATE'] = $data['old_submissiondate'] ?? date("Y-m-d H:i:s");
+        $values['SUBMISSION_DATE'] = date("Y-m-d H:i:s");
 
         // Metadata
         $values['RECORD'] = $data['xml'];
@@ -2361,6 +2361,11 @@ class Episciences_Submit
             if (isset($data['old_docid']) && $isUpdatable) {
                 $values['DOCID'] = (int)$data['old_docid'];
                 $values['STATUS'] = (int)Ccsd_Tools::ifsetor($oldStatus, $values['STATUS']);
+            }
+
+            // The submission date is shared by all the versions of a paper (set from the stored paper)
+            if (!empty($data['old_submissiondate'])) {
+                $values['SUBMISSION_DATE'] = $data['old_submissiondate'];
             }
 
             $values['PAPERID'] = (int)Ccsd_Tools::ifsetor($data['old_paperid'], 0);
@@ -2407,8 +2412,8 @@ class Episciences_Submit
     /**
      * Overwrite the "old_*" values of a replacement with those of the stored paper.
      * These values come from hidden inputs: they must never be trusted as posted.
-     * The submission date is kept only when the paper is really replaced: the new submission
-     * that follows a refused paper is a fresh one.
+     * The submission date is shared by all the versions of a paper: the new version (including the one
+     * that follows a refused paper, which keeps the same paper id) keeps the date of the stored paper.
      *
      * @param array<string, mixed> $formValues
      * @param Episciences_Paper $storedPaper the paper to replace, as stored in the database
@@ -2429,10 +2434,7 @@ class Episciences_Submit
         $formValues['old_paperid'] = $storedPaper->getPaperid();
         $formValues['old_paper_vid'] = $storedPaper->getVid();
         $formValues['old_paper_sid'] = $storedPaper->getSid();
-
-        if ($storedPaper->canBeReplaced()) {
-            $formValues['old_submissiondate'] = $storedPaper->getSubmission_date();
-        }
+        $formValues['old_submissiondate'] = $storedPaper->getSubmission_date();
 
         return $formValues;
     }
