@@ -175,14 +175,16 @@ class Bootstrapper
     }
 
     /**
-     * Resolve the CLI environment: APPLICATION_ENV (constant or variable), then APP_ENV (.env files), then production
+     * Resolve the CLI environment: APPLICATION_ENV (constant or variable), then APP_ENV (.env files or process environment), then production
      */
     private static function resolveEnvironment(): string
     {
+        // $_ENV is not guaranteed to contain the process environment (variables_order), hence the getenv() fallbacks
         $candidates = [
                 defined('APPLICATION_ENV') ? (string)APPLICATION_ENV : '',
                 (string)getenv('APPLICATION_ENV'),
                 (string)($_ENV['APP_ENV'] ?? ''),
+                (string)getenv('APP_ENV'),
         ];
 
         foreach ($candidates as $env) {
