@@ -1,0 +1,27 @@
+<?php
+
+use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Paper\Spdx\LicenseSpdxResolver;
+
+$id = 'license-value-' . $this->docId;
+?>
+<div style="width: 400px">
+    <form action="/administratepaper/savespdxlicense" id="licence-form-<?= $this->docId ?>"
+          style="height : 34px;">
+
+        <div class="pull-right" style="padding-left : 10px;">
+            <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>
+        </div>
+
+        <div class="input-group">
+            <?= $this->licenseFormSelect(
+                    'license', LicenseSpdxResolver::urlToSpdxCode($this->licence),
+                    [
+                    'class' => 'form-control',
+                    'data-license-family' => 'creative-commons'
+                    ]
+            ) ?>
+        </div>
+
+    </form>
+</div>

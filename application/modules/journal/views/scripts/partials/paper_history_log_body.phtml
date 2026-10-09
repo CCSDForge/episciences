@@ -146,6 +146,13 @@ $tag = $this->tag;
         echo $this->escape($fullName);
         break;
 
+    // License updated
+    case Episciences_Paper_Logger::CODE_LICENSE_UPDATED:
+        echo $this->translate(' :');
+        echo ' ' . $this->escape($detail['newLicense']) . ' > ';
+        echo $this->escape($fullName);
+        break;
+
     // COAR Notify Review (inbox)
     case Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW:
         if (isset($detail['origin'])) {

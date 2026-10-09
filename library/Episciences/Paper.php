@@ -5,6 +5,8 @@ use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\Export;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
+use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
@@ -982,9 +984,9 @@ class Episciences_Paper
      * @return $this
      * @throws Exception
      */
-    public function setXslt($xml, string $theme = 'full_paper'): self
+    public function setXslt($xml, string $theme = 'full_paper', array $params = []): self
     {
-        $this->_xslt = Ccsd_Tools::xslt($xml, APPLICATION_PUBLIC_PATH . '/xsl/' . $theme . '.xsl');
+        $this->_xslt = Ccsd_Tools::xslt($xml, APPLICATION_PUBLIC_PATH . '/xsl/' . $theme . '.xsl', $params);
         return $this;
     }
 
@@ -1366,6 +1368,8 @@ class Episciences_Paper
         $crossRefXml = Episciences_Paper_XmlExportManager::getXmlCleaned(Episciences_Paper_XmlExportManager::xmlExport($this, Episciences_Paper_XmlExportManager::CROSSREF_FORMAT));
         $crossRefXml = str_replace(array("jats:p", "jats:"), array("value", ""), Episciences_Tools::spaceCleaner($crossRefXml));
         $xmlToArray = $serializer->decode($crossRefXml, "xml");
+
+        $this->completeInfoLicense($xmlToArray);
 
         if ($this->isTmp()) {
             $this->processTmpVersion($this);
@@ -5123,7 +5127,10 @@ class Episciences_Paper
      */
     public function getLicence(): string
     {
-        $this->_licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
+        if (!$this->_licence) {
+            $this->_licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
+        }
+
         return $this->_licence;
     }
 
@@ -5815,6 +5822,44 @@ class Episciences_Paper
         ]);
 
         $queue->send();
+    }
+
+    private function completeInfoLicense(array &$target): void
+    {
+
+        if (!isset($target[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][0]['license_ref'])) {
+            return;
+        }
+
+        $licenseRefs = &$target[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][0]['license_ref'];
+
+        if (!is_array($licenseRefs)) {
+            return;
+        }
+
+        foreach ($licenseRefs as &$license) {
+            if ((($license['@applies_to'] ?? null) === 'vor') && isset($license['#'])) {
+                $license['name'] = '';
+                $string = $license['#'];
+                $code = LicenseSpdxResolver::urlToSpdxCode($string);
+                if ($code !== '') {
+                    $license['name'] = (new LicenseCode(['code' => $code, 'name' => null]))->getName();
+                }
+                return;
+            }
+        }
+    }
+
+    public function licenseCanBeResolved() : bool{
+        return (new LicenseSpdxResolver())->resolve($this->getLicence()) !== LicenseSpdxResolver::NO_ASSERTION;
+    }
+
+    public function ignoreLicenseCheck(): bool
+    {
+        return
+                $this->isTmp() ||
+                !$this->getAcceptanceDate() ||
+                $this->licenseCanBeResolved();
     }
 
     public function isAllowedToEditMasterFile(): bool

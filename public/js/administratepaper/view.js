@@ -12,10 +12,10 @@ function getTags() {
     }
 
     let tags = [
-        { text: translate('Code de la revue'), value: review['code'] },
-        { text: translate('Nom de la revue'), value: review['name'] },
-        { text: translate("Id de l'article"), value: paper.id.toString() },
-        { text: translate("Titre de l'article"), value: paper_title },
+        {text: translate('Code de la revue'), value: review['code']},
+        {text: translate('Nom de la revue'), value: review['name']},
+        {text: translate("Id de l'article"), value: paper.id.toString()},
+        {text: translate("Titre de l'article"), value: paper_title},
     ];
 
     if (paper_ratings) {
@@ -662,8 +662,6 @@ function cancel() {
     $('#change-status-group').fadeIn();
 }
 
-
-
 /**
  *
  * @param button
@@ -732,7 +730,7 @@ const DOI_PATTERN = /^10\.\d{4,9}\/[-._;()/:A-Z0-9]+$/i;
  */
 function validateDoiInput(value) {
     if (!value) {
-        return { valid: false, error: 'DOI cannot be empty.' };
+        return {valid: false, error: 'DOI cannot be empty.'};
     }
     if (!DOI_PATTERN.test(value)) {
         return {
@@ -740,7 +738,7 @@ function validateDoiInput(value) {
             error: 'Invalid DOI format. Expected: 10.XXXX/suffix',
         };
     }
-    return { valid: true, error: '' };
+    return {valid: true, error: ''};
 }
 
 /**
@@ -968,8 +966,8 @@ function reinviteReviewer(docid, uid) {
     let $formId = $('#invitereviewer_form_' + docid);
     $formId.append(
         '<input id = "reinvite_uid" type="hidden" name="reinvite_uid" value="' +
-            uid +
-            '">'
+        uid +
+        '">'
     );
     $formId.submit();
 }
@@ -1350,9 +1348,152 @@ function valide($target) {
     }
 }
 
+function getLicensesForm(button, docId) {
+
+    getEditingPopover(
+        button,
+        docId,
+        '/administratepaper/getlicenselistform',
+        '/administratepaper/savespdxlicense',
+        'paper-license-link'
+    );
+
+}
+
+/**
+ *
+ * @param button
+ * @param docId
+ * @param preAction
+ * @param postAction
+ * @param targetToRefreshId
+ * @param forceHistoryRefresh
+ */
+function getEditingPopover(button, docId, preAction, postAction, targetToRefreshId, forceHistoryRefresh = true) {
+    let request = getCommonForm(
+        button,
+        docId,
+        preAction
+    );
+
+    let popoverParams = {
+        placement: 'bottom',
+        container: 'body',
+        html: true,
+        content: getLoader(),
+    };
+
+    request.done(function (result) {
+        // Destruction du popup de chargement
+        $(button).popover('destroy');
+        openedPopover = null;
+        // Affichage du formulaire dans le popover
+        popoverParams.content = result;
+        $(button).popover(popoverParams).popover('show');
+
+        $('form[action^="' + postAction + '"]').on(
+            'submit',
+            function () {
+                let $target = $('#' + targetToRefreshId);
+                // CSRF token expected by the post action
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = csrfMeta ? csrfMeta.content : '';
+                // Traitement AJAX du formulaire
+                let sRequest = ajaxRequest(
+                    postAction,
+                    new URLSearchParams(new FormData(this)).toString() +
+                        '&docid=' + docId +
+                        '&csrf_token=' + encodeURIComponent(csrfToken),
+                    'POST',
+                    'json'
+                );
+                sRequest.done(function (response) {
+                    // Destruction du popup
+                    $(button).popover('destroy');
+
+                    if (response) {
+
+                        // The action returns a JSON object. With dataType 'json', jQuery
+                        // parses it automatically; otherwise, it's a string that needs to be decoded
+                        let parsed = response;
+                        if (typeof response === 'string') {
+                            parsed = JSON.parse(response);
+                        }
+
+                        if (targetToRefreshId === 'paper-license-link' && parsed && typeof parsed === 'object') {
+
+                            if (!parsed.error) {
+                                if (parsed.warning) {
+                                    bootbox.setDefaults({ locale: locale });
+                                    bootbox.alert(translate(parsed.warning));
+                                } else {
+                                    if ($target.length) {
+                                        $target
+                                            .text(parsed.name)
+                                            .attr("href", parsed.href);
+                                    }
+
+                                    // Update (or remove) the info-license-box with the freshly rendered block
+                                    if (typeof parsed.html === 'string') {
+                                        const $box = $('.info-license-box');
+                                        if (parsed.html.trim() === '') {
+                                            $box.remove();
+                                        } else {
+                                            $box.replaceWith(parsed.html);
+                                        }
+                                    }
+
+                                    // Replace the whole licence block, so that no stale rights entry remains
+                                    if (typeof parsed.linkHtml === 'string') {
+                                        const licenseBlock = document.getElementById('paper-license-block');
+                                        if (licenseBlock) {
+                                            licenseBlock.innerHTML = parsed.linkHtml;
+                                        } else {
+                                            location.reload();
+                                        }
+                                    }
+                                }
+                            } else {
+                                bootbox.setDefaults({ locale: locale });
+                                bootbox.alert(translate(parsed.error));
+                            }
+
+                        } else if (typeof response === 'string') {
+                            $target.html(response);
+                        }
+
+                        if (forceHistoryRefresh) {
+                            refreshPaperHistory(docId);
+                        }
+
+                    } else {
+
+                        if (targetToRefreshId === 'publication-date') {
+                            alert(translate('Veuillez indiquer une date valide'));
+                        }
+
+                    }
+                });
+                // Rejected requests (e.g. 403: role or CSRF token) return a JSON error
+                sRequest.fail(function (xhr) {
+                    $(button).popover('destroy');
+                    const error =
+                        (xhr.responseJSON && xhr.responseJSON.error) ||
+                        'Une erreur est survenue, veuillez réessayer.';
+                    bootbox.setDefaults({ locale: locale });
+                    bootbox.alert(translate(error));
+                });
+                return false;
+            }
+        );
+    });
+
+}
+
+
 // Expose pure helpers for unit testing only.
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { validateDoiInput, updateDoiDisplay, DOI_PATTERN };
+    module.exports = {validateDoiInput, updateDoiDisplay, DOI_PATTERN};
 }
 
 

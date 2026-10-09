@@ -1,4 +1,11 @@
 <?php
+
+use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Paper\Spdx\LicenseCodeManager;
+use Episciences\Paper\Spdx\LicenseSpdxResolver;
+use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
+use Psr\Log\LogLevel;
+
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
 use Episciences\Paper\RepositoryVersionsService;
@@ -671,7 +678,8 @@ class AdministratepaperController extends PaperDefaultController
             $this->checkPermissions($review, $paper);
         }
 
-        $paper->setXslt($paper->getXml(), 'admin_paper');
+        // Only secretaries can save a licence (see savespdxlicenseAction)
+        $paper->setXslt($paper->getXml(), 'admin_paper', ['canEditLicense' => Episciences_Auth::isSecretary() ? '1' : '0']);
 
         // load all volumes
         $volumes = $review->getVolumes();
@@ -4635,6 +4643,150 @@ class AdministratepaperController extends PaperDefaultController
         $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-publication-date-form.phtml');
         return true;
 
+    }
+
+    /**
+     * @return void
+     * @throws Zend_Controller_Response_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+
+    public function getlicenselistformAction(): void
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $docId = $request->getPost('docid');
+
+        if (!$docId) {
+            return;
+        }
+
+        $paper = Episciences_PapersManager::get($docId, false);
+
+        if (!$paper instanceof Episciences_Paper) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
+        $this->_helper->layout->disableLayout();
+        $this->view->docId = $paper->getDocid();
+        $this->view->licence = $paper->getLicence();
+        $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-license-form.phtml');
+    }
+
+
+    public function savespdxlicenseAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        // Check the request, the role and the CSRF token before loading anything
+        if (
+                !$request->isPost() ||
+                !$request->isXmlHttpRequest() ||
+                !Episciences_Auth::isSecretary() ||
+                !Episciences_Csrf_Helper::validateRequestToken($request)
+        ) {
+            $this->getResponse()->setHttpResponseCode(403);
+            $this->sendJsonError("Échec de l'enregistrement de la licence : action non autorisée.");
+            return;
+        }
+
+        $docId = ($request->getPost('docid')) ?: $request->getParam('docid');
+
+        $paper = Episciences_PapersManager::get($docId);
+
+        if (!$paper) {
+            echo false;
+            return;
+        }
+
+        // spdx license code
+        $currentSpdxCode = $request->getPost('license');
+
+        // Reject missing and non-scalar values (e.g. license[]=MIT) before using the code as a string
+        if (!is_string($currentSpdxCode) || trim($currentSpdxCode) === '') {
+            $this->sendJsonError("Échec de l'enregistrement de la licence : aucun code de licence fourni.");
+            return;
+        }
+
+        $oldLicense = LicenseCodeManager::getCode($paper->getDocid());
+
+        // If the license to save is the same as the current one, warn the user
+        if ($oldLicense === $currentSpdxCode) {
+            echo json_encode(['warning' => 'La licence actuelle est déjà définie.'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return;
+        }
+
+        $isCurrentSpdxCodeValid = (new LicenseSpdxResolver())->isValid($currentSpdxCode);
+
+        if (!$isCurrentSpdxCodeValid) {
+            $this->sendJsonError("Échec de l'enregistrement de la licence : code SPDX invalide.");
+            return;
+        }
+
+        // Old license retrieved from the repository or via an enrichment script
+        $paperLicenceObject = Episciences_Paper_LicenceManager::getLicenceObjectByDocId($paper->getDocid());
+
+        if ($paperLicenceObject) {
+
+            if (!$oldLicense) {
+                $oldLicense = $paperLicenceObject->getLicence();
+            }
+
+            $paperLicenceObject->setDocid($paper->getDocid());
+            $paperLicenceObject->setUid(Episciences_Auth::getUid());
+            $paperLicenceObject->save();
+        }
+
+        $spdxLicense = new LicenseCode([
+                'code' => $currentSpdxCode,
+                'docid' => $docId
+        ]);
+
+        $spdxLicense->save();
+
+        try {
+            $paper->save();
+        } catch (InvalidArgumentExceptionAlias|Zend_Db_Adapter_Exception  $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+        }
+
+        $newLicense = $paper->getLicence();
+
+        $license = [
+                'href' => $paper->getLicence(),
+                'name' => $spdxLicense->getName(),
+                'html' => $this->view->partial('paper/info-license-box.phtml', ['paper' => $paper]),
+                'linkHtml' => $this->view->partial('paper/license-link.phtml', ['paper' => $paper])
+        ];
+
+        $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'previousLicense' => $oldLicense, 'newLicense' => $newLicense];
+
+        try {
+            echo json_encode($license, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $paper->log(Episciences_Paper_Logger::CODE_LICENSE_UPDATED, Episciences_Auth::getUid(), $details);
+        } catch (JsonException|Zend_Db_Adapter_Exception $e) {
+            trigger_error($e->getMessage());
+            $this->sendJsonError("Échec de l'enregistrement de la licence.");
+        }
+    }
+
+    /**
+     * Send a JSON error response to the client.
+     * @param string $message
+     * @return void
+     * @throws JsonException
+     */
+    private function sendJsonError(string $message): void
+    {
+        echo json_encode(
+            ['error' => $message],
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
     }
 
     /**
