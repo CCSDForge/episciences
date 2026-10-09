@@ -170,6 +170,33 @@ class Episciences_Mail_Template
 
 
     /**
+     * Fetch a custom template of a given journal from its id, and populate it from database.
+     * Default templates (shared by all journals) and templates of other journals are never found.
+     *
+     * @param int $id
+     * @param int $rvid
+     * @return bool
+     */
+    public function findCustom(int $id, int $rvid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $select = $db->select()
+            ->from(T_MAIL_TEMPLATES)
+            ->where('ID = ?', $id)
+            ->where('RVID = ?', $rvid)
+            ->where('PARENTID IS NOT NULL');
+
+        $template = $db->fetchRow($select);
+
+        if ($template) {
+            return $this->populate($template);
+        }
+
+        return false;
+    }
+
+    /**
      * fetch a template from a given key, and populate it from database
      * @param string $key
      * @return bool
@@ -367,7 +394,7 @@ class Episciences_Mail_Template
         $key = $this->getKey();
 
         // Supprimer en base
-        if ($db->delete(T_MAIL_TEMPLATES, 'ID = ' . $id) < 1){
+        if ($db->delete(T_MAIL_TEMPLATES, ['ID = ?' => $id]) < 1){
             return false;
         }
 

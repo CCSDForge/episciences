@@ -47,15 +47,14 @@
                             </button>
                         </a>
                         <?php if ($template['PARENTID']) : ?>
-                            <a class="delete-template"
-                               href="/administratemail/deletetemplate?id=<?= $template['ID'] ?>"
-                               title="<?= $this->translate($deleteTemplateTitle) ?>">
-                                <button class="btn btn-default btn-xs" data-toggle="tooltip"
-                                        title="<?= $this->translate($deleteTemplateTitle) ?>"
-                                        role="button" >
+                            <form class="delete-template-form" method="post" action="/administratemail/deletetemplate" style="display: inline">
+                                <input type="hidden" name="id" value="<?= (int)$template['ID'] ?>">
+                                <input type="hidden" name="<?= $this->escape($this->deleteTemplateCsrfToken['name']) ?>" value="<?= $this->escape($this->deleteTemplateCsrfToken['value']) ?>">
+                                <button type="submit" class="btn btn-default btn-xs" data-toggle="tooltip"
+                                        title="<?= $this->translate($deleteTemplateTitle) ?>">
                                     <span class="glyphicon glyphicon-trash"></span>&nbsp;<?= $this->translate('Rétablir') ?>
                                 </button>
-                            </a>
+                            </form>
 
                         <?php endif; ?>
                     <?php endif; ?>
