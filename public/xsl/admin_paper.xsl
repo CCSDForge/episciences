@@ -11,6 +11,9 @@
     
     <xsl:output method="html" encoding="utf-8" indent="yes"/>
 
+    <!-- '1' when the current user is allowed to save the paper licence -->
+    <xsl:param name="canEditLicense" select="'0'"/>
+
     <xsl:template match="/record">
         <xsl:variable name="rightOrcid" select="episciences/rightOrcid/text()"/>
         <xsl:if test="$rightOrcid = '1'">
@@ -334,12 +337,14 @@
                             </xsl:if>
                         </xsl:for-each>
                         <!-- No SPDX licence yet (missing or legacy rights only): the licence must still be editable -->
-                        <div class="small">
-                            <xsl:if test="not(metadata/oai_dc:dc/dc:rights[not(contains(., 'info:eu-repo/semantics/'))])">
-                                <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
-                            </xsl:if>
-                            <xsl:call-template name="license-edit-button"/>
-                        </div>
+                        <xsl:if test="$canEditLicense = '1'">
+                            <div class="small">
+                                <xsl:if test="not(metadata/oai_dc:dc/dc:rights[not(contains(., 'info:eu-repo/semantics/'))])">
+                                    <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
+                                </xsl:if>
+                                <xsl:call-template name="license-edit-button"/>
+                            </div>
+                        </xsl:if>
                     </xsl:otherwise>
                 </xsl:choose>
 
@@ -464,17 +469,20 @@
         </xsl:for-each>
     </xsl:template>
 
-    <!-- Template for processing subjects with language grouping -->
+    <!-- Licence edit button, rendered only for users allowed to save a licence -->
     <xsl:template name="license-edit-button">
-        <button type="button" class="btn btn-default btn-xs popover-link edit-license" style="margin-left: 5px">
-            <xsl:attribute name="onclick">
-                <xsl:value-of select="concat('getLicensesForm(this, ', episciences/id,')')"/>
-            </xsl:attribute>
-            <span class="fa-solid fa-pen-to-square" style="margin-right: 5px"/>
-            <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Modifier')"/>
-        </button>
+        <xsl:if test="$canEditLicense = '1'">
+            <button type="button" class="btn btn-default btn-xs popover-link edit-license" style="margin-left: 5px">
+                <xsl:attribute name="onclick">
+                    <xsl:value-of select="concat('getLicensesForm(this, ', episciences/id,')')"/>
+                </xsl:attribute>
+                <span class="fa-solid fa-pen-to-square" style="margin-right: 5px"/>
+                <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Modifier')"/>
+            </button>
+        </xsl:if>
     </xsl:template>
 
+    <!-- Template for processing subjects with language grouping -->
     <xsl:template name="process-subjects">
         <!-- Count total subjects -->
         <xsl:variable name="subject_count" select="count(metadata/oai_dc:dc/dc:subject)"/>

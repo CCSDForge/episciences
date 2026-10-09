@@ -678,7 +678,8 @@ class AdministratepaperController extends PaperDefaultController
             $this->checkPermissions($review, $paper);
         }
 
-        $paper->setXslt($paper->getXml(), 'admin_paper');
+        // Only secretaries can save a licence (see savespdxlicenseAction)
+        $paper->setXslt($paper->getXml(), 'admin_paper', ['canEditLicense' => Episciences_Auth::isSecretary() ? '1' : '0']);
 
         // load all volumes
         $volumes = $review->getVolumes();
