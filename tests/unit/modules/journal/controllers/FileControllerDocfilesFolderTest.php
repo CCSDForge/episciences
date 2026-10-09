@@ -96,6 +96,22 @@ final class FileControllerDocfilesFolderTest extends TestCase
         self::assertSame($relativePath, $delivered[0][1]);
     }
 
+    public function testCopyEditingFileOfACommentIsServed(): void
+    {
+        [$code, $delivered] = $this->runDocfilesAction(['folder' => 'ce', 'parentCommentId' => '34']);
+
+        self::assertSame(200, $code);
+        self::assertSame('copy_editing_sources/34/report.xml', $delivered[0][1] ?? null);
+    }
+
+    public function testMissingFolderIsRefused(): void
+    {
+        [$code, $delivered] = $this->runDocfilesAction([]);
+
+        self::assertSame(404, $code);
+        self::assertSame([], $delivered, 'no file must be delivered');
+    }
+
     /**
      * @return array<string, array{array<string, string>}>
      */
