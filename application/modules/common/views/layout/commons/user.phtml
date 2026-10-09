@@ -2,8 +2,8 @@
     <li class="dropdown">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
             <?php if (Episciences_Auth::isImpersonating()): ?>
-                <span class="badge" style="background-color: #ffc107; color: #212529; font-weight: bold; margin-right: 4px;" title="<?= $this->translate("Changement d'identité actif") ?>">
-                    <i class="fas fa-user-secret" style="color: #212529;"></i> SU
+                <span class="text-bg-warning su-session-badge" title="<?= $this->translate("Changement d'identité actif") ?>">
+                    <i class="fas fa-user-secret" aria-hidden="true"></i> SU
                 </span>
             <?php endif; ?>
             <img class="user-photo-thumb"
@@ -18,14 +18,14 @@
                 $origUser = Episciences_Auth::getOriginalIdentity();
                 $origScreenName = $origUser ? $origUser->getScreenName() : '';
                 ?>
-                <li style="padding: 6px 12px; margin-bottom: 6px; background-color: #fff3cd; border-bottom: 1px solid #ffeeba; color: #856404; font-size: 12px;">
-                    <div style="font-weight: bold;">
-                        <i class="fas fa-user-secret"></i> <?= $this->translate("Changement d'identité actif") ?>
+                <li class="alert alert-warning su-session-notice">
+                    <div class="su-session-notice-title">
+                        <i class="fas fa-user-secret" aria-hidden="true"></i> <?= $this->translate("Changement d'identité actif") ?>
                     </div>
-                    <div style="margin-top: 2px;">
+                    <div class="su-session-notice-account">
                         <?= $this->translate("Compte d'origine :") ?> <strong><?= $this->escape($origScreenName) ?></strong>
                     </div>
-                    <div class="text-muted" style="font-size: 11px; margin-top: 2px;">
+                    <div class="text-muted su-session-notice-hint">
                         <i class="fas fa-info-circle"></i> <?= $this->translate("Modifications désactivées") ?>
                     </div>
                 </li>
@@ -65,8 +65,8 @@
                                 <div>
                                     <?= $this->partial('user/roles_only_tags.phtml', ['roles' => Episciences_Auth::getRoles()]) ?>
                                     <?php if (Episciences_Auth::isImpersonating()): ?>
-                                        <span class="label" style="background-color: #ffc107; color: #212529; font-weight: bold;" title="<?= $this->translate("Session sous switch-user") ?>">
-                                            <i class="fas fa-user-secret" style="color: #212529;"></i> <?= $this->translate("Switch-User") ?>
+                                        <span class="text-bg-warning" title="<?= $this->translate("Session sous switch-user") ?>">
+                                            <i class="fas fa-user-secret" aria-hidden="true"></i> <?= $this->translate("Switch-User") ?>
                                         </span>
                                     <?php endif; ?>
                                 </div>
@@ -78,9 +78,12 @@
             <li class="divider"></li>
             <li style="padding:0 10px 10px; text-align:center;">
                 <?php if (Episciences_Auth::isImpersonating()): ?>
-                    <a href="/user/unsu" class="btn btn-warning btn-xs" style="margin-bottom: 6px; font-weight: bold; width: 100%;">
-                        <i class="fas fa-arrow-left"></i>&nbsp;<?= $this->translate("Reprendre mon compte") ?>
-                    </a>
+                    <form method="post" action="<?= $this->url(['controller' => 'user', 'action' => 'unsu'], 'default', true) ?>">
+                        <input type="hidden" name="csrf_token" value="<?= $this->escape(Episciences_Csrf_Helper::getSessionToken()) ?>">
+                        <button type="submit" class="btn btn-warning btn-xs su-session-exit">
+                            <i class="fas fa-arrow-left" aria-hidden="true"></i>&nbsp;<?= $this->translate("Reprendre mon compte") ?>
+                        </button>
+                    </form>
                 <?php endif; ?>
                 <span><a href="/user/logout" class="btn btn-default btn-xs"><i
                                 class="fas fa-sign-out-alt"></i>&nbsp;<?= $this->translate("Déconnexion") ?></a></span>

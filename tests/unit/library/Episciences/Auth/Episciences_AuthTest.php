@@ -21,6 +21,7 @@ class Episciences_AuthTest extends TestCase
         Episciences_Auth::getInstance()->clearIdentity();
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
         unset($session->realIdentities);
+        Episciences_Auth::clearImpersonation();
         unset($session->photoVersion);
         unset($session->currentAttachmentsPath);
     }
@@ -30,6 +31,7 @@ class Episciences_AuthTest extends TestCase
         Episciences_Auth::getInstance()->clearIdentity();
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
         unset($session->realIdentities);
+        Episciences_Auth::clearImpersonation();
         unset($session->photoVersion);
         unset($session->currentAttachmentsPath);
     }
@@ -436,15 +438,17 @@ class Episciences_AuthTest extends TestCase
         self::assertTrue(Episciences_Auth::hasRealIdentity());
     }
 
-    public function testHasRealIdentityWhenSessionRealIdentitiesIsEmpty(): void
+    public function testAnEmptySwitchUserStackIsIgnored(): void
     {
         $user = $this->createMockUser(42, [Episciences_Acl::ROLE_MEMBER]);
         $this->loginUser($user);
 
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
         $session->realIdentities = [];
+        $session->impersonatedUid = 42;
 
-        self::assertFalse(Episciences_Auth::hasRealIdentity());
+        self::assertTrue(Episciences_Auth::hasRealIdentity());
+        self::assertFalse(Episciences_Auth::isImpersonating());
     }
 
     public function testHasRealIdentityWhenImpersonating(): void
@@ -453,8 +457,7 @@ class Episciences_AuthTest extends TestCase
         $author = $this->createMockUser(42, [Episciences_Acl::ROLE_AUTHOR]);
 
         $this->loginUser($admin);
-        Episciences_Auth::saveRealIdentity();
-        $this->loginUser($author);
+        Episciences_Auth::startImpersonation($author);
 
         self::assertFalse(Episciences_Auth::hasRealIdentity());
         self::assertSame($admin, Episciences_Auth::getOriginalIdentity());
@@ -465,7 +468,7 @@ class Episciences_AuthTest extends TestCase
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
         $session->realIdentities = [];
 
-        // Not logged in, getUser() returns null → getAllIdentities returns []
+        // Not logged in: getUser() returns null
         self::assertNull(Episciences_Auth::getOriginalIdentity());
     }
 
@@ -479,15 +482,63 @@ class Episciences_AuthTest extends TestCase
         self::assertSame($user, $identities[0]);
     }
 
-    public function testGetAllIdentitiesAfterSaveRealIdentity(): void
+    public function testGetAllIdentitiesWhileImpersonatingHoldsTheRealIdentity(): void
     {
         $admin = $this->createMockUser(99, [Episciences_Acl::ROLE_ADMIN]);
+        $target = $this->createMockUser(42, [Episciences_Acl::ROLE_AUTHOR]);
         $this->loginUser($admin);
-        Episciences_Auth::saveRealIdentity();
+        Episciences_Auth::startImpersonation($target);
 
         $identities = Episciences_Auth::getAllIdentities();
         self::assertCount(1, $identities);
         self::assertSame($admin, $identities[0]);
+        self::assertSame(42, Episciences_Auth::getUid());
+    }
+
+    public function testAStackLeftByAnotherLoginIsNotHonoured(): void
+    {
+        $admin = $this->createMockUser(99, [Episciences_Acl::ROLE_ADMIN]);
+        $target = $this->createMockUser(42, [Episciences_Acl::ROLE_AUTHOR]);
+        $nextUser = $this->createMockUser(7, [Episciences_Acl::ROLE_MEMBER]);
+
+        $this->loginUser($admin);
+        Episciences_Auth::startImpersonation($target);
+        // Logout without unsu then another login in the same session
+        Episciences_Auth::getInstance()->clearIdentity();
+        $this->loginUser($nextUser);
+
+        self::assertFalse(Episciences_Auth::isImpersonating());
+        self::assertSame([$nextUser], Episciences_Auth::getAllIdentities());
+        self::assertNull(Episciences_Auth::endImpersonation());
+        self::assertSame(7, Episciences_Auth::getUid(), 'the stale stack must never restore the admin');
+    }
+
+    public function testEndImpersonationRestoresTheRealIdentity(): void
+    {
+        $admin = $this->createMockUser(99, [Episciences_Acl::ROLE_ADMIN]);
+        $target = $this->createMockUser(42, [Episciences_Acl::ROLE_AUTHOR]);
+        $this->loginUser($admin);
+        Episciences_Auth::startImpersonation($target);
+
+        self::assertSame($admin, Episciences_Auth::endImpersonation());
+        self::assertSame(99, Episciences_Auth::getUid());
+        self::assertFalse(Episciences_Auth::isImpersonating());
+        self::assertNull(Episciences_Auth::endImpersonation(), 'a second call has nothing to restore');
+        self::assertSame(99, Episciences_Auth::getUid());
+    }
+
+    public function testClearImpersonationForgetsTheStack(): void
+    {
+        $admin = $this->createMockUser(99, [Episciences_Acl::ROLE_ADMIN]);
+        $target = $this->createMockUser(42, [Episciences_Acl::ROLE_AUTHOR]);
+        $this->loginUser($admin);
+        Episciences_Auth::startImpersonation($target);
+
+        Episciences_Auth::clearImpersonation();
+
+        self::assertFalse(Episciences_Auth::isImpersonating());
+        self::assertNull(Episciences_Auth::endImpersonation());
+        self::assertSame(42, Episciences_Auth::getUid());
     }
 
     // ==================== isAllowedToDeclareConflict ====================
@@ -507,8 +558,7 @@ class Episciences_AuthTest extends TestCase
         $author = $this->createMockUser(42, [Episciences_Acl::ROLE_AUTHOR]);
 
         $this->loginUser($root);
-        Episciences_Auth::saveRealIdentity();
-        $this->loginUser($author);
+        Episciences_Auth::startImpersonation($author);
 
         // Root impersonating an author: suUser is root → inner check skipped → false
         self::assertFalse(Episciences_Auth::isAllowedToDeclareConflict());
@@ -521,8 +571,7 @@ class Episciences_AuthTest extends TestCase
         $author = $this->createMockUser(42, [Episciences_Acl::ROLE_AUTHOR]);
 
         $this->loginUser($secretary);
-        Episciences_Auth::saveRealIdentity();
-        $this->loginUser($author);
+        Episciences_Auth::startImpersonation($author);
 
         // Current identity (author) has no editorial roles, but suUser (secretary) does → true
         self::assertTrue(Episciences_Auth::isAllowedToDeclareConflict());
@@ -633,8 +682,7 @@ class Episciences_AuthTest extends TestCase
         $target = $this->createMockUser(42, [Episciences_Acl::ROLE_AUTHOR]);
 
         $this->loginUser($admin);
-        Episciences_Auth::saveRealIdentity();
-        $this->loginUser($target);
+        Episciences_Auth::startImpersonation($target);
 
         self::assertTrue(Episciences_Auth::isImpersonating());
     }

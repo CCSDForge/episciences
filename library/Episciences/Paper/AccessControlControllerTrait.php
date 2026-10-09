@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Episciences\User\SuLogger;
+
 /**
  * Trait for shared "manage this paper" access-control logic.
  * Used by AdministratepaperController and ActivityController so both
@@ -232,7 +234,23 @@ trait Episciences_Paper_AccessControlControllerTrait
 
         if ($suResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
             // switch back to the original account: the conflict confirmation is expected from it
-            Episciences_Auth::updateIdentity($suUser);
+            $impersonatedUid = (int)Episciences_Auth::getUid();
+            $sessionId = session_id() ?: null;
+
+            if (Episciences_Auth::endImpersonation() !== null) {
+                $audit = SuLogger::requestContext($this->getRequest());
+                SuLogger::log(
+                    fromUid: (int)$suUser->getUid(),
+                    toUid: $impersonatedUid,
+                    action: SuLogger::ACTION_UNSU,
+                    rvid: (int)RVID,
+                    reason: SuLogger::REASON_CONFLICT_CONFIRMATION,
+                    ipAddress: $audit['ipAddress'],
+                    userAgent: $audit['userAgent'],
+                    sessionId: $sessionId,
+                    details: $audit['details']
+                );
+            }
 
             $message .= $this->view->translate("Vous êtes maintenant connecté à votre compte :");
             $message .= '<br>';

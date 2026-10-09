@@ -2651,4 +2651,9 @@ return array(
     "Session sous switch-user" => "Session under switch-user",
     "Switch-User" => "Switch-User",
     "Vous avez repris votre compte principal (%s)." => "You have switched back to your primary account (%s).",
+    "Vous ne pouvez pas basculer vers votre propre compte." => "You cannot switch to your own account.",
+    "Vous n'avez pas les privilèges requis pour accéder à ce compte." => "You do not have the privileges required to access this account.",
+    "Vous ne pouvez pas changer d'utilisateur lorsque vous êtes déjà sous une identité de substitution." => "You cannot switch user while already impersonating another user.",
+    "Ce compte n'a aucun rôle dans cette revue." => "This account has no role in this journal.",
+    "Action non autorisée." => "Unauthorized action.",
 );

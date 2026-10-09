@@ -498,5 +498,10 @@ return [
     "Session sous switch-user" => "Session sous switch-user",
     "Switch-User" => "Switch-User",
     "Vous avez repris votre compte principal (%s)." => "Vous avez repris votre compte principal (%s).",
+    "Vous ne pouvez pas basculer vers votre propre compte." => "Vous ne pouvez pas basculer vers votre propre compte.",
+    "Vous n'avez pas les privilèges requis pour accéder à ce compte." => "Vous n'avez pas les privilèges requis pour accéder à ce compte.",
+    "Vous ne pouvez pas changer d'utilisateur lorsque vous êtes déjà sous une identité de substitution." => "Vous ne pouvez pas changer d'utilisateur lorsque vous êtes déjà sous une identité de substitution.",
+    "Ce compte n'a aucun rôle dans cette revue." => "Ce compte n'a aucun rôle dans cette revue.",
+    "Action non autorisée." => "Action non autorisée.",
 
 ];

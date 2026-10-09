@@ -6,6 +6,7 @@ namespace unit\library\Episciences\User;
 
 use Episciences\User\SuLogger;
 use PHPUnit\Framework\TestCase;
+use Zend_Controller_Request_HttpTestCase;
 use Zend_Db_Adapter_Abstract;
 
 /**
@@ -42,7 +43,7 @@ final class SuLoggerTest extends TestCase
                         && $data['rvid'] === 3
                         && $data['ip_address'] === '192.168.1.1'
                         && $data['user_agent'] === 'TestBrowser'
-                        && $data['session_id'] === 'sess123'
+                        && $data['session_id'] === hash('sha256', 'sess123')
                         && $data['is_anonymized'] === 0
                         && isset($data['created_at']);
                 })
@@ -83,26 +84,97 @@ final class SuLoggerTest extends TestCase
         self::assertFalse($result);
     }
 
+    public function testLogNeverStoresTheRawSessionId(): void
+    {
+        $stored = null;
+        $db = $this->createMock(Zend_Db_Adapter_Abstract::class);
+        $db->method('insert')->willReturnCallback(function (string $table, array $data) use (&$stored): int {
+            $stored = $data;
+            return 1;
+        });
+
+        SuLogger::log(10, 20, SuLogger::ACTION_UNSU, 3, sessionId: 'live-session-id', adapter: $db);
+
+        self::assertIsArray($stored);
+        self::assertSame(SuLogger::ACTION_UNSU, $stored['action']);
+        self::assertStringNotContainsString('live-session-id', (string)json_encode($stored));
+        self::assertSame(SuLogger::hashSessionId('live-session-id'), $stored['session_id']);
+    }
+
+    public function testHashSessionIdIgnoresMissingIds(): void
+    {
+        self::assertNull(SuLogger::hashSessionId(null));
+        self::assertNull(SuLogger::hashSessionId(''));
+        self::assertSame(64, strlen((string)SuLogger::hashSessionId('abc')));
+    }
+
     public function testAnonymizeOldLogsProcessesMatchingRows(): void
     {
         $db = $this->createMock(Zend_Db_Adapter_Abstract::class);
         $db->expects(self::once())
             ->method('fetchAll')
             ->willReturn([
-                ['id' => 1, 'ip_address' => '1.1.1.1'],
-                ['id' => 2, 'ip_address' => '192.168.5.5'],
+                [
+                    'id' => 1,
+                    'ip_address' => '1.1.1.1',
+                    'details' => json_encode(['from_roles' => ['secretary'], SuLogger::DETAILS_FORWARDED_FOR => '203.0.113.9']),
+                ],
+                ['id' => 2, 'ip_address' => '192.168.5.5', 'details' => json_encode([SuLogger::DETAILS_FORWARDED_FOR => '203.0.113.9'])],
+                ['id' => 3, 'ip_address' => null, 'details' => null],
             ]);
 
-        $db->expects(self::exactly(2))
+        $updates = [];
+        $db->expects(self::exactly(3))
             ->method('update')
-            ->willReturnCallback(function (string $table, array $bind, array $where): int {
+            ->willReturnCallback(function (string $table, array $bind, array $where) use (&$updates): int {
                 self::assertSame(SuLogger::TABLE_NAME, $table);
-                self::assertSame(1, $bind['is_anonymized']);
-                self::assertTrue($bind['ip_address'] === '1.1.0.0' || $bind['ip_address'] === '192.168.0.0');
+                $updates[$where['id = ?']] = $bind;
                 return 1;
             });
 
         $count = SuLogger::anonymizeOldLogs(retentionDays: 365, adapter: $db);
-        self::assertSame(2, $count);
+        self::assertSame(3, $count);
+
+        self::assertSame('1.1.0.0', $updates[1]['ip_address']);
+        self::assertSame('192.168.0.0', $updates[2]['ip_address']);
+        self::assertNull($updates[3]['ip_address']);
+
+        foreach ($updates as $bind) {
+            self::assertSame(1, $bind['is_anonymized']);
+            self::assertNull($bind['user_agent']);
+            self::assertNull($bind['session_id']);
+            self::assertStringNotContainsString('203.0.113.9', (string)$bind['details']);
+        }
+
+        self::assertSame(['from_roles' => ['secretary']], json_decode((string)$updates[1]['details'], true));
+        self::assertNull($updates[2]['details'], 'nothing left once the forwarded-for chain is removed');
+    }
+
+    public function testRequestContextTakesTheIpFromTheConnectionOnly(): void
+    {
+        $previousServer = $_SERVER;
+        $_SERVER['REMOTE_ADDR'] = '198.51.100.7';
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setHeader('Client-IP', '10.0.0.1');
+        $request->setHeader('X-Forwarded-For', '203.0.113.9, 10.0.0.2');
+        $request->setHeader('User-Agent', 'TestBrowser');
+
+        try {
+            $context = SuLogger::requestContext($request);
+        } finally {
+            $_SERVER = $previousServer;
+        }
+
+        self::assertSame('198.51.100.7', $context['ipAddress']);
+        self::assertSame('TestBrowser', $context['userAgent']);
+        self::assertSame([SuLogger::DETAILS_FORWARDED_FOR => '203.0.113.9, 10.0.0.2'], $context['details']);
+    }
+
+    public function testRequestContextOfANonHttpRequestIsEmpty(): void
+    {
+        self::assertSame(
+            ['ipAddress' => null, 'userAgent' => null, 'details' => []],
+            SuLogger::requestContext(new \stdClass())
+        );
     }
 }

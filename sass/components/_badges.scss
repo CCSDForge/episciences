@@ -9,7 +9,8 @@
 // Available project-wide; first used in the activity timeline (activity_timeline_review_table.phtml).
 .text-bg-light,
 .text-bg-dark,
-.text-bg-success {
+.text-bg-success,
+.text-bg-warning {
   display: inline-block;
   padding: 0.35em 0.65em;
   font-size: 0.75em;
@@ -33,6 +34,11 @@
 .text-bg-success {
   color: #fff;
   background-color: #198754;
+}
+
+.text-bg-warning {
+  color: #000;
+  background-color: #ffc107;
 }
 
 .unavailable-badge {

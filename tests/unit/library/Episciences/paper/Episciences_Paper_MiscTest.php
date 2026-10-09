@@ -33,6 +33,7 @@ final class Episciences_Paper_MiscTest extends TestCase
         \Episciences_Auth::getInstance()->clearIdentity();
         $session = new \Zend_Session_Namespace(SESSION_NAMESPACE);
         unset($session->realIdentities);
+        \Episciences_Auth::clearImpersonation();
     }
 
     protected function tearDown(): void
@@ -40,6 +41,7 @@ final class Episciences_Paper_MiscTest extends TestCase
         \Episciences_Auth::getInstance()->clearIdentity();
         $session = new \Zend_Session_Namespace(SESSION_NAMESPACE);
         unset($session->realIdentities);
+        \Episciences_Auth::clearImpersonation();
     }
 
     private function createMockUser(int $uid): \Episciences_User
@@ -225,8 +227,7 @@ final class Episciences_Paper_MiscTest extends TestCase
         $impersonated = $this->createMockUser(42);
 
         $this->loginUser($admin);
-        \Episciences_Auth::saveRealIdentity();
-        $this->loginUser($impersonated);
+        \Episciences_Auth::startImpersonation($impersonated);
 
         // Current identity (42) doesn't match, but the original identity (99) does
         self::assertTrue($paper->isOwner());
@@ -241,8 +242,7 @@ final class Episciences_Paper_MiscTest extends TestCase
         $impersonated = $this->createMockUser(42);
 
         $this->loginUser($admin);
-        \Episciences_Auth::saveRealIdentity();
-        $this->loginUser($impersonated);
+        \Episciences_Auth::startImpersonation($impersonated);
 
         self::assertFalse($paper->isOwner());
     }

@@ -7,15 +7,22 @@ document.addEventListener('DOMContentLoaded', function () {
             const uid = this.getAttribute('attr-uid');
             const formData = new FormData();
             formData.append('uid', uid);
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
 
             fetch('/user/ajaxdeletephoto', {
                 method: 'POST',
                 body: formData,
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': csrfMeta ? csrfMeta.content : '',
                 },
             })
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.text();
+                })
                 .then(data => {
                     if (data == '1') {
                         const photoElements = document.querySelectorAll(
