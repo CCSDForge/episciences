@@ -168,8 +168,8 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if ($everywhere) {
             // Supprime son compte ES et ses rôles pour toutes les revues
-            $db->delete(T_USER_ROLES, 'UID = ' . (int)$uid);
-            $db->delete(T_USERS, 'UID = ' . (int)$uid);
+            $db->delete(T_USER_ROLES, ['UID = ?' => (int)$uid]);
+            $db->delete(T_USERS, ['UID = ?' => (int)$uid]);
 
             // Désactive toutes ses assignations (relecture, édition) pour toutes les revues
             $db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
@@ -194,7 +194,7 @@ class Episciences_User extends Ccsd_User_Models_User
             )", $uid);
         } else {
             // Supprime uniquement ses rôles pour cette revue
-            $db->delete(T_USER_ROLES, 'RVID = ' . RVID . ' AND UID = ' . $uid);
+            $db->delete(T_USER_ROLES, ['RVID = ?' => RVID, 'UID = ?' => (int)$uid]);
 
             // Désactive toutes ses assignations (relecture, édition) pour cette revue
             $db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
@@ -232,7 +232,7 @@ class Episciences_User extends Ccsd_User_Models_User
     public static function deleteFromCAS($uid)
     {
         $db = Ccsd_Db_Adapter_Cas::getAdapter();
-        return $db->delete(T_CAS_USERS, 'UID = ' . (int)$uid);
+        return $db->delete(T_CAS_USERS, ['UID = ?' => (int)$uid]);
     }
 
     // Retourne les droits de l'utilisateur (pour toutes les revues / portails)

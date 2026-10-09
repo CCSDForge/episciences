@@ -864,11 +864,18 @@ class UserDefaultController extends Zend_Controller_Action
             return;
         }
 
-        $userId = $request->getPost('userId');
+        // The identifier must be a plain positive integer
+        $userId = filter_var($request->getPost('userId'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         $table = $request->getPost('table');
 
+        if ($userId === false) {
+            $this->getResponse()->setHttpResponseCode(400);
+            echo 0;
+            return;
+        }
+
         // Each delete control carries its own per-user request token.
-        $tokenName = 'user_delete_' . (int)$userId;
+        $tokenName = 'user_delete_' . $userId;
         if (!Episciences_Csrf_Helper::validateToken($tokenName, (string)$request->getPost($tokenName, ''))) {
             $this->getResponse()->setHttpResponseCode(403);
             echo 0;
