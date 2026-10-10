@@ -298,6 +298,7 @@
         <?= $this->partial('user/user_profile.phtml', ['user' => $this->user]) ?>
     </div>
 
+    <?php if (!Episciences_Auth::isImpersonating()): ?>
     <div class="panel-footer">
         <a class="btn btn-default btn-sm" href="/user/change_account_email"><span class="fa-solid fa-envelope" style="margin-right: 5px;"></span><?= $this->translate("Modifier mon courriel") ?></a>
         <a class="btn btn-default btn-sm" href="/user/edit"><span class="glyphicon glyphicon-user"></span> <?= $this->translate('Modifier mon profil') ?>
@@ -308,6 +309,7 @@
         </a>
 
     </div>
+    <?php endif; ?>
 
 </div>
 

@@ -119,16 +119,21 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                                   title="<?php echo $this->translate("Vous êtes déjà connecté avec ce compte."); ?>"
                                   class="lightergrey fas fa-user-secret"></span>
                         <?php else : ?>
-                            <a href="/user/su/uid/<?php echo $user['uid']; ?>"><span data-toggle="tooltip"
-                                                                                     title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
-                                                                                     class="darkgrey fas fa-user-secret"></span></a>&nbsp;
+                            <?= $this->partial('user/su_button.phtml', ['uid' => $user['uid'], 'buttonClass' => 'btn btn-link btn-xs darkgrey']) ?>&nbsp;
                         <?php endif; ?>
                     <?php endif; ?>
-                    <?php if (Episciences_Auth::isSecretary()) : ?>
-                        <a href="/user/edit?userid=<?php echo $user['uid']; ?>"> <span data-toggle="tooltip"
-                                                                                       title="<?php echo $this->translate("Modifier ce compte."); ?>"
-                                                                                       class="darkgrey glyphicon glyphicon-edit"></span>
+                    <?php if ($user['uid'] == Episciences_Auth::getUid() && !Episciences_Auth::isImpersonating()) : ?>
+                        <a href="/user/edit"> <span data-toggle="tooltip"
+                                                    title="<?php echo $this->translate("Modifier mon compte."); ?>"
+                                                    class="darkgrey glyphicon glyphicon-edit"></span>
                         </a>&nbsp;
+                    <?php elseif (Episciences_Auth::isRoot() && !Episciences_Auth::isImpersonating()) : ?>
+                        <a href="/user/edit?userid=<?php echo $user['uid']; ?>"> <span data-toggle="tooltip"
+                                                                                        title="<?php echo $this->translate("Modifier ce compte."); ?>"
+                                                                                        class="darkgrey glyphicon glyphicon-edit"></span>
+                        </a>&nbsp;
+                    <?php endif; ?>
+                    <?php if (Episciences_Auth::isSecretary()) : ?>
                         <?php if (Episciences_Auth::getUid() == $user['uid']) : ?>
                             <span style="cursor: pointer" data-toggle="tooltip"
                                   title="<?php echo $this->translate('Ce compte vous appartient, vous ne pouvez pas le supprimer.'); ?>"
@@ -146,10 +151,6 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                             </a>
                         <?php endif; ?>
                     <?php else : ?>
-                        <span style="cursor: pointer" data-toggle="tooltip"
-                              title="<?= $this->translate("Vous n'avez pas les droits nécessaires pour modifier ce compte."); ?>"
-                              class="darkgrey glyphicon glyphicon-edit">
-                        </span>
                         <span style="cursor: pointer" data-toggle="tooltip"
                               title="<?= $this->translate('Vous n\'avez pas les droits nécessaires pour supprimer ce compte.'); ?>"
                               class="lightergrey glyphicon glyphicon-trash">

@@ -60,14 +60,7 @@ $rvid = RVID;
                 <?php endif; ?>
 
                 <?php if (Episciences_Auth::isSecretary()) : ?>
-                    <a class="btn btn-default" href="/user/su/uid/<?php echo $paper->getUid(); ?>">
-                        <span data-toggle="tooltip"
-                              style="margin: 0.2rem"
-                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
-                              class="fas fa-user-secret">
-
-                        </span>
-                    </a>&nbsp;
+                    <?= $this->partial('user/su_button.phtml', ['uid' => $paper->getUid()]) ?>&nbsp;
                 <?php endif; ?>
                 <img src="/user/photo/name/<?= urlencode($this->escape($paper->getSubmitter()->getScreenName())); ?>/uid/<?= $paper->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
                      class="user-photo-small" alt="avatar">
@@ -114,13 +107,7 @@ $rvid = RVID;
                                     </span>
                                 </a>
                                 <?php if (Episciences_Auth::isSecretary()) : ?>
-                                    <a class="btn btn-default" href="/user/su/uid/<?php echo $coAuthorInfo->getUid(); ?>">
-                                        <span data-toggle="tooltip"
-                                              style="margin: 0.2rem"
-                                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
-                                              class="fas fa-user-secret">
-                                        </span>
-                                    </a>
+                                    <?= $this->partial('user/su_button.phtml', ['uid' => $coAuthorInfo->getUid()]) ?>
                                 <?php endif; ?>
                                 <?php if (Episciences_Auth::isAdministrator()) : ?>
                                     <a id="remove-coauthor" class="btn btn-default" onclick="removeCoAuthor(<?= $paper->getDocid() ?>,<?= $coAuthorInfo->getUid() ?>, <?= $this->escape($rvid) ?>)">

@@ -82,7 +82,6 @@ echo $this->doctype('HTML5');
 <?php $this->navbar(true, ['languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')], true, ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml']); ?>
 <div id="container" class="container<?php echo $this->containerClass; ?>">
 
-
     <div class="logo">
         <?php
         if (is_file(REVIEW_PATH . 'layout/' . 'header.' . Zend_Registry::get('lang') . '.html')) {

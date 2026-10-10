@@ -239,4 +239,34 @@
   z-index: 1000;
 }
 
+// Switch user (su) session: notice at the top of the user menu, colors from .alert-warning
+.su-session-notice {
+  margin-bottom: 6px;
+  padding: 6px 12px;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  font-size: 12px;
 
+  .su-session-notice-title {
+    font-weight: bold;
+  }
+
+  .su-session-notice-account {
+    margin-top: 2px;
+  }
+
+  .su-session-notice-hint {
+    margin-top: 2px;
+    font-size: 11px;
+  }
+}
+
+.su-session-badge {
+  margin-right: 4px;
+}
+
+.su-session-exit {
+  margin-bottom: 6px;
+  font-weight: bold;
+  width: 100%;
+}

@@ -3,7 +3,10 @@
 use Ccsd\Auth\AdapterFactory;
 use Episciences\Altcha\ChallengeHelper;
 use Episciences\Trait\LocaleByCookieTrait;
+use Episciences\User\AccountMutationPolicy;
 use Episciences\User\EmailPolicy;
+use Episciences\User\ImpersonationPolicy;
+use Episciences\User\SuLogger;
 
 
 class UserDefaultController extends Zend_Controller_Action
@@ -100,21 +103,53 @@ class UserDefaultController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
 
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
 
-        $uidFrom = Episciences_Auth::getUid();
-        $uidToSu = $this->getRequest()->getParam('uid');
+        if (!$this->isSwitchUserRequestValid($request)) {
+            $this->_helper->FlashMessenger->setNamespace('danger')->addMessage(
+                Zend_Registry::get('Zend_Translate')->translate('Action non autorisée.')
+            );
+            $this->_helper->redirector('list', 'user');
+            return;
+        }
 
-        // Checks if user can use su function
-        if ((RVID === 0 && !Episciences_Auth::isRoot()) || (RVID !== 0 && !Episciences_Auth::isRoot() && !Episciences_Auth::isSecretary())) { // git #235
-            $this->_helper->FlashMessenger->setNamespace('danger')->addMessage("Vous n'avez pas les privilèges requis pour accéder à cette page.");
-            $this->redirect($this->view->url(['controller' => 'user', 'action' => 'index'], null, true));
+        $uidFrom = (int)Episciences_Auth::getUid();
+        // Captured before the switch: the roles the session is initiated with
+        $fromRoles = Episciences_Auth::getRoles();
+        $rawUidToSu = $request->getPost('uid');
+        // Bounded to the `user_su_log.to_uid` column (int unsigned)
+        $uidToSu = filter_var($rawUidToSu, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 4294967295]]);
+        $audit = SuLogger::requestContext($request);
+
+        if (!ImpersonationPolicy::hasPrivilege($fromRoles, (int)RVID)) {
+            $details = $audit['details'];
+            if ($uidToSu === false) {
+                // An invalid target is kept as sent, the denial must not be lost
+                $details['requested_uid'] = substr(is_scalar($rawUidToSu) ? (string)$rawUidToSu : gettype($rawUidToSu), 0, 64);
+            }
+            SuLogger::log(
+                $uidFrom,
+                $uidToSu === false ? 0 : $uidToSu,
+                SuLogger::ACTION_DENIED,
+                (int)RVID,
+                ImpersonationPolicy::DENIED_INSUFFICIENT_PRIVILEGES,
+                $audit['ipAddress'],
+                $audit['userAgent'],
+                session_id() ?: null,
+                $details
+            );
+            $this->_helper->FlashMessenger->setNamespace('danger')->addMessage(
+                Zend_Registry::get('Zend_Translate')->translate("Vous n'avez pas les privilèges requis pour accéder à cette page.")
+            );
+            $this->_helper->redirector('index', 'user');
             return;
         }
 
         // Checks uid
-        if (filter_var($uidToSu, FILTER_VALIDATE_INT) === false) {
+        if ($uidToSu === false) {
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage("Cet identifiant n'est pas valide.");
-            $this->redirect($this->view->url(['controller' => 'user', 'action' => 'list'], null, true));
+            $this->_helper->redirector('list', 'user');
             return;
         }
 
@@ -123,24 +158,196 @@ class UserDefaultController extends Zend_Controller_Action
 
         if (empty($res)) {
             $this->_helper->FlashMessenger->setNamespace('danger')->addMessage("Ce compte n'existe pas.");
-            $this->redirect($this->view->url(['controller' => 'user', 'action' => 'list'], null, true));
+            $this->_helper->redirector('list', 'user');
+            return;
+        }
+
+        $decision = ImpersonationPolicy::evaluate(
+            $fromRoles,
+            (int)RVID,
+            $uidFrom,
+            $uidToSu,
+            $user->getRoles((int)RVID) ?? [],
+            $user->hasRoles($uidToSu, (int)RVID),
+            Episciences_Auth::isImpersonating()
+        );
+
+        if ($decision !== ImpersonationPolicy::ALLOWED) {
+            SuLogger::log(
+                $uidFrom,
+                $uidToSu,
+                SuLogger::ACTION_DENIED,
+                (int)RVID,
+                $decision,
+                $audit['ipAddress'],
+                $audit['userAgent'],
+                session_id() ?: null,
+                $audit['details']
+            );
+
+            $messages = [
+                ImpersonationPolicy::DENIED_ALREADY_IMPERSONATING => "Vous ne pouvez pas changer d'utilisateur lorsque vous êtes déjà sous une identité de substitution.",
+                ImpersonationPolicy::DENIED_SELF_TARGET => "Vous ne pouvez pas basculer vers votre propre compte.",
+                ImpersonationPolicy::DENIED_TARGET_NOT_IN_JOURNAL => "Ce compte n'a aucun rôle dans cette revue.",
+                ImpersonationPolicy::DENIED_ESCALATION => "Vous n'avez pas les privilèges requis pour accéder à ce compte.",
+            ];
+
+            $this->_helper->FlashMessenger->setNamespace('danger')->addMessage(
+                Zend_Registry::get('Zend_Translate')->translate($messages[$decision] ?? 'Action non autorisée.')
+            );
+
+            $redirectAction = ($decision === ImpersonationPolicy::DENIED_ALREADY_IMPERSONATING) ? 'dashboard' : 'list';
+            $this->_helper->redirector($redirectAction, 'user');
             return;
         }
 
         $this->synchroniseLocalUserFromCasIfNecessary($user);
 
-        // save uidFrom
+        if (!$this->startAuditedImpersonation($user, $uidFrom, $fromRoles, $audit)) {
+            $this->_helper->FlashMessenger->setNamespace('danger')->addMessage(
+                Zend_Registry::get('Zend_Translate')->translate("Le changement d'utilisateur n'a pas pu être enregistré dans le journal d'audit : il a été refusé.")
+            );
+            $this->_helper->redirector('list', 'user');
+            return;
+        }
 
-        Episciences_Auth::saveRealIdentity();
+        $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
+            Zend_Registry::get('Zend_Translate')->translate("Vous êtes connecté en tant que : ") . $user->getScreenName()
+        );
 
-        Episciences_Auth::updateIdentity($user);
+        // Transparency and accountability flash notice
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_WARNING)->addMessage(
+            Zend_Registry::get('Zend_Translate')->translate(
+                "Pour des raisons de sécurité et de traçabilité, cette session de changement d'identité est enregistrée (votre compte, le compte cible, la revue, votre adresse IP, votre navigateur et l'horodatage). Conformément aux règles de sécurité, vous ne pouvez pas modifier le compte de cet utilisateur."
+            )
+        );
 
-        Ccsd_User_Models_UserMapper::suLog($uidFrom, $uidToSu, 'GRANTED', 'episciences');
+        $this->redirect($this->view->url(['controller' => 'user', 'action' => 'dashboard', 'lang' => Episciences_Auth::getLangueid()], null, true));
+    }
+
+    /**
+     * Terminate an active impersonation session and restore the original authenticated user.
+     * @throws Zend_Session_Exception
+     */
+    public function unsuAction(): void
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        if (!$this->isSwitchUserRequestValid($request) || !Episciences_Auth::isImpersonating()) {
+            $this->_helper->redirector('dashboard', 'user');
+            return;
+        }
+
+        $impersonatedUid = (int)Episciences_Auth::getUid();
+        // Session id of the impersonation, as logged by the GRANTED event
+        $sessionId = session_id() ?: null;
+
+        $originalUser = Episciences_Auth::endImpersonation();
+
+        if ($originalUser === null) {
+            // Unbound switch user state: the identity has been cleared, close the session
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_WARNING)->addMessage(
+                Zend_Registry::get('Zend_Translate')->translate("La session de changement d'utilisateur n'a pas pu être vérifiée : vous avez été déconnecté.")
+            );
+            $this->_helper->redirector('logout', 'user');
+            return;
+        }
 
         Zend_Session::regenerateId();
 
-        $this->_helper->FlashMessenger->setNamespace('success')->addMessage(Zend_Registry::get('Zend_Translate')->translate("Vous êtes connecté en tant que : ") . $user->getScreenName());
+        $audit = SuLogger::requestContext($request);
+        SuLogger::log(
+            fromUid: (int)$originalUser->getUid(),
+            toUid: $impersonatedUid,
+            action: SuLogger::ACTION_UNSU,
+            rvid: (int)RVID,
+            ipAddress: $audit['ipAddress'],
+            userAgent: $audit['userAgent'],
+            sessionId: $sessionId,
+            details: $audit['details']
+        );
+
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage(
+            sprintf(
+                Zend_Registry::get('Zend_Translate')->translate("Vous avez repris votre compte principal (%s)."),
+                $originalUser->getScreenName()
+            )
+        );
+
         $this->redirect($this->view->url(['controller' => 'user', 'action' => 'dashboard', 'lang' => Episciences_Auth::getLangueid()], null, true));
+    }
+
+    /**
+     * Switches the session to the target user once the GRANTED event is recorded:
+     * a switch user that cannot be audited is not granted.
+     *
+     * @param list<string> $fromRoles Roles of the initiator, captured before the switch
+     * @param array{ipAddress: ?string, userAgent: ?string, details: array<string, string>} $audit
+     */
+    private function startAuditedImpersonation(Episciences_User $target, int $uidFrom, array $fromRoles, array $audit): bool
+    {
+        Zend_Session::regenerateId();
+
+        // Logged with the new session id, shared with the matching UNSU event
+        $isLogged = SuLogger::log(
+            $uidFrom,
+            (int)$target->getUid(),
+            SuLogger::ACTION_GRANTED,
+            (int)RVID,
+            null,
+            $audit['ipAddress'],
+            $audit['userAgent'],
+            session_id() ?: null,
+            ['from_roles' => $fromRoles] + $audit['details']
+        );
+
+        if (!$isLogged) {
+            return false;
+        }
+
+        Episciences_Auth::startImpersonation($target);
+
+        return true;
+    }
+
+    /**
+     * A logout closes the switch user session too: it is recorded as its end.
+     */
+    private function logSwitchUserEndOnLogout(): void
+    {
+        if (!Episciences_Auth::isImpersonating()) {
+            return;
+        }
+
+        $originalUser = Episciences_Auth::getOriginalIdentity();
+        $impersonatedUid = (int)Episciences_Auth::getUid();
+
+        // An unbound stack gives no trusted initiator
+        if ($originalUser === null || (int)$originalUser->getUid() === $impersonatedUid) {
+            return;
+        }
+
+        $audit = SuLogger::requestContext($this->getRequest());
+        SuLogger::log(
+            fromUid: (int)$originalUser->getUid(),
+            toUid: $impersonatedUid,
+            action: SuLogger::ACTION_UNSU,
+            rvid: (int)RVID,
+            reason: SuLogger::REASON_LOGOUT,
+            ipAddress: $audit['ipAddress'],
+            userAgent: $audit['userAgent'],
+            sessionId: session_id() ?: null,
+            details: $audit['details']
+        );
+    }
+
+    /**
+     * Switching identity changes the session: only accept a POST carrying the session request token.
+     */
+    private function isSwitchUserRequestValid(Zend_Controller_Request_Http $request): bool
+    {
+        return $request->isPost() && Episciences_Csrf_Helper::validateRequestToken($request);
     }
 
     /**
@@ -216,6 +423,9 @@ class UserDefaultController extends Zend_Controller_Action
             case Zend_Auth_Result::SUCCESS:
 
                 Zend_Session::regenerateId();
+
+                // A new login never inherits a switch user state left in the session
+                Episciences_Auth::clearImpersonation();
 
                 // Instance singleton de Episciences_Auth
                 $auth = Episciences_Auth::getInstance();
@@ -312,6 +522,8 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function logoutAction(): void
     {
+        $this->logSwitchUserEndOnLogout();
+        Episciences_Auth::clearImpersonation();
 
         $urlParams = ['controller' => 'user', 'action' => 'logoutfromcas'];
 
@@ -726,10 +938,25 @@ class UserDefaultController extends Zend_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        $userUid = !$request->isPost() ? (int)$request->getParam('userid') : (int)$request->getPost('UID');
+        // The edited account is only ever taken from the "userid" parameter, never from the form fields
+        $userUid = (int)$request->getParam('userid');
+        $actingUid = Episciences_Auth::isLogged() ? (int)Episciences_Auth::getUid() : null;
+        $isImpersonating = Episciences_Auth::isImpersonating();
+        $isRoot = Episciences_Auth::isRoot();
+
+        if (!AccountMutationPolicy::canEditProfile($userUid, $actingUid, $isImpersonating, $isRoot)) {
+            $error = $isImpersonating
+                ? "Vous ne pouvez pas modifier le compte d'un utilisateur lorsque vous utilisez la fonctionnalité de changement d'identité."
+                : "Vous n'êtes pas autorisé à modifier le compte d'un autre utilisateur.";
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage(
+                Zend_Registry::get('Zend_Translate')->translate($error)
+            );
+            $this->_helper->redirector('dashboard', 'user');
+            return;
+        }
 
         $user = new Episciences_User();
-        $userId = (!empty($userUid) && Episciences_Auth::isSecretary()) ? $userUid : Episciences_Auth::getUid();
+        $userId = (!empty($userUid) && $isRoot) ? $userUid : (int)Episciences_Auth::getUid();
 
         // Données par défaut du compte CAS
         $ccsdUserMapper = new Ccsd_User_Models_UserMapper();
@@ -749,7 +976,7 @@ class UserDefaultController extends Zend_Controller_Action
         $userDefaults = $casUserDefaults->toArray();
         $userDefaults = array_merge($userDefaults, $localUserDefaults);
         $form = new Episciences_User_Form_Edit(['UID' => $userId]);
-        $form->setAction($this->view->url());
+        $form->setAction($this->view->url($userId !== $actingUid ? ['userid' => $userId] : []));
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Enregistrer les modifications',
             'class' => 'btn btn-primary'
@@ -789,7 +1016,7 @@ class UserDefaultController extends Zend_Controller_Action
                 }
 
 
-                $updatedUserValues = array_merge($localUserDefaults, $values["ccsd"], $values["episciences"]);
+                $updatedUserValues = self::bindProfileValuesToAccount($localUserDefaults, $values, $userId);
 
                 // Initialized in Episciences_User::setAdditionalProfileInformation
                 unset($updatedUserValues['AFFILIATIONS'], $updatedUserValues['SOCIAL_MEDIAS'], $updatedUserValues['WEB_SITES'], $updatedUserValues['BIOGRAPHY']);
@@ -834,7 +1061,7 @@ class UserDefaultController extends Zend_Controller_Action
 
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Les modifications sont sauvegardées.');
 
-                if (Episciences_Auth::isSecretary() && Episciences_Auth::getUid() != $user->getUid()) {
+                if ($isRoot && Episciences_Auth::getUid() !== $user->getUid()) {
                     $this->_helper->redirector('list', 'user');
                 } else {
                     $this->_helper->redirector('dashboard', 'user');
@@ -844,6 +1071,23 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         $this->view->form = $form;
+    }
+
+
+    /**
+     * Values saved by the profile form, always bound to the account being edited: the UID
+     * posted with the form is ignored.
+     *
+     * @param array<string, mixed> $localUserDefaults
+     * @param array{ccsd: array<string, mixed>, episciences: array<string, mixed>} $values
+     * @return array<string, mixed>
+     */
+    private static function bindProfileValuesToAccount(array $localUserDefaults, array $values, int $uid): array
+    {
+        $updatedUserValues = array_merge($localUserDefaults, $values['ccsd'], $values['episciences']);
+        $updatedUserValues['UID'] = $uid;
+
+        return $updatedUserValues;
     }
 
     /**
@@ -1102,6 +1346,13 @@ class UserDefaultController extends Zend_Controller_Action
         $targetUid = $this->resolveEmailChangeTargetUid($request);
 
         if ($targetUid === 0) {
+            $error = Episciences_Auth::isImpersonating()
+                ? "Vous ne pouvez pas modifier l'adresse email d'un utilisateur lorsque vous utilisez la fonctionnalité de changement d'identité."
+                : "Vous n'êtes pas autorisé à modifier l'adresse email d'un autre utilisateur.";
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage(
+                Zend_Registry::get('Zend_Translate')->translate($error)
+            );
+            $this->_helper->redirector('dashboard', 'user');
             return;
         }
 
@@ -1135,32 +1386,22 @@ class UserDefaultController extends Zend_Controller_Action
     /**
      * Resolves which account this request is allowed to change the email of.
      *
-     * Returns the acting user's own UID by default. A secretary may target
-     * another account (?userid= / hidden USER_UID field), but only one
-     * holding a role in the current review, unless they are an administrator.
-     * Returns 0 when the request targets an account the caller isn't allowed
-     * to touch.
+     * Only the legitimate account owner (logged in, not impersonating) may
+     * change their own email. Targeting any other account returns 0.
      */
     private function resolveEmailChangeTargetUid(Zend_Controller_Request_Http $request): int
     {
-        $self = (int)Episciences_Auth::getUid();
+        $actingUid = (int)Episciences_Auth::getUid();
         $requested = (int)($request->isPost()
             ? $request->getPost('USER_UID')
             : $request->getParam('userid'));
+        $target = ($requested === 0) ? $actingUid : $requested;
 
-        if ($requested === 0 || $requested === $self) {
-            return $self;
-        }
-
-        if (!Episciences_Auth::isSecretary()) {
+        if (!AccountMutationPolicy::canChangeEmail($target, $actingUid, Episciences_Auth::isImpersonating(), Episciences_Auth::isRoot())) {
             return 0;
         }
 
-        if (Episciences_Auth::isAdministrator()) {
-            return $requested;
-        }
-
-        return (new Episciences_User())->hasRoles($requested, RVID) ? $requested : 0;
+        return $target;
     }
 
     /**
@@ -1325,6 +1566,12 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function changepasswordAction(): void
     {
+        if (Episciences_Auth::isImpersonating()) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                ->addMessage($this->view->translate('Modification de compte interdite sous switch-user.'));
+            $this->_helper->redirector('dashboard', 'user');
+            return;
+        }
 
         // Retour de l'activation OK
         if ($this->getRequest()->getParam('change') == 'done') {
@@ -1730,32 +1977,42 @@ class UserDefaultController extends Zend_Controller_Action
         }
     }
 
-    public function ajaxdeletephotoAction()
+    public function ajaxdeletephotoAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
 
-        $params = $this->getRequest()->getPost();
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $params = $request->getPost();
 
-        $res = false;
-        if ($this->getRequest()->isXmlHttpRequest() && isset($params['uid'])) {
-            if (Episciences_Auth::getUid() == $params['uid'] || Episciences_Auth::isSecretary()) {
-                $user = new Ccsd_User_Models_User(['uid' => $params['uid']]);
-                $user->setUuid(Episciences_UserManager::getUuidFromUid($params['uid']));
-                $user->deletePhoto();
-                Episciences_Auth::incrementPhotoVersion();
-                if (Episciences_Auth::getUid() == $params['uid']) {
-                    $res = '1';
-                } else {
-                    $res = '2';
-                }
-            }
+        if (!$request->isXmlHttpRequest() || !isset($params['uid'])) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
         }
-        if ($res === false) {
-            header("HTTP/1.0 404 Not Found");
-            exit();
+
+        $actingUid = Episciences_Auth::isLogged() ? (int)Episciences_Auth::getUid() : null;
+        $photoOwnerUid = (int)$params['uid'];
+
+        if (
+            !Episciences_Csrf_Helper::validateRequestToken($request) ||
+            !AccountMutationPolicy::canDeletePhoto($photoOwnerUid, $actingUid, Episciences_Auth::isImpersonating(), Episciences_Auth::isRoot())
+        ) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
         }
-        echo $res;
+
+        $user = new Ccsd_User_Models_User(['uid' => $photoOwnerUid]);
+        $user->setUuid(Episciences_UserManager::getUuidFromUid($photoOwnerUid));
+        $user->deletePhoto();
+
+        // '1': the caller's own photo (navbar thumbnails to refresh), '2': another account's photo
+        if ($photoOwnerUid === $actingUid) {
+            Episciences_Auth::incrementPhotoVersion();
+            $this->getResponse()->setBody('1');
+        } else {
+            $this->getResponse()->setBody('2');
+        }
     }
 
     public function photoAction(): void
@@ -2076,6 +2333,13 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function resetapipasswordAction(): void
     {
+        if (Episciences_Auth::isImpersonating()) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                ->addMessage($this->view->translate('Modification de compte interdite sous switch-user.'));
+            $this->_helper->redirector('dashboard', 'user');
+            return;
+        }
+
         $form = new Episciences_User_Form_ApiResetPassword();
         $form->setAction($this->view->url());
         $form->setActions(true)->createSubmitButton('submit', [
