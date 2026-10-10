@@ -37,6 +37,9 @@ final class UserDefaultControllerSwitchUserTest extends TestCase
     /** @var list<array<string, mixed>> rows inserted in user_su_log */
     private array $auditRows = [];
 
+    /** Whether audit rows can be written */
+    private bool $auditAvailable = true;
+
     private bool $previousUnitTestEnabled;
 
     /** @var array<string, mixed> */
@@ -56,6 +59,9 @@ final class UserDefaultControllerSwitchUserTest extends TestCase
             ->getMock();
         $this->adapter->method('insert')->willReturnCallback(function (string $table, array $data): int {
             if ($table === SuLogger::TABLE_NAME) {
+                if (!$this->auditAvailable) {
+                    throw new \Zend_Db_Statement_Exception("Table 'user_su_log' doesn't exist");
+                }
                 $this->auditRows[] = $data;
             }
             return 1;
@@ -181,6 +187,60 @@ final class UserDefaultControllerSwitchUserTest extends TestCase
         self::assertSame(10, $this->auditRows[0]['from_uid']);
     }
 
+    public function testSuWithAnInvalidUidByAnEditorIsDeniedAndLoggedWithinTheColumnRange(): void
+    {
+        Episciences_Auth::getInstance()->getStorage()->write($this->user(10, [Episciences_Acl::ROLE_EDITOR]));
+        $token = Episciences_Csrf_Helper::getSessionToken();
+
+        $this->controller($this->request('POST', ['uid' => '-5', 'csrf_token' => $token]))->suAction();
+
+        self::assertCount(1, $this->auditRows);
+        self::assertSame(SuLogger::ACTION_DENIED, $this->auditRows[0]['action']);
+        self::assertSame(0, $this->auditRows[0]['to_uid'], 'an unsigned column never receives a negative UID');
+        self::assertSame('-5', json_decode((string)$this->auditRows[0]['details'], true)['requested_uid']);
+    }
+
+    public function testSwitchIsGrantedOnceAudited(): void
+    {
+        Episciences_Auth::getInstance()->getStorage()->write($this->user(10, [Episciences_Acl::ROLE_SECRETARY]));
+
+        $isGranted = $this->startAuditedImpersonation($this->user(20, [Episciences_Acl::ROLE_AUTHOR]));
+
+        self::assertTrue($isGranted);
+        self::assertSame(20, Episciences_Auth::getUid());
+        self::assertTrue(Episciences_Auth::isImpersonating());
+        self::assertCount(1, $this->auditRows);
+        self::assertSame(SuLogger::ACTION_GRANTED, $this->auditRows[0]['action']);
+        self::assertSame(['from_roles' => [Episciences_Acl::ROLE_SECRETARY]], json_decode((string)$this->auditRows[0]['details'], true));
+    }
+
+    public function testSwitchIsNotGrantedWhenItCannotBeAudited(): void
+    {
+        Episciences_Auth::getInstance()->getStorage()->write($this->user(10, [Episciences_Acl::ROLE_SECRETARY]));
+        $this->auditAvailable = false;
+
+        // The audit failure is reported as a PHP warning
+        set_error_handler(static fn(): bool => true, E_USER_WARNING);
+        try {
+            $isGranted = $this->startAuditedImpersonation($this->user(20, [Episciences_Acl::ROLE_AUTHOR]));
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertFalse($isGranted);
+        self::assertSame(10, Episciences_Auth::getUid());
+        self::assertFalse(Episciences_Auth::isImpersonating());
+    }
+
+    private function startAuditedImpersonation(Episciences_User $target): bool
+    {
+        $controller = $this->controller($this->request('POST'));
+        $audit = SuLogger::requestContext($controller->getRequest());
+
+        return (new ReflectionMethod($controller, 'startAuditedImpersonation'))
+            ->invoke($controller, $target, 10, [Episciences_Acl::ROLE_SECRETARY], $audit);
+    }
+
     // ------------------------------------------------------------------ unsu
 
     public function testUnsuIgnoresAGetRequest(): void
@@ -221,7 +281,7 @@ final class UserDefaultControllerSwitchUserTest extends TestCase
         self::assertSame('198.51.100.7', $this->auditRows[0]['ip_address']);
     }
 
-    public function testUnsuWithAStackLeftByAnotherLoginKeepsTheCurrentUser(): void
+    public function testUnsuWithAStackLeftByAnotherLoginClosesTheSession(): void
     {
         $this->impersonate();
         // Logout without unsu, then another user logs in within the same session
@@ -229,10 +289,65 @@ final class UserDefaultControllerSwitchUserTest extends TestCase
         Episciences_Auth::getInstance()->getStorage()->write($this->user(30, [Episciences_Acl::ROLE_MEMBER]));
         $token = Episciences_Csrf_Helper::getSessionToken();
 
-        $this->controller($this->request('POST', ['csrf_token' => $token]))->unsuAction();
+        $controller = $this->controller($this->request('POST', ['csrf_token' => $token]));
+        $controller->unsuAction();
 
-        self::assertSame(30, Episciences_Auth::getUid());
+        self::assertFalse(Episciences_Auth::isLogged(), 'the stale stack never restores the secretary');
+        self::assertStringContainsString('/user/logout', $this->redirectLocation($controller));
         self::assertSame([], $this->auditRows);
+    }
+
+    // ------------------------------------------------------------------ logout
+
+    // The logout action itself ends with a CAS redirection: the audit step is called directly
+
+    public function testLogoutWhileSwitchedIsLoggedAsTheEndOfTheSwitch(): void
+    {
+        $this->impersonate();
+
+        $this->logSwitchUserEndOnLogout($this->controller($this->request('GET')));
+
+        self::assertCount(1, $this->auditRows);
+        self::assertSame(SuLogger::ACTION_UNSU, $this->auditRows[0]['action']);
+        self::assertSame(SuLogger::REASON_LOGOUT, $this->auditRows[0]['reason']);
+        self::assertSame(10, $this->auditRows[0]['from_uid']);
+        self::assertSame(20, $this->auditRows[0]['to_uid']);
+    }
+
+    public function testLogoutWithoutSwitchIsNotLogged(): void
+    {
+        Episciences_Auth::getInstance()->getStorage()->write($this->user(10, [Episciences_Acl::ROLE_SECRETARY]));
+
+        $this->logSwitchUserEndOnLogout($this->controller($this->request('GET')));
+
+        self::assertSame([], $this->auditRows);
+    }
+
+    public function testLogoutWithAnUnboundStackIsNotLogged(): void
+    {
+        $this->impersonate();
+        Episciences_Auth::getInstance()->clearIdentity();
+        Episciences_Auth::getInstance()->getStorage()->write($this->user(30, [Episciences_Acl::ROLE_MEMBER]));
+
+        $this->logSwitchUserEndOnLogout($this->controller($this->request('GET')));
+
+        self::assertSame([], $this->auditRows, 'no trusted initiator to record');
+    }
+
+    private function redirectLocation(\UserDefaultController $controller): string
+    {
+        foreach ($controller->getResponse()->getHeaders() as $header) {
+            if (strcasecmp($header['name'], 'Location') === 0) {
+                return (string)$header['value'];
+            }
+        }
+
+        return '';
+    }
+
+    private function logSwitchUserEndOnLogout(\UserDefaultController $controller): void
+    {
+        (new ReflectionMethod($controller, 'logSwitchUserEndOnLogout'))->invoke($controller);
     }
 
     // ------------------------------------------------------------------ profile edition

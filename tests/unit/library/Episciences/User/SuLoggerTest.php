@@ -150,6 +150,64 @@ final class SuLoggerTest extends TestCase
         self::assertNull($updates[2]['details'], 'nothing left once the forwarded-for chain is removed');
     }
 
+    public function testAnonymizeIpOfAnInvalidValueIsNull(): void
+    {
+        self::assertNull(SuLogger::anonymizeIp('not-an-ip'));
+        self::assertNull(SuLogger::anonymizeIp(''));
+    }
+
+    public function testAnonymizeOldLogsStoresNullForAnInvalidIp(): void
+    {
+        $db = $this->createMock(Zend_Db_Adapter_Abstract::class);
+        $db->method('fetchAll')->willReturn([['id' => 1, 'ip_address' => 'garbage', 'details' => null]]);
+
+        $bind = null;
+        $db->method('update')->willReturnCallback(function (string $table, array $data) use (&$bind): int {
+            $bind = $data;
+            return 1;
+        });
+
+        SuLogger::anonymizeOldLogs(adapter: $db);
+
+        self::assertIsArray($bind);
+        self::assertNull($bind['ip_address']);
+    }
+
+    public function testAnonymizeOldLogsCountsOnlyTheUpdatedRows(): void
+    {
+        $db = $this->createMock(Zend_Db_Adapter_Abstract::class);
+        $db->method('fetchAll')->willReturn([
+            ['id' => 1, 'ip_address' => '1.1.1.1', 'details' => null],
+            ['id' => 2, 'ip_address' => '1.1.1.2', 'details' => null],
+        ]);
+        // The second row has been anonymized meanwhile
+        $db->method('update')->willReturnOnConsecutiveCalls(1, 0);
+
+        self::assertSame(1, SuLogger::anonymizeOldLogs(adapter: $db));
+    }
+
+    public function testAnonymizeOldLogsProcessesTheRecordsByBatches(): void
+    {
+        $fullBatch = [];
+        for ($id = 1; $id <= SuLogger::ANONYMIZATION_BATCH_SIZE; $id++) {
+            $fullBatch[] = ['id' => $id, 'ip_address' => null, 'details' => null];
+        }
+        $lastBatch = [['id' => SuLogger::ANONYMIZATION_BATCH_SIZE + 1, 'ip_address' => null, 'details' => null]];
+
+        $cursors = [];
+        $db = $this->createMock(Zend_Db_Adapter_Abstract::class);
+        $db->expects(self::exactly(2))
+            ->method('fetchAll')
+            ->willReturnCallback(function (string $sql, array $bind) use (&$cursors, $fullBatch, $lastBatch): array {
+                $cursors[] = $bind[1];
+                return $cursors === [0] ? $fullBatch : $lastBatch;
+            });
+        $db->method('update')->willReturn(1);
+
+        self::assertSame(SuLogger::ANONYMIZATION_BATCH_SIZE + 1, SuLogger::anonymizeOldLogs(adapter: $db));
+        self::assertSame([0, SuLogger::ANONYMIZATION_BATCH_SIZE], $cursors, 'each batch starts after the last processed id');
+    }
+
     public function testRequestContextTakesTheIpFromTheConnectionOnly(): void
     {
         $previousServer = $_SERVER;

@@ -270,11 +270,19 @@ class Episciences_Auth extends Ccsd_Auth
      * Restore the identity saved by the last startImpersonation().
      *
      * @return Episciences_User|null The restored identity, null when the session is not impersonating
+     *                               or when the saved identities are unbound (the identity is then cleared)
      */
     public static function endImpersonation(): ?Episciences_User
     {
         if (!self::isImpersonating()) {
             self::clearImpersonation();
+            return null;
+        }
+
+        // The saved identities cannot be trusted: nothing is restored and the session is closed
+        if (self::hasUnboundImpersonationStack()) {
+            self::clearImpersonation();
+            self::getInstance()->clearIdentity();
             return null;
         }
 
@@ -305,12 +313,30 @@ class Episciences_Auth extends Ccsd_Auth
     }
 
     /**
+     * A non-empty identity stack that is not bound to the authenticated user (e.g. a switch user
+     * session started before the stack was bound to the impersonated UID).
+     * The session must not be considered as the account owner's one.
+     */
+    private static function hasUnboundImpersonationStack(): bool
+    {
+        if (!self::isLogged()) {
+            return false;
+        }
+
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        $realIdentities = $session->realIdentities;
+
+        return is_array($realIdentities) && $realIdentities !== [] &&
+            (int)$session->impersonatedUid !== (int)self::getUid();
+    }
+
+    /**
      * Check if user has a real identity
      * @return bool
      */
     public static function hasRealIdentity(): bool
     {
-        if (!self::isLogged()) {
+        if (!self::isLogged() || self::hasUnboundImpersonationStack()) {
             return false;
         }
         $original = self::getOriginalIdentity();

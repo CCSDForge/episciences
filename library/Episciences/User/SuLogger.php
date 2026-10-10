@@ -33,6 +33,11 @@ final class SuLogger
     public const REASON_CONFLICT_CONFIRMATION = 'conflict_confirmation';
 
     /**
+     * Reason recorded when the switch user session ends with a logout
+     */
+    public const REASON_LOGOUT = 'logout';
+
+    /**
      * Records a switch user event (granted, denied or ended).
      *
      * @param int $fromUid Initiator user UID
@@ -129,21 +134,35 @@ final class SuLogger
     }
 
     /**
+     * Number of records read and anonymized at once by anonymizeOldLogs()
+     */
+    public const ANONYMIZATION_BATCH_SIZE = 500;
+
+    /**
      * Anonymizes an IPv4 or IPv6 address:
      * - IPv4: /16 mask (255.255.0.0), e.g. 1.1.1.1 -> 1.1.0.0
      * - IPv6: /48 mask (ffff:ffff:ffff::), e.g. 2001:db8:85a3:8d3::1 -> 2001:db8:85a3::
+     *
+     * @return ?string Null when the value is not an IP address
      */
-    public static function anonymizeIp(string $ip): string
+    public static function anonymizeIp(string $ip): ?string
     {
+        if (filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return null;
+        }
+
         $anonymizer = new IpAnonymizer();
         $anonymizer->ipv4NetMask = '255.255.0.0';
         $anonymizer->ipv6NetMask = 'ffff:ffff:ffff:0000:0000:0000:0000:0000';
-        return $anonymizer->anonymize($ip);
+        $anonymized = $anonymizer->anonymize($ip);
+
+        return $anonymized === '' ? null : $anonymized;
     }
 
     /**
      * Anonymizes user_su_log records older than the retention threshold: the IP address is masked,
      * the user agent, the session hash and the declared forwarded-for chain are removed.
+     * Records are processed by batches of ANONYMIZATION_BATCH_SIZE, in id order.
      *
      * @param int $retentionDays Number of retention days before anonymizing (default 365)
      * @param ?Zend_Db_Adapter_Abstract $adapter Optional database adapter
@@ -157,25 +176,30 @@ final class SuLogger
         }
 
         $sql = 'SELECT id, ip_address, details FROM ' . self::TABLE_NAME .
-            ' WHERE is_anonymized = 0 AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)';
-        $rows = $db->fetchAll($sql, [$retentionDays]);
+            ' WHERE is_anonymized = 0 AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY) AND id > ?' .
+            ' ORDER BY id LIMIT ' . self::ANONYMIZATION_BATCH_SIZE;
         $updated = 0;
+        $lastId = 0;
 
-        foreach ($rows as $row) {
-            $rawIp = $row['ip_address'] ?? null;
-            $db->update(
-                self::TABLE_NAME,
-                [
-                    'ip_address' => ($rawIp === null || $rawIp === '') ? null : self::anonymizeIp((string)$rawIp),
-                    'user_agent' => null,
-                    'session_id' => null,
-                    'details' => self::anonymizeDetails($row['details'] ?? null),
-                    'is_anonymized' => 1
-                ],
-                ['id = ?' => (int)$row['id']]
-            );
-            $updated++;
-        }
+        do {
+            $rows = $db->fetchAll($sql, [$retentionDays, $lastId]);
+
+            foreach ($rows as $row) {
+                $lastId = (int)$row['id'];
+                $rawIp = $row['ip_address'] ?? null;
+                $updated += $db->update(
+                    self::TABLE_NAME,
+                    [
+                        'ip_address' => ($rawIp === null || $rawIp === '') ? null : self::anonymizeIp((string)$rawIp),
+                        'user_agent' => null,
+                        'session_id' => null,
+                        'details' => self::anonymizeDetails($row['details'] ?? null),
+                        'is_anonymized' => 1
+                    ],
+                    ['id = ?' => $lastId]
+                );
+            }
+        } while (count($rows) === self::ANONYMIZATION_BATCH_SIZE);
 
         return $updated;
     }

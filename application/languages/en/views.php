@@ -2650,6 +2650,8 @@ return array(
     "Modifications désactivées" => "Modifications disabled",
     "Session sous switch-user" => "Session under switch-user",
     "Switch-User" => "Switch-User",
+    "Le changement d'utilisateur n'a pas pu être enregistré dans le journal d'audit : il a été refusé." => "The switch user could not be recorded in the audit log: it has been denied.",
+    "La session de changement d'utilisateur n'a pas pu être vérifiée : vous avez été déconnecté." => "The switch user session could not be verified: you have been logged out.",
     "Vous avez repris votre compte principal (%s)." => "You have switched back to your primary account (%s).",
     "Vous ne pouvez pas basculer vers votre propre compte." => "You cannot switch to your own account.",
     "Vous n'avez pas les privilèges requis pour accéder à ce compte." => "You do not have the privileges required to access this account.",

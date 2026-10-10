@@ -497,6 +497,8 @@ return [
     "Modifications désactivées" => "Modifications désactivées",
     "Session sous switch-user" => "Session sous switch-user",
     "Switch-User" => "Switch-User",
+    "Le changement d'utilisateur n'a pas pu être enregistré dans le journal d'audit : il a été refusé." => "Le changement d'utilisateur n'a pas pu être enregistré dans le journal d'audit : il a été refusé.",
+    "La session de changement d'utilisateur n'a pas pu être vérifiée : vous avez été déconnecté." => "La session de changement d'utilisateur n'a pas pu être vérifiée : vous avez été déconnecté.",
     "Vous avez repris votre compte principal (%s)." => "Vous avez repris votre compte principal (%s).",
     "Vous ne pouvez pas basculer vers votre propre compte." => "Vous ne pouvez pas basculer vers votre propre compte.",
     "Vous n'avez pas les privilèges requis pour accéder à ce compte." => "Vous n'avez pas les privilèges requis pour accéder à ce compte.",

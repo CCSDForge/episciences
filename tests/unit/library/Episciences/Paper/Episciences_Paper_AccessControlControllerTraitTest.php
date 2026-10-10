@@ -15,6 +15,7 @@ use Episciences_User;
 use PHPUnit\Framework\TestCase;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Table_Abstract;
+use Zend_Session;
 use Zend_Session_Namespace;
 
 /**
@@ -581,11 +582,15 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
             return 1;
         });
         Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+        // Regenerating the session id is a no-op in unit test mode
+        $previousUnitTestEnabled = Zend_Session::$_unitTestEnabled;
+        Zend_Session::$_unitTestEnabled = true;
 
         try {
             $this->harness->callRedirectIfConflict($this->createPaper(), $this->createReview());
         } finally {
             Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+            Zend_Session::$_unitTestEnabled = $previousUnitTestEnabled;
         }
 
         // the switch back is audited like an explicit unsu

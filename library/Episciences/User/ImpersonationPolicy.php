@@ -29,6 +29,12 @@ final class ImpersonationPolicy
     /**
      * Rank of each role, following the inheritance chain declared in Episciences_Acl:
      * a role always ranks strictly above the role it inherits from.
+     *
+     * Known limitation: the ACL tree is reduced to a total order. Side branches (boards, author,
+     * reviewer, copy editor, webmaster...) are not inherited by the secretary but rank below it, so a
+     * secretary may switch to a copy editor or a webmaster and get their role-specific checks.
+     * This is accepted: switching to authors and board members must stay possible, and the secretary
+     * already holds most of these resources in acl.ini. A new side role must be ranked with care.
      */
     private const ROLE_RANKS = [
         Episciences_Acl::ROLE_GUEST => 0,

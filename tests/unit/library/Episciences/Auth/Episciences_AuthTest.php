@@ -507,10 +507,33 @@ class Episciences_AuthTest extends TestCase
         Episciences_Auth::getInstance()->clearIdentity();
         $this->loginUser($nextUser);
 
-        self::assertFalse(Episciences_Auth::isImpersonating());
         self::assertSame([$nextUser], Episciences_Auth::getAllIdentities());
+        // The session is not trusted as the account owner's one
+        self::assertTrue(Episciences_Auth::isImpersonating());
+        self::assertFalse(Episciences_Auth::hasRealIdentity());
+
+        self::assertNull(Episciences_Auth::endImpersonation(), 'the stale stack must never restore the admin');
+        self::assertFalse(Episciences_Auth::isLogged(), 'the session is closed');
+        self::assertFalse(Episciences_Auth::isImpersonating());
+    }
+
+    public function testAStackSavedBeforeTheUidBindingKeepsTheSessionImpersonating(): void
+    {
+        $admin = $this->createMockUser(99, [Episciences_Acl::ROLE_ADMIN]);
+        $target = $this->createMockUser(42, [Episciences_Acl::ROLE_AUTHOR]);
+
+        // Switch user session started before the stack was bound to the impersonated UID
+        $this->loginUser($target);
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        $session->realIdentities = [$admin];
+
+        self::assertTrue(Episciences_Auth::isImpersonating(), 'account mutations stay forbidden');
+        self::assertFalse(Episciences_Auth::hasRealIdentity());
+        self::assertSame($target, Episciences_Auth::getOriginalIdentity(), 'the unbound stack is not honoured');
+
         self::assertNull(Episciences_Auth::endImpersonation());
-        self::assertSame(7, Episciences_Auth::getUid(), 'the stale stack must never restore the admin');
+        self::assertFalse(Episciences_Auth::isLogged());
+        self::assertNull($session->realIdentities);
     }
 
     public function testEndImpersonationRestoresTheRealIdentity(): void

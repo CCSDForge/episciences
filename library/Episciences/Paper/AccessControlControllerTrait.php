@@ -160,6 +160,7 @@ trait Episciences_Paper_AccessControlControllerTrait
             $url = '/paper/view?id=' . $docId;
         } elseif (self::isConflictDetected($paper, $review)) {
             $message = $this->buildConflictRedirectMessage($paper->checkConflictResponse(Episciences_Auth::getUid()));
+            $this->switchBackIfConflictConfirmationExpected();
             $url = '/coi/report?id=' . $docId;
         } else { // user has required permissions
             return;
@@ -220,6 +221,48 @@ trait Episciences_Paper_AccessControlControllerTrait
     }
 
     /**
+     * A switched (su) session that answered "later" to the conflict check is switched back to the
+     * original account, from which the conflict confirmation is expected.
+     * The identity change is handled like an explicit unsu: new session id and audit event.
+     */
+    private function switchBackIfConflictConfirmationExpected(): void
+    {
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+
+        if (
+            !Episciences_Auth::isImpersonating() ||
+            ($session->checkConflictResponseForSu ?? null) !== Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']
+        ) {
+            return;
+        }
+
+        $impersonatedUid = (int)Episciences_Auth::getUid();
+        // Session id of the impersonation, as logged by the GRANTED event
+        $sessionId = session_id() ?: null;
+
+        $originalUser = Episciences_Auth::endImpersonation();
+
+        if ($originalUser === null) {
+            return;
+        }
+
+        Zend_Session::regenerateId();
+
+        $audit = SuLogger::requestContext($this->getRequest());
+        SuLogger::log(
+            fromUid: (int)$originalUser->getUid(),
+            toUid: $impersonatedUid,
+            action: SuLogger::ACTION_UNSU,
+            rvid: (int)RVID,
+            reason: SuLogger::REASON_CONFLICT_CONFIRMATION,
+            ipAddress: $audit['ipAddress'],
+            userAgent: $audit['userAgent'],
+            sessionId: $sessionId,
+            details: $audit['details']
+        );
+    }
+
+    /**
      * Conflict message for a switched (su) session, based on the answer given while switched.
      * @param Episciences_User $suUser the original identity
      * @param string $suResponse the answer given while switched
@@ -233,25 +276,7 @@ trait Episciences_Paper_AccessControlControllerTrait
         $message .= '<br>';
 
         if ($suResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
-            // switch back to the original account: the conflict confirmation is expected from it
-            $impersonatedUid = (int)Episciences_Auth::getUid();
-            $sessionId = session_id() ?: null;
-
-            if (Episciences_Auth::endImpersonation() !== null) {
-                $audit = SuLogger::requestContext($this->getRequest());
-                SuLogger::log(
-                    fromUid: (int)$suUser->getUid(),
-                    toUid: $impersonatedUid,
-                    action: SuLogger::ACTION_UNSU,
-                    rvid: (int)RVID,
-                    reason: SuLogger::REASON_CONFLICT_CONFIRMATION,
-                    ipAddress: $audit['ipAddress'],
-                    userAgent: $audit['userAgent'],
-                    sessionId: $sessionId,
-                    details: $audit['details']
-                );
-            }
-
+            // the switch back itself is done by switchBackIfConflictConfirmationExpected()
             $message .= $this->view->translate("Vous êtes maintenant connecté à votre compte :");
             $message .= '<br>';
             $message .= $this->translateConflictConfirmationRequiredMessage();

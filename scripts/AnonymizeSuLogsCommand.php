@@ -31,13 +31,14 @@ class AnonymizeSuLogsCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $io->title('Anonymize Switch User (user_su_log) IP addresses');
 
-        $this->bootstrap();
-
-        $days = (int) $input->getOption('days');
-        if ($days <= 0) {
+        // Validated before anything else: a mistyped value must not anonymize records irreversibly
+        $days = filter_var($input->getOption('days'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($days === false) {
             $io->error('The retention threshold in days must be a positive integer.');
             return Command::FAILURE;
         }
+
+        $this->bootstrap();
 
         $io->note(sprintf('Processing user_su_log records older than %d days...', $days));
 

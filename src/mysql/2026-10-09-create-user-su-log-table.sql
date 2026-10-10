@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS `user_su_log` (
   `from_uid` int unsigned NOT NULL COMMENT 'Initiating user UID',
   `to_uid` int unsigned NOT NULL COMMENT 'Target user UID',
   `action` varchar(30) NOT NULL COMMENT 'GRANTED, DENIED, UNSU',
-  `reason` varchar(50) DEFAULT NULL COMMENT 'Reason code when DENIED',
+  `reason` varchar(50) DEFAULT NULL COMMENT 'Reason code when DENIED, or how an UNSU happened (conflict_confirmation, logout)',
   `ip_address` varchar(45) DEFAULT NULL COMMENT 'Client IP from REMOTE_ADDR (IPv4 up to 15, IPv6 up to 45 chars)',
   `user_agent` varchar(255) DEFAULT NULL COMMENT 'Client HTTP User-Agent',
   `session_id` varchar(128) DEFAULT NULL COMMENT 'SHA-256 of the session identifier',
