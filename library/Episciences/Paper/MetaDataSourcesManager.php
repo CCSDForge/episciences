@@ -3,6 +3,7 @@
 
 class Episciences_Paper_MetaDataSourcesManager
 {
+    public const ENABLED = 1;
     public static function all(bool $isObjEntries = true, bool $enabledOnly = true): array
     {
 
@@ -12,7 +13,7 @@ class Episciences_Paper_MetaDataSourcesManager
         $query = $db->select()->from(T_PAPER_METADATA_SOURCES);
 
         if ($enabledOnly) {
-            $query->where('status = ?', true);
+            $query->where('status = ?', self::ENABLED);
         }
 
         $rows = $db->fetchAssoc($query);
