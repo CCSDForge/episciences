@@ -181,11 +181,11 @@ trait Episciences_Paper_AccessControlControllerTrait
         $suUser = Episciences_Auth::getOriginalIdentity();
 
         if ($suUser && ($suUser->getUid() !== Episciences_Auth::getUid())) {
-            $message .= $suUser->getScreenName();
+            $message .= $this->view->escape($suUser->getScreenName());
             $message .= ', ';
             $message .= '<br>';
             $message .= $this->view->translate("Vous êtes connecté en tant que : ");
-            $message .= Episciences_Auth::getScreenName();
+            $message .= $this->view->escape(Episciences_Auth::getScreenName());
             $message .= '<br>';
         }
 
@@ -271,7 +271,7 @@ trait Episciences_Paper_AccessControlControllerTrait
      */
     private function buildSwitchedUserConflictMessage(Episciences_User $suUser, string $suResponse, string $checkConflictResponse): string
     {
-        $message = $suUser->getScreenName();
+        $message = $this->view->escape($suUser->getScreenName());
         $message .= ', ';
         $message .= '<br>';
 
@@ -287,7 +287,7 @@ trait Episciences_Paper_AccessControlControllerTrait
         $message .= $this->view->translate("Vous avez vous-même signalé un conflit d'intérêts avec cette soumission.");
         $message .= '<br>';
         $message .= $this->view->translate("Vous êtes connecté en tant que : ");
-        $message .= Episciences_Auth::getScreenName();
+        $message .= $this->view->escape(Episciences_Auth::getScreenName());
         $message .= '<br>';
 
         if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {

@@ -30,6 +30,7 @@ Encore
     .addEntry('app', './assets/app.js')
     .addEntry('altcha', './assets/altcha.js')
     .addEntry('filepond', './assets/filepond.js')
+    .addEntry('toast', './assets/toast.js')
     //.addEntry('page1', './assets/page1.js')
     //.addEntry('page2', './assets/page2.js')
 

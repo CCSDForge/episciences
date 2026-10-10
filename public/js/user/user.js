@@ -50,10 +50,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
                     deletePhotoButton.classList.add('hidden');
-                    message('Photo supprimée.', 'alert-success');
+                    message(translate('Photo supprimée.'), 'alert-success');
                 })
                 .catch(error => {
-                    message('La suppression a échoué.', 'alert-danger');
+                    message(
+                        translate('La suppression a échoué.'),
+                        'alert-danger'
+                    );
                 });
 
             return false;

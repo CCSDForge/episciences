@@ -5351,7 +5351,8 @@ class AdministratepaperController extends PaperDefaultController
                 $user->setIs_valid();
                 $user->setRegistrationDate();
                 $user->setModificationDate();
-                $screenName = $user->getScreenName();
+                // Inserted into HTML flash messages
+                $screenName = $this->view->escape($user->getScreenName());
 
                 if ($user->save()) {
                     $success = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté en tant que co-auteur du document");

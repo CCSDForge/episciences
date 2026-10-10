@@ -581,21 +581,18 @@ function permalink(str) {
     return str;
 }
 
+/**
+ * Display a feedback message as a toast; falls back to a native alert
+ * when the toast bundle is not loaded, so the message is never lost.
+ * @param text plain text (escaped before rendering)
+ * @param type Bootstrap alert class, e.g. 'alert-danger'
+ */
 function message(text, type) {
-    $('#flash-messages').html(getMessageHtml(text, type));
-    setTimeout(function () {
-        $('#flash-messages').find('.alert').alert('close');
-    }, 10000);
-}
-
-function getMessageHtml(text, type) {
-    return (
-        '<div class="alert ' +
-        type +
-        '"><button type="button" class="close" data-dismiss="alert">&times;</button>' +
-        htmlEntities(text) +
-        '</div>'
-    );
+    if (window.toast && typeof window.toast.show === 'function') {
+        window.toast.show(htmlEntities(text), type);
+        return;
+    }
+    window.alert(text);
 }
 
 /**
