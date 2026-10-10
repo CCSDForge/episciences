@@ -18,7 +18,8 @@
 <?php
 if ($this->form) {
     if (CAPTCHA_BRAND === 'ALTCHA') {
-        echo $this->webpackAssets('altcha');
+        // Queued in <head> with the layout's webpack entries, so the shared runtime chunk is loaded only once
+        $this->getHelper('webpackAssets')->queueScript('altcha');
     }
     $this->form->setAction($this->url());
     echo $this->form;

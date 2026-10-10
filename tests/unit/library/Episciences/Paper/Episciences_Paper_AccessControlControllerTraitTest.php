@@ -17,6 +17,7 @@ use Zend_Db_Adapter_Abstract;
 use Zend_Db_Table_Abstract;
 use Zend_Session;
 use Zend_Session_Namespace;
+use Zend_View;
 
 /**
  * Captures the flash messages and redirections issued by the trait instead of
@@ -84,7 +85,8 @@ final class AccessControlHarness
     public function __construct()
     {
         $this->_helper = new AccessControlFakeHelperBroker();
-        $this->view = new class {
+        // Real view for escape(); translation is a passthrough
+        $this->view = new class extends Zend_View {
             public function translate(string $message): string
             {
                 return $message;
@@ -182,13 +184,13 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
     /**
      * @param list<string> $roles
      */
-    private function createMockUser(int $uid, array $roles = []): Episciences_User
+    private function createMockUser(int $uid, array $roles = [], ?string $screenName = null): Episciences_User
     {
         $user = $this->createMock(Episciences_User::class);
         $user->method('getUid')->willReturn($uid);
         $user->method('getRoles')->willReturn($roles);
         $user->method('getAllRoles')->willReturn([RVID => $roles]);
-        $user->method('getScreenName')->willReturn('User ' . $uid);
+        $user->method('getScreenName')->willReturn($screenName ?? 'User ' . $uid);
         return $user;
     }
 
@@ -518,6 +520,24 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         self::assertStringContainsString('User 99', $message);
         self::assertStringContainsString('Vous êtes connecté en tant que', $message);
         self::assertStringContainsString('vous-même déposé', $message);
+    }
+
+    public function testOwnerRedirectionEscapesScreenNames(): void
+    {
+        Episciences_Auth::getInstance()->getStorage()->write($this->createMockUser(99, [], '<a href="https://example.org">Real</a>'));
+        Episciences_Auth::startImpersonation($this->createMockUser(42, [Episciences_Acl::ROLE_EDITOR], '<b>Target</b>'));
+
+        $this->harness->callRedirectIfConflict(
+            $this->createPaper(isOwner: true),
+            $this->createReview()
+        );
+
+        $message = $this->harness->_helper->messages[0];
+        self::assertStringContainsString('&lt;a href=&quot;https://example.org&quot;&gt;Real&lt;/a&gt;', $message);
+        self::assertStringContainsString('&lt;b&gt;Target&lt;/b&gt;', $message);
+        self::assertStringNotContainsString('<a ', $message);
+        // intentional markup is preserved
+        self::assertStringContainsString('<br>', $message);
     }
 
     public function testDeclaredConflictRedirectsToTheCoiReport(): void

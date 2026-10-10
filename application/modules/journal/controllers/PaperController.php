@@ -4177,6 +4177,7 @@ class PaperController extends PaperDefaultController
 
             $docId = (int)$request->getPost('docid');
             $result = 0;
+            $jsonResult = [];
 
             try {
                 $paper = Episciences_PapersManager::get($docId);
