@@ -728,6 +728,26 @@ final class Episciences_Mail_ReminderTest extends TestCase
                 'expectedUids' => [999, 2],
                 'message' => 'When reviewerUid is null (temp user), supervisor with matching USER_TMP ID should NOT be excluded'
             ],
+
+            // Supervisor without email
+            'supervisor without email is skipped' => [
+                'supervisors' => [1 => null, 2 => '', 3 => 'secretary@example.com'],
+                'authorUid' => 100,
+                'coAuthorUids' => [],
+                'reviewerUid' => 200,
+                'reviewerEmail' => 'reviewer@example.com',
+                'expectedUids' => [3],
+                'message' => 'Supervisors without email should be skipped'
+            ],
+            'reviewer without email does not match supervisor without email' => [
+                'supervisors' => [1 => '', 2 => 'secretary@example.com'],
+                'authorUid' => 100,
+                'coAuthorUids' => [],
+                'reviewerUid' => null,
+                'reviewerEmail' => '',
+                'expectedUids' => [2],
+                'message' => 'An empty reviewer email should not be used for exclusion'
+            ],
         ];
     }
 

@@ -1118,12 +1118,15 @@ class Episciences_Mail_Reminder
             if ((int)$data['TMP_USER'] === 1) {
                 $user = new Episciences_User_Tmp;
 
-                if (!empty($user->find($data['UID']))) {
-                    $user->generateScreen_name();
-                    $fullname = $user->getFullName();
-                    $lang = $user->getLangueid(true);
-                    $invitation_url .= $lang . '/tmp/' . md5($user->getEmail());
+                // the temporary reviewer no longer exists: no name, no email, no valid link
+                if (empty($user->find($data['UID']))) {
+                    continue;
                 }
+
+                $user->generateScreen_name();
+                $fullname = $user->getFullName();
+                $lang = $user->getLangueid(true);
+                $invitation_url .= $lang . '/tmp/' . md5($user->getEmail());
 
             } else {
                 $user = new Episciences_User;
@@ -1304,25 +1307,7 @@ class Episciences_Mail_Reminder
                 }
             }
         } elseif ($this->isSupervisorRecipient()) {
-            foreach ($tmp as $data) {
-                $paper = Episciences_PapersManager::get($data['DOCID']);
-                if (!$paper || $this->isPaperNotNeedToReminders($paper, $filters)) {
-                    continue;
-                }
-
-                $reviewer = new Episciences_User;
-                $reviewer->findWithCAS($data['UID']);
-
-                $tags = [
-                    Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
-                ];
-
-                array_push($recipients, ...$this->getSupervisorRecipients(
-                    $paper, (int)$data['UID'], $reviewer->getEmail(), $reviewer->getScreenName(), $tags, $data['DEADLINE']
-                ));
-            }
+            $recipients = $this->getReviewingDeadlineSupervisorRecipients($tmp, $filters, $review);
         } else {
             foreach ($tmp as $data) {
 
@@ -1469,25 +1454,7 @@ class Episciences_Mail_Reminder
                 }
             }
         } elseif ($this->isSupervisorRecipient()) {
-            foreach ($tmp as $data) {
-                $paper = Episciences_PapersManager::get($data['DOCID']);
-                if (!$paper || $this->isPaperNotNeedToReminders($paper, $filters)) {
-                    continue;
-                }
-
-                $reviewer = new Episciences_User;
-                $reviewer->findWithCAS($data['UID']);
-
-                $tags = [
-                    Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
-                ];
-
-                array_push($recipients, ...$this->getSupervisorRecipients(
-                    $paper, (int)$data['UID'], $reviewer->getEmail(), $reviewer->getScreenName(), $tags, $data['DEADLINE']
-                ));
-            }
+            $recipients = $this->getReviewingDeadlineSupervisorRecipients($tmp, $filters, $review);
         } else {
             foreach ($tmp as $data) {
 
@@ -1729,9 +1696,14 @@ class Episciences_Mail_Reminder
         }
 
         $filtered = [];
-        $reviewerEmailLower = $reviewerEmail !== null ? strtolower($reviewerEmail) : null;
+        $reviewerEmailLower = !empty($reviewerEmail) ? strtolower($reviewerEmail) : null;
 
         foreach ($supervisors as $uid => $email) {
+            // Skip supervisors without email: nothing to send, and strtolower(null) is deprecated
+            if (empty($email)) {
+                continue;
+            }
+
             // Exclude author
             if ($uid === $authorUid) {
                 continue;
@@ -1756,6 +1728,42 @@ class Episciences_Mail_Reminder
         }
 
         return $filtered;
+    }
+
+    /**
+     * Build the supervisor (chief_editor, secretary) recipients of the reminders before and after the reviewing deadline.
+     *
+     * @param array $rows Reviewing rows (DOCID, UID, DEADLINE)
+     * @param array $filters Paper statuses that don't need reminders
+     * @param Episciences_Review $review
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function getReviewingDeadlineSupervisorRecipients(array $rows, array $filters, Episciences_Review $review): array
+    {
+        $recipients = [];
+
+        foreach ($rows as $data) {
+            $paper = Episciences_PapersManager::get($data['DOCID']);
+            if (!$paper || $this->isPaperNotNeedToReminders($paper, $filters)) {
+                continue;
+            }
+
+            $reviewer = new Episciences_User;
+            $reviewer->findWithCAS($data['UID']);
+
+            $tags = [
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
+            ];
+
+            array_push($recipients, ...$this->getSupervisorRecipients(
+                $paper, (int)$data['UID'], $reviewer->getEmail(), $reviewer->getScreenName(), $tags, $data['DEADLINE']
+            ));
+        }
+
+        return $recipients;
     }
 
     /**
