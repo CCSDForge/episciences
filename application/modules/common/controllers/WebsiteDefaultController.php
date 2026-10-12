@@ -113,6 +113,7 @@ class WebsiteDefaultController extends Episciences_Controller_Action
             $translator = Zend_Registry::get('Zend_Translate');
         } catch (Zend_Exception $e) {
             error_log($e->getMessage());
+            $translator = null;
         }
 
         if (isset($params['method']) && $request->isPost()) {
