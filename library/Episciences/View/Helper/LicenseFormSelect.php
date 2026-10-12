@@ -39,23 +39,37 @@ class Episciences_View_Helper_LicenseFormSelect extends Zend_View_Helper_FormSel
     }
 
     /**
-     * @return array<string, string> SPDX code => license name, empty option first, then sorted by name
+     * @return array<string, string> SPDX code => "name (code)", empty option first, then sorted by label
      */
     protected function buildOptions(?string $currentValue = null): array
     {
         $options = [];
 
         foreach ($this->fetchRecommendedLicenses() as $license) {
-            $options[$license->getCode()] = $license->getName();
+            $options[$license->getCode()] = self::formatLabel($license->getName(), $license->getCode());
         }
 
         if ($currentValue !== null && !array_key_exists($currentValue, $options)) {
-            $options[$currentValue] = $this->fetchLicenseName($currentValue) ?: $currentValue;
+            $options[$currentValue] = self::formatLabel((string)$this->fetchLicenseName($currentValue), $currentValue);
         }
 
         asort($options, SORT_NATURAL | SORT_FLAG_CASE);
 
         return ['' => $this->view->translate(self::EMPTY_LABEL)] + $options;
+    }
+
+    /**
+     * "MIT License (MIT)"; the code alone when the name is missing or identical to it
+     */
+    public static function formatLabel(string $name, string $code): string
+    {
+        $name = trim($name);
+
+        if ($name === '' || strcasecmp($name, $code) === 0) {
+            return $code;
+        }
+
+        return sprintf('%s (%s)', $name, $code);
     }
 
     /**

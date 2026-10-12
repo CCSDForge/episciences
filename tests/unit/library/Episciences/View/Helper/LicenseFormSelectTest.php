@@ -67,7 +67,7 @@ class LicenseFormSelectTest extends TestCase
         $options = $this->createHelper($this->recommended(), ['GPL-3.0-only' => 'GNU General Public License v3.0 only'])
             ->exposeBuildOptions('GPL-3.0-only');
 
-        $this->assertSame('GNU General Public License v3.0 only', $options['GPL-3.0-only']);
+        $this->assertSame('GNU General Public License v3.0 only (GPL-3.0-only)', $options['GPL-3.0-only']);
         $this->assertSame(['', 'Apache-2.0', 'CC-BY-4.0', 'GPL-3.0-only', 'MIT'], array_keys($options));
     }
 
@@ -76,6 +76,21 @@ class LicenseFormSelectTest extends TestCase
         $options = $this->createHelper($this->recommended())->exposeBuildOptions('Unknown-1.0');
 
         $this->assertSame('Unknown-1.0', $options['Unknown-1.0']);
+    }
+
+    public function testLabelsContainNameAndCode(): void
+    {
+        $options = $this->createHelper($this->recommended())->exposeBuildOptions();
+
+        $this->assertSame('MIT License (MIT)', $options['MIT']);
+        $this->assertSame('Apache License 2.0 (Apache-2.0)', $options['Apache-2.0']);
+    }
+
+    public function testFormatLabel(): void
+    {
+        $this->assertSame('MIT License (MIT)', Episciences_View_Helper_LicenseFormSelect::formatLabel('MIT License', 'MIT'));
+        $this->assertSame('MIT', Episciences_View_Helper_LicenseFormSelect::formatLabel('mit', 'MIT'));
+        $this->assertSame('MIT', Episciences_View_Helper_LicenseFormSelect::formatLabel('  ', 'MIT'));
     }
 
     public function testRecommendedCurrentLicenseIsNotDuplicated(): void
