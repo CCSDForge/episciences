@@ -139,6 +139,13 @@ class ReviewController extends Zend_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $review = Episciences_ReviewsManager::find(RVID);
+
+        if (!$review instanceof Episciences_Review) {
+            $this->getResponse()?->setHttpResponseCode(404);
+            $this->renderScript('index/notfound.phtml');
+            return;
+        }
+
         $review->loadSettings();
 
         $isSubmitted = $request->isPost() && array_key_exists('submit', $request->getPost());
@@ -148,13 +155,16 @@ class ReviewController extends Zend_Controller_Action
             if ($form->isValid($request->getPost())) {
                 $values = $form->getValues();
 
-                // An empty multiselect is not posted: store an empty list (no restriction)
-                $review->setOptions([
-                    Episciences_Review::SETTING_LICENSE_DEFAULT => $values[Episciences_Review::SETTING_LICENSE_DEFAULT] ?? '',
-                    Episciences_Review::SETTING_LICENSES_ALLOWED => is_array($values[Episciences_Review::SETTING_LICENSES_ALLOWED] ?? null)
-                        ? $values[Episciences_Review::SETTING_LICENSES_ALLOWED]
-                        : [],
-                ]);
+                // setSetting() rather than setOptions(): the latter would also reset the DOI settings
+                // of the (cached) review. An empty multiselect is not posted: store an empty list (no restriction)
+                $review
+                    ->setSetting(Episciences_Review::SETTING_LICENSE_DEFAULT, $values[Episciences_Review::SETTING_LICENSE_DEFAULT] ?? '')
+                    ->setSetting(
+                        Episciences_Review::SETTING_LICENSES_ALLOWED,
+                        is_array($values[Episciences_Review::SETTING_LICENSES_ALLOWED] ?? null)
+                            ? $values[Episciences_Review::SETTING_LICENSES_ALLOWED]
+                            : []
+                    );
 
                 if ($review->saveLicenseSettings()) {
                     $message = sprintf('<strong>%s</strong>', $this->view->translate('Les modifications ont bien été enregistrées.'));
