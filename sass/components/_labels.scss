@@ -5,11 +5,16 @@
 
 @each $variant, $values in $bs-theme-colors {
   .label-#{$variant} {
-    color: map-get($values, "badge-color");
-    background-color: map-get($values, "badge-bg");
+    @include bs-badge-colors($values);
+  }
 
-    @if map-has-key($values, "badge-border") {
-      border: 1px solid map-get($values, "badge-border");
+  // Linked labels: override the BS3 a.label / .label-*[href] hover and focus palette (white text, BS3 colors)
+  a.label-#{$variant},
+  .label-#{$variant}[href] {
+    &:hover,
+    &:focus {
+      color: map-get($values, "badge-color");
+      background-color: map-get($values, "btn-hover-bg");
     }
   }
 }

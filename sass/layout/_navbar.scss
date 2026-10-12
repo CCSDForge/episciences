@@ -1,35 +1,3 @@
-.nav-collapse .btn-group .icon-user {
-  margin-right: 5px;
-  opacity:0.9;
-  filter: alpha(opacity=90);
-}
-
-// user button
-.nav-collapse .btn-primary {
-
-  color: $white;
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
-  background-repeat: repeat-x;
-
-  background-color: #444;
-  background-image: linear-gradient(to bottom, #555, $darker-grey);
-  border-color: $darker-grey $darker-grey #444;
-  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
-}
-
-.nav-collapse .btn-primary:hover,
-.nav-collapse .btn-primary:active,
-.nav-collapse .btn-primary.active,
-.nav-collapse .btn-primary.disabled,
-.nav-collapse .btn-primary[disabled] {
-  color: $white;
-  background-color: $almost-black;
-}
-
-.nav-collapse .btn-group.open .btn-primary.dropdown-toggle {
-  background-color: $darker-grey;
-  border-color: $black $almost-black;
-}
 /* Navbar de services */
 #nav-services > .navbar-nav > .active > a {
   font-weight: bold;
@@ -229,7 +197,8 @@
 }
 
 // Switch user (su) session: notice at the top of the user menu, colors from .alert-warning
-.su-session-notice {
+// .alert prefix: must outrank the .alert-* radius from components/_alerts.scss, imported later
+.alert.su-session-notice {
   margin-bottom: 6px;
   padding: 6px 12px;
   border-width: 0 0 1px;

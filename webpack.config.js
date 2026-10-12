@@ -69,18 +69,6 @@ Encore
         };
     })
 
-    // optimizes CSS minification in production by removing all comments
-    .configureCssMinimizerPlugin((options) => {
-        options.minimizerOptions = {
-            preset: [
-                'default',
-                {
-                    discardComments: { removeAll: true },
-                },
-            ],
-        };
-    })
-
 // uncomment if you use TypeScript
 //.enableTypeScriptLoader()
 

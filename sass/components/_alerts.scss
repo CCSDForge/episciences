@@ -4,18 +4,7 @@
  * Uses shared CSS custom properties to minimize compiled CSS footprint.
  */
 
-$bs-alert-selectors: (
-  ".alert-primary",
-  ".alert-secondary",
-  ".alert-success",
-  ".alert-danger",
-  ".alert-warning",
-  ".alert-info",
-  ".alert-light",
-  ".alert-dark"
-);
-
-#{$bs-alert-selectors} {
+#{bs-theme-selectors(".alert-")} {
   border-radius: 0.375rem;
   color: var(--bs-alert-color);
   background-color: var(--bs-alert-bg);

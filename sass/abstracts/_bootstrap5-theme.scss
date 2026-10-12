@@ -124,3 +124,28 @@ $bs-theme-colors: (
     "btn-focus-shadow": rgba(66, 70, 73, 0.5),
   ),
 );
+
+// Comma-separated selector list built from the theme keys, e.g. bs-theme-selectors(".btn-")
+// gives ".btn-primary, .btn-secondary, ...", so new variants never need a hand-kept list.
+@function bs-theme-selectors($prefix) {
+  $selectors: ();
+  @each $variant in map-keys($bs-theme-colors) {
+    $selectors: append($selectors, "#{$prefix}#{$variant}", comma);
+  }
+  @return $selectors;
+}
+
+// Badge palette shared by BS5 .text-bg-* helpers and BS3 .label-* classes
+@mixin bs-badge-colors($values, $important: false) {
+  @if $important {
+    color: map-get($values, "badge-color") !important;
+    background-color: map-get($values, "badge-bg") !important;
+  } @else {
+    color: map-get($values, "badge-color");
+    background-color: map-get($values, "badge-bg");
+  }
+
+  @if map-has-key($values, "badge-border") {
+    border: 1px solid map-get($values, "badge-border");
+  }
+}

@@ -9,7 +9,8 @@
   border-radius: 50rem !important;
 }
 
-[class*="text-bg-"] {
+// Badge shape only on .badge: alone, .text-bg-* stays a color-only helper as in BS5.3
+#{bs-theme-selectors(".badge.text-bg-")} {
   display: inline-block;
   padding: 0.35em 0.65em;
   font-size: 0.75em;
@@ -21,12 +22,7 @@
 
 @each $variant, $values in $bs-theme-colors {
   .text-bg-#{$variant} {
-    color: map-get($values, "badge-color") !important;
-    background-color: map-get($values, "badge-bg") !important;
-
-    @if map-has-key($values, "badge-border") {
-      border: 1px solid map-get($values, "badge-border");
-    }
+    @include bs-badge-colors($values, true);
   }
 }
 
