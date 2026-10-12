@@ -33,6 +33,20 @@ class LicenseManager
         return $result;
     }
 
+    /**
+     * @return array<string, string> code => name of the recommended licenses
+     */
+    public static function fetchRecommendedOptions(): array
+    {
+        $options = [];
+
+        foreach (self::fetchRecommended() ?? [] as $license) {
+            $options[$license->getCode()] = $license->getName();
+        }
+
+        return $options;
+    }
+
     private static function fetchProcess(?array &$result, $fetch = 'array'): void
     {
 

@@ -4669,8 +4669,12 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         $this->_helper->layout->disableLayout();
+        $review = $this->getPaperReview($paper);
+
         $this->view->docId = $paper->getDocid();
-        $this->view->licenseCode = $this->getCurrentSpdxCode($paper);
+        $this->view->licenseCode = $this->getCurrentSpdxCode($paper) ?? $review?->getDefaultLicense();
+        // null: no restriction, all the recommended licenses are offered
+        $this->view->allowedLicenses = $review?->getAllowedLicenses() ?: null;
         $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-license-form.phtml');
     }
 
@@ -4695,6 +4699,13 @@ class AdministratepaperController extends PaperDefaultController
         $code = (new LicenseSpdxResolver())->resolve($licence);
 
         return $code !== LicenseSpdxResolver::NO_ASSERTION ? $code : null;
+    }
+
+    private function getPaperReview(Episciences_Paper $paper): ?Episciences_Review
+    {
+        $review = Episciences_ReviewsManager::find($paper->getRvid());
+
+        return $review instanceof Episciences_Review ? $review : null;
     }
 
 
@@ -4733,6 +4744,13 @@ class AdministratepaperController extends PaperDefaultController
         // Reject missing and non-scalar values (e.g. license[]=MIT) before using the code as a string
         if (!is_string($currentSpdxCode) || trim($currentSpdxCode) === '') {
             $this->sendJsonError("Échec de l'enregistrement de la licence : aucun code de licence fourni.");
+            return;
+        }
+
+        $allowedLicenses = $this->getPaperReview($paper)?->getAllowedLicenses() ?? [];
+
+        if ($allowedLicenses !== [] && !in_array($currentSpdxCode, $allowedLicenses, true)) {
+            $this->sendJsonError("Échec de l'enregistrement de la licence : cette licence n'est pas autorisée par la revue.");
             return;
         }
 

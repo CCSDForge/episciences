@@ -5,6 +5,8 @@ namespace unit\library\Episciences\View\Helper;
 use Episciences\Paper\Spdx\License;
 use Episciences_View_Helper_LicenseFormSelect;
 use PHPUnit\Framework\TestCase;
+use Zend_Form_Element_Multiselect;
+use Zend_Form_Element_Select;
 use Zend_View;
 
 /**
@@ -21,9 +23,9 @@ class LicenseFormSelectTest extends TestCase
             {
             }
 
-            public function exposeBuildOptions(?string $currentValue = null): array
+            public function exposeBuildOptions(?string $currentValue = null, ?array $licenseCodes = null): array
             {
-                return $this->buildOptions($currentValue);
+                return $this->buildOptions($currentValue !== null ? [$currentValue] : [], $licenseCodes);
             }
 
             protected function fetchRecommendedLicenses(): array
@@ -125,6 +127,82 @@ class LicenseFormSelectTest extends TestCase
         $this->assertStringContainsString('id="license"', $html);
         $this->assertStringContainsString('class="license-select"', $html);
         $this->assertStringNotContainsString('selected="selected"', $html);
+    }
+
+    public function testLicenseCodesRestrictTheOptions(): void
+    {
+        $options = $this->createHelper($this->recommended())->exposeBuildOptions(null, ['MIT', 'Apache-2.0']);
+
+        $this->assertSame(['', 'Apache-2.0', 'MIT'], array_keys($options));
+    }
+
+    public function testCurrentValueIsKeptWhenNotInRestriction(): void
+    {
+        $options = $this->createHelper($this->recommended())->exposeBuildOptions('CC-BY-4.0', ['MIT']);
+
+        $this->assertSame(['', 'CC-BY-4.0', 'MIT'], array_keys($options));
+    }
+
+    public function testRestrictionAcceptsCodeLabelMapFromZendForm(): void
+    {
+        $html = $this->createHelper($this->recommended())
+            ->licenseFormSelect('license', null, [], ['' => 'empty', 'MIT' => 'ignored label']);
+
+        $this->assertStringContainsString('value="MIT"', $html);
+        $this->assertStringContainsString('MIT License (MIT)', $html);
+        $this->assertStringNotContainsString('CC-BY-4.0', $html);
+        $this->assertStringNotContainsString('ignored label', $html);
+    }
+
+    public function testMultipleSelectHasNoEmptyOptionAndSelectsAllValues(): void
+    {
+        $html = $this->createHelper($this->recommended())
+            ->licenseFormSelect('licensesAllowed', ['MIT', 'Apache-2.0'], ['multiple' => 'multiple']);
+
+        $this->assertStringContainsString('name="licensesAllowed[]"', $html);
+        $this->assertStringNotContainsString('value=""', $html);
+        $this->assertMatchesRegularExpression('/value="MIT"[^>]*selected="selected"/', $html);
+        $this->assertMatchesRegularExpression('/value="Apache-2.0"[^>]*selected="selected"/', $html);
+        $this->assertDoesNotMatchRegularExpression('/value="CC-BY-4.0"[^>]*selected="selected"/', $html);
+    }
+
+    public function testRendersAsZendFormElementHelper(): void
+    {
+        $helper = $this->createHelper($this->recommended());
+        $view = new Zend_View();
+        $view->registerHelper($helper, 'licenseFormSelect');
+
+        $element = new Zend_Form_Element_Multiselect('licensesAllowed', [
+            'helper' => 'licenseFormSelect',
+            'multiOptions' => ['MIT' => 'MIT License', 'Apache-2.0' => 'Apache License 2.0'],
+        ]);
+        $element->setView($view)->setValue(['MIT']);
+        $html = $element->render();
+
+        $this->assertStringContainsString('name="licensesAllowed[]"', $html);
+        $this->assertStringContainsString('Apache License 2.0 (Apache-2.0)', $html);
+        $this->assertStringNotContainsString('CC-BY-4.0', $html);
+        $this->assertMatchesRegularExpression('/value="MIT"[^>]*selected="selected"/', $html);
+
+        $this->assertTrue($element->isValid(['MIT', 'Apache-2.0']));
+        $this->assertFalse($element->isValid(['GPL-3.0-only']), 'InArray validator still applies');
+    }
+
+    public function testSingleZendFormElementKeepsEmptyOption(): void
+    {
+        $helper = $this->createHelper($this->recommended());
+        $view = new Zend_View();
+        $view->registerHelper($helper, 'licenseFormSelect');
+
+        $element = new Zend_Form_Element_Select('licenseDefault', [
+            'helper' => 'licenseFormSelect',
+            'multiOptions' => ['' => 'empty', 'MIT' => 'MIT License', 'CC-BY-4.0' => 'CC BY'],
+        ]);
+        $html = $element->setView($view)->render();
+
+        $this->assertStringContainsString('value=""', $html);
+        $this->assertStringContainsString(Episciences_View_Helper_LicenseFormSelect::EMPTY_LABEL, $html);
+        $this->assertStringNotContainsString('Apache-2.0', $html);
     }
 
     public function testLabelsAreEscaped(): void

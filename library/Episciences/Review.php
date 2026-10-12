@@ -54,6 +54,9 @@ class Episciences_Review
     public const COVER_LETTER_REQUIREMENT_DISABLED = 0;
     public const COVER_LETTER_REQUIREMENT_OPTIONAL = 1;
     public const COVER_LETTER_REQUIREMENT_REQUIRED = 2;
+    // Journal licenses (SPDX codes)
+    public const SETTING_LICENSE_DEFAULT = 'licenseDefault';
+    public const SETTING_LICENSES_ALLOWED = 'licensesAllowed';
 
     //const SETTING_EDITORS_CAN_MAKE_DECISIONS = 'editorsCanMakeDecisions';
     public const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
@@ -256,11 +259,14 @@ class Episciences_Review
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
             self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
             self::SETTING_MAIL_DISPLAY_CODE,
+            self::SETTING_LICENSE_DEFAULT,
+            self::SETTING_LICENSES_ALLOWED,
         ];
 
 
         $this->_jsonSettings = [
             self::SETTING_REPOSITORIES,
+            self::SETTING_LICENSES_ALLOWED,
             self::SETTING_DOMAINS,
             self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
             self::SETTING_SYSTEM_NOTIFICATIONS,
@@ -1165,6 +1171,7 @@ class Episciences_Review
 
         $form = $this->addRedirectionMailError($form);
 
+        $form = $this->addLicensesSettingsForm($form);
 
         // display group: publication settings
         $form->addDisplayGroup([
@@ -1182,6 +1189,13 @@ class Episciences_Review
             self::SETTING_ARXIV_PAPER_PASSWORD
         ], 'publication', ["legend" => "Paramètres de soumission"]);
         $form->getDisplayGroup('publication')->removeDecorator('DtDdWrapper');
+
+        // display group : licenses
+        $form->addDisplayGroup([
+            self::SETTING_LICENSE_DEFAULT,
+            self::SETTING_LICENSES_ALLOWED
+        ], 'licenses', ['legend' => 'Licences']);
+        $form->getDisplayGroup('licenses')->removeDecorator('DtDdWrapper');
 
         // display group : rating settings
         $form->addDisplayGroup([
@@ -1974,6 +1988,83 @@ class Episciences_Review
 
     }
 
+    private function addLicensesSettingsForm(Ccsd_Form $form): Ccsd_Form
+    {
+        $licenses = \Episciences\Paper\Spdx\LicenseManager::fetchRecommendedOptions();
+
+        $form->addElement('select', self::SETTING_LICENSE_DEFAULT, [
+                'label' => 'Licence par défaut',
+                'description' => "Pré-sélectionnée lors du choix de la licence d'un article qui n'en a pas encore",
+                'helper' => 'licenseFormSelect',
+                'class' => 'form-control',
+                'multioptions' => ['' => Episciences_View_Helper_LicenseFormSelect::EMPTY_LABEL] + $licenses,
+                'validators' => [self::defaultLicenseValidator()],
+            ]
+        );
+
+        $form->addElement('multiselect', self::SETTING_LICENSES_ALLOWED, [
+                'label' => 'Licences autorisées',
+                'description' => 'Aucune sélection : toutes les licences recommandées sont proposées',
+                'helper' => 'licenseFormSelect',
+                'class' => 'form-control',
+                'size' => 10,
+                'multioptions' => $licenses,
+            ]
+        );
+
+        $form->getElement(self::SETTING_LICENSE_DEFAULT)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_LICENSES_ALLOWED)->getDecorator('label')->setOption('class', 'col-md-2');
+
+        return $form;
+    }
+
+    /**
+     * The default license must be one of the allowed licenses (when the journal restricts them)
+     */
+    public static function defaultLicenseValidator(): Zend_Validate_Callback
+    {
+        $validator = new Zend_Validate_Callback(static function ($value, $context = []): bool {
+            $allowed = self::normalizeLicenseCodes($context[self::SETTING_LICENSES_ALLOWED] ?? []);
+            return $allowed === [] || in_array($value, $allowed, true);
+        });
+        $validator->setMessage('La licence par défaut doit faire partie des licences autorisées', Zend_Validate_Callback::INVALID_VALUE);
+
+        return $validator;
+    }
+
+    /**
+     * SPDX code pre-selected for a paper without license
+     */
+    public function getDefaultLicense(): ?string
+    {
+        $code = trim((string)$this->getSetting(self::SETTING_LICENSE_DEFAULT));
+
+        return $code !== '' ? $code : null;
+    }
+
+    /**
+     * SPDX codes allowed by the journal; empty: no restriction
+     * @return string[]
+     */
+    public function getAllowedLicenses(): array
+    {
+        return self::normalizeLicenseCodes($this->getSetting(self::SETTING_LICENSES_ALLOWED));
+    }
+
+    /**
+     * @return string[]
+     */
+    private static function normalizeLicenseCodes(mixed $codes): array
+    {
+        if (!is_array($codes)) {
+            return [];
+        }
+
+        $codes = array_map(static fn($code) => trim((string)$code), $codes);
+
+        return array_values(array_unique(array_filter($codes, static fn(string $code) => $code !== '')));
+    }
+
     /**
      * Save review settings in DB
      * @return bool
@@ -2016,6 +2107,10 @@ class Episciences_Review
         }
 
         $allSettings[self::SETTING_MAIL_DISPLAY_CODE] = trim(strip_tags((string)$this->getSetting(self::SETTING_MAIL_DISPLAY_CODE)));
+
+        // Licenses
+        $allSettings[self::SETTING_LICENSE_DEFAULT] = (string)$this->getDefaultLicense();
+        $allSettings[self::SETTING_LICENSES_ALLOWED] = $this->getAllowedLicenses();
 
         // Deadlines with units
         $deadlines = [

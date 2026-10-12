@@ -200,6 +200,60 @@ class Episciences_ReviewTest extends TestCase
         self::assertSame(2, Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED);
     }
 
+    // =========================================================================
+    // Journal licenses
+    // =========================================================================
+
+    public function testLicensesAreUnsetByDefault(): void
+    {
+        $this->review->applySettingsFromRows([]);
+        self::assertNull($this->review->getDefaultLicense());
+        self::assertSame([], $this->review->getAllowedLicenses());
+    }
+
+    public function testLicensesAreLoadedFromRows(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'CC-BY-4.0'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["CC-BY-4.0","MIT"]'],
+        ]);
+        self::assertSame('CC-BY-4.0', $this->review->getDefaultLicense());
+        self::assertSame(['CC-BY-4.0', 'MIT'], $this->review->getAllowedLicenses());
+    }
+
+    public function testAllowedLicensesIgnoreInvalidStoredValues(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => '  '],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => 'not json'],
+        ]);
+        self::assertNull($this->review->getDefaultLicense());
+        self::assertSame([], $this->review->getAllowedLicenses());
+    }
+
+    public function testLicensesCanBeSetThroughOptions(): void
+    {
+        $this->review->applySettingsFromRows([]);
+        $this->review->setOptions([
+            Episciences_Review::SETTING_LICENSE_DEFAULT => 'MIT',
+            Episciences_Review::SETTING_LICENSES_ALLOWED => ['MIT', '', 'MIT', ' Apache-2.0 '],
+        ]);
+        self::assertSame('MIT', $this->review->getDefaultLicense());
+        self::assertSame(['MIT', 'Apache-2.0'], $this->review->getAllowedLicenses());
+    }
+
+    public function testDefaultLicenseValidator(): void
+    {
+        $validator = Episciences_Review::defaultLicenseValidator();
+        $key = Episciences_Review::SETTING_LICENSES_ALLOWED;
+
+        self::assertTrue($validator->isValid('MIT', [$key => []]), 'no restriction');
+        self::assertTrue($validator->isValid('MIT', []), 'multiselect not posted');
+        self::assertTrue($validator->isValid('MIT', [$key => ['MIT', 'CC-BY-4.0']]));
+        self::assertFalse($validator->isValid('Apache-2.0', [$key => ['MIT', 'CC-BY-4.0']]));
+        self::assertArrayHasKey(Zend_Validate_Callback::INVALID_VALUE, $validator->getMessages());
+    }
+
     public function testGetCoverLetterRequirementDefaultsToOptionalWhenUnset(): void
     {
         // Reviews created before this setting existed have no stored value in DB.

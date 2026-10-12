@@ -25,9 +25,15 @@ class Episciences_View_Helper_LicenseFormSelect extends Zend_View_Helper_FormSel
 {
     public const EMPTY_LABEL = '--- Sélectionner une licence ---';
 
-    public function licenseFormSelect(string $name, ?string $value = null, array $attribs = []): string
+    /**
+     * @param string|string[]|null $value SPDX code(s); an array for a multiple select
+     * @param array|null $licenseCodes codes to offer (list of codes, or a code => label map as passed by
+     *                                 Zend_Form_Decorator_ViewHelper); null: all the recommended licenses
+     */
+    public function licenseFormSelect(string $name, string|array|null $value = null, array $attribs = [], ?array $licenseCodes = null): string
     {
-        $value = ($value !== null && trim($value) !== '') ? trim($value) : null;
+        $values = self::normalizeValues($value);
+        $isMultiple = !empty($attribs['multiple']);
 
         if (!isset($attribs['id'])) {
             $attribs['id'] = $name;
@@ -35,27 +41,57 @@ class Episciences_View_Helper_LicenseFormSelect extends Zend_View_Helper_FormSel
 
         $attribs['class'] = $attribs['class'] ?? sprintf('%s-select', $name);
 
-        return $this->view->formSelect($name, $value, $attribs, $this->buildOptions($value));
+        $options = $this->buildOptions($values, self::normalizeCodes($licenseCodes), !$isMultiple);
+
+        return $this->view->formSelect($name, $isMultiple ? $values : ($values[0] ?? null), $attribs, $options);
     }
 
     /**
-     * @return array<string, string> SPDX code => "name (code)", empty option first, then sorted by label
+     * @param string[] $currentValues codes always offered, even if not recommended / not in $licenseCodes
+     * @param string[]|null $licenseCodes restricts the recommended licenses; null: no restriction
+     * @return array<string, string> SPDX code => "name (code)", optional empty option first, then sorted by label
      */
-    protected function buildOptions(?string $currentValue = null): array
+    protected function buildOptions(array $currentValues = [], ?array $licenseCodes = null, bool $withEmptyOption = true): array
     {
         $options = [];
 
         foreach ($this->fetchRecommendedLicenses() as $license) {
-            $options[$license->getCode()] = self::formatLabel($license->getName(), $license->getCode());
+            if ($licenseCodes === null || in_array($license->getCode(), $licenseCodes, true)) {
+                $options[$license->getCode()] = self::formatLabel($license->getName(), $license->getCode());
+            }
         }
 
-        if ($currentValue !== null && !array_key_exists($currentValue, $options)) {
-            $options[$currentValue] = self::formatLabel((string)$this->fetchLicenseName($currentValue), $currentValue);
+        foreach (array_merge($licenseCodes ?? [], $currentValues) as $code) {
+            if (!array_key_exists($code, $options)) {
+                $options[$code] = self::formatLabel((string)$this->fetchLicenseName($code), $code);
+            }
         }
 
         asort($options, SORT_NATURAL | SORT_FLAG_CASE);
 
-        return ['' => $this->view->translate(self::EMPTY_LABEL)] + $options;
+        return $withEmptyOption ? ['' => $this->view->translate(self::EMPTY_LABEL)] + $options : $options;
+    }
+
+    /**
+     * @return string[] non-empty trimmed codes
+     */
+    private static function normalizeValues(string|array|null $value): array
+    {
+        $values = array_map(static fn($v) => trim((string)$v), (array)$value);
+
+        return array_values(array_unique(array_filter($values, static fn(string $v) => $v !== '')));
+    }
+
+    /**
+     * @return string[]|null
+     */
+    private static function normalizeCodes(?array $licenseCodes): ?array
+    {
+        if ($licenseCodes === null) {
+            return null;
+        }
+
+        return self::normalizeValues(array_is_list($licenseCodes) ? $licenseCodes : array_keys($licenseCodes));
     }
 
     /**

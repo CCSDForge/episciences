@@ -89,6 +89,11 @@ class ReviewController extends Zend_Controller_Action
                     }
                 }
 
+                // An empty multiselect is not posted: store an empty list (no restriction)
+                if (!is_array($reviewSettingsToSave[Episciences_Review::SETTING_LICENSES_ALLOWED] ?? null)) {
+                    $reviewSettingsToSave[Episciences_Review::SETTING_LICENSES_ALLOWED] = [];
+                }
+
                 $review->setOptions($reviewSettingsToSave);
                 if ($review->save()) {
                     $message = '<strong>' . $this->view->translate("Les modifications ont bien été enregistrées.") . '</strong>';
