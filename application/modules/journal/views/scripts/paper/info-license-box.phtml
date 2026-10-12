@@ -16,7 +16,7 @@ if ($isLicenceMissing) {
     $message = 'Merci de préciser la licence pour cette publication avant sa mise en ligne.';
 } elseif ($status === Episciences_Paper::LICENSE_CHECK_MISMATCH) {
     $title = 'Licence non conforme';
-    $message = 'La licence choisie ne correspond pas à la licence choisie par la revue.';
+    $message = 'La licence de cette publication ne fait pas partie des licences acceptées par la revue.';
 } else {
     $title = 'Licence non reconnue';
     $message = "La licence de cette publication n'a pas pu être identifiée parmi les licences SPDX.";

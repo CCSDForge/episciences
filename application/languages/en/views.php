@@ -482,7 +482,7 @@ return array(
     'Licence non conforme' => 'Non-compliant license',
     'Définir la licence' => 'Set the license',
     'Modifier la licence' => 'Edit the license',
-    'La licence choisie ne correspond pas à la licence choisie par la revue.' => 'The license selected does not match the license selected by the journal.',
+    'La licence de cette publication ne fait pas partie des licences acceptées par la revue.' => 'The license of this publication is not one of the licenses accepted by the journal.',
     "La licence de cette publication n'a pas pu être identifiée parmi les licences SPDX." => 'The license of this publication could not be identified among the SPDX licenses.',
     'Merci de préciser la licence pour cette publication avant sa mise en ligne.' => 'Kindly indicate the license for this publication before it is published.',
     "Opter pour un autre fichier principal" => "Opt for a different primary file",
