@@ -225,8 +225,21 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
             'lifetime' => 120,
             'automatic_serialization' => true
         ];
+        // One directory per system user: files created by another user (e.g. a CLI script run as root)
+        // are not writable by php-fpm and trigger "Failed saving metadata to metadataCache" notices
+        $userId = function_exists('posix_geteuid') ? (string)posix_geteuid() : get_current_user();
+        $cacheDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'epi-db-metadata-' . $userId;
+
+        if (!is_dir($cacheDir) && !@mkdir($cacheDir, 0700, true) && !is_dir($cacheDir)) {
+            return;
+        }
+
+        if (!is_writable($cacheDir)) {
+            return;
+        }
+
         $backendOptions = [
-            'cache_dir' => sys_get_temp_dir()
+            'cache_dir' => $cacheDir
         ];
         $dbCache = Zend_Cache::factory('Core', 'File', $frontendOptions, $backendOptions);
         Zend_Db_Table_Abstract::setDefaultMetadataCache($dbCache);
