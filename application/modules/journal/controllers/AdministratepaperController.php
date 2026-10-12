@@ -4669,20 +4669,13 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         $this->_helper->layout->disableLayout();
-        $review = $this->getPaperReview($paper);
+        $review = $paper->findReview();
 
         $this->view->docId = $paper->getDocid();
         $this->view->licenseCode = $paper->getSpdxLicenseCode() ?? $review?->getDefaultLicense();
         // null: no restriction, all the recommended licenses are offered
         $this->view->allowedLicenses = $review?->getAllowedLicenses() ?: null;
         $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-license-form.phtml');
-    }
-
-    private function getPaperReview(Episciences_Paper $paper): ?Episciences_Review
-    {
-        $review = Episciences_ReviewsManager::find($paper->getRvid());
-
-        return $review instanceof Episciences_Review ? $review : null;
     }
 
 
@@ -4733,7 +4726,7 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
-        $allowedLicenses = $this->getPaperReview($paper)?->getAllowedLicenses() ?? [];
+        $allowedLicenses = $paper->findReview()?->getAllowedLicenses() ?? [];
 
         if ($allowedLicenses !== [] && !in_array($currentSpdxCode, $allowedLicenses, true)) {
             $this->sendJsonError("Échec de l'enregistrement de la licence : cette licence n'est pas autorisée par la revue.");

@@ -5939,7 +5939,10 @@ class Episciences_Paper
         return $code !== LicenseSpdxResolver::NO_ASSERTION ? $code : null;
     }
 
-    private function findReview(): ?Episciences_Review
+    /**
+     * Journal of the paper; null if it cannot be found
+     */
+    public function findReview(): ?Episciences_Review
     {
         $review = Episciences_ReviewsManager::find($this->getRvid());
 
