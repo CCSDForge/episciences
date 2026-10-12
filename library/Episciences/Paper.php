@@ -6,6 +6,7 @@ use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\Export;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Paper\Spdx\LicenseCodeManager;
 use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
@@ -47,6 +48,10 @@ class Episciences_Paper
      */
     public const CACHE_CLASS_NAMESPACE = 'paper';
     public const JSON_DOCUMENT_COLUMN = 'DOCUMENT';
+    // License problems reported to the editorial staff (see getLicenseCheckStatus())
+    public const LICENSE_CHECK_MISSING = 'missing';
+    public const LICENSE_CHECK_MISMATCH = 'mismatch';
+    public const LICENSE_CHECK_UNRECOGNIZED = 'unrecognized';
 
     public const STATUS_SUBMITTED = 0;
     // reviewers have been assigned, but did not start their reports
@@ -5854,12 +5859,67 @@ class Episciences_Paper
         return (new LicenseSpdxResolver())->resolve($this->getLicence()) !== LicenseSpdxResolver::NO_ASSERTION;
     }
 
-    public function ignoreLicenseCheck(): bool
+    public function ignoreLicenseCheck(?Episciences_Review $review = null): bool
     {
-        return
-                $this->isTmp() ||
-                !$this->getAcceptanceDate() ||
-                $this->licenseCanBeResolved();
+        return $this->getLicenseCheckStatus($review) === null;
+    }
+
+    /**
+     * License problem to report for an accepted paper, null if there is none:
+     * - LICENSE_CHECK_MISSING: no license
+     * - LICENSE_CHECK_MISMATCH: the license differs from the journal default license
+     * - LICENSE_CHECK_UNRECOGNIZED: the license cannot be resolved to an SPDX code (journal without default license)
+     *
+     * @param Episciences_Review|null $review journal of the paper; loaded if null
+     */
+    public function getLicenseCheckStatus(?Episciences_Review $review = null): ?string
+    {
+        if ($this->isTmp() || !$this->getAcceptanceDate()) {
+            return null;
+        }
+
+        if (!$this->getLicence()) {
+            return self::LICENSE_CHECK_MISSING;
+        }
+
+        $code = $this->getSpdxLicenseCode();
+        $defaultLicense = ($review ?? $this->findReview())?->getDefaultLicense();
+
+        if ($defaultLicense !== null && ($code === null || strcasecmp($code, $defaultLicense) !== 0)) {
+            return self::LICENSE_CHECK_MISMATCH;
+        }
+
+        return $code === null ? self::LICENSE_CHECK_UNRECOGNIZED : null;
+    }
+
+    /**
+     * SPDX code of the license: the code saved manually takes precedence,
+     * otherwise it is resolved from the license URL (repository or enrichment).
+     */
+    public function getSpdxLicenseCode(): ?string
+    {
+        $code = LicenseCodeManager::getCode($this->getDocid());
+
+        if (is_string($code) && $code !== '') {
+            return $code;
+        }
+
+        $licence = (string)$this->getLicence();
+
+        if ($licence === '') {
+            return null;
+        }
+
+        $code = (new LicenseSpdxResolver())->resolve($licence);
+
+        return $code !== LicenseSpdxResolver::NO_ASSERTION ? $code : null;
+    }
+
+    private function findReview(): ?Episciences_Review
+    {
+        $review = Episciences_ReviewsManager::find($this->getRvid());
+
+        return $review instanceof Episciences_Review ? $review : null;
     }
 
     public function isAllowedToEditMasterFile(): bool

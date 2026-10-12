@@ -2003,7 +2003,7 @@ class Episciences_Review
 
         $form->addElement('multiselect', self::SETTING_LICENSES_ALLOWED, [
                 'label' => 'Licences autorisées',
-                'description' => 'Aucune sélection : toutes les licences recommandées sont proposées. Sinon, la licence par défaut est toujours incluse',
+                'description' => 'Aucune sélection : toutes les licences recommandées sont proposées.',
                 'helper' => 'licenseFormSelect',
                 'class' => 'form-control',
                 'size' => 10,

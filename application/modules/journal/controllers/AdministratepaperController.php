@@ -4672,33 +4672,10 @@ class AdministratepaperController extends PaperDefaultController
         $review = $this->getPaperReview($paper);
 
         $this->view->docId = $paper->getDocid();
-        $this->view->licenseCode = $this->getCurrentSpdxCode($paper) ?? $review?->getDefaultLicense();
+        $this->view->licenseCode = $paper->getSpdxLicenseCode() ?? $review?->getDefaultLicense();
         // null: no restriction, all the recommended licenses are offered
         $this->view->allowedLicenses = $review?->getAllowedLicenses() ?: null;
         $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-license-form.phtml');
-    }
-
-    /**
-     * SPDX code of the paper license: the code saved manually takes precedence,
-     * otherwise it is resolved from the license URL (repository or enrichment).
-     */
-    private function getCurrentSpdxCode(Episciences_Paper $paper): ?string
-    {
-        $code = LicenseCodeManager::getCode($paper->getDocid());
-
-        if (is_string($code) && $code !== '') {
-            return $code;
-        }
-
-        $licence = (string)$paper->getLicence();
-
-        if ($licence === '') {
-            return null;
-        }
-
-        $code = (new LicenseSpdxResolver())->resolve($licence);
-
-        return $code !== LicenseSpdxResolver::NO_ASSERTION ? $code : null;
     }
 
     private function getPaperReview(Episciences_Paper $paper): ?Episciences_Review

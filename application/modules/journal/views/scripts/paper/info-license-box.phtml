@@ -2,18 +2,20 @@
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
 
-if ($paper->ignoreLicenseCheck()) {
+$status = $paper->getLicenseCheckStatus();
+
+if ($status === null) {
     return;
 }
 
 $icon = 'fa-bell';
-$isLicenceMissing = !$paper->getLicence();
+$isLicenceMissing = $status === Episciences_Paper::LICENSE_CHECK_MISSING;
 
 if ($isLicenceMissing) {
     $title = 'Licence manquante';
     $message = 'Merci de préciser la licence pour cette publication avant sa mise en ligne.';
 } else {
-    $title = 'Licence non reconnue';
+    $title = $status === Episciences_Paper::LICENSE_CHECK_MISMATCH ? 'Licence non conforme' : 'Licence non reconnue';
     $message = 'La licence choisie ne correspond pas à la licence choisie par la revue.';
 }
 
