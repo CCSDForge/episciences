@@ -52,6 +52,21 @@ class Episciences_Mail_Reminder
         self::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE => [Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR]
     ];
 
+
+    // reminder copies that can reach the same person through several roles, highest priority first
+    public const RECIPIENT_PRIORITY = [
+        Episciences_Acl::ROLE_EDITOR => 1,
+        Episciences_Acl::ROLE_CHIEF_EDITOR => 2,
+        Episciences_Acl::ROLE_SECRETARY => 3,
+    ];
+
+    // reminder types deduplicated across recipient roles
+    public const DEDUPLICATED_TYPES = [
+        self::TYPE_UNANSWERED_INVITATION,
+        self::TYPE_BEFORE_REVIEWING_DEADLINE,
+        self::TYPE_AFTER_REVIEWING_DEADLINE,
+    ];
+
     private $_id;
     private $_rvid;
     private $_type;
@@ -1728,6 +1743,55 @@ class Episciences_Mail_Reminder
         }
 
         return $filtered;
+    }
+
+    /**
+     * Sort reminder rows by journal, type, then recipient priority (@see self::RECIPIENT_PRIORITY),
+     * so that a person holding several roles receives the copy of the highest priority role.
+     * Other roles (reviewer, author) come first and keep their order (usort() is stable).
+     *
+     * @param array $remindersData rows of T_MAIL_REMINDERS
+     * @return array
+     */
+    public static function sortByRecipientPriority(array $remindersData): array
+    {
+        usort($remindersData, static fn(array $a, array $b): int =>
+            [(int)$a['RVID'], (int)$a['TYPE'], self::RECIPIENT_PRIORITY[$a['RECIPIENT']] ?? 0]
+            <=>
+            [(int)$b['RVID'], (int)$b['TYPE'], self::RECIPIENT_PRIORITY[$b['RECIPIENT']] ?? 0]
+        );
+
+        return $remindersData;
+    }
+
+    /**
+     * Key identifying the same reminder sent to the same person in a run:
+     * reminder type | docid | recipient UID | reviewer email (lowercase).
+     *
+     * @param int $type reminder type
+     * @param string $role recipient role of the reminder
+     * @param array $recipient recipient built by loadRecipients()
+     * @return string|null null when the recipient is not deduplicated
+     */
+    public static function getDeduplicationKey(int $type, string $role, array $recipient): ?string
+    {
+        $tags = $recipient['tags'] ?? [];
+
+        if (
+            !in_array($type, self::DEDUPLICATED_TYPES, true) ||
+            !isset(self::RECIPIENT_PRIORITY[$role]) ||
+            empty($recipient['uid']) ||
+            !isset($tags[Episciences_Mail_Tags::TAG_ARTICLE_ID])
+        ) {
+            return null;
+        }
+
+        return implode('|', [
+            $type,
+            (int)$tags[Episciences_Mail_Tags::TAG_ARTICLE_ID],
+            (int)$recipient['uid'],
+            strtolower((string)($tags[Episciences_Mail_Tags::TAG_REVIEWER_MAIL] ?? '')),
+        ]);
     }
 
     /**

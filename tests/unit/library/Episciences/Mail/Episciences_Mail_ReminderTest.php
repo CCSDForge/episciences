@@ -892,6 +892,90 @@ final class Episciences_Mail_ReminderTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Deduplication across recipient roles (one reminder per person, paper and reviewer)
+    // -------------------------------------------------------------------------
+
+    public function testSortByRecipientPriorityOrdersEditorThenChiefEditorThenSecretary(): void
+    {
+        $rows = [
+            ['ID' => 1, 'RVID' => 3, 'TYPE' => Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE, 'RECIPIENT' => \Episciences_Acl::ROLE_SECRETARY],
+            ['ID' => 2, 'RVID' => 3, 'TYPE' => Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE, 'RECIPIENT' => \Episciences_Acl::ROLE_CHIEF_EDITOR],
+            ['ID' => 3, 'RVID' => 3, 'TYPE' => Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE, 'RECIPIENT' => \Episciences_Acl::ROLE_EDITOR],
+        ];
+
+        $sorted = Episciences_Mail_Reminder::sortByRecipientPriority($rows);
+
+        $this->assertSame([3, 2, 1], array_column($sorted, 'ID'));
+    }
+
+    public function testSortByRecipientPriorityKeepsOtherRolesFirstAndInTheirOrder(): void
+    {
+        $rows = [
+            ['ID' => 1, 'RVID' => 3, 'TYPE' => Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION, 'RECIPIENT' => \Episciences_Acl::ROLE_EDITOR],
+            ['ID' => 2, 'RVID' => 3, 'TYPE' => Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION, 'RECIPIENT' => \Episciences_Acl::ROLE_REVIEWER],
+            ['ID' => 3, 'RVID' => 3, 'TYPE' => Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION, 'RECIPIENT' => \Episciences_Acl::ROLE_REVIEWER],
+        ];
+
+        $sorted = Episciences_Mail_Reminder::sortByRecipientPriority($rows);
+
+        // reviewer rows come first and keep their relative order (stable sort)
+        $this->assertSame([2, 3, 1], array_column($sorted, 'ID'));
+    }
+
+    public function testSortByRecipientPriorityDoesNotMixJournalsAndTypes(): void
+    {
+        $rows = [
+            ['ID' => 1, 'RVID' => 4, 'TYPE' => Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION, 'RECIPIENT' => \Episciences_Acl::ROLE_EDITOR],
+            ['ID' => 2, 'RVID' => 3, 'TYPE' => Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE, 'RECIPIENT' => \Episciences_Acl::ROLE_EDITOR],
+            ['ID' => 3, 'RVID' => 3, 'TYPE' => Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE, 'RECIPIENT' => \Episciences_Acl::ROLE_SECRETARY],
+            ['ID' => 4, 'RVID' => 3, 'TYPE' => Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE, 'RECIPIENT' => \Episciences_Acl::ROLE_EDITOR],
+        ];
+
+        $sorted = Episciences_Mail_Reminder::sortByRecipientPriority($rows);
+
+        // journal 3 before journal 4, type 1 before type 2, then priority inside a type
+        $this->assertSame([4, 3, 2, 1], array_column($sorted, 'ID'));
+    }
+
+    /**
+     * @dataProvider deduplicationKeyDataProvider
+     */
+    public function testGetDeduplicationKey(int $type, string $role, array $recipient, ?string $expected): void
+    {
+        $this->assertSame($expected, Episciences_Mail_Reminder::getDeduplicationKey($type, $role, $recipient));
+    }
+
+    public static function deduplicationKeyDataProvider(): array
+    {
+        $after = Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE;
+        $recipient = self::buildDeduplicationRecipient(7, 123, 'Reviewer.X@Example.org');
+
+        return [
+            'editor copy' => [$after, \Episciences_Acl::ROLE_EDITOR, $recipient, '2|123|7|reviewer.x@example.org'],
+            'chief editor copy: same key as the editor copy' => [$after, \Episciences_Acl::ROLE_CHIEF_EDITOR, $recipient, '2|123|7|reviewer.x@example.org'],
+            'secretary copy: same key as the editor copy' => [$after, \Episciences_Acl::ROLE_SECRETARY, $recipient, '2|123|7|reviewer.x@example.org'],
+            'another reviewer: different key' => [$after, \Episciences_Acl::ROLE_EDITOR, self::buildDeduplicationRecipient(7, 123, 'reviewer.y@example.org'), '2|123|7|reviewer.y@example.org'],
+            'another reminder type: different key' => [Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION, \Episciences_Acl::ROLE_EDITOR, $recipient, '0|123|7|reviewer.x@example.org'],
+            'type outside the deduplicated ones' => [Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE, \Episciences_Acl::ROLE_EDITOR, $recipient, null],
+            'reviewer role' => [$after, \Episciences_Acl::ROLE_REVIEWER, $recipient, null],
+            'author role' => [$after, \Episciences_Acl::ROLE_AUTHOR, $recipient, null],
+            'recipient without uid' => [$after, \Episciences_Acl::ROLE_EDITOR, self::buildDeduplicationRecipient(0, 123, 'reviewer.x@example.org'), null],
+            'recipient without article id' => [$after, \Episciences_Acl::ROLE_EDITOR, ['uid' => 7, 'tags' => []], null],
+        ];
+    }
+
+    private static function buildDeduplicationRecipient(int $uid, int $docId, string $reviewerEmail): array
+    {
+        return [
+            'uid' => $uid,
+            'tags' => [
+                \Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+                \Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewerEmail,
+            ],
+        ];
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

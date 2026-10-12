@@ -91,7 +91,7 @@ try {
         displayMessage($sql . PHP_EOL);
     }
 
-    $remindersData = $db->fetchAll($sql);
+    $remindersData = Episciences_Mail_Reminder::sortByRecipientPriority($db->fetchAll($sql));
 
     $settings = ['is' => ['code' => $opts->rvcode]];
 
@@ -134,6 +134,8 @@ try {
         $review->loadSettings();
         // read by Episciences_PapersManager::keepOnlyUsersWithoutConflict()
         Zend_Registry::set('reviewSettings', $review->getSettings());
+        // reminders already sent in this journal, @see Episciences_Mail_Reminder::getDeduplicationKey()
+        $sentKeys = [];
 
         $languages = $website->getLanguages();
         if (empty($languages)) {
@@ -177,6 +179,14 @@ try {
 
             foreach ($recipients as $recipient) {
 
+                $deduplicationKey = Episciences_Mail_Reminder::getDeduplicationKey(
+                    (int)$reminder->getType(), (string)$reminder->getRecipient(), $recipient
+                );
+                if ($deduplicationKey !== null && isset($sentKeys[$deduplicationKey])) {
+                    displayMessage('Skipped > ' . $recipient['fullname'] . ' (' . $recipient['uid'] . ') already received this reminder through another role', 'default', true);
+                    continue;
+                }
+
                 $tags = (array_key_exists('tags', $recipient)) ? $recipient['tags'] : [];
                 $paper = null;
 
@@ -213,6 +223,10 @@ try {
                 $mail->addTo($recipient['email'], $recipient['fullname']);
 
                 displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'], 'default', true);
+
+                if ($deduplicationKey !== null) {
+                    $sentKeys[$deduplicationKey] = true;
+                }
 
                 $mail->setSubject($reminder->getSubject($recipient['lang']));
                 $mail->setRawBody($reminder->getBody($recipient['lang']));
