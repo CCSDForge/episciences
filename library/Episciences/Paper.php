@@ -5878,11 +5878,13 @@ class Episciences_Paper
             return null;
         }
 
-        if (!$this->getLicence()) {
+        // a manually saved SPDX code counts as a license, even without a license URL
+        $code = $this->getSpdxLicenseCode();
+
+        if (!$this->getLicence() && $code === null) {
             return self::LICENSE_CHECK_MISSING;
         }
 
-        $code = $this->getSpdxLicenseCode();
         $defaultLicense = ($review ?? $this->findReview())?->getDefaultLicense();
 
         if ($defaultLicense !== null && ($code === null || strcasecmp($code, $defaultLicense) !== 0)) {

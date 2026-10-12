@@ -79,6 +79,15 @@ class Episciences_Paper_LicenseCheckStatusTest extends TestCase
         );
     }
 
+    public function testSavedSpdxCodeWithoutLicenseUrlIsNotMissing(): void
+    {
+        self::assertNull($this->paper('', 'CC-BY-4.0')->getLicenseCheckStatus($this->review('CC-BY-4.0')));
+        self::assertSame(
+            Episciences_Paper::LICENSE_CHECK_MISMATCH,
+            $this->paper('', 'MIT')->getLicenseCheckStatus($this->review('CC-BY-4.0'))
+        );
+    }
+
     public function testSameLicenseAsJournalDefaultIsCompliant(): void
     {
         $paper = $this->paper(self::CC_BY_URL, 'CC-BY-4.0');
