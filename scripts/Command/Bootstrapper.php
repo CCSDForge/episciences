@@ -1,0 +1,199 @@
+<?php
+
+namespace scripts\Command;
+
+use Episciences_Paper_MetaDataSourcesManager;
+use Exception;
+use Monolog\Formatter\LineFormatter;
+use Monolog\Handler\RotatingFileHandler;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
+use Zend_Application;
+use Zend_Application_Exception;
+use Zend_Db;
+use Zend_Db_Adapter_Abstract;
+use Zend_Db_Exception;
+use Zend_Db_Table;
+use Zend_Loader_Autoloader;
+use Zend_Locale;
+use Zend_Registry;
+
+class Bootstrapper
+{
+    private ?Zend_Db_Adapter_Abstract $db;
+    private LoggerInterface $logger;
+    private string $logFile;
+    private ?string $env;
+
+    private int $verbosityLevel;
+
+    /**
+     * @param string|null $env application.ini section; resolved from the environment when null
+     * @throws Zend_Application_Exception
+     * @throws Zend_Db_Exception
+     */
+
+    public function __construct(?string $env = null)
+    {
+        $this->env = $env;
+        $this->bootstrap();
+    }
+
+    /**
+     * Initialization based on the console context
+     * @throws Exception
+     */
+    public function initialize(InputInterface $input, OutputInterface $output, ?string $loggerFileName = null): void
+    {
+        $io = new SymfonyStyle($input, $output);
+        $this->verbosityLevel = $output->getVerbosity();
+        $this->initLogger($io, $loggerFileName);
+    }
+
+    /**
+     * @return void
+     * @throws Zend_Application_Exception
+     * @throws Zend_Db_Exception
+     */
+
+    private function bootstrap(): void
+    {
+        if (!defined('APPLICATION_PATH')) {
+            define('APPLICATION_PATH', dirname(__DIR__, 2) . '/application');
+        }
+
+        require_once __DIR__ . '/../../public/const.php';
+        require_once __DIR__ . '/../../public/bdd_const.php';
+
+        // const.php loads the .env files but does not define APPLICATION_ENV for CLI requests
+        $this->env ??= self::resolveEnvironment();
+
+        defineProtocol();
+        defineSimpleConstants();
+        defineSQLTableConstants();
+        defineApplicationConstants();
+        defineJournalConstants();
+
+        $libraries = [dirname(APPLICATION_PATH) . '/library'];
+        set_include_path(implode(PATH_SEPARATOR, array_merge($libraries, [get_include_path()])));
+        require_once 'Zend/Application.php';
+
+
+        // Do NOT call $application->bootstrap() — APPLICATION_MODULE may be undefined
+        // which causes Bootstrap::_initModule() to fail silently.
+
+        $application = new Zend_Application($this->env, APPLICATION_PATH . '/configs/application.ini');
+        $autoloader = Zend_Loader_Autoloader::getInstance();
+        $autoloader->setFallbackAutoloader(true);
+        $db = Zend_Db::factory('PDO_MYSQL', $application->getOption('resources')['db']['params']);
+        Zend_Db_Table::setDefaultAdapter($db);
+
+
+        Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
+        Zend_Registry::set('Zend_Locale', new Zend_Locale('en'));
+
+        $this->db = $db;
+    }
+
+    /**
+     * @param SymfonyStyle|null $io
+     * @param string|null $customFileName
+     * @return void
+     * @throws Exception
+     */
+
+    protected function initLogger(SymfonyStyle $io = null, ?string $customFileName = null): void
+    {
+
+        if (!$customFileName) {
+            $fileName = "default_bootstrap_command_" . date('Ymd_His') . '.log';
+        } else {
+            $fileName = $customFileName;
+        }
+
+        $fileName = sprintf('%s%s.log', EPISCIENCES_LOG_PATH, $fileName);
+        $this->logFile = $fileName;
+
+        $logger = new Logger($fileName);
+
+        // Handler Fichier ( Toujours actif, niveau DEBUG pour garder la trace complète)
+
+        $handler = new RotatingFileHandler(
+                $this->logFile,
+                0, // unlimited
+                Logger::DEBUG,
+                true,
+                0664
+        );
+        $handler->setFormatter(new LineFormatter(null, null, false, true));
+        $logger->pushHandler($handler);
+
+        // Console Handler (Conditional based on verbosity level)
+        // If --quiet (-q) is passed, OutputInterface::VERBOSITY_QUIET is active:
+        // no console handler is added, the logs only go to the file handler above.
+        // Do NOT add a NullHandler here: it stops the propagation and the file handler would receive nothing.
+
+        if (!$io?->isQuiet()) {
+            // Normal or Verbose Mode
+            // Setting the console log level
+            $logLevel = Logger::INFO; // Par défaut
+
+            if ($io->isVerbose()) {
+                $logLevel = Logger::DEBUG; // Affiche tout si -v ou -vv
+            } elseif ($io->isVeryVerbose() || $io->isDebug()) {
+                $logLevel = Logger::DEBUG;
+            }
+
+            $logger->pushHandler(new StreamHandler('php://stdout', $logLevel));
+        }
+
+        $this->logger = $logger;
+    }
+
+    public function getDb(): ?Zend_Db_Adapter_Abstract
+    {
+        return $this->db;
+    }
+
+    public function getLogger(): LoggerInterface
+    {
+        return $this->logger;
+    }
+
+    public function getLogFile(): string
+    {
+        return $this->logFile;
+    }
+
+    public function getEnvironment(): string
+    {
+        return $this->env;
+    }
+
+    /**
+     * Resolve the CLI environment: APPLICATION_ENV (constant or variable), then APP_ENV (.env files or process environment), then production
+     */
+    private static function resolveEnvironment(): string
+    {
+        // $_ENV is not guaranteed to contain the process environment (variables_order), hence the getenv() fallbacks
+        $candidates = [
+                defined('APPLICATION_ENV') ? (string)APPLICATION_ENV : '',
+                (string)getenv('APPLICATION_ENV'),
+                (string)($_ENV['APP_ENV'] ?? ''),
+                (string)getenv('APP_ENV'),
+        ];
+
+        foreach ($candidates as $env) {
+            if ($env !== '') {
+                return $env;
+            }
+        }
+
+        return 'production';
+    }
+
+}

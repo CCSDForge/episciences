@@ -36,7 +36,7 @@ $rvid = RVID;
                     <span data-toggle="tooltip"
                           class="fa-regular fa-address-card"
                           style="margin: 0.2rem"
-                          title="<?= $this->translate("Voir le profil") ?>">
+                          title="<?php echo $this->translate("Voir le profil") ?>">
                     </span>
                 </a>
 
@@ -45,7 +45,7 @@ $rvid = RVID;
                     <span data-toggle="tooltip"
                           class="glyphicon glyphicon-envelope"
                           style="margin: 0.2rem"
-                          title="<?= $this->translate("Contacter ce contributeur") ?>">
+                          title="<?php echo $this->translate("Contacter ce contributeur") ?>">
                     </span>
                 </a>
 
@@ -60,14 +60,7 @@ $rvid = RVID;
                 <?php endif; ?>
 
                 <?php if (Episciences_Auth::isSecretary()) : ?>
-                    <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'su', 'uid' => $paper->getUid()])?>">
-                        <span data-toggle="tooltip"
-                              style="margin: 0.2rem"
-                              title="<?= $this->translate("Se connecter avec ce compte.")?>"
-                              class="fas fa-user-secret">
-
-                        </span>
-                    </a>&nbsp;
+                    <?= $this->partial('user/su_button.phtml', ['uid' => $paper->getUid()]) ?>&nbsp;
                 <?php endif; ?>
                 <img src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($paper->getSubmitter()->getScreenName())); ?>/uid/<?= $paper->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
                      class="user-photo-small" alt="avatar">
@@ -97,7 +90,7 @@ $rvid = RVID;
                                         </span>
                                     </a>
                                 <?php endif; ?>
-                                <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $coAuthorInfo->getUid()]) ?>"
+                                <a class="btn btn-default" href="/user/view/userid/<?= $coAuthorInfo->getUid() ?>"
                                    target="_blank">
                                     <span data-toggle="tooltip"
                                           class="fa-regular fa-address-card"
@@ -114,13 +107,7 @@ $rvid = RVID;
                                     </span>
                                 </a>
                                 <?php if (Episciences_Auth::isSecretary()) : ?>
-                                    <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'su', 'uid' => $coAuthorInfo->getUid()])?>">
-                                        <span data-toggle="tooltip"
-                                              style="margin: 0.2rem"
-                                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
-                                              class="fas fa-user-secret">
-                                        </span>
-                                    </a>
+                                    <?= $this->partial('user/su_button.phtml', ['uid' => $coAuthorInfo->getUid()]) ?>
                                 <?php endif; ?>
                                 <?php if (Episciences_Auth::isAdministrator()) : ?>
                                     <a id="remove-coauthor" class="btn btn-default" onclick="removeCoAuthor(<?= $paper->getDocid() ?>,<?= $coAuthorInfo->getUid() ?>, <?= $this->escape($rvid) ?>)">

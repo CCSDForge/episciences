@@ -93,6 +93,7 @@ class Episciences_Paper_Logger
 
 
     public const CODE_REVISION_DEADLINE_UPDATED = 'revision_deadline_updated';
+    public const CODE_LICENSE_UPDATED = "paper_license_updated";
 
 
     // log type css class — sorted alphabetically by key (constant value)
@@ -127,6 +128,7 @@ class Episciences_Paper_Logger
         self::CODE_LD_ADDED                             => self::INFO,
         self::CODE_LD_CHANGED                           => self::INFO,
         self::CODE_LD_REMOVED                           => self::INFO,
+        self::CODE_LICENSE_UPDATED                      => self::INFO,
         self::CODE_MAIL_SENT                            => self::INFO,
         self::CODE_MAJOR_REVISION_REQUEST               => self::VIOLET,
         self::CODE_MINOR_REVISION_REQUEST               => self::VIOLET,
@@ -192,6 +194,7 @@ class Episciences_Paper_Logger
         self::CODE_LD_ADDED                             => "Ajout d'une donnée liée",
         self::CODE_LD_CHANGED                           => "Changement d'une donnée liée",
         self::CODE_LD_REMOVED                           => "Suppression d'une donnée liée",
+        self::CODE_LICENSE_UPDATED                      => "Licence mise à jour",
         self::CODE_MAIL_SENT                            => "Envoi d'un e-mail",
         self::CODE_MAJOR_REVISION_REQUEST               => 'Demande de modifications majeures',
         self::CODE_MINOR_REVISION_REQUEST               => 'Demande de modifications mineures',
@@ -264,6 +267,7 @@ class Episciences_Paper_Logger
         self::CODE_LD_ADDED                             => self::CATEGORY_EDITORIAL,
         self::CODE_LD_CHANGED                           => self::CATEGORY_EDITORIAL,
         self::CODE_LD_REMOVED                           => self::CATEGORY_EDITORIAL,
+        self::CODE_LICENSE_UPDATED                      => self::CATEGORY_EDITORIAL,
         self::CODE_MAIL_SENT                            => self::CATEGORY_COMMUNICATION,
         self::CODE_MAJOR_REVISION_REQUEST               => self::CATEGORY_EDITORIAL,
         self::CODE_MINOR_REVISION_REQUEST               => self::CATEGORY_EDITORIAL,
@@ -524,8 +528,8 @@ class Episciences_Paper_Logger
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $data = [
-            'PAPERID' => $paperid,
-            'DOCID' => $docid,
+                'PAPERID' => $paperid,
+                'DOCID' => $docid,
             // ?? instead of ?: so that $uid = 0 is not silently replaced by EPISCIENCES_UID
             'UID'  => $uid  ?? EPISCIENCES_UID,
             'RVID' => $rvid ?? RVID,

@@ -3382,6 +3382,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"core-js@npm:^3":
+  version: 3.50.0
+  resolution: "core-js@npm:3.50.0"
+  checksum: 10/9690bd111d8500437e65b365ec0dbe8d8899e99e877452d142c72bfbf272bd6edbf38ec9c2da8fa88d9186bba9246309bff68cedd2a6c43a3bf0748625e0e092
+  languageName: node
+  linkType: hard
+
 "cross-spawn@npm:^7.0.3, cross-spawn@npm:^7.0.6":
   version: 7.0.6
   resolution: "cross-spawn@npm:7.0.6"
@@ -6310,6 +6317,7 @@ __metadata:
     "@playwright/test": "npm:^1.60.0"
     "@symfony/webpack-encore": "npm:^5.3.1"
     altcha: "npm:3.1.0"
+    core-js: "npm:^3"
     filepond: "npm:4.32.12"
     filepond-plugin-file-validate-size: "npm:2.2.8"
     filepond-plugin-file-validate-type: "npm:1.2.9"

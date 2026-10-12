@@ -127,9 +127,12 @@ final class SubmittedRecordTest extends TestCase
         foreach (self::licenceProvider() as $label => [$source, $licence, $linked]) {
             $html = $this->renderLicence($stylesheet, $source, $licence);
 
-            if ($linked) {
-                self::assertStringContainsString('Licence : <a rel="noopener" target="_blank" href="' . $licence . '"', $html, $label);
-            } else {
+                if ($linked) {
+                    self::assertStringContainsString('Licence : <a', $html, $label);
+                    self::assertStringContainsString('href="' . $licence . '"', $html, $label);
+                    self::assertStringContainsString('rel="noopener"', $html, $label);
+                    self::assertStringContainsString('target="_blank"', $html, $label);
+                } else {
                 self::assertDoesNotMatchRegularExpression('/Licence : <a [^>]*href=/', $html, $label);
             }
         }

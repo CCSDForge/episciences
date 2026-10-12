@@ -34,8 +34,13 @@ require_once __DIR__ . '/UpdatePapersDocumentCommand.php';
 require_once __DIR__ . '/CleanHalRecordDescriptionsCommand.php';
 require_once __DIR__ . '/UpdateTranslationsCommand.php';
 require_once __DIR__ . '/GetDoiCommand.php';
+require_once __DIR__ . '/Command/AbstractCommand.php';
+require_once __DIR__ . '/Command/Bootstrapper.php';
+require_once __DIR__ . '/UpdateLicensesCommand.php';
+require_once __DIR__ . '/ImportSpdxLicenseListCommand.php';
 require_once __DIR__ . '/NormalizeUserAffiliationsCommand.php';
 require_once __DIR__ . '/RevalidateNextCacheCommand.php';
+require_once __DIR__ . '/AnonymizeSuLogsCommand.php';
 
 // Solr indexing commands
 require_once __DIR__ . '/SolrIndexCommand.php';
@@ -60,6 +65,7 @@ $application = new Application('Episciences CLI', '1.0.0');
 $application->add(new GenerateUsersCommand());
 $application->add(new InitDevUsersCommand());
 $application->add(new CreateBotUserCommand());
+$application->add(new AnonymizeSuLogsCommand());
 
 // Enrichment commands
 $application->add(new ExtractBiblioRefsCommand());
@@ -111,6 +117,8 @@ $application->add(new UpdateGeoIpCommand());
 
 // Papers commands
 $application->add(new UpdatePapersDocumentCommand());
+$application->add(new UpdateLicensesCommand());
+$application->add(new ImportSpdxLicenseListCommand());
 $application->add(new CleanHalRecordDescriptionsCommand());
 
 // Translation commands

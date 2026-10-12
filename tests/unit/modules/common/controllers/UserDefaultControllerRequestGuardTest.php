@@ -208,15 +208,15 @@ final class UserDefaultControllerRequestGuardTest extends TestCase
             'processChangeEmail must cast the acting user\'s UID to int before comparing (D6)');
     }
 
-    public function testResolveEmailChangeTargetUidScopesSecretariesToTheirReview(): void
+    public function testResolveEmailChangeTargetUidEnforcesAccountMutationPolicy(): void
     {
         $method = $this->extractMethod('resolveEmailChangeTargetUid');
-        self::assertStringContainsString('isSecretary()', $method,
-            'resolveEmailChangeTargetUid must require the secretary role to target another account (D8)');
-        self::assertStringContainsString('hasRoles(', $method,
-            'resolveEmailChangeTargetUid must check the target has a role in the current review (D8)');
-        self::assertStringContainsString('RVID', $method,
-            'resolveEmailChangeTargetUid must scope the role check to the current review (D8)');
+        self::assertStringContainsString('AccountMutationPolicy::canChangeEmail', $method,
+            'resolveEmailChangeTargetUid must use AccountMutationPolicy::canChangeEmail');
+        self::assertStringContainsString('Episciences_Auth::isImpersonating()', $method,
+            'resolveEmailChangeTargetUid must pass the impersonation status to the policy');
+        self::assertStringContainsString('Episciences_Auth::isRoot()', $method,
+            'resolveEmailChangeTargetUid must pass the root status to the policy');
     }
 
     public function testChangeAccountEmailActionUsesTheSharedTargetResolver(): void
@@ -224,6 +224,46 @@ final class UserDefaultControllerRequestGuardTest extends TestCase
         $method = $this->extractMethod('changeaccountemailAction');
         self::assertStringContainsString('resolveEmailChangeTargetUid(', $method,
             'changeaccountemailAction must resolve its target the same way processChangeEmail does (D8)');
+    }
+
+    // -----------------------------------------------------------------------
+    // Account mutation & anti-impersonation guards
+    // -----------------------------------------------------------------------
+
+    public function testEditActionEnforcesAccountMutationPolicy(): void
+    {
+        $method = $this->extractMethod('editAction');
+        self::assertStringContainsString('AccountMutationPolicy::canEditProfile', $method,
+            'editAction must guard profile modification via AccountMutationPolicy::canEditProfile');
+        self::assertStringContainsString('isImpersonating', $method,
+            'editAction must check impersonation status');
+        self::assertStringContainsString('isRoot', $method,
+            'editAction must check root status');
+    }
+
+    public function testChangePasswordActionGuardsAgainstImpersonation(): void
+    {
+        $method = $this->extractMethod('changepasswordAction');
+        self::assertStringContainsString('Episciences_Auth::isImpersonating()', $method,
+            'changepasswordAction must prevent password change during switch-user');
+    }
+
+    public function testResetApiPasswordActionGuardsAgainstImpersonation(): void
+    {
+        $method = $this->extractMethod('resetapipasswordAction');
+        self::assertStringContainsString('Episciences_Auth::isImpersonating()', $method,
+            'resetapipasswordAction must prevent API password reset during switch-user');
+    }
+
+    public function testAjaxDeletePhotoActionEnforcesAccountMutationPolicy(): void
+    {
+        $method = $this->extractMethod('ajaxdeletephotoAction');
+        self::assertStringContainsString('AccountMutationPolicy::canDeletePhoto', $method,
+            'ajaxdeletephotoAction must guard photo deletion with AccountMutationPolicy::canDeletePhoto');
+        self::assertStringContainsString('Episciences_Auth::isRoot()', $method,
+            'ajaxdeletephotoAction must pass the root status to the policy');
+        self::assertMatchesRegularExpression('/setHttpResponseCode\(\s*403\s*\)/', $method,
+            'ajaxdeletephotoAction must respond 403 when photo deletion policy denies');
     }
 
     // -----------------------------------------------------------------------

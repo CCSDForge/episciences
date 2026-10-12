@@ -159,7 +159,7 @@ class Episciences_Auth_PluginTest extends TestCase
      * @param list<string> $roles
      * @return array{string, string}
      */
-    private function dispatchWithApplicationAcl(string $controller, string $action, array $roles): array
+    private function dispatchWithApplicationAcl(string $controller, string $action, array $roles, bool $xhr = false): array
     {
         $acl = new Episciences_Acl(); // acl.ini and the navigation files, as loaded by the application
         $acl->loadFromNavigation([APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.navigation.json']);
@@ -173,7 +173,14 @@ class Episciences_Auth_PluginTest extends TestCase
                 Zend_Auth::getInstance()->getStorage()->write($user);
             }
 
-            $request = new Zend_Controller_Request_Http();
+            $request = $xhr
+                ? new class extends Zend_Controller_Request_Http {
+                    public function isXmlHttpRequest(): bool
+                    {
+                        return true;
+                    }
+                }
+                : new Zend_Controller_Request_Http();
             $request->setControllerName($controller)->setActionName($action);
             $plugin = new class($acl) extends Episciences_Auth_Plugin {
                 public function __construct(private readonly Episciences_Acl $applicationAcl)
@@ -225,6 +232,17 @@ class Episciences_Auth_PluginTest extends TestCase
     public function testEverySpellingOfARestrictedActionIsDeniedToAMemberWithoutTheRole(string $controller, string $action): void
     {
         [$resolvedController, $resolvedAction] = $this->dispatchWithApplicationAcl($controller, $action, [Episciences_Acl::ROLE_MEMBER]);
+
+        self::assertSame([Ccsd_Auth_Plugin::FAIL_AUTH_CONTROLLER, Ccsd_Auth_Plugin::FAIL_AUTH_ACTION], [$resolvedController, $resolvedAction]);
+    }
+
+    /**
+     * The accepted papers list is only an ACL resource when the journal navigation declares it:
+     * without it, a client-supplied X-Requested-With header must not let the request through.
+     */
+    public function testUndeclaredAcceptedPapersListIsDeniedToAGuestSendingAnXhrHeader(): void
+    {
+        [$resolvedController, $resolvedAction] = $this->dispatchWithApplicationAcl('browse', 'accepted-docs', [], true);
 
         self::assertSame([Ccsd_Auth_Plugin::FAIL_AUTH_CONTROLLER, Ccsd_Auth_Plugin::FAIL_AUTH_ACTION], [$resolvedController, $resolvedAction]);
     }

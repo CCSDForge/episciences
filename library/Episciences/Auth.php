@@ -248,16 +248,86 @@ class Episciences_Auth extends Ccsd_Auth
     }
 
     /**
-     * Save a real identity if an admin Sign in as another user
-     * @return void
+     * Switch the session to another user, remembering the current identity so it can be restored.
+     *
+     * The stack is bound to the impersonated UID: it is only honoured while that user is the
+     * authenticated one.
      */
-    public static function saveRealIdentity(): void
+    public static function startImpersonation(Episciences_User $target): void
     {
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        /** @var Episciences_User[] $realIdentities */
-        $realIdentities = isset($session->realIdentities) ? array_merge($session->realIdentities, [self::getUser()]) : [self::getUser()];
-        $session->realIdentities = $realIdentities;
+        $realIdentities = self::getAllIdentities();
+        $realIdentities = self::isImpersonating() ? $realIdentities : [];
+        $realIdentities[] = self::getUser();
 
+        $session->realIdentities = $realIdentities;
+        $session->impersonatedUid = (int)$target->getUid();
+
+        self::updateIdentity($target);
+    }
+
+    /**
+     * Restore the identity saved by the last startImpersonation().
+     *
+     * @return Episciences_User|null The restored identity, null when the session is not impersonating
+     *                               or when the saved identities are unbound (the identity is then cleared)
+     */
+    public static function endImpersonation(): ?Episciences_User
+    {
+        if (!self::isImpersonating()) {
+            self::clearImpersonation();
+            return null;
+        }
+
+        // The saved identities cannot be trusted: nothing is restored and the session is closed
+        if (self::hasUnboundImpersonationStack()) {
+            self::clearImpersonation();
+            self::getInstance()->clearIdentity();
+            return null;
+        }
+
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        /** @var Episciences_User[] $realIdentities */
+        $realIdentities = $session->realIdentities;
+        $originalUser = array_pop($realIdentities);
+
+        if (empty($realIdentities)) {
+            self::clearImpersonation();
+        } else {
+            $session->realIdentities = $realIdentities;
+            $session->impersonatedUid = (int)$originalUser->getUid();
+        }
+
+        self::updateIdentity($originalUser);
+
+        return $originalUser;
+    }
+
+    /**
+     * Forget any switch user state (login, logout, stale state).
+     */
+    public static function clearImpersonation(): void
+    {
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        unset($session->realIdentities, $session->impersonatedUid);
+    }
+
+    /**
+     * A non-empty identity stack that is not bound to the authenticated user (e.g. a switch user
+     * session started before the stack was bound to the impersonated UID).
+     * The session must not be considered as the account owner's one.
+     */
+    private static function hasUnboundImpersonationStack(): bool
+    {
+        if (!self::isLogged()) {
+            return false;
+        }
+
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        $realIdentities = $session->realIdentities;
+
+        return is_array($realIdentities) && $realIdentities !== [] &&
+            (int)$session->impersonatedUid !== (int)self::getUid();
     }
 
     /**
@@ -266,11 +336,20 @@ class Episciences_Auth extends Ccsd_Auth
      */
     public static function hasRealIdentity(): bool
     {
-        if (!self::isLogged()) {
+        if (!self::isLogged() || self::hasUnboundImpersonationStack()) {
             return false;
         }
         $original = self::getOriginalIdentity();
         return $original !== null && $original->getUid() === self::getUid();
+    }
+
+    /**
+     * Check if the current session is impersonating another user (via suAction).
+     * @return bool
+     */
+    public static function isImpersonating(): bool
+    {
+        return self::isLogged() && !self::hasRealIdentity();
     }
 
     /**
@@ -290,9 +369,22 @@ class Episciences_Auth extends Ccsd_Auth
      */
     public static function getAllIdentities(): array
     {
-        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        return $session->realIdentities ?? [self::getUser()];
+        if (!self::isLogged()) {
+            return [self::getUser()];
+        }
 
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        $realIdentities = $session->realIdentities;
+
+        // A stack left behind by another login is not honoured
+        if (
+            !is_array($realIdentities) || $realIdentities === [] ||
+            (int)$session->impersonatedUid !== (int)self::getUid()
+        ) {
+            return [self::getUser()];
+        }
+
+        return $realIdentities;
     }
 
     /**

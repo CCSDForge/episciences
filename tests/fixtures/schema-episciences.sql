@@ -1048,6 +1048,31 @@ CREATE TABLE `volume_proceeding` (
   PRIMARY KEY (`VID`,`SETTING`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `user_su_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_su_log` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `rvid` int unsigned NOT NULL DEFAULT 0,
+  `from_uid` int unsigned NOT NULL,
+  `to_uid` int unsigned NOT NULL,
+  `action` varchar(30) NOT NULL,
+  `reason` varchar(50) DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `session_id` varchar(128) DEFAULT NULL,
+  `details` json DEFAULT NULL,
+  `is_anonymized` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_from_uid` (`from_uid`),
+  KEY `idx_to_uid` (`to_uid`),
+  KEY `idx_rvid` (`rvid`),
+  KEY `idx_action` (`action`),
+  KEY `idx_anonymization` (`is_anonymized`, `created_at`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!50001 DROP VIEW IF EXISTS `v_mailing_lists_resolved`*/;
 /*!50001 SET @saved_cs_client          = @@character_set_client */;
 /*!50001 SET @saved_cs_results         = @@character_set_results */;

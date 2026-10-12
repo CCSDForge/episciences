@@ -1,6 +1,9 @@
 module.exports = {
     testEnvironment: 'jsdom',
     setupFilesAfterEnv: ['<rootDir>/tests/js/setup.js'],
+    moduleNameMapper: {
+        '\\.css$': '<rootDir>/tests/js/styleMock.js'
+    },
     testMatch: ['**/tests/js/**/*.test.js'],
     collectCoverageFrom: [
         'public/js/**/*.js',
