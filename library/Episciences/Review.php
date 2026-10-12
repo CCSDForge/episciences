@@ -1997,14 +1997,14 @@ class Episciences_Review
                 'description' => "Pré-sélectionnée lors du choix de la licence d'un article qui n'en a pas encore",
                 'helper' => 'licenseFormSelect',
                 'class' => 'form-control',
+                'required' => true,
                 'multioptions' => ['' => Episciences_View_Helper_LicenseFormSelect::EMPTY_LABEL] + $licenses,
-                'validators' => [self::defaultLicenseValidator()],
             ]
         );
 
         $form->addElement('multiselect', self::SETTING_LICENSES_ALLOWED, [
                 'label' => 'Licences autorisées',
-                'description' => 'Aucune sélection : toutes les licences recommandées sont proposées',
+                'description' => 'Aucune sélection : toutes les licences recommandées sont proposées. Sinon, la licence par défaut est toujours incluse',
                 'helper' => 'licenseFormSelect',
                 'class' => 'form-control',
                 'size' => 10,
@@ -2019,20 +2019,6 @@ class Episciences_Review
     }
 
     /**
-     * The default license must be one of the allowed licenses (when the journal restricts them)
-     */
-    public static function defaultLicenseValidator(): Zend_Validate_Callback
-    {
-        $validator = new Zend_Validate_Callback(static function ($value, $context = []): bool {
-            $allowed = self::normalizeLicenseCodes($context[self::SETTING_LICENSES_ALLOWED] ?? []);
-            return $allowed === [] || in_array($value, $allowed, true);
-        });
-        $validator->setMessage('La licence par défaut doit faire partie des licences autorisées', Zend_Validate_Callback::INVALID_VALUE);
-
-        return $validator;
-    }
-
-    /**
      * SPDX code pre-selected for a paper without license
      */
     public function getDefaultLicense(): ?string
@@ -2043,12 +2029,20 @@ class Episciences_Review
     }
 
     /**
-     * SPDX codes allowed by the journal; empty: no restriction
+     * SPDX codes allowed by the journal; empty: no restriction.
+     * When the journal restricts the licenses, the default license is always one of them.
      * @return string[]
      */
     public function getAllowedLicenses(): array
     {
-        return self::normalizeLicenseCodes($this->getSetting(self::SETTING_LICENSES_ALLOWED));
+        $allowed = self::normalizeLicenseCodes($this->getSetting(self::SETTING_LICENSES_ALLOWED));
+        $default = $this->getDefaultLicense();
+
+        if ($allowed !== [] && $default !== null && !in_array($default, $allowed, true)) {
+            $allowed[] = $default;
+        }
+
+        return $allowed;
     }
 
     /**

@@ -2671,6 +2671,5 @@ return array(
     "Licence par défaut" => "Default license",
     "Pré-sélectionnée lors du choix de la licence d'un article qui n'en a pas encore" => "Pre-selected when choosing the license of an article that does not have one yet",
     "Licences autorisées" => "Allowed licenses",
-    "Aucune sélection : toutes les licences recommandées sont proposées" => "No selection: all the recommended licenses are offered",
-    "La licence par défaut doit faire partie des licences autorisées" => "The default license must be one of the allowed licenses",
+    "Aucune sélection : toutes les licences recommandées sont proposées. Sinon, la licence par défaut est toujours incluse" => "No selection: all the recommended licenses are offered. Otherwise, the default license is always included",
 );
