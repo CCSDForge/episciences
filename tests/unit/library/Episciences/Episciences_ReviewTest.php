@@ -244,10 +244,44 @@ class Episciences_ReviewTest extends TestCase
 
     private function buildLicensesSettingsForm(): Ccsd_Form
     {
-        $method = new ReflectionMethod(Episciences_Review::class, 'addLicensesSettingsForm');
-        $method->setAccessible(true);
+        return $this->review->licensesSettingsForm();
+    }
 
-        return $method->invoke($this->review, new Ccsd_Form());
+    private static function methodSource(string $name): string
+    {
+        $method = new ReflectionMethod(Episciences_Review::class, $name);
+        $lines = file($method->getFileName());
+
+        return implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+    }
+
+    public function testLicensesSettingsFormHasBothElementsAndSubmit(): void
+    {
+        $form = $this->buildLicensesSettingsForm();
+
+        self::assertNotNull($form->getElement(Episciences_Review::SETTING_LICENSE_DEFAULT));
+        self::assertNotNull($form->getElement(Episciences_Review::SETTING_LICENSES_ALLOWED));
+        self::assertNotNull($form->getDisplayGroup('licenses'));
+    }
+
+    /**
+     * Licenses have their own page (review/licenses): the main settings page must neither
+     * display them (the required default license would block saving the other settings)
+     * nor save them.
+     */
+    public function testLicensesAreNotPartOfTheMainSettings(): void
+    {
+        self::assertStringNotContainsString('SETTING_LICENSE', self::methodSource('settingsForm'));
+        self::assertStringNotContainsString('SETTING_LICENSE', self::methodSource('save'));
+    }
+
+    public function testSaveLicenseSettingsOnlyWritesLicenseKeys(): void
+    {
+        $source = self::methodSource('saveLicenseSettings');
+
+        self::assertStringContainsString('self::SETTING_LICENSE_DEFAULT =>', $source);
+        self::assertStringContainsString('self::SETTING_LICENSES_ALLOWED =>', $source);
+        self::assertSame(2, substr_count($source, '=>'));
     }
 
     public function testDefaultLicenseIsRequired(): void

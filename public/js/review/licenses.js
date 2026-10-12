@@ -1,5 +1,5 @@
 /**
- * Journal settings: keep the default license selected in the allowed licenses.
+ * Journal licenses page: keep the default license selected in the allowed licenses.
  *
  * An empty allowed list means "no restriction" (all the recommended licenses):
  * it is left untouched. Otherwise the default license is (re)selected, so it

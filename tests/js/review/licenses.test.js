@@ -5,7 +5,7 @@
 const {
     selectDefaultInAllowedLicenses,
     initLicensesSettings,
-} = require('../../../public/js/review/settings-licenses');
+} = require('../../../public/js/review/licenses');
 
 function render(defaultCode, allowedCodes) {
     const codes = ['MIT', 'CC-BY-4.0', 'Apache-2.0'];

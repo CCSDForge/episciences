@@ -1171,7 +1171,6 @@ class Episciences_Review
 
         $form = $this->addRedirectionMailError($form);
 
-        $form = $this->addLicensesSettingsForm($form);
 
         // display group: publication settings
         $form->addDisplayGroup([
@@ -1189,13 +1188,6 @@ class Episciences_Review
             self::SETTING_ARXIV_PAPER_PASSWORD
         ], 'publication', ["legend" => "Paramètres de soumission"]);
         $form->getDisplayGroup('publication')->removeDecorator('DtDdWrapper');
-
-        // display group : licenses
-        $form->addDisplayGroup([
-            self::SETTING_LICENSE_DEFAULT,
-            self::SETTING_LICENSES_ALLOWED
-        ], 'licenses', ['legend' => 'Licences']);
-        $form->getDisplayGroup('licenses')->removeDecorator('DtDdWrapper');
 
         // display group : rating settings
         $form->addDisplayGroup([
@@ -1988,8 +1980,15 @@ class Episciences_Review
 
     }
 
-    private function addLicensesSettingsForm(Ccsd_Form $form): Ccsd_Form
+    /**
+     * Journal licenses form (dedicated page: review/licenses)
+     */
+    public function licensesSettingsForm(): Ccsd_Form
     {
+        $form = new Ccsd_Form();
+        $form->setAttrib('class', 'form-horizontal');
+        $form->getDecorator('FormRequired')->setOption('style', 'float: none;');
+
         $licenses = \Episciences\Paper\Spdx\LicenseManager::fetchRecommendedOptions();
 
         $form->addElement('select', self::SETTING_LICENSE_DEFAULT, [
@@ -2015,7 +2014,31 @@ class Episciences_Review
         $form->getElement(self::SETTING_LICENSE_DEFAULT)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_LICENSES_ALLOWED)->getDecorator('label')->setOption('class', 'col-md-2');
 
+        $form->addDisplayGroup([
+            self::SETTING_LICENSE_DEFAULT,
+            self::SETTING_LICENSES_ALLOWED
+        ], 'licenses', ['legend' => 'Licences']);
+        $form->getDisplayGroup('licenses')->removeDecorator('DtDdWrapper');
+
+        $form->setActions(true)->createSubmitButton('submit', [
+                'label' => 'Enregistrer les paramètres',
+                'class' => 'btn btn-primary'
+            ]
+        );
+
         return $form;
+    }
+
+    /**
+     * Save only the journal licenses settings (the other settings are left untouched)
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function saveLicenseSettings(): bool
+    {
+        return $this->upsertSettings([
+            self::SETTING_LICENSE_DEFAULT => (string)$this->getDefaultLicense(),
+            self::SETTING_LICENSES_ALLOWED => $this->getAllowedLicenses(),
+        ]);
     }
 
     /**
@@ -2102,10 +2125,6 @@ class Episciences_Review
 
         $allSettings[self::SETTING_MAIL_DISPLAY_CODE] = trim(strip_tags((string)$this->getSetting(self::SETTING_MAIL_DISPLAY_CODE)));
 
-        // Licenses
-        $allSettings[self::SETTING_LICENSE_DEFAULT] = (string)$this->getDefaultLicense();
-        $allSettings[self::SETTING_LICENSES_ALLOWED] = $this->getAllowedLicenses();
-
         // Deadlines with units
         $deadlines = [
             self::SETTING_RATING_DEADLINE => self::SETTING_RATING_DEADLINE_UNIT,
@@ -2142,10 +2161,28 @@ class Episciences_Review
         $doiSettings = $this->getDoiSettings();
         $allSettings = array_merge($allSettings, $doiSettings->__toArray());
 
+        if (!$this->upsertSettings($allSettings)) {
+            return false;
+        }
+
+        $this->checkAndCreateIfNotExistsCryptoFile();
+
+        return true;
+    }
+
+    /**
+     * Insert or update the given review settings
+     * @param array<string, mixed> $settings setting => value (arrays are stored as JSON)
+     */
+    private function upsertSettings(array $settings): bool
+    {
+        if ($settings === []) {
+            return true;
+        }
+
         $values = [];
 
-        // Enregistrement des paramètres
-        foreach ($allSettings as $setting => $value) {
+        foreach ($settings as $setting => $value) {
             $setting = $this->_db->quote($setting);
             // Encode every array, including an empty one, so [] is stored as '[]' rather
             // than quoted to '' (which json_decode()s back to null on reload).
@@ -2163,13 +2200,7 @@ class Episciences_Review
         $sql .= implode(',', $values);
         $sql .= ' AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE';
 
-        if (!$this->_db->getConnection()?->query($sql)) {
-            return false;
-        }
-
-        $this->checkAndCreateIfNotExistsCryptoFile();
-
-        return true;
+        return (bool)$this->_db->getConnection()?->query($sql);
     }
 
     /**
