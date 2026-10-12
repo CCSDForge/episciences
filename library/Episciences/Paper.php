@@ -5855,15 +5855,6 @@ class Episciences_Paper
         }
     }
 
-    public function licenseCanBeResolved() : bool{
-        return (new LicenseSpdxResolver())->resolve($this->getLicence()) !== LicenseSpdxResolver::NO_ASSERTION;
-    }
-
-    public function ignoreLicenseCheck(?Episciences_Review $review = null): bool
-    {
-        return $this->getLicenseCheckStatus($review) === null;
-    }
-
     /**
      * License problem to report for an accepted paper, null if there is none:
      * - LICENSE_CHECK_MISSING: no license

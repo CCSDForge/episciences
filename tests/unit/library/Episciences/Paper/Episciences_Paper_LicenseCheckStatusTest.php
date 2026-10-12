@@ -8,7 +8,6 @@ use PHPUnit\Framework\TestCase;
  * DB-dependent accessors (repository, acceptance date, license, SPDX code) are stubbed.
  *
  * @covers Episciences_Paper::getLicenseCheckStatus
- * @covers Episciences_Paper::ignoreLicenseCheck
  */
 class Episciences_Paper_LicenseCheckStatusTest extends TestCase
 {
@@ -104,7 +103,6 @@ class Episciences_Paper_LicenseCheckStatusTest extends TestCase
         $paper = $this->paper(self::CC_BY_URL, 'CC-BY-4.0');
 
         self::assertNull($paper->getLicenseCheckStatus($this->review('CC-BY-4.0')));
-        self::assertTrue($paper->ignoreLicenseCheck($this->review('CC-BY-4.0')));
     }
 
     public function testComparisonIsCaseInsensitive(): void
@@ -117,7 +115,6 @@ class Episciences_Paper_LicenseCheckStatusTest extends TestCase
         $paper = $this->paper(self::CC_BY_URL, 'CC-BY-4.0');
 
         self::assertSame(Episciences_Paper::LICENSE_CHECK_MISMATCH, $paper->getLicenseCheckStatus($this->review('MIT')));
-        self::assertFalse($paper->ignoreLicenseCheck($this->review('MIT')));
     }
 
     public function testUnrecognizedLicenseWithJournalDefaultIsMismatch(): void
