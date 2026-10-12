@@ -1,66 +1,77 @@
 /**
  * Button components - Bootstrap 5.3.8 variants
  * Ports and overrides for Bootstrap 3 without loading the full BS5 bundle.
+ * Uses shared CSS custom properties on variant selectors to keep CSS compact.
  */
 
-.btn {
+$bs-btn-selectors: (
+  ".btn-primary",
+  ".btn-secondary",
+  ".btn-success",
+  ".btn-danger",
+  ".btn-warning",
+  ".btn-info",
+  ".btn-light",
+  ".btn-dark"
+);
+
+#{$bs-btn-selectors} {
   border-radius: 0.375rem;
+  color: var(--bs-btn-color);
+  background-color: var(--bs-btn-bg);
+  border-color: var(--bs-btn-border-color);
+
+  &:hover {
+    color: var(--bs-btn-hover-color, var(--bs-btn-color));
+    background-color: var(--bs-btn-hover-bg);
+    border-color: var(--bs-btn-hover-border);
+  }
+
+  &:focus,
+  &.focus {
+    color: var(--bs-btn-hover-color, var(--bs-btn-color));
+    background-color: var(--bs-btn-hover-bg);
+    border-color: var(--bs-btn-hover-border);
+    box-shadow: 0 0 0 0.25rem var(--bs-btn-focus-shadow);
+  }
+
+  &:active,
+  &.active,
+  .open > &.dropdown-toggle {
+    color: var(--bs-btn-active-color, var(--bs-btn-color));
+    background-color: var(--bs-btn-active-bg);
+    border-color: var(--bs-btn-active-border);
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+
+    &:hover,
+    &:focus,
+    &.focus {
+      color: var(--bs-btn-active-color, var(--bs-btn-color));
+      background-color: var(--bs-btn-active-bg);
+      border-color: var(--bs-btn-active-border);
+    }
+  }
+
+  &:disabled,
+  &.disabled,
+  &[disabled] {
+    color: var(--bs-btn-disabled-color, var(--bs-btn-color));
+    background-color: var(--bs-btn-disabled-bg, var(--bs-btn-bg));
+    border-color: var(--bs-btn-disabled-border, var(--bs-btn-border-color));
+    opacity: 0.65;
+    pointer-events: none;
+  }
 }
 
 @each $variant, $values in $bs-theme-colors {
-  $color: map-get($values, "btn-color");
-  $bg: map-get($values, "btn-bg");
-  $border: map-get($values, "btn-border");
-  $hover-bg: map-get($values, "btn-hover-bg");
-  $hover-border: map-get($values, "btn-hover-border");
-  $active-bg: map-get($values, "btn-active-bg");
-  $active-border: map-get($values, "btn-active-border");
-  $focus-shadow: map-get($values, "btn-focus-shadow");
-
   .btn-#{$variant} {
-    color: $color;
-    background-color: $bg;
-    border-color: $border;
-
-    &:hover {
-      color: $color;
-      background-color: $hover-bg;
-      border-color: $hover-border;
-    }
-
-    &:focus,
-    &.focus {
-      color: $color;
-      background-color: $hover-bg;
-      border-color: $hover-border;
-      box-shadow: 0 0 0 0.25rem $focus-shadow;
-    }
-
-    &:active,
-    &.active,
-    .open > &.dropdown-toggle {
-      color: $color;
-      background-color: $active-bg;
-      border-color: $active-border;
-      box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
-
-      &:hover,
-      &:focus,
-      &.focus {
-        color: $color;
-        background-color: $active-bg;
-        border-color: $active-border;
-      }
-    }
-
-    &:disabled,
-    &.disabled,
-    &[disabled] {
-      color: $color;
-      background-color: $bg;
-      border-color: $border;
-      opacity: 0.65;
-      pointer-events: none;
-    }
+    --bs-btn-color: #{map-get($values, "btn-color")};
+    --bs-btn-bg: #{map-get($values, "btn-bg")};
+    --bs-btn-border-color: #{map-get($values, "btn-border")};
+    --bs-btn-hover-bg: #{map-get($values, "btn-hover-bg")};
+    --bs-btn-hover-border: #{map-get($values, "btn-hover-border")};
+    --bs-btn-active-bg: #{map-get($values, "btn-active-bg")};
+    --bs-btn-active-border: #{map-get($values, "btn-active-border")};
+    --bs-btn-focus-shadow: #{map-get($values, "btn-focus-shadow")};
   }
 }
