@@ -11,6 +11,9 @@ class LicenseManager
 
     public const RECOMMENDED = 1;
 
+    /** @var array<string, array> fetchRecommended() results, by columns and fetch mode */
+    private static array $recommendedCache = [];
+
     private static function allQuery(string|array $cols = '*'): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -24,13 +27,33 @@ class LicenseManager
         return $db?->fetchAssoc($query);
     }
 
+    /**
+     * Recommended licenses, cached for the current process (the same page may need them several times,
+     * e.g. the journal licenses form and each of its license selects)
+     */
     public static function fetchRecommended(string|array $cols = ['code', 'name'], $fetch = 'object'): ?array
     {
+        $cacheKey = serialize([$cols, $fetch]);
+
+        if (array_key_exists($cacheKey, self::$recommendedCache)) {
+            return self::$recommendedCache[$cacheKey];
+        }
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $query = self::allQuery($cols)->where('recommended = ?', self::RECOMMENDED);
         $result = $db?->fetchAssoc($query);
         self::fetchProcess($result, $fetch);
+
+        if ($result !== null) {
+            self::$recommendedCache[$cacheKey] = $result;
+        }
+
         return $result;
+    }
+
+    public static function clearCache(): void
+    {
+        self::$recommendedCache = [];
     }
 
     /**
