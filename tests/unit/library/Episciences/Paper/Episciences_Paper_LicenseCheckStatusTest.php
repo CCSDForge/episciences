@@ -49,12 +49,23 @@ class Episciences_Paper_LicenseCheckStatusTest extends TestCase
         };
     }
 
-    private function review(?string $defaultLicense): Episciences_Review
+    /**
+     * @param string[] $allowedLicenses
+     */
+    private function review(?string $defaultLicense, array $allowedLicenses = []): Episciences_Review
     {
+        $rows = [];
+
+        if ($defaultLicense !== null) {
+            $rows[] = ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => $defaultLicense];
+        }
+
+        if ($allowedLicenses !== []) {
+            $rows[] = ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => json_encode($allowedLicenses)];
+        }
+
         $review = new Episciences_Review();
-        $review->applySettingsFromRows($defaultLicense === null ? [] : [
-            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => $defaultLicense],
-        ]);
+        $review->applySettingsFromRows($rows);
 
         return $review;
     }
@@ -127,6 +138,34 @@ class Episciences_Paper_LicenseCheckStatusTest extends TestCase
         self::assertSame(
             Episciences_Paper::LICENSE_CHECK_UNRECOGNIZED,
             $this->paper('https://example.org/custom-license', null)->getLicenseCheckStatus($this->review(null))
+        );
+    }
+
+    public function testAllowedNonDefaultLicenseIsCompliant(): void
+    {
+        $review = $this->review('CC-BY-4.0', ['CC-BY-4.0', 'CC-BY-SA-4.0']);
+
+        self::assertNull($this->paper('', 'CC-BY-SA-4.0')->getLicenseCheckStatus($review));
+        self::assertNull($this->paper('', 'cc-by-sa-4.0')->getLicenseCheckStatus($review));
+    }
+
+    public function testLicenseOutsideAllowedLicensesIsMismatch(): void
+    {
+        self::assertSame(
+            Episciences_Paper::LICENSE_CHECK_MISMATCH,
+            $this->paper('', 'MIT')->getLicenseCheckStatus($this->review('CC-BY-4.0', ['CC-BY-4.0', 'CC-BY-SA-4.0']))
+        );
+    }
+
+    public function testAllowedLicensesWithoutDefaultAreChecked(): void
+    {
+        $review = $this->review(null, ['CC-BY-4.0']);
+
+        self::assertNull($this->paper(self::CC_BY_URL, 'CC-BY-4.0')->getLicenseCheckStatus($review));
+        self::assertSame(Episciences_Paper::LICENSE_CHECK_MISMATCH, $this->paper('', 'MIT')->getLicenseCheckStatus($review));
+        self::assertSame(
+            Episciences_Paper::LICENSE_CHECK_MISMATCH,
+            $this->paper('https://example.org/custom-license', null)->getLicenseCheckStatus($review)
         );
     }
 }

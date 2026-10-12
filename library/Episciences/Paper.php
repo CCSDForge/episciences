@@ -5867,8 +5867,9 @@ class Episciences_Paper
     /**
      * License problem to report for an accepted paper, null if there is none:
      * - LICENSE_CHECK_MISSING: no license
-     * - LICENSE_CHECK_MISMATCH: the license differs from the journal default license
-     * - LICENSE_CHECK_UNRECOGNIZED: the license cannot be resolved to an SPDX code (journal without default license)
+     * - LICENSE_CHECK_MISMATCH: the license is not one of the journal allowed licenses
+     *   (or, without restriction, differs from the journal default license)
+     * - LICENSE_CHECK_UNRECOGNIZED: the license cannot be resolved to an SPDX code (journal without license constraint)
      *
      * @param Episciences_Review|null $review journal of the paper; loaded if null
      */
@@ -5885,13 +5886,34 @@ class Episciences_Paper
             return self::LICENSE_CHECK_MISSING;
         }
 
-        $defaultLicense = ($review ?? $this->findReview())?->getDefaultLicense();
+        $review ??= $this->findReview();
 
-        if ($defaultLicense !== null && ($code === null || strcasecmp($code, $defaultLicense) !== 0)) {
+        // licenses accepted by the journal: the allowed ones, otherwise only the default one
+        $acceptedLicenses = $review?->getAllowedLicenses() ?? [];
+
+        if ($acceptedLicenses === [] && ($defaultLicense = $review?->getDefaultLicense()) !== null) {
+            $acceptedLicenses = [$defaultLicense];
+        }
+
+        if ($acceptedLicenses !== [] && ($code === null || !self::isLicenseCodeIn($code, $acceptedLicenses))) {
             return self::LICENSE_CHECK_MISMATCH;
         }
 
         return $code === null ? self::LICENSE_CHECK_UNRECOGNIZED : null;
+    }
+
+    /**
+     * @param string[] $codes
+     */
+    private static function isLicenseCodeIn(string $code, array $codes): bool
+    {
+        foreach ($codes as $candidate) {
+            if (strcasecmp($code, $candidate) === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
