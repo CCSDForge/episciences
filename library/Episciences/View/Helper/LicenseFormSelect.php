@@ -32,7 +32,7 @@ class Episciences_View_Helper_LicenseFormSelect extends Zend_View_Helper_FormSel
      */
     public function licenseFormSelect(string $name, string|array|null $value = null, array $attribs = [], ?array $licenseCodes = null): string
     {
-        $values = self::normalizeValues($value);
+        $values = LicenseManager::normalizeCodes($value);
         $isMultiple = !empty($attribs['multiple']);
 
         if (!isset($attribs['id'])) {
@@ -41,7 +41,7 @@ class Episciences_View_Helper_LicenseFormSelect extends Zend_View_Helper_FormSel
 
         $attribs['class'] = $attribs['class'] ?? sprintf('%s-select', $name);
 
-        $options = $this->buildOptions($values, self::normalizeCodes($licenseCodes), !$isMultiple);
+        $options = $this->buildOptions($values, self::normalizeOfferedCodes($licenseCodes), !$isMultiple);
 
         return $this->view->formSelect($name, $isMultiple ? $values : ($values[0] ?? null), $attribs, $options);
     }
@@ -73,25 +73,15 @@ class Episciences_View_Helper_LicenseFormSelect extends Zend_View_Helper_FormSel
     }
 
     /**
-     * @return string[] non-empty trimmed codes
-     */
-    private static function normalizeValues(string|array|null $value): array
-    {
-        $values = array_map(static fn($v) => trim((string)$v), (array)$value);
-
-        return array_values(array_unique(array_filter($values, static fn(string $v) => $v !== '')));
-    }
-
-    /**
      * @return string[]|null
      */
-    private static function normalizeCodes(?array $licenseCodes): ?array
+    private static function normalizeOfferedCodes(?array $licenseCodes): ?array
     {
         if ($licenseCodes === null) {
             return null;
         }
 
-        return self::normalizeValues(array_is_list($licenseCodes) ? $licenseCodes : array_keys($licenseCodes));
+        return LicenseManager::normalizeCodes(array_is_list($licenseCodes) ? $licenseCodes : array_keys($licenseCodes));
     }
 
     /**

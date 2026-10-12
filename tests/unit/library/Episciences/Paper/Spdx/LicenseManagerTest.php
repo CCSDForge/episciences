@@ -73,6 +73,17 @@ class LicenseManagerTest extends TestCase
     }
 
     /**
+     * @covers ::normalizeCodes
+     */
+    public function testNormalizeCodes(): void
+    {
+        self::assertSame(['MIT', 'Apache-2.0'], LicenseManager::normalizeCodes(['MIT', '', ' MIT ', ' Apache-2.0 ', null]));
+        self::assertSame(['MIT'], LicenseManager::normalizeCodes(' MIT '));
+        self::assertSame([], LicenseManager::normalizeCodes(''));
+        self::assertSame([], LicenseManager::normalizeCodes(null));
+    }
+
+    /**
      * @covers ::clearCache
      */
     public function testClearCacheQueriesAgain(): void

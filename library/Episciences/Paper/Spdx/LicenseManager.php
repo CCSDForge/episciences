@@ -57,6 +57,17 @@ class LicenseManager
     }
 
     /**
+     * @param string|array|null $codes SPDX code(s)
+     * @return string[] non-empty trimmed codes, without duplicates
+     */
+    public static function normalizeCodes(string|array|null $codes): array
+    {
+        $codes = array_map(static fn($code) => trim((string)$code), (array)$codes);
+
+        return array_values(array_unique(array_filter($codes, static fn(string $code) => $code !== '')));
+    }
+
+    /**
      * @return array<string, string> code => name of the recommended licenses
      */
     public static function fetchRecommendedOptions(): array

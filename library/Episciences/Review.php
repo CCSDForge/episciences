@@ -2065,7 +2065,8 @@ class Episciences_Review
      */
     public function getAllowedLicenses(): array
     {
-        $allowed = self::normalizeLicenseCodes($this->getSetting(self::SETTING_LICENSES_ALLOWED));
+        $allowed = $this->getSetting(self::SETTING_LICENSES_ALLOWED);
+        $allowed = \Episciences\Paper\Spdx\LicenseManager::normalizeCodes(is_array($allowed) ? $allowed : []);
         $default = $this->getDefaultLicense();
 
         if ($allowed !== [] && $default !== null && !in_array($default, $allowed, true)) {
@@ -2073,20 +2074,6 @@ class Episciences_Review
         }
 
         return $allowed;
-    }
-
-    /**
-     * @return string[]
-     */
-    private static function normalizeLicenseCodes(mixed $codes): array
-    {
-        if (!is_array($codes)) {
-            return [];
-        }
-
-        $codes = array_map(static fn($code) => trim((string)$code), $codes);
-
-        return array_values(array_unique(array_filter($codes, static fn(string $code) => $code !== '')));
     }
 
     /**
