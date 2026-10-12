@@ -4724,18 +4724,19 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
+        $oldLicense = LicenseCodeManager::getCode($paper->getDocid());
+
+        // If the license to save is the same as the current one, warn the user
+        // (checked first: the current license may predate the journal's allowed licenses)
+        if ($oldLicense === $currentSpdxCode) {
+            echo json_encode(['warning' => 'La licence actuelle est déjà définie.'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return;
+        }
+
         $allowedLicenses = $this->getPaperReview($paper)?->getAllowedLicenses() ?? [];
 
         if ($allowedLicenses !== [] && !in_array($currentSpdxCode, $allowedLicenses, true)) {
             $this->sendJsonError("Échec de l'enregistrement de la licence : cette licence n'est pas autorisée par la revue.");
-            return;
-        }
-
-        $oldLicense = LicenseCodeManager::getCode($paper->getDocid());
-
-        // If the license to save is the same as the current one, warn the user
-        if ($oldLicense === $currentSpdxCode) {
-            echo json_encode(['warning' => 'La licence actuelle est déjà définie.'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             return;
         }
 

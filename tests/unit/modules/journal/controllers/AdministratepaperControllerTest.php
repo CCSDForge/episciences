@@ -1460,4 +1460,53 @@ class AdministratepaperControllerTest extends TestCase
             . 'in the reviewer invitation e-mail'
         );
     }
+
+    // ---------------------------------------------------------------
+    // savespdxlicenseAction — journal allowed licenses
+    // ---------------------------------------------------------------
+
+    /**
+     * Bug: the allowed-licenses check ran before the "already set" check, so
+     * re-saving a paper's current license unchanged — a license that may predate
+     * the journal's allowed licenses, and that the form always offers — failed with
+     * "not allowed" instead of the "already set" warning.
+     */
+    public function testSavespdxlicenseActionChecksCurrentLicenseBeforeAllowedLicenses(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $alreadySetPos = strpos($method, 'La licence actuelle est déjà définie.');
+        $allowedPos    = strpos($method, 'getAllowedLicenses()');
+
+        $this->assertNotFalse($alreadySetPos, '"already set" warning not found in savespdxlicenseAction');
+        $this->assertNotFalse($allowedPos, 'getAllowedLicenses() call not found in savespdxlicenseAction');
+
+        $this->assertLessThan(
+            $allowedPos,
+            $alreadySetPos,
+            'BUG: the "already set" check must come before the allowed-licenses check, '
+            . 'otherwise re-saving a pre-existing license is rejected as not allowed'
+        );
+    }
+
+    /**
+     * A new license outside the journal's allowed licenses must still be rejected,
+     * before anything is saved.
+     */
+    public function testSavespdxlicenseActionRejectsNotAllowedLicenseBeforeSaving(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $rejectPos = strpos($method, "cette licence n'est pas autorisée par la revue");
+        $savePos   = strpos($method, '->save()');
+
+        $this->assertNotFalse($rejectPos, 'not-allowed license error not found in savespdxlicenseAction');
+        $this->assertNotFalse($savePos, 'save() call not found in savespdxlicenseAction');
+
+        $this->assertLessThan(
+            $savePos,
+            $rejectPos,
+            'A license not allowed by the journal must be rejected before any save'
+        );
+    }
 }
