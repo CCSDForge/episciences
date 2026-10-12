@@ -36,7 +36,7 @@ class LicenseManager
     private static function fetchProcess(?array &$result, $fetch = 'array'): void
     {
 
-        if ($fetch !== 'object') {
+        if ($fetch !== 'object' || $result === null) {
             return;
         }
 
