@@ -1,0 +1,151 @@
+// Bootstrap 5.3 theme tokens (primary, secondary, success, danger, warning, info, light, dark)
+// Factorized for alerts, badges, and buttons without importing the full Bootstrap 5 bundle.
+
+$bs-theme-colors: (
+  "primary": (
+    "alert-color": #052c65,
+    "alert-bg": #cfe2ff,
+    "alert-border": #9ec5fe,
+    "badge-color": #fff,
+    "badge-bg": #0d6efd,
+    "btn-color": #fff,
+    "btn-bg": #0d6efd,
+    "btn-border": #0d6efd,
+    "btn-hover-bg": #0b5ed7,
+    "btn-hover-border": #0a58ca,
+    "btn-active-bg": #0a58ca,
+    "btn-active-border": #0a53be,
+    "btn-focus-shadow": rgba(49, 132, 253, 0.5),
+  ),
+  "secondary": (
+    "alert-color": #2b2f32,
+    "alert-bg": #e2e3e5,
+    "alert-border": #c4c8cb,
+    "badge-color": #fff,
+    "badge-bg": #6c757d,
+    "btn-color": #fff,
+    "btn-bg": #6c757d,
+    "btn-border": #6c757d,
+    "btn-hover-bg": #5c636a,
+    "btn-hover-border": #565e64,
+    "btn-active-bg": #565e64,
+    "btn-active-border": #51585e,
+    "btn-focus-shadow": rgba(130, 138, 145, 0.5),
+  ),
+  "success": (
+    "alert-color": #0a3622,
+    "alert-bg": #d1e7dd,
+    "alert-border": #a3cfbb,
+    "badge-color": #fff,
+    "badge-bg": #198754,
+    "btn-color": #fff,
+    "btn-bg": #198754,
+    "btn-border": #198754,
+    "btn-hover-bg": #157347,
+    "btn-hover-border": #146c43,
+    "btn-active-bg": #146c43,
+    "btn-active-border": #13653f,
+    "btn-focus-shadow": rgba(60, 153, 110, 0.5),
+  ),
+  "danger": (
+    "alert-color": #58151c,
+    "alert-bg": #f8d7da,
+    "alert-border": #f1aeb5,
+    "badge-color": #fff,
+    "badge-bg": #dc3545,
+    "btn-color": #fff,
+    "btn-bg": #dc3545,
+    "btn-border": #dc3545,
+    "btn-hover-bg": #bb2d3b,
+    "btn-hover-border": #b02a37,
+    "btn-active-bg": #b02a37,
+    "btn-active-border": #a52834,
+    "btn-focus-shadow": rgba(225, 83, 97, 0.5),
+  ),
+  "warning": (
+    "alert-color": #664d03,
+    "alert-bg": #fff3cd,
+    "alert-border": #ffe69c,
+    "badge-color": #000,
+    "badge-bg": #ffc107,
+    "btn-color": #000,
+    "btn-bg": #ffc107,
+    "btn-border": #ffc107,
+    "btn-hover-bg": #ffca2c,
+    "btn-hover-border": #ffc720,
+    "btn-active-bg": #ffcd39,
+    "btn-active-border": #ffc720,
+    "btn-focus-shadow": rgba(217, 164, 6, 0.5),
+  ),
+  "info": (
+    "alert-color": #055160,
+    "alert-bg": #cff4fc,
+    "alert-border": #9eeaf9,
+    "badge-color": #000,
+    "badge-bg": #0dcaf0,
+    "btn-color": #000,
+    "btn-bg": #0dcaf0,
+    "btn-border": #0dcaf0,
+    "btn-hover-bg": #31d2f2,
+    "btn-hover-border": #25cff2,
+    "btn-active-bg": #3dd5f3,
+    "btn-active-border": #25cff2,
+    "btn-focus-shadow": rgba(11, 172, 204, 0.5),
+  ),
+  "light": (
+    "alert-color": #495057,
+    "alert-bg": #fcfcfd,
+    "alert-border": #e9ecef,
+    "badge-color": #000,
+    "badge-bg": #f8f9fa,
+    "badge-border": #dee2e6,
+    "btn-color": #000,
+    "btn-bg": #f8f9fa,
+    "btn-border": #f8f9fa,
+    "btn-hover-bg": #d3d4d5,
+    "btn-hover-border": #c6c7c8,
+    "btn-active-bg": #c6c7c8,
+    "btn-active-border": #babbbc,
+    "btn-focus-shadow": rgba(211, 212, 213, 0.5),
+  ),
+  "dark": (
+    "alert-color": #495057,
+    "alert-bg": #ced4da,
+    "alert-border": #adb5bd,
+    "badge-color": #fff,
+    "badge-bg": #212529,
+    "btn-color": #fff,
+    "btn-bg": #212529,
+    "btn-border": #212529,
+    "btn-hover-bg": #424649,
+    "btn-hover-border": #373b3e,
+    "btn-active-bg": #4d5154,
+    "btn-active-border": #373b3e,
+    "btn-focus-shadow": rgba(66, 70, 73, 0.5),
+  ),
+);
+
+// Comma-separated selector list built from the theme keys, e.g. bs-theme-selectors(".btn-")
+// gives ".btn-primary, .btn-secondary, ...", so new variants never need a hand-kept list.
+@function bs-theme-selectors($prefix) {
+  $selectors: ();
+  @each $variant in map-keys($bs-theme-colors) {
+    $selectors: append($selectors, "#{$prefix}#{$variant}", comma);
+  }
+  @return $selectors;
+}
+
+// Badge palette shared by BS5 .text-bg-* helpers and BS3 .label-* classes
+@mixin bs-badge-colors($values, $important: false) {
+  @if $important {
+    color: map-get($values, "badge-color") !important;
+    background-color: map-get($values, "badge-bg") !important;
+  } @else {
+    color: map-get($values, "badge-color");
+    background-color: map-get($values, "badge-bg");
+  }
+
+  @if map-has-key($values, "badge-border") {
+    border: 1px solid map-get($values, "badge-border");
+  }
+}
