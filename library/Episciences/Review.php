@@ -1991,6 +1991,13 @@ class Episciences_Review
 
         $licenses = \Episciences\Paper\Spdx\LicenseManager::fetchRecommendedOptions();
 
+        // the saved codes are always offered (and accepted on submit), even if they are not / no longer recommended
+        foreach (array_merge(array_filter([$this->getDefaultLicense()]), $this->getAllowedLicenses()) as $code) {
+            if (!array_key_exists($code, $licenses)) {
+                $licenses[$code] = \Episciences\Paper\Spdx\LicenseManager::getNameByIdentifier($code) ?: $code;
+            }
+        }
+
         $form->addElement('select', self::SETTING_LICENSE_DEFAULT, [
                 'label' => 'Licence par défaut',
                 'description' => "Pré-sélectionnée lors du choix de la licence d'un article qui n'en a pas encore",

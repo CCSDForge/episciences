@@ -265,6 +265,25 @@ class Episciences_ReviewTest extends TestCase
     }
 
     /**
+     * Saved codes that are not (or no longer) recommended are displayed as selected:
+     * they must be valid options, otherwise the form cannot be submitted unchanged.
+     */
+    public function testLicensesSettingsFormAcceptsSavedNonRecommendedCodes(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'LicenseRef-Default-Test'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["LicenseRef-Allowed-Test"]'],
+        ]);
+
+        $form = $this->buildLicensesSettingsForm();
+
+        self::assertTrue($form->isValid([
+            Episciences_Review::SETTING_LICENSE_DEFAULT => 'LicenseRef-Default-Test',
+            Episciences_Review::SETTING_LICENSES_ALLOWED => ['LicenseRef-Default-Test', 'LicenseRef-Allowed-Test'],
+        ]));
+    }
+
+    /**
      * Licenses have their own page (review/licenses): the main settings page must neither
      * display them (the required default license would block saving the other settings)
      * nor save them.
