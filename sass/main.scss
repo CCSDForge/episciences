@@ -2,6 +2,7 @@
 
 // variables (available colors)
 @import "abstracts/variables";
+@import "abstracts/bootstrap5-theme";
 // theme configuration (text colors, size, backgrounds...)
 @import "themes/theme";
 
@@ -27,7 +28,9 @@
 @import "components/paper-status-colors";
 @import "components/flags";
 @import "components/footer";
+@import "components/alerts";
 @import "components/badges";
+@import "components/buttons";
 @import "components/labels";
 @import "components/timeline-base";
 @import "components/timeline-editor-comments";
