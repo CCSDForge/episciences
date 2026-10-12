@@ -39,6 +39,15 @@ final class Episciences_Mail_ReminderTest extends TestCase
         }
     }
 
+    protected function tearDown(): void
+    {
+        // reviewSettings is set by some tests: do not leak it to the following ones
+        if (\Zend_Registry::isRegistered('reviewSettings')) {
+            \Zend_Registry::getInstance()->offsetUnset('reviewSettings');
+        }
+        parent::tearDown();
+    }
+
     // -------------------------------------------------------------------------
     // Type constants — completeness & sequentiality
     // -------------------------------------------------------------------------
@@ -778,12 +787,31 @@ final class Episciences_Mail_ReminderTest extends TestCase
         $this->assertSame($cachedContext, $context);
     }
 
+    public function testGetSupervisorFilterContextSkipsCoAuthorsWithoutSupervisor(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+        $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
+        // no chief editor: no conflict check, no co-author query
+        $this->setPrivateProperty($reminder, '_supervisorsCache', [\Episciences_Acl::ROLE_CHIEF_EDITOR => []]);
+
+        $paper = $this->createMock(\Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(7);
+        $paper->method('getUid')->willReturn(100);
+        $paper->expects($this->never())->method('getCoAuthors');
+
+        $context = $this->invokePrivateMethod($reminder, 'getSupervisorFilterContext', [$paper]);
+
+        $this->assertSame(['authorUid' => 100, 'coAuthorUids' => [], 'supervisors' => []], $context);
+    }
+
     public function testGetSupervisorFilterContextCachesPerPaper(): void
     {
         $reminder = new Episciences_Mail_Reminder();
         $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
-        // no chief editor: no database load, nothing to check for conflicts
-        $this->setPrivateProperty($reminder, '_supervisorsCache', [\Episciences_Acl::ROLE_CHIEF_EDITOR => []]);
+        $supervisors = [1 => $this->createSupervisorMock(1, 'chief@example.com')];
+        $this->setPrivateProperty($reminder, '_supervisorsCache', [\Episciences_Acl::ROLE_CHIEF_EDITOR => $supervisors]);
+        // conflicts of interest disabled: no database access in keepOnlyUsersWithoutConflict()
+        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => 0]);
 
         $paper = $this->createMock(\Episciences_Paper::class);
         $paper->method('getDocid')->willReturn(7);
@@ -795,7 +823,7 @@ final class Episciences_Mail_ReminderTest extends TestCase
         $first = $this->invokePrivateMethod($reminder, 'getSupervisorFilterContext', [$paper]);
         $second = $this->invokePrivateMethod($reminder, 'getSupervisorFilterContext', [$paper]);
 
-        $expected = ['authorUid' => 100, 'coAuthorUids' => [50], 'supervisors' => []];
+        $expected = ['authorUid' => 100, 'coAuthorUids' => [50], 'supervisors' => $supervisors];
         $this->assertSame($expected, $first);
         $this->assertSame($expected, $second);
     }

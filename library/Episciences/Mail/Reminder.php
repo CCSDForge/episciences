@@ -1848,17 +1848,22 @@ class Episciences_Mail_Reminder
             return $this->_supervisorFilterContextCache[$role][$docId];
         }
 
-        $coAuthorUids = [];
-        try {
-            $coAuthorUids = array_keys($paper->getCoAuthors());
-        } catch (Zend_Db_Statement_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
         $supervisors = $this->getSupervisors();
 
         if (!empty($supervisors)) {
-            Episciences_PapersManager::keepOnlyUsersWithoutConflict((int)$paper->getPaperid(), $supervisors, (int)$this->getRvid());
+
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict((int)$paper->getPaperid(),
+                $supervisors, (int)$this->getRvid());
+        }
+
+        // co-authors are only needed to filter the remaining supervisors
+        $coAuthorUids = [];
+        if (!empty($supervisors)) {
+            try {
+                $coAuthorUids = array_keys($paper->getCoAuthors());
+            } catch (Zend_Db_Statement_Exception $e) {
+                trigger_error($e->getMessage());
+            }
         }
 
         return $this->_supervisorFilterContextCache[$role][$docId] = [
