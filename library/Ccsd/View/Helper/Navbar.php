@@ -57,6 +57,12 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
     protected $_userRenderScript = 'commons/user.phtml';
 
     /**
+     * Display the account menu or the login/create account links (hidden in read-only maintenance mode)
+     * @var bool
+     */
+    protected $_accountActions = true;
+
+    /**
      * @var string
      */
     protected $_navBarSearchScript = 'commons/navbar-search-form.phtml';
@@ -94,7 +100,8 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
             $this->_displayLogin = true;
             foreach ([
                          'isLogged',
-                         'userRenderScript'
+                         'userRenderScript',
+                         'accountActions'
                      ] as $option) {
                 if (isset($loginOptions[$option])) {
                     $this->{'_' . $option} = $loginOptions[$option];
@@ -178,13 +185,13 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
 
 
                         <?php
-                        if ($this->_isLogged) {
+                        if ($this->_accountActions && $this->_isLogged) {
                             try {
                                 echo $this->view->render($this->_userRenderScript);
                             } catch (Exception $e) {
                                 trigger_error('Failed rendering ' . $this->_userRenderScript, E_USER_WARNING);
                             }
-                        } else { ?>
+                        } elseif ($this->_accountActions) { ?>
 
                             <?php if (defined('RVCODE') && RVCODE !== 'portal'): ?>
 

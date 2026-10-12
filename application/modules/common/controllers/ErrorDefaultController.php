@@ -121,5 +121,26 @@ class ErrorDefaultController extends Zend_Controller_Action
         $this->view->message = "Vous n'êtes pas autorisé à accéder à cette page.";
     }
 
+    /**
+     * Read-only maintenance mode: the requested page could write to the database (see ReadOnlyGate plugin).
+     */
+    public function readonlyAction(): void
+    {
+        if ($this->getResponse()->isRedirect()) {
+            // Language switch turned into a redirect by the ReadOnlyGate plugin
+            $this->_helper->layout()->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
+
+        $this->getResponse()
+            ->setHttpResponseCode(503)
+            ->setHeader('Retry-After', (string) \Episciences\Maintenance\ReadOnlyMode::getRetryAfterSeconds(), true);
+
+        if ($this->getRequest()->isXmlHttpRequest()) {
+            $this->_helper->layout()->disableLayout();
+        }
+    }
+
 
 }

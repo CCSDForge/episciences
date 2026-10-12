@@ -117,4 +117,20 @@ final class ErrorDefaultControllerTest extends TestCase
         // Should set 404 because of EXCEPTION_NO_ROUTE, not 403
         self::assertSame(404, $response->getHttpResponseCode());
     }
+
+    public function testReadonlyActionAnswersServiceUnavailableWithRetryAfter(): void
+    {
+        \Episciences\Maintenance\ReadOnlyMode::setScheduleOverride(null, null);
+        $response = new \Zend_Controller_Response_Http();
+        $this->controller->setRequest(new \Zend_Controller_Request_Http());
+        $this->controller->setResponse($response);
+
+        $this->controller->readonlyAction();
+
+        self::assertSame(503, $response->getHttpResponseCode());
+        self::assertContains(
+            ['name' => 'Retry-After', 'value' => (string) \Episciences\Maintenance\ReadOnlyMode::getRetryAfterSeconds(), 'replace' => true],
+            $response->getHeaders()
+        );
+    }
 }

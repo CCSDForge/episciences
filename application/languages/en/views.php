@@ -2666,4 +2666,14 @@ return array(
     "Vous ne pouvez pas changer d'utilisateur lorsque vous êtes déjà sous une identité de substitution." => "You cannot switch user while already impersonating another user.",
     "Ce compte n'a aucun rôle dans cette revue." => "This account has no role in this journal.",
     "Action non autorisée." => "Unauthorized action.",
+    // Read-only maintenance mode
+    "Maintenance en cours" => "Maintenance in progress",
+    "Le site est temporairement en consultation seule : cette page n'est pas disponible pendant la maintenance. Merci de réessayer plus tard." => "The website is temporarily read-only: this page is not available during maintenance. Please try again later.",
+    "Retour à l'accueil" => "Back to the homepage",
+    "Maintenance en cours : le site reste consultable, mais les connexions, soumissions et modifications sont temporairement suspendues." => "Maintenance in progress: the website can still be browsed, but logins, submissions and changes are temporarily suspended.",
+    "Maintenance prévue du %1\$s au %2\$s." => "Maintenance scheduled from %1\$s to %2\$s.",
+    "Fin de maintenance prévue : %s." => "Maintenance scheduled to end on %s.",
+    "Maintenance commencée le %s." => "Maintenance started on %s.",
+    "Maintenance à venir : le site restera consultable, mais les connexions, soumissions et modifications seront temporairement suspendues." => "Upcoming maintenance: the website will remain available for browsing, but logins, submissions and changes will be temporarily suspended.",
+    "Début de maintenance prévu : %s." => "Maintenance scheduled to start on %s.",
 );
