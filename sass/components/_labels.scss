@@ -1,11 +1,15 @@
-/* label dark */
-.label-dark {
-  background-color: $black;
-  color: $white;
-}
+/**
+ * Label components - Bootstrap 5.3 alignment
+ * Synchronizes Bootstrap 3 .label-* classes with modern Bootstrap 5.3 theme tokens.
+ */
 
-// Bootstrap label-warning: white on #f0ad4e = ~1.9:1 (fails WCAG AA 4.5:1)
-// black on #f0ad4e = ~11.1:1
-.label-warning {
-  color: #000;
+@each $variant, $values in $bs-theme-colors {
+  .label-#{$variant} {
+    color: map-get($values, "badge-color");
+    background-color: map-get($values, "badge-bg");
+
+    @if map-has-key($values, "badge-border") {
+      border: 1px solid map-get($values, "badge-border");
+    }
+  }
 }
