@@ -7,7 +7,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Test suite for Episciences_Paper::isAssignedEditorOrCopyEditor() and Episciences_Paper::findLatestVersion()
+ * Test suite for Episciences_Paper::isAssignedEditorOrCopyEditor(), Episciences_Paper::isAssignedEditor()
+ * and Episciences_Paper::findLatestVersionForAssignmentCheck()
  */
 final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
 {
@@ -16,12 +17,12 @@ final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
         $paper = $this->createPartialMock(Episciences_Paper::class, [
             'getEditor',
             'getCopyEditor',
-            'findLatestVersion',
+            'findLatestVersionForAssignmentCheck',
         ]);
 
         $paper->method('getEditor')->willReturn($isEditor);
         $paper->method('getCopyEditor')->willReturn($isCopyEditor);
-        $paper->method('findLatestVersion')->willReturn($latestVersion);
+        $paper->method('findLatestVersionForAssignmentCheck')->willReturn($latestVersion);
 
         return $paper;
     }
@@ -38,7 +39,7 @@ final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
     public function testEditorAssignedToThisVersionIsAssigned(): void
     {
         $paper = $this->createPaper(true, false);
-        $paper->expects(self::never())->method('findLatestVersion');
+        $paper->expects(self::never())->method('findLatestVersionForAssignmentCheck');
 
         self::assertTrue($paper->isAssignedEditorOrCopyEditor(42));
     }
@@ -46,7 +47,7 @@ final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
     public function testCopyEditorAssignedToThisVersionIsAssigned(): void
     {
         $paper = $this->createPaper(false, true);
-        $paper->expects(self::never())->method('findLatestVersion');
+        $paper->expects(self::never())->method('findLatestVersionForAssignmentCheck');
 
         self::assertTrue($paper->isAssignedEditorOrCopyEditor(42));
     }
@@ -77,6 +78,47 @@ final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
         self::assertFalse($this->createPaper(false, false)->isAssignedEditorOrCopyEditor(42));
     }
 
+    public function testEditorAssignedToThisVersionIsAssignedEditor(): void
+    {
+        $paper = $this->createPaper(true, false);
+        $paper->expects(self::never())->method('findLatestVersionForAssignmentCheck');
+
+        self::assertTrue($paper->isAssignedEditor(42));
+    }
+
+    public function testEditorAssignedToTheLatestVersionIsAssignedEditorOfAPreviousVersion(): void
+    {
+        $paper = $this->createPaper(false, false, $this->createLatestVersion(true, false));
+
+        self::assertTrue($paper->isAssignedEditor(42));
+    }
+
+    public function testCopyEditorIsNotAssignedEditor(): void
+    {
+        $paper = $this->createPaper(false, true, $this->createLatestVersion(false, true));
+
+        self::assertFalse($paper->isAssignedEditor(42));
+    }
+
+    public function testUnassignedUserOnTheLatestVersionIsNotAssignedEditor(): void
+    {
+        self::assertFalse($this->createPaper(false, false)->isAssignedEditor(42));
+    }
+
+    public function testFindLatestVersionForAssignmentCheckHoldsTheLatestVersionIdentifiers(): void
+    {
+        $paper = $this->createPartialMock(Episciences_Paper::class, ['getLatestVersionId', 'getDocid', 'getPaperid']);
+        $paper->method('getLatestVersionId')->willReturn('12');
+        $paper->method('getDocid')->willReturn(10);
+        $paper->method('getPaperid')->willReturn(10);
+
+        $latestVersion = $paper->findLatestVersionForAssignmentCheck();
+
+        self::assertInstanceOf(Episciences_Paper::class, $latestVersion);
+        self::assertSame(12, $latestVersion->getDocid());
+        self::assertSame(10, $latestVersion->getPaperid());
+    }
+
     /**
      * @dataProvider latestVersionIdProvider
      */
@@ -86,7 +128,7 @@ final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
         $paper->method('getLatestVersionId')->willReturn($latestVersionId);
         $paper->method('getDocid')->willReturn(10);
 
-        self::assertNull($paper->findLatestVersion());
+        self::assertNull($paper->findLatestVersionForAssignmentCheck());
     }
 
     public static function latestVersionIdProvider(): array

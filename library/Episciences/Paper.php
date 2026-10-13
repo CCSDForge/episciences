@@ -5128,17 +5128,36 @@ class Episciences_Paper
             return true;
         }
 
-        $latestVersion = $this->findLatestVersion();
+        $latestVersion = $this->findLatestVersionForAssignmentCheck();
 
         return $latestVersion && ($latestVersion->getEditor($uid) || $latestVersion->getCopyEditor($uid));
     }
 
     /**
-     * Fetch the latest version of this paper.
+     * Check if a user is assigned as editor to this paper.
+     * For a previous version, the assignment is checked on the latest version (see isAssignedEditorOrCopyEditor()).
+     *
+     * @param int $uid
+     * @return bool
+     */
+    public function isAssignedEditor(int $uid): bool
+    {
+        if ($this->getEditor($uid)) {
+            return true;
+        }
+
+        $latestVersion = $this->findLatestVersionForAssignmentCheck();
+
+        return $latestVersion && $latestVersion->getEditor($uid);
+    }
+
+    /**
+     * Build the latest version of this paper, only to check its editor and copy editor assignments:
+     * the returned object holds the identifiers only, not the paper data.
      *
      * @return Episciences_Paper|null null when this paper is the latest version or when it cannot be found
      */
-    public function findLatestVersion(): ?Episciences_Paper
+    public function findLatestVersionForAssignmentCheck(): ?Episciences_Paper
     {
         $latestDocId = (int)$this->getLatestVersionId();
 
@@ -5146,7 +5165,9 @@ class Episciences_Paper
             return null;
         }
 
-        return Episciences_PapersManager::get($latestDocId, false) ?: null;
+        return (new Episciences_Paper())
+            ->setDocid($latestDocId)
+            ->setPaperid($this->getPaperid());
     }
 
     /**
