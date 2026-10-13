@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A reviewer holding a temporary account and invited more than once on the same paper was returned
   without any identity, which made the paper page fail.
 
+[RT#301096]:
+- An editor (or guest editor) assigned to a paper could not access its previous versions:
+  the assignment is now checked on the latest version.
+- Permissions are now also checked on obsolete versions in the paper management page.
+
 ### Changed
 - The continuous integration workflows now generate the configuration and the database the PHPUnit
   bootstrap requires. The test suite was aborting before its first test and reporting success: no

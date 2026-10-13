@@ -81,9 +81,7 @@ trait Episciences_Paper_AccessControlControllerTrait
         $redirection = [];
         $message = "Vous n'avez pas les droits suffisants pour accéder à cet article";
 
-        $isAssigned = $paper->getEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid());
-
-        if ($isAssigned) {
+        if ($paper->isAssignedEditorOrCopyEditor((int)Episciences_Auth::getUid())) {
             return $redirection;
         }
 

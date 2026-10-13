@@ -112,8 +112,7 @@ class DefaultController extends Zend_Controller_Action
 
         return !$isAllowToEditors && !$isAllowToCopyEditors && !$paper->isPublished() &&
             !Episciences_Auth::isSecretary() && // nor editorial secretary or user is not chief editor or // nor admin
-            !$paper->getEditor($loggedUid) &&
-            !$paper->getCopyEditor($loggedUid) &&
+            !$paper->isAssignedEditorOrCopyEditor((int)$loggedUid) &&
             !array_key_exists($loggedUid, $paper->getReviewers()) && // nor reviewer
             !$paper->isOwner() &&
             !$paper->isCoauthor();
