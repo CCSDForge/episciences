@@ -2,11 +2,15 @@
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Episciences\Files\FileManager;
+use Episciences\Upload\SafeFileName;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
 class FileController extends DefaultController
 {
+    /** Sub-directories of a document that docfilesAction may serve: comments, copy-editing sources, data descriptor */
+    private const DOCFILES_FOLDERS = ['comments', Episciences_CommentsManager::COPY_EDITING_SOURCES, FileManager::DD_SOURCE];
     /** Content types the browser may display instead of downloading */
     private const INLINE_CONTENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
@@ -38,7 +42,17 @@ class FileController extends DefaultController
         $this->_helper->viewRenderer->setNoRender();
         $params = $this->getRequest()->getParams();
 
-        $folder = ($params['folder'] === 'ce') ? Episciences_CommentsManager::COPY_EDITING_SOURCES : $params['folder'];
+        $folder = $params['folder'] ?? '';
+        if ($folder === 'ce') {
+            $folder = Episciences_CommentsManager::COPY_EDITING_SOURCES;
+        }
+
+        // Other sub-directories of the document (reports, ratings, tmp...) have their own access rules
+        if (!in_array($folder, self::DOCFILES_FOLDERS, true)) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         $parentCommentId = $params['parentCommentId'] ?? null;
         $docId = (int)$params['docId'];
         $filename = $params['filename'];
@@ -48,6 +62,15 @@ class FileController extends DefaultController
 
         if (!empty($extension)) {
             $file .= '.' . $extension;
+        }
+
+        // The folder allow-list would be pointless if a segment could climb out of it (e.g. "../reports")
+        if (
+            !SafeFileName::isBare($file) ||
+            (null !== $parentCommentId && !preg_match('/^\d+$/D', (string)$parentCommentId))
+        ) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
         }
 
         // Trusted base: the document directory. The folder / parentCommentId / file
