@@ -37,6 +37,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1009](https://github.com/CCSDForge/episciences/pull/1009): remove redundant account linking confirmation when emails match
 - Avoid suggesting that an invitation be linked to another account if it has already been accepted, has expired or has been cancelled.
 
+[RT#301096]:
+- An editor (or guest editor) assigned to a paper could not access its previous versions:
+  the assignment is now checked on the latest version.
+- Permissions are now also checked on obsolete versions in the paper management page.
+- On the page of a previous version, the assigned editor (or guest editor) can now see the reviews
+  and the non-public details.
+
 ### Changed
 - OpenCitations client migrated to API v2 (DOI sent with its `doi:` scheme, throttling and retry on HTTP 429).
   **Deployment**: set `OPENCITATIONS.APIURL` to `https://api.opencitations.net/index/v2/citations/` in

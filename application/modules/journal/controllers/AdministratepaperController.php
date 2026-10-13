@@ -669,13 +669,14 @@ class AdministratepaperController extends PaperDefaultController
         $contributorSocialMedia = $contributor->getSocialMedias();
         $this->view->contributorSocialMedia = $contributorSocialMedia;
         $this->view->coAuthorsList = $paper->getCoAuthors();
+        // redirect if not allowed (previous versions included)
+        $this->checkPermissions($review, $paper);
+
         // check if paper is obsolete; if so, display a warning
         if ($paper->isObsolete()) {
             $latestDocId = $paper->getLatestVersionId();
             $this->view->latestDocId = $latestDocId;
             $this->view->linkToLatestDocId = $this->buildAdminPaperUrl($latestDocId);
-        } else { // redirect if not allowed
-            $this->checkPermissions($review, $paper);
         }
 
         // Only secretaries can save a licence (see savespdxlicenseAction)
