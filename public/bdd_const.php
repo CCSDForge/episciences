@@ -42,6 +42,12 @@ if (file_exists($path)) {
 defined('CAPTCHA_BRAND') || define('CAPTCHA_BRAND', '');
 defined('ALTCHA_HMAC_SECRET') || define('ALTCHA_HMAC_SECRET', '');
 
+// Read-only maintenance mode (no database write from the web application), disabled unless set in pwd.json
+defined('EPISCIENCES_READ_ONLY_MODE') || define('EPISCIENCES_READ_ONLY_MODE', false);
+// Planned start/end of the read-only maintenance, displayed to visitors (ISO 8601, e.g. 2026-10-20T08:00:00+02:00)
+defined('EPISCIENCES_READ_ONLY_MODE_START') || define('EPISCIENCES_READ_ONLY_MODE_START', '');
+defined('EPISCIENCES_READ_ONLY_MODE_END') || define('EPISCIENCES_READ_ONLY_MODE_END', '');
+
 /**
  * S'assure que la constante de nom $name est definie
  * Si non definie, prendra la valeur de la variable d'environnement du meme nom
