@@ -74,7 +74,9 @@ final class DocumentFilePolicy
 
         return match ($folder) {
             self::FOLDER_DATA_DESCRIPTOR => true,
-            self::FOLDER_COMMENTS => array_intersect($commentTypes, self::REVIEWER_COMMENT_TYPES) !== [],
+            // The folder is shared by all the comments of the version: a name also carried by a comment hidden
+            // from the reviewers may be that comment's file
+            self::FOLDER_COMMENTS => $commentTypes !== [] && array_diff($commentTypes, self::REVIEWER_COMMENT_TYPES) === [],
             default => false,
         };
     }

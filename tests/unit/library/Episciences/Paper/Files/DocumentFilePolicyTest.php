@@ -99,9 +99,13 @@ final class DocumentFilePolicyTest extends TestCase
             'author to editor' => [[Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR], false],
             'editor to author' => [[Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR], false],
             'file of no comment' => [[], false],
-            'same file name on a shown and a hidden comment' => [
-                [Episciences_CommentsManager::TYPE_EDITOR_COMMENT, Episciences_CommentsManager::TYPE_INFO_ANSWER],
+            'same file name on two shown comments' => [
+                [Episciences_CommentsManager::TYPE_AUTHOR_COMMENT, Episciences_CommentsManager::TYPE_INFO_ANSWER],
                 true,
+            ],
+            'same file name on a shown and a hidden comment' => [
+                [Episciences_CommentsManager::TYPE_INFO_ANSWER, Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR],
+                false,
             ],
         ];
     }
