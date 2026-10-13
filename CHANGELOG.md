@@ -46,6 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On the page of a previous version, the assigned editor (or guest editor) can now see the reviews
   and the non-public details.
 
+- The files attached to the comments, the copy-editing files and the data descriptors of a paper are now
+  only served to the users who see them on the paper pages.
+
 ### Changed
 - OpenCitations client migrated to API v2 (DOI sent with its `doi:` scheme, throttling and retry on HTTP 429).
   **Deployment**: set `OPENCITATIONS.APIURL` to `https://api.opencitations.net/index/v2/citations/` in

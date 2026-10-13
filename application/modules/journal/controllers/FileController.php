@@ -3,6 +3,7 @@
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Episciences\Files\FileManager;
+use Episciences\Paper\Files\DocumentFilePolicy;
 use Episciences\Upload\SafeFileName;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
@@ -83,7 +84,57 @@ class FileController extends DefaultController
 
         $relativePath .= $file;
 
+        // 404 rather than 403: do not disclose that the file exists
+        if (!$this->isAllowedToReadDocumentFile($docId, $folder, $file)) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         $this->loadFile(Episciences_PapersManager::buildDocumentPath($docId), $relativePath);
+    }
+
+    /**
+     * The files of a paper version are only given to the users who see them on the paper pages
+     * (see DocumentFilePolicy).
+     */
+    protected function isAllowedToReadDocumentFile(int $docId, string $folder, string $file): bool
+    {
+        try {
+            $paper = Episciences_PapersManager::get($docId, false);
+        } catch (Exception $e) {
+            trigger_error($e->getMessage());
+            return false;
+        }
+
+        if (!$paper) {
+            return false;
+        }
+
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+        $uid = (int)Episciences_Auth::getUid();
+
+        $isEditorialStaff = Episciences_Auth::isSecretary() ||
+            (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor()) ||
+            (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor()) ||
+            $paper->isAssignedEditorOrCopyEditor($uid);
+
+        $isReviewer = array_key_exists($uid, $paper->getReviewers());
+
+        // Reviewers only see some of the comments: the type of the comment carrying the file decides
+        $commentTypes = $isReviewer && $folder === DocumentFilePolicy::FOLDER_COMMENTS
+            ? Episciences_CommentsManager::findTypesByAttachment($docId, $file)
+            : [];
+
+        return DocumentFilePolicy::isAllowed(
+            $folder,
+            $paper->isPublished(),
+            $paper->isOwnerOrCoAuthor(),
+            self::isConflictDetected($paper, $review),
+            $isEditorialStaff,
+            $isReviewer,
+            $commentTypes
+        );
     }
 
     // load an e-mail attached file
