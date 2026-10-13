@@ -57,7 +57,8 @@ final class ReadOnlyMode
      */
     public static function parseFlag(mixed $value): bool
     {
-        $enabled = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        // filter_var() turns null into false even with FILTER_NULL_ON_FAILURE: an explicit null is invalid too
+        $enabled = $value === null ? null : filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
         if ($enabled !== null) {
             return $enabled;
         }

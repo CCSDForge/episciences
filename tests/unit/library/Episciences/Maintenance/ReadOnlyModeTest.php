@@ -6,7 +6,11 @@ namespace unit\library\Episciences\Maintenance;
 
 use DateTimeImmutable;
 use Episciences\Maintenance\ReadOnlyMode;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
+use Zend_Registry;
 
 final class ReadOnlyModeTest extends TestCase
 {
@@ -173,6 +177,43 @@ final class ReadOnlyModeTest extends TestCase
             'empty' => ['', false],
             'typo stays disabled' => ['oui', false],
             'not a scalar stays disabled' => [['true'], false],
+            'null stays disabled' => [null, false],
+        ];
+    }
+
+    /**
+     * @dataProvider invalidFlagProvider
+     */
+    public function testInvalidFlagValueIsLogged(mixed $value): void
+    {
+        $handler = new TestHandler();
+        $hadLogger = Zend_Registry::isRegistered('appLogger');
+        $previousLogger = $hadLogger ? Zend_Registry::get('appLogger') : null;
+        Zend_Registry::set('appLogger', new Logger('test', [$handler]));
+        $reported = new ReflectionProperty(ReadOnlyMode::class, 'invalidFlagReported');
+        $reported->setValue(null, false);
+
+        try {
+            self::assertFalse(ReadOnlyMode::parseFlag($value));
+            self::assertTrue($handler->hasWarningThatContains('Invalid ' . ReadOnlyMode::CONSTANT_NAME . ' value'));
+        } finally {
+            $reported->setValue(null, false);
+            if ($hadLogger) {
+                Zend_Registry::set('appLogger', $previousLogger);
+            } else {
+                Zend_Registry::getInstance()->offsetUnset('appLogger');
+            }
+        }
+    }
+
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function invalidFlagProvider(): array
+    {
+        return [
+            'typo' => ['oui'],
+            'null' => [null],
         ];
     }
 

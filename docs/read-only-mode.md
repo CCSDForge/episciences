@@ -195,6 +195,17 @@ On every web server, set `READ_ONLY_MODE_START` and `READ_ONLY_MODE_END` in `con
 
 Run the planned operations (schema migrations, MySQL upgrade, switchover, restoration…). The public site stays available meanwhile.
 
+`super_read_only` also blocks administrative accounts: operations that write to the database cannot run while it is enabled.
+
+1. Keep the scheduled jobs and the Messenger workers stopped, and `READ_ONLY_MODE` set to `true` on every web server: from now on, they are the only protection against application writes.
+2. On the server being written to, disable the safety net:
+   ```sql
+   SET GLOBAL super_read_only = OFF;
+   SET GLOBAL read_only = OFF;
+   ```
+3. Run the operations that write (migrations, restoration…).
+4. If the read-only period continues afterwards, enable it again: `SET GLOBAL super_read_only = ON;`. Otherwise, go directly to "Back to normal".
+
 ### 4. Back to normal (reverse order)
 
 1. ```sql
