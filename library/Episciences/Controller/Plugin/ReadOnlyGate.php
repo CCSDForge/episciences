@@ -25,11 +25,12 @@ final class ReadOnlyGate extends Zend_Controller_Plugin_Abstract
     public const DENIED_CONTROLLER = 'error';
     public const DENIED_ACTION = 'readonly';
 
-    /** Guest resources that write to the database, even on GET (email links, CAS callback, server API) */
+    /**
+     * Guest resources that write to the database, even on GET (email links, CAS callback, server API).
+     * Logging out stays possible: its only write (end of a switch user session) is skipped in read-only mode.
+     */
     public const WRITING_GUEST_RESOURCES = [
         'user-login',
-        'user-logout',
-        'user-logoutfromcas',
         'user-create',
         'user-altcha-challenge',
         'user-activate',

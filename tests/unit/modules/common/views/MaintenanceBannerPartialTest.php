@@ -36,7 +36,8 @@ final class MaintenanceBannerPartialTest extends TestCase
         Zend_Registry::set('lang', 'fr');
 
         ReadOnlyMode::setOverride(false);
-        ReadOnlyMode::setScheduleOverride(null, null);
+        // Empty dates, not nulls: nulls would fall back to the schedule configured in pwd.json
+        ReadOnlyMode::setScheduleOverride('', '');
     }
 
     protected function tearDown(): void
@@ -123,6 +124,17 @@ final class MaintenanceBannerPartialTest extends TestCase
         ReadOnlyMode::setScheduleOverride((new DateTimeImmutable('+2 days'))->format(DATE_ATOM), null);
 
         self::assertStringContainsString('Début de maintenance prévu : ', $this->render());
+    }
+
+    public function testUpcomingMaintenanceWithAZuluDateIsAnnounced(): void
+    {
+        // ext/intl rejects the "Z" time zone of ext/date: the banner must still render
+        ReadOnlyMode::setScheduleOverride((new DateTimeImmutable('+2 days'))->format('Y-m-d\TH:i:s\Z'), null);
+
+        $html = $this->render();
+
+        self::assertStringContainsString('Début de maintenance prévu : ', $html);
+        self::assertStringContainsString('(UTC+00:00)', $html);
     }
 
     public function testPastPlannedStartIsNotAnnounced(): void

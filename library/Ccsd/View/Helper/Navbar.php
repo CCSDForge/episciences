@@ -191,6 +191,10 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                             } catch (Exception $e) {
                                 trigger_error('Failed rendering ' . $this->_userRenderScript, E_USER_WARNING);
                             }
+                        } elseif ($this->_isLogged) {
+                            // Read-only maintenance mode: no account menu, but logging out stays possible ?>
+                            <a class="btn btn-default navbar-btn" href="/user/logout"><i class="fas fa-sign-out-alt" aria-hidden="true"></i>&nbsp;<?= $view->translate('Déconnexion') ?></a>
+                            <?php
                         } elseif ($this->_accountActions) { ?>
 
                             <?php if (defined('RVCODE') && RVCODE !== 'portal'): ?>

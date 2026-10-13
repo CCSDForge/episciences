@@ -133,6 +133,14 @@ class ErrorDefaultController extends Zend_Controller_Action
             return;
         }
 
+        if (!\Episciences\Maintenance\ReadOnlyMode::isEnabled()) {
+            // Only meaningful during a maintenance: otherwise the page does not exist
+            $this->getResponse()->setHttpResponseCode(404);
+            $this->view->message = 'Page not found';
+            $this->_helper->viewRenderer->setScriptAction('error');
+            return;
+        }
+
         $this->getResponse()
             ->setHttpResponseCode(503)
             ->setHeader('Retry-After', (string) \Episciences\Maintenance\ReadOnlyMode::getRetryAfterSeconds(), true);

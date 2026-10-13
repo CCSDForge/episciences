@@ -6,8 +6,12 @@ namespace Episciences\Maintenance;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
+use Episciences\AppRegistry;
 use Exception;
 use IntlDateFormatter;
+use IntlException;
+use ValueError;
 
 /**
  * Read-only maintenance mode: the web application must not write to the database.
@@ -35,15 +39,38 @@ final class ReadOnlyMode
     /** @var array{start: string, end: string}|null */
     private static ?array $scheduleOverride = null;
 
+    /** The invalid flag warning is logged once per request, isEnabled() being called many times */
+    private static bool $invalidFlagReported = false;
+
     public static function isEnabled(): bool
     {
         if (self::$override !== null) {
             return self::$override;
         }
 
-        $configured = defined(self::CONSTANT_NAME) ? constant(self::CONSTANT_NAME) : false;
+        return self::parseFlag(defined(self::CONSTANT_NAME) ? constant(self::CONSTANT_NAME) : false);
+    }
 
-        return filter_var($configured, FILTER_VALIDATE_BOOLEAN);
+    /**
+     * Boolean value of the configured flag. A value that is not a boolean (e.g. a typo such as "oui")
+     * leaves the mode disabled, but is logged so that the operators notice it.
+     */
+    public static function parseFlag(mixed $value): bool
+    {
+        $enabled = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($enabled !== null) {
+            return $enabled;
+        }
+
+        if (!self::$invalidFlagReported) {
+            self::$invalidFlagReported = true;
+            AppRegistry::getMonoLogger()?->warning(
+                'Invalid ' . self::CONSTANT_NAME . ' value, read-only mode stays disabled',
+                ['value' => is_scalar($value) ? $value : get_debug_type($value)]
+            );
+        }
+
+        return false;
     }
 
     /**
@@ -113,8 +140,15 @@ final class ReadOnlyMode
      */
     public static function formatDateTime(DateTimeImmutable $date, string $locale): string
     {
-        $formatter = new IntlDateFormatter($locale, IntlDateFormatter::LONG, IntlDateFormatter::SHORT, $date->getTimezone());
-        $formatted = $formatter->format($date);
+        // ext/intl rejects some ext/date time zones ("Z", abbreviations such as "CEST"): only the wall-clock
+        // time and the UTC offset are displayed, so a fixed-offset zone is equivalent and always accepted.
+        // A banner must never break a page, hence the fallback.
+        try {
+            $formatter = new IntlDateFormatter($locale, IntlDateFormatter::LONG, IntlDateFormatter::SHORT, new DateTimeZone($date->format('P')));
+            $formatted = $formatter->format($date);
+        } catch (IntlException|ValueError) {
+            $formatted = false;
+        }
 
         if ($formatted === false) {
             $formatted = $date->format('Y-m-d H:i');

@@ -29,7 +29,7 @@ All settings live in the `EPISCIENCES` section of `config/pwd.json` (see the tra
 
 | Key | Constant | Default | Description |
 |---|---|---|---|
-| `READ_ONLY_MODE` | `EPISCIENCES_READ_ONLY_MODE` | `false` | Enables the read-only mode |
+| `READ_ONLY_MODE` | `EPISCIENCES_READ_ONLY_MODE` | `false` | Enables the read-only mode (boolean; `true`/`false`, `1`/`0`, `on`/`off` and `yes`/`no` are also accepted) |
 | `READ_ONLY_MODE_START` | `EPISCIENCES_READ_ONLY_MODE_START` | `""` | Planned start, displayed to visitors and announced beforehand (optional) |
 | `READ_ONLY_MODE_END` | `EPISCIENCES_READ_ONLY_MODE_END` | `""` | Planned end, displayed to visitors and used for `Retry-After` (optional) |
 
@@ -37,8 +37,9 @@ Notes:
 
 - `config/pwd.json` is read on every request: changes take effect **immediately**, without reloading PHP-FPM. It must be changed on **every web server**.
 - A syntax error in `config/pwd.json` makes the whole site unavailable (`public/bdd_const.php` answers 503): validate the file after editing it, e.g. `python3 -m json.tool config/pwd.json`.
+- Any other `READ_ONLY_MODE` value (a typo such as `"oui"`) leaves the mode **disabled** and logs a `warning` in the application log.
 - The planned start and end are **informational only**: they never switch the mode on or off. Only `READ_ONLY_MODE` does.
-- Dates use the ISO 8601 format **with a UTC offset** (`2026-10-20T08:00:00+02:00`). Without an offset, the server time zone is assumed. Either date may be omitted; an empty or invalid value is ignored (the schedule is simply not displayed).
+- Dates use the ISO 8601 format **with a UTC offset** (`2026-10-20T08:00:00+02:00`); the `Z` suffix (`2026-10-20T06:00:00Z`) and time zone names or abbreviations (`Europe/Paris`, `CEST`) are accepted too, the banner always displays the UTC offset. Without an offset, the server time zone is assumed. Either date may be omitted; an empty or invalid value is ignored (the schedule is simply not displayed).
 
 ### Displayed schedule
 
@@ -112,7 +113,7 @@ Controller action
 | `layout/commons/maintenance-banner.phtml` | Single banner (read-only, upcoming, `RENDER_ALERT_BANNER`), included in `layout.phtml` and `portal.phtml`; uses `read-only-schedule.phtml` and `alert-banner.phtml` |
 | `Episciences_Paper_Visits::add()` | Skips the `STAT_TEMP` insert in read-only mode |
 | `Bootstrap::_initAcl()` | Everyone gets the guest navigation |
-| `Ccsd_View_Helper_Navbar` (`accountActions` option) | Hides the account menu and the login form |
+| `Ccsd_View_Helper_Navbar` (`accountActions` option) | Hides the account menu and the login form; logged-in users keep a "Log out" link |
 
 ### Which pages are served
 
@@ -124,7 +125,7 @@ The gate uses an **allow-list**, so that a new page is denied by default during 
 
 | Resource | Why it writes |
 |---|---|
-| `user-login`, `user-logout`, `user-logoutfromcas` | CAS callback synchronises the local user and its roles; logout while impersonating writes the audit trail |
+| `user-login` | CAS callback synchronises the local user and its roles |
 | `user-create`, `user-altcha-challenge` | Account creation |
 | `user-activate` | Activation link (e-mail) activates the account and deletes the token |
 | `user-lostpassword`, `user-lostlogin`, `user-resetpassword` | Tokens and password changes |
@@ -134,10 +135,12 @@ The gate uses an **allow-list**, so that a new page is denied by default during 
 
 The rule applies **whoever is logged in**: an editor with an open session only sees the public site. Sessions are kept, so users find them back after the maintenance.
 
+Logging out stays possible (`user-logout`, `user-logoutfromcas`), for instance on a shared computer. Its only database write, recording the end of a switch user session in the audit trail (`user_su_log`), is skipped in read-only mode: a switch user session ended by a logout during the maintenance is not recorded.
+
 Exceptions:
 
 - the **OAI-PMH** module is never filtered (it is read-only and the protocol allows `POST`);
-- `error-error` and `error-readonly` are always served;
+- `error-error` and `error-readonly` are always served (`error/readonly` answers 404 outside read-only mode);
 - resources unknown to the ACL are left to `Episciences_Auth_Plugin`, which never dispatches them.
 
 > When adding a page open to guests that writes to the database on `GET` (for instance a new link sent by e-mail), add its resource to `ReadOnlyGate::WRITING_GUEST_RESOURCES`.
@@ -150,7 +153,10 @@ Outside read-only mode, a database error on this insert (for instance MySQL runn
 
 ### What is not covered
 
-The mode only concerns the **web application**. Background processes write to the database on their own and must be stopped by the operators (see below). PHP sessions, caches, OAI resumption tokens and logs are stored on the filesystem and are not affected.
+The mode only concerns the **web application** (journals, portal, OAI-PMH). Other processes write to the same database on their own and must be stopped by the operators (see below):
+
+- the scheduled jobs and the Messenger workers (including the Next.js front-end revalidation worker);
+- the Symfony API, and every client calling it with write access (new front-end, webhooks, third-party services): put it in read-only or maintenance mode too, or rely on `super_read_only`. PHP sessions, caches, OAI resumption tokens and logs are stored on the filesystem and are not affected.
 
 ---
 
@@ -187,6 +193,8 @@ On every web server, set `READ_ONLY_MODE_START` and `READ_ONLY_MODE_END` in `con
 
 ### 3. Database maintenance
 
+Run the planned operations (schema migrations, MySQL upgrade, switchover, restoration…). The public site stays available meanwhile.
+
 ### 4. Back to normal (reverse order)
 
 1. ```sql
@@ -203,10 +211,13 @@ On every web server, set `READ_ONLY_MODE_START` and `READ_ONLY_MODE_END` in `con
 
 | Test | Covers |
 |---|---|
-| `tests/unit/library/Episciences/Maintenance/ReadOnlyModeTest.php` | Flag, schedule parsing, `Retry-After`, date formatting |
+| `tests/unit/library/Episciences/Maintenance/ReadOnlyModeTest.php` | Flag (including invalid values), schedule parsing, `Retry-After`, date formatting (including `Z` and abbreviations) |
 | `tests/unit/library/Episciences/Controller/Plugin/ReadOnlyGateTest.php` | Allowed and denied pages, methods, OAI, language switcher |
 | `tests/unit/library/Episciences/Paper/VisitsReadOnlyTest.php` | No visit insert in read-only mode; database errors do not break the page |
-| `tests/unit/modules/common/controllers/ErrorDefaultControllerTest.php` | 503 and `Retry-After` |
+| `tests/unit/modules/common/controllers/ErrorDefaultControllerTest.php` | 503 and `Retry-After`, XHR without layout, language switch redirect, 404 outside read-only mode |
+| `tests/unit/modules/common/controllers/UserDefaultControllerSwitchUserTest.php` | No switch user audit write on logout in read-only mode |
+| `tests/unit/library/Episciences/Auth/Episciences_Auth_PluginTest.php` | No redirection to the profile form in read-only mode |
+| `tests/unit/library/Ccsd/View/Helper/NavbarTest.php` | `accountActions` option: no login form, "Log out" link kept |
 | `tests/unit/modules/common/views/MaintenanceBannerPartialTest.php` | Banner priorities, announcement, schedule rendering, `RENDER_ALERT_BANNER` |
 
 ```bash

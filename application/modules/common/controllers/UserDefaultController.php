@@ -2,6 +2,7 @@
 
 use Ccsd\Auth\AdapterFactory;
 use Episciences\Altcha\ChallengeHelper;
+use Episciences\Maintenance\ReadOnlyMode;
 use Episciences\Trait\LocaleByCookieTrait;
 use Episciences\User\AccountMutationPolicy;
 use Episciences\User\EmailPolicy;
@@ -312,11 +313,12 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
-     * A logout closes the switch user session too: it is recorded as its end.
+     * A logout closes the switch user session too: it is recorded as its end,
+     * except in read-only maintenance mode, where logging out must not write to the database.
      */
     private function logSwitchUserEndOnLogout(): void
     {
-        if (!Episciences_Auth::isImpersonating()) {
+        if (ReadOnlyMode::isEnabled() || !Episciences_Auth::isImpersonating()) {
             return;
         }
 

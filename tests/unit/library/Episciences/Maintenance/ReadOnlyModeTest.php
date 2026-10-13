@@ -126,6 +126,56 @@ final class ReadOnlyModeTest extends TestCase
         self::assertStringEndsWith('(UTC+02:00)', $english);
     }
 
+    /**
+     * ext/intl rejects some time zones accepted by ext/date: the date must still be formatted.
+     *
+     * @dataProvider timeZoneRejectedByIntlProvider
+     */
+    public function testDateWithATimeZoneRejectedByIntlIsFormatted(string $value, string $expectedTime, string $expectedOffset): void
+    {
+        $formatted = ReadOnlyMode::formatDateTime(new DateTimeImmutable($value), 'en');
+
+        self::assertStringContainsString('October', $formatted);
+        self::assertStringContainsString($expectedTime, $formatted);
+        self::assertStringEndsWith($expectedOffset, $formatted);
+    }
+
+    /**
+     * @return array<string, array{string, string, string}>
+     */
+    public static function timeZoneRejectedByIntlProvider(): array
+    {
+        return [
+            'Zulu' => ['2026-10-20T08:00:00Z', '8:00', '(UTC+00:00)'],
+            'abbreviation' => ['2026-10-20 08:00 CEST', '8:00', '(UTC+02:00)'],
+        ];
+    }
+
+    /**
+     * @dataProvider flagProvider
+     */
+    public function testFlagValueIsParsedAsABoolean(mixed $value, bool $expected): void
+    {
+        self::assertSame($expected, ReadOnlyMode::parseFlag($value));
+    }
+
+    /**
+     * @return array<string, array{mixed, bool}>
+     */
+    public static function flagProvider(): array
+    {
+        return [
+            'true' => [true, true],
+            'false' => [false, false],
+            'string true' => ['true', true],
+            'one' => ['1', true],
+            'string off' => ['off', false],
+            'empty' => ['', false],
+            'typo stays disabled' => ['oui', false],
+            'not a scalar stays disabled' => [['true'], false],
+        ];
+    }
+
     private static function configuredState(): bool
     {
         return filter_var(constant(ReadOnlyMode::CONSTANT_NAME), FILTER_VALIDATE_BOOLEAN);

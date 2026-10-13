@@ -64,6 +64,8 @@ final class ReadOnlyGateTest extends TestCase
             'search' => ['search', 'index', 'GET'],
             'bibtex export' => ['export', 'bibtex', 'GET'],
             'rss' => ['rss', 'papers', 'GET'],
+            'logout' => ['user', 'logout', 'GET'],
+            'return from the CAS logout' => ['user', 'logoutfromcas', 'GET'],
         ];
     }
 
