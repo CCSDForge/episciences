@@ -340,13 +340,21 @@ class Episciences_Volume_Metadata
                 mkdir($path, 0777, true);
             }
 
+            // setFile() would drop a name that is not bare (e.g. with a backslash): check it before
+            // the previous file is removed, or the volume would lose both files
+            $storedName = PublicFileStore::storedName((string)$file['name']);
+            $filename = SafeFileName::isBare($storedName) ? Ccsd_Tools::getNewFileName($storedName, $path) : '';
+            if (!SafeFileName::isBare($filename)) {
+                AppRegistry::getMonoLogger()?->warning('Volume file refused', ['vid' => $this->getVid(), 'reason' => 'The file name is not a bare file name']);
+                return false;
+            }
+
             // Supprimer l'ancien fichier
             if ($this->hasFile() && file_exists($path . $this->getFile())) {
                 unlink($path . $this->getFile());
             }
 
             // Déplacer le fichier dans son dossier final
-            $filename = Ccsd_Tools::getNewFileName(PublicFileStore::storedName((string)$file['name']), $path);
             if (file_exists($file['tmp_name'])) {
                 rename($file['tmp_name'], $path . $filename);
                 chmod($path . $filename, 0644);
