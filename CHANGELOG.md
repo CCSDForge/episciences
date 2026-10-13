@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An editor (or guest editor) assigned to a paper could not access its previous versions:
   the assignment is now checked on the latest version.
 - Permissions are now also checked on obsolete versions in the paper management page.
+- On the page of a previous version, the assigned editor (or guest editor) can now see the reviews
+  and the non-public details.
 
 ### Changed
 - The continuous integration workflows now generate the configuration and the database the PHPUnit
