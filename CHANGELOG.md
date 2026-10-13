@@ -36,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without any identity, which made the paper page fail.
 - [#1009](https://github.com/CCSDForge/episciences/pull/1009): remove redundant account linking confirmation when emails match
 - Avoid suggesting that an invitation be linked to another account if it has already been accepted, has expired or has been cancelled.
+- A refused paper resubmitted through the inbox (COAR Notify) keeps the submission date of the refused paper,
+  which is shared by all the versions of a paper, instead of getting the current date.
 
 [RT#301096]:
 - An editor (or guest editor) assigned to a paper could not access its previous versions:
