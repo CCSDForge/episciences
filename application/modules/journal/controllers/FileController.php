@@ -2,7 +2,7 @@
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Episciences\Files\FileManager;
+use Episciences\AppRegistry;
 use Episciences\Paper\Files\DocumentFilePolicy;
 use Episciences\Upload\SafeFileName;
 
@@ -10,8 +10,6 @@ require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.p
 
 class FileController extends DefaultController
 {
-    /** Sub-directories of a document that docfilesAction may serve: comments, copy-editing sources, data descriptor */
-    private const DOCFILES_FOLDERS = ['comments', Episciences_CommentsManager::COPY_EDITING_SOURCES, FileManager::DD_SOURCE];
     /** Content types the browser may display instead of downloading */
     private const INLINE_CONTENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
@@ -49,7 +47,7 @@ class FileController extends DefaultController
         }
 
         // Other sub-directories of the document (reports, ratings, tmp...) have their own access rules
-        if (!in_array($folder, self::DOCFILES_FOLDERS, true)) {
+        if (!in_array($folder, DocumentFilePolicy::FOLDERS, true)) {
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
@@ -65,10 +63,15 @@ class FileController extends DefaultController
             $file .= '.' . $extension;
         }
 
-        // The folder allow-list would be pointless if a segment could climb out of it (e.g. "../reports")
+        // The folder allow-list would be pointless if a segment could climb out of it (e.g. "../reports").
+        // Only copy-editing files are stored by comment: elsewhere the access check, made on the file name,
+        // would not be about the file served.
         if (
             !SafeFileName::isBare($file) ||
-            (null !== $parentCommentId && !preg_match('/^\d+$/D', (string)$parentCommentId))
+            (
+                null !== $parentCommentId &&
+                ($folder !== DocumentFilePolicy::FOLDER_COPY_EDITING || !preg_match('/^\d+$/D', (string)$parentCommentId))
+            )
         ) {
             $this->getResponse()->setHttpResponseCode(404);
             return;
@@ -100,41 +103,78 @@ class FileController extends DefaultController
     protected function isAllowedToReadDocumentFile(int $docId, string $folder, string $file): bool
     {
         try {
-            $paper = Episciences_PapersManager::get($docId, false);
+            $paper = $this->findPaper($docId);
+
+            if (!$paper) {
+                return false;
+            }
+
+            // Public file: the user's roles do not matter
+            if (DocumentFilePolicy::isPublic($folder, $paper->isPublished())) {
+                return true;
+            }
+
+            $review = $this->findJournal();
+            $uid = (int)Episciences_Auth::getUid();
+
+            $isOwnerOrCoAuthor = $paper->isOwnerOrCoAuthor();
+            $isReviewer = array_key_exists($uid, $paper->getReviewers());
+
+            // The author and the reviewers only see some of the comments: the type of the comment carrying the file decides
+            $commentTypes = ($isOwnerOrCoAuthor || $isReviewer) && $folder === DocumentFilePolicy::FOLDER_COMMENTS
+                ? $this->findCommentTypes($docId, $file)
+                : [];
+
+            return DocumentFilePolicy::isAllowed(
+                $folder,
+                $paper->isPublished(),
+                $isOwnerOrCoAuthor,
+                static::isConflictDetected($paper, $review),
+                static::isEditorialStaff($paper, $review->getSettings()),
+                $isReviewer,
+                $commentTypes
+            );
         } catch (Exception $e) {
-            trigger_error($e->getMessage());
+            // Refused, but not to be mistaken for a missing file
+            AppRegistry::getMonoLogger()?->warning('Document file access check failed', [
+                'docId' => $docId,
+                'folder' => $folder,
+                'file' => $file,
+                'exception' => $e->getMessage(),
+            ]);
             return false;
         }
+    }
 
-        if (!$paper) {
-            return false;
-        }
+    /**
+     * @throws Exception
+     */
+    protected function findPaper(int $docId): ?Episciences_Paper
+    {
+        return Episciences_PapersManager::get($docId, false) ?: null;
+    }
 
+    /**
+     * @throws Exception
+     */
+    protected function findJournal(): Episciences_Review
+    {
         $review = Episciences_ReviewsManager::find(RVID);
+
+        if (!$review) {
+            throw new RuntimeException(sprintf('Journal #%d not found', RVID));
+        }
+
         $review->loadSettings();
-        $uid = (int)Episciences_Auth::getUid();
+        return $review;
+    }
 
-        $isEditorialStaff = Episciences_Auth::isSecretary() ||
-            (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor()) ||
-            (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor()) ||
-            $paper->isAssignedEditorOrCopyEditor($uid);
-
-        $isReviewer = array_key_exists($uid, $paper->getReviewers());
-
-        // Reviewers only see some of the comments: the type of the comment carrying the file decides
-        $commentTypes = $isReviewer && $folder === DocumentFilePolicy::FOLDER_COMMENTS
-            ? Episciences_CommentsManager::findTypesByAttachment($docId, $file)
-            : [];
-
-        return DocumentFilePolicy::isAllowed(
-            $folder,
-            $paper->isPublished(),
-            $paper->isOwnerOrCoAuthor(),
-            self::isConflictDetected($paper, $review),
-            $isEditorialStaff,
-            $isReviewer,
-            $commentTypes
-        );
+    /**
+     * @return int[]
+     */
+    protected function findCommentTypes(int $docId, string $file): array
+    {
+        return Episciences_CommentsManager::findTypesByAttachment($docId, $file);
     }
 
     // load an e-mail attached file

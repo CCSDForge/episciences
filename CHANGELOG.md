@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
+- The document files of a paper (comments, copy-editing, data descriptor) follow the access rules of the paper pages.
+
 [RT#293890]:
 - Sorting by invitation status does not reflect the actual situation:
     A reviewer’s report is categorised as an "Additional reviewer’s report",
@@ -45,9 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Permissions are now also checked on obsolete versions in the paper management page.
 - On the page of a previous version, the assigned editor (or guest editor) can now see the reviews
   and the non-public details.
-
-- The files attached to the comments, the copy-editing files and the data descriptors of a paper are now
-  only served to the users who see them on the paper pages.
 
 ### Changed
 - OpenCitations client migrated to API v2 (DOI sent with its `doi:` scheme, throttling and retry on HTTP 429).

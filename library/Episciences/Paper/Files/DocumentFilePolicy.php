@@ -12,18 +12,23 @@ use Episciences_CommentsManager;
  * data descriptor), mirroring what the paper pages show to each user:
  *
  * - the data descriptor of a published paper is shown on its public page;
- * - the author and co-authors read every file of their paper;
- * - a user in conflict of interest with the paper reads nothing else;
+ * - the author and co-authors read the copy-editing files, the data descriptor and the files of the
+ *   comments they are shown (every comment but the exchanges internal to the editorial staff);
  * - the editorial staff of the paper (secretaries, assigned editors and copy editors, editors and copy
- *   editors of a journal that does not restrict them to their assigned papers) read every file;
+ *   editors of a journal that does not restrict them to their assigned papers) read every file, unless
+ *   they are in conflict of interest with the paper;
  * - reviewers read the data descriptor and the files of the comments they are shown: their exchanges
- *   with the author and the author's cover letter. Copy-editing files are not for them.
+ *   with the author and the author's cover letter. Copy-editing files are not for them. A conflict of
+ *   interest, which concerns the editorial role, does not withdraw what the reviewing page shows them.
  */
 final class DocumentFilePolicy
 {
     public const FOLDER_COMMENTS = 'comments';
     public const FOLDER_COPY_EDITING = Episciences_CommentsManager::COPY_EDITING_SOURCES;
     public const FOLDER_DATA_DESCRIPTOR = FileManager::DD_SOURCE;
+
+    /** Sub-directories of a paper version governed by this policy */
+    public const FOLDERS = [self::FOLDER_COMMENTS, self::FOLDER_COPY_EDITING, self::FOLDER_DATA_DESCRIPTOR];
 
     /** Types of the comments shown to the reviewers of a paper */
     public const REVIEWER_COMMENT_TYPES = [
@@ -32,6 +37,23 @@ final class DocumentFilePolicy
         Episciences_CommentsManager::TYPE_CONTRIBUTOR_TO_REVIEWER,
         Episciences_CommentsManager::TYPE_AUTHOR_COMMENT,
     ];
+
+    /** Types of the comments exchanged within the editorial staff, never shown to the author */
+    public const EDITORIAL_COMMENT_TYPES = [
+        Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
+        Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
+        Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
+        Episciences_CommentsManager::TYPE_EDITOR_COMMENT,
+        Episciences_CommentsManager::TYPE_EDITOR_MONITORING_REFUSED,
+    ];
+
+    /**
+     * Files anyone may read, whatever their roles on the paper
+     */
+    public static function isPublic(string $folder, bool $isPublished): bool
+    {
+        return $folder === self::FOLDER_DATA_DESCRIPTOR && $isPublished;
+    }
 
     /**
      * @param string $folder sub-directory of the paper version (one of the FOLDER_* constants)
@@ -52,30 +74,43 @@ final class DocumentFilePolicy
         array  $commentTypes = []
     ): bool
     {
-        if ($folder === self::FOLDER_DATA_DESCRIPTOR && $isPublished) {
+        if (self::isPublic($folder, $isPublished)) {
             return true;
         }
 
-        if ($isOwnerOrCoAuthor) {
+        if ($isEditorialStaff && !$hasConflict && in_array($folder, self::FOLDERS, true)) {
             return true;
         }
 
-        if ($hasConflict) {
-            return false;
-        }
-
-        if ($isEditorialStaff) {
+        if ($isOwnerOrCoAuthor && self::isShownToAuthor($folder, $commentTypes)) {
             return true;
         }
 
-        if (!$isReviewer) {
-            return false;
-        }
+        return $isReviewer && self::isShownToReviewer($folder, $commentTypes);
+    }
 
+    /**
+     * @param int[] $commentTypes
+     */
+    private static function isShownToAuthor(string $folder, array $commentTypes): bool
+    {
+        return match ($folder) {
+            self::FOLDER_COPY_EDITING, self::FOLDER_DATA_DESCRIPTOR => true,
+            // The folder is shared by all the comments of the version: a name also carried by an internal
+            // comment of the editorial staff may be that comment's file
+            self::FOLDER_COMMENTS => $commentTypes !== [] && array_intersect($commentTypes, self::EDITORIAL_COMMENT_TYPES) === [],
+            default => false,
+        };
+    }
+
+    /**
+     * @param int[] $commentTypes
+     */
+    private static function isShownToReviewer(string $folder, array $commentTypes): bool
+    {
         return match ($folder) {
             self::FOLDER_DATA_DESCRIPTOR => true,
-            // The folder is shared by all the comments of the version: a name also carried by a comment hidden
-            // from the reviewers may be that comment's file
+            // Same as for the author: a name also carried by a comment hidden from the reviewers may be its file
             self::FOLDER_COMMENTS => $commentTypes !== [] && array_diff($commentTypes, self::REVIEWER_COMMENT_TYPES) === [],
             default => false,
         };

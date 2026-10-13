@@ -14,19 +14,13 @@ use PHPUnit\Framework\TestCase;
  */
 final class DocumentFilePolicyTest extends TestCase
 {
-    private const FOLDERS = [
-        DocumentFilePolicy::FOLDER_COMMENTS,
-        DocumentFilePolicy::FOLDER_COPY_EDITING,
-        DocumentFilePolicy::FOLDER_DATA_DESCRIPTOR,
-    ];
-
     /**
      * @return array<string, array{string}>
      */
     public static function foldersProvider(): array
     {
         $cases = [];
-        foreach (self::FOLDERS as $folder) {
+        foreach (DocumentFilePolicy::FOLDERS as $folder) {
             $cases[$folder] = [$folder];
         }
         return $cases;
@@ -38,10 +32,57 @@ final class DocumentFilePolicyTest extends TestCase
         self::assertFalse(DocumentFilePolicy::isAllowed($folder, false, false, false, false, false));
     }
 
-    #[DataProvider('foldersProvider')]
-    public function testAuthorReadsEveryFileOfTheirPaper(string $folder): void
+    public function testAuthorReadsTheCopyEditingFilesAndTheDataDescriptor(): void
     {
-        self::assertTrue(DocumentFilePolicy::isAllowed($folder, false, true, false, false, false));
+        self::assertTrue(DocumentFilePolicy::isAllowed(DocumentFilePolicy::FOLDER_COPY_EDITING, false, true, false, false, false));
+        self::assertTrue(DocumentFilePolicy::isAllowed(DocumentFilePolicy::FOLDER_DATA_DESCRIPTOR, false, true, false, false, false));
+    }
+
+    /**
+     * @return array<string, array{int[], bool}>
+     */
+    public static function authorCommentsProvider(): array
+    {
+        return [
+            'cover letter' => [[Episciences_CommentsManager::TYPE_AUTHOR_COMMENT], true],
+            'clarification request' => [[Episciences_CommentsManager::TYPE_INFO_REQUEST], true],
+            'revision request' => [[Episciences_CommentsManager::TYPE_REVISION_REQUEST], true],
+            'editor to author' => [[Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR], true],
+            'editor comment' => [[Episciences_CommentsManager::TYPE_EDITOR_COMMENT], false],
+            'acceptance suggestion' => [[Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION], false],
+            'refusal suggestion' => [[Episciences_CommentsManager::TYPE_SUGGESTION_REFUS], false],
+            'revision suggestion' => [[Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION], false],
+            'monitoring refused' => [[Episciences_CommentsManager::TYPE_EDITOR_MONITORING_REFUSED], false],
+            'file of no comment' => [[], false],
+            'same file name on a shown and an internal comment' => [
+                [Episciences_CommentsManager::TYPE_AUTHOR_COMMENT, Episciences_CommentsManager::TYPE_EDITOR_COMMENT],
+                false,
+            ],
+        ];
+    }
+
+    /**
+     * @param int[] $commentTypes
+     */
+    #[DataProvider('authorCommentsProvider')]
+    public function testAuthorReadsTheFilesOfTheCommentsTheyAreShown(array $commentTypes, bool $expected): void
+    {
+        self::assertSame(
+            $expected,
+            DocumentFilePolicy::isAllowed(DocumentFilePolicy::FOLDER_COMMENTS, false, true, false, false, false, $commentTypes)
+        );
+    }
+
+    public function testAuthorInConflictStillReadsTheirFiles(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isAllowed(DocumentFilePolicy::FOLDER_COPY_EDITING, false, true, true, false, false));
+    }
+
+    public function testEditorialStaffAuthorReadsTheInternalComments(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isAllowed(
+            DocumentFilePolicy::FOLDER_COMMENTS, false, true, false, true, false, [Episciences_CommentsManager::TYPE_EDITOR_COMMENT]
+        ));
     }
 
     #[DataProvider('foldersProvider')]
@@ -54,7 +95,19 @@ final class DocumentFilePolicyTest extends TestCase
     public function testConflictOfInterestPrevailsOverEditorialRole(string $folder): void
     {
         self::assertFalse(DocumentFilePolicy::isAllowed(
-            $folder, false, false, true, true, true, [Episciences_CommentsManager::TYPE_INFO_REQUEST]
+            $folder, false, false, true, true, false, [Episciences_CommentsManager::TYPE_EDITOR_COMMENT]
+        ));
+    }
+
+    public function testConflictOfInterestLeavesAReviewerWhatTheReviewingPageShows(): void
+    {
+        $shownComment = [Episciences_CommentsManager::TYPE_INFO_REQUEST];
+
+        self::assertTrue(DocumentFilePolicy::isAllowed(DocumentFilePolicy::FOLDER_COMMENTS, false, false, true, true, true, $shownComment));
+        self::assertTrue(DocumentFilePolicy::isAllowed(DocumentFilePolicy::FOLDER_DATA_DESCRIPTOR, false, false, true, true, true));
+        self::assertFalse(DocumentFilePolicy::isAllowed(DocumentFilePolicy::FOLDER_COPY_EDITING, false, false, true, true, true));
+        self::assertFalse(DocumentFilePolicy::isAllowed(
+            DocumentFilePolicy::FOLDER_COMMENTS, false, false, true, true, true, [Episciences_CommentsManager::TYPE_EDITOR_COMMENT]
         ));
     }
 
@@ -129,8 +182,16 @@ final class DocumentFilePolicyTest extends TestCase
         ));
     }
 
-    public function testUnknownFolderIsRefusedToReviewers(): void
+    public function testUnknownFolderIsRefusedToEveryRole(): void
     {
-        self::assertFalse(DocumentFilePolicy::isAllowed('reports', false, false, false, false, true));
+        self::assertFalse(DocumentFilePolicy::isAllowed('reports', false, true, false, true, true));
+    }
+
+    public function testOnlyThePublishedDataDescriptorIsPublic(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isPublic(DocumentFilePolicy::FOLDER_DATA_DESCRIPTOR, true));
+        self::assertFalse(DocumentFilePolicy::isPublic(DocumentFilePolicy::FOLDER_DATA_DESCRIPTOR, false));
+        self::assertFalse(DocumentFilePolicy::isPublic(DocumentFilePolicy::FOLDER_COMMENTS, true));
+        self::assertFalse(DocumentFilePolicy::isPublic(DocumentFilePolicy::FOLDER_COPY_EDITING, true));
     }
 }

@@ -119,6 +119,14 @@ final class FileControllerDocfilesFolderTest extends TestCase
         self::assertSame('copy_editing_sources/34/report.xml', $delivered[0][1] ?? null);
     }
 
+    public function testCopyEditingCommentIdMustBeANumber(): void
+    {
+        [$code, $delivered] = $this->runDocfilesAction(['folder' => 'ce', 'parentCommentId' => '../comments']);
+
+        self::assertSame(404, $code);
+        self::assertSame([], $delivered, 'no file must be delivered');
+    }
+
     public function testAccessIsCheckedOnThePaperFolderAndFile(): void
     {
         $this->runDocfilesAction(['folder' => 'ce', 'parentCommentId' => '34']);
@@ -155,6 +163,7 @@ final class FileControllerDocfilesFolderTest extends TestCase
             'file name is a parent directory' => [['filename' => '..', 'extension' => '']],
             'comment id climbs out of the folder' => [['parentCommentId' => '../reports/7']],
             'comment id is not a number' => [['parentCommentId' => 'abc']],
+            'comment id outside the copy-editing folder' => [['parentCommentId' => '34']],
         ];
     }
 
