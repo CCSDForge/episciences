@@ -5128,15 +5128,25 @@ class Episciences_Paper
             return true;
         }
 
+        $latestVersion = $this->findLatestVersion();
+
+        return $latestVersion && ($latestVersion->getEditor($uid) || $latestVersion->getCopyEditor($uid));
+    }
+
+    /**
+     * Fetch the latest version of this paper.
+     *
+     * @return Episciences_Paper|null null when this paper is the latest version or when it cannot be found
+     */
+    public function findLatestVersion(): ?Episciences_Paper
+    {
         $latestDocId = (int)$this->getLatestVersionId();
 
         if ($latestDocId === 0 || $latestDocId === $this->getDocid()) {
-            return false;
+            return null;
         }
 
-        $latestVersion = Episciences_PapersManager::get($latestDocId, false);
-
-        return $latestVersion && ($latestVersion->getEditor($uid) || $latestVersion->getCopyEditor($uid));
+        return Episciences_PapersManager::get($latestDocId, false) ?: null;
     }
 
     /**
