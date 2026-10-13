@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Maintenance\ReadOnlyMode;
 use Episciences\MonoLog\MonologFactory;
 
 
@@ -189,8 +190,11 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
         $config = new Zend_Config_Json($localNavigationFile, null, ['ignoreconstants' => true]);
 
+        // Read-only maintenance mode: everyone gets the public navigation (see ReadOnlyGate plugin)
+        $isReadOnly = ReadOnlyMode::isEnabled();
+
         //Chargement de la navigation
-        if (Episciences_Auth::isLogged()) {
+        if (Episciences_Auth::isLogged() && !$isReadOnly) {
             $connectedConfig = new Zend_Config_Json($globalNavigationFile, null, ['ignoreconstants' => true]);
         } else {
             $connectedConfig = new Zend_Config_Json(APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.guest.navigation.json', null, ['ignoreconstants' => true]);
@@ -211,7 +215,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         //Initialisation du menu
         $viewRenderer->view->nav($navigation)
             ->setAcl($acl)
-            ->setRoles(Episciences_Auth::getRoles());
+            ->setRoles($isReadOnly ? [Episciences_Acl::ROLE_GUEST] : Episciences_Auth::getRoles());
 
         return $acl;
     }

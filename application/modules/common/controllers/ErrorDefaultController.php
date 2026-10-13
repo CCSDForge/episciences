@@ -121,5 +121,34 @@ class ErrorDefaultController extends Episciences_Controller_Action
         $this->view->message = "Vous n'êtes pas autorisé à accéder à cette page.";
     }
 
+    /**
+     * Read-only maintenance mode: the requested page could write to the database (see ReadOnlyGate plugin).
+     */
+    public function readonlyAction(): void
+    {
+        if ($this->getResponse()->isRedirect()) {
+            // Language switch turned into a redirect by the ReadOnlyGate plugin
+            $this->_helper->layout()->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
+
+        if (!\Episciences\Maintenance\ReadOnlyMode::isEnabled()) {
+            // Only meaningful during a maintenance: otherwise the page does not exist
+            $this->getResponse()->setHttpResponseCode(404);
+            $this->view->message = 'Page not found';
+            $this->_helper->viewRenderer->setScriptAction('error');
+            return;
+        }
+
+        $this->getResponse()
+            ->setHttpResponseCode(503)
+            ->setHeader('Retry-After', (string) \Episciences\Maintenance\ReadOnlyMode::getRetryAfterSeconds(), true);
+
+        if ($this->getRequest()->isXmlHttpRequest()) {
+            $this->_helper->layout()->disableLayout();
+        }
+    }
+
 
 }

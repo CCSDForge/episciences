@@ -2370,9 +2370,9 @@ class Episciences_Tools
     }
 
 
-    public static function isIPv6(string $ipv6): bool
+    public static function isIPv6(?string $ipv6): bool
     {
-        return filter_var($ipv6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
+        return $ipv6 !== null && filter_var($ipv6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
     }
 
     /**

@@ -516,5 +516,14 @@ return [
     "Vous ne pouvez pas changer d'utilisateur lorsque vous êtes déjà sous une identité de substitution." => "Vous ne pouvez pas changer d'utilisateur lorsque vous êtes déjà sous une identité de substitution.",
     "Ce compte n'a aucun rôle dans cette revue." => "Ce compte n'a aucun rôle dans cette revue.",
     "Action non autorisée." => "Action non autorisée.",
-
+    // Read-only maintenance mode
+    "Maintenance en cours" => "Maintenance en cours",
+    "Le site est temporairement en consultation seule : cette page n'est pas disponible pendant la maintenance. Merci de réessayer plus tard." => "Le site est temporairement en consultation seule : cette page n'est pas disponible pendant la maintenance. Merci de réessayer plus tard.",
+    "Retour à l'accueil" => "Retour à l'accueil",
+    "Maintenance en cours : le site reste consultable, mais les connexions, soumissions et modifications sont temporairement suspendues." => "Maintenance en cours : le site reste consultable, mais les connexions, soumissions et modifications sont temporairement suspendues.",
+    "Maintenance prévue du %1\$s au %2\$s." => "Maintenance prévue du %1\$s au %2\$s.",
+    "Fin de maintenance prévue : %s." => "Fin de maintenance prévue : %s.",
+    "Maintenance commencée le %s." => "Maintenance commencée le %s.",
+    "Maintenance à venir : le site restera consultable, mais les connexions, soumissions et modifications seront temporairement suspendues." => "Maintenance à venir : le site restera consultable, mais les connexions, soumissions et modifications seront temporairement suspendues.",
+    "Début de maintenance prévu : %s." => "Début de maintenance prévu : %s.",
 ];

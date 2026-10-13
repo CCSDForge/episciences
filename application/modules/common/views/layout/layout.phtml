@@ -92,14 +92,7 @@ if (APPLICATION_MODULE !== 'portal') {
 } else {
     $displayLogin = false;
 }
-$this->navbar(true, [
-    'languages' => Zend_Registry::get('languages'),
-    'lang' => Zend_Registry::get('lang')],
-    $displayLogin,
-    ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml'
-    ]);
-?>
-
+$this->navbar(true, ['languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')], true, ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml', 'accountActions' => !\Episciences\Maintenance\ReadOnlyMode::isEnabled()]); ?>
 <div id="container" class="container<?php echo $this->containerClass; ?>">
 
     <div class="logo">
@@ -110,11 +103,7 @@ $this->navbar(true, [
         } ?>
     </div>
 
-    <?php if (EPISCIENCES_RENDER_ALERT_BANNER['STATUS']): ?>
-
-        <?= $this->render('commons/alert-banner.phtml') ?>
-
-    <?php endif; ?>
+    <?= $this->render('commons/maintenance-banner.phtml') ?>
 
     <?php ?>
 

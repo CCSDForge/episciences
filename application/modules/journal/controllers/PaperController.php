@@ -221,7 +221,7 @@ class PaperController extends PaperDefaultController
 
         // ratings **************************************************
         //[#169]: https://github.com/CCSDForge/episciences/issues/169
-        $isVisibleRatings = (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid)) ||
+        $isVisibleRatings = (Episciences_Auth::isSecretary() || $paper->isAssignedEditorOrCopyEditor((int)$loggedUid)) ||
             $paper->isReportsVisibleToAuthor() ||
             ($review->getSetting(Episciences_Review::SETTING_SHOW_RATINGS) && $paper->isPublished());
 
@@ -243,8 +243,7 @@ class PaperController extends PaperDefaultController
                 $isSecretary ||
                 (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor()) ||
                 (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor()) ||
-                $paper->getEditor($loggedUid) ||
-                $paper->getCopyEditor($loggedUid);
+                $paper->isAssignedEditorOrCopyEditor((int)$loggedUid);
 
         } catch (Zend_Db_Statement_Exception $e) {
             $commonTest = false;

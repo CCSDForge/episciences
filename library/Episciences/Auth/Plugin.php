@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Maintenance\ReadOnlyMode;
+
 /**
  * Access rights verification for a resource
  *
@@ -34,7 +36,7 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
                     $request->setParam('error_message', "Accès refusé");
                     $request->setParam('error_description', "Vous ne disposez pas des droits nécessaires pour accéder à cette page.");
                 }
-            } else if (Episciences_Auth::isLogged() && $resource !== 'user-edit' && $resource !== 'user-logout' && $resource !== 'user-photo') {
+            } else if (Episciences_Auth::isLogged() && !ReadOnlyMode::isEnabled() && $resource !== 'user-edit' && $resource !== 'user-logout' && $resource !== 'user-photo') {
                 // The user is allowed to access the resource, we check if their account is completed on Episciences
                 $epiUser = new Episciences_User();
                 if (!$epiUser->hasLocalData(Episciences_Auth::getUid())) {
@@ -86,14 +88,22 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
      */
     public function resolveResource(string $controller, string $action): string
     {
+        return self::resolveAclResource($this->_acl, $controller, $action);
+    }
+
+    /**
+     * @see resolveResource() Same resolution against a given ACL, shared with the read-only maintenance gate.
+     */
+    public static function resolveAclResource(Zend_Acl $acl, string $controller, string $action): string
+    {
         $raw = $controller . '-' . $action;
-        if ($this->_acl->has($raw)) {
+        if ($acl->has($raw)) {
             return $raw;
         }
 
         $matches = [];
-        foreach ($this->_acl->getResources() as $candidate) {
-            if ($this->matchesRequest((string)$candidate, $controller, $action)) {
+        foreach ($acl->getResources() as $candidate) {
+            if (self::matchesRequest((string)$candidate, $controller, $action)) {
                 $matches[] = (string)$candidate;
             }
         }
@@ -106,7 +116,7 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
      * dispatcher-normalized. Every hyphen is tried as the controller/action boundary, because both parts
      * may themselves contain hyphens.
      */
-    private function matchesRequest(string $resource, string $controller, string $action): bool
+    private static function matchesRequest(string $resource, string $controller, string $action): bool
     {
         $wantedController = self::normalizeName($controller);
         $wantedAction = self::normalizeName($action);
