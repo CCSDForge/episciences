@@ -5114,6 +5114,42 @@ class Episciences_Paper
     }
 
     /**
+     * Check if a user is assigned as editor or copy editor to this paper.
+     * Editors and copy editors are unassigned from a version when a new one is submitted:
+     * for a previous version, the assignment is checked on the latest version.
+     *
+     * @param int $uid
+     * @return bool
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function isAssignedEditorOrCopyEditor(int $uid): bool
+    {
+        if ($this->getEditor($uid) || $this->getCopyEditor($uid)) {
+            return true;
+        }
+
+        $latestVersion = $this->findLatestVersion();
+
+        return $latestVersion && ($latestVersion->getEditor($uid) || $latestVersion->getCopyEditor($uid));
+    }
+
+    /**
+     * Fetch the latest version of this paper.
+     *
+     * @return Episciences_Paper|null null when this paper is the latest version or when it cannot be found
+     */
+    public function findLatestVersion(): ?Episciences_Paper
+    {
+        $latestDocId = (int)$this->getLatestVersionId();
+
+        if ($latestDocId === 0 || $latestDocId === $this->getDocid()) {
+            return null;
+        }
+
+        return Episciences_PapersManager::get($latestDocId, false) ?: null;
+    }
+
+    /**
      * Check if a specific user is a co-author of this paper
      */
     public function isCoAuthorByUid(int $uid): bool
