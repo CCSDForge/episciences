@@ -239,6 +239,9 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         $paper->method('getCopyEditor')->willReturnCallback(
             fn(int $uid) => $uid === $assignedCopyEditorUid ? $this->createMockUser($uid) : null
         );
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturnCallback(
+            fn(int $uid) => $uid === $assignedEditorUid || $uid === $assignedCopyEditorUid
+        );
         $paper->method('isApprovedByAuthor')->willReturn($isApprovedByAuthor);
         $paper->method('isOwner')->willReturn($isOwner);
         $paper->method('getDocid')->willReturn($docId);
@@ -360,6 +363,20 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         $this->harness->callCheckPermissions($this->createReview(), $this->createPaper());
 
         self::assertSame([self::ACCESS_DENIED_MESSAGE], $this->harness->_helper->messages);
+    }
+
+    public function testAssignedGuestEditorIsNotRedirected(): void
+    {
+        // also covers previous versions: the assignment is resolved on the latest version
+        $this->loginUser(42, [Episciences_Acl::ROLE_GUEST_EDITOR, Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_AUTHOR]);
+
+        $allowed = $this->harness->callCheckPermissions(
+            $this->createReview(),
+            $this->createPaper(assignedEditorUid: 42)
+        );
+
+        self::assertTrue($allowed);
+        self::assertNull($this->harness->_helper->redirectedTo);
     }
 
     public function testGuestEditorWhoIsAlsoEditorIsNotBlockedByTheGuestRule(): void
