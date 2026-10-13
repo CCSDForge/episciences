@@ -875,7 +875,7 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         // Each delete control carries its own per-user request token.
-        $tokenName = 'user_delete_' . $userId;
+        $tokenName = 'user_delete_' . (int)$userId;
         if (!Episciences_Csrf_Helper::validateToken($tokenName, (string)$request->getPost($tokenName, ''))) {
             $this->getResponse()->setHttpResponseCode(403);
             echo 0;
