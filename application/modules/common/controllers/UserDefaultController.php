@@ -578,8 +578,35 @@ class UserDefaultController extends Zend_Controller_Action
         Zend_Session::regenerateId();
     }
 
+    /**
+     * Guard for the user lookup endpoints (names, usernames and e-mail addresses):
+     * the caller must be allowed to manage papers in the current journal.
+     * Answers 403 with an empty JSON body when it is not.
+     *
+     * @return bool true when the request has been denied (the action must stop)
+     */
+    private function denyUserLookup(): bool
+    {
+        if (Episciences_Auth::isLogged() && Episciences_Auth::isAllowedToManagePaper()) {
+            return false;
+        }
+
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender(true);
+        $this->getResponse()
+            ->setHttpResponseCode(403)
+            ->setHeader('Content-Type', 'application/json', true);
+        $this->getResponse()->setBody('[]');
+
+        return true;
+    }
+
     public function findcasusersAction()
     {
+        if ($this->denyUserLookup()) {
+            return;
+        }
+
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
 
@@ -658,6 +685,11 @@ class UserDefaultController extends Zend_Controller_Action
 
     public function listAction()
     {
+        if (!Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor()) {
+            $this->_helper->redirector->gotoUrl('/error/deny');
+            return;
+        }
+
         $usersList = Episciences_UsersManager::getAllUsers();
 
         if ($this->_helper->getHelper('FlashMessenger')->getMessages()) {
@@ -1640,49 +1672,15 @@ class UserDefaultController extends Zend_Controller_Action
     // GESTION DES ROLES *******************************************************************************************
 
     /**
-     * fetch users list for autocomplete
-     * use "term" param for searching users in database
-     */
-    public function findusersAction(): void
-    {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-
-        $request = $this->getRequest();
-        $users = [];
-
-        if ($request) {
-
-            $filter = $request->getParam('term');
-            $withoutRoles = ($request->getParam('type') !== 'all');
-            $result = Episciences_User::filterUsers($filter, $withoutRoles);
-
-            if (!empty($result)) {
-
-                foreach ($result as $key => $user) {
-                    $name = $user['LASTNAME'];
-                    if ($user['FIRSTNAME'] !== '') {
-                        $name = $user['FIRSTNAME'] . ' ' . $name;
-                    }
-                    $label = $name . ' (' . mb_strtolower($user['USERNAME'], 'UTF-8') . ')' . ' <' . $user['EMAIL'] . '>';
-
-                    $users[$key]['uid'] = $user['UID'];
-                    $users[$key]['name'] = $name;
-                    $users[$key]['mail'] = $user['EMAIL'];
-                    $users[$key]['label'] = $label;
-                }
-            }
-        }
-
-        echo Zend_Json::encode(array_values($users));
-    }
-
-    /**
      * Retourne tous les logins associés à un email et les détails d'un compte utilisateurs par login
      * @throws Exception
      */
     public function ajaxfindusersbymailAction(): void
     {
+        if ($this->denyUserLookup()) {
+            return;
+        }
+
         $result = '';
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -1722,6 +1720,10 @@ class UserDefaultController extends Zend_Controller_Action
 
     public function findusersbyfirstnameandnameAction(): void
     {
+        if ($this->denyUserLookup()) {
+            return;
+        }
+
         $result = [];
 
         $this->_helper->layout()->disableLayout();
@@ -1750,6 +1752,10 @@ class UserDefaultController extends Zend_Controller_Action
 
     public function ajaxfindcasuserAction(): void
     {
+        if ($this->denyUserLookup()) {
+            return;
+        }
+
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
         $user = null;
@@ -1959,34 +1965,6 @@ class UserDefaultController extends Zend_Controller_Action
         $this->view->roles = $userRoles;
         $this->renderScript('partials/user_roles.phtml');
         $this->_helper->layout->disableLayout();
-    }
-
-    /**
-     * fetch users e-mail addresses for autocompletion
-     * use "term" param for searching users database
-     */
-    public function getmailsAction()
-    {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-
-        $request = $this->getRequest();
-        $query = $request->getQuery('term');
-
-        //Retourne une liste de destinataires
-        if ($request->isXmlHttpRequest()) {
-            $users = [];
-            foreach (Episciences_User::filterUsers($query, false) ?? [] as $user) {
-                $name = $user['SCREEN_NAME'] !== '' ? $user['SCREEN_NAME'] : trim($user['FIRSTNAME'] . ' ' . $user['LASTNAME']);
-                $users[] = [
-                    'uid' => $user['UID'],
-                    'name' => $name,
-                    'mail' => $user['EMAIL'],
-                    'label' => htmlentities($name . ' <' . $user['EMAIL'] . '>'),
-                ];
-            }
-            echo Zend_Json::encode($users);
-        }
     }
 
     public function ajaxdeletephotoAction(): void

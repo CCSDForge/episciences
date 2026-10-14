@@ -227,67 +227,6 @@ class Episciences_User extends Ccsd_User_Models_User
 
     // Retourne les droits de l'utilisateur (pour toutes les revues / portails)
 
-    /** Columns returned by filterUsers(): identity data only, no credentials */
-    private const FILTER_USERS_COLUMNS = ['UID', 'USERNAME', 'EMAIL', 'LASTNAME', 'FIRSTNAME'];
-
-    public static function filterUsers($filter, $withoutRoles = true)
-    {
-        $result = null;
-        $filter = trim($filter);
-        $keywords = explode(' ', $filter);
-
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_USERS);
-        $subSelect = $db->select()->from(T_USER_ROLES, ['UID'])->where('RVID = ?', RVID);
-        if ($withoutRoles) {
-            $subSelect->where('ROLEID != ?', Episciences_Acl::ROLE_MEMBER);
-            $select->where('UID NOT IN (' . new Zend_Db_Expr($subSelect) . ')');
-        } else {
-            $select->where('UID IN (' . new Zend_Db_Expr($subSelect) . ')');
-        }
-
-        $users = $db->fetchAssoc($select);
-
-        if ($users) {
-            $casDb = Ccsd_Db_Adapter_Cas::getAdapter();
-            // Never select the whole row: T_CAS_USERS holds credential columns that must not reach callers
-            $select = $casDb->select()
-                ->from(T_CAS_USERS, self::FILTER_USERS_COLUMNS)
-                ->where('UID IN (?)', array_keys($users))
-                ->order('LASTNAME');
-
-            $where = '(';
-            $isFirstKeyword = true;
-            foreach ($keywords as $keyword) {
-                if (!empty($keyword)) {
-                    if (!$isFirstKeyword) {
-                        $where .= ' AND ';
-                    }
-                    $isFirstKeyword = false;
-                    $where .= '(';
-                    $where .= $casDb->quoteInto('FIRSTNAME LIKE ? OR ', '%' . $keyword . '%');
-                    $where .= $casDb->quoteInto('LASTNAME LIKE ?', '%' . $keyword . '%');
-                    $where .= ')';
-                }
-            }
-            $where .= ' OR ';
-            $where .= $casDb->quoteInto('EMAIL LIKE ?', '%' . $filter . '%');
-            $where .= ')';
-
-            $select->where($where);
-            $select->limit(25);
-            $result = $casDb->fetchAll($select);
-
-            // SCREEN_NAME lives in the local table, not in the CAS one
-            foreach ($result as &$row) {
-                $row['SCREEN_NAME'] = $users[$row['UID']]['SCREEN_NAME'] ?? '';
-            }
-            unset($row);
-        }
-
-        return ($result);
-    }
-
     public static function filterCasUsers($filter)
     {
         $filter = trim($filter);
