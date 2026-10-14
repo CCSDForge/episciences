@@ -352,8 +352,6 @@ class AdministratemailController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         } elseif ($isSendRequest) {
 
-            $post['sender'] = Episciences_Auth::getUid();
-
             if ($this->checkRecipients($post)['isDetectedErrors']) {
                 $form->setDefaults($post);
             }
@@ -467,109 +465,12 @@ class AdministratemailController extends Zend_Controller_Action
             return;
         }
 
-        $validator = new Zend_Validate_EmailAddress();
-        // set from & reply-to: always built server-side, client-supplied values are ignored
-        $from = Episciences_Auth::getFullName() . ' <' . RVCODE . '@' . DOMAIN . '>';
-        $replyto = Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>';
-
-        // Récupération des destinataires
-        $to = $checkedRecipients['recipients']['to'];
-        $cc = $checkedRecipients['recipients']['cc'];
-        $bcc = $checkedRecipients['recipients']['bcc'];
-
-        // récupération du contenu
-        $subject = (!empty(Ccsd_Tools::ifsetor($post['subject']))) ? $post['subject'] : Zend_Registry::get('Zend_Translate')->translate('Aucun sujet');
-        $content = Ccsd_Tools::clear_nl(Ccsd_Tools::ifsetor($post['content']));
-
-        if (empty($content) && empty($post[Episciences_Mail_Send::ATTACHMENTS])) {
-            $content = 'Empty message.';
-        }
-
-        $mail = new Episciences_Mail('UTF-8');
-        $mail->setSubject($subject);
-        $mail->setRawBody($content);
-
-        $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_EMAIL, Episciences_Auth::getEmail());
-        $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_FULL_NAME, Episciences_Auth::getFullName());
-        $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME, Episciences_Auth::getScreenName());
-
-        if ($from) {
-
-            $postMailValidation = Episciences_Tools::postMailValidation($from);
-            $email = $postMailValidation['email'];
-            $name = $postMailValidation['name'];
-
-            if ($validator->isValid($email)) {
-                $mail->setFrom($email, $name);
-            }
-        }
-
-        if ($replyto) {
-
-            $postMailValidation = Episciences_Tools::postMailValidation($replyto);
-            $email = $postMailValidation['email'];
-            $name = $postMailValidation['name'];
-
-            if ($validator->isValid($email)) {
-                $mail->setReplyTo($email, $name);
-            }
-        }
-
-        foreach ($to as $recipient) {
-
-            $postMailValidation = Episciences_Tools::postMailValidation($recipient['value']);
-            $email = $postMailValidation['email'];
-            $name = $postMailValidation['name'];
-
-            if ($validator->isValid($email)) {
-                $mail->addTo($email, $name);
-            }
-        }
-
-        foreach ($cc as $recipient) {
-
-            $postMailValidation = Episciences_Tools::postMailValidation($recipient['value']);
-            $email = $postMailValidation['email'];
-            $name = $postMailValidation['name'];
-
-            if ($validator->isValid($email)) {
-                $mail->addCc($email, $name);
-            } else {
-                trigger_error(RVCODE . 'FROM_MAILING_BAD_CC_MAIL: ' . $email);
-            }
-        }
-
-        foreach ($bcc as $recipient) {
-
-            $email = Episciences_Tools::postMailValidation($recipient['value'])['email'];
-
-            if ($validator->isValid($email)) {
-                $mail->addBcc($email);
-            } else {
-                trigger_error(RVCODE . 'FROM_MAILING_BAD_BCC_MAIL: ' . $email);
-            }
-        }
-
         if (isset($post['docid'])) {
-            /** @var Episciences_Paper $paper */
+            /** @var Episciences_Paper|false $paper */
             $paper = Episciences_PapersManager::get((int)$post['docid']);
-            $mail->setDocid($paper->getDocid());
         }
 
-        $mail->setUid(Episciences_Auth::getUid());
-
-        if (isset($post[Episciences_Mail_Send::ATTACHMENTS])) {
-            // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
-            $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
-            $path = Episciences_Tools::getAttachmentsPath();
-            foreach ($attachments as $attachment) {
-                $filepath = Episciences_Tools::resolveAttachmentPath($path, $attachment);
-                if ($filepath !== null) {
-                    $mail->addAttachedFile($filepath);
-                }
-            }
-        }
-
+        $mail = $this->buildMail($post, $checkedRecipients['recipients'], $paper ?: null);
 
         if ($mail->writeMail()) {
 
@@ -610,6 +511,100 @@ class AdministratemailController extends Zend_Controller_Action
 
         $this->_helper->redirector->gotoUrl('administratemail/send');
 
+    }
+
+    /**
+     * Build the mail of the mailing form (not sent)
+     * @param array<string, mixed> $post
+     * @param array{to: array<int, array<string, mixed>>, cc: array<int, array<string, mixed>>, bcc: array<int, array<string, mixed>>} $recipients
+     * @throws Zend_Mail_Exception
+     */
+    private function buildMail(array $post, array $recipients, ?Episciences_Paper $paper): Episciences_Mail
+    {
+        $validator = new Zend_Validate_EmailAddress();
+
+        // Récupération des destinataires
+        $to = $recipients['to'];
+        $cc = $recipients['cc'];
+        $bcc = $recipients['bcc'];
+
+        // récupération du contenu
+        $subject = (!empty(Ccsd_Tools::ifsetor($post['subject']))) ? $post['subject'] : Zend_Registry::get('Zend_Translate')->translate('Aucun sujet');
+        $content = Ccsd_Tools::clear_nl(Ccsd_Tools::ifsetor($post['content']));
+
+        if (empty($content) && empty($post[Episciences_Mail_Send::ATTACHMENTS])) {
+            $content = 'Empty message.';
+        }
+
+        $mail = new Episciences_Mail('UTF-8');
+        $mail->setSubject($subject);
+        $mail->setRawBody($content);
+
+        $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_EMAIL, Episciences_Auth::getEmail());
+        $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_FULL_NAME, Episciences_Auth::getFullName());
+        $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME, Episciences_Auth::getScreenName());
+
+        // From & Reply-To are always built server-side: client-supplied values are ignored
+        $mail->setFrom(RVCODE . '@' . DOMAIN, Episciences_Auth::getFullName());
+
+        if ($validator->isValid(Episciences_Auth::getEmail())) {
+            $mail->setReplyTo(Episciences_Auth::getEmail(), Episciences_Auth::getFullName());
+        }
+
+        foreach ($to as $recipient) {
+
+            $postMailValidation = Episciences_Tools::postMailValidation($recipient['value']);
+            $email = $postMailValidation['email'];
+            $name = $postMailValidation['name'];
+
+            if ($validator->isValid($email)) {
+                $mail->addTo($email, $name);
+            }
+        }
+
+        foreach ($cc as $recipient) {
+
+            $postMailValidation = Episciences_Tools::postMailValidation($recipient['value']);
+            $email = $postMailValidation['email'];
+            $name = $postMailValidation['name'];
+
+            if ($validator->isValid($email)) {
+                $mail->addCc($email, $name);
+            } else {
+                trigger_error(RVCODE . 'FROM_MAILING_BAD_CC_MAIL: ' . $email);
+            }
+        }
+
+        foreach ($bcc as $recipient) {
+
+            $email = Episciences_Tools::postMailValidation($recipient['value'])['email'];
+
+            if ($validator->isValid($email)) {
+                $mail->addBcc($email);
+            } else {
+                trigger_error(RVCODE . 'FROM_MAILING_BAD_BCC_MAIL: ' . $email);
+            }
+        }
+
+        if ($paper) {
+            $mail->setDocid($paper->getDocid());
+        }
+
+        $mail->setUid(Episciences_Auth::getUid());
+
+        if (isset($post[Episciences_Mail_Send::ATTACHMENTS])) {
+            // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
+            $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
+            $path = Episciences_Tools::getAttachmentsPath();
+            foreach ($attachments as $attachment) {
+                $filepath = Episciences_Tools::resolveAttachmentPath($path, $attachment);
+                if ($filepath !== null) {
+                    $mail->addAttachedFile($filepath);
+                }
+            }
+        }
+
+        return $mail;
     }
 
     /**
