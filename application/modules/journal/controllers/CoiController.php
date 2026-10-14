@@ -222,7 +222,6 @@ class CoiController extends PaperDefaultController
             $id = (int)$request->getPost('conflictId');
             $docId = (int)$request->getPost('docId');
 
-            $currentConflict = Episciences_Paper_ConflictsManager::findById($id);
             $respond = false;
 
             try {
@@ -231,6 +230,7 @@ class CoiController extends PaperDefaultController
                 $paper = Episciences_PapersManager::get($docId, false);
 
                 if ($paper instanceof Episciences_Paper) {
+                    $currentConflict = Episciences_Paper_ConflictsManager::findById($id);
                     $respond = Episciences_Paper_ConflictsManager::deleteByIdAndPaperId($id, $paper->getPaperid());
                 }
 
