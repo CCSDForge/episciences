@@ -225,17 +225,6 @@ class Episciences_User extends Ccsd_User_Models_User
         return true;
     }
 
-    /**
-     * delete user from CAS database
-     * @param $uid
-     * @return int
-     */
-    public static function deleteFromCAS($uid)
-    {
-        $db = Ccsd_Db_Adapter_Cas::getAdapter();
-        return $db->delete(T_CAS_USERS, ['UID = ?' => (int)$uid]);
-    }
-
     // Retourne les droits de l'utilisateur (pour toutes les revues / portails)
 
     /** Columns returned by filterUsers(): identity data only, no credentials */
