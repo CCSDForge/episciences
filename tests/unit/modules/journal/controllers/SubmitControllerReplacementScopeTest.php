@@ -62,28 +62,37 @@ final class SubmitControllerReplacementScopeTest extends TestCase
         Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
     }
 
-    public function testRenameIdentifierCanBeRestrictedToAJournal(): void
+    public function testRenameIdentifierIsRestrictedToThePaperInItsJournal(): void
     {
         $this->adapter->expects(self::once())
             ->method('update')
             ->with(
                 T_PAPERS,
                 ['IDENTIFIER' => 'abc-REFUSED'],
-                ['IDENTIFIER = ?' => 'abc', 'RVID = ?' => 3]
+                ['IDENTIFIER = ?' => 'abc', 'PAPERID = ?' => 7, 'RVID = ?' => 3]
             )
             ->willReturn(1);
 
-        self::assertSame(1, Episciences_PapersManager::renameIdentifier('abc', 'abc-REFUSED', 3));
+        self::assertSame(1, Episciences_PapersManager::renameIdentifier('abc', 'abc-REFUSED', 7, 3));
     }
 
-    public function testRenameIdentifierWithoutJournalKeepsItsPreviousBehaviour(): void
+    /**
+     * @return array<string, array{int, int}>
+     */
+    public static function missingPaperOrJournalProvider(): array
     {
-        $this->adapter->expects(self::once())
-            ->method('update')
-            ->with(T_PAPERS, ['IDENTIFIER' => 'abc-REFUSED'], ['IDENTIFIER = ?' => 'abc'])
-            ->willReturn(2);
+        return [
+            'no paper' => [0, 3],
+            'no journal' => [7, 0],
+        ];
+    }
 
-        self::assertSame(2, Episciences_PapersManager::renameIdentifier('abc', 'abc-REFUSED'));
+    #[\PHPUnit\Framework\Attributes\DataProvider('missingPaperOrJournalProvider')]
+    public function testRenameIdentifierWithoutPaperOrJournalRenamesNothing(int $paperId, int $rvId): void
+    {
+        $this->adapter->expects(self::never())->method('update');
+
+        self::assertFalse(Episciences_PapersManager::renameIdentifier('abc', 'abc-REFUSED', $paperId, $rvId));
     }
 
     public function testReplacementOfAnUnknownPaperIsRefusedWithoutAnyWrite(): void
@@ -208,7 +217,7 @@ final class SubmitControllerReplacementScopeTest extends TestCase
      * Control case: the same setup reaches the write once every check passes.
      * The renaming is reported as failed, so that the submission stops there.
      */
-    public function testResubmissionOfAnOwnRefusedPaperRenamesItsIdentifierInTheJournalOnly(): void
+    public function testResubmissionOfAnOwnRefusedPaperRenamesTheIdentifierOfThePaperInItsJournalOnly(): void
     {
         $this->logInAs(self::OWNER_UID);
         $this->returnPaper();
@@ -217,7 +226,7 @@ final class SubmitControllerReplacementScopeTest extends TestCase
             ->with(
                 T_PAPERS,
                 ['IDENTIFIER' => 'paper-identifier-REFUSED'],
-                ['IDENTIFIER = ?' => 'paper-identifier', 'RVID = ?' => RVID]
+                ['IDENTIFIER = ?' => 'paper-identifier', 'PAPERID = ?' => 12, 'RVID = ?' => RVID]
             )
             ->willReturn(0);
 

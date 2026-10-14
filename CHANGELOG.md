@@ -62,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - a rejected replacement now gives an explicit, translated message (paper not found, not the author, publication in progress);
   - the concept identifier, version and update datetime of the submitted document are the ones resolved on the server, not the ones posted by the form, both on the submission form and on the new version page;
   - a paper that is ready to publish or approved by its author is no longer replaced from the submission form (this added a second active version and removed the files of the stored one): the message points to the new version page instead;
-  - the files of the replaced paper are only removed when the paper is replaced in place, so a refused paper submitted again keeps its files.
+  - the files of the replaced paper are only removed when the paper is replaced in place, so a refused paper submitted again keeps its files;
+  - submitting a refused paper again only renames ("-REFUSED" suffix) the versions of that paper in its journal, never another paper sharing its identifier.
 
 ### Changed
 - OpenCitations client migrated to API v2 (DOI sent with its `doi:` scheme, throttling and retry on HTTP 429).
