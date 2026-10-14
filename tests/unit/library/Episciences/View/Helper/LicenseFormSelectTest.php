@@ -136,6 +136,21 @@ class LicenseFormSelectTest extends TestCase
         $this->assertSame(['', 'Apache-2.0', 'MIT'], array_keys($options));
     }
 
+    /**
+     * An offered code missing from the SPDX licenses table (e.g. removed since it was allowed)
+     * could not be saved: it is not offered, unless it is the current value.
+     */
+    public function testUnknownOfferedCodeIsNotOfferedUnlessCurrent(): void
+    {
+        $helper = $this->createHelper($this->recommended(), ['GPL-3.0-only' => 'GNU General Public License v3.0 only']);
+
+        $options = $helper->exposeBuildOptions(null, ['MIT', 'GPL-3.0-only', 'Removed-1.0']);
+        $this->assertSame(['', 'GPL-3.0-only', 'MIT'], array_keys($options));
+
+        $options = $helper->exposeBuildOptions('Removed-1.0', ['MIT', 'Removed-1.0']);
+        $this->assertSame('Removed-1.0', $options['Removed-1.0']);
+    }
+
     public function testCurrentValueIsKeptWhenNotInRestriction(): void
     {
         $options = $this->createHelper($this->recommended())->exposeBuildOptions('CC-BY-4.0', ['MIT']);

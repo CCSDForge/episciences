@@ -1406,6 +1406,7 @@ return array(
     "paper-submitted" => "View their articles",
     "paper-view" => "View an article",
     "review-settings" => "Edit journal settings",
+    "review-licenses" => "Edit journal licenses",
     "review-staff" => "View the list of editorial members",
     "reviewer-invitation" => "Manage their invitation to review an article",
     "rss-papers" => "View the RSS feed of published articles",

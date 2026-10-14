@@ -61,7 +61,15 @@ class Episciences_View_Helper_LicenseFormSelect extends Zend_View_Helper_FormSel
             }
         }
 
-        foreach (array_merge($licenseCodes ?? [], $currentValues) as $code) {
+        // offered codes that are not recommended: only the known SPDX licenses (they could not be saved otherwise)
+        foreach ($licenseCodes ?? [] as $code) {
+            if (!array_key_exists($code, $options) && ($name = $this->fetchLicenseName($code)) !== null) {
+                $options[$code] = self::formatLabel($name, $code);
+            }
+        }
+
+        // the current values are always offered, so that they are never silently lost
+        foreach ($currentValues as $code) {
             if (!array_key_exists($code, $options)) {
                 $options[$code] = self::formatLabel((string)$this->fetchLicenseName($code), $code);
             }

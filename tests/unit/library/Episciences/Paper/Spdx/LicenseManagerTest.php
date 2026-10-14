@@ -95,6 +95,25 @@ class LicenseManagerTest extends TestCase
     }
 
     /**
+     * @covers ::loadSpdxCode
+     * @covers ::clearCache
+     */
+    public function testSpdxCodesAreQueriedOnceUntilCacheIsCleared(): void
+    {
+        $adapter = $this->getMockBuilder($this->previousAdapter::class)
+            ->setConstructorArgs([$this->previousAdapter->getConfig()])
+            ->onlyMethods(['fetchCol'])
+            ->getMock();
+        $adapter->expects(self::exactly(2))->method('fetchCol')->willReturn(['MIT', 'CC-BY-4.0']);
+        Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+
+        self::assertSame(['MIT', 'CC-BY-4.0'], LicenseManager::loadSpdxCode());
+        self::assertSame(['MIT', 'CC-BY-4.0'], LicenseManager::loadSpdxCode());
+        LicenseManager::clearCache();
+        LicenseManager::loadSpdxCode();
+    }
+
+    /**
      * @covers ::clearCache
      */
     public function testClearCacheQueriesAgain(): void

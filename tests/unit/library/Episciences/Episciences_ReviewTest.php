@@ -284,6 +284,14 @@ class Episciences_ReviewTest extends TestCase
     }
 
     /**
+     * The option labels are built by the licenseFormSelect helper: the form must not look up the license names itself
+     */
+    public function testLicensesSettingsFormDoesNotLookUpLicenseNames(): void
+    {
+        self::assertStringNotContainsString('getNameByIdentifier', self::methodSource('licensesSettingsForm'));
+    }
+
+    /**
      * Licenses have their own page (review/licenses): the main settings page must neither
      * display them (the required default license would block saving the other settings)
      * nor save them.
