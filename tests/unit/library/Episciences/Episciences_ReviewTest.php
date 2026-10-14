@@ -338,6 +338,15 @@ class Episciences_ReviewTest extends TestCase
         self::assertSame(['MIT', 'CC-BY-4.0'], $this->review->getAllowedLicenses());
     }
 
+    public function testDefaultLicenseIsNotDuplicatedInAllowedLicensesWhateverTheCase(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'cc-by-4.0'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["MIT","CC-BY-4.0"]'],
+        ]);
+        self::assertSame(['MIT', 'CC-BY-4.0'], $this->review->getAllowedLicenses());
+    }
+
     public function testEmptyAllowedLicensesStayUnrestrictedWithDefault(): void
     {
         // Empty list = all the recommended licenses: adding the default would restrict to it alone

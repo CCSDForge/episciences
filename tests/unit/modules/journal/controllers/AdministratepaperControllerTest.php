@@ -1509,4 +1509,18 @@ class AdministratepaperControllerTest extends TestCase
             'A license not allowed by the journal must be rejected before any save'
         );
     }
+
+    /**
+     * Bug: the form pre-selects the paper current license even when the journal does not allow it,
+     * but a license only resolved from the license URL (no saved SPDX code) was then rejected as not allowed.
+     * The allowed-licenses check must also be case-insensitive, like Episciences_Paper::getLicenseCheckStatus().
+     */
+    public function testSavespdxlicenseActionAcceptsPaperCurrentLicenseCaseInsensitively(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $this->assertStringContainsString('LicenseManager::containsCode($currentSpdxCode, $allowedLicenses)', $method);
+        $this->assertStringContainsString('$paper->getSpdxLicenseCode()', $method);
+        $this->assertStringNotContainsString('in_array($currentSpdxCode', $method);
+    }
 }

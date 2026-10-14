@@ -68,6 +68,21 @@ class LicenseManager
     }
 
     /**
+     * SPDX license identifiers are matched case-insensitively
+     * @param string[] $codes
+     */
+    public static function containsCode(string $code, array $codes): bool
+    {
+        foreach ($codes as $candidate) {
+            if (strcasecmp($code, (string)$candidate) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @return array<string, string> code => name of the recommended licenses
      */
     public static function fetchRecommendedOptions(): array

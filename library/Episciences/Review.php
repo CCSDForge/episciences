@@ -2069,7 +2069,7 @@ class Episciences_Review
         $allowed = \Episciences\Paper\Spdx\LicenseManager::normalizeCodes(is_array($allowed) ? $allowed : []);
         $default = $this->getDefaultLicense();
 
-        if ($allowed !== [] && $default !== null && !in_array($default, $allowed, true)) {
+        if ($allowed !== [] && $default !== null && !\Episciences\Paper\Spdx\LicenseManager::containsCode($default, $allowed)) {
             $allowed[] = $default;
         }
 

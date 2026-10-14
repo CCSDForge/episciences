@@ -84,6 +84,17 @@ class LicenseManagerTest extends TestCase
     }
 
     /**
+     * @covers ::containsCode
+     */
+    public function testContainsCodeIsCaseInsensitive(): void
+    {
+        self::assertTrue(LicenseManager::containsCode('cc-by-4.0', ['MIT', 'CC-BY-4.0']));
+        self::assertTrue(LicenseManager::containsCode('CC-BY-4.0', ['cc-by-4.0']));
+        self::assertFalse(LicenseManager::containsCode('CC-BY-4.0', ['CC-BY-SA-4.0']));
+        self::assertFalse(LicenseManager::containsCode('CC-BY-4.0', []));
+    }
+
+    /**
      * @covers ::clearCache
      */
     public function testClearCacheQueriesAgain(): void

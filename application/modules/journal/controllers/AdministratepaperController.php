@@ -2,6 +2,7 @@
 
 use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\Paper\Spdx\LicenseCodeManager;
+use Episciences\Paper\Spdx\LicenseManager;
 use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 use Psr\Log\LogLevel;
@@ -4728,7 +4729,13 @@ class AdministratepaperController extends PaperDefaultController
 
         $allowedLicenses = $paper->findReview()?->getAllowedLicenses() ?? [];
 
-        if ($allowedLicenses !== [] && !in_array($currentSpdxCode, $allowedLicenses, true)) {
+        // The paper current license is always accepted, even when it is only resolved from the license URL:
+        // the form pre-selects it, even if it is not allowed by the journal
+        if (
+            $allowedLicenses !== [] &&
+            !LicenseManager::containsCode($currentSpdxCode, $allowedLicenses) &&
+            !LicenseManager::containsCode($currentSpdxCode, array_filter([$paper->getSpdxLicenseCode()]))
+        ) {
             $this->sendJsonError("Échec de l'enregistrement de la licence : cette licence n'est pas autorisée par la revue.");
             return;
         }

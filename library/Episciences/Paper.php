@@ -7,6 +7,7 @@ use Episciences\Paper\Export;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\Paper\Spdx\LicenseCodeManager;
+use Episciences\Paper\Spdx\LicenseManager;
 use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
@@ -5883,25 +5884,11 @@ class Episciences_Paper
         // empty: no restriction
         $allowedLicenses = $review?->getAllowedLicenses() ?? [];
 
-        if ($allowedLicenses !== [] && ($code === null || !self::isLicenseCodeIn($code, $allowedLicenses))) {
+        if ($allowedLicenses !== [] && ($code === null || !LicenseManager::containsCode($code, $allowedLicenses))) {
             return self::LICENSE_CHECK_MISMATCH;
         }
 
         return $code === null ? self::LICENSE_CHECK_UNRECOGNIZED : null;
-    }
-
-    /**
-     * @param string[] $codes
-     */
-    private static function isLicenseCodeIn(string $code, array $codes): bool
-    {
-        foreach ($codes as $candidate) {
-            if (strcasecmp($code, $candidate) === 0) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
