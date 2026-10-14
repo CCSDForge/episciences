@@ -433,6 +433,23 @@ generate-sitemap: ## Generate XML sitemap — use rvcode=CODE for one journal, o
 			$(if $(filter 1,$(pretty)),--pretty); \
 	fi
 
+# --- Website --------------------------------------------------------------------
+
+regenerate-website-headers: ## Regenerate journal header files from WEBSITE_HEADER — use rvcode=CODE for one journal, or all=1 for every journal (optional: dry-run=1 protocol=http)
+	# Prod (one journal):  sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php website:regenerate-headers --rvcode=RVCODE [--dry-run] [-q]
+	# Prod (all journals): sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php website:regenerate-headers --all [--dry-run] [-q]
+	@if [ -z "$(rvcode)" ] && [ "$(all)" != "1" ]; then \
+		echo "Error: specify rvcode=JOURNAL_CODE or all=1"; \
+		echo "Usage: make regenerate-website-headers rvcode=JOURNAL_CODE [dry-run=1] [protocol=http]"; \
+		echo "       make regenerate-website-headers all=1 [dry-run=1] [protocol=http]"; \
+		exit 1; \
+	fi
+	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php website:regenerate-headers \
+		$(if $(rvcode),--rvcode=$(rvcode),--all) \
+		$(if $(filter 1,$(dry-run)),--dry-run) \
+		$(if $(protocol),--protocol=$(protocol))
+
 # --- Volume / DOAJ --------------------------------------------------------------
 
 merge-pdf-volume: ## Merge PDFs for all articles in a journal volume into one file (requires rvcode=JOURNAL_CODE; optional: ignore-cache=1 remove-cache=1 dry-run=1)

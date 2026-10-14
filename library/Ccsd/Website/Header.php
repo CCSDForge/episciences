@@ -314,51 +314,59 @@ class Ccsd_Website_Header
     public function createHeader()
     {
         foreach ($this->_languages as $lang) {
-            $content = "<table width=\"100%\" cellpadding=\"0\" style=\"position:relative;\">\n<tr>\n";
-            foreach ($this->_logos as $logo) {
-                $content .= "<td align=\"" . self::safeAlign($logo['align'] ?? '') . "\">";
-                if ($logo['type'] == self::LOGO_IMG) {
-                    if ($logo['img_href'] != "") {
-                        $content .= "<a href=\"" . self::safeHref($logo['img_href']) . "\" border=\"0\" target=\"_self\">";
-                    }
-                    if (substr($logo['img'], 0, 4) != "/img") {
-                        $logo['img'] = $this->_publicUrl . $logo['img'];
-                    }
-
-                    $content .= "<img src=\"" . self::esc($logo['img']) . "\"";
-                    if ($logo['img_width'] != "") {
-                        $content .= " width=\"" . self::esc($logo['img_width']) . "\"";
-                    }
-                    if ($logo['img_height'] != "") {
-                        $content .= " height=\"" . self::esc($logo['img_height']) . "\"";
-                    }
-                    if ($logo['img_alt'] != "") {
-                        $content .= " alt=\"" . self::esc($logo['img_alt']) . "\"";
-                    }
-                    $content .= " />";
-                    if ($logo['img_href'] != "") {
-                        $content .= "</a>";
-                    }
-                } else {
-                    $content .= "<span";
-                    if ($logo['text_class'] != "") {
-                        $content .= " class=\"" . self::esc($logo['text_class']) . "\"";
-                    }
-                    if ($logo['text_style'] != "") {
-                        $content .= " style=\"" . self::esc($logo['text_style']) . "\"";
-                    }
-                    $content .= ">" . self::escText($logo['text'][$lang] ?? '') . "</span>";
-                }
-                $content .= "</td>\n";
-            }
-            $content .= "</tr>\n</table>\n";
-
             if (!is_dir($this->_layoutDir)) {
                 mkdir($this->_layoutDir, 0777, true);
             }
 
-            file_put_contents($this->_layoutDir . 'header.' . $lang . '.html', $content);
+            file_put_contents($this->_layoutDir . 'header.' . $lang . '.html', $this->renderHeader($lang));
         }
 
+    }
+
+    /**
+     * Build the HTML of the header for one language
+     */
+    public function renderHeader(string $lang): string
+    {
+        $content = "<table width=\"100%\" cellpadding=\"0\" style=\"position:relative;\">\n<tr>\n";
+        foreach ($this->_logos as $logo) {
+            $content .= "<td align=\"" . self::safeAlign($logo['align'] ?? '') . "\">";
+            if ($logo['type'] == self::LOGO_IMG) {
+                if ($logo['img_href'] != "") {
+                    $content .= "<a href=\"" . self::safeHref($logo['img_href']) . "\" border=\"0\" target=\"_self\">";
+                }
+                if (substr($logo['img'], 0, 4) != "/img") {
+                    $logo['img'] = $this->_publicUrl . $logo['img'];
+                }
+
+                $content .= "<img src=\"" . self::esc($logo['img']) . "\"";
+                if ($logo['img_width'] != "") {
+                    $content .= " width=\"" . self::esc($logo['img_width']) . "\"";
+                }
+                if ($logo['img_height'] != "") {
+                    $content .= " height=\"" . self::esc($logo['img_height']) . "\"";
+                }
+                if ($logo['img_alt'] != "") {
+                    $content .= " alt=\"" . self::esc($logo['img_alt']) . "\"";
+                }
+                $content .= " />";
+                if ($logo['img_href'] != "") {
+                    $content .= "</a>";
+                }
+            } else {
+                $content .= "<span";
+                if ($logo['text_class'] != "") {
+                    $content .= " class=\"" . self::esc($logo['text_class']) . "\"";
+                }
+                if ($logo['text_style'] != "") {
+                    $content .= " style=\"" . self::esc($logo['text_style']) . "\"";
+                }
+                $content .= ">" . self::escText($logo['text'][$lang] ?? '') . "</span>";
+            }
+            $content .= "</td>\n";
+        }
+        $content .= "</tr>\n</table>\n";
+
+        return $content;
     }
 }
