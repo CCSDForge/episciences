@@ -1128,6 +1128,7 @@ class Episciences_Mail_Reminder
             $lang = $this->_defaultLanguage;
             $fullname = 'is probably undefined';
             $invitation_url = $review->getUrl() . "/reviewer/invitation/id/" . $data['INVITATION_ID'] . '/lang/';
+            $invitation_url_suffix = '';
 
 
             if ((int)$data['TMP_USER'] === 1) {
@@ -1141,23 +1142,26 @@ class Episciences_Mail_Reminder
                 $user->generateScreen_name();
                 $fullname = $user->getFullName();
                 $lang = $user->getLangueid(true);
-                $invitation_url .= $lang . '/tmp/' . md5($user->getEmail());
+                $invitation_url_suffix = '/tmp/' . md5($user->getEmail());
 
             } else {
                 $user = new Episciences_User;
                 $user->findWithCAS($data['UID']);
                 $fullname = $user->getScreenName();
                 $lang = $user->getLangueid(true);
-                $invitation_url .= $lang;
             }
 
-            $tags = [
+            // dates and link depend on the language of the recipient
+            $localizedTags = static fn(string $tagLang): array => [
+                Episciences_Mail_Tags::TAG_INVITATION_LINK => $invitation_url . $tagLang . $invitation_url_suffix,
+                Episciences_Mail_Tags::TAG_INVITATION_DATE => Episciences_View_Helper_Date::Date($data['INVITATION_DATE'], $tagLang),
+                Episciences_Mail_Tags::TAG_EXPIRATION_DATE => Episciences_View_Helper_Date::Date($data['EXPIRATION_DATE'], $tagLang)
+            ];
+
+            $tags = array_merge([
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                Episciences_Mail_Tags::TAG_INVITATION_LINK => $invitation_url,
-                Episciences_Mail_Tags::TAG_INVITATION_DATE => Episciences_View_Helper_Date::Date($data['INVITATION_DATE'], $lang),
-                Episciences_Mail_Tags::TAG_EXPIRATION_DATE => Episciences_View_Helper_Date::Date($data['EXPIRATION_DATE'], $lang)
-            ];
+            ], $localizedTags($lang));
 
             if ($this->getRecipient() === 'editor') {
                 foreach ($paper->getEditors(true, true) as $editor) {
@@ -1184,7 +1188,7 @@ class Episciences_Mail_Reminder
                 // a temporary reviewer has no account UID
                 $reviewerUid = (int)$data['TMP_USER'] === 1 ? null : (int)$data['UID'];
                 array_push($recipients, ...$this->getSupervisorRecipients(
-                    $paper, $reviewerUid, $user->getEmail(), $fullname, $tags, $data['INVITATION_DATE']
+                    $paper, $reviewerUid, $user->getEmail(), $fullname, $tags, $data['INVITATION_DATE'], $localizedTags
                 ));
             } else {
 
@@ -1839,6 +1843,7 @@ class Episciences_Mail_Reminder
      * @param string $reviewerFullName
      * @param array $tags Tags shared by all supervisors
      * @param string|null $deadline
+     * @param callable|null $localizedTags Builds the language-dependent tags (dates, links) for a given language
      * @return array
      */
     private function getSupervisorRecipients(
@@ -1847,7 +1852,8 @@ class Episciences_Mail_Reminder
         ?string $reviewerEmail,
         string $reviewerFullName,
         array $tags,
-        ?string $deadline
+        ?string $deadline,
+        ?callable $localizedTags = null
     ): array {
         $context = $this->getSupervisorFilterContext($paper);
         $supervisors = $context['supervisors'];
@@ -1874,13 +1880,14 @@ class Episciences_Mail_Reminder
         foreach ($keptUids as $uid) {
             /** @var Episciences_User $supervisor */
             $supervisor = $supervisors[$uid];
+            $supervisorLang = $supervisor->getLangueid(true);
 
             $recipients[] = [
                 'uid' => $supervisor->getUid(),
                 'fullname' => $supervisor->getFullName(),
                 'email' => $supervisor->getEmail(),
-                'lang' => $supervisor->getLangueid(true),
-                'tags' => array_merge($tags, [
+                'lang' => $supervisorLang,
+                'tags' => array_merge($tags, $localizedTags ? $localizedTags($supervisorLang) : [], [
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($supervisor->getLangueid(), true),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $supervisor->getUsername(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $supervisor->getScreenName(),
