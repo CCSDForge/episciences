@@ -140,6 +140,70 @@ final class Episciences_Paper_MiscTest extends TestCase
         self::assertSame('secret123', $this->paper->getPassword());
     }
 
+    public function testSetPasswordStoresEncryptedValueWhenEncryptFlagIsTrue(): void
+    {
+        $paper = $this->createPartialMock(Episciences_Paper::class, ['encryptPassword']);
+        $paper->expects(self::once())
+            ->method('encryptPassword')
+            ->with('secret123')
+            ->willReturn('def5-cipher');
+
+        $paper->setPassword('secret123', true);
+
+        self::assertSame('def5-cipher', $paper->getPassword());
+    }
+
+    public function testSetPasswordNeverKeepsPlainTextWhenEncryptionFails(): void
+    {
+        $paper = $this->createPaperWithFailingEncryption();
+
+        $warnings = $this->collectUserWarnings(static fn() => $paper->setPassword('secret123', true));
+
+        self::assertSame(['missing crypto key'], $warnings);
+        self::assertNull($paper->getPassword());
+    }
+
+    public function testSetPasswordKeepsPreviousValueWhenEncryptionFails(): void
+    {
+        $paper = $this->createPaperWithFailingEncryption();
+        $paper->setPassword('def5-previous-cipher');
+
+        $warnings = $this->collectUserWarnings(static fn() => $paper->setPassword('new-secret', true));
+
+        self::assertSame(['missing crypto key'], $warnings);
+        self::assertSame('def5-previous-cipher', $paper->getPassword());
+    }
+
+    private function createPaperWithFailingEncryption(): Episciences_Paper
+    {
+        $paper = $this->createPartialMock(Episciences_Paper::class, ['encryptPassword']);
+        $paper->method('encryptPassword')->willThrowException(new \Zend_Exception('missing crypto key'));
+
+        return $paper;
+    }
+
+    /**
+     * Runs $callback and returns the E_USER_WARNING messages it raised.
+     *
+     * @return string[]
+     */
+    private function collectUserWarnings(callable $callback): array
+    {
+        $warnings = [];
+        set_error_handler(static function (int $errno, string $errstr) use (&$warnings): bool {
+            $warnings[] = $errstr;
+            return true;
+        }, E_USER_WARNING);
+
+        try {
+            $callback();
+        } finally {
+            restore_error_handler();
+        }
+
+        return $warnings;
+    }
+
     public function testSetPasswordNullResultsInNullPassword(): void
     {
         $this->paper->setPassword(null);
