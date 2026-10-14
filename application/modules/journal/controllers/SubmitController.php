@@ -301,7 +301,7 @@ class SubmitController extends DefaultController
         // restricted to the current journal and to its owner.
         $oldPaper = Episciences_PapersManager::get((int)($formValues['old_docid'] ?? 0), false);
 
-        if (!$oldPaper instanceof Episciences_Paper || $oldPaper->getRvid() !== RVID || !$oldPaper->isOwner()) {
+        if (!$oldPaper instanceof Episciences_Paper || !$this->canCurrentUserReplace($oldPaper)) {
             $translator = Zend_Registry::get('Zend_Translate');
             $result = ['code' => 0, 'message' => $translator->translate("Aucune modification n'a été enregistrée")];
             return [$result, '<strong>' . $result['message'] . '</strong>'];
@@ -313,6 +313,13 @@ class SubmitController extends DefaultController
         $formValues['old_version'] = $oldPaper->getVersion();
         $formValues['old_paper_vid'] = $oldPaper->getVid();
         $formValues['old_paper_sid'] = $oldPaper->getSid();
+
+        // A new version keeps the submission date of the paper it replaces, a resubmitted refused paper gets a new one
+        if ($oldPaper->canBeReplaced()) {
+            $formValues['old_submissiondate'] = $oldPaper->getSubmission_date();
+        } else {
+            unset($formValues['old_submissiondate']);
+        }
 
         $selfPaper = $oldPaper;
 
@@ -329,6 +336,25 @@ class SubmitController extends DefaultController
     }
 
     /**
+     * The paper must belong to the current journal and to the current user;
+     * a refused paper can only be resubmitted if the journal allows it.
+     */
+    private function canCurrentUserReplace(Episciences_Paper $oldPaper): bool
+    {
+        if ($oldPaper->getRvid() !== RVID || !$oldPaper->isOwner()) {
+            return false;
+        }
+
+        if (!$oldPaper->isRefused()) {
+            return true;
+        }
+
+        $settings = Zend_Registry::isRegistered('reviewSettings') ? (array)Zend_Registry::get('reviewSettings') : [];
+
+        return !empty($settings[Episciences_Review::SETTING_CAN_RESUBMIT_REFUSED_PAPER]);
+    }
+
+    /**
      * Handle the case of a brand-new submission.
      *
      * @param Episciences_Submit $submit
@@ -342,6 +368,9 @@ class SubmitController extends DefaultController
      */
     private function handleNewSubmission(Episciences_Submit $submit, array $formValues): array
     {
+        // Only a replaced paper provides a submission date
+        unset($formValues['old_submissiondate']);
+
         $result = $submit->saveDoc($formValues);
         $message = $result['message'];
 
