@@ -595,9 +595,11 @@ class PaperController extends PaperDefaultController
                     $message .= ', ';
                     $message .= $this->view->translate('car il est identique à celui déjà enregistré.');
                 } else {
+                    $previousPassword = $paper->getPassword();
                     $paper->setPassword($postedPwd, true);
 
-                    if ($paper->save()) {
+                    // the password is left unchanged when encryption fails
+                    if ($paper->getPassword() !== $previousPassword && $paper->save()) {
                         $message = $this->view->translate("Votre mot de passe a bien été enregistré.");
                         $isErrors = false;
                     }

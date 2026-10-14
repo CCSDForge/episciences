@@ -2394,12 +2394,12 @@ class Episciences_Paper
 
             try {
 
-                $paperPassword = Episciences_Tools::encrypt($paperPassword);
+                $paperPassword = $this->encryptPassword($paperPassword);
 
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_WARNING);
-                // never fall back to storing the clear-text value
-                $paperPassword = null;
+                // never store the clear-text value; keep the previously stored (encrypted) one
+                return $this;
 
             }
         }
@@ -2407,6 +2407,14 @@ class Episciences_Paper
         $this->_password = $paperPassword;
 
         return $this;
+    }
+
+    /**
+     * @throws Exception when the journal crypto key is missing or unusable
+     */
+    protected function encryptPassword(string $plainPassword): string
+    {
+        return Episciences_Tools::encrypt($plainPassword);
     }
 
     /**
