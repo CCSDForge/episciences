@@ -5859,8 +5859,9 @@ class Episciences_Paper
      * License problem to report for an accepted paper, null if there is none:
      * - LICENSE_CHECK_MISSING: no license
      * - LICENSE_CHECK_MISMATCH: the license is not one of the journal allowed licenses
-     *   (or, without restriction, differs from the journal default license)
      * - LICENSE_CHECK_UNRECOGNIZED: the license cannot be resolved to an SPDX code (journal without license constraint)
+     *
+     * The journal default license is only pre-selected in the license form: it is not a constraint.
      *
      * @param Episciences_Review|null $review journal of the paper; loaded if null
      */
@@ -5879,14 +5880,10 @@ class Episciences_Paper
 
         $review ??= $this->findReview();
 
-        // licenses accepted by the journal: the allowed ones, otherwise only the default one
-        $acceptedLicenses = $review?->getAllowedLicenses() ?? [];
+        // empty: no restriction
+        $allowedLicenses = $review?->getAllowedLicenses() ?? [];
 
-        if ($acceptedLicenses === [] && ($defaultLicense = $review?->getDefaultLicense()) !== null) {
-            $acceptedLicenses = [$defaultLicense];
-        }
-
-        if ($acceptedLicenses !== [] && ($code === null || !self::isLicenseCodeIn($code, $acceptedLicenses))) {
+        if ($allowedLicenses !== [] && ($code === null || !self::isLicenseCodeIn($code, $allowedLicenses))) {
             return self::LICENSE_CHECK_MISMATCH;
         }
 

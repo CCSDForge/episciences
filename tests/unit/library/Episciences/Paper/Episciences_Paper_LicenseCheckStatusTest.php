@@ -94,7 +94,7 @@ class Episciences_Paper_LicenseCheckStatusTest extends TestCase
         self::assertNull($this->paper('', 'CC-BY-4.0')->getLicenseCheckStatus($this->review('CC-BY-4.0')));
         self::assertSame(
             Episciences_Paper::LICENSE_CHECK_MISMATCH,
-            $this->paper('', 'MIT')->getLicenseCheckStatus($this->review('CC-BY-4.0'))
+            $this->paper('', 'MIT')->getLicenseCheckStatus($this->review('CC-BY-4.0', ['CC-BY-4.0']))
         );
     }
 
@@ -107,20 +107,26 @@ class Episciences_Paper_LicenseCheckStatusTest extends TestCase
 
     public function testComparisonIsCaseInsensitive(): void
     {
-        self::assertNull($this->paper(self::CC_BY_URL, 'cc-by-4.0')->getLicenseCheckStatus($this->review('CC-BY-4.0')));
+        self::assertNull(
+            $this->paper(self::CC_BY_URL, 'cc-by-4.0')->getLicenseCheckStatus($this->review('CC-BY-4.0', ['CC-BY-4.0']))
+        );
     }
 
-    public function testDifferentLicenseFromJournalDefaultIsMismatch(): void
+    /**
+     * Without allowed licenses, the default license is only pre-selected in the license form:
+     * any other license is compliant, as the form and the save action accept it.
+     */
+    public function testDifferentLicenseFromJournalDefaultWithoutRestrictionIsCompliant(): void
     {
         $paper = $this->paper(self::CC_BY_URL, 'CC-BY-4.0');
 
-        self::assertSame(Episciences_Paper::LICENSE_CHECK_MISMATCH, $paper->getLicenseCheckStatus($this->review('MIT')));
+        self::assertNull($paper->getLicenseCheckStatus($this->review('MIT')));
     }
 
-    public function testUnrecognizedLicenseWithJournalDefaultIsMismatch(): void
+    public function testUnrecognizedLicenseWithJournalDefaultWithoutRestriction(): void
     {
         self::assertSame(
-            Episciences_Paper::LICENSE_CHECK_MISMATCH,
+            Episciences_Paper::LICENSE_CHECK_UNRECOGNIZED,
             $this->paper('https://example.org/custom-license', null)->getLicenseCheckStatus($this->review('MIT'))
         );
     }
