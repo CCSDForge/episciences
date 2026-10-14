@@ -114,22 +114,31 @@ php scripts/console.php enrichment:extract-biblio-refs [options]
 
 | Option | Description |
 |--------|-------------|
-| `--docid <id>` | Process only this DOCID (any status) |
+| `--docid <id>` | Process only this DOCID (ignores status filter) |
 | `--rvcode <code>` | Restrict processing to one journal |
 | `--dry-run` | Log what would be sent without calling the API |
-| `--published` | Also include `STATUS_PUBLISHED` papers (default: `STATUS_SUBMITTED` only) |
-| `--accepted` | Also include `STATUS_ACCEPTED` papers (default: `STATUS_SUBMITTED` only) |
+| `--submitted` | Filter on `STATUS_SUBMITTED` papers (`0`) |
+| `--ok-for-reviewing` | Filter on `STATUS_OK_FOR_REVIEWING` papers (`1`) |
+| `--being-reviewed` | Filter on `STATUS_BEING_REVIEWED` papers (`2`, includes revised versions) |
+| `--reviewed` | Filter on `STATUS_REVIEWED` papers (`3`) |
+| `--reviewers-invited` | Filter on `STATUS_REVIEWERS_INVITED` papers (`14`) |
+| `--accepted` | Filter on `STATUS_ACCEPTED` papers (`4`) |
+| `--published` | Filter on `STATUS_PUBLISHED` papers (`16`) |
 | `--api-url <url>` | Override `EPISCIENCES_BIBLIOREF[URL]` at runtime (e.g. Docker-internal address) |
 
-By default the command targets papers with `STATUS_SUBMITTED`. Use `--published` and/or `--accepted` to broaden the scope. When `--docid` is given, no status filter is applied.
+By default (when no status option is specified), the command processes **all supported statuses** (`submitted`, `ok-for-reviewing`, `being-reviewed`, `reviewed`, `reviewers-invited`, `accepted`, `published`). When one or more status options are provided, processing is restricted exclusively to those requested statuses. When `--docid` is given, no status filter is applied.
+
+The command outputs a detailed summary table at the end of execution showing the result and reference count for each DOCID.
 
 Each API call has a 360-second timeout (GROBID extraction can take several minutes). The command returns exit code 1 if any calls fail, so cron alerts fire on partial failures.
+
+> **Technical documentation:** see [biblioref-extraction.md](biblioref-extraction.md) for full architecture and lifecycle details.
 
 > **Docker note:** if the script runs inside a Docker container that cannot resolve the public hostname configured in `pwd.json`, use `--api-url` to point to the Docker-internal service address:
 > ```bash
 > php scripts/console.php enrichment:extract-biblio-refs \
 >   --api-url=http://citations-php-fpm \
->   --published
+>   --being-reviewed
 > ```
 
 Recommended cron schedule: daily (e.g. every night at 00:30).
