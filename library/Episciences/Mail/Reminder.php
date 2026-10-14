@@ -1167,7 +1167,7 @@ class Episciences_Mail_Reminder
                 foreach ($paper->getEditors(true, true) as $editor) {
                     $editorLang = $editor->getLangueid(true);
                     $editorTags = array_merge($tags, $localizedTags($editorLang), [
-                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editorLang, true),
+                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
                         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $fullname,
                         Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $user->getEmail(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
@@ -1888,7 +1888,7 @@ class Episciences_Mail_Reminder
                 'email' => $supervisor->getEmail(),
                 'lang' => $supervisorLang,
                 'tags' => array_merge($tags, $localizedTags ? $localizedTags($supervisorLang) : [], [
-                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($supervisorLang, true),
+                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($supervisor->getLangueid(), true),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $supervisor->getUsername(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $supervisor->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $supervisor->getFullName(),
