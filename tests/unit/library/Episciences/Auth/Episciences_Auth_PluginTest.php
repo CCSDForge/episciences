@@ -250,7 +250,10 @@ class Episciences_Auth_PluginTest extends TestCase
 
     public function testMemberWithoutLocalAccountDataIsSentToTheProfileForm(): void
     {
-        self::assertSame('user/edit', $this->profileRedirectOfAMemberWithoutLocalData(false));
+        // The redirection carries the journal path prefix (PREFIX_URL) on manager branches
+        $expected = (defined('PREFIX_URL') ? PREFIX_URL : '/') . 'user/edit';
+
+        self::assertSame($expected, $this->profileRedirectOfAMemberWithoutLocalData(false));
     }
 
     /**
