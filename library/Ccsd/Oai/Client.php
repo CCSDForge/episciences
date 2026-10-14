@@ -83,7 +83,7 @@ class Ccsd_Oai_Client {
             $userAgent = method_exists($this, 'getUserAgent') ? $this->getUserAgent() : 'CcsdToolsCurl';
             $options[CURLOPT_USERAGENT] = $userAgent;
 			$url = $this->baseUrl.'?verb=GetRecord&identifier='.$identifier.'&metadataPrefix='.$format;
-			$curlResponse = (string)Ccsd_Tools::curlSourceGetContents($url, $options);
+			$curlResponse = $this->fetchResponse($url, $options);
 
             if(empty($curlResponse)) {
                 throw new Ccsd_Error("No body returned");
@@ -120,6 +120,18 @@ class Ccsd_Oai_Client {
         } catch ( Exception $e ) {
 			throw new Exception($e->getMessage(), "0");
 		}
+    }
+
+    /**
+     * HTTP call of the OAI-PMH server (overridable to test response handling without network)
+     * @param string $url
+     * @param array $options cURL options
+     * @return string response body
+     * @throws Ccsd_Error on cURL error
+     */
+    protected function fetchResponse(string $url, array $options): string
+    {
+        return (string)Ccsd_Tools::curlSourceGetContents($url, $options);
     }
 
 	protected static function isOaiError( DOMNodeList $nodelist )
