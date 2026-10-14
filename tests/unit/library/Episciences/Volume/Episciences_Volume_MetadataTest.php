@@ -353,6 +353,27 @@ class Episciences_Volume_MetadataTest extends TestCase
         self::assertFalse($this->meta->save());
     }
 
+    public function testSaveUpdatesOnlyTheRowOfItsOwnVolume(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = $this->getMockBuilder($previousAdapter::class)
+            ->setConstructorArgs([$previousAdapter->getConfig()])
+            ->onlyMethods(['insert', 'update'])
+            ->getMock();
+        $adapter->expects(self::never())->method('insert');
+        $adapter->expects(self::once())->method('update')
+            ->with(T_VOLUME_METADATAS, self::anything(), ['ID = ?' => 7, 'VID = ?' => 3])
+            ->willReturn(1);
+        Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+
+        try {
+            $meta = new Episciences_Volume_Metadata(['id' => 7, 'vid' => 3, 'title' => ['en' => 'T']]);
+            self::assertTrue($meta->save());
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
+
     // =========================================================================
     // setOptions — priority (vid, file, tmpfile executed first)
     // =========================================================================

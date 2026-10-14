@@ -409,6 +409,26 @@ class Episciences_VolumeTest extends TestCase
         $this->assertArrayNotHasKey('id', $result);
     }
 
+    public function testDiscardForeignMetadataIdDropsFractionalId(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => 7.5]);
+
+        $this->assertArrayNotHasKey('id', $result);
+    }
+
+    public function testDiscardForeignMetadataIdNormalisesNumericStringToInt(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => '7']);
+
+        $this->assertSame(7, $result['id']);
+    }
+
     private function invokeDiscardForeignMetadataId(Episciences_Volume $volume, array $values): array
     {
         $method = new ReflectionMethod(Episciences_Volume::class, 'discardForeignMetadataId');
