@@ -33,6 +33,7 @@ php scripts/console.php <command> --help
 | [`enrichment:classifications-msc`](#enrichmentclassifications-msc) | Enrich MSC 2020 classification codes from zbMath Open API |
 | [`enrichment:zb-reviews`](#enrichmentzb-reviews) | Discover and store zbMATH Open reviews |
 | [`sitemap:generate`](#sitemapgenerate) | Generate a sitemap for a journal |
+| [`website:regenerate-headers`](#websiteregenerate-headers) | Regenerate the journal header files from `WEBSITE_HEADER` |
 | [`volume:merge-pdf`](#volumemerge-pdf) | Merge all volume PDFs for a journal |
 | [`doaj:export-volumes`](#doajexport-volumes) | Create DOAJ XML exports for journal volumes |
 | [`zbjats:zip`](#zbjatszip) | Package PDF + zbJATS XML into a ZIP archive per volume |
@@ -369,6 +370,39 @@ php scripts/console.php sitemap:generate --all [--pretty]
 | `--rvcode=<code>` | RV code of the journal to process — mutually exclusive with `--all` |
 | `--all` | Process all active journals (STATUS = 1) — mutually exclusive with `--rvcode` |
 | `--pretty` | Pretty-print the XML output |
+
+---
+
+## Website
+
+### `website:regenerate-headers`
+
+Rewrites `data/<code>/layout/header.<lang>.html` from the `WEBSITE_HEADER` table, for every interface
+language of the journal. The layout serves these files as is and the web application only rewrites them when
+a journal saves its header: run this command after a change to the header rendering (e.g. output escaping)
+so that existing journals benefit from it.
+Exactly one of `--rvcode` or `--all` must be provided.
+
+```bash
+# One journal
+php scripts/console.php website:regenerate-headers --rvcode=<code> [--dry-run]
+
+# Every journal of the REVIEW table, whatever its status
+php scripts/console.php website:regenerate-headers --all [--dry-run]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--rvcode=<code>` | RV code of the journal to process — mutually exclusive with `--all` |
+| `--all` | Process every journal of the `REVIEW` table — mutually exclusive with `--rvcode` |
+| `--protocol=<https\|http>` | Protocol of the journal URLs used for the logo images (default: `https`) |
+| `--dry-run` | Report the files that would change without writing them |
+
+Only existing files whose content changes are rewritten. A missing file is reported (`missing`) but not created,
+since the layout shows no header for that language today. Files that are not generated from `WEBSITE_HEADER` are
+never modified and are listed at the end of the run for a manual check:
+- `orphan`: a header file exists but the journal has no `WEBSITE_HEADER` row;
+- `stale`: a header file exists for a language the journal does not offer.
 
 ---
 

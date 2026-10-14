@@ -95,3 +95,7 @@ assets/node_modules/
 /.scannerwork/
 /.sonar/
 /.phpunit.cache/
+
+# Playwright
+/playwright-report/
+/test-results/

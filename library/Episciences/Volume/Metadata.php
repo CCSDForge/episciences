@@ -2,7 +2,9 @@
 
 use Episciences\AppRegistry;
 use Episciences\Upload\PublicFileStore;
+use Episciences\Upload\SafeFileName;
 use Episciences\Upload\UploadChecker;
+use Psr\Log\LogLevel;
 
 class Episciences_Volume_Metadata
 {
@@ -266,9 +268,27 @@ class Episciences_Volume_Metadata
         return $this->_file;
     }
 
+    /**
+     * The name can come back from the browser (hidden form field) and is later joined to the volume directory
+     * (unlink, download): anything that is not a bare file name is dropped.
+     */
     public function setFile($file)
     {
-        $this->_file = $file;
+        if (SafeFileName::isBare($file)) {
+            $this->_file = $file;
+            return $this;
+        }
+
+        if ($file !== null && $file !== '') {
+            // The stored reference is lost on the next save: keep a trace to find the orphan file
+            Episciences_View_Helper_Log::log(
+                'Volume metadata file name rejected',
+                LogLevel::WARNING,
+                ['file' => is_scalar($file) ? (string)$file : gettype($file), 'vid' => $this->getVid()]
+            );
+        }
+
+        $this->_file = null;
         return $this;
     }
 
@@ -320,13 +340,21 @@ class Episciences_Volume_Metadata
                 mkdir($path, 0777, true);
             }
 
+            // setFile() would drop a name that is not bare (e.g. with a backslash): check it before
+            // the previous file is removed, or the volume would lose both files
+            $storedName = PublicFileStore::storedName((string)$file['name']);
+            $filename = SafeFileName::isBare($storedName) ? Ccsd_Tools::getNewFileName($storedName, $path) : '';
+            if (!SafeFileName::isBare($filename)) {
+                AppRegistry::getMonoLogger()?->warning('Volume file refused', ['vid' => $this->getVid(), 'reason' => 'The file name is not a bare file name']);
+                return false;
+            }
+
             // Supprimer l'ancien fichier
             if ($this->hasFile() && file_exists($path . $this->getFile())) {
                 unlink($path . $this->getFile());
             }
 
             // Déplacer le fichier dans son dossier final
-            $filename = Ccsd_Tools::getNewFileName(PublicFileStore::storedName((string)$file['name']), $path);
             if (file_exists($file['tmp_name'])) {
                 rename($file['tmp_name'], $path . $filename);
                 chmod($path . $filename, 0644);

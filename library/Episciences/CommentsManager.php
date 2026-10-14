@@ -897,4 +897,54 @@ class Episciences_CommentsManager
 
     }
 
+    /**
+     * Types of the comments of a paper version that have this file attached.
+     * The "comments" directory of a version is shared by all its comments: the file name alone does not tell
+     * which comment it belongs to.
+     *
+     * @return int[]
+     */
+    public static function findTypesByAttachment(int $docId, string $file): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPER_COMMENTS, ['TYPE', 'FILE'])
+            ->where('DOCID = ?', $docId)
+            // Copy-editing files are stored in their own directory, not in the "comments" one
+            ->where('TYPE NOT IN (?)', self::copyEditingTypes())
+            ->where('FILE IS NOT NULL')
+            ->where("FILE != ''");
+
+        $types = [];
+
+        foreach ($db->fetchAll($select) as $row) {
+            // Several files are stored as a JSON list (author / editor exchanges), a single one as a plain name
+            $files = json_decode((string)$row['FILE'], true);
+
+            if (!is_array($files)) {
+                $files = [$row['FILE']];
+            }
+
+            if (in_array($file, $files, true)) {
+                $types[] = (int)$row['TYPE'];
+            }
+        }
+
+        return array_values(array_unique($types));
+    }
+
+    /**
+     * Types of the comments whose files are stored in the copy-editing directory of a paper version
+     *
+     * @return int[]
+     */
+    public static function copyEditingTypes(): array
+    {
+        return array_merge(
+            self::$_copyEditingRequestTypes,
+            self::$_copyEditingAnswerTypes,
+            [self::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION]
+        );
+    }
+
 }

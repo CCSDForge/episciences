@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
+- The document files of a paper (comments, copy-editing, data descriptor) follow the access rules of the paper pages.
+
 [RT#293890]:
 - Sorting by invitation status does not reflect the actual situation:
     A reviewer’s report is categorised as an "Additional reviewer’s report",
@@ -36,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without any identity, which made the paper page fail.
 - [#1009](https://github.com/CCSDForge/episciences/pull/1009): remove redundant account linking confirmation when emails match
 - Avoid suggesting that an invitation be linked to another account if it has already been accepted, has expired or has been cancelled.
+- A refused paper resubmitted through the inbox (COAR Notify) keeps the submission date of the refused paper,
+  which is shared by all the versions of a paper, instead of getting the current date.
 
 [RT#301096]:
 - An editor (or guest editor) assigned to a paper could not access its previous versions:
@@ -43,6 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Permissions are now also checked on obsolete versions in the paper management page.
 - On the page of a previous version, the assigned editor (or guest editor) can now see the reviews
   and the non-public details.
+- A guest editor (or copy editor) assigned to a paper could not download the review report
+  attachments ("File not found"): the download permission now relies on the assignment check,
+  same as the review display.
 
 ### Changed
 - OpenCitations client migrated to API v2 (DOI sent with its `doi:` scheme, throttling and retry on HTTP 429).
@@ -165,6 +172,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- [#1231](https://github.com/CCSDForge/episciences/pull/1231) Website header: only administrators, chief editors, secretaries, webmasters and root can edit it, and the form requires a CSRF token. The generated header escapes every value and only keeps http(s), mailto and tel links. A submission with an invalid CSRF token is not saved: the form is shown again with an error message. Labels still accept the entities already typed, line breaks and the `b`, `strong`, `i` and `em` tags without attributes; any other markup is now shown as text. The CSS style of a label only keeps typographic properties (no positioning, background or `url()`) and its CSS classes are limited to valid class names. Run `website:regenerate-headers --all` once after deployment to rewrite the existing header files, which are otherwise only regenerated when a journal saves its header.
 - [#1216](https://github.com/CCSDForge/episciences/pull/1216) Paper illustration (graphical abstract) upload: the actual MIME type is now checked (the extension alone, case-sensitive, was trusted), SVG is no longer accepted, and access checks are tightened.
 - [#1176](https://github.com/CCSDForge/episciences/pull/1176) Update `league/commonmark` to 2.10.1 to patch DoS vulnerability in Attributes extension.
 - [#1175](https://github.com/CCSDForge/episciences/pull/1175) Patch transitive npm vulnerabilities flagged by Dependabot in the build/test toolchain via yarn resolutions.
