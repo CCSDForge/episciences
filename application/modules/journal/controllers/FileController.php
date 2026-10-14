@@ -134,18 +134,10 @@ class FileController extends DefaultController
             return;
         }
 
-        // Rating reports are confidential: only editorial staff, the paper's editor,
-        // the reviewer who authored the report, or the author of the paper once the
-        // reports are visible to them may access the attachment.
+        // Rating reports are confidential: see Episciences_Rating_Report::isAttachmentAccessibleToLoggedUser()
         $paper = Episciences_PapersManager::get($report->getDocid());
-        $isAllowed = Episciences_Auth::isLogged() && $paper && (
-                Episciences_Auth::isAllowedToUploadPaperReport()
-                || $paper->getEditor(Episciences_Auth::getUid())
-                || (int)$report->getUid() === Episciences_Auth::getUid()
-                || $paper->isReportsVisibleToAuthor()
-            );
 
-        if (!$isAllowed) {
+        if (!$report->isAttachmentAccessibleToLoggedUser($paper ?: null)) {
             // Return 404 rather than 403 to avoid disclosing the report's existence.
             $this->getResponse()->setHttpResponseCode(404);
             $this->view->message = "Fichier introuvable";

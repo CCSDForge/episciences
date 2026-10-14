@@ -108,16 +108,18 @@ final class FileControllerPathHandlingTest extends TestCase
 
     public function testReportActionChecksPermissions(): void
     {
+        // The access rules themselves are covered by
+        // Episciences_Rating_ReportAttachmentAccessTest.
         $method = $this->extractMethod('reportAction');
 
-        self::assertStringContainsString('Episciences_Auth::isLogged()', $method,
-            'reportAction() must require authentication');
-        self::assertStringContainsString('isAllowedToUploadPaperReport()', $method,
-            'reportAction() must allow editorial staff');
-        self::assertStringContainsString('getEditor(', $method,
-            "reportAction() must allow the paper's editor");
-        self::assertStringContainsString('$report->getUid()', $method,
-            'reportAction() must allow the reviewer who authored the report');
+        self::assertStringContainsString('$report->isAttachmentAccessibleToLoggedUser(', $method,
+            'reportAction() must delegate the permission check to the report');
+
+        $checkPos = strpos($method, 'isAttachmentAccessibleToLoggedUser(');
+        $openPos = strpos($method, 'openFile(');
+        self::assertNotFalse($openPos, 'reportAction() must call openFile()');
+        self::assertLessThan($openPos, $checkPos,
+            'The permission must be checked before the file is served');
     }
 
     public function testReportActionUses404WhenNotPermitted(): void
