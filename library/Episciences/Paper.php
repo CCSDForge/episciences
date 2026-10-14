@@ -5165,7 +5165,7 @@ class Episciences_Paper
      *
      * @return Episciences_Paper|null null when this paper is the latest version or when it cannot be found
      */
-    public function findLatestVersionForAssignmentCheck(): ?Episciences_Paper
+    protected function findLatestVersionForAssignmentCheck(): ?Episciences_Paper
     {
         $latestDocId = (int)$this->getLatestVersionId();
 

@@ -5,6 +5,7 @@ namespace unit\library\Episciences\paper;
 use Episciences_Paper;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 /**
  * Test suite for Episciences_Paper::isAssignedEditorOrCopyEditor(), Episciences_Paper::isAssignedEditor()
@@ -134,11 +135,16 @@ final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
         $paper->method('getDocid')->willReturn(10);
         $paper->method('getPaperid')->willReturn(10);
 
-        $latestVersion = $paper->findLatestVersionForAssignmentCheck();
+        $latestVersion = $this->findLatestVersionForAssignmentCheck($paper);
 
         self::assertInstanceOf(Episciences_Paper::class, $latestVersion);
         self::assertSame(12, $latestVersion->getDocid());
         self::assertSame(10, $latestVersion->getPaperid());
+    }
+
+    private function findLatestVersionForAssignmentCheck(Episciences_Paper $paper): ?Episciences_Paper
+    {
+        return (new ReflectionMethod(Episciences_Paper::class, 'findLatestVersionForAssignmentCheck'))->invoke($paper);
     }
 
     /**
@@ -150,7 +156,7 @@ final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
         $paper->method('getLatestVersionId')->willReturn($latestVersionId);
         $paper->method('getDocid')->willReturn(10);
 
-        self::assertNull($paper->findLatestVersionForAssignmentCheck());
+        self::assertNull($this->findLatestVersionForAssignmentCheck($paper));
     }
 
     public static function latestVersionIdProvider(): array
