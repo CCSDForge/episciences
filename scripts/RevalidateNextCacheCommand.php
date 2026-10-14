@@ -14,7 +14,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
-use Throwable;
 
 /**
  * Immediately trigger Next.js cache revalidation for a specific journal and

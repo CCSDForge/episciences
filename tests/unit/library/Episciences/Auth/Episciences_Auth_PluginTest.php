@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Episciences\Maintenance\ReadOnlyMode;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -159,7 +160,7 @@ class Episciences_Auth_PluginTest extends TestCase
      * @param list<string> $roles
      * @return array{string, string}
      */
-    private function dispatchWithApplicationAcl(string $controller, string $action, array $roles): array
+    private function dispatchWithApplicationAcl(string $controller, string $action, array $roles, bool $xhr = false, int $uid = 4242): array
     {
         $acl = new Episciences_Acl(); // acl.ini and the navigation files, as loaded by the application
         $acl->loadFromNavigation([APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.navigation.json']);
@@ -168,12 +169,19 @@ class Episciences_Auth_PluginTest extends TestCase
         Zend_Auth::getInstance()->setStorage(new Zend_Auth_Storage_NonPersistent());
         try {
             if ($roles !== []) {
-                $user = new Episciences_User(['UID' => 4242]);
+                $user = new Episciences_User(['UID' => $uid]);
                 $user->setRoles([RVID => $roles]); // roles are indexed by journal
                 Zend_Auth::getInstance()->getStorage()->write($user);
             }
 
-            $request = new Zend_Controller_Request_Http();
+            $request = $xhr
+                ? new class extends Zend_Controller_Request_Http {
+                    public function isXmlHttpRequest(): bool
+                    {
+                        return true;
+                    }
+                }
+                : new Zend_Controller_Request_Http();
             $request->setControllerName($controller)->setActionName($action);
             $plugin = new class($acl) extends Episciences_Auth_Plugin {
                 public function __construct(private readonly Episciences_Acl $applicationAcl)
@@ -227,5 +235,64 @@ class Episciences_Auth_PluginTest extends TestCase
         [$resolvedController, $resolvedAction] = $this->dispatchWithApplicationAcl($controller, $action, [Episciences_Acl::ROLE_MEMBER]);
 
         self::assertSame([Ccsd_Auth_Plugin::FAIL_AUTH_CONTROLLER, Ccsd_Auth_Plugin::FAIL_AUTH_ACTION], [$resolvedController, $resolvedAction]);
+    }
+
+    /**
+     * The accepted papers list is only an ACL resource when the journal navigation declares it:
+     * without it, a client-supplied X-Requested-With header must not let the request through.
+     */
+    public function testUndeclaredAcceptedPapersListIsDeniedToAGuestSendingAnXhrHeader(): void
+    {
+        [$resolvedController, $resolvedAction] = $this->dispatchWithApplicationAcl('browse', 'accepted-docs', [], true);
+
+        self::assertSame([Ccsd_Auth_Plugin::FAIL_AUTH_CONTROLLER, Ccsd_Auth_Plugin::FAIL_AUTH_ACTION], [$resolvedController, $resolvedAction]);
+    }
+
+    public function testMemberWithoutLocalAccountDataIsSentToTheProfileForm(): void
+    {
+        self::assertSame('user/edit', $this->profileRedirectOfAMemberWithoutLocalData(false));
+    }
+
+    /**
+     * In read-only maintenance mode the profile form is not served (503): the user must keep the public site.
+     */
+    public function testMemberWithoutLocalAccountDataIsNotSentToTheProfileFormInReadOnlyMode(): void
+    {
+        self::assertNull($this->profileRedirectOfAMemberWithoutLocalData(true));
+    }
+
+    /**
+     * Run preDispatch() on a public page for a logged-in member whose account is not completed on Episciences,
+     * and return the URL the redirector was asked to go to (null when no redirection was requested).
+     */
+    private function profileRedirectOfAMemberWithoutLocalData(bool $readOnly): ?string
+    {
+        $uid = 4242;
+        $redirector = new class extends Zend_Controller_Action_Helper_Redirector {
+            public ?string $url = null;
+
+            public function getName(): string
+            {
+                return 'Redirector';
+            }
+
+            public function gotoUrl($url, array $options = []): void
+            {
+                $this->url = $url;
+            }
+        };
+        Zend_Controller_Action_HelperBroker::addHelper($redirector);
+        Episciences_User::setStaticCache($uid, []); // no local row: hasLocalData() is false without any query
+        ReadOnlyMode::setOverride($readOnly);
+
+        try {
+            $this->dispatchWithApplicationAcl('paper', 'view', [Episciences_Acl::ROLE_MEMBER], false, $uid);
+
+            return $redirector->url;
+        } finally {
+            ReadOnlyMode::setOverride(null);
+            Episciences_User::forgetStaticCache($uid);
+            Zend_Controller_Action_HelperBroker::removeHelper('redirector');
+        }
     }
 }

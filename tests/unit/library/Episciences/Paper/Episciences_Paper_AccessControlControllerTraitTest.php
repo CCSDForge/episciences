@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Paper;
 
+use Episciences\User\SuLogger;
 use Episciences_Acl;
 use Episciences_Auth;
 use Episciences_Paper;
@@ -12,7 +13,11 @@ use Episciences_Paper_Conflict;
 use Episciences_Review;
 use Episciences_User;
 use PHPUnit\Framework\TestCase;
+use Zend_Db_Adapter_Abstract;
+use Zend_Db_Table_Abstract;
+use Zend_Session;
 use Zend_Session_Namespace;
+use Zend_View;
 
 /**
  * Captures the flash messages and redirections issued by the trait instead of
@@ -80,7 +85,8 @@ final class AccessControlHarness
     public function __construct()
     {
         $this->_helper = new AccessControlFakeHelperBroker();
-        $this->view = new class {
+        // Real view for escape(); translation is a passthrough
+        $this->view = new class extends Zend_View {
             public function translate(string $message): string
             {
                 return $message;
@@ -172,18 +178,19 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         Episciences_Auth::getInstance()->clearIdentity();
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
         unset($session->realIdentities, $session->photoVersion, $session->checkConflictResponseForSu);
+        Episciences_Auth::clearImpersonation();
     }
 
     /**
      * @param list<string> $roles
      */
-    private function createMockUser(int $uid, array $roles = []): Episciences_User
+    private function createMockUser(int $uid, array $roles = [], ?string $screenName = null): Episciences_User
     {
         $user = $this->createMock(Episciences_User::class);
         $user->method('getUid')->willReturn($uid);
         $user->method('getRoles')->willReturn($roles);
         $user->method('getAllRoles')->willReturn([RVID => $roles]);
-        $user->method('getScreenName')->willReturn('User ' . $uid);
+        $user->method('getScreenName')->willReturn($screenName ?? 'User ' . $uid);
         return $user;
     }
 
@@ -193,6 +200,15 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
     private function loginUser(int $uid, array $roles): void
     {
         Episciences_Auth::getInstance()->getStorage()->write($this->createMockUser($uid, $roles));
+    }
+
+    /**
+     * @param list<string> $targetRoles
+     */
+    private function switchUser(int $realUid, int $targetUid, array $targetRoles): void
+    {
+        $this->loginUser($realUid, []);
+        Episciences_Auth::startImpersonation($this->createMockUser($targetUid, $targetRoles));
     }
 
     /**
@@ -221,6 +237,9 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         );
         $paper->method('getCopyEditor')->willReturnCallback(
             fn(int $uid) => $uid === $assignedCopyEditorUid ? $this->createMockUser($uid) : null
+        );
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturnCallback(
+            fn(int $uid) => $uid === $assignedEditorUid || $uid === $assignedCopyEditorUid
         );
         $paper->method('isApprovedByAuthor')->willReturn($isApprovedByAuthor);
         $paper->method('isOwner')->willReturn($isOwner);
@@ -341,6 +360,20 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         $this->harness->callCheckPermissions($this->createReview(), $this->createPaper());
 
         self::assertSame([self::ACCESS_DENIED_MESSAGE], $this->harness->_helper->messages);
+    }
+
+    public function testAssignedGuestEditorIsNotRedirected(): void
+    {
+        // also covers previous versions: the assignment is resolved on the latest version
+        $this->loginUser(42, [Episciences_Acl::ROLE_GUEST_EDITOR, Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_AUTHOR]);
+
+        $allowed = $this->harness->callCheckPermissions(
+            $this->createReview(),
+            $this->createPaper(assignedEditorUid: 42)
+        );
+
+        self::assertTrue($allowed);
+        self::assertNull($this->harness->_helper->redirectedTo);
     }
 
     public function testGuestEditorWhoIsAlsoEditorIsNotBlockedByTheGuestRule(): void
@@ -493,9 +526,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
 
     public function testOwnerRedirectionMentionsTheOriginalIdentityWhenSwitched(): void
     {
-        $this->loginUser(42, [Episciences_Acl::ROLE_EDITOR]);
-        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        $session->realIdentities = [$this->createMockUser(99)];
+        $this->switchUser(99, 42, [Episciences_Acl::ROLE_EDITOR]);
 
         $this->harness->callRedirectIfConflict(
             $this->createPaper(isOwner: true),
@@ -506,6 +537,24 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         self::assertStringContainsString('User 99', $message);
         self::assertStringContainsString('Vous êtes connecté en tant que', $message);
         self::assertStringContainsString('vous-même déposé', $message);
+    }
+
+    public function testOwnerRedirectionEscapesScreenNames(): void
+    {
+        Episciences_Auth::getInstance()->getStorage()->write($this->createMockUser(99, [], '<a href="https://example.org">Real</a>'));
+        Episciences_Auth::startImpersonation($this->createMockUser(42, [Episciences_Acl::ROLE_EDITOR], '<b>Target</b>'));
+
+        $this->harness->callRedirectIfConflict(
+            $this->createPaper(isOwner: true),
+            $this->createReview()
+        );
+
+        $message = $this->harness->_helper->messages[0];
+        self::assertStringContainsString('&lt;a href=&quot;https://example.org&quot;&gt;Real&lt;/a&gt;', $message);
+        self::assertStringContainsString('&lt;b&gt;Target&lt;/b&gt;', $message);
+        self::assertStringNotContainsString('<a ', $message);
+        // intentional markup is preserved
+        self::assertStringContainsString('<br>', $message);
     }
 
     public function testDeclaredConflictRedirectsToTheCoiReport(): void
@@ -540,10 +589,9 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
 
     public function testSwitchedUserConflictAnsweredYesMentionsTheSelfReportedConflict(): void
     {
-        $this->loginUser(42, [Episciences_Acl::ROLE_EDITOR]);
+        $this->switchUser(99, 42, [Episciences_Acl::ROLE_EDITOR]);
         AccessControlHarness::$conflictDetected = true;
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        $session->realIdentities = [$this->createMockUser(99)];
         $session->checkConflictResponseForSu = Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
 
         $this->harness->callRedirectIfConflict($this->createPaper(), $this->createReview());
@@ -558,13 +606,36 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
 
     public function testSwitchedUserConflictAnsweredLaterRestoresTheOriginalIdentity(): void
     {
-        $this->loginUser(42, [Episciences_Acl::ROLE_EDITOR]);
+        $this->switchUser(99, 42, [Episciences_Acl::ROLE_EDITOR]);
         AccessControlHarness::$conflictDetected = true;
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        $session->realIdentities = [$this->createMockUser(99)];
         $session->checkConflictResponseForSu = Episciences_Paper_Conflict::AVAILABLE_ANSWER['later'];
 
-        $this->harness->callRedirectIfConflict($this->createPaper(), $this->createReview());
+        $auditRows = [];
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = $this->createMock(Zend_Db_Adapter_Abstract::class);
+        $adapter->method('insert')->willReturnCallback(function (string $table, array $data) use (&$auditRows): int {
+            $auditRows[] = $data;
+            return 1;
+        });
+        Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+        // Regenerating the session id is a no-op in unit test mode
+        $previousUnitTestEnabled = Zend_Session::$_unitTestEnabled;
+        Zend_Session::$_unitTestEnabled = true;
+
+        try {
+            $this->harness->callRedirectIfConflict($this->createPaper(), $this->createReview());
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+            Zend_Session::$_unitTestEnabled = $previousUnitTestEnabled;
+        }
+
+        // the switch back is audited like an explicit unsu
+        self::assertCount(1, $auditRows);
+        self::assertSame(SuLogger::ACTION_UNSU, $auditRows[0]['action']);
+        self::assertSame(SuLogger::REASON_CONFLICT_CONFIRMATION, $auditRows[0]['reason']);
+        self::assertSame(99, $auditRows[0]['from_uid']);
+        self::assertSame(42, $auditRows[0]['to_uid']);
 
         $message = $this->harness->_helper->messages[0];
         self::assertStringContainsString('User 99', $message);
@@ -572,6 +643,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         self::assertStringContainsString(self::CONFIRMATION_REQUIRED_MESSAGE, $message);
         // the original account has been restored so it can confirm the conflict absence
         self::assertSame(99, Episciences_Auth::getUid());
+        self::assertFalse(Episciences_Auth::isImpersonating(), 'the switch user state is closed');
     }
 
     // =========================================================================

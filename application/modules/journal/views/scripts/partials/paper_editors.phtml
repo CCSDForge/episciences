@@ -60,14 +60,7 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
                 <?php endif; ?>
 
                 <?php if (Episciences_Auth::isSecretary()) : ?>
-                    <a class="btn btn-default" href="/user/su/uid/<?php echo $editor->getUid(); ?>">
-                        <span data-toggle="tooltip"
-                              style="margin: 0.2rem"
-                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
-                              class="fas fa-user-secret">
-
-                        </span>
-                    </a>&nbsp;
+                    <?= $this->partial('user/su_button.phtml', ['uid' => $editor->getUid()]) ?>&nbsp;
                 <?php endif; ?>
 
                 <img src="/user/photo/name/<?= urlencode($this->escape($editor->getScreenName())); ?>/uid/<?= $editor->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"

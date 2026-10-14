@@ -81,7 +81,7 @@
                                     <xsl:value-of select="episciences/paperLicence/text()"/>
                                 </xsl:attribute>
                                 <xsl:value-of
-                                        select="php:function('Ccsd_Tools::translate', string(episciences/paperLicence))"/>
+                                        select="php:function('Ccsd_Tools::translateLicense', string(episciences/paperLicence))"/>
                             </a>
                         </div>
                     </xsl:when>

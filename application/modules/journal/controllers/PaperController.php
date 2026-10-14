@@ -221,7 +221,7 @@ class PaperController extends PaperDefaultController
 
         // ratings **************************************************
         //[#169]: https://github.com/CCSDForge/episciences/issues/169
-        $isVisibleRatings = (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid)) ||
+        $isVisibleRatings = (Episciences_Auth::isSecretary() || $paper->isAssignedEditorOrCopyEditor((int)$loggedUid)) ||
             $paper->isReportsVisibleToAuthor() ||
             ($review->getSetting(Episciences_Review::SETTING_SHOW_RATINGS) && $paper->isPublished());
 
@@ -239,12 +239,7 @@ class PaperController extends PaperDefaultController
 
         try {
 
-            $commonTest =
-                $isSecretary ||
-                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor()) ||
-                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor()) ||
-                $paper->getEditor($loggedUid) ||
-                $paper->getCopyEditor($loggedUid);
+            $commonTest = self::isEditorialStaff($paper, $review->getSettings());
 
         } catch (Zend_Db_Statement_Exception $e) {
             $commonTest = false;
@@ -440,7 +435,13 @@ class PaperController extends PaperDefaultController
             Episciences_CommentsManager::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION
         ]];
 
-        $copyEditingDemands = Episciences_CommentsManager::getList($paper->getDocid(), $copyEditingSettings);
+        // Copy-editing is between the author and the editorial staff: reviewers do not see it (see DocumentFilePolicy)
+        $isAllowedToSeeCopyEditing = Episciences_Auth::isLogged() &&
+            ($paper->isOwnerOrCoAuthor() || (!$isConflictDetected && $commonTest));
+
+        $copyEditingDemands = $isAllowedToSeeCopyEditing ?
+            Episciences_CommentsManager::getList($paper->getDocid(), $copyEditingSettings) :
+            [];
 
         $this->view->copyEditingDemands = $copyEditingDemands;
 
@@ -594,9 +595,11 @@ class PaperController extends PaperDefaultController
                     $message .= ', ';
                     $message .= $this->view->translate('car il est identique à celui déjà enregistré.');
                 } else {
+                    $previousPassword = $paper->getPassword();
                     $paper->setPassword($postedPwd, true);
 
-                    if ($paper->save()) {
+                    // the password is left unchanged when encryption fails
+                    if ($paper->getPassword() !== $previousPassword && $paper->save()) {
                         $message = $this->view->translate("Votre mot de passe a bien été enregistré.");
                         $isErrors = false;
                     }
@@ -1325,7 +1328,7 @@ class PaperController extends PaperDefaultController
                 // update paper status & paper password
 
                 if ($this->dataProcessing($post)['isValid']) {
-                    $paper->setPassword($post['paperPassword']);
+                    $paper->setPassword($post['paperPassword'], true);
                 }
 
                 if ($paper->getStatus() !== $newStatus) {
@@ -4177,6 +4180,7 @@ class PaperController extends PaperDefaultController
 
             $docId = (int)$request->getPost('docid');
             $result = 0;
+            $jsonResult = [];
 
             try {
                 $paper = Episciences_PapersManager::get($docId);

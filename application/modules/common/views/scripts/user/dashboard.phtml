@@ -334,8 +334,10 @@
 		<?php echo $this->partial('user/user_profile.phtml', array('user'=>$this->user)); ?>
 	</div>
 	
+	<?php if (!Episciences_Auth::isImpersonating()): ?>
 	<div class="panel-footer">
 		<div class="small"><a href="/user/edit"><span class="glyphicon glyphicon-user"></span> <?php echo $this->translate('Modifier mon profil'); ?></a></div>
 	</div>
+	<?php endif; ?>
 	
 </div>

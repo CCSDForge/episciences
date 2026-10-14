@@ -143,6 +143,41 @@ final class ReviewDeadlineValidationTest extends TestCase
     }
 
     /**
+     * @return array<string, array{mixed, array{int, string}|null}>
+     */
+    public static function storedIntervalProvider(): array
+    {
+        return [
+            'default' => ['1 month', [1, 'month']],
+            'legacy plural' => ['2 weeks', [2, 'week']],
+            'surrounding spaces' => [' 10 day ', [10, 'day']],
+            'legacy upper case' => ['2 WEEK', [2, 'week']],
+            'legacy mixed case plural' => ['3 Months', [3, 'month']],
+            'upper bound' => [Episciences_Review::DEADLINE_VALUE_MAX . ' day', [Episciences_Review::DEADLINE_VALUE_MAX, 'day']],
+            'above upper bound' => [(Episciences_Review::DEADLINE_VALUE_MAX + 1) . ' day', null],
+            'sql injected in the unit' => ['1 DAY) , (SELECT SLEEP(5)) -- ', null],
+            'sql injected in the value' => ['1) OR 1=1 -- day', null],
+            'unknown unit' => ['3 hour', null],
+            'unknown upper-case unit' => ['3 HOUR', null],
+            'zero' => ['0 day', null],
+            'negative' => ['-1 day', null],
+            'unit only' => [' week', null],
+            'empty' => ['', null],
+            'null' => [null, null],
+            'array' => [['1 day'], null],
+        ];
+    }
+
+    /**
+     * @param array{int, string}|null $expected
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('storedIntervalProvider')]
+    public function testParseStoredInterval(mixed $stored, ?array $expected): void
+    {
+        self::assertSame($expected, DeadlineUnit::parseStoredInterval($stored));
+    }
+
+    /**
      * @return array<string, array{class-string, array<string, string>, bool}>
      */
     public static function crossFieldProvider(): array

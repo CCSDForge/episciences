@@ -37,6 +37,9 @@ return [
     // Delete confirmations
     "Voulez-vous supprimer ce fichier ?" => "Voulez-vous supprimer ce fichier ?",
     "Voulez-vous supprimer votre fichier attaché ?" => "Voulez-vous supprimer votre fichier attaché ?",
+    "Une erreur est survenue lors de la mise à jour des métadonnées." => "Une erreur est survenue lors de la mise à jour des métadonnées.",
+    "Photo supprimée." => "Photo supprimée.",
+    "La suppression a échoué." => "La suppression a échoué.",
 
     // PPS (Problematic Paper Screener) — bibliographic reference badge labels
     'Retracted'                    => 'Rétracté',

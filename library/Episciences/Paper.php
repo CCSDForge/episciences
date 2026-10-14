@@ -5,6 +5,8 @@ use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\Export;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
+use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
@@ -982,9 +984,9 @@ class Episciences_Paper
      * @return $this
      * @throws Exception
      */
-    public function setXslt($xml, string $theme = 'full_paper'): self
+    public function setXslt($xml, string $theme = 'full_paper', array $params = []): self
     {
-        $this->_xslt = Ccsd_Tools::xslt($xml, APPLICATION_PUBLIC_PATH . '/xsl/' . $theme . '.xsl');
+        $this->_xslt = Ccsd_Tools::xslt($xml, APPLICATION_PUBLIC_PATH . '/xsl/' . $theme . '.xsl', $params);
         return $this;
     }
 
@@ -1366,6 +1368,8 @@ class Episciences_Paper
         $crossRefXml = Episciences_Paper_XmlExportManager::getXmlCleaned(Episciences_Paper_XmlExportManager::xmlExport($this, Episciences_Paper_XmlExportManager::CROSSREF_FORMAT));
         $crossRefXml = str_replace(array("jats:p", "jats:"), array("value", ""), Episciences_Tools::spaceCleaner($crossRefXml));
         $xmlToArray = $serializer->decode($crossRefXml, "xml");
+
+        $this->completeInfoLicense($xmlToArray);
 
         if ($this->isTmp()) {
             $this->processTmpVersion($this);
@@ -2390,10 +2394,12 @@ class Episciences_Paper
 
             try {
 
-                $paperPassword = Episciences_Tools::encrypt($paperPassword);
+                $paperPassword = $this->encryptPassword($paperPassword);
 
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_WARNING);
+                // never store the clear-text value; keep the previously stored (encrypted) one
+                return $this;
 
             }
         }
@@ -2401,6 +2407,14 @@ class Episciences_Paper
         $this->_password = $paperPassword;
 
         return $this;
+    }
+
+    /**
+     * @throws Exception when the journal crypto key is missing or unusable
+     */
+    protected function encryptPassword(string $plainPassword): string
+    {
+        return Episciences_Tools::encrypt($plainPassword);
     }
 
     /**
@@ -5123,7 +5137,10 @@ class Episciences_Paper
      */
     public function getLicence(): string
     {
-        $this->_licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
+        if (!$this->_licence) {
+            $this->_licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
+        }
+
         return $this->_licence;
     }
 
@@ -5240,6 +5257,42 @@ class Episciences_Paper
     public function isOwnerOrCoAuthor(): bool
     {
         return $this->isOwner() || $this->isCoauthor();
+    }
+
+    /**
+     * Check if a user is assigned as editor or copy editor to this paper.
+     * Editors and copy editors are unassigned from a version when a new one is submitted:
+     * for a previous version, the assignment is checked on the latest version.
+     *
+     * @param int $uid
+     * @return bool
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function isAssignedEditorOrCopyEditor(int $uid): bool
+    {
+        if ($this->getEditor($uid) || $this->getCopyEditor($uid)) {
+            return true;
+        }
+
+        $latestVersion = $this->findLatestVersion();
+
+        return $latestVersion && ($latestVersion->getEditor($uid) || $latestVersion->getCopyEditor($uid));
+    }
+
+    /**
+     * Fetch the latest version of this paper.
+     *
+     * @return Episciences_Paper|null null when this paper is the latest version or when it cannot be found
+     */
+    public function findLatestVersion(): ?Episciences_Paper
+    {
+        $latestDocId = (int)$this->getLatestVersionId();
+
+        if ($latestDocId === 0 || $latestDocId === $this->getDocid()) {
+            return null;
+        }
+
+        return Episciences_PapersManager::get($latestDocId, false) ?: null;
     }
 
     /**
@@ -5815,6 +5868,44 @@ class Episciences_Paper
         ]);
 
         $queue->send();
+    }
+
+    private function completeInfoLicense(array &$target): void
+    {
+
+        if (!isset($target[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][0]['license_ref'])) {
+            return;
+        }
+
+        $licenseRefs = &$target[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][0]['license_ref'];
+
+        if (!is_array($licenseRefs)) {
+            return;
+        }
+
+        foreach ($licenseRefs as &$license) {
+            if ((($license['@applies_to'] ?? null) === 'vor') && isset($license['#'])) {
+                $license['name'] = '';
+                $string = $license['#'];
+                $code = LicenseSpdxResolver::urlToSpdxCode($string);
+                if ($code !== '') {
+                    $license['name'] = (new LicenseCode(['code' => $code, 'name' => null]))->getName();
+                }
+                return;
+            }
+        }
+    }
+
+    public function licenseCanBeResolved() : bool{
+        return (new LicenseSpdxResolver())->resolve($this->getLicence()) !== LicenseSpdxResolver::NO_ASSERTION;
+    }
+
+    public function ignoreLicenseCheck(): bool
+    {
+        return
+                $this->isTmp() ||
+                !$this->getAcceptanceDate() ||
+                $this->licenseCanBeResolved();
     }
 
     public function isAllowedToEditMasterFile(): bool

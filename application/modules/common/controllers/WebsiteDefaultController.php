@@ -64,8 +64,23 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function headerAction()
     {
+        // Secretaries include administrators, chief editors and root
+        if (!Episciences_Auth::isSecretary() && !Episciences_Auth::isWebmaster()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
+
+        $isSubmitted = $this->getRequest()->isPost() && isset($_POST['header']);
+        if ($isSubmitted && !$this->_validateCsrf()) {
+            // The submitted values are not shown again: they may come from another site
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Les modifications n'ont pas été enregistrées car le formulaire a expiré. Veuillez les saisir à nouveau.");
+            $this->redirect('/website/header');
+            return;
+        }
+
         $header = new Episciences_Website_Header();
-        if ($this->getRequest()->isPost() && isset($_POST['header'])) {
+        if ($isSubmitted) {
             $isValid = $header->isValid($this->getRequest()->getPost(), $_FILES);
             if (true === $isValid) { //Formulaire valide
                 $header->save($this->getRequest()->getPost(), $_FILES);
