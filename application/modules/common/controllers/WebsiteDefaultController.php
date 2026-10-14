@@ -213,19 +213,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     protected function _validateCsrf()
     {
-        $request = $this->getRequest();
-        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        $expectedToken = $session->csrfToken;
-
-        if (!$expectedToken) {
-            return false;
-        }
-
-        if ($request->isXmlHttpRequest()) {
-            return $request->getHeader('X-CSRF-Token') === $expectedToken;
-        }
-
-        return $request->getPost('csrf_token') === $expectedToken;
+        return Episciences_Csrf_Helper::validateRequestToken($this->getRequest());
     }
 
     /**

@@ -347,8 +347,8 @@ class AdministratemailController extends Zend_Controller_Action
                 return;
             }
 
-            // Nothing is sent: show the form again with what was typed
-            $form->setDefaults($post);
+            // Nothing is sent, and the form is not filled with the refused request:
+            // its values may come from another site
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         } elseif ($isSendRequest) {
 

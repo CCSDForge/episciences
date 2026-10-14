@@ -48,7 +48,10 @@ class VolumeController extends Zend_Controller_Action
         }
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
 
-            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($request->getPost())) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($request->getPost())) {
 
                 $oVolume = new Episciences_Volume();
 
@@ -73,7 +76,7 @@ class VolumeController extends Zend_Controller_Action
 
                 $this->_helper->redirector('index', 'volume');
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
             }
@@ -107,14 +110,15 @@ class VolumeController extends Zend_Controller_Action
     {
         $request = $this->getRequest();
 
-        $respond = false;
-
         if ($request->isPost() && Episciences_Csrf_Helper::validateRequestToken($request)) {
             $params = $request->getPost('params');
             $id = (int) $params['id'] ?? $request->getQuery('id');
 
             // Only volumes of the current journal can be deleted
             $respond = Episciences_VolumesManager::find($id, RVID) ? Episciences_VolumesManager::delete($id) : false;
+        } else {
+            // Shown by the delete button as the reason of the failure
+            $respond = $this->view->translate('Votre session a expiré, veuillez réessayer.');
         }
 
         $this->_helper->viewRenderer->setNoRender();
@@ -123,22 +127,24 @@ class VolumeController extends Zend_Controller_Action
     }
 
     /**
-     * @return false|void
+     * @return void
      * @throws Zend_Db_Adapter_Exception
      */
     public function sortAction()
     {
         $request = $this->getRequest();
+        $this->_helper->viewRenderer->setNoRender();
+        $this->_helper->getHelper('layout')->disableLayout();
+
         if (!$request->isXmlHttpRequest() || !$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
-            return false;
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
         }
 
         $params = $request->getPost();
         $params['rvid'] = RVID;
 
         Episciences_VolumesAndSectionsManager::sort($params);
-        $this->_helper->viewRenderer->setNoRender();
-        $this->_helper->getHelper('layout')->disableLayout();
     }
 
     // Affiche le formulaire d'assignation de rédacteurs à un volume
@@ -463,7 +469,10 @@ class VolumeController extends Zend_Controller_Action
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
             $post = $request->getPost();
 
-            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($post)) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($post)) {
                 // Backend protection: Restore original titles if volume has published papers
                 if ($hasPublishedPapers) {
                     $originalTitles = $volume->getTitles();
@@ -517,7 +526,7 @@ class VolumeController extends Zend_Controller_Action
                 $this->_helper->redirector->gotoUrl($referer);
 
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }

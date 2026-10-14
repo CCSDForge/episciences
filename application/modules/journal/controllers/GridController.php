@@ -105,8 +105,8 @@ class GridController extends Zend_Controller_Action
             return;
         }
 
-        $from = $request->getPost('from');
-        $to = $request->getPost('to');
+        $from = (int)$request->getPost('from');
+        $to = (int)$request->getPost('to');
 
         $source_grid = new Episciences_Rating_Grid;
         if (!$source_grid->loadXML(REVIEW_GRIDS_PATH . 'grid_' . $from . '.xml')) {
@@ -205,7 +205,10 @@ class GridController extends Zend_Controller_Action
 
         if ($request->getPost('submit')) {
 
-            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($_POST)) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($_POST)) {
 
                 if ($this->savecriterion($oGrid, $oCriterion)) {
                     $message = '<strong>' . $this->view->translate("Le nouveau critère a bien été ajouté.") . '</strong>';
@@ -217,7 +220,7 @@ class GridController extends Zend_Controller_Action
                 $this->_helper->redirector('list', 'grid');
 
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }
@@ -354,7 +357,10 @@ class GridController extends Zend_Controller_Action
 
         if ($request->getPost('submit')) {
 
-            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($request->getPost())) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($request->getPost())) {
 
                 if ($this->savecriterion($oGrid, $oCriterion, 'separator')) {
                     $message = '<strong>' . $this->view->translate("Le nouveau séparateur a bien été ajouté.") . '</strong>';
@@ -366,7 +372,7 @@ class GridController extends Zend_Controller_Action
                 $this->_helper->redirector('list', 'grid');
 
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }
@@ -404,7 +410,10 @@ class GridController extends Zend_Controller_Action
         $post = $request->getPost();
 
         if ($request->getPost('submit')) {
-            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($_POST)) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($_POST)) {
 
                 if ($this->savecriterion($oGrid, $oCriterion, 'separator')) {
                     $message = '<strong>' . $this->view->translate("Le séparateur a bien été modifié.") . '</strong>';
@@ -416,7 +425,7 @@ class GridController extends Zend_Controller_Action
                 $this->_helper->redirector('list', 'grid');
 
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
             }
@@ -460,7 +469,10 @@ class GridController extends Zend_Controller_Action
 
         if ($request->getPost('submit')) {
 
-            if (Episciences_Csrf_Helper::validateRequestToken($request) && $form->isValid($_POST)) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($_POST)) {
 
                 if ($this->savecriterion($oGrid, $oCriterion)) {
                     $message = '<strong>' . $this->view->translate("Le critère a bien été modifié.") . '</strong>';
@@ -472,7 +484,7 @@ class GridController extends Zend_Controller_Action
                 $this->_helper->redirector('list', 'grid');
 
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
             }
