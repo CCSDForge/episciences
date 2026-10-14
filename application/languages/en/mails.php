@@ -463,6 +463,7 @@ return [
     'Le template par défaut a été restauré' => 'The default template has been restored',
     'La suppression du template personnalisé a échoué' => 'Deleting the custom template failed',
     'Rétablir' => 'Revert',
+    'Rétablir le template par défaut :' => 'Revert to the default template:',
 
     // git #230
     // Notification de la soumission d'un article – copie destinée aux rédacteurs en chef, administrateurs et secrétaires de rédaction (selon les paramètres de notification de la revue),

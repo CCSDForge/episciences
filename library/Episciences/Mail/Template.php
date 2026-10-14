@@ -170,6 +170,33 @@ class Episciences_Mail_Template
 
 
     /**
+     * Fetch a template usable by a given journal from its id, and populate it from database:
+     * a default template (shared by all journals) or a custom template of this journal.
+     * Custom templates of other journals are never found.
+     *
+     * @param int $id
+     * @param int $rvid
+     * @return bool
+     */
+    public function findForJournal(int $id, int $rvid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $select = $db->select()
+            ->from(T_MAIL_TEMPLATES)
+            ->where('ID = ?', $id)
+            ->where('(RVID IS NULL OR RVID = ?)', $rvid);
+
+        $template = $db->fetchRow($select);
+
+        if ($template) {
+            return $this->populate($template);
+        }
+
+        return false;
+    }
+
+    /**
      * Fetch a custom template of a given journal from its id, and populate it from database.
      * Default templates (shared by all journals) and templates of other journals are never found.
      *
@@ -185,7 +212,7 @@ class Episciences_Mail_Template
             ->from(T_MAIL_TEMPLATES)
             ->where('ID = ?', $id)
             ->where('RVID = ?', $rvid)
-            ->where('PARENTID IS NOT NULL');
+            ->where('PARENTID > 0'); // same rule as isCustom()
 
         $template = $db->fetchRow($select);
 

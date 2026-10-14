@@ -74,7 +74,36 @@ final class Episciences_Mail_TemplateScopeTest extends TestCase
         self::assertCount(1, $this->selects);
         self::assertMatchesRegularExpression('/ID\s*=\s*7/', $this->selects[0]);
         self::assertMatchesRegularExpression('/RVID\s*=\s*3/', $this->selects[0]);
-        self::assertStringContainsString('PARENTID IS NOT NULL', $this->selects[0]);
+        self::assertStringContainsString('PARENTID > 0', $this->selects[0]);
+    }
+
+    public function testFindForJournalOnlyReachesDefaultTemplatesAndThoseOfTheJournal(): void
+    {
+        $this->stubFetchRow(false);
+
+        self::assertFalse((new Episciences_Mail_Template())->findForJournal(7, 3));
+
+        self::assertCount(1, $this->selects);
+        self::assertMatchesRegularExpression('/ID\s*=\s*7/', $this->selects[0]);
+        self::assertMatchesRegularExpression('/\(RVID IS NULL OR RVID\s*=\s*3\)/', $this->selects[0]);
+    }
+
+    public function testFindForJournalPopulatesADefaultTemplate(): void
+    {
+        $this->stubFetchRow([
+            'ID' => '2',
+            'PARENTID' => null,
+            'RVID' => null,
+            'RVCODE' => null,
+            'KEY' => 'paper_submitted_editor_copy',
+            'TYPE' => 'paper',
+        ]);
+
+        $template = new Episciences_Mail_Template();
+
+        self::assertTrue($template->findForJournal(2, 3));
+        self::assertEquals(2, $template->getId());
+        self::assertFalse($template->isCustom());
     }
 
     public function testFindCustomPopulatesTheTemplateWhenFound(): void

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
+function initTemplates() {
     const templates = document.getElementById('templates');
 
     if (!templates) {
@@ -21,4 +21,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-});
+}
+
+// The script may be loaded after the document has been parsed
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTemplates);
+} else {
+    initTemplates();
+}

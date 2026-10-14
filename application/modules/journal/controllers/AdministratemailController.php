@@ -8,8 +8,6 @@ class AdministratemailController extends Zend_Controller_Action
      */
     private $_allowedToEdit;
 
-    private const DELETE_TEMPLATE_CSRF = 'delete_template';
-
     public function init(): void
     {
         $isAllowed = Episciences_Auth::isSecretary() || Episciences_Auth::isWebmaster();
@@ -43,7 +41,7 @@ class AdministratemailController extends Zend_Controller_Action
     {
         $this->view->templates = Episciences_Mail_TemplatesManager::getList([], RVID);
         $this->view->editorsCanEditTmplates = $this->isAllowedToEdit();
-        $this->view->deleteTemplateCsrfToken = Episciences_Csrf_Helper::generateToken(self::DELETE_TEMPLATE_CSRF);
+        $this->view->csrfToken = Episciences_Csrf_Helper::getSessionToken();
     }
 
     /**
@@ -74,6 +72,7 @@ class AdministratemailController extends Zend_Controller_Action
 
         if (!$this->isAllowedToEdit()) {
             $this->_helper->redirector->gotoUrl('/error/deny');
+            return;
         }
 
         /** @var Zend_Controller_Request_Http $request */
@@ -81,13 +80,18 @@ class AdministratemailController extends Zend_Controller_Action
 
         if (!$request->isXmlHttpRequest()) {
             $this->_helper->redirector->gotoUrl('/error/deny');
+            return;
         }
 
-        $params = $request->getPost();
-        $id = (int)$params['id'];
+        $id = (int)$request->getPost('id');
 
         $oTemplate = new Episciences_Mail_Template();
-        $oTemplate->find($id);
+
+        // only a default template or a custom template of the current journal can be edited
+        if (!$oTemplate->findForJournal($id, RVID)) {
+            $this->_helper->redirector->gotoUrl('/error/deny');
+            return;
+        }
 
         $langs = Episciences_Tools::getLanguages();
         $form = Episciences_Mail_TemplatesManager::getTemplateForm($oTemplate, $langs);
@@ -118,10 +122,12 @@ class AdministratemailController extends Zend_Controller_Action
         $id = (int)$request->getQuery('id');
 
         $template = new Episciences_Mail_Template();
-        $template->find($id);
 
-        if (!$template) {
-            throw new Zend_Exception("Ce template n'existe pas");
+        // only a default template or a custom template of the current journal can be saved
+        if (!$template->findForJournal($id, RVID)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti !");
+            $this->_helper->redirector->gotoUrl('/administratemail/templates');
+            return;
         }
 
         $post = $request->getPost();
@@ -155,6 +161,7 @@ class AdministratemailController extends Zend_Controller_Action
 
         if (!$this->isAllowedToEdit()) {
             $this->_helper->redirector->gotoUrl('/error/deny');
+            return;
         }
 
         $this->_helper->viewRenderer->setNoRender();
@@ -162,11 +169,9 @@ class AdministratemailController extends Zend_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        if (
-            !$request->isPost() ||
-            !Episciences_Csrf_Helper::validateToken(self::DELETE_TEMPLATE_CSRF, (string)$request->getPost(self::DELETE_TEMPLATE_CSRF, ''))
-        ) {
-            $this->_helper->redirector->gotoUrl('/error/deny');
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Votre session a expiré, veuillez réessayer.');
+            $this->_helper->redirector->gotoUrl('/administratemail/templates');
             return;
         }
 
