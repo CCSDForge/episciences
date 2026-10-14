@@ -866,7 +866,6 @@ class UserDefaultController extends Zend_Controller_Action
 
         // The identifier must be a plain positive integer
         $userId = filter_var($request->getPost('userId'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-        $table = $request->getPost('table');
 
         if ($userId === false) {
             $this->getResponse()->setHttpResponseCode(400);
@@ -874,24 +873,28 @@ class UserDefaultController extends Zend_Controller_Action
             return;
         }
 
+        // A secretary cannot delete their own account
+        if ($userId === (int)Episciences_Auth::getUid()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
+
         // Each delete control carries its own per-user request token.
-        $tokenName = 'user_delete_' . (int)$userId;
+        $tokenName = 'user_delete_' . $userId;
         if (!Episciences_Csrf_Helper::validateToken($tokenName, (string)$request->getPost($tokenName, ''))) {
             $this->getResponse()->setHttpResponseCode(403);
             echo 0;
             return;
         }
 
+        // Only the local account is deleted: the CAS account is shared by all journals
         $respond = 0;
-
-        if ($table == 'localUsers') {
+        if ($request->getPost('table') === 'localUsers') {
             $respond = Episciences_User::deleteLocalData($userId);
-        } elseif ($table == 'casUsers') {
-            $respond = Episciences_User::deleteFromCAS($userId);
         }
 
         echo $respond;
-
     }
 
     /**

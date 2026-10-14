@@ -164,14 +164,15 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public static function deleteLocalData($uid, $everywhere = false)
     {
+        $uid = (int)$uid;
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         if ($everywhere) {
-            // Supprime son compte ES et ses rôles pour toutes les revues
-            $db->delete(T_USER_ROLES, ['UID = ?' => (int)$uid]);
-            $db->delete(T_USERS, ['UID = ?' => (int)$uid]);
+            // Delete the Episciences account and its roles for every journal
+            $db->delete(T_USER_ROLES, ['UID = ?' => $uid]);
+            $db->delete(T_USERS, ['UID = ?' => $uid]);
 
-            // Désactive toutes ses assignations (relecture, édition) pour toutes les revues
+            // Disable all assignments (review, editing) for every journal
             $db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
             SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
             FROM USER_ASSIGNMENT `u`
@@ -193,10 +194,10 @@ class Episciences_User extends Ccsd_User_Models_User
             AND ROLEID != 'member'
             )", $uid);
         } else {
-            // Supprime uniquement ses rôles pour cette revue
-            $db->delete(T_USER_ROLES, ['RVID = ?' => RVID, 'UID = ?' => (int)$uid]);
+            // Delete the roles for this journal only
+            $db->delete(T_USER_ROLES, ['RVID = ?' => RVID, 'UID = ?' => $uid]);
 
-            // Désactive toutes ses assignations (relecture, édition) pour cette revue
+            // Disable all assignments (review, editing) for this journal
             $db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
             SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
             FROM USER_ASSIGNMENT `u`
