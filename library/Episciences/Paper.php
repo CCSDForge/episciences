@@ -5124,6 +5124,10 @@ class Episciences_Paper
      */
     public function isAssignedEditorOrCopyEditor(int $uid): bool
     {
+        if ($uid <= 0) { // anonymous visitor: no assignment to look up
+            return false;
+        }
+
         if ($this->getEditor($uid) || $this->getCopyEditor($uid)) {
             return true;
         }
@@ -5142,6 +5146,10 @@ class Episciences_Paper
      */
     public function isAssignedEditor(int $uid): bool
     {
+        if ($uid <= 0) { // anonymous visitor: no assignment to look up
+            return false;
+        }
+
         if ($this->getEditor($uid)) {
             return true;
         }

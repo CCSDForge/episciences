@@ -105,6 +105,28 @@ final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
         self::assertFalse($this->createPaper(false, false)->isAssignedEditor(42));
     }
 
+    /**
+     * @dataProvider invalidUidProvider
+     */
+    public function testInvalidUidIsNeverAssigned(int $uid): void
+    {
+        $paper = $this->createPaper(true, true, $this->createLatestVersion(true, true));
+        $paper->expects(self::never())->method('getEditor');
+        $paper->expects(self::never())->method('getCopyEditor');
+        $paper->expects(self::never())->method('findLatestVersionForAssignmentCheck');
+
+        self::assertFalse($paper->isAssignedEditorOrCopyEditor($uid));
+        self::assertFalse($paper->isAssignedEditor($uid));
+    }
+
+    public static function invalidUidProvider(): array
+    {
+        return [
+            'anonymous visitor' => [0],
+            'negative uid' => [-1],
+        ];
+    }
+
     public function testFindLatestVersionForAssignmentCheckHoldsTheLatestVersionIdentifiers(): void
     {
         $paper = $this->createPartialMock(Episciences_Paper::class, ['getLatestVersionId', 'getDocid', 'getPaperid']);
