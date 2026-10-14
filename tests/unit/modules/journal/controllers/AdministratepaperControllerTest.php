@@ -1523,4 +1523,29 @@ class AdministratepaperControllerTest extends TestCase
         $this->assertStringContainsString('$paper->getSpdxLicenseCode()', $method);
         $this->assertStringNotContainsString('in_array($currentSpdxCode', $method);
     }
+
+    /**
+     * Security: the license actions must not read or change the license of a paper of another journal
+     * (the paper's own journal settings were used, whatever the current journal).
+     */
+    public function testLicenseActionsRejectPapersOfAnotherJournal(): void
+    {
+        foreach (['getlicenselistformAction', 'savespdxlicenseAction'] as $action) {
+            $method = $this->extractMethod($action);
+
+            $this->assertStringContainsString('$paper->getRvid() !== RVID', $method, "$action must check the paper journal");
+            $this->assertMatchesRegularExpression(
+                '/getRvid\(\) !== RVID\)\s*\{\s*\$this->getResponse\(\)->setHttpResponseCode\(404\)/',
+                $method,
+                "$action must answer 404 for a paper of another journal"
+            );
+        }
+
+        $save = $this->extractMethod('savespdxlicenseAction');
+        $this->assertLessThan(
+            strpos($save, '->save()'),
+            strpos($save, 'getRvid() !== RVID'),
+            'The journal check must come before any save'
+        );
+    }
 }

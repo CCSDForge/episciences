@@ -4665,7 +4665,8 @@ class AdministratepaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId, false);
 
-        if (!$paper instanceof Episciences_Paper) {
+        // a paper of another journal is handled as not found
+        if (!$paper instanceof Episciences_Paper || $paper->getRvid() !== RVID) {
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
@@ -4705,8 +4706,10 @@ class AdministratepaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId);
 
-        if (!$paper) {
-            echo false;
+        // a paper of another journal is handled as not found
+        if (!$paper instanceof Episciences_Paper || $paper->getRvid() !== RVID) {
+            $this->getResponse()->setHttpResponseCode(404);
+            $this->sendJsonError("Échec de l'enregistrement de la licence : article introuvable.");
             return;
         }
 
