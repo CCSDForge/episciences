@@ -1799,6 +1799,20 @@ class Episciences_Mail_Reminder
     }
 
     /**
+     * Whether the recipient already received this reminder through another recipient role in this run.
+     * Several reminders of the same role are all sent.
+     *
+     * @param array $sentKeys deduplication keys already sent => recipient role that sent them
+     * @param string|null $key deduplication key of the recipient, @see getDeduplicationKey()
+     * @param string $role recipient role of the current reminder
+     * @return bool
+     */
+    public static function isAlreadySentThroughAnotherRole(array $sentKeys, ?string $key, string $role): bool
+    {
+        return $key !== null && isset($sentKeys[$key]) && $sentKeys[$key] !== $role;
+    }
+    
+    /**
      * Build the supervisor (chief_editor, secretary) recipients of the reminders before and after the reviewing deadline.
      *
      * @param array $rows Reviewing rows (DOCID, UID, DEADLINE)

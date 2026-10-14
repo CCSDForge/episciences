@@ -945,6 +945,31 @@ final class Episciences_Mail_ReminderTest extends TestCase
         $this->assertSame($expected, Episciences_Mail_Reminder::getDeduplicationKey($type, $role, $recipient));
     }
 
+    public static function alreadySentThroughAnotherRoleProvider(): array
+    {
+        $key = '2|123|5|x@example.org';
+
+        return [
+            'not deduplicated (null key)' => [[$key => 'editor'], null, 'chief_editor', false],
+            'key not sent yet' => [[], $key, 'chief_editor', false],
+            'same role: second reminder is sent' => [[$key => 'editor'], $key, 'editor', false],
+            'other role: skipped' => [[$key => 'editor'], $key, 'chief_editor', true],
+        ];
+    }
+
+    /**
+     * @dataProvider alreadySentThroughAnotherRoleProvider
+     */
+    public function testIsAlreadySentThroughAnotherRole(
+        array $sentKeys,
+        ?string $key,
+        string $role,
+        bool $expected
+    ): void {
+        $this->assertSame($expected, Episciences_Mail_Reminder::isAlreadySentThroughAnotherRole($sentKeys,
+            $key, $role));
+    }
+
     public static function deduplicationKeyDataProvider(): array
     {
         $after = Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE;

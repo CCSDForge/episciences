@@ -134,7 +134,7 @@ try {
         $review->loadSettings();
         // read by Episciences_PapersManager::keepOnlyUsersWithoutConflict()
         Zend_Registry::set('reviewSettings', $review->getSettings());
-        // reminders already sent in this journal, @see Episciences_Mail_Reminder::getDeduplicationKey()
+        // reminders already sent in this journal,  in this journal (key => recipient role), @see Episciences_Mail_Reminder::getDeduplicationKey()
         $sentKeys = [];
 
         $languages = $website->getLanguages();
@@ -182,7 +182,9 @@ try {
                 $deduplicationKey = Episciences_Mail_Reminder::getDeduplicationKey(
                     (int)$reminder->getType(), (string)$reminder->getRecipient(), $recipient
                 );
-                if ($deduplicationKey !== null && isset($sentKeys[$deduplicationKey])) {
+                if (Episciences_Mail_Reminder::isAlreadySentThroughAnotherRole(
+                    $sentKeys, $deduplicationKey, (string)$reminder->getRecipient()
+                )) {
                     displayMessage('Skipped > ' . $recipient['fullname'] . ' (' . $recipient['uid'] . ') already received this reminder through another role', 'default', true);
                     continue;
                 }
@@ -225,7 +227,7 @@ try {
                 displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'], 'default', true);
 
                 if ($deduplicationKey !== null) {
-                    $sentKeys[$deduplicationKey] = true;
+                    $sentKeys[$deduplicationKey] = (string)$reminder->getRecipient();
                 }
 
                 $mail->setSubject($reminder->getSubject($recipient['lang']));
