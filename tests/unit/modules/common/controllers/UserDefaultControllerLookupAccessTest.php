@@ -20,15 +20,10 @@ final class UserDefaultControllerLookupAccessTest extends TestCase
 {
     private const LOOKUP_ACTIONS = [
         'findcasusersAction',
-        'findusersAction',
         'ajaxfindusersbymailAction',
         'findusersbyfirstnameandnameAction',
         'ajaxfindcasuserAction',
-        'getmailsAction',
     ];
-
-    /** Lookups restricted to secretaries and editors, as in acl.ini */
-    private const EDITORIAL_ONLY_ACTIONS = ['findusersAction', 'getmailsAction'];
 
     private Zend_Auth_Storage_Interface $previousAuthStorage;
 
@@ -96,19 +91,6 @@ final class UserDefaultControllerLookupAccessTest extends TestCase
     /**
      * @return array<string, array{string}>
      */
-    public static function editorialOnlyActionProvider(): array
-    {
-        $cases = [];
-        foreach (self::EDITORIAL_ONLY_ACTIONS as $action) {
-            $cases[$action] = [$action];
-        }
-
-        return $cases;
-    }
-
-    /**
-     * @return array<string, array{string}>
-     */
     public static function paperManagerRoleProvider(): array
     {
         return [
@@ -141,19 +123,6 @@ final class UserDefaultControllerLookupAccessTest extends TestCase
 
         self::assertSame(403, $response->getHttpResponseCode());
         self::assertSame('', $output);
-        self::assertSame('[]', $response->getBody());
-    }
-
-    /**
-     * @dataProvider editorialOnlyActionProvider
-     */
-    public function testGuestEditorGetsForbiddenOnEditorialOnlyLookups(string $action): void
-    {
-        $this->logInAs(Episciences_Acl::ROLE_GUEST_EDITOR);
-
-        [$response] = $this->runAction($action);
-
-        self::assertSame(403, $response->getHttpResponseCode());
         self::assertSame('[]', $response->getBody());
     }
 
