@@ -9,7 +9,7 @@ JEST_CONFIG := jest.config.js
 # =============================================================================
 # Test Commands
 # =============================================================================
-.PHONY: test test-all test-php test-js test-php-unit test-php-integration test-js-unit test-js-watch test-js-coverage test-coverage lint-php
+.PHONY: test test-all test-php test-js test-php-unit test-php-integration test-js-unit test-js-watch test-js-coverage test-e2e test-coverage lint-php
 
 test: test-all ## Run all tests (PHP + JavaScript)
 
@@ -56,6 +56,10 @@ test-js-watch: ## Run JavaScript tests in watch mode
 test-js-coverage: ## Run JavaScript tests with coverage report
 	@echo "Running JavaScript tests with coverage..."
 	@yarn test:coverage
+
+test-e2e: ## Run Playwright E2E tests (usage: make test-e2e [APP_MODE=manager] [BASE_URL=https://...])
+	@echo "Running Playwright E2E tests..."
+	@$(if $(APP_MODE),APP_MODE=$(call shell_quote,$(APP_MODE))) $(if $(BASE_URL),BASE_URL=$(call shell_quote,$(BASE_URL))) yarn test:e2e
 
 test-coverage: ## Run all tests with coverage (where available)
 	@echo "Running tests with coverage..."
