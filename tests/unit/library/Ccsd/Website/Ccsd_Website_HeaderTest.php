@@ -112,6 +112,47 @@ class Ccsd_Website_HeaderTest extends TestCase
         self::assertSame('&lt;u&gt;x&lt;/u&gt; &lt;bold&gt;', $this->renderText('<u>x</u> <bold>'));
     }
 
+    private function renderSpan(string $class, string $style): string
+    {
+        $html = $this->render([
+            'type' => 'text',
+            'align' => 'left',
+            'text' => ['en' => 'x'],
+            'text_class' => $class,
+            'text_style' => $style,
+        ]);
+        preg_match('#<span[^>]*>#', $html, $matches);
+
+        return $matches[0] ?? '';
+    }
+
+    public function testTypographicStylesAreKept(): void
+    {
+        self::assertSame(
+            '<span style="font-size:40px;font-weight:bold;color:#21472e;color:rgb(2, 125, 186);font-family:&quot;Open Sans&quot;, serif;">',
+            $this->renderSpan('', 'font-size:40px; Font-Weight: bold ;color:#21472e;color: rgb(2, 125, 186);font-family:"Open Sans", serif')
+        );
+    }
+
+    public function testLayoutAndRemoteStylesAreDropped(): void
+    {
+        self::assertSame(
+            '<span style="color:red;">',
+            $this->renderSpan('', 'position:fixed;top:0;width:100%;background:url(https://evil.example/x.png);color:red;'
+                . 'font-family:url(x);color:expression(alert(1));color:var(--x);color:\72 ed;color:red/**/')
+        );
+        self::assertSame('<span>', $this->renderSpan('', 'position:fixed;z-index:9999'));
+    }
+
+    public function testInvalidClassNamesAreDropped(): void
+    {
+        self::assertSame(
+            '<span class="rv-header _x -title">',
+            $this->renderSpan(' rv-header  a" 2col _x -title {}', '')
+        );
+        self::assertSame('<span>', $this->renderSpan('"><script>', ''));
+    }
+
     public function testUnknownAlignmentFallsBackToLeft(): void
     {
         $html = $this->render([
