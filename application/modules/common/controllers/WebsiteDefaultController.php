@@ -138,7 +138,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
         if (isset($params['method']) && $request->isPost()) {
             if (!$this->_validateCsrf()) {
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage($translator->translate('Votre session a expiré, veuillez réessayer.'));
+                $this->addCsrfError();
                 $this->_helper->redirector->goToUrl($request->getRequestUri());
                 return;
             }
