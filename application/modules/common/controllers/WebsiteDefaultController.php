@@ -75,7 +75,7 @@ class WebsiteDefaultController extends Episciences_Controller_Action
         if ($isSubmitted && !$this->_validateCsrf()) {
             // The submitted values are not shown again: they may come from another site
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Les modifications n'ont pas été enregistrées car le formulaire a expiré. Veuillez les saisir à nouveau.");
-            $this->redirect('/website/header');
+            $this->redirect($this->url(['controller' => 'website', 'action' => 'header']));
             return;
         }
 
