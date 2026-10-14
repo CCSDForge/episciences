@@ -38,6 +38,9 @@ final class AdministratemailControllerTemplateScopeTest extends TestCase
     /** @var list<string> SQL of the SELECT statements sent to the adapter */
     private array $selects = [];
 
+    /** @var array<string, mixed>|false template row found by the lookups */
+    private array|false $templateRow = false;
+
     protected function setUp(): void
     {
         $this->previousUnitTestEnabled = Zend_Session::$_unitTestEnabled;
@@ -59,7 +62,7 @@ final class AdministratemailControllerTemplateScopeTest extends TestCase
         $this->adapter->method('fetchRow')->willReturnCallback(function ($select) {
             $this->selects[] = $select instanceof Zend_Db_Select ? $select->assemble() : (string)$select;
 
-            return false; // a template of another journal is not found
+            return $this->templateRow; // by default, a template of another journal is not found
         });
         Zend_Db_Table_Abstract::setDefaultAdapter($this->adapter);
 
@@ -92,9 +95,10 @@ final class AdministratemailControllerTemplateScopeTest extends TestCase
         array $post,
         bool $isPost = true,
         bool $allowedToEdit = true,
-        array $headers = []
+        array $headers = [],
+        ?Zend_Controller_Request_HttpTestCase $request = null
     ): string {
-        $request = new Zend_Controller_Request_HttpTestCase();
+        $request ??= new Zend_Controller_Request_HttpTestCase();
         $request->setMethod($isPost ? 'POST' : 'GET');
         $request->setPost($isPost ? $post : []);
         foreach ($headers as $name => $value) {
@@ -222,5 +226,25 @@ final class AdministratemailControllerTemplateScopeTest extends TestCase
         self::assertStringEndsWith('/administratemail/templates', $url);
         self::assertCount(1, $this->selects);
         self::assertMatchesRegularExpression('/\(RVID IS NULL OR RVID = ' . RVID . '\)/', $this->selects[0]);
+    }
+
+    #[DataProvider('refusedRevertProvider')]
+    public function testSaveIsRefusedWithoutAPostCarryingTheToken(bool $isPost, ?string $token): void
+    {
+        $this->assertNoWrite();
+        // A default template, which the journal may customise
+        $this->templateRow = ['ID' => 7, 'PARENTID' => null, 'RVID' => null, 'RVCODE' => null, 'KEY' => 'paper_accepted', 'TYPE' => 0];
+
+        $sessionToken = Episciences_Csrf_Helper::getSessionToken();
+        $post = ['en' => ['subject' => 'x', 'body' => 'y', 'name' => 'z']];
+        if ($token !== null) {
+            $post['csrf_token'] = $token === 'valid' ? $sessionToken : $token;
+        }
+
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setQuery(['id' => '7']);
+        $url = $this->callAction('savetemplateAction', $post, $isPost, true, [], $request);
+
+        self::assertStringEndsWith('/administratemail/templates', $url);
     }
 }
