@@ -25,6 +25,8 @@ describe('Profile photo deletion', function () {
         `;
         global.message = jest.fn();
         global.fetch = jest.fn();
+        // JS_PREFIX_URL is defined by the layout (path prefix of the journal on manager branches)
+        global.JS_PREFIX_URL = '/';
         // Runs the repository script under test, as the other suites do
         eval(userJs);
         document.dispatchEvent(new Event('DOMContentLoaded'));
@@ -33,6 +35,7 @@ describe('Profile photo deletion', function () {
     afterEach(function () {
         delete global.message;
         delete global.fetch;
+        delete global.JS_PREFIX_URL;
     });
 
     function respond(status, body) {

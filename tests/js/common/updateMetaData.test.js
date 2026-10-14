@@ -33,6 +33,8 @@ describe('updateMetaData', () => {
         global.message = jest.fn();
         global.getLoader = jest.fn(() => '<span>loading</span>');
         global.fetch = jest.fn();
+        // JS_PREFIX_URL is defined by the layout (path prefix of the journal on manager branches)
+        global.JS_PREFIX_URL = '/';
 
         reloadMock = jest.fn();
         fakeLocation = { reload: reloadMock };
@@ -41,6 +43,7 @@ describe('updateMetaData', () => {
     afterEach(() => {
         delete global.message;
         delete global.getLoader;
+        delete global.JS_PREFIX_URL;
     });
 
     function respondWith(status, body) {
