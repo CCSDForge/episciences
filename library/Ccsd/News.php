@@ -231,6 +231,9 @@ class Ccsd_News
     public function delete($newsid): bool
     {
         $newsid = (int)$newsid;
+        if ($newsid <= 0) {
+            return false;
+        }
 
         $deleted = $this->_db->delete($this->_table, [
             $this->_primary . ' = ?' => $newsid,

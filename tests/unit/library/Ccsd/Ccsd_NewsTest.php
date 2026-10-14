@@ -23,15 +23,16 @@ class Ccsd_NewsTest extends TestCase
         return $news;
     }
 
-    private function buildAdapter(): Zend_Db_Adapter_Abstract
+    /**
+     * Concrete adapter so that select() and identifier quoting stay real;
+     * only the methods reaching the database (connection included) are stubbed.
+     */
+    private function buildAdapter(): Zend_Db_Adapter_Pdo_Mysql
     {
-        $db = $this->getMockBuilder(Zend_Db_Adapter_Abstract::class)
+        return $this->getMockBuilder(Zend_Db_Adapter_Pdo_Mysql::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['fetchOne', 'delete', 'select'])
-            ->getMockForAbstractClass();
-        $db->method('select')->willReturnCallback(static fn() => new Zend_Db_Select($db));
-
-        return $db;
+            ->onlyMethods(['_connect', 'fetchOne', 'delete', 'update', 'insert'])
+            ->getMock();
     }
 
     public function testBelongsToSiteRejectsNonPositiveId(): void
@@ -46,7 +47,10 @@ class Ccsd_NewsTest extends TestCase
     {
         $db = $this->buildAdapter();
         $db->expects(self::once())->method('fetchOne')
-            ->with(self::callback(static fn($select) => str_contains((string)$select, 'SID')))
+            ->with(self::callback(static fn(Zend_Db_Select $select): bool => $select->getPart(Zend_Db_Select::WHERE) === [
+                '(NEWSID = 12)',
+                'AND (SID = ' . self::SID . ')',
+            ]))
             ->willReturn('12');
 
         self::assertTrue($this->buildNews($db)->belongsToSite(12));
@@ -70,6 +74,26 @@ class Ccsd_NewsTest extends TestCase
             ])
             ->willReturn(0);
 
-        self::assertFalse($this->buildNews($db)->delete('12'));
+        self::assertFalse($this->buildNews($db)->delete(12));
+    }
+
+    public function testDeleteRejectsNonPositiveId(): void
+    {
+        $db = $this->buildAdapter();
+        $db->expects(self::never())->method('delete');
+
+        self::assertFalse($this->buildNews($db)->delete(0));
+    }
+
+    public function testSaveRejectsForeignNews(): void
+    {
+        $db = $this->buildAdapter();
+        $db->method('fetchOne')->willReturn(false);
+        $db->expects(self::never())->method('update');
+        $db->expects(self::never())->method('insert');
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->buildNews($db)->save(['newsid' => 12, 'online' => 1, 'title' => ['fr' => 't'], 'uid' => 1]);
     }
 }

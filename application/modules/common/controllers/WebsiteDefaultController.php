@@ -451,12 +451,15 @@ class WebsiteDefaultController extends Zend_Controller_Action
             // Delete
             if ($this->getRequest()->getPost('action') === 'delete') {
                 $delId = (int) ($post['newsid'] ?? 0);
-                if ($newsObj->belongsToSite($delId)) {
-                    $newsObj->delete($delId);
+                if ($newsObj->delete($delId)) {
                     Episciences_JournalNews::deleteByLegacyId($delId);
                     $this->_helper->FlashMessenger
                         ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)
                         ->addMessage("L'actualité a été supprimée.");
+                } else {
+                    $this->_helper->FlashMessenger
+                        ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                        ->addMessage("Actualité introuvable.");
                 }
                 $this->redirect('/website/news');
                 return;
@@ -465,6 +468,9 @@ class WebsiteDefaultController extends Zend_Controller_Action
             // Add / edit
             $newsid = (int) ($post['newsid'] ?? 0);
             if ($newsid > 0 && !$newsObj->belongsToSite($newsid)) {
+                $this->_helper->FlashMessenger
+                    ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                    ->addMessage("Actualité introuvable.");
                 $this->redirect('/website/news');
                 return;
             }
