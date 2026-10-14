@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without any identity, which made the paper page fail.
 - [#1009](https://github.com/CCSDForge/episciences/pull/1009): remove redundant account linking confirmation when emails match
 - Avoid suggesting that an invitation be linked to another account if it has already been accepted, has expired or has been cancelled.
+- Mail templates: editing, saving and reverting a template now only apply to a default template or a template of the current journal;
+  the revert is submitted as a confirmed form instead of a link, and an expired session shows a message instead of an error page.
 - A refused paper resubmitted through the inbox (COAR Notify) keeps the submission date of the refused paper,
   which is shared by all the versions of a paper, instead of getting the current date.
 
