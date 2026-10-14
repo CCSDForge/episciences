@@ -145,6 +145,52 @@ final class SubmitControllerReplacementScopeTest extends TestCase
         self::assertSame(0, $result['code']);
     }
 
+    public function testReplacementOfAPaperOwnedBySomeoneElseTellsWhy(): void
+    {
+        $this->logInAs(self::OWNER_UID + 1);
+        $this->returnPaper();
+
+        $formValues = $this->forgedFormValues();
+        [$result] = $this->replace($formValues);
+
+        self::assertSame(
+            Zend_Registry::get('Zend_Translate')->translate(Episciences_Submit::REPLACEMENT_ERROR_NOT_OWNER),
+            $result['message']
+        );
+    }
+
+    /**
+     * @return array<string, array{int}>
+     */
+    public static function notReplacedInPlaceProvider(): array
+    {
+        return [
+            'paper ready to publish' => [Episciences_Paper::STATUS_CE_READY_TO_PUBLISH],
+            'paper approved by the author' => [Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION],
+        ];
+    }
+
+    /**
+     * Replacing such a paper from the submission form would add a second active row for the paper
+     * and remove the files of the stored one: its new version goes through the new version page.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('notReplacedInPlaceProvider')]
+    public function testPaperFurtherInThePublicationProcessIsNotReplacedFromTheSubmissionForm(int $status): void
+    {
+        $this->logInAs(self::OWNER_UID);
+        $this->returnPaper(['STATUS' => $status]);
+        $this->adapter->expects(self::never())->method('update');
+
+        $formValues = $this->forgedFormValues();
+        [$result] = $this->replace($formValues);
+
+        self::assertSame(0, $result['code']);
+        self::assertSame(
+            Zend_Registry::get('Zend_Translate')->translate(Episciences_Submit::REPLACEMENT_ERROR_NOT_REPLACEABLE),
+            $result['message']
+        );
+    }
+
     public function testResubmissionOfARefusedPaperIsRefusedWhenTheJournalDoesNotAllowIt(): void
     {
         $this->allowRefusedPaperResubmission(false);

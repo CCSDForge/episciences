@@ -7,6 +7,7 @@ namespace Episciences\Submit;
 use Episciences\AppRegistry;
 use Episciences_Repositories;
 use Episciences_Repositories_Common;
+use Episciences_Repositories_CryptologyePrint_Hooks;
 use Episciences_Submit;
 use Zend_Session_Namespace;
 
@@ -18,9 +19,18 @@ use Zend_Session_Namespace;
  * can change it. It is remembered in the session when the document is searched, and fetched
  * again from the repository when it is no longer there. A remembered record is consumed by
  * resolve(): it does not stay in the session once the document is submitted.
+ *
+ * The other values computed from the repository response and posted back by the form are remembered
+ * with the record for the same reason: the concept identifier (repositories exposing one, e.g. Zenodo),
+ * the version given by the repository hook and the datetime pointing a specific version (e.g. IACR).
  */
 final class SubmittedRecord
 {
+    public const RECORD = 'record';
+    public const CONCEPT_IDENTIFIER = Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY;
+    public const VERSION = 'hookVersion';
+    public const UPDATE_DATETIME = Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME;
+
     private const SESSION_NAMESPACE = 'submitted_records';
     private const MAX_REMEMBERED = 10;
 
@@ -45,15 +55,24 @@ final class SubmittedRecord
     }
 
     /**
-     * Remember the record sent to the author after a repository search.
+     * Remember the document sent to the author after a repository search, under the identifier and
+     * version that the form posts back.
+     *
+     * @param array<string, mixed> $response cleaned response of Episciences_Submit::getDoc() holding a 'record'
      */
-    public static function remember(string $repoId, string $docId, float $version, string $record): void
+    public static function remember(string $repoId, string $docId, float $version, array $response): void
     {
+        $document = self::documentFrom($response);
+
+        if ($document === null) {
+            return;
+        }
+
         $session = new Zend_Session_Namespace(self::SESSION_NAMESPACE);
         $records = is_array($session->records) ? $session->records : [];
 
         unset($records[self::key($repoId, $docId, $version)]);
-        $records[self::key($repoId, $docId, $version)] = $record;
+        $records[self::key($repoId, $docId, $version)] = $document;
 
         $session->records = array_slice($records, -self::MAX_REMEMBERED, null, true);
     }
@@ -65,16 +84,30 @@ final class SubmittedRecord
      */
     public static function resolve(string $repoId, string $docId, float $version, ?int $latestObsoleteDocId = null): ?string
     {
+        return self::resolveDocument($repoId, $docId, $version, $latestObsoleteDocId)[self::RECORD] ?? null;
+    }
+
+    /**
+     * Document to store for a submission (record, concept identifier, version, update datetime),
+     * resolved as resolve() does. Returns null when the repository gives no record.
+     *
+     * @return array{record: string, conceptIdentifier: ?string, hookVersion: ?float, update: ?string}|null
+     */
+    public static function resolveDocument(string $repoId, string $docId, float $version, ?int $latestObsoleteDocId = null): ?array
+    {
         $session = new Zend_Session_Namespace(self::SESSION_NAMESPACE);
         $records = is_array($session->records) ? $session->records : [];
         $key = self::key($repoId, $docId, $version);
 
-        if (isset($records[$key]) && is_string($records[$key])) {
-            $record = $records[$key];
+        // A record remembered alone (former format) is fetched again, so as not to lose the other values
+        if (isset($records[$key])) {
+            $remembered = is_array($records[$key]) ? self::documentFrom($records[$key]) : null;
             unset($records[$key]);
             $session->records = $records;
 
-            return $record;
+            if ($remembered !== null) {
+                return $remembered;
+            }
         }
 
         AppRegistry::getMonoLogger()?->warning(sprintf(
@@ -95,9 +128,34 @@ final class SubmittedRecord
             return null;
         }
 
-        $record = self::clean($response, $repoId)['record'] ?? null;
+        return self::documentFrom(self::clean($response, $repoId));
+    }
 
-        return is_string($record) && $record !== '' ? $record : null;
+    /**
+     * @param array<mixed> $response
+     * @return array{record: string, conceptIdentifier: ?string, hookVersion: ?float, update: ?string}|null
+     */
+    private static function documentFrom(array $response): ?array
+    {
+        $record = $response[self::RECORD] ?? null;
+
+        if (!is_string($record) || $record === '') {
+            return null;
+        }
+
+        $version = $response[self::VERSION] ?? null;
+
+        return [
+            self::RECORD => $record,
+            self::CONCEPT_IDENTIFIER => self::nonEmptyString($response[self::CONCEPT_IDENTIFIER] ?? null),
+            self::VERSION => is_numeric($version) ? (float)$version : null,
+            self::UPDATE_DATETIME => self::nonEmptyString($response[self::UPDATE_DATETIME] ?? null),
+        ];
+    }
+
+    private static function nonEmptyString(mixed $value): ?string
+    {
+        return is_scalar($value) && (string)$value !== '' ? (string)$value : null;
     }
 
     private static function key(string $repoId, string $docId, float $version): string

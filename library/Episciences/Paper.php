@@ -237,6 +237,13 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
     ];
+    /**
+     * Statuses of a paper that the submission form replaces in place (same row) by a new version
+     */
+    public const STATUS_REPLACEABLE_IN_PLACE = [
+        self::STATUS_SUBMITTED,
+        self::STATUS_OK_FOR_REVIEWING,
+    ];
     public const All_STATUS_WAITING_FOR_FINAL_VERSION = [
         self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
         self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
@@ -2814,7 +2821,8 @@ class Episciences_Paper
             $sql->where('VERSION = ?', $this->getVersion());
         }
         // If there are several versions of the article, we retrieve the latest version of the article
-        $sql->order('WHEN DESC');
+        // (the docid breaks the tie between rows saved at the same second)
+        $sql->order('WHEN DESC')->order('DOCID DESC');
 
         return (int)($db->fetchOne($sql));
     }
@@ -3933,8 +3941,8 @@ class Episciences_Paper
     }
 
     /**
-     * @param array $options
-     * @return array|string
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>|string the result as an array from the command line, JSON encoded otherwise
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
@@ -3961,6 +3969,11 @@ class Episciences_Paper
         }
 
         $isMainSubmission = array_key_exists('isNewVersionOf', $options) && !$options['isNewVersionOf']; // first submission
+        // The submission form only replaces a paper in place: a paper further in the publication process is not offered
+        $isReplaceable = ($isMainSubmission && !$isEpiNotify) ? $this->canBeReplacedInPlace() : $this->canBeReplaced();
+        // Such a paper gets its new version through the new version page, like a revision
+        $isNewerVersionOnRequestOnly = !$isReplaceable && $this->canBeReplaced()
+            && isset($options['version']) && $options['version'] > $this->getVersion();
 
         // Base UI helpers
         $span = $isFromCli ? '' : '<span class="fas fa-exclamation-circle"></span>';
@@ -4038,7 +4051,7 @@ class Episciences_Paper
             } elseif (
                 isset($options['version']) &&
                 $options['version'] > $this->getVersion() &&
-                $this->canBeReplaced()
+                $isReplaceable
             ) {
                 $msg = $result['message'];
                 $msg .= $isEpiNotify ? ' *** The previous version will be replaced ***' : $question;
@@ -4064,6 +4077,7 @@ class Episciences_Paper
                     in_array($status, self::STATUS_WITH_EXPECTED_REVISION, true)
                     || in_array($status, self::All_STATUS_WAITING_FOR_FINAL_VERSION, true)
                     || $status === self::STATUS_OBSOLETE
+                    || $isNewerVersionOnRequestOnly
                 )
             ) {
 
@@ -5776,6 +5790,14 @@ class Episciences_Paper
     public function canBeReplaced(): bool
     {
         return in_array($this->getStatus(), [self::STATUS_SUBMITTED, self::STATUS_OK_FOR_REVIEWING, self::STATUS_CE_READY_TO_PUBLISH, self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION], true);
+    }
+
+    /**
+     * Whether the submission form can replace this paper by a new version, keeping its row
+     */
+    public function canBeReplacedInPlace(): bool
+    {
+        return in_array($this->getStatus(), self::STATUS_REPLACEABLE_IN_PLACE, true);
     }
 
     private function combineDocUrlLabel(): string
