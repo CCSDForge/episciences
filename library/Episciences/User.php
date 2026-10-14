@@ -1147,24 +1147,24 @@ class Episciences_User extends Ccsd_User_Models_User
             $this->_db->delete(T_USER_ROLES, ['RVID = ?' => $rvId, 'UID = ?' => $uid, 'ROLEID = ?' => $role]);
         }
 
-        if (!empty($roles)) {
+        // Préparation de la requête (valeurs à insérer)
+        $values = [];
+        foreach ((array)$roles as $roleId) {
+            $values[] = '(' . $uid . ',' . $rvId . ',' . $this->_db->quote($roleId) . ')';
+        }
 
-            // Préparation de la requête (valeurs à insérer)
-            foreach ($roles as $roleId) {
-                $roleId = $this->_db->quote($roleId);
-                $values[] = '(' . $uid . ',' . $rvId . ',' . $roleId . ')';
-            }
+        // Preserve member as a role if the user has no other roles, to avoid they disappear from the user list
+        if (empty($values) && !$this->hasAnyRole($uid, $rvId)) {
+            $values[] = '(' . $uid . ',' . $rvId . ',' . $this->_db->quote(Episciences_Acl::ROLE_MEMBER) . ')';
+        }
 
-            // Preserve member as a role is the user has no other roles, to avoid they disappear from the user list
-            if (empty($values)) {
-                $roleId = Episciences_Acl::ROLE_MEMBER;
-                $values[] = '(' . $uid . ',' . $rvId . ',' . $roleId . ')';
-            }
-
-            // Save roles
+        // Save roles
+        if (!empty($values)) {
             $sql = 'INSERT IGNORE INTO ' . T_USER_ROLES . ' (UID, RVID, ROLEID) VALUES ' . implode(',', $values);
             $this->_db->query($sql);
+        }
 
+        if (!empty($roles)) {
             // Si on update les rôles de son propre compte, il faut mettre à jour la session
             if (PHP_SAPI !== 'cli') {
                 $user = Episciences_Auth::getInstance()->getIdentity();
@@ -1204,6 +1204,8 @@ class Episciences_User extends Ccsd_User_Models_User
     /**
      * Roles actually removed by a save: current roles that are editable by the caller and no longer submitted
      *
+     * @internal public for unit tests only, called by saveUserRoles()
+     *
      * @param array<int, string> $currentRoles
      * @param array<int, string> $submittedRoles
      * @param array<int, string> $editableRoles
@@ -1212,6 +1214,17 @@ class Episciences_User extends Ccsd_User_Models_User
     public static function computeRemovedRoles(array $currentRoles, array $submittedRoles, array $editableRoles): array
     {
         return array_values(array_diff(array_intersect($currentRoles, $editableRoles), $submittedRoles));
+    }
+
+    private function hasAnyRole(int $uid, int $rvId): bool
+    {
+        return (bool)$this->_db->fetchOne(
+            $this->_db->select()
+                ->from(T_USER_ROLES, 'ROLEID')
+                ->where('UID = ?', $uid)
+                ->where('RVID = ?', $rvId)
+                ->limit(1)
+        );
     }
 
     public function saveNewRoles(int $uid, string|array $roles = Episciences_Acl::ROLE_MEMBER, int $rvId = null): bool

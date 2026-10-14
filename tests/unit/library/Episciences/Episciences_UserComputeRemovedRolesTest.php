@@ -29,7 +29,7 @@ final class Episciences_UserComputeRemovedRolesTest extends TestCase
         self::assertSame(['reviewer'], Episciences_User::computeRemovedRoles(['chief_editor', 'reviewer'], [], ['reviewer']));
     }
 
-    public function testKeptRoleIsNotRemoved(): void
+    public function testOnlyUncheckedEditableRolesAreRemoved(): void
     {
         self::assertSame(['editor'], Episciences_User::computeRemovedRoles(['editor', 'reviewer'], ['reviewer'], ['editor', 'reviewer']));
     }
