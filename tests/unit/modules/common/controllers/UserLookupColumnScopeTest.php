@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace unit\modules\common\controllers;
 
 use Ccsd_Db_Adapter_Cas;
+use Episciences_Acl;
+use Episciences_Auth;
 use Episciences_User;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
 use Zend_Controller_Request_HttpTestCase;
+use Zend_Auth_Storage_Interface;
+use Zend_Auth_Storage_NonPersistent;
 use Zend_Controller_Response_HttpTestCase;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Select;
@@ -25,6 +29,7 @@ final class UserLookupColumnScopeTest extends TestCase
 {
     private Zend_Db_Adapter_Abstract $previousAdapter;
     private mixed $previousCasAdapter;
+    private Zend_Auth_Storage_Interface $previousAuthStorage;
 
     /** @var MockObject&Zend_Db_Adapter_Abstract */
     private $localDb;
@@ -54,12 +59,21 @@ final class UserLookupColumnScopeTest extends TestCase
         $property->setAccessible(true);
         $this->previousCasAdapter = $property->getValue();
         $property->setValue(null, $this->casDb);
+
+        // The lookup endpoints are restricted to editorial staff
+        $this->previousAuthStorage = Episciences_Auth::getInstance()->getStorage();
+        Episciences_Auth::getInstance()->setStorage(new Zend_Auth_Storage_NonPersistent());
+        $editor = $this->createMock(Episciences_User::class);
+        $editor->method('getAllRoles')->willReturn([RVID => [Episciences_Acl::ROLE_EDITOR]]);
+        Episciences_Auth::getInstance()->getStorage()->write($editor);
     }
 
     protected function tearDown(): void
     {
         Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
         (new ReflectionProperty(Ccsd_Db_Adapter_Cas::class, 'cas_adapter'))->setValue(null, $this->previousCasAdapter);
+        Episciences_Auth::getInstance()->clearIdentity();
+        Episciences_Auth::getInstance()->setStorage($this->previousAuthStorage);
     }
 
     /**

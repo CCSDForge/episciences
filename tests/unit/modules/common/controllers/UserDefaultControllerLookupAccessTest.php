@@ -4,29 +4,68 @@ declare(strict_types=1);
 
 namespace unit\modules\common\controllers;
 
+use Episciences_Acl;
+use Episciences_Auth;
+use Episciences_User;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Zend_Auth_Storage_Interface;
+use Zend_Auth_Storage_NonPersistent;
 
 /**
- * The user lookup endpoints must refuse callers who cannot manage papers,
- * independently of the ACL layer.
+ * The user lookup endpoints and the user list page must refuse callers who
+ * cannot manage papers, independently of the ACL layer.
  */
 final class UserDefaultControllerLookupAccessTest extends TestCase
 {
+    private const LOOKUP_ACTIONS = [
+        'findcasusersAction',
+        'findusersAction',
+        'ajaxfindusersbymailAction',
+        'findusersbyfirstnameandnameAction',
+        'ajaxfindcasuserAction',
+        'getmailsAction',
+    ];
+
+    /** Lookups restricted to secretaries and editors, as in acl.ini */
+    private const EDITORIAL_ONLY_ACTIONS = ['findusersAction', 'getmailsAction'];
+
+    private Zend_Auth_Storage_Interface $previousAuthStorage;
+
+    /** @var array<mixed> */
+    private array $previousGet;
+
+    /** @var list<array{string, array<mixed>}> helper calls recorded by the broker stub */
+    private array $helperCalls = [];
+
+    public static function setUpBeforeClass(): void
+    {
+        require_once APPLICATION_PATH . '/modules/common/controllers/UserDefaultController.php';
+    }
+
+    protected function setUp(): void
+    {
+        $this->previousAuthStorage = Episciences_Auth::getInstance()->getStorage();
+        Episciences_Auth::getInstance()->setStorage(new Zend_Auth_Storage_NonPersistent());
+        Episciences_Auth::getInstance()->clearIdentity();
+        $this->previousGet = $_GET;
+        $_GET = [];
+    }
+
+    protected function tearDown(): void
+    {
+        Episciences_Auth::getInstance()->clearIdentity();
+        Episciences_Auth::getInstance()->setStorage($this->previousAuthStorage);
+        $_GET = $this->previousGet;
+    }
+
     /**
      * @return array<string, array{string}>
      */
     public static function lookupActionProvider(): array
     {
         $cases = [];
-        foreach ([
-                     'findcasusersAction',
-                     'findusersAction',
-                     'ajaxfindusersbymailAction',
-                     'findusersbyfirstnameandnameAction',
-                     'ajaxfindcasuserAction',
-                     'getmailsAction',
-                 ] as $action) {
+        foreach (self::LOOKUP_ACTIONS as $action) {
             $cases[$action] = [$action];
         }
 
@@ -34,12 +73,144 @@ final class UserDefaultControllerLookupAccessTest extends TestCase
     }
 
     /**
+     * @return array<string, array{string, string}>
+     */
+    public static function roleWithoutPaperManagementProvider(): array
+    {
+        $cases = [];
+        foreach ([
+                     Episciences_Acl::ROLE_MEMBER,
+                     Episciences_Acl::ROLE_AUTHOR,
+                     Episciences_Acl::ROLE_REVIEWER,
+                     Episciences_Acl::ROLE_COPY_EDITOR,
+                     Episciences_Acl::ROLE_WEBMASTER,
+                 ] as $role) {
+            foreach (self::LOOKUP_ACTIONS as $action) {
+                $cases["$role on $action"] = [$role, $action];
+            }
+        }
+
+        return $cases;
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function editorialOnlyActionProvider(): array
+    {
+        $cases = [];
+        foreach (self::EDITORIAL_ONLY_ACTIONS as $action) {
+            $cases[$action] = [$action];
+        }
+
+        return $cases;
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function paperManagerRoleProvider(): array
+    {
+        return [
+            'guest editor' => [Episciences_Acl::ROLE_GUEST_EDITOR],
+            'secretary' => [Episciences_Acl::ROLE_SECRETARY],
+            'editor' => [Episciences_Acl::ROLE_EDITOR],
+        ];
+    }
+
+    /**
      * @dataProvider lookupActionProvider
      */
     public function testAnonymousCallerGetsForbiddenAndNoData(string $action): void
     {
-        require_once APPLICATION_PATH . '/modules/common/controllers/UserDefaultController.php';
+        [$response, $output] = $this->runAction($action);
 
+        self::assertSame(403, $response->getHttpResponseCode());
+        self::assertSame('', $output);
+        self::assertSame('[]', $response->getBody());
+    }
+
+    /**
+     * @dataProvider roleWithoutPaperManagementProvider
+     */
+    public function testLoggedInCallerWithoutPaperManagementRoleGetsForbidden(string $role, string $action): void
+    {
+        $this->logInAs($role);
+
+        [$response, $output] = $this->runAction($action);
+
+        self::assertSame(403, $response->getHttpResponseCode());
+        self::assertSame('', $output);
+        self::assertSame('[]', $response->getBody());
+    }
+
+    /**
+     * @dataProvider editorialOnlyActionProvider
+     */
+    public function testGuestEditorGetsForbiddenOnEditorialOnlyLookups(string $action): void
+    {
+        $this->logInAs(Episciences_Acl::ROLE_GUEST_EDITOR);
+
+        [$response] = $this->runAction($action);
+
+        self::assertSame(403, $response->getHttpResponseCode());
+        self::assertSame('[]', $response->getBody());
+    }
+
+    /**
+     * Without any "term", the CAS user search answers an empty list before
+     * reaching the database: it shows that the guard let the request through.
+     *
+     * @dataProvider paperManagerRoleProvider
+     */
+    public function testPaperManagerPassesTheGuard(string $role): void
+    {
+        $this->logInAs($role);
+
+        [$response, $output] = $this->runAction('findcasusersAction');
+
+        self::assertSame(200, $response->getHttpResponseCode());
+        self::assertSame('[]', $output);
+    }
+
+    /**
+     * @return array<string, array{?string}>
+     */
+    public static function userListDeniedRoleProvider(): array
+    {
+        return [
+            'anonymous' => [null],
+            'reviewer' => [Episciences_Acl::ROLE_REVIEWER],
+            'guest editor' => [Episciences_Acl::ROLE_GUEST_EDITOR],
+        ];
+    }
+
+    /**
+     * @dataProvider userListDeniedRoleProvider
+     */
+    public function testUserListRedirectsCallerWhoIsNeitherSecretaryNorEditor(?string $role): void
+    {
+        if ($role !== null) {
+            $this->logInAs($role);
+        }
+
+        $this->runAction('listAction');
+
+        self::assertContains(['gotoUrl', ['/error/deny']], $this->helperCalls);
+    }
+
+    private function logInAs(string $role): void
+    {
+        $user = $this->createMock(Episciences_User::class);
+        $user->method('getAllRoles')->willReturn([RVID => [$role]]);
+        Episciences_Auth::getInstance()->getStorage()->write($user);
+    }
+
+    /**
+     * @return array{\Zend_Controller_Response_Http, string} the response and the echoed output
+     */
+    private function runAction(string $action): array
+    {
         $controller = (new ReflectionClass(\UserDefaultController::class))->newInstanceWithoutConstructor();
 
         $response = new \Zend_Controller_Response_Http();
@@ -47,36 +218,44 @@ final class UserDefaultControllerLookupAccessTest extends TestCase
         $request->setParam('term', 'a');
 
         $reflection = new ReflectionClass(\Zend_Controller_Action::class);
-        foreach (['_request' => $request, '_response' => $response] as $name => $value) {
+        foreach (['_request' => $request, '_response' => $response, '_helper' => $this->helperBrokerStub()] as $name => $value) {
             $property = $reflection->getProperty($name);
             $property->setAccessible(true);
             $property->setValue($controller, $value);
         }
-        $helper = $reflection->getProperty('_helper');
-        $helper->setAccessible(true);
-        $helper->setValue($controller, self::helperBrokerStub());
 
         ob_start();
-        $controller->{$action}();
-        $output = ob_get_clean();
+        try {
+            $controller->{$action}();
+        } finally {
+            $output = (string) ob_get_clean();
+        }
 
-        self::assertSame(403, $response->getHttpResponseCode());
-        self::assertSame('', (string) $output);
-        self::assertSame('[]', $response->getBody());
+        return [$response, $output];
     }
 
     /**
-     * Stands in for the action helper broker: every helper accepts any call and
-     * returns itself, so layout / view renderer calls are no-ops.
+     * Stands in for the action helper broker: every helper accepts any call,
+     * records it and returns itself, so layout / view renderer calls are no-ops.
      */
-    private static function helperBrokerStub(): object
+    private function helperBrokerStub(): object
     {
-        return new class {
+        $record = function (string $name, array $arguments): void {
+            $this->helperCalls[] = [$name, $arguments];
+        };
+
+        return new class ($record) {
+            public function __construct(private readonly \Closure $record)
+            {
+            }
+
             /**
              * @param array<mixed> $arguments
              */
             public function __call(string $name, array $arguments): self
             {
+                ($this->record)($name, $arguments);
+
                 return $this;
             }
 

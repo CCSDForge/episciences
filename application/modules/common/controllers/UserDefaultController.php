@@ -580,14 +580,19 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * Guard for the user lookup endpoints (names, usernames and e-mail addresses):
-     * the caller must be allowed to manage papers in the current journal.
+     * the caller must be allowed to manage papers in the current journal, or be a
+     * secretary or an editor when $editorialOnly is set (same scope as acl.ini).
      * Answers 403 with an empty JSON body when it is not.
      *
      * @return bool true when the request has been denied (the action must stop)
      */
-    private function denyUserLookup(): bool
+    private function denyUserLookup(bool $editorialOnly = false): bool
     {
-        if (Episciences_Auth::isLogged() && Episciences_Auth::isAllowedToManagePaper()) {
+        $allowed = Episciences_Auth::isLogged() && ($editorialOnly
+                ? (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor())
+                : Episciences_Auth::isAllowedToManagePaper());
+
+        if ($allowed) {
             return false;
         }
 
@@ -1677,7 +1682,7 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function findusersAction(): void
     {
-        if ($this->denyUserLookup()) {
+        if ($this->denyUserLookup(true)) {
             return;
         }
 
@@ -2015,7 +2020,7 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function getmailsAction()
     {
-        if ($this->denyUserLookup()) {
+        if ($this->denyUserLookup(true)) {
             return;
         }
 
