@@ -3,13 +3,14 @@
 namespace unit\library\Episciences\paper;
 
 use Episciences_Paper;
+use Episciences_User;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
 /**
  * Test suite for Episciences_Paper::isAssignedEditorOrCopyEditor(), Episciences_Paper::isAssignedEditor()
- * and Episciences_Paper::findLatestVersionForAssignmentCheck()
+ * Episciences_Paper::findLatestVersionForAssignmentCheck() and Episciences_Paper::isEditorForReportVisibility()
  */
 final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
 {
@@ -126,6 +127,60 @@ final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
             'anonymous visitor' => [0],
             'negative uid' => [-1],
         ];
+    }
+
+    private function isEditorForReportVisibility(Episciences_Paper $paper, bool $hasEditorRole, bool $isEditorsEncapsulated): bool
+    {
+        $user = $this->createMock(Episciences_User::class);
+        $user->method('getUid')->willReturn(42);
+        $user->method('isEditor')->willReturn($hasEditorRole);
+
+        return (new ReflectionMethod(Episciences_Paper::class, 'isEditorForReportVisibility'))
+            ->invoke($paper, $user, $isEditorsEncapsulated);
+    }
+
+    /**
+     * @dataProvider reportVisibilityProvider
+     */
+    public function testEditorForReportVisibility(
+        bool $isEditorOfThisVersion,
+        bool $isEditorOfTheLatestVersion,
+        bool $isCopyEditorOfTheLatestVersion,
+        bool $hasEditorRole,
+        bool $isEditorsEncapsulated,
+        bool $expected
+    ): void {
+        $paper = $this->createPaper(
+            $isEditorOfThisVersion,
+            false,
+            $this->createLatestVersion($isEditorOfTheLatestVersion, $isCopyEditorOfTheLatestVersion)
+        );
+
+        self::assertSame($expected, $this->isEditorForReportVisibility($paper, $hasEditorRole, $isEditorsEncapsulated));
+    }
+
+    public static function reportVisibilityProvider(): array
+    {
+        // [editor of this version, editor of the latest version, copy editor of the latest version, editor role, encapsulated, expected]
+        return [
+            'encapsulated: editor of this version' => [true, false, false, true, true, true],
+            'encapsulated: editor of the latest version only' => [false, true, false, true, true, true],
+            'encapsulated: guest editor of the latest version only' => [false, true, false, false, true, true],
+            'encapsulated: unassigned editor' => [false, false, false, true, true, false],
+            'encapsulated: copy editor of the latest version' => [false, false, true, false, true, false],
+            'not encapsulated: unassigned editor' => [false, false, false, true, false, true],
+            'not encapsulated: guest editor of the latest version only' => [false, true, false, false, false, true],
+            'not encapsulated: unassigned user without editor role' => [false, false, false, false, false, false],
+        ];
+    }
+
+    public function testEditorRoleWithoutEncapsulationSkipsTheAssignmentChecks(): void
+    {
+        $paper = $this->createPaper(false, false);
+        $paper->expects(self::never())->method('getEditor');
+        $paper->expects(self::never())->method('findLatestVersionForAssignmentCheck');
+
+        self::assertTrue($this->isEditorForReportVisibility($paper, true, false));
     }
 
     public function testFindLatestVersionForAssignmentCheckHoldsTheLatestVersionIdentifiers(): void

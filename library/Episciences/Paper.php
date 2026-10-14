@@ -2423,9 +2423,10 @@ class Episciences_Paper
             $review = Episciences_ReviewsManager::find(RVID);
             $review->loadSettings();
 
-            $isEditor = ($review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) == 1) ?
-                $this->getEditor($user->getUid()) :
-                $user->isEditor();
+            $isEditor = $this->isEditorForReportVisibility(
+                $user,
+                $review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) == 1
+            );
 
             if ($user->getUid() == $this->getUid()) {
                 // user is the paper contributor
@@ -2450,6 +2451,22 @@ class Episciences_Paper
         }
 
         return $this->filterRatingReports($reports, $visibility, $user);
+    }
+
+    /**
+     * Check if a user sees the rating criteria reserved to editors.
+     * The assigned editor (or guest editor) always does, including the one assigned to the latest version
+     * when this paper is a previous version (same rule as the report details, see isAssignedEditor()).
+     * Without editors encapsulation, any editor does too.
+     *
+     * @param Episciences_User $user
+     * @param bool $isEditorsEncapsulated
+     * @return bool
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function isEditorForReportVisibility(Episciences_User $user, bool $isEditorsEncapsulated): bool
+    {
+        return (!$isEditorsEncapsulated && $user->isEditor()) || $this->isAssignedEditor((int)$user->getUid());
     }
 
     /**
