@@ -219,7 +219,7 @@ References only need to be extracted when a new DOCID is created (new submission
 
 The command outputs a summary table at the end of execution showing the result and reference count for each DOCID. Papers already extracted are only listed with `-v`.
 
-Each API call has a 360-second timeout (GROBID extraction can take several minutes). The command returns exit code 1 if any calls fail, so cron alerts fire on partial failures.
+Each API call has a 360-second timeout (GROBID extraction can take several minutes). The command returns exit code 1 if any calls fail, so cron alerts fire on partial failures. Papers whose host is not allowed by the service (`Invalid URL`) or whose PDF contains no reference are reported as skipped and do not fail the run.
 
 > **Technical documentation:** see [biblioref-extraction.md](biblioref-extraction.md) for full architecture and lifecycle details.
 

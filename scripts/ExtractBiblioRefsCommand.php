@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
@@ -56,6 +57,17 @@ class ExtractBiblioRefsCommand extends Command
     ];
 
     private const DEFAULT_TIMEOUT = 360;
+
+    /**
+     * Biblioref errors that retrying cannot fix: reported as skipped so they do not fail the cron run.
+     * HTTP status => [error message prefix returned by the service => skip reason].
+     */
+    private const SKIPPED_API_ERRORS = [
+        400 => ['Invalid URL' => 'host not allowed'],      // host missing from EPISCIENCES_ALLOWED_HOSTS
+        200 => ['No references found' => 'no references'], // success: false, GROBID found no reference in the PDF
+    ];
+
+    private const SKIP_REASON_TEMPORARY = 'temporary';
 
     protected function configure(): void
     {
@@ -187,7 +199,8 @@ class ExtractBiblioRefsCommand extends Command
         $extracted        = 0;
         $alreadyExtracted = 0;
         $failed           = 0;
-        $skipped          = 0;
+        /** @var array<string, int> $skipped Skipped papers per reason */
+        $skipped          = array_fill_keys([self::SKIP_REASON_TEMPORARY, ...array_merge(...array_values(self::SKIPPED_API_ERRORS))], 0);
 
         // Already extracted papers are only listed in verbose mode, to keep cron output short.
         $verbose = $io->isVerbose();
@@ -210,8 +223,8 @@ class ExtractBiblioRefsCommand extends Command
 
             if ((int) $row['REPOID'] === 0) {
                 $logger->info(sprintf('DOCID %d — temporary version, skipped', $paperDocId));
-                $skipped++;
-                $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, 'skipped (temporary)');
+                $skipped[self::SKIP_REASON_TEMPORARY]++;
+                $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, sprintf('skipped (%s)', self::SKIP_REASON_TEMPORARY));
                 $progressBar->advance();
                 continue;
             }
@@ -266,6 +279,9 @@ class ExtractBiblioRefsCommand extends Command
             if ($result === null) {
                 $failed++;
                 $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, 'failed');
+            } elseif ($result['skipReason'] !== null) {
+                $skipped[$result['skipReason']]++;
+                $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, sprintf('skipped (%s)', $result['skipReason']));
             } elseif ($result['alreadyExtracted']) {
                 $alreadyExtracted++;
                 if ($verbose) {
@@ -290,10 +306,15 @@ class ExtractBiblioRefsCommand extends Command
 
         if (!$dryRun) {
             $logger->info(sprintf(
-                'Extraction complete — extracted: %d, already done: %d, skipped: %d, failed: %d (total: %d)',
+                'Extraction complete — extracted: %d, already done: %d, skipped: %d (%s), failed: %d (total: %d)',
                 $extracted,
                 $alreadyExtracted,
-                $skipped,
+                array_sum($skipped),
+                implode(', ', array_map(
+                    static fn(string $reason, int $count): string => sprintf('%s: %d', $reason, $count),
+                    array_keys($skipped),
+                    $skipped
+                )),
                 $failed,
                 $total
             ));
@@ -334,7 +355,7 @@ class ExtractBiblioRefsCommand extends Command
      *
      * Returns the parsed result on success, null on any failure.
      *
-     * @return array{alreadyExtracted: bool, referenceCount: ?int}|null
+     * @return array{alreadyExtracted: bool, referenceCount: ?int, skipReason: ?string}|null
      */
     private function callExtractApi(
         Client $client,
@@ -352,12 +373,23 @@ class ExtractBiblioRefsCommand extends Command
         }
 
         try {
-            $body = $client->get($apiUrl, [
+            $response = $client->get($apiUrl, [
                 'headers' => $headers,
                 'verify'  => $sslVerify,
                 'timeout' => $timeout,
-            ])->getBody()->getContents();
+            ]);
+            $body = $response->getBody()->getContents();
         } catch (GuzzleException $e) {
+            $errorResponse = $e instanceof RequestException ? $e->getResponse() : null;
+            if ($errorResponse !== null) {
+                $errorData = json_decode((string) $errorResponse->getBody(), true);
+                $error     = is_array($errorData) && is_string($errorData['error'] ?? null) ? $errorData['error'] : '';
+                $skipReason = $this->getSkipReason($errorResponse->getStatusCode(), $error);
+                if ($skipReason !== null) {
+                    return $this->skippedResult($articleUrl, $skipReason, $error, $logger);
+                }
+            }
+
             $logger->error(sprintf(
                 'HTTP error for %s (code %s): %s',
                 $articleUrl,
@@ -385,10 +417,16 @@ class ExtractBiblioRefsCommand extends Command
         }
 
         if (!($data['success'] ?? false)) {
+            $error      = is_string($data['error'] ?? null) ? $data['error'] : '';
+            $skipReason = $this->getSkipReason($response->getStatusCode(), $error);
+            if ($skipReason !== null) {
+                return $this->skippedResult($articleUrl, $skipReason, $error, $logger);
+            }
+
             $logger->error(sprintf(
                 'Extraction failed for %s: %s',
                 $articleUrl,
-                (string) ($data['error'] ?? 'unknown error')
+                $error !== '' ? $error : 'unknown error'
             ));
             return null;
         }
@@ -404,7 +442,32 @@ class ExtractBiblioRefsCommand extends Command
             $refCount !== null ? sprintf(' (%d references)', $refCount) : ''
         ));
 
-        return ['alreadyExtracted' => $alreadyExtracted, 'referenceCount' => $refCount];
+        return ['alreadyExtracted' => $alreadyExtracted, 'referenceCount' => $refCount, 'skipReason' => null];
+    }
+
+    /**
+     * Return the skip reason when the HTTP status and error message match an entry of SKIPPED_API_ERRORS.
+     */
+    private function getSkipReason(int $httpStatus, string $error): ?string
+    {
+        foreach (self::SKIPPED_API_ERRORS[$httpStatus] ?? [] as $prefix => $reason) {
+            if (str_starts_with($error, $prefix)) {
+                return $reason;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{alreadyExtracted: bool, referenceCount: ?int, skipReason: string}
+     */
+    private function skippedResult(string $articleUrl, string $skipReason, string $error, LoggerInterface $logger): array
+    {
+        // The service message is logged as is: 'Invalid URL' also covers malformed URLs, not only disallowed hosts.
+        $logger->warning(sprintf('Skipped %s: %s (%s)', $articleUrl, $skipReason, $error));
+
+        return ['alreadyExtracted' => false, 'referenceCount' => null, 'skipReason' => $skipReason];
     }
 
     private function bootstrap(): void
