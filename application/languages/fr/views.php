@@ -276,6 +276,7 @@ return [
     "paper-submitted" => "Voir ses articles",
     "paper-view" => "Voir un article",
     "review-settings" => "Paramétrer la revue",
+    "review-licenses" => "Paramétrer les licences de la revue",
     "review-staff" => "Voir la liste des membres du comité éditorial",
     "reviewer-invitation" => "Gérer son invitation à relire un article ",
     "rss-papers" => "Consulter le flux RSS des articles",

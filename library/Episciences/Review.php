@@ -54,6 +54,9 @@ class Episciences_Review
     public const COVER_LETTER_REQUIREMENT_DISABLED = 0;
     public const COVER_LETTER_REQUIREMENT_OPTIONAL = 1;
     public const COVER_LETTER_REQUIREMENT_REQUIRED = 2;
+    // Journal licenses (SPDX codes)
+    public const SETTING_LICENSE_DEFAULT = 'licenseDefault';
+    public const SETTING_LICENSES_ALLOWED = 'licensesAllowed';
 
     //const SETTING_EDITORS_CAN_MAKE_DECISIONS = 'editorsCanMakeDecisions';
     public const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
@@ -256,11 +259,14 @@ class Episciences_Review
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
             self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
             self::SETTING_MAIL_DISPLAY_CODE,
+            self::SETTING_LICENSE_DEFAULT,
+            self::SETTING_LICENSES_ALLOWED,
         ];
 
 
         $this->_jsonSettings = [
             self::SETTING_REPOSITORIES,
+            self::SETTING_LICENSES_ALLOWED,
             self::SETTING_DOMAINS,
             self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
             self::SETTING_SYSTEM_NOTIFICATIONS,
@@ -1975,6 +1981,101 @@ class Episciences_Review
     }
 
     /**
+     * Journal licenses form (dedicated page: review/licenses)
+     */
+    public function licensesSettingsForm(): Ccsd_Form
+    {
+        $form = new Ccsd_Form();
+        $form->setAttrib('class', 'form-horizontal');
+        $form->getDecorator('FormRequired')->setOption('style', 'float: none;');
+
+        $licenses = \Episciences\Paper\Spdx\LicenseManager::fetchRecommendedOptions();
+
+        // the saved codes are always offered (and accepted on submit), even if they are not / no longer recommended;
+        // the labels are built by the licenseFormSelect helper
+        foreach (array_merge(array_filter([$this->getDefaultLicense()]), $this->getAllowedLicenses()) as $code) {
+            $licenses[$code] ??= $code;
+        }
+
+        $form->addElement('select', self::SETTING_LICENSE_DEFAULT, [
+                'label' => 'Licence par défaut',
+                'description' => "Pré-sélectionnée lors du choix de la licence d'un article qui n'en a pas encore",
+                'helper' => 'licenseFormSelect',
+                'class' => 'form-control',
+                'required' => true,
+                'multioptions' => ['' => Episciences_View_Helper_LicenseFormSelect::EMPTY_LABEL] + $licenses,
+            ]
+        );
+
+        $form->addElement('multiselect', self::SETTING_LICENSES_ALLOWED, [
+                'label' => 'Licences autorisées',
+                'description' => 'Aucune sélection : toutes les licences recommandées sont proposées.',
+                'helper' => 'licenseFormSelect',
+                'class' => 'form-control',
+                'size' => 10,
+                'multioptions' => $licenses,
+            ]
+        );
+
+        $form->getElement(self::SETTING_LICENSE_DEFAULT)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_LICENSES_ALLOWED)->getDecorator('label')->setOption('class', 'col-md-2');
+
+        $form->addDisplayGroup([
+            self::SETTING_LICENSE_DEFAULT,
+            self::SETTING_LICENSES_ALLOWED
+        ], 'licenses', ['legend' => 'Licences']);
+        $form->getDisplayGroup('licenses')->removeDecorator('DtDdWrapper');
+
+        $form->setActions(true)->createSubmitButton('submit', [
+                'label' => 'Enregistrer les paramètres',
+                'class' => 'btn btn-primary'
+            ]
+        );
+
+        return $form;
+    }
+
+    /**
+     * Save only the journal licenses settings (the other settings are left untouched)
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function saveLicenseSettings(): bool
+    {
+        return $this->upsertSettings([
+            self::SETTING_LICENSE_DEFAULT => (string)$this->getDefaultLicense(),
+            self::SETTING_LICENSES_ALLOWED => $this->getAllowedLicenses(),
+        ]);
+    }
+
+    /**
+     * SPDX code pre-selected for a paper without license
+     */
+    public function getDefaultLicense(): ?string
+    {
+        $code = trim((string)$this->getSetting(self::SETTING_LICENSE_DEFAULT));
+
+        return $code !== '' ? $code : null;
+    }
+
+    /**
+     * SPDX codes allowed by the journal; empty: no restriction.
+     * When the journal restricts the licenses, the default license is always one of them.
+     * @return string[]
+     */
+    public function getAllowedLicenses(): array
+    {
+        $allowed = $this->getSetting(self::SETTING_LICENSES_ALLOWED);
+        $allowed = \Episciences\Paper\Spdx\LicenseManager::normalizeCodes(is_array($allowed) ? $allowed : []);
+        $default = $this->getDefaultLicense();
+
+        if ($allowed !== [] && $default !== null && !\Episciences\Paper\Spdx\LicenseManager::containsCode($default, $allowed)) {
+            $allowed[] = $default;
+        }
+
+        return $allowed;
+    }
+
+    /**
      * Save review settings in DB
      * @return bool
      * @throws Zend_Db_Statement_Exception
@@ -2053,10 +2154,28 @@ class Episciences_Review
         $doiSettings = $this->getDoiSettings();
         $allSettings = array_merge($allSettings, $doiSettings->__toArray());
 
+        if (!$this->upsertSettings($allSettings)) {
+            return false;
+        }
+
+        $this->checkAndCreateIfNotExistsCryptoFile();
+
+        return true;
+    }
+
+    /**
+     * Insert or update the given review settings
+     * @param array<string, mixed> $settings setting => value (arrays are stored as JSON)
+     */
+    private function upsertSettings(array $settings): bool
+    {
+        if ($settings === []) {
+            return true;
+        }
+
         $values = [];
 
-        // Enregistrement des paramètres
-        foreach ($allSettings as $setting => $value) {
+        foreach ($settings as $setting => $value) {
             $setting = $this->_db->quote($setting);
             // Encode every array, including an empty one, so [] is stored as '[]' rather
             // than quoted to '' (which json_decode()s back to null on reload).
@@ -2074,13 +2193,7 @@ class Episciences_Review
         $sql .= implode(',', $values);
         $sql .= ' AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE';
 
-        if (!$this->_db->getConnection()?->query($sql)) {
-            return false;
-        }
-
-        $this->checkAndCreateIfNotExistsCryptoFile();
-
-        return true;
+        return (bool)$this->_db->getConnection()?->query($sql);
     }
 
     /**
