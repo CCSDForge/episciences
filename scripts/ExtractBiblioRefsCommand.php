@@ -28,29 +28,33 @@ class ExtractBiblioRefsCommand extends Command
      * Statuses a new DOCID (new submission or new version) can be created with.
      * Extraction is only needed when a DOCID is created: later status changes keep the same document.
      * Option name => status code.
+     *
+     * Values are literals mirroring Episciences_Paper::STATUS_* (kept in sync by ExtractBiblioRefsCommandTest):
+     * configure() reads them from the constructor, before bootstrap() registers the ZF1 autoloader,
+     * so Episciences_Paper cannot be referenced here.
      */
     public const SUPPORTED_STATUSES = [
         // new submission, or new version without reassigned reviewers
-        'submitted'              => Episciences_Paper::STATUS_SUBMITTED,
+        'submitted'              => 0,  // Episciences_Paper::STATUS_SUBMITTED
         // new version with reassigned reviewers
-        'ok-for-reviewing'       => Episciences_Paper::STATUS_OK_FOR_REVIEWING,
+        'ok-for-reviewing'       => 1,  // Episciences_Paper::STATUS_OK_FOR_REVIEWING
         // Episciences_Submit::saveDoc() called with a PAPERID
-        'being-reviewed'         => Episciences_Paper::STATUS_BEING_REVIEWED,
+        'being-reviewed'         => 2,  // Episciences_Paper::STATUS_BEING_REVIEWED
         // new version of an accepted paper
-        'accepted'               => Episciences_Paper::STATUS_ACCEPTED,
-        'accepted-final-version' => Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
+        'accepted'               => 4,  // Episciences_Paper::STATUS_ACCEPTED
+        'accepted-final-version' => 28, // Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING
         // new version submitted during copy editing
-        'ce-ready-to-publish'    => Episciences_Paper::STATUS_CE_READY_TO_PUBLISH,
-        'approved-by-author'     => Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
+        'ce-ready-to-publish'    => 23, // Episciences_Paper::STATUS_CE_READY_TO_PUBLISH
+        'approved-by-author'     => 33, // Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION
     ];
 
     /**
      * Statuses that keep an existing DOCID, selectable on demand only (never part of the default selection).
      * 'published' covers papers imported directly as published and papers published before extraction existed.
-     * Option name => status code.
+     * Option name => status code (literal for the same reason as SUPPORTED_STATUSES).
      */
     public const OPT_IN_STATUSES = [
-        'published' => Episciences_Paper::STATUS_PUBLISHED,
+        'published' => 16, // Episciences_Paper::STATUS_PUBLISHED
     ];
 
     private const DEFAULT_TIMEOUT = 360;
