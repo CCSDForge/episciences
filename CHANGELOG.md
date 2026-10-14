@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Permissions are now also checked on obsolete versions in the paper management page.
 - On the page of a previous version, the assigned editor (or guest editor) can now see the reviews
   and the non-public details.
+- A guest editor (or copy editor) assigned to a paper could not download the review report
+  attachments ("File not found"): the download permission now relies on the assignment check,
+  same as the review display.
 
 ### Changed
 - The continuous integration workflows now generate the configuration and the database the PHPUnit

@@ -114,8 +114,8 @@ final class FileControllerPathHandlingTest extends TestCase
             'reportAction() must require authentication');
         self::assertStringContainsString('isAllowedToUploadPaperReport()', $method,
             'reportAction() must allow editorial staff');
-        self::assertStringContainsString('getEditor(', $method,
-            "reportAction() must allow the paper's editor");
+        self::assertStringContainsString('isAssignedEditorOrCopyEditor(', $method,
+            "reportAction() must allow the paper's assigned editor or copy editor (guest editor)");
         self::assertStringContainsString('$report->getUid()', $method,
             'reportAction() must allow the reviewer who authored the report');
     }
