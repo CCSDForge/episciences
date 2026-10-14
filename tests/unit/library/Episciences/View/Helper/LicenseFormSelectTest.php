@@ -151,6 +151,34 @@ class LicenseFormSelectTest extends TestCase
         $this->assertSame('Removed-1.0', $options['Removed-1.0']);
     }
 
+    /**
+     * A code offered or saved with a different case must neither exclude the recommended license
+     * nor add a duplicate option.
+     */
+    public function testCodesAreMatchedCaseInsensitively(): void
+    {
+        $helper = $this->createHelper($this->recommended(), ['cc-by-4.0' => 'Creative Commons Attribution 4.0 International']);
+
+        $this->assertSame(['', 'CC-BY-4.0'], array_keys($helper->exposeBuildOptions(null, ['cc-by-4.0'])));
+        $this->assertSame(['', 'CC-BY-4.0'], array_keys($helper->exposeBuildOptions('cc-by-4.0', ['CC-BY-4.0'])));
+        $this->assertSame(['', 'CC-BY-4.0'], array_keys($helper->exposeBuildOptions('CC-BY-4.0', ['cc-by-4.0'])));
+    }
+
+    public function testSavedCodeWithDifferentCaseSelectsTheRenderedOption(): void
+    {
+        $html = $this->createHelper($this->recommended())->licenseFormSelect('license', 'cc-by-4.0');
+
+        $this->assertMatchesRegularExpression('/value="CC-BY-4.0"[^>]*selected="selected"/', $html);
+        $this->assertStringNotContainsString('value="cc-by-4.0"', $html);
+
+        $html = $this->createHelper($this->recommended())
+            ->licenseFormSelect('licenses', ['mit', 'CC-BY-4.0'], ['multiple' => 'multiple']);
+
+        $this->assertMatchesRegularExpression('/value="MIT"[^>]*selected="selected"/', $html);
+        $this->assertMatchesRegularExpression('/value="CC-BY-4.0"[^>]*selected="selected"/', $html);
+        $this->assertStringNotContainsString('value="mit"', $html);
+    }
+
     public function testCurrentValueIsKeptWhenNotInRestriction(): void
     {
         $options = $this->createHelper($this->recommended())->exposeBuildOptions('CC-BY-4.0', ['MIT']);

@@ -43,6 +43,9 @@ class Episciences_View_Helper_LicenseFormSelect extends Zend_View_Helper_FormSel
 
         $options = $this->buildOptions($values, self::normalizeOfferedCodes($licenseCodes), !$isMultiple);
 
+        // select the rendered option whatever the case of the saved code (e.g. "cc-by-4.0" selects "CC-BY-4.0")
+        $values = array_map(static fn(string $code) => self::findOptionKey($code, $options) ?? $code, $values);
+
         return $this->view->formSelect($name, $isMultiple ? $values : ($values[0] ?? null), $attribs, $options);
     }
 
@@ -50,27 +53,30 @@ class Episciences_View_Helper_LicenseFormSelect extends Zend_View_Helper_FormSel
      * @param string[] $currentValues codes always offered, even if not recommended / not in $licenseCodes
      * @param string[]|null $licenseCodes restricts the recommended licenses; null: no restriction
      * @return array<string, string> SPDX code => "name (code)", optional empty option first, then sorted by label
+     *
+     * SPDX codes are matched case-insensitively: a code offered or saved with a different case
+     * does not exclude the recommended license, nor add a duplicate option.
      */
     protected function buildOptions(array $currentValues = [], ?array $licenseCodes = null, bool $withEmptyOption = true): array
     {
         $options = [];
 
         foreach ($this->fetchRecommendedLicenses() as $license) {
-            if ($licenseCodes === null || in_array($license->getCode(), $licenseCodes, true)) {
+            if ($licenseCodes === null || LicenseManager::containsCode($license->getCode(), $licenseCodes)) {
                 $options[$license->getCode()] = self::formatLabel($license->getName(), $license->getCode());
             }
         }
 
         // offered codes that are not recommended: only the known SPDX licenses (they could not be saved otherwise)
         foreach ($licenseCodes ?? [] as $code) {
-            if (!array_key_exists($code, $options) && ($name = $this->fetchLicenseName($code)) !== null) {
+            if (self::findOptionKey($code, $options) === null && ($name = $this->fetchLicenseName($code)) !== null) {
                 $options[$code] = self::formatLabel($name, $code);
             }
         }
 
         // the current values are always offered, so that they are never silently lost
         foreach ($currentValues as $code) {
-            if (!array_key_exists($code, $options)) {
+            if (self::findOptionKey($code, $options) === null) {
                 $options[$code] = self::formatLabel((string)$this->fetchLicenseName($code), $code);
             }
         }
@@ -78,6 +84,21 @@ class Episciences_View_Helper_LicenseFormSelect extends Zend_View_Helper_FormSel
         asort($options, SORT_NATURAL | SORT_FLAG_CASE);
 
         return $withEmptyOption ? ['' => $this->view->translate(self::EMPTY_LABEL)] + $options : $options;
+    }
+
+    /**
+     * Option key matching the SPDX code case-insensitively; null if there is none
+     * @param array<string, string> $options
+     */
+    private static function findOptionKey(string $code, array $options): ?string
+    {
+        foreach (array_keys($options) as $key) {
+            if (strcasecmp($code, (string)$key) === 0) {
+                return (string)$key;
+            }
+        }
+
+        return null;
     }
 
     /**
