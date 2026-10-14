@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
+- Removing the chief editor role of a user who stays editor (or the reverse) no longer disables their paper assignments as editor.
 - The session cookie is now sent with the `SameSite=Lax` attribute (configurable with `resources.session.cookie_samesite`).
 - `enrichment:extract-biblio-refs` reports papers whose host is not allowed by the Biblioref service, or whose PDF contains no reference, as skipped instead of failed, so they no longer fail the cron run.
 - The document files of a paper (comments, copy-editing, data descriptor) follow the access rules of the paper pages.
