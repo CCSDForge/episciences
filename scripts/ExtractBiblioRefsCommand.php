@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
@@ -56,6 +57,15 @@ class ExtractBiblioRefsCommand extends Command
     ];
 
     private const DEFAULT_TIMEOUT = 360;
+
+    /**
+     * Biblioref errors that retrying cannot fix: reported as skipped so they do not fail the cron run.
+     * Error message prefix returned by the service => skip reason.
+     */
+    private const SKIPPED_API_ERRORS = [
+        'Invalid URL'         => 'host not allowed', // HTTP 400: host missing from EPISCIENCES_ALLOWED_HOSTS
+        'No references found' => 'no references',    // HTTP 200: GROBID found no reference in the PDF
+    ];
 
     protected function configure(): void
     {
@@ -266,6 +276,9 @@ class ExtractBiblioRefsCommand extends Command
             if ($result === null) {
                 $failed++;
                 $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, 'failed');
+            } elseif ($result['skipReason'] !== null) {
+                $skipped++;
+                $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, sprintf('skipped (%s)', $result['skipReason']));
             } elseif ($result['alreadyExtracted']) {
                 $alreadyExtracted++;
                 if ($verbose) {
@@ -334,7 +347,7 @@ class ExtractBiblioRefsCommand extends Command
      *
      * Returns the parsed result on success, null on any failure.
      *
-     * @return array{alreadyExtracted: bool, referenceCount: ?int}|null
+     * @return array{alreadyExtracted: bool, referenceCount: ?int, skipReason: ?string}|null
      */
     private function callExtractApi(
         Client $client,
@@ -358,6 +371,13 @@ class ExtractBiblioRefsCommand extends Command
                 'timeout' => $timeout,
             ])->getBody()->getContents();
         } catch (GuzzleException $e) {
+            $skipReason = $e instanceof RequestException
+                ? $this->getSkipReason((string) $e->getResponse()?->getBody())
+                : null;
+            if ($skipReason !== null) {
+                return $this->skippedResult($articleUrl, $skipReason, $logger);
+            }
+
             $logger->error(sprintf(
                 'HTTP error for %s (code %s): %s',
                 $articleUrl,
@@ -385,6 +405,11 @@ class ExtractBiblioRefsCommand extends Command
         }
 
         if (!($data['success'] ?? false)) {
+            $skipReason = $this->getSkipReason($body);
+            if ($skipReason !== null) {
+                return $this->skippedResult($articleUrl, $skipReason, $logger);
+            }
+
             $logger->error(sprintf(
                 'Extraction failed for %s: %s',
                 $articleUrl,
@@ -404,7 +429,34 @@ class ExtractBiblioRefsCommand extends Command
             $refCount !== null ? sprintf(' (%d references)', $refCount) : ''
         ));
 
-        return ['alreadyExtracted' => $alreadyExtracted, 'referenceCount' => $refCount];
+        return ['alreadyExtracted' => $alreadyExtracted, 'referenceCount' => $refCount, 'skipReason' => null];
+    }
+
+    /**
+     * Return the skip reason when the API response body carries an error listed in SKIPPED_API_ERRORS.
+     */
+    private function getSkipReason(string $body): ?string
+    {
+        $data  = json_decode($body, true);
+        $error = is_array($data) && is_string($data['error'] ?? null) ? $data['error'] : '';
+
+        foreach (self::SKIPPED_API_ERRORS as $prefix => $reason) {
+            if (str_starts_with($error, $prefix)) {
+                return $reason;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{alreadyExtracted: bool, referenceCount: ?int, skipReason: string}
+     */
+    private function skippedResult(string $articleUrl, string $skipReason, LoggerInterface $logger): array
+    {
+        $logger->warning(sprintf('Skipped %s: %s', $articleUrl, $skipReason));
+
+        return ['alreadyExtracted' => false, 'referenceCount' => null, 'skipReason' => $skipReason];
     }
 
     private function bootstrap(): void

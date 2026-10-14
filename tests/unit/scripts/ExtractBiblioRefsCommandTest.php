@@ -4,6 +4,12 @@ namespace unit\scripts;
 
 use Episciences_Paper;
 use ExtractBiblioRefsCommand;
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
+use Psr\Log\NullLogger;
+use ReflectionMethod;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -13,7 +19,7 @@ require_once __DIR__ . '/../../../scripts/ExtractBiblioRefsCommand.php';
 /**
  * Unit tests for ExtractBiblioRefsCommand.
  *
- * Covers command metadata only — no bootstrap, no DB, no HTTP.
+ * No bootstrap, no DB: Biblioref API responses are simulated with a Guzzle MockHandler.
  */
 class ExtractBiblioRefsCommandTest extends TestCase
 {
@@ -178,5 +184,99 @@ class ExtractBiblioRefsCommandTest extends TestCase
             SERVER_PROTOCOL . '://jtest.' . DOMAIN . '/123/pdf',
             $command->getJournalPdfUrl('jtest', 123, false)
         );
+    }
+
+    /**
+     * @return array{alreadyExtracted: bool, referenceCount: ?int, skipReason: ?string}|null
+     */
+    private function callExtractApi(Response $response): ?array
+    {
+        $client = new Client(['handler' => HandlerStack::create(new MockHandler([$response]))]);
+        $method = new ReflectionMethod(ExtractBiblioRefsCommand::class, 'callExtractApi');
+        $method->setAccessible(true);
+
+        /** @var array{alreadyExtracted: bool, referenceCount: ?int, skipReason: ?string}|null $result */
+        $result = $method->invoke(
+            new ExtractBiblioRefsCommand(),
+            $client,
+            'https://biblioref.test/api/extract?docid=123',
+            'token',
+            true,
+            'https://example.org/paper.pdf',
+            5,
+            new NullLogger(),
+            123
+        );
+
+        return $result;
+    }
+
+    public function testHostNotAllowedIsSkipped(): void
+    {
+        $result = $this->callExtractApi(new Response(400, [], (string) json_encode([
+            'success' => false,
+            'error'   => 'Invalid URL: only http(s) URLs on an allowed Episciences host are accepted',
+        ])));
+
+        $this->assertSame('host not allowed', $result['skipReason'] ?? null);
+    }
+
+    public function testPdfWithoutReferencesIsSkipped(): void
+    {
+        $result = $this->callExtractApi(new Response(200, [], (string) json_encode([
+            'success' => false,
+            'docId'   => 123,
+            'error'   => 'No references found in the PDF',
+        ])));
+
+        $this->assertSame('no references', $result['skipReason'] ?? null);
+    }
+
+    public function testOtherClientErrorFails(): void
+    {
+        $result = $this->callExtractApi(new Response(400, [], (string) json_encode([
+            'success' => false,
+            'error'   => 'Missing required parameter: url',
+        ])));
+
+        $this->assertNull($result);
+    }
+
+    public function testServerErrorFails(): void
+    {
+        $this->assertNull($this->callExtractApi(new Response(502, [], 'Bad Gateway')));
+    }
+
+    public function testOtherExtractionErrorFails(): void
+    {
+        $result = $this->callExtractApi(new Response(200, [], (string) json_encode([
+            'success' => false,
+            'error'   => 'unexpected failure',
+        ])));
+
+        $this->assertNull($result);
+    }
+
+    public function testAlreadyExtractedResult(): void
+    {
+        $result = $this->callExtractApi(new Response(200, [], (string) json_encode([
+            'success'          => true,
+            'docId'            => 123,
+            'alreadyExtracted' => true,
+            'referenceCount'   => 42,
+        ])));
+
+        $this->assertSame(['alreadyExtracted' => true, 'referenceCount' => 42, 'skipReason' => null], $result);
+    }
+
+    public function testNewExtractionResult(): void
+    {
+        $result = $this->callExtractApi(new Response(200, [], (string) json_encode([
+            'success'          => true,
+            'docId'            => 123,
+            'alreadyExtracted' => false,
+        ])));
+
+        $this->assertSame(['alreadyExtracted' => false, 'referenceCount' => null, 'skipReason' => null], $result);
     }
 }

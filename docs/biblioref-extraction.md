@@ -102,7 +102,18 @@ The service stores references by `DOCID` (the `docid` parameter), so the URL is 
   * `/{DOCID}/pdf` otherwise
 * Other statuses: the PDF URL in the repository (`Episciences_Repositories::getPaperUrl()`), then the main file URL, then the repository landing page.
 
-The service only downloads from hosts listed in its `EPISCIENCES_ALLOWED_HOSTS` setting. Papers hosted elsewhere are rejected with HTTP 400 and reported as `failed`.
+The service only downloads from hosts listed in its `EPISCIENCES_ALLOWED_HOSTS` setting. Papers hosted elsewhere are rejected with HTTP 400 (`Invalid URL`).
+
+### Errors reported as skipped
+
+Some API errors cannot be fixed by retrying. They are reported as `skipped` instead of `failed`, so they do not make the command exit with code 1:
+
+| API error | Result |
+| :--- | :--- |
+| `Invalid URL` (HTTP 400): host missing from `EPISCIENCES_ALLOWED_HOSTS` | `skipped (host not allowed)` |
+| `No references found in the PDF` (HTTP 200, `success: false`) | `skipped (no references)` |
+
+These papers are still selected on every run while their status stays in the selection.
 
 ---
 
@@ -146,7 +157,7 @@ For every processed paper, the command logs the DOCID, the action and the refere
 At the end, a summary table (`SymfonyStyle::table`) lists:
 * **DOCID**: Document identifier
 * **Status**: Option name and numeric code
-* **Result**: `extracted`, `already extracted`, `skipped (temporary)`, `failed`, `failed (no url)` or `dry-run`
+* **Result**: `extracted`, `already extracted`, `skipped (temporary)`, `skipped (host not allowed)`, `skipped (no references)`, `failed`, `failed (no url)` or `dry-run`
 * **References**: Number of bibliographic references returned by the API (or `-` when omitted)
 
 Papers already extracted are only listed in verbose mode (`-v`), to keep cron output short. Totals (extracted, already cached, skipped, failed) are always logged.
