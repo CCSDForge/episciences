@@ -108,10 +108,18 @@ final class FileControllerPathHandlingTest extends TestCase
 
     public function testReportActionDelegatesToAccessClass(): void
     {
+        // The access rules themselves are covered by
+        // tests/unit/library/Episciences/Rating/Report/AccessTest.php.
         $method = $this->extractMethod('reportAction');
 
         self::assertStringContainsString('Episciences_Rating_Report_Access::mayDownloadAttachment', $method,
             'reportAction() must delegate access control to Episciences_Rating_Report_Access');
+
+        $checkPos = strpos($method, 'mayDownloadAttachment(');
+        $openPos = strpos($method, 'openFile(');
+        self::assertNotFalse($openPos, 'reportAction() must call openFile()');
+        self::assertLessThan($openPos, $checkPos,
+            'The permission must be checked before the file is served');
     }
 
     public function testReportActionUses404WhenNotPermitted(): void

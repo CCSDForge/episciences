@@ -225,8 +225,7 @@ class AccessTest extends TestCase
     public function testGlobalEditorWithoutEncapsulationIsEditorialStaff(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
 
@@ -256,8 +255,7 @@ class AccessTest extends TestCase
     public function testGlobalEditorWithEncapsulationNotAssignedIsNotEditorialStaff(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(false);  // not assigned to this paper
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);  // not assigned to this paper
         $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
@@ -292,8 +290,7 @@ class AccessTest extends TestCase
     public function testGlobalEditorWithEncapsulationButAssignedIsEditorialStaff(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(true);  // assigned to this paper
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(true);  // assigned to this paper
 
         $report = $this->createMock(Episciences_Rating_Report::class);
 
@@ -323,8 +320,7 @@ class AccessTest extends TestCase
     public function testAssignedEditorWithoutGlobalRoleIsEditorialStaff(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(true);  // assigned to this paper
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(true);  // assigned to this paper
 
         $report = $this->createMock(Episciences_Rating_Report::class);
 
@@ -348,6 +344,40 @@ class AccessTest extends TestCase
         self::assertSame(Episciences_Rating_Report_Access::ROLE_EDITORIAL_STAFF, $result);
     }
 
+    /**
+     * RT#301096: a copy editor assigned to the latest version only (unassigned from the
+     * previous version when the new one was submitted) is editorial staff on the
+     * previous version, even with encapsulation enabled.
+     */
+    public function testCopyEditorAssignedToLatestVersionOnlyIsEditorialStaff(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false); // not assigned to this version
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(true); // assigned to the latest version
+
+        $report = $this->createMock(Episciences_Rating_Report::class);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturnMap([
+            [Episciences_Review::SETTING_ENCAPSULATE_EDITORS, true],
+            [Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS, true],
+        ]);
+
+        $result = Episciences_Rating_Report_Access::resolveRole(
+            $paper,
+            $report,
+            self::UID_PAPER_AUTHOR,
+            $review,
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            true   // isCopyEditor - global role, encapsulated
+        );
+
+        self::assertSame(Episciences_Rating_Report_Access::ROLE_EDITORIAL_STAFF, $result);
+    }
+
     // -------------------------------------------------------------------------
     // resolveRole() - copy editor encapsulation tests
     // -------------------------------------------------------------------------
@@ -358,8 +388,7 @@ class AccessTest extends TestCase
     public function testGlobalCopyEditorWithoutEncapsulationIsEditorialStaff(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
 
@@ -389,8 +418,7 @@ class AccessTest extends TestCase
     public function testGlobalCopyEditorWithEncapsulationNotAssignedIsNotEditorialStaff(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);  // not assigned
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);  // not assigned
         $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
@@ -423,8 +451,7 @@ class AccessTest extends TestCase
     public function testGlobalCopyEditorWithEncapsulationButAssignedIsEditorialStaff(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(true);  // assigned to this paper
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(true);  // assigned to this paper
 
         $report = $this->createMock(Episciences_Rating_Report::class);
 
@@ -458,8 +485,7 @@ class AccessTest extends TestCase
     public function testUidZeroDoesNotMatchReportAuthor(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
         $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
@@ -491,8 +517,7 @@ class AccessTest extends TestCase
     public function testResolveRoleReturnsReportAuthorForReviewer(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
         $report->method('getUid')->willReturn(self::UID_REPORT_AUTHOR);
@@ -518,8 +543,7 @@ class AccessTest extends TestCase
     public function testResolveRoleReturnsReportAuthorForOnbehalfReviewer(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
         $report->method('getUid')->willReturn(self::UID_REPORT_AUTHOR);
@@ -546,8 +570,7 @@ class AccessTest extends TestCase
     {
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
         $report->method('getUid')->willReturn(self::UID_REPORT_AUTHOR);
@@ -573,8 +596,7 @@ class AccessTest extends TestCase
     public function testResolveRoleReturnsNullForAnonymous(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
 
@@ -600,8 +622,7 @@ class AccessTest extends TestCase
         // A reviewer who is also the paper author should be REPORT_AUTHOR
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
         $report->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);  // same person is report author
@@ -631,8 +652,7 @@ class AccessTest extends TestCase
         // so they keep full access to their own report (including WIP) even
         // though they also hold an editorial role.
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
         $report->method('getUid')->willReturn(self::UID_REPORT_AUTHOR);
@@ -676,8 +696,7 @@ class AccessTest extends TestCase
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
         $paper->method('isPublished')->willReturn(true);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -719,8 +738,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR); // paper author
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -758,8 +776,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -797,8 +814,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -838,8 +854,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -881,8 +896,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -920,8 +934,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -955,8 +968,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -989,8 +1001,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -1024,8 +1035,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -1062,8 +1072,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -1097,8 +1106,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);
@@ -1132,8 +1140,7 @@ class AccessTest extends TestCase
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
-        $paper->method('getEditor')->willReturn(false);
-        $paper->method('getCopyEditor')->willReturn(false);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
 
         $review = $this->createMock(Episciences_Review::class);
         $review->method('getSetting')->willReturn(false);

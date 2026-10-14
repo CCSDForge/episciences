@@ -265,13 +265,12 @@ class Episciences_Rating_Report_Access
             return true;
         }
 
-        // Paper-specific assignments (always allowed regardless of encapsulation)
+        // Paper-specific assignments (always allowed regardless of encapsulation).
+        // Assignments are checked on the latest version too: editors and copy editors
+        // are unassigned from a version when a new one is submitted.
         if ($uid !== null && $uid !== 0) {
             try {
-                if ($paper->getEditor($uid)) {
-                    return true;
-                }
-                if ($paper->getCopyEditor($uid)) {
+                if ($paper->isAssignedEditorOrCopyEditor($uid)) {
                     return true;
                 }
             } catch (Zend_Db_Statement_Exception $e) {
