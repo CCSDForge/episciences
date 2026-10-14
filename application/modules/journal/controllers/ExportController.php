@@ -23,10 +23,11 @@ class ExportController extends DefaultController
     }
 
     /**
-     * @return Episciences_Paper|void
+     * @return Episciences_Paper
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
-    protected function getPaperToExport()
+    protected function getPaperToExport(): Episciences_Paper
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -35,21 +36,10 @@ class ExportController extends DefaultController
         $request = $this->getRequest();
         $docId = $request->getParam('id');
 
-        if (!is_numeric($docId)) {
-            $this->getResponse()?->setHttpResponseCode(404);
-            $this->renderScript('index/notfound.phtml');
-            echo $this->getResponse()->getBody();
-            exit;
-        }
-
-        /** @var Episciences_Paper $paper */
-        $paper = Episciences_PapersManager::get($docId, false);
+        $paper = is_numeric($docId) ? $this->findPaper((int)$docId) : null;
 
         if (!$paper || $paper->getRvid() != RVID || $paper->getRepoid() == 0 || $paper->isDeleted() || $paper->isRemoved()) {
-            $this->getResponse()?->setHttpResponseCode(404);
-            $this->renderScript('index/notfound.phtml');
-            echo $this->getResponse()->getBody();
-            exit;
+            $this->notFound();
         }
 
         $this->redirectIfNotPublished($request, $paper);
@@ -57,9 +47,37 @@ class ExportController extends DefaultController
     }
 
     /**
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function findPaper(int $docId): ?Episciences_Paper
+    {
+        return Episciences_PapersManager::get($docId, false) ?: null;
+    }
+
+    /**
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function findPublishedDocId(int $paperId): int
+    {
+        return Episciences_PapersManager::getPublishedPaperId($paperId);
+    }
+
+    /**
+     * Answers 404 and stops the request
+     */
+    protected function notFound(): never
+    {
+        $this->getResponse()->setHttpResponseCode(404);
+        $this->renderScript('index/notfound.phtml');
+        echo $this->getResponse()->getBody();
+        exit;
+    }
+
+    /**
      * Restricts the export of an unpublished paper to the users allowed to see it
      * (same rule as the paper page): redirects to the published version if there is one,
      * to the login page for anonymous visitors, and to the home page otherwise.
+     * redirect() exits the request.
      * @param Zend_Controller_Request_Http $request
      * @param Episciences_Paper $paper
      * @throws Zend_Db_Statement_Exception
@@ -72,20 +90,16 @@ class ExportController extends DefaultController
         }
 
         $paperId = $paper->getPaperid() ?: $paper->getDocid();
-        $id = Episciences_PapersManager::getPublishedPaperId($paperId);
+        $id = $this->findPublishedDocId((int)$paperId);
 
         if ($id !== 0) {
             // redirect to the published version
             $this->redirect('/' . $id . '/' . $request->getActionName());
-            exit;
-        }
-
-        if (!Episciences_Auth::isLogged()) {
+        } elseif (!Episciences_Auth::isLogged()) {
             $this->redirect('/user/login/forward-controller/' . $request->getControllerName() . '/id/' . $paper->getDocid() . '/forward-action/' . $request->getActionName());
-            exit;
+        } else {
+            $this->redirectsIfHaveNotEnoughPermissions($paper);
         }
-
-        $this->redirectsIfHaveNotEnoughPermissions($paper);
     }
 
     public function jsonv2Action(): void
