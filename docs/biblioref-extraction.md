@@ -113,6 +113,8 @@ Some API errors cannot be fixed by retrying. They are reported as `skipped` inst
 | `Invalid URL` (HTTP 400): host missing from `EPISCIENCES_ALLOWED_HOSTS` | `skipped (host not allowed)` |
 | `No references found in the PDF` (HTTP 200, `success: false`) | `skipped (no references)` |
 
+The HTTP status must match: the same message with another status (for example a 5xx) is reported as `failed`. The warning logged for a skipped paper includes the message of the service, since `Invalid URL` also covers malformed URLs.
+
 These papers are still selected on every run while their status stays in the selection.
 
 ---
@@ -160,7 +162,7 @@ At the end, a summary table (`SymfonyStyle::table`) lists:
 * **Result**: `extracted`, `already extracted`, `skipped (temporary)`, `skipped (host not allowed)`, `skipped (no references)`, `failed`, `failed (no url)` or `dry-run`
 * **References**: Number of bibliographic references returned by the API (or `-` when omitted)
 
-Papers already extracted are only listed in verbose mode (`-v`), to keep cron output short. Totals (extracted, already cached, skipped, failed) are always logged.
+Papers already extracted are only listed in verbose mode (`-v`), to keep cron output short. Totals (extracted, already cached, skipped with a count per reason, failed) are always logged.
 
 ### Catch-up for published papers
 

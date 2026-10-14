@@ -8,6 +8,9 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
 use PHPUnit\Framework\TestCase;
@@ -189,7 +192,7 @@ class ExtractBiblioRefsCommandTest extends TestCase
     /**
      * @return array{alreadyExtracted: bool, referenceCount: ?int, skipReason: ?string}|null
      */
-    private function callExtractApi(Response $response): ?array
+    private function callExtractApi(Response $response, ?LoggerInterface $logger = null): ?array
     {
         $client = new Client(['handler' => HandlerStack::create(new MockHandler([$response]))]);
         $method = new ReflectionMethod(ExtractBiblioRefsCommand::class, 'callExtractApi');
@@ -204,7 +207,7 @@ class ExtractBiblioRefsCommandTest extends TestCase
             true,
             'https://example.org/paper.pdf',
             5,
-            new NullLogger(),
+            $logger ?? new NullLogger(),
             123
         );
 
@@ -219,6 +222,37 @@ class ExtractBiblioRefsCommandTest extends TestCase
         ])));
 
         $this->assertSame('host not allowed', $result['skipReason'] ?? null);
+    }
+
+    public function testSkippedPaperLogsServiceMessage(): void
+    {
+        $handler = new TestHandler();
+        $this->callExtractApi(new Response(400, [], (string) json_encode([
+            'success' => false,
+            'error'   => 'Invalid URL: only http(s) URLs on an allowed Episciences host are accepted',
+        ])), new Logger('test', [$handler]));
+
+        $this->assertTrue($handler->hasWarningThatContains('only http(s) URLs on an allowed Episciences host are accepted'));
+    }
+
+    public function testInvalidUrlWithServerErrorFails(): void
+    {
+        $result = $this->callExtractApi(new Response(500, [], (string) json_encode([
+            'success' => false,
+            'error'   => 'Invalid URL: only http(s) URLs on an allowed Episciences host are accepted',
+        ])));
+
+        $this->assertNull($result);
+    }
+
+    public function testNoReferencesWithServerErrorFails(): void
+    {
+        $result = $this->callExtractApi(new Response(500, [], (string) json_encode([
+            'success' => false,
+            'error'   => 'No references found in the PDF',
+        ])));
+
+        $this->assertNull($result);
     }
 
     public function testPdfWithoutReferencesIsSkipped(): void
