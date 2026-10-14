@@ -26,6 +26,12 @@ final class NavbarTest extends TestCase
         $request = new Zend_Controller_Request_Http();
         $request->setControllerName('paper')->setActionName('view');
         $front->setRequest($request);
+
+        // The navbar builds its links with the url() helper, which needs the default route
+        $router = $front->getRouter();
+        if (!$router->hasRoute('default')) {
+            $router->addDefaultRoutes();
+        }
     }
 
     protected function tearDown(): void
@@ -41,7 +47,7 @@ final class NavbarTest extends TestCase
         $html = $this->render(['isLogged' => false]);
 
         self::assertStringContainsString('id="form-login"', $html);
-        self::assertStringNotContainsString('href="/user/logout"', $html);
+        self::assertStringNotContainsString('user/logout"', $html);
     }
 
     public function testVisitorGetsNoLoginFormWithoutAccountActions(): void
@@ -50,14 +56,15 @@ final class NavbarTest extends TestCase
 
         self::assertStringNotContainsString('id="form-login"', $html);
         self::assertStringNotContainsString('/user/create', $html);
-        self::assertStringNotContainsString('href="/user/logout"', $html);
+        self::assertStringNotContainsString('user/logout"', $html);
     }
 
     public function testLoggedUserCanStillLogOutWithoutAccountActions(): void
     {
         $html = $this->render(['isLogged' => true, 'userRenderScript' => 'not-rendered.phtml', 'accountActions' => false]);
 
-        self::assertStringContainsString('href="/user/logout"', $html);
+        // The URL is built by the url() helper: it may carry the journal path prefix on manager branches
+        self::assertMatchesRegularExpression('#href="[^"]*/user/logout"#', $html);
         self::assertStringNotContainsString('id="form-login"', $html);
     }
 

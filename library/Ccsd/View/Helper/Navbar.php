@@ -193,7 +193,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                             }
                         } elseif ($this->_isLogged) {
                             // Read-only maintenance mode: no account menu, but logging out stays possible ?>
-                            <a class="btn btn-default navbar-btn" href="/user/logout"><i class="fas fa-sign-out-alt" aria-hidden="true"></i>&nbsp;<?= $view->translate('Déconnexion') ?></a>
+                            <a class="btn btn-default navbar-btn" href="<?= $view->url(['controller' => 'user', 'action' => 'logout']) ?>"><i class="fas fa-sign-out-alt" aria-hidden="true"></i>&nbsp;<?= $view->translate('Déconnexion') ?></a>
                             <?php
                         } elseif ($this->_accountActions) { ?>
 
