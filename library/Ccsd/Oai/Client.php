@@ -89,7 +89,10 @@ class Ccsd_Oai_Client {
                 throw new Ccsd_Error("No body returned");
             }
 
-			$dom->loadXML($curlResponse);
+			// Non-XML body (e.g. HTML error page): fail as a Ccsd_Error instead of a TypeError below
+			if (!@$dom->loadXML($curlResponse) || $dom->documentElement === null) {
+				throw new Ccsd_Error("Invalid OAI-PMH response");
+			}
 			$xpath = new DOMXPath($dom);
 			foreach (Ccsd_Tools::getNamespaces($dom->documentElement) as $id => $ns) {
 				$xpath->registerNamespace($id, $ns);
