@@ -1901,6 +1901,8 @@ class Episciences_Mail_TemplatesManager
             $form->addSubForm($subform, $code);
         }
 
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
+
         $defaults = self::getTemplateFormDefaults($template, $langs);
         $form->setDefaults($defaults);
         return $form;

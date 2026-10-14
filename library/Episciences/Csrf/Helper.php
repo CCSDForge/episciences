@@ -183,6 +183,23 @@ class Episciences_Csrf_Helper
     }
 
     /**
+     * Add the per-session request token to a form as a hidden "csrf_token" field.
+     *
+     * The element is flagged as ignored, so it never shows up in getValues().
+     *
+     * @throws Zend_Form_Exception
+     * @throws Exception
+     */
+    public static function addSessionTokenElement(Zend_Form $form): void
+    {
+        $form->addElement('hidden', 'csrf_token', [
+            'value' => self::getSessionToken(),
+            'ignore' => true,
+            'decorators' => ['ViewHelper'],
+        ]);
+    }
+
+    /**
      * Sanitize the token name to be a valid form element name
      */
     private static function sanitizeName(string $name): string

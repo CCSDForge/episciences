@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the revert is submitted as a confirmed form instead of a link, and an expired session shows a message instead of an error page.
 - A refused paper resubmitted through the inbox (COAR Notify) keeps the submission date of the refused paper,
   which is shared by all the versions of a paper, instead of getting the current date.
+- The website settings (menu, style, languages), the page content, the mail templates, the mailing form, the rating grids, and the volume and section management actions now check the form token before saving or deleting.
 
 [RT#301096]:
 - An editor (or guest editor) assigned to a paper could not access its previous versions:

@@ -96,6 +96,8 @@ class Episciences_Mail_Send
 
         }
 
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
+
         $form->addElement('hidden', self::getElementName('hidden_to', $prefix));
 
 
