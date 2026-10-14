@@ -1438,6 +1438,8 @@ class ToolsTest extends TestCase
                 "String '$ip' should not be a valid IPv6 address"
             );
         }
+
+        $this->assertFalse(Episciences_Tools::isIPv6(null));
     }
 
     // ============================================================================

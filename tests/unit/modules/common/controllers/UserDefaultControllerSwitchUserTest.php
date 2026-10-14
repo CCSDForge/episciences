@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\modules\common\controllers;
 
+use Episciences\Maintenance\ReadOnlyMode;
 use Episciences\User\SuLogger;
 use Episciences_Acl;
 use Episciences_Auth;
@@ -95,6 +96,7 @@ final class UserDefaultControllerSwitchUserTest extends TestCase
     {
         Episciences_Auth::getInstance()->clearIdentity();
         Episciences_Auth::clearImpersonation();
+        ReadOnlyMode::setOverride(null);
         Zend_Controller_Action_HelperBroker::removeHelper('redirector');
         Zend_Session::$_unitTestEnabled = $this->previousUnitTestEnabled;
         Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
@@ -321,6 +323,16 @@ final class UserDefaultControllerSwitchUserTest extends TestCase
         $this->logSwitchUserEndOnLogout($this->controller($this->request('GET')));
 
         self::assertSame([], $this->auditRows);
+    }
+
+    public function testLogoutWhileSwitchedIsNotLoggedInReadOnlyMode(): void
+    {
+        $this->impersonate();
+        ReadOnlyMode::setOverride(true);
+
+        $this->logSwitchUserEndOnLogout($this->controller($this->request('GET')));
+
+        self::assertSame([], $this->auditRows, 'logging out must not write to the database during maintenance');
     }
 
     public function testLogoutWithAnUnboundStackIsNotLogged(): void

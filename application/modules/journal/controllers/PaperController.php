@@ -221,7 +221,7 @@ class PaperController extends PaperDefaultController
 
         // ratings **************************************************
         //[#169]: https://github.com/CCSDForge/episciences/issues/169
-        $isVisibleRatings = (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid)) ||
+        $isVisibleRatings = (Episciences_Auth::isSecretary() || $paper->isAssignedEditorOrCopyEditor((int)$loggedUid)) ||
             $paper->isReportsVisibleToAuthor() ||
             ($review->getSetting(Episciences_Review::SETTING_SHOW_RATINGS) && $paper->isPublished());
 
@@ -239,12 +239,7 @@ class PaperController extends PaperDefaultController
 
         try {
 
-            $commonTest =
-                $isSecretary ||
-                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) && Episciences_Auth::isEditor()) ||
-                (!$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS) && Episciences_Auth::isCopyEditor()) ||
-                $paper->getEditor($loggedUid) ||
-                $paper->getCopyEditor($loggedUid);
+            $commonTest = self::isEditorialStaff($paper, $review->getSettings());
 
         } catch (Zend_Db_Statement_Exception $e) {
             $commonTest = false;
@@ -440,7 +435,13 @@ class PaperController extends PaperDefaultController
             Episciences_CommentsManager::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION
         ]];
 
-        $copyEditingDemands = Episciences_CommentsManager::getList($paper->getDocid(), $copyEditingSettings);
+        // Copy-editing is between the author and the editorial staff: reviewers do not see it (see DocumentFilePolicy)
+        $isAllowedToSeeCopyEditing = Episciences_Auth::isLogged() &&
+            ($paper->isOwnerOrCoAuthor() || (!$isConflictDetected && $commonTest));
+
+        $copyEditingDemands = $isAllowedToSeeCopyEditing ?
+            Episciences_CommentsManager::getList($paper->getDocid(), $copyEditingSettings) :
+            [];
 
         $this->view->copyEditingDemands = $copyEditingDemands;
 
