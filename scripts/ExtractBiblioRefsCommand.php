@@ -24,18 +24,71 @@ class ExtractBiblioRefsCommand extends Command
 {
     protected static $defaultName = 'enrichment:extract-biblio-refs';
 
+    /**
+     * Statuses a new DOCID (new submission or new version) can be created with.
+     * Extraction is only needed when a DOCID is created: later status changes keep the same document.
+     * Option name => status code.
+     */
+    public const SUPPORTED_STATUSES = [
+        // new submission, or new version without reassigned reviewers
+        'submitted'              => Episciences_Paper::STATUS_SUBMITTED,
+        // new version with reassigned reviewers
+        'ok-for-reviewing'       => Episciences_Paper::STATUS_OK_FOR_REVIEWING,
+        // Episciences_Submit::saveDoc() called with a PAPERID
+        'being-reviewed'         => Episciences_Paper::STATUS_BEING_REVIEWED,
+        // new version of an accepted paper
+        'accepted'               => Episciences_Paper::STATUS_ACCEPTED,
+        'accepted-final-version' => Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
+        // new version submitted during copy editing
+        'ce-ready-to-publish'    => Episciences_Paper::STATUS_CE_READY_TO_PUBLISH,
+        'approved-by-author'     => Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
+    ];
+
+    /**
+     * Statuses that keep an existing DOCID, selectable on demand only (never part of the default selection).
+     * 'published' covers papers imported directly as published and papers published before extraction existed.
+     * Option name => status code.
+     */
+    public const OPT_IN_STATUSES = [
+        'published' => Episciences_Paper::STATUS_PUBLISHED,
+    ];
+
     private const DEFAULT_TIMEOUT = 360;
 
     protected function configure(): void
     {
         $this
             ->setDescription('Pre-extract bibliographic references for papers via the Biblioref API (designed for cron)')
-            ->addOption('docid',     null, InputOption::VALUE_REQUIRED, 'Process only this DOCID (ignores status filter)')
-            ->addOption('rvcode',    null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)')
-            ->addOption('dry-run',   null, InputOption::VALUE_NONE,     'Show what would be processed without calling the API')
-            ->addOption('published', null, InputOption::VALUE_NONE,     'Also include STATUS_PUBLISHED papers (default: STATUS_SUBMITTED only)')
-            ->addOption('accepted',  null, InputOption::VALUE_NONE,     'Also include STATUS_ACCEPTED papers (default: STATUS_SUBMITTED only)')
-            ->addOption('api-url',   null, InputOption::VALUE_REQUIRED,  'Override EPISCIENCES_BIBLIOREF[URL] (useful when the configured URL is unreachable from the current host, e.g. inside Docker)');
+            ->addOption('docid',             null, InputOption::VALUE_REQUIRED, 'Process only this DOCID (ignores status filter)')
+            ->addOption('rvcode',            null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)')
+            ->addOption('dry-run',           null, InputOption::VALUE_NONE,     'Show what would be processed without calling the API')
+            ->addOption('api-url',           null, InputOption::VALUE_REQUIRED, 'Override EPISCIENCES_BIBLIOREF[URL] (useful when the configured URL is unreachable from the current host, e.g. inside Docker)');
+
+        foreach (self::SUPPORTED_STATUSES as $optionName => $statusCode) {
+            $this->addOption($optionName, null, InputOption::VALUE_NONE, sprintf('Filter on papers with status %d', $statusCode));
+        }
+
+        foreach (self::OPT_IN_STATUSES as $optionName => $statusCode) {
+            $this->addOption($optionName, null, InputOption::VALUE_NONE, sprintf('Filter on papers with status %d (not selected by default)', $statusCode));
+        }
+    }
+
+    /**
+     * Resolve the list of paper statuses to process based on input options.
+     * When no specific status flag is given, returns all supported statuses (opt-in statuses excluded).
+     *
+     * @return list<int>
+     */
+    public function resolveStatuses(InputInterface $input): array
+    {
+        $selected = [];
+        foreach (self::SUPPORTED_STATUSES + self::OPT_IN_STATUSES as $optionName => $statusCode) {
+            if ((bool) $input->getOption($optionName)) {
+                $selected[] = $statusCode;
+            }
+        }
+
+        return !empty($selected) ? array_values(array_unique($selected)) : array_values(self::SUPPORTED_STATUSES);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -99,13 +152,7 @@ class ExtractBiblioRefsCommand extends Command
             ->join(['r' => T_REVIEW], 'r.RVID = p.RVID', ['CODE', 'is_new_front_switched'])
             ->order('p.DOCID DESC');
 
-        $statuses = [Episciences_Paper::STATUS_SUBMITTED];
-        if ((bool) $input->getOption('published')) {
-            $statuses[] = Episciences_Paper::STATUS_PUBLISHED;
-        }
-        if ((bool) $input->getOption('accepted')) {
-            $statuses[] = Episciences_Paper::STATUS_ACCEPTED;
-        }
+        $statuses = $this->resolveStatuses($input);
 
         if ($docid !== null) {
             $select->where('p.DOCID = ?', (int) $docid);
@@ -138,24 +185,33 @@ class ExtractBiblioRefsCommand extends Command
         $failed           = 0;
         $skipped          = 0;
 
+        // Already extracted papers are only listed in verbose mode, to keep cron output short.
+        $verbose = $io->isVerbose();
+
+        /** @var list<list<string>> $summaryRows */
+        $summaryRows      = [];
+
         $io->progressStart($total);
 
         foreach ($rows as $row) {
-            $paperDocId = (int) $row['DOCID'];
-            $rvCode     = (string) $row['CODE'];
-            $newFront   = $row['is_new_front_switched'] === 'yes';
-            $isPublished = (int) $row['STATUS'] === Episciences_Paper::STATUS_PUBLISHED;
+            $paperDocId  = (int) $row['DOCID'];
+            $paperStatus = (int) $row['STATUS'];
+            $statusLabel = $this->getStatusLabel($paperStatus);
+            $rvCode      = (string) $row['CODE'];
+            $newFront    = $row['is_new_front_switched'] === 'yes';
+            // Journal PDF URLs only work for published papers (the new front serves no unpublished file).
+            $fromJournal = $paperStatus === Episciences_Paper::STATUS_PUBLISHED;
 
             if ((int) $row['REPOID'] === 0) {
                 $logger->info(sprintf('DOCID %d — temporary version, skipped', $paperDocId));
                 $skipped++;
+                $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, 'skipped (temporary)');
                 $io->progressAdvance();
                 continue;
             }
 
-            if ($isPublished) {
-                $path       = $newFront ? '/articles/' . $paperDocId : '/' . $paperDocId;
-                $articleUrl = SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN . $path;
+            if ($fromJournal) {
+                $articleUrl = $this->getJournalPdfUrl($rvCode, $paperDocId, $newFront);
             } else {
                 $articleUrl = Episciences_Repositories::getPaperUrl(
                     (int) $row['REPOID'],
@@ -180,13 +236,15 @@ class ExtractBiblioRefsCommand extends Command
             if ($articleUrl === '') {
                 $logger->warning(sprintf('DOCID %d — could not determine article URL (REPOID %d), skipping', $paperDocId, (int) $row['REPOID']));
                 $failed++;
+                $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, 'failed (no url)');
                 $io->progressAdvance();
                 continue;
             }
 
             if ($dryRun) {
-                $source = $isPublished ? 'journal' : 'archive';
+                $source = $fromJournal ? 'journal' : 'archive';
                 $logger->info(sprintf('[dry-run] Would call /api/extract for DOCID %d [%s] — %s', $paperDocId, $source, $articleUrl));
+                $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, 'dry-run');
                 $io->progressAdvance();
                 continue;
             }
@@ -197,20 +255,30 @@ class ExtractBiblioRefsCommand extends Command
                 $io->writeln(sprintf('GET %s', $apiUrl));
             }
 
-            $result = $this->callExtractApi($client, $apiUrl, $token, $sslVerify, $articleUrl, self::DEFAULT_TIMEOUT, $logger);
+            $result = $this->callExtractApi($client, $apiUrl, $token, $sslVerify, $articleUrl, self::DEFAULT_TIMEOUT, $logger, $paperDocId);
 
             if ($result === null) {
                 $failed++;
-            } elseif ($result['alreadyExtracted'] ?? false) {
+                $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, 'failed');
+            } elseif ($result['alreadyExtracted']) {
                 $alreadyExtracted++;
+                if ($verbose) {
+                    $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, 'already extracted', $result['referenceCount']);
+                }
             } else {
                 $extracted++;
+                $summaryRows[] = $this->summaryRow($paperDocId, $statusLabel, 'extracted', $result['referenceCount']);
             }
 
             $io->progressAdvance();
         }
 
         $io->progressFinish();
+
+        if (!empty($summaryRows)) {
+            $io->section('Extraction results per paper');
+            $io->table(['DOCID', 'Status', 'Result', 'References'], $summaryRows);
+        }
 
         if (!$dryRun) {
             $logger->info(sprintf(
@@ -228,12 +296,37 @@ class ExtractBiblioRefsCommand extends Command
         return $failed > 0 ? Command::FAILURE : Command::SUCCESS;
     }
 
+    public function getStatusLabel(int $status): string
+    {
+        $optionName = array_search($status, self::SUPPORTED_STATUSES + self::OPT_IN_STATUSES, true);
+
+        return $optionName !== false ? sprintf('%s (%d)', $optionName, $status) : (string) $status;
+    }
+
+    /**
+     * PDF URL of a published paper on the journal site.
+     */
+    public function getJournalPdfUrl(string $rvCode, int $docId, bool $newFront): string
+    {
+        $path = $newFront ? '/articles/' . $docId . '/download' : '/' . $docId . '/pdf';
+
+        return SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN . $path;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function summaryRow(int $docId, string $statusLabel, string $result, ?int $referenceCount = null): array
+    {
+        return [(string) $docId, $statusLabel, $result, $referenceCount !== null ? (string) $referenceCount : '-'];
+    }
+
     /**
      * Call the /api/extract endpoint for a single article URL.
      *
-     * Returns the decoded response array on success, null on any failure.
+     * Returns the parsed result on success, null on any failure.
      *
-     * @return array<string, mixed>|null
+     * @return array{alreadyExtracted: bool, referenceCount: ?int}|null
      */
     private function callExtractApi(
         Client $client,
@@ -242,7 +335,8 @@ class ExtractBiblioRefsCommand extends Command
         bool $sslVerify,
         string $articleUrl,
         int $timeout,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ?int $paperDocId = null
     ): ?array {
         $headers = ['Accept' => 'application/json'];
         if ($token !== '') {
@@ -291,17 +385,18 @@ class ExtractBiblioRefsCommand extends Command
             return null;
         }
 
+        $docId            = (int) ($data['docId'] ?? $paperDocId ?? 0);
         $alreadyExtracted = (bool) ($data['alreadyExtracted'] ?? false);
         $refCount         = isset($data['referenceCount']) ? (int) $data['referenceCount'] : null;
 
         $logger->info(sprintf(
             'DOCID %d — %s%s',
-            (int) ($data['docId'] ?? 0),
+            $docId,
             $alreadyExtracted ? 'already extracted' : 'extracted',
             $refCount !== null ? sprintf(' (%d references)', $refCount) : ''
         ));
 
-        return $data;
+        return ['alreadyExtracted' => $alreadyExtracted, 'referenceCount' => $refCount];
     }
 
     private function bootstrap(): void
