@@ -30,6 +30,11 @@ class Ccsd_Website_Header
     private const ALIGNMENTS = ['left', 'center', 'right'];
 
     /**
+     * Inline tags allowed in the labels, without attribute (in addition to line breaks)
+     */
+    private const INLINE_TAGS = ['b', 'strong', 'i', 'em'];
+
+    /**
      * Tableau des logos de l'en-tête du site
      * @var array
      */
@@ -277,12 +282,50 @@ class Ccsd_Website_Header
     }
 
     /**
-     * Escape a label: entities already typed by the user are kept as is, and line breaks stay allowed
+     * Escape a label: entities already typed by the user are kept as is, and line breaks
+     * and the inline tags of INLINE_TAGS stay allowed, without any attribute
      */
     private static function escText(mixed $value): string
     {
         $escaped = htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8', false);
-        return preg_replace('#&lt;br\s*/?&gt;#i', '<br>', $escaped) ?? $escaped;
+        $parts = preg_split(
+            '#(&lt;br\s*/?&gt;|&lt;/?(?:' . implode('|', self::INLINE_TAGS) . ')&gt;)#i',
+            $escaped,
+            -1,
+            PREG_SPLIT_DELIM_CAPTURE
+        );
+        if ($parts === false) {
+            return $escaped;
+        }
+
+        // Keep the tags balanced: a tag left open would also apply to the rest of the page
+        $html = '';
+        $open = [];
+        foreach ($parts as $i => $part) {
+            if ($i % 2 === 0) {
+                $html .= $part;
+                continue;
+            }
+            preg_match('#^&lt;(/?)([a-z]+)#i', $part, $matches);
+            [, $closing, $tag] = $matches;
+            $tag = strtolower($tag);
+            if ($tag === 'br') {
+                $html .= '<br>';
+            } elseif ($closing === '') {
+                $html .= '<' . $tag . '>';
+                $open[] = $tag;
+            } elseif (($pos = array_search($tag, $open, true)) !== false) {
+                // Closing a tag also closes the ones opened inside it
+                foreach (array_reverse(array_splice($open, $pos)) as $closed) {
+                    $html .= '</' . $closed . '>';
+                }
+            }
+        }
+        foreach (array_reverse($open) as $closed) {
+            $html .= '</' . $closed . '>';
+        }
+
+        return $html;
     }
 
     /**

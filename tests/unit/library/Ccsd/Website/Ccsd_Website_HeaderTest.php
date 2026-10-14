@@ -68,6 +68,50 @@ class Ccsd_Website_HeaderTest extends TestCase
         self::assertStringContainsString('<td align="center">', $html);
     }
 
+    private function renderText(string $text): string
+    {
+        $html = $this->render([
+            'type' => 'text',
+            'align' => 'left',
+            'text' => ['en' => $text],
+            'text_class' => '',
+            'text_style' => '',
+        ]);
+        preg_match('#<span>(.*)</span>#s', $html, $matches);
+
+        return $matches[1] ?? '';
+    }
+
+    public function testInlineTagsInLabelsAreKept(): void
+    {
+        self::assertSame(
+            '<b>Revue</b> <strong>d&apos;<i>études</i></strong> <em>maths</em>',
+            $this->renderText('<B>Revue</b> <STRONG>d&apos;<i>études</I></strong> <em>maths</em>')
+        );
+    }
+
+    public function testInlineTagsWithAttributesAreEscaped(): void
+    {
+        self::assertSame(
+            // The closing tag has no kept opening tag left to close, so it is dropped
+            '&lt;b onclick=&quot;x&quot;&gt;Revue &lt;strong style=&quot;x&quot;&gt;',
+            $this->renderText('<b onclick="x">Revue</b> <strong style="x">')
+        );
+    }
+
+    public function testInlineTagsAreBalanced(): void
+    {
+        self::assertSame('<b>open</b>', $this->renderText('<b>open'));
+        self::assertSame('stray', $this->renderText('stray</i>'));
+        self::assertSame('<b><i>x</i></b>y', $this->renderText('<b><i>x</b>y</i>'));
+        self::assertSame('<strong>a<br>b</strong>', $this->renderText('<strong>a<br />b</strong>'));
+    }
+
+    public function testOtherTagsInLabelsAreEscaped(): void
+    {
+        self::assertSame('&lt;u&gt;x&lt;/u&gt; &lt;bold&gt;', $this->renderText('<u>x</u> <bold>'));
+    }
+
     public function testUnknownAlignmentFallsBackToLeft(): void
     {
         $html = $this->render([

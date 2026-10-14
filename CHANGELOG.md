@@ -153,6 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- [#1231](https://github.com/CCSDForge/episciences/pull/1231) Website header: only administrators, chief editors, secretaries, webmasters and root can edit it, and the form requires a CSRF token. The generated header escapes every value and only keeps http(s) and mailto links. Labels still accept the entities already typed, line breaks and the `b`, `strong`, `i` and `em` tags without attributes; any other markup is now shown as text. Run `website:regenerate-headers --all` once after deployment to rewrite the existing header files, which are otherwise only regenerated when a journal saves its header.
 - [#1216](https://github.com/CCSDForge/episciences/pull/1216) Paper illustration (graphical abstract) upload: the actual MIME type is now checked (the extension alone, case-sensitive, was trusted), SVG is no longer accepted, and access checks are tightened.
 - [#1176](https://github.com/CCSDForge/episciences/pull/1176) Update `league/commonmark` to 2.10.1 to patch DoS vulnerability in Attributes extension.
 - [#1175](https://github.com/CCSDForge/episciences/pull/1175) Patch transitive npm vulnerabilities flagged by Dependabot in the build/test toolchain via yarn resolutions.
