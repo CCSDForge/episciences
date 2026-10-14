@@ -9,8 +9,18 @@
 # Run all tests (PHP + JavaScript)
 make test
 
-# PHP tests only
+# PHP tests only (all suites)
 make test-php
+
+# PHP unit tests only
+make test-php-unit
+
+# PHP integration tests only
+make test-php-integration
+
+# PHP tests with filter or suite
+make test-php FILTER=testMyMethod
+make test-php SUITE=unit
 
 # JavaScript tests only (Jest)
 make test-js
