@@ -1548,4 +1548,15 @@ class AdministratepaperControllerTest extends TestCase
             'The journal check must come before any save'
         );
     }
+
+    /**
+     * Bug: "cc-by-4.0" was not detected as the already saved "CC-BY-4.0", so the same license was saved again.
+     */
+    public function testSavespdxlicenseActionDetectsAlreadySetLicenseCaseInsensitively(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $this->assertStringNotContainsString('$oldLicense === $currentSpdxCode', $method);
+        $this->assertStringContainsString('LicenseManager::containsCode($currentSpdxCode, [$oldLicense])', $method);
+    }
 }

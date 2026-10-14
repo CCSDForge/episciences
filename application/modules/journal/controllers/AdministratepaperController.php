@@ -4726,7 +4726,7 @@ class AdministratepaperController extends PaperDefaultController
 
         // If the license to save is the same as the current one, warn the user
         // (checked first: the current license may predate the journal's allowed licenses)
-        if ($oldLicense === $currentSpdxCode) {
+        if (is_string($oldLicense) && LicenseManager::containsCode($currentSpdxCode, [$oldLicense])) {
             echo json_encode(['warning' => 'La licence actuelle est déjà définie.'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             return;
         }
