@@ -71,31 +71,38 @@ flowchart TD
 
 In Episciences, an article entity has a persistent **`PAPERID`**, while each physical document version possesses its own distinct **`DOCID`**.
 
-### Lifecycle Stages & Status Constants
+### Extraction is tied to DOCID creation
 
-| Status Code | PHP Constant | Label / Meaning | Role in Reference Extraction |
-| :---: | :--- | :--- | :--- |
-| **0** | `STATUS_SUBMITTED` | Submitted (V1 initial) | Captures all new initial submissions. |
-| **1** | `STATUS_OK_FOR_REVIEWING` | Validated for examination | Safety net for V1s approved on the same day prior to cron execution. |
-| **2** | `STATUS_BEING_REVIEWED` | Under active review | **Critical:** captures all revised versions (V2, V3...) which start directly in this state. |
-| **3** | `STATUS_REVIEWED` | Reviews completed | Editorial decision pending. |
-| **14** | `STATUS_REVIEWERS_INVITED` | Reviewers invited | Transition state during reviewer selection. |
-| **4** | `STATUS_ACCEPTED` | Paper accepted | Copy-editing phase begins. |
-| **16** | `STATUS_PUBLISHED` | Published article | Public article page, Crossref and zbJATS export. |
+References are extracted once per `DOCID`. A status change on an existing `DOCID` does not change the document, so it never requires a new extraction. The command therefore only selects the statuses a new `DOCID` can be created with:
 
-### The Revised Version Lifecycle Rule
+| Status Code | PHP Constant | Where the new DOCID is created |
+| :---: | :--- | :--- |
+| **0** | `STATUS_SUBMITTED` | New submission (`Episciences_Submit::saveDoc`), or new version without reassigned reviewers (`PaperController::determineNewPaperStatus`) |
+| **1** | `STATUS_OK_FOR_REVIEWING` | New version with reassigned reviewers |
+| **2** | `STATUS_BEING_REVIEWED` | `Episciences_Submit::saveDoc()` called with a `PAPERID` |
+| **4** | `STATUS_ACCEPTED` | New version of an accepted paper (journal does not allow revision after final decision) |
+| **28** | `STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING` | New version of an accepted paper (journal allows revision after final decision) |
+| **23** | `STATUS_CE_READY_TO_PUBLISH` | New version submitted during copy editing |
+| **33** | `STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION` | New version submitted during copy editing, after the author approved the journal formatting |
 
-When authors submit a revised manuscript following minor or major revision requests, the submission logic (`Episciences_Submit::savePaper`) creates a new record in `PAPERS` with a **new `DOCID`** and initializes its status directly to:
+Statuses such as `STATUS_REVIEWED` (`3`) or `STATUS_REVIEWERS_INVITED` (`14`) are always reached on an existing `DOCID` and are not selected. A specific paper in any status can still be processed with `--docid`.
 
-```php
-if ($paperId) {
-    $values['PAPERID'] = $paperId;
-    $values['STATUS']  = Episciences_Paper::STATUS_BEING_REVIEWED; // Status 2
-}
-```
+`STATUS_PUBLISHED` (`16`) is selectable with `--published` but is never part of the default selection. Publication keeps the `DOCID` of the accepted version, which was extracted when it was created. Two cases still need it, as a one-off catch-up rather than in the cron:
+* papers imported directly as published (`Episciences_Import`, `import:papers`)
+* papers published before the extraction command was deployed
 
-> [!IMPORTANT]
-> Revised versions **never pass through `STATUS_SUBMITTED` (`0`)**. Therefore, processing only status `0` leaves all revisions un-extracted. Including status `2` (`STATUS_BEING_REVIEWED`) ensures that 100% of revised versions are extracted.
+Temporary versions (`REPOID = 0`, files uploaded to Episciences instead of a repository) are excluded.
+
+### PDF URL sent to the service
+
+The service stores references by `DOCID` (the `docid` parameter), so the URL is only used to download the PDF.
+
+* Published papers (`16`, with `--published`): the PDF is fetched from the journal site. Journal download URLs only work for published papers.
+  * `/articles/{DOCID}/download` when the journal uses the new front (`is_new_front_switched = 'yes'`)
+  * `/{DOCID}/pdf` otherwise
+* Other statuses: the PDF URL in the repository (`Episciences_Repositories::getPaperUrl()`), then the main file URL, then the repository landing page.
+
+The service only downloads from hosts listed in its `EPISCIENCES_ALLOWED_HOSTS` setting. Papers hosted elsewhere are rejected with HTTP 400 and reported as `failed`.
 
 ---
 
@@ -116,29 +123,39 @@ php scripts/console.php enrichment:extract-biblio-refs [options]
 
 #### Status Filters
 
-* `--submitted`: Only papers with `STATUS_SUBMITTED` (`0`).
-* `--ok-for-reviewing`: Only papers with `STATUS_OK_FOR_REVIEWING` (`1`).
-* `--being-reviewed`: Only papers with `STATUS_BEING_REVIEWED` (`2`).
-* `--reviewed`: Only papers with `STATUS_REVIEWED` (`3`).
-* `--reviewers-invited`: Only papers with `STATUS_REVIEWERS_INVITED` (`14`).
-* `--accepted`: Only papers with `STATUS_ACCEPTED` (`4`).
-* `--published`: Only papers with `STATUS_PUBLISHED` (`16`).
+Each option restricts the selection to one DOCID creation status:
+
+* `--submitted` (`0`)
+* `--ok-for-reviewing` (`1`)
+* `--being-reviewed` (`2`)
+* `--accepted` (`4`)
+* `--accepted-final-version` (`28`)
+* `--ce-ready-to-publish` (`23`)
+* `--approved-by-author` (`33`)
+* `--published` (`16`, opt-in only)
 
 ### Default Selection Logic
 
-* **No status options passed:** extracts **all supported statuses** (`[0, 1, 2, 3, 14, 4, 16]`).
+* **No status options passed:** extracts all DOCID creation statuses (`[0, 1, 2, 4, 28, 23, 33]`). Published papers are not included.
 * **One or more status options passed:** restricts execution **exclusively** to the specified statuses.
 
 ### Reference Count Reporting
 
-For every processed paper, the command tracks and outputs:
-1. Progress-bar log message indicating DOCID, action, and reference count.
-2. A final ASCII summary table (`SymfonyStyle::table`) displaying:
-   * **DOCID**: Document identifier
-   * **Status**: Human-readable status name and numeric code
-   * **Result**: `extracted`, `already extracted`, `skipped (temporary)`, or `failed`
-   * **References**: Number of bibliographic references returned by the API (or `-` when omitted)
-3. Total counts: extracted, already cached, skipped, failed.
+For every processed paper, the command logs the DOCID, the action and the reference count when the API returns it.
+
+At the end, a summary table (`SymfonyStyle::table`) lists:
+* **DOCID**: Document identifier
+* **Status**: Option name and numeric code
+* **Result**: `extracted`, `already extracted`, `skipped (temporary)`, `failed`, `failed (no url)` or `dry-run`
+* **References**: Number of bibliographic references returned by the API (or `-` when omitted)
+
+Papers already extracted are only listed in verbose mode (`-v`), to keep cron output short. Totals (extracted, already cached, skipped, failed) are always logged.
+
+### Catch-up for published papers
+
+```bash
+php scripts/console.php enrichment:extract-biblio-refs --published --rvcode=<code>
+```
 
 ---
 

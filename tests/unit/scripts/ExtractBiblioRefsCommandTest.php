@@ -2,8 +2,10 @@
 
 namespace unit\scripts;
 
+use Episciences_Paper;
 use ExtractBiblioRefsCommand;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputDefinition;
 
 require_once __DIR__ . '/../../../scripts/ExtractBiblioRefsCommand.php';
@@ -39,48 +41,6 @@ class ExtractBiblioRefsCommandTest extends TestCase
         $this->assertFalse($this->definition->getOption('dry-run')->acceptValue(), 'dry-run must be a flag');
     }
 
-    public function testSubmittedIsFlag(): void
-    {
-        $this->assertTrue($this->definition->hasOption('submitted'));
-        $this->assertFalse($this->definition->getOption('submitted')->acceptValue(), 'submitted must be a flag');
-    }
-
-    public function testOkForReviewingIsFlag(): void
-    {
-        $this->assertTrue($this->definition->hasOption('ok-for-reviewing'));
-        $this->assertFalse($this->definition->getOption('ok-for-reviewing')->acceptValue(), 'ok-for-reviewing must be a flag');
-    }
-
-    public function testBeingReviewedIsFlag(): void
-    {
-        $this->assertTrue($this->definition->hasOption('being-reviewed'));
-        $this->assertFalse($this->definition->getOption('being-reviewed')->acceptValue(), 'being-reviewed must be a flag');
-    }
-
-    public function testReviewedIsFlag(): void
-    {
-        $this->assertTrue($this->definition->hasOption('reviewed'));
-        $this->assertFalse($this->definition->getOption('reviewed')->acceptValue(), 'reviewed must be a flag');
-    }
-
-    public function testReviewersInvitedIsFlag(): void
-    {
-        $this->assertTrue($this->definition->hasOption('reviewers-invited'));
-        $this->assertFalse($this->definition->getOption('reviewers-invited')->acceptValue(), 'reviewers-invited must be a flag');
-    }
-
-    public function testPublishedIsFlag(): void
-    {
-        $this->assertTrue($this->definition->hasOption('published'));
-        $this->assertFalse($this->definition->getOption('published')->acceptValue(), 'published must be a flag');
-    }
-
-    public function testAcceptedIsFlag(): void
-    {
-        $this->assertTrue($this->definition->hasOption('accepted'));
-        $this->assertFalse($this->definition->getOption('accepted')->acceptValue(), 'accepted must be a flag');
-    }
-
     public function testDocidAcceptsRequiredValue(): void
     {
         $this->assertTrue($this->definition->hasOption('docid'));
@@ -99,48 +59,124 @@ class ExtractBiblioRefsCommandTest extends TestCase
         $this->assertTrue($this->definition->getOption('api-url')->isValueRequired(), 'api-url must require a value');
     }
 
-    public function testSupportedStatusesConstant(): void
+    public function testEverySupportedStatusIsAFlagOption(): void
+    {
+        foreach (array_keys(ExtractBiblioRefsCommand::SUPPORTED_STATUSES) as $optionName) {
+            $this->assertTrue($this->definition->hasOption($optionName), "missing option --{$optionName}");
+            $this->assertFalse($this->definition->getOption($optionName)->acceptValue(), "{$optionName} must be a flag");
+        }
+    }
+
+    public function testSupportedStatusesAreDocidCreationStatuses(): void
     {
         $expected = [
-            'submitted'         => 0,
-            'ok-for-reviewing'  => 1,
-            'being-reviewed'    => 2,
-            'reviewed'          => 3,
-            'reviewers-invited' => 14,
-            'accepted'          => 4,
-            'published'         => 16,
+            'submitted'              => Episciences_Paper::STATUS_SUBMITTED,
+            'ok-for-reviewing'       => Episciences_Paper::STATUS_OK_FOR_REVIEWING,
+            'being-reviewed'         => Episciences_Paper::STATUS_BEING_REVIEWED,
+            'accepted'               => Episciences_Paper::STATUS_ACCEPTED,
+            'accepted-final-version' => Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
+            'ce-ready-to-publish'    => Episciences_Paper::STATUS_CE_READY_TO_PUBLISH,
+            'approved-by-author'     => Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
         ];
         $this->assertSame($expected, ExtractBiblioRefsCommand::SUPPORTED_STATUSES);
+    }
+
+    public function testPublishedIsAnOptInFlag(): void
+    {
+        $this->assertSame(['published' => Episciences_Paper::STATUS_PUBLISHED], ExtractBiblioRefsCommand::OPT_IN_STATUSES);
+        $this->assertTrue($this->definition->hasOption('published'));
+        $this->assertFalse($this->definition->getOption('published')->acceptValue(), 'published must be a flag');
+    }
+
+    public function testStatusesThatKeepTheSameDocidHaveNoOption(): void
+    {
+        foreach (['reviewed', 'reviewers-invited'] as $optionName) {
+            $this->assertFalse($this->definition->hasOption($optionName), "--{$optionName} must not exist");
+        }
     }
 
     public function testResolveStatusesDefaultsToAllSupportedStatuses(): void
     {
         $command = new ExtractBiblioRefsCommand();
-        $input = new \Symfony\Component\Console\Input\ArrayInput([], $command->getDefinition());
+        $input = new ArrayInput([], $command->getDefinition());
 
-        $statuses = $command->resolveStatuses($input);
-        $this->assertSame([0, 1, 2, 3, 14, 4, 16], $statuses);
+        $this->assertSame([0, 1, 2, 4, 28, 23, 33], $command->resolveStatuses($input));
     }
 
     public function testResolveStatusesWithSingleStatus(): void
     {
         $command = new ExtractBiblioRefsCommand();
-        $input = new \Symfony\Component\Console\Input\ArrayInput(['--being-reviewed' => true], $command->getDefinition());
+        $input = new ArrayInput(['--being-reviewed' => true], $command->getDefinition());
 
-        $statuses = $command->resolveStatuses($input);
-        $this->assertSame([2], $statuses);
+        $this->assertSame([2], $command->resolveStatuses($input));
     }
 
     public function testResolveStatusesWithMultipleStatuses(): void
     {
         $command = new ExtractBiblioRefsCommand();
-        $input = new \Symfony\Component\Console\Input\ArrayInput([
-            '--submitted'      => true,
-            '--ok-for-reviewing' => true,
-            '--published'      => true,
+        $input = new ArrayInput([
+            '--submitted'              => true,
+            '--ok-for-reviewing'       => true,
+            '--accepted-final-version' => true,
         ], $command->getDefinition());
 
-        $statuses = $command->resolveStatuses($input);
-        $this->assertSame([0, 1, 16], $statuses);
+        $this->assertSame([0, 1, 28], $command->resolveStatuses($input));
+    }
+
+    public function testStatusLabelUsesOptionName(): void
+    {
+        $command = new ExtractBiblioRefsCommand();
+
+        $this->assertSame('ce-ready-to-publish (23)', $command->getStatusLabel(Episciences_Paper::STATUS_CE_READY_TO_PUBLISH));
+    }
+
+    public function testResolveStatusesWithPublishedOnly(): void
+    {
+        $command = new ExtractBiblioRefsCommand();
+        $input = new ArrayInput(['--published' => true], $command->getDefinition());
+
+        $this->assertSame([16], $command->resolveStatuses($input));
+    }
+
+    public function testResolveStatusesCombinesDefaultAndOptInStatuses(): void
+    {
+        $command = new ExtractBiblioRefsCommand();
+        $input = new ArrayInput(['--submitted' => true, '--published' => true], $command->getDefinition());
+
+        $this->assertSame([0, 16], $command->resolveStatuses($input));
+    }
+
+    public function testStatusLabelForOptInStatus(): void
+    {
+        $command = new ExtractBiblioRefsCommand();
+
+        $this->assertSame('published (16)', $command->getStatusLabel(Episciences_Paper::STATUS_PUBLISHED));
+    }
+
+    public function testStatusLabelFallsBackToCodeForUnsupportedStatus(): void
+    {
+        $command = new ExtractBiblioRefsCommand();
+
+        $this->assertSame('3', $command->getStatusLabel(Episciences_Paper::STATUS_REVIEWED));
+    }
+
+    public function testJournalPdfUrlOnNewFront(): void
+    {
+        $command = new ExtractBiblioRefsCommand();
+
+        $this->assertSame(
+            SERVER_PROTOCOL . '://jtest.' . DOMAIN . '/articles/123/download',
+            $command->getJournalPdfUrl('jtest', 123, true)
+        );
+    }
+
+    public function testJournalPdfUrlOnLegacyFront(): void
+    {
+        $command = new ExtractBiblioRefsCommand();
+
+        $this->assertSame(
+            SERVER_PROTOCOL . '://jtest.' . DOMAIN . '/123/pdf',
+            $command->getJournalPdfUrl('jtest', 123, false)
+        );
     }
 }

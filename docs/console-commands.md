@@ -119,16 +119,17 @@ php scripts/console.php enrichment:extract-biblio-refs [options]
 | `--dry-run` | Log what would be sent without calling the API |
 | `--submitted` | Filter on `STATUS_SUBMITTED` papers (`0`) |
 | `--ok-for-reviewing` | Filter on `STATUS_OK_FOR_REVIEWING` papers (`1`) |
-| `--being-reviewed` | Filter on `STATUS_BEING_REVIEWED` papers (`2`, includes revised versions) |
-| `--reviewed` | Filter on `STATUS_REVIEWED` papers (`3`) |
-| `--reviewers-invited` | Filter on `STATUS_REVIEWERS_INVITED` papers (`14`) |
+| `--being-reviewed` | Filter on `STATUS_BEING_REVIEWED` papers (`2`) |
 | `--accepted` | Filter on `STATUS_ACCEPTED` papers (`4`) |
-| `--published` | Filter on `STATUS_PUBLISHED` papers (`16`) |
+| `--accepted-final-version` | Filter on `STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING` papers (`28`) |
+| `--ce-ready-to-publish` | Filter on `STATUS_CE_READY_TO_PUBLISH` papers (`23`) |
+| `--approved-by-author` | Filter on `STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION` papers (`33`) |
+| `--published` | Filter on `STATUS_PUBLISHED` papers (`16`). Never selected by default: one-off catch-up for imported papers or papers published before extraction existed |
 | `--api-url <url>` | Override `EPISCIENCES_BIBLIOREF[URL]` at runtime (e.g. Docker-internal address) |
 
-By default (when no status option is specified), the command processes **all supported statuses** (`submitted`, `ok-for-reviewing`, `being-reviewed`, `reviewed`, `reviewers-invited`, `accepted`, `published`). When one or more status options are provided, processing is restricted exclusively to those requested statuses. When `--docid` is given, no status filter is applied.
+References only need to be extracted when a new DOCID is created (new submission or new version). By default (when no status option is specified), the command processes every status a new DOCID can be created with (`submitted`, `ok-for-reviewing`, `being-reviewed`, `accepted`, `accepted-final-version`, `ce-ready-to-publish`, `approved-by-author`). When one or more status options are provided, processing is restricted exclusively to those requested statuses. Published papers are only processed with `--published`. When `--docid` is given, no status filter is applied.
 
-The command outputs a detailed summary table at the end of execution showing the result and reference count for each DOCID.
+The command outputs a summary table at the end of execution showing the result and reference count for each DOCID. Papers already extracted are only listed with `-v`.
 
 Each API call has a 360-second timeout (GROBID extraction can take several minutes). The command returns exit code 1 if any calls fail, so cron alerts fire on partial failures.
 
