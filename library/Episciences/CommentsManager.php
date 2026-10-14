@@ -911,6 +911,8 @@ class Episciences_CommentsManager
         $select = $db->select()
             ->from(T_PAPER_COMMENTS, ['TYPE', 'FILE'])
             ->where('DOCID = ?', $docId)
+            // Copy-editing files are stored in their own directory, not in the "comments" one
+            ->where('TYPE NOT IN (?)', self::copyEditingTypes())
             ->where('FILE IS NOT NULL')
             ->where("FILE != ''");
 
@@ -930,6 +932,20 @@ class Episciences_CommentsManager
         }
 
         return array_values(array_unique($types));
+    }
+
+    /**
+     * Types of the comments whose files are stored in the copy-editing directory of a paper version
+     *
+     * @return int[]
+     */
+    public static function copyEditingTypes(): array
+    {
+        return array_merge(
+            self::$_copyEditingRequestTypes,
+            self::$_copyEditingAnswerTypes,
+            [self::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION]
+        );
     }
 
 }

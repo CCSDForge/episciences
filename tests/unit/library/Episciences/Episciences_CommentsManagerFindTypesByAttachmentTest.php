@@ -79,6 +79,30 @@ final class Episciences_CommentsManagerFindTypesByAttachmentTest extends TestCas
         self::assertSame([12, 1], Episciences_CommentsManager::findTypesByAttachment(12, 'same.pdf'));
     }
 
+    public function testCopyEditingCommentsAreNotLookedUp(): void
+    {
+        $this->adapter->method('fetchAll')->willReturnCallback(
+            function (Zend_Db_Select $select): array {
+                $sql = $select->assemble();
+                $types = implode(', ', Episciences_CommentsManager::copyEditingTypes());
+                self::assertStringContainsString("(TYPE NOT IN ($types))", $sql);
+                return [];
+            }
+        );
+
+        self::assertSame([], Episciences_CommentsManager::findTypesByAttachment(12, 'sources.zip'));
+    }
+
+    public function testCopyEditingTypesIncludeTheAuthorValidationRequest(): void
+    {
+        $types = Episciences_CommentsManager::copyEditingTypes();
+
+        self::assertContains(Episciences_CommentsManager::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION, $types);
+        foreach (array_merge(Episciences_CommentsManager::$_copyEditingRequestTypes, Episciences_CommentsManager::$_copyEditingAnswerTypes) as $type) {
+            self::assertContains($type, $types);
+        }
+    }
+
     public function testPartialNameDoesNotMatch(): void
     {
         $this->givenComments([
