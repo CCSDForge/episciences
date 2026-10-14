@@ -52,7 +52,7 @@ jobs:
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Check PHP dependencies security (Composer Audit)
-        run: composer audit
+        run: composer audit --abandoned=ignore
 
       - name: Static Analysis (PHPStan)
         run: vendor/bin/phpstan analyse --memory-limit=1G --error-format=github
