@@ -15,6 +15,7 @@ require_once __DIR__ . '/ClearOpenAireCacheCommand.php';
 require_once __DIR__ . '/GetClassificationMscCommand.php';
 require_once __DIR__ . '/GetZbReviewsCommand.php';
 require_once __DIR__ . '/GenerateSitemapCommand.php';
+require_once __DIR__ . '/RegenerateWebsiteHeadersCommand.php';
 require_once __DIR__ . '/MergePdfVolCommand.php';
 require_once __DIR__ . '/CreateDoajVolumeExportsCommand.php';
 require_once __DIR__ . '/CheckDoajJournalsCommand.php';
@@ -81,6 +82,7 @@ $application->add(new GetZbReviewsCommand());
 
 // Sitemap commands
 $application->add(new GenerateSitemapCommand());
+$application->add(new RegenerateWebsiteHeadersCommand());
 
 // Volume commands
 $application->add(new MergePdfVolCommand());
