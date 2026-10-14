@@ -415,7 +415,7 @@ enrich-zb-reviews: ## Enrich zbMATH review data
 
 import-SPDX-license-list: ## Import / update the official SPDX license list into the license_spdx table (dry-run by default; use dry-run=0 to write)
 	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php import:spdx-license-list [--dry-run]
-	@echo "Importing the official SPDX license list (dry-run)..."
+	@echo "Importing the official SPDX license list$(if $(filter 0,$(dry-run)),, (dry-run))..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php import:spdx-license-list $(if $(filter 0,$(dry-run)),,--dry-run)
 
