@@ -166,9 +166,9 @@ class Ccsd_Website_HeaderTest extends TestCase
         self::assertStringContainsString('<td align="left">', $html);
     }
 
-    public function testRelativeAndMailtoLinksAreKept(): void
+    public function testRelativeMailtoAndTelLinksAreKept(): void
     {
-        foreach (['/page/about', 'mailto:contact@example.org', '//example.org/'] as $href) {
+        foreach (['/page/about', 'mailto:contact@example.org', 'tel:+33123456789', '//example.org/'] as $href) {
             $html = $this->render([
                 'type' => 'img',
                 'align' => 'left',
@@ -218,7 +218,7 @@ class Ccsd_Website_HeaderTest extends TestCase
 
     public function testObfuscatedLinkSchemeIsDropped(): void
     {
-        foreach (["java\tscript:alert(1)", "java\nscript:alert(1)", " \x01javascript:alert(1)", "data:text/html,x"] as $href) {
+        foreach (["java\tscript:alert(1)", "java\nscript:alert(1)", " \x01javascript:alert(1)", "data:text/html,x", "ftp://example.org/"] as $href) {
             $html = $this->render([
                 'type' => 'img',
                 'align' => 'left',

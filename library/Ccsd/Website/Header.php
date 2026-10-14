@@ -382,14 +382,14 @@ class Ccsd_Website_Header
     }
 
     /**
-     * Escape a link target, dropping any scheme other than http(s) and mailto
+     * Escape a link target, dropping any scheme other than http(s), mailto and tel
      */
     private static function safeHref(mixed $value): string
     {
         $value = (string)$value;
         // Browsers ignore whitespace and control characters inside a URL, so inspect the scheme without them
         $normalized = preg_replace('/[\x00-\x20\x7f]+/', '', $value) ?? '';
-        if (preg_match('/^[a-z][a-z0-9+.\-]*:/i', $normalized) && !preg_match('/^(https?|mailto):/i', $normalized)) {
+        if (preg_match('/^[a-z][a-z0-9+.\-]*:/i', $normalized) && !preg_match('/^(https?|mailto|tel):/i', $normalized)) {
             return '';
         }
         return self::esc($value);

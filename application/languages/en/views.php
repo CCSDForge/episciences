@@ -155,6 +155,7 @@ return array(
     "Ce formulaire comporte des erreurs" => "This form contains errors",
     "Le formulaire comporte des erreurs." => "This form contains errors.",
     "Les modifications ont bien été enregistrées." => "Changes have been saved.",
+    "Les modifications n'ont pas été enregistrées car le formulaire a expiré. Veuillez les saisir à nouveau." => "Your changes were not saved because the form has expired. Please enter them again.",
     "Modifications des affiliations bien prise en compte" => "Affiliations are updated",
     "Votre réponse a bien été enregistrée." => "Your answer has been saved.",
     "L'année du volume est incorrecte veuillez saisir entre: " => 'The year of the volume is incorrect, please enter between: ',
