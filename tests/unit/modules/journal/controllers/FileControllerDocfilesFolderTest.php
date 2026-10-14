@@ -10,8 +10,9 @@ use Zend_Controller_Response_HttpTestCase;
 
 /**
  * Behaviour of FileController::docfilesAction(): only the sub-directories meant to be linked from the
- * pages (comments, copy-editing sources, data descriptor) can be reached. The action is dispatched for
- * real; only the final file delivery (loadFile) is replaced by a recorder.
+ * pages (comments, copy-editing sources, data descriptor) can be reached, and only by the users allowed
+ * to read the files of the paper. The action is dispatched for real; the per-paper access check (see
+ * DocumentFilePolicyTest for its rules) and the final file delivery (loadFile) are replaced by recorders.
  */
 final class FileControllerDocfilesFolderTest extends TestCase
 {
@@ -20,11 +21,14 @@ final class FileControllerDocfilesFolderTest extends TestCase
         require_once APPLICATION_PATH . '/modules/journal/controllers/FileController.php';
     }
 
+    /** @var list<array{int, string, string}> access checks asked: docId, folder, file */
+    private array $accessChecks = [];
+
     /**
      * @param array<string, mixed> $params
      * @return array{int, list<array{string, string}>} HTTP response code, files delivered
      */
-    private function runDocfilesAction(array $params): array
+    private function runDocfilesAction(array $params, bool $isAllowed = true): array
     {
         $request = new Zend_Controller_Request_HttpTestCase();
         $request->setParams($params + ['docId' => '12', 'filename' => 'report', 'extension' => 'xml']);
@@ -33,14 +37,25 @@ final class FileControllerDocfilesFolderTest extends TestCase
         $controller = new class ($request, $response) extends \FileController {
             /** @var list<array{string, string}> */
             public array $delivered = [];
+            /** @var list<array{int, string, string}> */
+            public array $accessChecks = [];
+            public bool $isAllowed = true;
+
+            protected function isAllowedToReadDocumentFile(int $docId, string $folder, string $file): bool
+            {
+                $this->accessChecks[] = [$docId, $folder, $file];
+                return $this->isAllowed;
+            }
 
             protected function loadFile(string $path, string $file, bool $forceDownload = false): void
             {
                 $this->delivered[] = [$path, $file];
             }
         };
+        $controller->isAllowed = $isAllowed;
 
         $controller->docfilesAction();
+        $this->accessChecks = $controller->accessChecks;
 
         return [$response->getHttpResponseCode(), $controller->delivered];
     }
@@ -104,6 +119,32 @@ final class FileControllerDocfilesFolderTest extends TestCase
         self::assertSame('copy_editing_sources/34/report.xml', $delivered[0][1] ?? null);
     }
 
+    public function testCopyEditingCommentIdMustBeANumber(): void
+    {
+        [$code, $delivered] = $this->runDocfilesAction(['folder' => 'ce', 'parentCommentId' => '../comments']);
+
+        self::assertSame(404, $code);
+        self::assertSame([], $delivered, 'no file must be delivered');
+    }
+
+    public function testAccessIsCheckedOnThePaperFolderAndFile(): void
+    {
+        $this->runDocfilesAction(['folder' => 'ce', 'parentCommentId' => '34']);
+
+        self::assertSame([[12, 'copy_editing_sources', 'report.xml']], $this->accessChecks);
+    }
+
+    /**
+     * @dataProvider servedFoldersProvider
+     */
+    public function testUserNotAllowedOnThePaperGetsNotFound(string $folder): void
+    {
+        [$code, $delivered] = $this->runDocfilesAction(['folder' => $folder], false);
+
+        self::assertSame(404, $code);
+        self::assertSame([], $delivered, 'no file must be delivered');
+    }
+
     public function testMissingFolderIsRefused(): void
     {
         [$code, $delivered] = $this->runDocfilesAction([]);
@@ -122,6 +163,7 @@ final class FileControllerDocfilesFolderTest extends TestCase
             'file name is a parent directory' => [['filename' => '..', 'extension' => '']],
             'comment id climbs out of the folder' => [['parentCommentId' => '../reports/7']],
             'comment id is not a number' => [['parentCommentId' => 'abc']],
+            'comment id outside the copy-editing folder' => [['parentCommentId' => '34']],
         ];
     }
 

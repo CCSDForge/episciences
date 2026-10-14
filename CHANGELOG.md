@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
+- The document files of a paper (comments, copy-editing, data descriptor) follow the access rules of the paper pages.
+
 [RT#293890]:
 - Sorting by invitation status does not reflect the actual situation:
     A reviewer’s report is categorised as an "Additional reviewer’s report",
