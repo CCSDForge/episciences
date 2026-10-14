@@ -57,7 +57,7 @@ final class AdministratemailControllerTemplateScopeTest extends TestCase
         $this->previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
         $this->adapter = $this->getMockBuilder($this->previousAdapter::class)
             ->setConstructorArgs([$this->previousAdapter->getConfig()])
-            ->onlyMethods(['fetchRow', 'insert', 'update', 'delete'])
+            ->onlyMethods(['fetchRow', 'fetchAssoc', 'insert', 'update', 'delete'])
             ->getMock();
         $this->adapter->method('fetchRow')->willReturnCallback(function ($select) {
             $this->selects[] = $select instanceof Zend_Db_Select ? $select->assemble() : (string)$select;
@@ -246,5 +246,50 @@ final class AdministratemailControllerTemplateScopeTest extends TestCase
         $url = $this->callAction('savetemplateAction', $post, $isPost, true, [], $request);
 
         self::assertStringEndsWith('/administratemail/templates', $url);
+    }
+
+    /**
+     * The revert button of the template list carries the session token, and the revert accepts it.
+     */
+    public function testRevertButtonOfTheListCarriesATokenTheRevertAccepts(): void
+    {
+        $this->assertNoWrite();
+        // A custom template of the journal, listed with its revert button
+        $this->adapter->method('fetchAssoc')->willReturn([
+            7 => ['ID' => 7, 'PARENTID' => 3, 'RVID' => RVID, 'RVCODE' => RVCODE, 'KEY' => 'custom_paper_accepted', 'TYPE' => 'paper', 'POSITION' => 1],
+        ]);
+
+        $controller = new \AdministratemailController(new Zend_Controller_Request_HttpTestCase(), new Zend_Controller_Response_HttpTestCase());
+        $controller->setAllowedToEdit(true);
+        $controller->templatesAction();
+        $controller->view->addScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/');
+        // Script URLs of the editor, defined by public/const.php outside of the tests
+        foreach (['VENDOR_TINYMCE_JQUERY', 'VENDOR_TINYMCE', 'TINYMCE_DIR'] as $constant) {
+            if (!defined($constant)) {
+                define($constant, '');
+            }
+        }
+        $html = $controller->view->render('administratemail/templates.phtml');
+
+        $document = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $document->loadHTML($html);
+        libxml_clear_errors();
+        $fields = (new \DOMXPath($document))->query('//form[@action="/administratemail/deletetemplate"]//input[@type="hidden"]');
+        self::assertNotFalse($fields);
+        $post = [];
+        foreach ($fields as $field) {
+            /** @var \DOMElement $field */
+            $post[$field->getAttribute('name')] = $field->getAttribute('value');
+        }
+        self::assertSame(['id' => '7', 'csrf_token' => Episciences_Csrf_Helper::getSessionToken()], $post);
+
+        // Posted back, the form passes the token check and reaches the journal-scoped lookup
+        // (the list is read with fetchAssoc(), which is not captured)
+        $url = $this->callAction('deletetemplateAction', $post);
+
+        self::assertStringEndsWith('/administratemail/templates', $url);
+        self::assertCount(1, $this->selects);
+        self::assertStringContainsString('PARENTID > 0', $this->selects[0]);
     }
 }
