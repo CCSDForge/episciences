@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace unit\library\Episciences;
 
 use DOMDocument;
+use DOMElement;
 use DOMXPath;
 use Episciences_Paper;
 use PHPUnit\Framework\TestCase;
@@ -20,13 +21,19 @@ use Zend_View;
  */
 final class PaperLicenceLinkTest extends TestCase
 {
-    private mixed $previousTranslate = null;
-    private mixed $previousLang = null;
+    /** @var array<string, mixed> registry entries present before the test */
+    private array $previousRegistry = [];
 
     protected function setUp(): void
     {
-        $this->previousTranslate = Zend_Registry::isRegistered('Zend_Translate') ? Zend_Registry::get('Zend_Translate') : null;
-        $this->previousLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : null;
+        $this->previousRegistry = [];
+
+        foreach (['Zend_Translate', 'lang'] as $key) {
+            if (Zend_Registry::isRegistered($key)) {
+                $this->previousRegistry[$key] = Zend_Registry::get($key);
+            }
+        }
+
         Zend_Registry::set('lang', 'fr');
         Zend_Registry::set('Zend_Translate', new Zend_Translate([
             'adapter' => 'array',
@@ -38,8 +45,13 @@ final class PaperLicenceLinkTest extends TestCase
 
     protected function tearDown(): void
     {
-        Zend_Registry::set('Zend_Translate', $this->previousTranslate);
-        Zend_Registry::set('lang', $this->previousLang);
+        foreach (['Zend_Translate', 'lang'] as $key) {
+            if (array_key_exists($key, $this->previousRegistry)) {
+                Zend_Registry::set($key, $this->previousRegistry[$key]);
+            } elseif (Zend_Registry::isRegistered($key)) {
+                Zend_Registry::getInstance()->offsetUnset($key);
+            }
+        }
     }
 
     /**
@@ -113,7 +125,7 @@ final class PaperLicenceLinkTest extends TestCase
         $document = $this->load($html);
         $link = (new DOMXPath($document))->query('//a[@id="paper-license-link"]')->item(0);
 
-        self::assertNotNull($link);
+        self::assertInstanceOf(DOMElement::class, $link);
         self::assertSame($linked ? $licence : '', $link->getAttribute('href'));
     }
 
@@ -145,7 +157,7 @@ final class PaperLicenceLinkTest extends TestCase
         $hrefs = [];
 
         foreach ((new DOMXPath($this->load($html)))->query('//a[@href]') as $link) {
-            if ($link->getAttribute('href') === $licence) {
+            if ($link instanceof DOMElement && $link->getAttribute('href') === $licence) {
                 $hrefs[] = $link->getAttribute('href');
             }
         }

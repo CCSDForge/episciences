@@ -20,20 +20,31 @@ final class PaperXslLanguageBadgeTest extends TestCase
 {
     private const BADGE_XPATH = '//span[@class="badge rounded-pill text-bg-light"]';
 
-    private mixed $previousTranslate = null;
-    private mixed $previousLang = null;
+    /** @var array<string, mixed> registry entries present before the test */
+    private array $previousRegistry = [];
 
     protected function setUp(): void
     {
-        $this->previousTranslate = Zend_Registry::isRegistered('Zend_Translate') ? Zend_Registry::get('Zend_Translate') : null;
-        $this->previousLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : null;
+        $this->previousRegistry = [];
+
+        foreach (['Zend_Translate', 'lang'] as $key) {
+            if (Zend_Registry::isRegistered($key)) {
+                $this->previousRegistry[$key] = Zend_Registry::get($key);
+            }
+        }
+
         Zend_Registry::set('lang', 'fr');
     }
 
     protected function tearDown(): void
     {
-        Zend_Registry::set('Zend_Translate', $this->previousTranslate);
-        Zend_Registry::set('lang', $this->previousLang);
+        foreach (['Zend_Translate', 'lang'] as $key) {
+            if (array_key_exists($key, $this->previousRegistry)) {
+                Zend_Registry::set($key, $this->previousRegistry[$key]);
+            } elseif (Zend_Registry::isRegistered($key)) {
+                Zend_Registry::getInstance()->offsetUnset($key);
+            }
+        }
     }
 
     /**
