@@ -134,7 +134,7 @@ try {
         $review->loadSettings();
         // read by Episciences_PapersManager::keepOnlyUsersWithoutConflict()
         Zend_Registry::set('reviewSettings', $review->getSettings());
-        // reminders already sent in this journal,  in this journal (key => recipient role), @see Episciences_Mail_Reminder::getDeduplicationKey()
+        // reminders already sent in this journal (key => recipient role), @see Episciences_Mail_Reminder::getDeduplicationKey()
         $sentKeys = [];
 
         $languages = $website->getLanguages();
@@ -230,13 +230,18 @@ try {
 
                 displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'], 'default', true);
 
+                $mail->setSubject($reminder->getSubject($recipient['lang']));
+                $mail->setRawBody($reminder->getBody($recipient['lang']));
+
+                if (!$mail->writeMail($rvCode, $rvId, $isDebug)) {
+                    // not marked as sent: the copy intended for another role of this person can still be sent
+                    displayMessage('Failed to write the reminder to ' . $recipient['fullname'] . ' (' . $recipient['uid'] . ')', 'red', true);
+                    continue;
+                }
+
                 if ($deduplicationKey !== null) {
                     $sentKeys[$deduplicationKey] = (string)$reminder->getRecipient();
                 }
-
-                $mail->setSubject($reminder->getSubject($recipient['lang']));
-                $mail->setRawBody($reminder->getBody($recipient['lang']));
-                $mail->writeMail($rvCode, $rvId, $isDebug);
 
                 $msg = "reminder sent to " . $recipient['fullname'] . ' (' . $recipient['uid'] . ')';
                 if (isset($tags['%%ARTICLE_ID%%'])) {

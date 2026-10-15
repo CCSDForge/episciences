@@ -1052,6 +1052,7 @@ class Episciences_Mail_Reminder
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $recipients = [];
         $review = Episciences_ReviewsManager::find($this->getRvid());
+        $translator = Zend_Registry::get('Zend_Translate');
 
         /* récupère toutes les invitations (T_USER_INVITATIONS)
         * restées en attente (pending), et non expirées
@@ -1132,20 +1133,25 @@ class Episciences_Mail_Reminder
             $fullname = 'is probably undefined';
             $invitation_url = $review->getUrl() . "/reviewer/invitation/id/" . $data['INVITATION_ID'] . '/lang/';
             $invitation_url_suffix = '';
+            $isReviewerFound = true;
 
 
             if ((int)$data['TMP_USER'] === 1) {
                 $user = new Episciences_User_Tmp;
 
-                // the temporary reviewer no longer exists: no name, no email, no valid link
                 if (empty($user->find($data['UID']))) {
-                    continue;
+                    // the temporary reviewer no longer exists (no name, no email, no personal link):
+                    // the assigned editors are still told that the invitation is pending, so that they can invite someone else
+                    if ($this->getRecipient() !== 'editor') {
+                        continue;
+                    }
+                    $isReviewerFound = false;
+                } else {
+                    $user->generateScreen_name();
+                    $fullname = $user->getFullName();
+                    $lang = $user->getLangueid(true);
+                    $invitation_url_suffix = '/tmp/' . md5($user->getEmail());
                 }
-
-                $user->generateScreen_name();
-                $fullname = $user->getFullName();
-                $lang = $user->getLangueid(true);
-                $invitation_url_suffix = '/tmp/' . md5($user->getEmail());
 
             } else {
                 $user = new Episciences_User;
@@ -1171,8 +1177,8 @@ class Episciences_Mail_Reminder
                     $editorLang = $editor->getLangueid(true);
                     $editorTags = array_merge($tags, $localizedTags($editorLang), [
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
-                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $fullname,
-                        Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $user->getEmail(),
+                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $isReviewerFound ? $fullname : $translator->translate('Relecteur inconnu', $editorLang),
+                        Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $isReviewerFound ? $user->getEmail() : $translator->translate('adresse inconnue', $editorLang),
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername()
@@ -1827,9 +1833,11 @@ class Episciences_Mail_Reminder
     private function getReviewingDeadlineSupervisorRecipients(array $rows, array $filters, Episciences_Review $review): array
     {
         $recipients = [];
+        // papers loaded once: a paper has one row per reviewer
+        $papers = [];
 
         foreach ($rows as $data) {
-            $paper = Episciences_PapersManager::get($data['DOCID']);
+            $paper = $papers[$data['DOCID']] ??= Episciences_PapersManager::get($data['DOCID']);
             if (!$paper || $this->isPaperNotNeedToReminders($paper, $filters)) {
                 continue;
             }
