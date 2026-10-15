@@ -24,7 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [2021](changelogs/CHANGELOG-2021.md)
 
 ## Unreleased
+### Added
+- BAOBAB submissions now store the licence, the ROR of affiliations (including an organisational author's own ROR) and the translated abstracts filed as other descriptions.
+- Links to HAL found in a repository's related identifiers are now stored as linked publications.
+
+### Changed
+- The language of abstracts and keywords on the paper pages is shown as a badge with the language name, in the interface language, instead of an ISO code in brackets.
+
 ### Fixed
+- BAOBAB submissions no longer lose their abstract, keywords and dates when OAI-PMH is not configured or fails: the DataCite record is then fetched from the REST API.
+- BAOBAB links from a record to its own deposit page are no longer considered as related works.
 - Removing the chief editor role of a user who stays editor (or the reverse) no longer disables their paper assignments as editor.
 - The session cookie is now sent with the `SameSite=Lax` attribute (configurable with `resources.session.cookie_samesite`).
 - `enrichment:extract-biblio-refs` reports papers whose host is not allowed by the Biblioref service, or whose PDF contains no reference, as skipped instead of failed, so they no longer fail the cron run.

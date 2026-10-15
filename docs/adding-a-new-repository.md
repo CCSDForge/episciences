@@ -75,8 +75,13 @@ OpenAIRE XML, DataCite XML, or JATS XML), Episciences uses a two-tier storage mo
      normalized ORCIDs.
    - `PAPER_FILES` (via `Episciences_Paper_FilesManager`): file name, MIME type,
      file size, checksum, and download URL.
-   - `PAPER_DATASETS` (via `Episciences_Submit::processDatasets()`): related DOIs/handles,
-     relation types (`IsSupplementTo`, `References`, etc.).
+   - `PAPER_DATASETS` (via `Episciences_Submit::processDatasets()`): related DOIs,
+     handles, SWHIDs and HAL ids, with their relation types (`IsSupplementTo`,
+     `References`, etc.). Any other plain URL is ignored.
+   - `PAPER_LICENCES` (via `Episciences_Paper_LicenceManager`): not from the
+     `$enrichment` array but from a per-repository lookup in
+     `getApiResponseByRepoId()`/`extractLicenceData()`; a repository missing from
+     both gets no licence.
    - `PAPER_CITATIONS`: parsed bibliographic reference strings from article reference lists.
 
 ### 2. Supported Metadata Formats
@@ -128,7 +133,8 @@ rather than from InvenioRDM's `oai_dc` (which double-escapes HTML in
 fixed, `metadata_sources.base_url` can be set to the real endpoint and the
 hook's DataCite fetch switched from REST content negotiation to
 `Episciences_Repositories_Common::getRecord()` with `metadataPrefix=datacite`,
-as done for BAOBAB.
+as done for BAOBAB. BAOBAB's hook keeps the REST content negotiation as a
+fallback when `base_url` is not set or OAI-PMH fails.
 
 ## Checklist
 
@@ -155,6 +161,8 @@ as done for BAOBAB.
 - [ ] If the repository needs credentials (API token, OAuth), read them through
       `config/pwd.json` (see existing entries for the pattern) — never hardcode
       secrets in the hooks class.
+- [ ] Add the repository to `Episciences_Paper_LicenceManager::getApiResponseByRepoId()`
+      and `extractLicenceData()` if it exposes a licence.
 - [ ] Add `self::<NAME>_REPO_ID => '<example identifier>'` to
       `Episciences_Repositories::IDENTIFIER_EXEMPLES` so the submission form shows
       a placeholder.
