@@ -92,13 +92,16 @@ class Ccsd_Oai_Client
             $userAgent = method_exists($this, 'getUserAgent') ? $this->getUserAgent() : 'CcsdToolsCurl';
             $options[CURLOPT_USERAGENT] = $userAgent;
             $url = $this->baseUrl . '?verb=GetRecord&identifier=' . $identifier . '&metadataPrefix=' . $format;
-            $curlResponse = (string)Ccsd_Tools::curlSourceGetContents($url, $options);
+            $curlResponse = $this->fetchResponse($url, $options);
 
             if (empty($curlResponse)) {
                 throw new Ccsd_Error("No body returned");
             }
 
-            $dom->loadXML($curlResponse);
+            // Non-XML body (e.g. HTML error page): fail as a Ccsd_Error instead of a TypeError below
+            if (!@$dom->loadXML($curlResponse) || $dom->documentElement === null) {
+                throw new Ccsd_Error("Invalid OAI-PMH response");
+            }
             $xpath = new DOMXPath($dom);
             foreach (Ccsd_Tools::getNamespaces($dom->documentElement) as $id => $ns) {
                 $xpath->registerNamespace($id, $ns);
@@ -126,6 +129,18 @@ class Ccsd_Oai_Client
         } catch (Exception $e) {
             throw new Exception($e->getMessage(), "0");
         }
+    }
+
+    /**
+     * HTTP call of the OAI-PMH server (overridable to test response handling without network)
+     * @param string $url
+     * @param array $options cURL options
+     * @return string response body
+     * @throws Ccsd_Error on cURL error
+     */
+    protected function fetchResponse(string $url, array $options): string
+    {
+        return (string)Ccsd_Tools::curlSourceGetContents($url, $options);
     }
 }
 
