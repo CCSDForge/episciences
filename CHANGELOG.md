@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A command line script called with an unknown option now exits with an error code instead of 0,
   so a cron or a CI job is no longer told it succeeded.
 
+### Security
+- Co-author form of the paper management page: hardened checks.
+
 ### Fixed
 
 - Fix editor-to-author message notifications being lost or reported as sent when they were not: a plain exception while notifying another assigned editor no longer skips the author email, the author send result is checked, and the editor is warned when a notification could not be queued (`PaperDefaultController::newCommentNotifyManager()`, `AuthorEditorCommunicationControllerTrait`).
