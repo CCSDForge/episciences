@@ -37,6 +37,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     public const DATACITE_MIME_TYPE = 'application/vnd.datacite.datacite+xml';
     public const ROR_URL_PREFIX = 'https://ror.org/';
     public const ROR_ID_PATTERN = '/^0[a-hj-km-np-tv-z0-9]{6}[0-9]{2}$/';
+    public const ARK_PATTERN = '#^(?:https?://[^/]+/)?(ark:/?\d+/[^?\#\s]+)#';
 
     /**
      * @param array<string, mixed> $hookParams
@@ -140,10 +141,12 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     {
         $identifier = trim((string)($hookParams['id'] ?? ''));
 
-        if ($identifier !== '' && preg_match('#^ark:/?\d+/#', $identifier) === 1) {
-            $resolved = self::resolveArk($identifier);
+        // A bare ARK, or an ARK resolver URL (https://pidslink.ren.africa/ark:/50962/...)
+        if (preg_match(self::ARK_PATTERN, $identifier, $matches) === 1) {
+            $ark = rtrim($matches[1], '/');
+            $resolved = self::resolveArk($ark);
 
-            return [Episciences_Repositories_Common::META_IDENTIFIER => $resolved ?? $identifier];
+            return [Episciences_Repositories_Common::META_IDENTIFIER => $resolved ?? $ark];
         }
 
         // The submission form's JS helper (public/js/submit/index.js) strips the

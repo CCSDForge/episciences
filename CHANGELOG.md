@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - BAOBAB submissions now store the licence, the ROR of affiliations (including an organisational author's own ROR) and the translated abstracts filed as other descriptions.
 - Links to HAL found in a repository's related identifiers are now stored as linked publications.
+- BAOBAB submissions accept an ARK resolver URL (e.g. `https://pidslink.ren.africa/ark:/50962/...`) as well as a bare ARK or a record URL.
 
 ### Changed
 - The language of abstracts and keywords on the paper pages is shown as a badge with the language name, in the interface language, instead of an ISO code in brackets.

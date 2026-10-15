@@ -143,13 +143,31 @@ XML;
      * hookCleanIdentifiers() resolves an ARK through a live search API call
      * (Episciences_Tools::callApi() has no mock in this test suite: see
      * docs/adding-a-new-repository.md, "Testing"). Only the detection regex —
-     * matched with or without the slash after "ark:" — is exercised here.
+     * matched with or without the slash after "ark:", bare or behind a resolver
+     * URL — is exercised here.
+     *
+     * @dataProvider arkPatternProvider
      */
-    public function testArkPatternDetectsArkIdentifiersWithoutNetworkCall(): void
+    public function testArkPatternDetectsArkIdentifiersWithoutNetworkCall(string $input, ?string $expectedArk): void
     {
-        self::assertSame(1, preg_match('#^ark:/?\d+/#', 'ark:/50962/bb67854x81qwd65d'));
-        self::assertSame(1, preg_match('#^ark:/?\d+/#', 'ark:50962/bb67854x81qwd65d'));
-        self::assertSame(0, preg_match('#^ark:/?\d+/#', 'xkpt8-rjr81'));
+        $matched = preg_match(Episciences_Repositories_BAOBAB_Hooks::ARK_PATTERN, $input, $matches) === 1;
+
+        self::assertSame($expectedArk, $matched ? $matches[1] : null);
+    }
+
+    /**
+     * @return array<string, array{string, string|null}>
+     */
+    public static function arkPatternProvider(): array
+    {
+        return [
+            'bare ARK' => ['ark:/50962/bb67854x81qwd65d', 'ark:/50962/bb67854x81qwd65d'],
+            'bare ARK without slash' => ['ark:50962/bb67854x81qwd65d', 'ark:50962/bb67854x81qwd65d'],
+            'resolver URL' => ['https://pidslink.ren.africa/ark:/50962/bb678546fr6tnrn5', 'ark:/50962/bb678546fr6tnrn5'],
+            'resolver URL with query' => ['https://pidslink.ren.africa/ark:/50962/bb678546fr6tnrn5?info', 'ark:/50962/bb678546fr6tnrn5'],
+            'InvenioRDM slug' => ['xkpt8-rjr81', null],
+            'record URL' => ['https://baobab.wacren.net/records/0btwb-n7z35', null],
+        ];
     }
 
     // =========================================================================
