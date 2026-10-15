@@ -619,6 +619,43 @@ XML;
         self::assertSame('https://example.org/licence', Episciences_Repositories_BAOBAB_Hooks::extractLicenceUrl($json));
     }
 
+    /**
+     * @dataProvider unsafeLicenceLinkProvider
+     */
+    public function testExtractLicenceUrlDropsNonHttpLinks(string $link): void
+    {
+        $json = ['metadata' => ['rights' => [['title' => ['en' => 'Custom'], 'link' => $link]]]];
+
+        self::assertSame('', Episciences_Repositories_BAOBAB_Hooks::extractLicenceUrl($json));
+    }
+
+    public static function unsafeLicenceLinkProvider(): array
+    {
+        return [
+            'javascript scheme' => ['javascript:alert(document.cookie)'],
+            'data scheme' => ['data:text/html,<script>alert(1)</script>'],
+            'not a URL' => ['see the licence file'],
+            'http with injected quote' => ['https://example.org/"onmouseover="alert(1)'],
+        ];
+    }
+
+    public function testExtractAuthorsFromJsonIgnoresMalformedRor(): void
+    {
+        $creators = [
+            [
+                'person_or_org' => ['given_name' => 'Jane', 'family_name' => 'Doe'],
+                'affiliations' => [[
+                    'name' => 'WACREN',
+                    'identifiers' => [['identifier' => '"><script>alert(1)</script>', 'scheme' => 'ror']],
+                ]],
+            ],
+        ];
+
+        [, $authors] = $this->invokePrivate('extractAuthorsFromJson', [$creators]);
+
+        self::assertSame([['name' => 'WACREN']], $authors[0]['affiliation']);
+    }
+
     public function testExtractLicenceUrlEmptyWithoutRights(): void
     {
         self::assertSame('', Episciences_Repositories_BAOBAB_Hooks::extractLicenceUrl(['metadata' => []]));

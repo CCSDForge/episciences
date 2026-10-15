@@ -36,6 +36,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     public const RECORDS_URL_PREFIX = 'https://baobab.wacren.net/records/';
     public const DATACITE_MIME_TYPE = 'application/vnd.datacite.datacite+xml';
     public const ROR_URL_PREFIX = 'https://ror.org/';
+    public const ROR_ID_PATTERN = '/^0[a-hj-km-np-tv-z0-9]{6}[0-9]{2}$/';
 
     /**
      * @param array<string, mixed> $hookParams
@@ -298,13 +299,27 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      * Licence URL of an InvenioRDM record, from its REST JSON. Shared with
      * Episciences_Paper_LicenceManager, which stores the paper licence.
      *
+     * A custom licence's "link" is free text typed by the depositor and the
+     * stored licence ends up in an href: anything but an http(s) URL is dropped.
+     *
      * @param array<string, mixed> $json
      */
     public static function extractLicenceUrl(array $json): string
     {
         $rights = $json['metadata']['rights'][0] ?? [];
+        $url = trim((string)($rights['props']['url'] ?? $rights['link'] ?? ''));
 
-        return trim((string)($rights['props']['url'] ?? $rights['link'] ?? ''));
+        $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+
+        if (
+            !in_array($scheme, ['http', 'https'], true)
+            || filter_var($url, FILTER_VALIDATE_URL) === false
+            || preg_match('/["\'<>\s]/', $url) === 1
+        ) {
+            return '';
+        }
+
+        return $url;
     }
 
     /**
@@ -624,7 +639,8 @@ class Episciences_Repositories_BAOBAB_Hooks implements
 
         $rorId = trim(str_replace(self::ROR_URL_PREFIX, '', $rorId));
 
-        return $rorId !== '' ? self::ROR_URL_PREFIX . $rorId : null;
+        // A ROR id is "0" + 6 base32 characters + a 2-digit checksum.
+        return preg_match(self::ROR_ID_PATTERN, $rorId) === 1 ? self::ROR_URL_PREFIX . $rorId : null;
     }
 
     /**
