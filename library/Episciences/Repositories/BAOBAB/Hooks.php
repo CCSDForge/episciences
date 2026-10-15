@@ -36,6 +36,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     public const RECORDS_URL_PREFIX = 'https://baobab.wacren.net/records/';
     public const DATACITE_MIME_TYPE = 'application/vnd.datacite.datacite+xml';
     public const ROR_URL_PREFIX = 'https://ror.org/';
+    public const ROR_URL_PREFIX_PATTERN = '#^(?:https?://)?(?:www\.)?ror\.org/#i';
     public const ROR_ID_PATTERN = '/^0[a-hj-km-np-tv-z0-9]{6}[0-9]{2}$/';
     public const ARK_PATTERN = '#^(?:https?://[^/]+/)?(ark:/?\d+/[^?\#\s]+)#';
 
@@ -86,9 +87,9 @@ class Episciences_Repositories_BAOBAB_Hooks implements
             }
         }
 
-        if ($body === []) {
-            // Degraded fallback: DataCite could not be fetched or parsed. Build a
-            // minimal body from the JSON alone rather than fail the submission.
+        if (empty($body['title'])) {
+            // Degraded fallback: DataCite could not be fetched or parsed, or carried
+            // no title. Take the title from the JSON rather than fail the submission.
             $jsonTitle = trim((string)($json['metadata']['title'] ?? ''));
             $body['title'] = $jsonTitle !== '' ? [['value' => $jsonTitle, 'language' => $language]] : [];
         }
@@ -304,31 +305,44 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      *
      * A custom licence's "link" is free text typed by the depositor and the
      * stored licence ends up in an href: anything but an http(s) URL is dropped.
+     * The first valid URL wins, across all rights entries and, within an entry,
+     * props.url before link.
      *
      * @param array<string, mixed> $json
      */
     public static function extractLicenceUrl(array $json): string
     {
-        $rights = $json['metadata']['rights'][0] ?? [];
-        $url = trim((string)($rights['props']['url'] ?? $rights['link'] ?? ''));
+        foreach ($json['metadata']['rights'] ?? [] as $rights) {
+            if (!is_array($rights)) {
+                continue;
+            }
 
-        $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+            foreach ([$rights['props']['url'] ?? null, $rights['link'] ?? null] as $candidate) {
+                $url = trim((string)$candidate);
 
-        if (
-            !in_array($scheme, ['http', 'https'], true)
-            || filter_var($url, FILTER_VALIDATE_URL) === false
-            || preg_match('/["\'<>\s]/', $url) === 1
-        ) {
-            return '';
+                if (self::isSafeHttpUrl($url)) {
+                    return $url;
+                }
+            }
         }
 
-        return $url;
+        return '';
+    }
+
+    private static function isSafeHttpUrl(string $url): bool
+    {
+        $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true)
+            && filter_var($url, FILTER_VALIDATE_URL) !== false
+            && preg_match('/["\'<>\s]/', $url) !== 1;
     }
 
     /**
      * DataCite XML of the record: over OAI-PMH when metadata_sources.base_url is
-     * set, otherwise (or if OAI-PMH fails) through the REST API's content
-     * negotiation, which serves the same InvenioRDM serializer.
+     * set, otherwise (or if OAI-PMH fails or returns no DataCite resource, e.g. a
+     * deleted record) through the REST API's content negotiation, which serves
+     * the same InvenioRDM serializer.
      */
     private static function fetchDataCite(int|string $repoId, string $identifier): ?string
     {
@@ -339,7 +353,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
             try {
                 $xml = Episciences_Repositories_Common::getRecord($baseUrl, $oaiIdentifier, 'datacite');
 
-                if (is_string($xml) && trim($xml) !== '') {
+                if (is_string($xml) && self::hasDataCiteResource($xml)) {
                     return $xml;
                 }
             } catch (Ccsd_Error $e) {
@@ -357,7 +371,26 @@ class Episciences_Repositories_BAOBAB_Hooks implements
             return null;
         }
 
-        return is_string($xml) && trim($xml) !== '' ? $xml : null;
+        return is_string($xml) && self::hasDataCiteResource($xml) ? $xml : null;
+    }
+
+    private static function hasDataCiteResource(string $xml): bool
+    {
+        if (trim($xml) === '') {
+            return false;
+        }
+
+        libxml_use_internal_errors(true);
+        $document = simplexml_load_string($xml);
+        libxml_clear_errors();
+
+        if ($document === false) {
+            return false;
+        }
+
+        $document->registerXPathNamespace('datacite', self::DATACITE_NS);
+
+        return !empty($document->xpath('//datacite:resource'));
     }
 
     /**
@@ -486,9 +519,10 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     }
 
     /**
-     * Abstracts first; any other description is kept only when written in a
+     * Abstracts first; an "Other" description is kept only when written in a
      * language no abstract covers. BAOBAB depositors put a translated abstract in
-     * an "Other" additional description (xml:lang="eng" beside a French Abstract).
+     * an "Other" additional description (xml:lang="eng" beside a French Abstract);
+     * other types (TechnicalInfo, Methods...) are never promoted to an abstract.
      *
      * @return array<int, array<string, string>>
      */
@@ -497,7 +531,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         $descriptions = Episciences_Repositories_Common::extractDescriptions($metadata, $language, true, true);
         $coveredLanguages = array_column($descriptions, 'language');
 
-        foreach (Episciences_Repositories_Common::extractDescriptions($metadata, $language, false, true) as $description) {
+        foreach (Episciences_Repositories_Common::extractDescriptions($metadata, $language, false, true, 'Other') as $description) {
             if (!in_array($description['language'], $coveredLanguages, true)) {
                 $descriptions[] = $description;
                 $coveredLanguages[] = $description['language'];
@@ -514,7 +548,8 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      * gives given_name/family_name apart, with no splitting heuristic needed.
      *
      * An organisational creator's ROR has no slot on an Episciences author: it is
-     * kept as the creator's own affiliation, and lent to any other author's
+     * kept as the creator's own affiliation (only when it has a ROR, the name
+     * alone would just repeat the author's), and lent to any other author's
      * free-text affiliation bearing the same name.
      *
      * @param array<int, array<string, mixed>> $creators
@@ -556,7 +591,11 @@ class Episciences_Repositories_BAOBAB_Hooks implements
 
             $affiliations = self::buildAffiliations($creatorEntry['affiliations'] ?? [], $organisationRors);
 
-            if ($affiliations === [] && ($person['type'] ?? '') === 'organizational') {
+            if (
+                $affiliations === []
+                && ($person['type'] ?? '') === 'organizational'
+                && self::extractAffiliationRor($person) !== null
+            ) {
                 $affiliations = self::buildAffiliations([$person], $organisationRors);
             }
 
@@ -640,7 +679,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
             $rorId = (string)($affiliation['id'] ?? '');
         }
 
-        $rorId = trim(str_replace(self::ROR_URL_PREFIX, '', $rorId));
+        $rorId = (string)preg_replace(self::ROR_URL_PREFIX_PATTERN, '', trim($rorId));
 
         // A ROR id is "0" + 6 base32 characters + a 2-digit checksum.
         return preg_match(self::ROR_ID_PATTERN, $rorId) === 1 ? self::ROR_URL_PREFIX . $rorId : null;

@@ -678,4 +678,119 @@ XML;
     {
         self::assertSame('', Episciences_Repositories_BAOBAB_Hooks::extractLicenceUrl(['metadata' => []]));
     }
+
+    public function testExtractDescriptionsNeverPromotesNonOtherDescriptions(): void
+    {
+        $xml = <<<'XML'
+<?xml version="1.0"?>
+<resource xmlns="http://datacite.org/schema/kernel-4">
+    <descriptions>
+        <description descriptionType="Abstract" xml:lang="fr">Résumé</description>
+        <description descriptionType="TechnicalInfo" xml:lang="en">Software requirements</description>
+        <description descriptionType="Other" xml:lang="eng">English abstract</description>
+    </descriptions>
+</resource>
+XML;
+        $metadata = simplexml_load_string($xml);
+        $metadata->registerXPathNamespace('datacite', Episciences_Repositories_BAOBAB_Hooks::DATACITE_NS);
+
+        $result = $this->invokePrivate('extractDescriptions', [$metadata, 'fr']);
+
+        self::assertSame([
+            ['value' => 'Résumé', 'language' => 'fr'],
+            ['value' => 'English abstract', 'language' => 'en'],
+        ], $result);
+    }
+
+    public function testExtractLicenceUrlLooksBeyondFirstRightsEntry(): void
+    {
+        $json = ['metadata' => ['rights' => [
+            ['title' => ['en' => 'Custom'], 'link' => 'see the LICENSE file'],
+            ['id' => 'cc-by-4.0', 'props' => ['url' => 'https://creativecommons.org/licenses/by/4.0/']],
+        ]]];
+
+        self::assertSame('https://creativecommons.org/licenses/by/4.0/', Episciences_Repositories_BAOBAB_Hooks::extractLicenceUrl($json));
+    }
+
+    public function testExtractLicenceUrlFallsBackToLinkWhenPropsUrlEmpty(): void
+    {
+        $json = ['metadata' => ['rights' => [
+            ['props' => ['url' => ''], 'link' => 'https://example.org/licence'],
+        ]]];
+
+        self::assertSame('https://example.org/licence', Episciences_Repositories_BAOBAB_Hooks::extractLicenceUrl($json));
+    }
+
+    /**
+     * @dataProvider rorVariantProvider
+     */
+    public function testExtractAuthorsFromJsonAcceptsRorUrlVariants(string $ror): void
+    {
+        $creators = [
+            [
+                'person_or_org' => ['given_name' => 'Jane', 'family_name' => 'Doe'],
+                'affiliations' => [['name' => 'WACREN', 'identifiers' => [['identifier' => $ror, 'scheme' => 'ror']]]],
+            ],
+        ];
+
+        [, $authors] = $this->invokePrivate('extractAuthorsFromJson', [$creators]);
+
+        self::assertSame('https://ror.org/006rqpt26', $authors[0]['affiliation'][0]['id'][0]['id']);
+    }
+
+    public static function rorVariantProvider(): array
+    {
+        return [
+            'https URL' => ['https://ror.org/006rqpt26'],
+            'http URL' => ['http://ror.org/006rqpt26'],
+            'no scheme' => ['ror.org/006rqpt26'],
+            'bare id' => ['006rqpt26'],
+        ];
+    }
+
+    public function testExtractAuthorsFromJsonOrganisationalCreatorWithoutRorHasNoAffiliation(): void
+    {
+        $creators = [
+            ['person_or_org' => ['type' => 'organizational', 'name' => 'WACREN']],
+        ];
+
+        [, $authors] = $this->invokePrivate('extractAuthorsFromJson', [$creators]);
+
+        self::assertArrayNotHasKey('affiliation', $authors[0]);
+    }
+
+    // =========================================================================
+    // hasDataCiteResource() — an unusable OAI-PMH answer triggers the REST fallback
+    // =========================================================================
+
+    public function testHasDataCiteResourceInOaiRecord(): void
+    {
+        $xml = <<<'XML'
+<?xml version="1.0"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/">
+    <GetRecord><record><metadata>
+        <resource xmlns="http://datacite.org/schema/kernel-4"><titles><title>T</title></titles></resource>
+    </metadata></record></GetRecord>
+</OAI-PMH>
+XML;
+
+        self::assertTrue($this->invokePrivate('hasDataCiteResource', [$xml]));
+    }
+
+    /**
+     * @dataProvider unusableDataCiteProvider
+     */
+    public function testHasDataCiteResourceRejectsUnusableAnswers(string $xml): void
+    {
+        self::assertFalse($this->invokePrivate('hasDataCiteResource', [$xml]));
+    }
+
+    public static function unusableDataCiteProvider(): array
+    {
+        return [
+            'empty' => [''],
+            'not XML' => ['<html>Server error'],
+            'deleted record' => ['<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/"><GetRecord><record><header status="deleted"><identifier>oai:x</identifier></header></record></GetRecord></OAI-PMH>'],
+        ];
+    }
 }
