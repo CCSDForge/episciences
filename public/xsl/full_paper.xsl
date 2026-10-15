@@ -421,7 +421,8 @@
                         </xsl:if>
                         <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
                         <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
-                            <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
+                            <span class="badge rounded-pill text-bg-light"><xsl:value-of select="php:function('Episciences_Tools::getLanguageName', string(@xml:lang))"/></span>
+                            <xsl:text> </xsl:text>
                         </xsl:if>
                         <xsl:value-of select="php:function('Episciences_Tools::decodeLatexToSafeHtml', string(.))" disable-output-escaping="yes"/>
                     </p>
@@ -440,7 +441,8 @@
                         </xsl:if>
                         <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
                         <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
-                            <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
+                            <span class="badge rounded-pill text-bg-light"><xsl:value-of select="php:function('Episciences_Tools::getLanguageName', string(@xml:lang))"/></span>
+                            <xsl:text> </xsl:text>
                         </xsl:if>
                         <xsl:value-of select="php:function('Episciences_Tools::decodeLatexToSafeHtml', string(.))" disable-output-escaping="yes"/>
                     </p>
@@ -474,7 +476,8 @@
                     <xsl:sort select="@xml:lang"/>
                     <xsl:variable name="current_lang" select="@xml:lang"/>
                     
-                    <strong>[<xsl:value-of select="$current_lang"/>] </strong>
+                    <span class="badge rounded-pill text-bg-light"><xsl:value-of select="php:function('Episciences_Tools::getLanguageName', string($current_lang))"/></span>
+                    <xsl:text> </xsl:text>
                     
                     <xsl:for-each select="key('subjects-by-lang', $current_lang)">
                         <xsl:value-of select="."/>

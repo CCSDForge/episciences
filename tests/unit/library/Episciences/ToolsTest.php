@@ -3024,4 +3024,26 @@ class ToolsTest extends TestCase
         $this->assertSame($expected, Episciences_Tools::formatText($input));
     }
 
+
+    /**
+     * @dataProvider languageNameProvider
+     */
+    public function testGetLanguageName(?string $code, string $locale, string $expected): void
+    {
+        self::assertSame($expected, Episciences_Tools::getLanguageName($code, $locale));
+    }
+
+    public static function languageNameProvider(): array
+    {
+        return [
+            'alpha-2 in French' => ['fr', 'fr', 'Français'],
+            'alpha-2 in English' => ['fr', 'en', 'French'],
+            'English in French' => ['en', 'fr', 'Anglais'],
+            'alpha-3 code' => ['eng', 'fr', 'Anglais'],
+            'upper case code' => ['FR', 'en', 'French'],
+            'unknown code kept as is' => ['xx-unknown', 'fr', 'xx-unknown'],
+            'empty code' => ['', 'fr', ''],
+            'null code' => [null, 'fr', ''],
+        ];
+    }
 }

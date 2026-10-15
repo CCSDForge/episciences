@@ -10,6 +10,8 @@ use GuzzleHttp\Exception\GuzzleException;
 use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use League\HTMLToMarkdown\HtmlConverter;
+use Symfony\Component\Intl\Exception\MissingResourceException;
+use Symfony\Component\Intl\Languages;
 
 class Episciences_Tools
 {
@@ -925,6 +927,39 @@ class Episciences_Tools
         $text = preg_replace('#<(?!/?(?:' . $knownTags . ')(?:\s[^<>]*)?/?>)#i', '&lt;', $text) ?? $text;
 
         return $purifier->purifyHtml(self::latexToUtf8($text, true));
+    }
+
+    /**
+     * Name of a language in the interface language ("fr" displayed as
+     * "Français" in French, "French" in English), for metadata language labels.
+     * Accepts ISO 639-1 and 639-2/3 codes; an unknown code is returned as is.
+     *
+     * @param string|null $langCode e.g. 'fr', 'eng'
+     * @param string|null $displayLocale defaults to the interface language
+     */
+    public static function getLanguageName(?string $langCode, ?string $displayLocale = null): string
+    {
+        $code = strtolower(trim((string)$langCode));
+
+        if ($code === '') {
+            return '';
+        }
+
+        $displayLocale ??= self::getLocale();
+
+        try {
+            if (Languages::exists($code)) {
+                $name = Languages::getName($code, $displayLocale);
+            } elseif (Languages::alpha3CodeExists($code)) {
+                $name = Languages::getAlpha3Name($code, $displayLocale);
+            } else {
+                return (string)$langCode;
+            }
+        } catch (MissingResourceException $e) {
+            return (string)$langCode;
+        }
+
+        return mb_strtoupper(mb_substr($name, 0, 1)) . mb_substr($name, 1);
     }
 
     /**
