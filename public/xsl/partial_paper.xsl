@@ -77,7 +77,7 @@
                         <div class="small">
                             <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
                             <a rel="noopener" target="_blank">
-                                <xsl:if test="(starts-with(episciences/paperLicence/text(), 'http://') or starts-with(episciences/paperLicence/text(), 'https://'))">
+                                <xsl:if test="php:function('Episciences_Tools::isHttpUrl', string(episciences/paperLicence))">
                                     <xsl:attribute name="href">
                                         <xsl:value-of select="episciences/paperLicence/text()"/>
                                     </xsl:attribute>
@@ -94,7 +94,7 @@
                                 <div class="small">
                                     <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
                                     <a rel="noopener" target="_blank">
-                                        <xsl:if test="not(contains($doc_rights, '[CC_NO]')) and (starts-with($doc_rights, 'http://') or starts-with($doc_rights, 'https://'))">
+                                        <xsl:if test="not(contains($doc_rights, '[CC_NO]')) and php:function('Episciences_Tools::isHttpUrl', string($doc_rights))">
                                             <xsl:attribute name="href">
                                                 <xsl:value-of select="$doc_rights"/>
                                             </xsl:attribute>

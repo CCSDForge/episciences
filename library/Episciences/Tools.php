@@ -2134,6 +2134,20 @@ class Episciences_Tools
     }
 
     /**
+     * Whether a value can safely become an href: an absolute http(s) URL
+     * (scheme in any case) with no quote, angle bracket or whitespace. Also
+     * called from the paper stylesheets through php:function.
+     */
+    public static function isHttpUrl(string $url): bool
+    {
+        $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true)
+            && filter_var($url, FILTER_VALIDATE_URL) !== false
+            && preg_match('/["\'<>\s]/', $url) !== 1;
+    }
+
+    /**
      * Check if a string is a HAL URL containing a valid HAL identifier
      * @param string $url
      * @return bool

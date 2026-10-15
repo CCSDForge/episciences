@@ -3,7 +3,7 @@
 $paper = $this->paper;
 $licence = $paper->getLicence();
 // Same rule as the paper stylesheets: only an http(s) licence becomes a link
-$isLinkable = str_starts_with($licence, 'http://') || str_starts_with($licence, 'https://');
+$isLinkable = Episciences_Tools::isHttpUrl($licence);
 ?>
 <div class="small">
     <?= $this->escape($this->translate('Licence : ')) ?>

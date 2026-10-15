@@ -3074,4 +3074,28 @@ class ToolsTest extends TestCase
             'null code' => [null, 'fr', ''],
         ];
     }
+
+    /**
+     * @dataProvider httpUrlProvider
+     */
+    public function testIsHttpUrl(string $url, bool $expected): void
+    {
+        self::assertSame($expected, Episciences_Tools::isHttpUrl($url));
+    }
+
+    public static function httpUrlProvider(): array
+    {
+        return [
+            'https' => ['https://creativecommons.org/licenses/by/4.0/', true],
+            'http' => ['http://example.org/licence', true],
+            'upper case scheme' => ['HTTPS://example.org/licence', true],
+            'javascript scheme' => ['javascript:alert(1)', false],
+            'data scheme' => ['data:text/html,<b>x</b>', false],
+            'relative path' => ['/licence', false],
+            'free text' => ['CC BY 4.0', false],
+            'quote breaking out of the attribute' => ['https://example.org/"onmouseover="x', false],
+            'whitespace' => ['https://example.org/a b', false],
+            'empty' => ['', false],
+        ];
+    }
 }

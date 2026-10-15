@@ -65,6 +65,8 @@ final class PaperLicenceLinkTest extends TestCase
             $cases[$stylesheet . ' https licence'] = [$stylesheet, 'https://creativecommons.org/licenses/by/4.0', true];
             $cases[$stylesheet . ' javascript licence'] = [$stylesheet, 'javascript:alert(1)', false];
             $cases[$stylesheet . ' data licence'] = [$stylesheet, 'data:text/html,x', false];
+            $cases[$stylesheet . ' upper case scheme'] = [$stylesheet, 'HTTPS://creativecommons.org/licenses/by/4.0', true];
+            $cases[$stylesheet . ' free text after the scheme'] = [$stylesheet, 'https://example.org/a b', false];
         }
 
         return $cases;
@@ -106,6 +108,8 @@ final class PaperLicenceLinkTest extends TestCase
         return [
             'https licence' => ['https://creativecommons.org/licenses/by/4.0', true],
             'javascript licence' => ['javascript:alert(1)', false],
+            'upper case scheme' => ['HTTPS://creativecommons.org/licenses/by/4.0', true],
+            'free text after the scheme' => ['https://example.org/a b', false],
         ];
     }
 
