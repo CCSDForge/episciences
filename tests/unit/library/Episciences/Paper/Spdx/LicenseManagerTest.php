@@ -114,6 +114,23 @@ class LicenseManagerTest extends TestCase
     }
 
     /**
+     * @covers ::getNameByIdentifier
+     */
+    public function testGetNameByIdentifierReturnsNullForAnUnknownCode(): void
+    {
+        $adapter = $this->getMockBuilder($this->previousAdapter::class)
+            ->setConstructorArgs([$this->previousAdapter->getConfig()])
+            ->onlyMethods(['fetchOne'])
+            ->getMock();
+        // Zend_Db returns false when no row matches (e.g. an empty license table)
+        $adapter->method('fetchOne')->willReturnOnConsecutiveCalls('MIT License', false);
+        Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+
+        self::assertSame('MIT License', LicenseManager::getNameByIdentifier('MIT'));
+        self::assertNull(LicenseManager::getNameByIdentifier('UNKNOWN-1.0'));
+    }
+
+    /**
      * @covers ::clearCache
      */
     public function testClearCacheQueriesAgain(): void
