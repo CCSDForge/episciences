@@ -40,7 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the assignment is now checked on the latest version.
 - Permissions are now also checked on obsolete versions in the paper management page.
 - On the page of a previous version, the assigned editor (or guest editor) can now see the reviews
-  and the non-public details.
+  and the non-public details. The editor (not the copy editor) also sees the details of these reviews.
+- The assigned editor (or guest editor), including the one assigned to the latest version, now sees
+  the rating criteria reserved to editors, whether or not the editors are encapsulated.
 - A guest editor (or copy editor) assigned to a paper could not download the review report
   attachments ("File not found"): the download permission now relies on the assignment check,
   same as the review display.

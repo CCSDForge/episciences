@@ -427,6 +427,8 @@ class Episciences_Paper
     private $_solrData = [];
     private $_history;
     private $_latestVersionId;
+    /** @var Episciences_Paper|false|null false until computed, see findLatestVersionForAssignmentCheck() */
+    private Episciences_Paper|false|null $_latestVersionForAssignmentCheck = false;
     private $_suggestedEditors;
     /** @var Episciences_Editor[] $_editors */
     private $_editors = [];
@@ -2423,17 +2425,21 @@ class Episciences_Paper
             $review = Episciences_ReviewsManager::find(RVID);
             $review->loadSettings();
 
-            $isEditor = ($review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) == 1) ?
-                $this->getEditor($user->getUid()) :
-                $user->isEditor();
-
             if ($user->getUid() == $this->getUid()) {
                 // user is the paper contributor
                 $visibility = [
                     Episciences_Rating_Criterion::VISIBILITY_PUBLIC,
                     Episciences_Rating_Criterion::VISIBILITY_CONTRIBUTOR
                 ];
-            } elseif (Episciences_Auth::isChiefEditor() || Episciences_Auth::isSecretary() || $isEditor) {
+            } elseif (
+                Episciences_Auth::isChiefEditor() ||
+                Episciences_Auth::isSecretary() ||
+                // last, as it may query the assignments
+                $this->isEditorForReportVisibility(
+                    $user,
+                    $review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) == 1
+                )
+            ) {
                 // user is an editor
                 $visibility = [
                     Episciences_Rating_Criterion::VISIBILITY_PUBLIC,
@@ -2450,6 +2456,22 @@ class Episciences_Paper
         }
 
         return $this->filterRatingReports($reports, $visibility, $user);
+    }
+
+    /**
+     * Check if a user sees the rating criteria reserved to editors.
+     * The assigned editor (or guest editor) always does, including the one assigned to the latest version
+     * when this paper is a previous version (same rule as the report details, see isAssignedEditor()).
+     * Without editors encapsulation, any editor does too.
+     *
+     * @param Episciences_User $user
+     * @param bool $isEditorsEncapsulated
+     * @return bool
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function isEditorForReportVisibility(Episciences_User $user, bool $isEditorsEncapsulated): bool
+    {
+        return (!$isEditorsEncapsulated && $user->isEditor()) || $this->isAssignedEditor((int)$user->getUid());
     }
 
     /**
@@ -5124,29 +5146,64 @@ class Episciences_Paper
      */
     public function isAssignedEditorOrCopyEditor(int $uid): bool
     {
+        if ($uid <= 0) { // anonymous visitor: no assignment to look up
+            return false;
+        }
+
         if ($this->getEditor($uid) || $this->getCopyEditor($uid)) {
             return true;
         }
 
-        $latestVersion = $this->findLatestVersion();
+        $latestVersion = $this->findLatestVersionForAssignmentCheck();
 
         return $latestVersion && ($latestVersion->getEditor($uid) || $latestVersion->getCopyEditor($uid));
     }
 
     /**
-     * Fetch the latest version of this paper.
+     * Check if a user is assigned as editor to this paper.
+     * For a previous version, the assignment is checked on the latest version (see isAssignedEditorOrCopyEditor()).
      *
-     * @return Episciences_Paper|null null when this paper is the latest version or when it cannot be found
+     * @param int $uid
+     * @return bool
      */
-    public function findLatestVersion(): ?Episciences_Paper
+    public function isAssignedEditor(int $uid): bool
     {
+        if ($uid <= 0) { // anonymous visitor: no assignment to look up
+            return false;
+        }
+
+        if ($this->getEditor($uid)) {
+            return true;
+        }
+
+        $latestVersion = $this->findLatestVersionForAssignmentCheck();
+
+        return $latestVersion && $latestVersion->getEditor($uid);
+    }
+
+    /**
+     * Build the latest version of this paper, only to check its editor and copy editor assignments:
+     * the returned object holds the identifiers only, not the paper data.
+     * The result is kept for the lifetime of this object, so that the assignments of the latest version
+     * are fetched once, however many checks are made.
+     *
+     * @return Episciences_Paper|null null when this paper is the latest version or when no version is found
+     */
+    protected function findLatestVersionForAssignmentCheck(): ?Episciences_Paper
+    {
+        if ($this->_latestVersionForAssignmentCheck !== false) {
+            return $this->_latestVersionForAssignmentCheck;
+        }
+
         $latestDocId = (int)$this->getLatestVersionId();
 
         if ($latestDocId === 0 || $latestDocId === $this->getDocid()) {
-            return null;
+            return $this->_latestVersionForAssignmentCheck = null;
         }
 
-        return Episciences_PapersManager::get($latestDocId, false) ?: null;
+        return $this->_latestVersionForAssignmentCheck = (new Episciences_Paper())
+            ->setDocid($latestDocId)
+            ->setPaperid($this->getPaperid());
     }
 
     /**
