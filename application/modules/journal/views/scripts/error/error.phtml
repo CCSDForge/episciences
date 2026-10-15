@@ -20,5 +20,5 @@
     <pre><?php echo $this->escape($this->exception->getTraceAsString()) ?></pre>
 
     <h2>Request Parameters:</h2>
-    <pre><?php echo $this->escape(var_export($this->request->getParams(), true)) ?></pre>
+    <pre><?php echo $this->escape(var_export($this->requestParams ?? [], true)) ?></pre>
 <?php } ?>

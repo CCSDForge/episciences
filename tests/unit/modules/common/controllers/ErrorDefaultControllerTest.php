@@ -81,6 +81,87 @@ final class ErrorDefaultControllerTest extends TestCase
         self::assertSame('***', $out['Secret']);
     }
 
+    public function testKeysContainingSensitiveFragmentsAreMasked(): void
+    {
+        $in = [
+            'PASSWORD_VERIFY' => 'a',
+            'API_PASSWORD_VERIFY' => 'b',
+            'paperPassword' => 'c',
+            'search_doc' => ['paperPassword' => 'd', 'title' => 'T'],
+            'csrf' => 'e',
+            'keywords' => 'kept',
+        ];
+
+        $out = $this->controller->redactSensitiveParams($in);
+
+        self::assertSame('***', $out['PASSWORD_VERIFY']);
+        self::assertSame('***', $out['API_PASSWORD_VERIFY']);
+        self::assertSame('***', $out['paperPassword']);
+        self::assertSame('***', $out['search_doc']['paperPassword']);
+        self::assertSame('T', $out['search_doc']['title']);
+        self::assertSame('***', $out['csrf']);
+        self::assertSame('kept', $out['keywords']);
+    }
+
+    public function testSensitiveKeyHoldingAnArrayIsMaskedEntirely(): void
+    {
+        $out = $this->controller->redactSensitiveParams(['password' => ['a', 'b']]);
+        self::assertSame('***', $out['password']);
+    }
+
+    public function testGenericNamesAreMaskedOnExactMatchOnly(): void
+    {
+        $out = $this->controller->redactSensitiveParams([
+            'code' => '5f0c1a2b3d4e5',
+            'ACCESS_CODE' => '5f0c1a2b3d4e5',
+            'user_access_code' => 'kept',
+            'language_code' => 'fr',
+        ]);
+
+        self::assertSame('***', $out['code']);
+        self::assertSame('***', $out['ACCESS_CODE']);
+        self::assertSame('kept', $out['user_access_code']);
+        self::assertSame('fr', $out['language_code']);
+    }
+
+    public function testRoleNamesContainingAFragmentAreNotMasked(): void
+    {
+        $out = $this->controller->redactSensitiveParams([
+            'roles' => ['secretary' => '1', 'secretaries' => ['12']],
+            'client_secret' => 'y',
+        ]);
+
+        self::assertSame('1', $out['roles']['secretary']);
+        self::assertSame(['12'], $out['roles']['secretaries']);
+        self::assertSame('***', $out['client_secret']);
+    }
+
+    public function testErrorPageReceivesRedactedParameters(): void
+    {
+        // The failing request, as captured by the error handler plugin
+        $failedRequest = new \Zend_Controller_Request_Http();
+        $failedRequest->setParam('password', 'secret');
+        $failedRequest->setParam('title', 'T');
+
+        $errorHandler = new \ArrayObject([
+            'type' => \Zend_Controller_Plugin_ErrorHandler::EXCEPTION_OTHER,
+            'request' => $failedRequest,
+            'exception' => new \Exception('Failure'),
+        ], \ArrayObject::ARRAY_AS_PROPS);
+
+        $errorRequest = new \Zend_Controller_Request_Http();
+        $errorRequest->setParam('error_handler', $errorHandler);
+
+        $this->controller->setRequest($errorRequest);
+        $this->controller->setResponse(new \Zend_Controller_Response_Http());
+        $this->controller->view = new \Zend_View();
+
+        $this->controller->errorAction();
+
+        self::assertSame('***', $this->controller->view->requestParams['password']);
+        self::assertSame('T', $this->controller->view->requestParams['title']);
+    }
+
     public function testNestedParametersAreMasked(): void
     {
         $in = ['form' => ['email' => 'a@b.c', 'password' => 'secret']];

@@ -38,12 +38,14 @@ class ErrorDefaultController extends Zend_Controller_Action
 	                break;
 	        }
 	        
+	        // Credential-like values are masked for both the log and the error page
+	        $loggableParams = $this->redactSensitiveParams($errors->request->getParams());
+
 	        // Log exception, if logger available
 	        if ($log = $this->getLog()) {
 	        	$log->log("******* " . $this->view->message . " : " . $errors->exception->getMessage(), $priority, $errors->exception);
 	        	$log->log("Exception thrown in : " . $errors->exception->getFile() . " - l." .$errors->exception->getLine(), $priority);
-	            $loggableParams = $this->redactSensitiveParams($errors->request->getParams());
-            $log->log('Request Parameters : ' . Zend_Json::encode($loggableParams), $priority, $loggableParams);
+	        	$log->log('Request Parameters : ' . Zend_Json::encode($loggableParams), $priority, $loggableParams);
 	        }
 	        
 	        // conditionally display exceptions
@@ -61,6 +63,7 @@ class ErrorDefaultController extends Zend_Controller_Action
 	        }
 	        
 	        $this->view->request   = $errors->request;
+	        $this->view->requestParams = $loggableParams;
 	        
 	        
         }
@@ -69,22 +72,51 @@ class ErrorDefaultController extends Zend_Controller_Action
     /**
      * Replace the value of credential-like parameters before they reach the logs.
      *
+     * A parameter is masked when its lowercased name contains one of the sensitive
+     * fragments (e.g. PASSWORD_VERIFY, API_PASSWORD_VERIFY, paperPassword, csrf_token),
+     * or exactly matches a name too generic to be used as a fragment (e.g. the volume
+     * access code). Role names containing a fragment (secretary) are not masked.
+     *
      * @param array $params
      * @return array
      */
     public function redactSensitiveParams(array $params): array
     {
-        $sensitive = ['password', 'passwd', 'pwd', 'previous_password', 'api_password', 'token', 'secret', 'csrf_token'];
+        $sensitive = ['password', 'passwd', 'pwd', 'token', 'secret', 'csrf', 'api_key', 'apikey'];
+        $sensitiveExact = ['code', 'access_code'];
+        $notSensitive = [Episciences_Acl::ROLE_SECRETARY, Episciences_Acl::ROLE_SECRETARY_PLURAL];
 
         foreach ($params as $key => $value) {
-            if (is_array($value)) {
-                $params[$key] = $this->redactSensitiveParams($value);
-            } elseif (in_array(strtolower((string)$key), $sensitive, true)) {
+            $name = strtolower((string)$key);
+            $isSensitive = in_array($name, $sensitiveExact, true)
+                || (!in_array($name, $notSensitive, true) && self::isSensitiveKey($name, $sensitive));
+
+            if ($isSensitive) {
                 $params[$key] = '***';
+            } elseif (is_array($value)) {
+                $params[$key] = $this->redactSensitiveParams($value);
             }
         }
 
         return $params;
+    }
+
+    /**
+     * @param string $key
+     * @param string[] $fragments
+     * @return bool
+     */
+    private static function isSensitiveKey(string $key, array $fragments): bool
+    {
+        $key = strtolower($key);
+
+        foreach ($fragments as $fragment) {
+            if (str_contains($key, $fragment)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getLog()
