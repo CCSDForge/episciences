@@ -177,6 +177,9 @@ try {
             $origin = !$opts->date ? new DateTime("now") : date_create($opts->date);
             $origin->setTime(0,0); // otherwise, the number of days before the review deadline was calculated incorrectly (one day difference).
 
+            // papers loaded once per reminder: several recipients (editors, chief editors, secretaries) share the same paper
+            $papers = [];
+
             foreach ($recipients as $recipient) {
 
                 $deduplicationKey = Episciences_Mail_Reminder::getDeduplicationKey(
@@ -194,7 +197,8 @@ try {
 
                 $mail = new Episciences_Mail('UTF-8', $rvCode);
                 if (isset($tags['%%ARTICLE_ID%%'])) {
-                    $paper = Episciences_PapersManager::get($tags['%%ARTICLE_ID%%']);
+                    $docId = (int)$tags['%%ARTICLE_ID%%'];
+                    $paper = $papers[$docId] ??= Episciences_PapersManager::get($docId);
                     $mail->setDocid($paper->getDocid(), $paper->getPaperid());
                     displayMessage('DOCID > #' . $paper->getDocid(), 'default', true);
                 }

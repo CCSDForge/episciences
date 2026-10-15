@@ -773,9 +773,7 @@ final class Episciences_Mail_ReminderTest extends TestCase
             'coAuthorUids' => [50],
             'supervisors' => [],
         ];
-        $this->setPrivateProperty($reminder, '_supervisorFilterContextCache', [
-            \Episciences_Acl::ROLE_CHIEF_EDITOR => [42 => $cachedContext],
-        ]);
+        $this->setPrivateProperty($reminder, '_supervisorFilterContextCache', [42 => $cachedContext]);
 
         $paper = $this->createMock(\Episciences_Paper::class);
         $paper->method('getDocid')->willReturn(42);
@@ -792,7 +790,7 @@ final class Episciences_Mail_ReminderTest extends TestCase
         $reminder = new Episciences_Mail_Reminder();
         $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
         // no chief editor: no conflict check, no co-author query
-        $this->setPrivateProperty($reminder, '_supervisorsCache', [\Episciences_Acl::ROLE_CHIEF_EDITOR => []]);
+        $this->setPrivateProperty($reminder, '_supervisorsCache', []);
 
         $paper = $this->createMock(\Episciences_Paper::class);
         $paper->method('getDocid')->willReturn(7);
@@ -809,7 +807,7 @@ final class Episciences_Mail_ReminderTest extends TestCase
         $reminder = new Episciences_Mail_Reminder();
         $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
         $supervisors = [1 => $this->createSupervisorMock(1, 'chief@example.com')];
-        $this->setPrivateProperty($reminder, '_supervisorsCache', [\Episciences_Acl::ROLE_CHIEF_EDITOR => $supervisors]);
+        $this->setPrivateProperty($reminder, '_supervisorsCache', $supervisors);
         // conflicts of interest disabled: no database access in keepOnlyUsersWithoutConflict()
         \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => 0]);
 
@@ -839,13 +837,11 @@ final class Episciences_Mail_ReminderTest extends TestCase
             50 => $this->createSupervisorMock(50, 'coauthor@example.com'),
             200 => $this->createSupervisorMock(200, 'reviewer@example.com'),
         ];
-        $this->setPrivateProperty($reminder, '_supervisorFilterContextCache', [
-            \Episciences_Acl::ROLE_SECRETARY => [7 => [
-                'authorUid' => 100,
-                'coAuthorUids' => [50],
-                'supervisors' => $supervisors,
-            ]],
-        ]);
+        $this->setPrivateProperty($reminder, '_supervisorFilterContextCache', [7 => [
+            'authorUid' => 100,
+            'coAuthorUids' => [50],
+            'supervisors' => $supervisors,
+        ]]);
 
         $paper = $this->createMock(\Episciences_Paper::class);
         $paper->method('getDocid')->willReturn(7);
@@ -865,22 +861,55 @@ final class Episciences_Mail_ReminderTest extends TestCase
         $this->assertSame('Title', $recipients[0]['tags'][\Episciences_Mail_Tags::TAG_ARTICLE_TITLE]);
     }
 
-    public function testGetSupervisorsReturnsCachedListForEachRecipientRole(): void
+    /**
+     * @dataProvider emptyReviewerEmailProvider
+     */
+    public function testGetSupervisorRecipientsSkipsReviewerWithoutEmail(?string $reviewerEmail): void
     {
         $reminder = new Episciences_Mail_Reminder();
-        $chiefEditors = [1 => 'chief editor'];
-        $secretaries = [2 => 'secretary'];
-        $this->setPrivateProperty($reminder, '_supervisorsCache', [
-            \Episciences_Acl::ROLE_CHIEF_EDITOR => $chiefEditors,
-            \Episciences_Acl::ROLE_SECRETARY => $secretaries,
+        $reminder->setRecipient(\Episciences_Acl::ROLE_SECRETARY);
+
+        $paper = $this->createMock(\Episciences_Paper::class);
+        // returns before loading the supervisors, the co-authors and the conflicts of interest
+        $paper->expects($this->never())->method('getDocid');
+
+        $recipients = $this->invokePrivateMethod($reminder, 'getSupervisorRecipients', [
+            $paper, 200, $reviewerEmail, '', ['shared' => 'tag'], '2026-10-01',
         ]);
 
-        $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
-        $this->assertSame($chiefEditors, $this->invokePrivateMethod($reminder, 'getSupervisors'));
+        $this->assertSame([], $recipients);
+    }
 
-        // switching role must not return the other role's list
+    public static function emptyReviewerEmailProvider(): array
+    {
+        return [
+            'null email' => [null],
+            'empty email' => [''],
+        ];
+    }
+
+    public function testGetSupervisorsReturnsCachedList(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+        $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
+        $chiefEditors = [1 => 'chief editor'];
+        $this->setPrivateProperty($reminder, '_supervisorsCache', $chiefEditors);
+
+        $this->assertSame($chiefEditors, $this->invokePrivateMethod($reminder, 'getSupervisors'));
+    }
+
+    public function testSetRecipientResetsSupervisorCaches(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+        $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
+        $this->setPrivateProperty($reminder, '_supervisorsCache', [1 => 'chief editor']);
+        $this->setPrivateProperty($reminder, '_supervisorFilterContextCache', [7 => ['supervisors' => []]]);
+
+        // switching role must not reuse the other role's supervisors
         $reminder->setRecipient(\Episciences_Acl::ROLE_SECRETARY);
-        $this->assertSame($secretaries, $this->invokePrivateMethod($reminder, 'getSupervisors'));
+
+        $this->assertNull($this->getPrivateProperty($reminder, '_supervisorsCache'));
+        $this->assertSame([], $this->getPrivateProperty($reminder, '_supervisorFilterContextCache'));
     }
 
     public function testGetSupervisorsReturnsEmptyArrayForNonSupervisorRole(): void
@@ -1016,6 +1045,11 @@ final class Episciences_Mail_ReminderTest extends TestCase
     {
         $rp = new \ReflectionProperty($object, $property);
         $rp->setValue($object, $value);
+    }
+
+    private function getPrivateProperty(object $object, string $property): mixed
+    {
+        return (new \ReflectionProperty($object, $property))->getValue($object);
     }
 
     private function invokePrivateMethod(object $object, string $method, array $args = []): mixed

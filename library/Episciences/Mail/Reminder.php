@@ -86,16 +86,16 @@ class Episciences_Mail_Reminder
     protected $_defaultLanguage = 'en';
 
     /**
-     * Supervisors (chief editors / secretaries) keyed by recipient role,
-     * loaded once per instance instead of once per invitation row
-     * @var array<string, Episciences_User[]>
+     * Supervisors (chief editors / secretaries) of the recipient role,
+     * loaded once per instance instead of once per invitation row (reset by setRecipient())
+     * @var Episciences_User[]|null
      */
-    private array $_supervisorsCache = [];
+    private ?array $_supervisorsCache = null;
 
     /**
      * Per-paper filtering context (author, co-authors, supervisors without conflict)
-     * keyed by recipient role then docid, shared by all reviewers of the same paper
-     * @var array<string, array<int, array{authorUid: int, coAuthorUids: array, supervisors: Episciences_User[]}>>
+     * keyed by docid, shared by all reviewers of the same paper (reset by setRecipient())
+     * @var array<int, array{authorUid: int, coAuthorUids: array, supervisors: Episciences_User[]}>
      */
     private array $_supervisorFilterContextCache = [];
 
@@ -476,6 +476,9 @@ class Episciences_Mail_Reminder
     public function setRecipient($recipient): self
     {
         $this->_recipient = $recipient;
+        // the supervisor caches depend on the recipient role
+        $this->_supervisorsCache = null;
+        $this->_supervisorFilterContextCache = [];
         return $this;
     }
 
@@ -1869,6 +1872,11 @@ class Episciences_Mail_Reminder
         ?string $deadline,
         ?callable $localizedTags = null
     ): array {
+        // reviewer not found (deleted account, CAS lookup failure): the reminder would be sent with an empty %%REVIEWER_MAIL%%
+        if (empty($reviewerEmail)) {
+            return [];
+        }
+
         $context = $this->getSupervisorFilterContext($paper);
         $supervisors = $context['supervisors'];
 
@@ -1918,7 +1926,7 @@ class Episciences_Mail_Reminder
 
     /**
      * Author, co-authors and supervisors without conflict of interest for a paper,
-     * loaded once per recipient role and paper (shared by all reviewers of the paper).
+     * loaded once per paper (shared by all reviewers of the paper).
      *
      * @param Episciences_Paper $paper
      * @return array{authorUid: int, coAuthorUids: array, supervisors: Episciences_User[]}
@@ -1926,11 +1934,10 @@ class Episciences_Mail_Reminder
      */
     private function getSupervisorFilterContext(Episciences_Paper $paper): array
     {
-        $role = $this->getRecipient();
         $docId = (int)$paper->getDocid();
 
-        if (isset($this->_supervisorFilterContextCache[$role][$docId])) {
-            return $this->_supervisorFilterContextCache[$role][$docId];
+        if (isset($this->_supervisorFilterContextCache[$docId])) {
+            return $this->_supervisorFilterContextCache[$docId];
         }
 
         $supervisors = $this->getSupervisors();
@@ -1951,7 +1958,7 @@ class Episciences_Mail_Reminder
             }
         }
 
-        return $this->_supervisorFilterContextCache[$role][$docId] = [
+        return $this->_supervisorFilterContextCache[$docId] = [
             'authorUid' => (int)$paper->getUid(),
             'coAuthorUids' => $coAuthorUids,
             'supervisors' => $supervisors,
@@ -1966,19 +1973,19 @@ class Episciences_Mail_Reminder
      */
     private function getSupervisors(): array
     {
-        $recipient = $this->getRecipient();
+        if ($this->_supervisorsCache === null) {
+            $recipient = $this->getRecipient();
 
-        if (!isset($this->_supervisorsCache[$recipient])) {
             if ($recipient === Episciences_Acl::ROLE_CHIEF_EDITOR) {
-                $this->_supervisorsCache[$recipient] = Episciences_Review::getChiefEditors();
+                $this->_supervisorsCache = Episciences_Review::getChiefEditors();
             } elseif ($recipient === Episciences_Acl::ROLE_SECRETARY) {
-                $this->_supervisorsCache[$recipient] = Episciences_Review::getSecretaries();
+                $this->_supervisorsCache = Episciences_Review::getSecretaries();
             } else {
-                $this->_supervisorsCache[$recipient] = [];
+                $this->_supervisorsCache = [];
             }
         }
 
-        return $this->_supervisorsCache[$recipient];
+        return $this->_supervisorsCache;
     }
 
     /**
