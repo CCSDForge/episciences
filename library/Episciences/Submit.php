@@ -2784,6 +2784,72 @@ class Episciences_Submit
             || Episciences_Repositories::isDspace($repoId);
     }
 
+    /**
+     * @return array{0: string, 1: string, 2: int}|null [HAL id as found, HAL id
+     *         without its version suffix, version (0 when none)], or null when
+     *         the value carries no HAL id
+     */
+    private static function parseHalIdentifier(string $value): ?array
+    {
+        $halMatch = Episciences_Tools::getHalIdInString($value);
+
+        if (empty($halMatch)) {
+            return null;
+        }
+
+        $halId = $halMatch[0];
+        $versionSuffix = $halMatch[1] ?? '';
+
+        if ($versionSuffix === '') {
+            return [$halId, $halId, 0];
+        }
+
+        return [$halId, substr($halId, 0, -strlen($versionSuffix)), (int)ltrim($versionSuffix, 'v')];
+    }
+
+    /**
+     * Stores a HAL link the way a manual addition does
+     * (AdministratelinkeddataController::addldAction()): the bare HAL id rather
+     * than the URL, with HAL's full citation as metadata when HAL returns one.
+     *
+     * @param array<string, mixed> $options
+     */
+    private static function addHalDataset(int $docId, string $value, array $options): int
+    {
+        $parsedHalId = self::parseHalIdentifier($value);
+
+        if ($parsedHalId === null) {
+            return 0;
+        }
+
+        [$halId, $halIdWithoutVersion, $version] = $parsedHalId;
+
+        if (Episciences_Paper_DatasetsManager::findByValue($docId, $halId) !== null) {
+            return 0;
+        }
+
+        $metadataId = null;
+        $citation = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($halIdWithoutVersion, $version));
+
+        if (!empty($citation->response->docs[0]->citationFull_s)) {
+            $datasetMetadata = new Episciences_Paper_DatasetMetadata();
+            $datasetMetadata->setMetatext(json_encode(
+                ['citationFull' => $citation->response->docs[0]->citationFull_s],
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+            ));
+            $metadataId = Episciences_Paper_DatasetsMetadataManager::insert([$datasetMetadata]);
+        }
+
+        return Episciences_Paper_DatasetsManager::addDatasetFromSubmission(
+            $docId,
+            Episciences_Paper_Dataset::HAL_CODE,
+            $halId,
+            Episciences_Paper_Dataset::PUBLICATION,
+            $metadataId,
+            $options
+        );
+    }
+
     public static function processDatasets(Episciences_Paper|int $paper, ?array $allDatasets = []): int
     {
         $affectedRows = 0;
@@ -2878,6 +2944,8 @@ class Episciences_Submit
                 } elseif ($typeLd === Episciences_Paper_Dataset::HANDLE_CODE) {
                     $value = Episciences_Tools::cleanHandle($value);
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
+                } elseif ($typeLd === Episciences_Paper_Dataset::HAL_CODE) {
+                    $affectedRows += self::addHalDataset($docId, $value, $options);
                 }
                 if (!empty($noProcessed)) {
                     $affectedRows += $affectedRows = self::forceAddingDatasets($current, $noProcessed);
