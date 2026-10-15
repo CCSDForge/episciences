@@ -1664,6 +1664,20 @@ class Episciences_User extends Ccsd_User_Models_User
             return;
         }
 
+        // Keep the assignments still covered by a role the user holds (e.g. chief_editor removed, editor kept)
+        $keptRoles = $this->_db->fetchCol(
+            $this->_db->select()
+                ->from(T_USER_ROLES, 'ROLEID')
+                ->where('UID = ?', $uid)
+                ->where('RVID = ?', $rvId)
+        ) ?: [];
+        $keptAssignmentRoles = array_intersect_key($userRoleToAssignmentRole, array_flip($keptRoles));
+        $assignmentRolesToDisable = array_diff($assignmentRolesToDisable, $keptAssignmentRoles);
+
+        if (empty($assignmentRolesToDisable)) {
+            return;
+        }
+
         foreach ($assignmentRolesToDisable as $roleToDisable) {
             $this->_db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
             SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
