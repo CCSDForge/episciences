@@ -266,7 +266,8 @@ class WebsiteDefaultController extends Episciences_Controller_Action
     {
 
         $journal = Episciences_ReviewsManager::find(RVCODE);
-        $isSwitched = $journal->isNewFrontSwitched();
+        // Unknown journal: keep the flat list of the old sites
+        $isSwitched = $journal instanceof Episciences_Review && $journal->isNewFrontSwitched();
 
         $processed = [];
 
