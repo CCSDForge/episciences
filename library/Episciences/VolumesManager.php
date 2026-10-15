@@ -566,7 +566,7 @@ class Episciences_VolumesManager
     static function getForm(string $referer = '', Episciences_Volume $volume = null, bool $hasPublishedPapers = false): \Ccsd_Form
     {
         if (empty($referer)) {
-            $referer = '/volume/list';
+            $referer = PREFIX_URL . 'volume/list';
         }
 
         $form = new Ccsd_Form;
