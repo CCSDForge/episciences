@@ -89,7 +89,7 @@ class AdministratemailController extends Episciences_Controller_Action
 
         // only a default template or a custom template of the current journal can be edited
         if (!$oTemplate->findForJournal($id, RVID)) {
-            $this->_helper->redirector->gotoUrl('/error/deny');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'error', 'action' => 'deny']));
             return;
         }
 
@@ -126,13 +126,13 @@ class AdministratemailController extends Episciences_Controller_Action
         // only a default template or a custom template of the current journal can be saved
         if (!$template->findForJournal($id, RVID)) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti !");
-            $this->_helper->redirector->gotoUrl('/administratemail/templates');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'administratemail', 'action' => 'templates']));
             return;
         }
 
         if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti !");
-            $this->_helper->redirector->gotoUrl('/administratemail/templates');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'administratemail', 'action' => 'templates']));
             return;
         }
 
@@ -178,7 +178,7 @@ class AdministratemailController extends Episciences_Controller_Action
 
         if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Votre session a expiré, veuillez réessayer.');
-            $this->_helper->redirector->gotoUrl('/administratemail/templates');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'administratemail', 'action' => 'templates']));
             return;
         }
 

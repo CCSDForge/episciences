@@ -695,7 +695,7 @@ class UserDefaultController extends Episciences_Controller_Action
     public function listAction()
     {
         if (!Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor()) {
-            $this->_helper->redirector->gotoUrl('/error/deny');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'error', 'action' => 'deny']));
             return;
         }
 

@@ -535,7 +535,7 @@ class WebsiteDefaultController extends Episciences_Controller_Action
                 $this->_helper->FlashMessenger
                     ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
                     ->addMessage("Actualité introuvable.");
-                $this->redirect('/website/news');
+                $this->redirect($this->url(['controller' => 'website', 'action' => 'news']));
                 return;
             }
             $form   = $newsObj->getForm($newsid);

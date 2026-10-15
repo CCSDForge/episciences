@@ -144,8 +144,9 @@ final class ExportControllerAccessTest extends TestCase
 
     public function testAnonymousVisitorIsSentToTheLoginPage(): void
     {
+        // On manager branches the url() helper adds the journal path prefix and passes the parameters as a query string
         $this->assertStopsWith(
-            'redirect:/user/login/forward-controller/export/id/' . self::DOCID . '/forward-action/bibtex',
+            'redirect:' . (defined('PREFIX_URL') ? PREFIX_URL : '/') . 'user/login?forward-controller=export&id=' . self::DOCID . '&forward-action=bibtex',
             $this->controller($this->paper())
         );
     }

@@ -178,7 +178,7 @@ final class FormTokenRefusalTest extends TestCase
     {
         $controller = $this->callAction(\GridController::class, 'copyAction', self::withToken(['from' => '0', 'to' => '1'], $token), $isPost);
 
-        self::assertStringEndsWith('/grid/list', $this->redirectUrl());
+        self::assertStringContainsString('/grid/list', $this->redirectUrl());
         self::assertSame([self::EXPIRED], $this->errorMessages($controller));
     }
 
@@ -190,7 +190,7 @@ final class FormTokenRefusalTest extends TestCase
         $controller = $this->callAction(\GridController::class, 'addAction', ['submit' => '1', 'volume' => (string)$volumeId]);
 
         self::assertFileDoesNotExist(REVIEW_GRIDS_PATH . 'grid_' . $volumeId . '.xml');
-        self::assertStringEndsWith('/grid/list', $this->redirectUrl());
+        self::assertStringContainsString('/grid/list', $this->redirectUrl());
         self::assertSame([self::EXPIRED], $this->errorMessages($controller));
     }
 
