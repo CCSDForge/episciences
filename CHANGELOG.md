@@ -24,7 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [2021](changelogs/CHANGELOG-2021.md)
 
 ## Unreleased
+### Added
+- BAOBAB submissions now store the licence, the ROR of affiliations (including an organisational author's own ROR) and the translated abstracts filed as other descriptions.
+- Links to HAL found in a repository's related identifiers are now stored as linked publications, or as linked software for a HAL software deposit.
+- BAOBAB submissions accept an ARK resolver URL (e.g. `https://pidslink.ren.africa/ark:/50962/...`) as well as a bare ARK or a record URL.
+
 ### Fixed
+- A paper whose repository lists related works is now reindexed when one of them is added, even when another one could not be resolved.
+- BAOBAB submissions no longer lose their abstract, keywords and dates when OAI-PMH is not configured or fails: the DataCite record is then fetched from the REST API.
+- BAOBAB links from a record to its own deposit page are no longer considered as related works.
 - Removing the chief editor role of a user who stays editor (or the reverse) no longer disables their paper assignments as editor.
 - The session cookie is now sent with the `SameSite=Lax` attribute (configurable with `resources.session.cookie_samesite`).
 - `enrichment:extract-biblio-refs` reports papers whose host is not allowed by the Biblioref service, or whose PDF contains no reference, as skipped instead of failed, so they no longer fail the cron run.
@@ -73,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The continuous integration workflows now generate the configuration and the database the PHPUnit
   bootstrap requires. The test suite was aborting before its first test and reporting success: no
   PHP test had ever actually run on CI.
+- The language of abstracts and keywords on the paper pages is shown as a badge with the language name, in the interface language, instead of an ISO code in brackets.
 - A command line script called with an unknown option now exits with an error code instead of 0,
   so a cron or a CI job is no longer told it succeeded.
 

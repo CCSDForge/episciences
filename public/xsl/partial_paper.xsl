@@ -77,9 +77,11 @@
                         <div class="small">
                             <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
                             <a rel="noopener" target="_blank">
-                                <xsl:attribute name="href">
-                                    <xsl:value-of select="episciences/paperLicence/text()"/>
-                                </xsl:attribute>
+                                <xsl:if test="php:function('Episciences_Tools::isHttpUrl', string(episciences/paperLicence))">
+                                    <xsl:attribute name="href">
+                                        <xsl:value-of select="episciences/paperLicence/text()"/>
+                                    </xsl:attribute>
+                                </xsl:if>
                                 <xsl:value-of
                                         select="php:function('Ccsd_Tools::translateLicense', string(episciences/paperLicence))"/>
                             </a>
@@ -92,7 +94,7 @@
                                 <div class="small">
                                     <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
                                     <a rel="noopener" target="_blank">
-                                        <xsl:if test="not (contains($doc_rights, '[CC_NO]'))">
+                                        <xsl:if test="not(contains($doc_rights, '[CC_NO]')) and php:function('Episciences_Tools::isHttpUrl', string($doc_rights))">
                                             <xsl:attribute name="href">
                                                 <xsl:value-of select="$doc_rights"/>
                                             </xsl:attribute>
@@ -164,7 +166,9 @@
                         </xsl:if>
                         <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
                         <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
-                            <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
+                            <xsl:call-template name="language-badge">
+                                <xsl:with-param name="lang" select="@xml:lang"/>
+                            </xsl:call-template>
                         </xsl:if>
                         <xsl:value-of select="php:function('Episciences_Tools::decodeLatexToSafeHtml', string(.))" disable-output-escaping="yes"/>
                     </p>
@@ -183,7 +187,9 @@
                         </xsl:if>
                         <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
                         <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
-                            <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
+                            <xsl:call-template name="language-badge">
+                                <xsl:with-param name="lang" select="@xml:lang"/>
+                            </xsl:call-template>
                         </xsl:if>
                         <xsl:value-of select="php:function('Episciences_Tools::decodeLatexToSafeHtml', string(.))" disable-output-escaping="yes"/>
                     </p>
@@ -192,4 +198,11 @@
         </xsl:for-each>
     </xsl:template>
 
-</xsl:stylesheet> 
+    <!-- Badge naming a language in the interface language, followed by a space -->
+    <xsl:template name="language-badge">
+        <xsl:param name="lang"/>
+        <span class="badge rounded-pill text-bg-light"><xsl:value-of select="php:function('Episciences_Tools::getLanguageName', string($lang))"/></span>
+        <xsl:text> </xsl:text>
+    </xsl:template>
+
+</xsl:stylesheet>

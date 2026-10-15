@@ -20,6 +20,10 @@ class Episciences_SoftwareHeritageTools
     public const API_HAL_URL      = 'https://hal.science/';
     public const PREFIX_SWHID_DIR = 'swh:1:dir:';
 
+    // Callers run inside user requests (submission, linked data management): never wait unbounded
+    private const HTTP_TIMEOUT = 10.0;
+    private const HTTP_CONNECT_TIMEOUT = 5.0;
+
     private static ?SoftwareHeritageApiClient $client = null;
 
     /**
@@ -36,7 +40,11 @@ class Episciences_SoftwareHeritageTools
             $cache = new FilesystemAdapter('softwareHeritage', SoftwareHeritageApiClient::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
             $logger = new Logger('softwareHeritage');
             $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'softwareHeritage_' . date('Y-m-d') . '.log', Level::Info));
-            self::$client = new SoftwareHeritageApiClient(new Client(), $cache, $logger);
+            self::$client = new SoftwareHeritageApiClient(
+                new Client(['timeout' => self::HTTP_TIMEOUT, 'connect_timeout' => self::HTTP_CONNECT_TIMEOUT]),
+                $cache,
+                $logger
+            );
         }
         return self::$client;
     }

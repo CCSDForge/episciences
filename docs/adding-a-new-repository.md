@@ -75,8 +75,13 @@ OpenAIRE XML, DataCite XML, or JATS XML), Episciences uses a two-tier storage mo
      normalized ORCIDs.
    - `PAPER_FILES` (via `Episciences_Paper_FilesManager`): file name, MIME type,
      file size, checksum, and download URL.
-   - `PAPER_DATASETS` (via `Episciences_Submit::processDatasets()`): related DOIs/handles,
-     relation types (`IsSupplementTo`, `References`, etc.).
+   - `PAPER_DATASETS` (via `Episciences_Submit::processDatasets()`): related DOIs,
+     handles, SWHIDs and HAL ids, with their relation types (`IsSupplementTo`,
+     `References`, etc.). Any other plain URL is ignored.
+   - `PAPER_LICENCES` (via `Episciences_Paper_LicenceManager`): not from the
+     `$enrichment` array but from a per-repository lookup in
+     `getApiResponseByRepoId()`/`extractLicenceData()`; a repository missing from
+     both gets no licence.
    - `PAPER_CITATIONS`: parsed bibliographic reference strings from article reference lists.
 
 ### 2. Supported Metadata Formats
@@ -104,7 +109,7 @@ OpenAIRE XML, DataCite XML, or JATS XML), Episciences uses a two-tier storage mo
 | **HAL** | `repository` | Generic OAI-PMH 2.0 (`https://api.archives-ouvertes.fr/oai/hal/`) | `oai_dc` (Dublin Core XML) | XML sanitation stripping non-abstract audience notes (`DataSanitizerInterface::hookCleanXMLRecordInput`), direct PDF link via `paper_url` | `Episciences_Repositories_HAL_Hooks` |
 | **arXiv** | `repository` | Generic OAI-PMH 2.0 (`https://oaipmh.arxiv.org/oai`) | `oai_dc` (Dublin Core XML) | XML and metadata sanitation keeping only primary abstract (`hookFilterMetadata`, `hookCleanXMLRecordInput`), direct PDF link via `paper_url` | `Episciences_Repositories_ArXiv_Hooks` |
 | **ARCHE (ACDH-CH)** | `repository` | OAI-PMH 2.0 (`https://arche.acdh.oeaw.ac.at/oaipmh/`) + ACDH-CH REST API | `oai_datacite` (DataCite Kernel 3 XML) | Multilingual titles & descriptions (`extractMultilingualContent`), authors (`extractPersons`), license, related dataset identifiers (`LinkedDataEnrichmentInterface`) | `Episciences_Repositories_ARCHE_Hooks` |
-| **BAOBAB (WACREN, InvenioRDM 14)** | `repository` | OAI-PMH 2.0 (`https://baobab.wacren.net/oai2d`, `metadataPrefix=datacite`) for the Dublin Core body + InvenioRDM REST API v1 (`/api/records/{id}`) for enrichments | DataCite Kernel 4 XML (via OAI-PMH) + InvenioRDM JSON (files, authors, access, concept id, via REST) | Authors from `person_or_org` (not `creatorName`, which InvenioRDM writes "Family, Given"), mirrored files via `links.content` (`FilesEnrichmentInterface`), related datasets filtered for community memberships (`LinkedDataEnrichmentInterface`), concept identifier from `parent.id` (`ConceptIdentifierInterface`), ARK resolution via a PID search query | `Episciences_Repositories_BAOBAB_Hooks` |
+| **BAOBAB (WACREN, InvenioRDM 14)** | `repository` | OAI-PMH 2.0 (`https://baobab.wacren.net/oai2d`, `metadataPrefix=datacite`) for the Dublin Core body + InvenioRDM REST API v1 (`/api/records/{id}`) for enrichments | DataCite Kernel 4 XML (via OAI-PMH) + InvenioRDM JSON (files, authors, access, concept id, via REST) | Authors from `person_or_org` (not `creatorName`, which InvenioRDM writes "Family, Given"), mirrored files via `links.content` (`FilesEnrichmentInterface`), related datasets filtered for community memberships (`LinkedDataEnrichmentInterface`), concept identifier from `parent.id` (`ConceptIdentifierInterface`), ARK resolution via a PID search query (bare `ark:/...` or resolver URL such as `https://pidslink.ren.africa/ark:/...`) | `Episciences_Repositories_BAOBAB_Hooks` |
 | **Generic OAI-PMH Archive** | `repository` | Standard OAI-PMH 2.0 (`metadata_sources.base_url`) | `oai_dc` (Dublin Core XML) | Standard Dublin Core XML directly into `PAPERS.RECORD`, direct PDF linking via `metadata_sources.paper_url` | No custom hook needed (or minimal `CommonHooksInterface` returning `[]`) |
 
 ### A reusable lesson: when an InvenioRDM instance's OAI-PMH is broken
@@ -128,7 +133,8 @@ rather than from InvenioRDM's `oai_dc` (which double-escapes HTML in
 fixed, `metadata_sources.base_url` can be set to the real endpoint and the
 hook's DataCite fetch switched from REST content negotiation to
 `Episciences_Repositories_Common::getRecord()` with `metadataPrefix=datacite`,
-as done for BAOBAB.
+as done for BAOBAB. BAOBAB's hook keeps the REST content negotiation as a
+fallback when `base_url` is not set or OAI-PMH fails.
 
 ## Checklist
 
@@ -155,6 +161,8 @@ as done for BAOBAB.
 - [ ] If the repository needs credentials (API token, OAuth), read them through
       `config/pwd.json` (see existing entries for the pattern) — never hardcode
       secrets in the hooks class.
+- [ ] Add the repository to `Episciences_Paper_LicenceManager::getApiResponseByRepoId()`
+      and `extractLicenceData()` if it exposes a licence.
 - [ ] Add `self::<NAME>_REPO_ID => '<example identifier>'` to
       `Episciences_Repositories::IDENTIFIER_EXEMPLES` so the submission form shows
       a placeholder.

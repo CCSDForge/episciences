@@ -148,6 +148,25 @@ class Episciences_Paper_DatasetsManager
     }
 
     /**
+     * Whether a HAL document is already linked to the paper, whatever the
+     * version suffix it was stored with ("hal-01234567", "hal-01234567v2"...).
+     *
+     * @param string $halIdWithoutVersion HAL id stripped of its version suffix
+     */
+    public static function hasHalDocument(int $docId, string $halIdWithoutVersion): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $versionedPattern = addcslashes($halIdWithoutVersion, '\\%_') . 'v%';
+        $sql = $db->select()
+            ->from(T_PAPER_DATASETS, ['id'])
+            ->where('doc_id = ?', $docId)
+            ->where('(value = ? OR value LIKE ' . $db->quote($versionedPattern) . ')', $halIdWithoutVersion)
+            ->limit(1);
+
+        return $db->fetchOne($sql) !== false;
+    }
+
+    /**
      * @param int $docId
      * @return bool
      */

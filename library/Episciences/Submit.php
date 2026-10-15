@@ -2784,6 +2784,76 @@ class Episciences_Submit
             || Episciences_Repositories::isDspace($repoId);
     }
 
+    /**
+     * Stores a HAL link the way a manual addition does
+     * (AdministratelinkeddataController::addldAction()), with HAL's full
+     * citation as metadata when HAL returns one:
+     * - a software deposit (HAL docType_s SOFTWARE) is stored as software under
+     *   its HAL id without version, with its SWHID and codemeta;
+     * - anything else is stored as a publication under its HAL id as found.
+     * The related identifier's resource_type only decides when HAL does not
+     * answer: HAL's own document type wins otherwise.
+     *
+     * @param array<string, mixed> $options
+     */
+    private static function addHalDataset(int $docId, string $value, string $resourceType, array $options): int
+    {
+        $parsedHalId = Episciences_Tools::splitHalIdentifier($value);
+
+        if ($parsedHalId === null) {
+            return 0;
+        }
+
+        [$halId, $halIdWithoutVersion, $version] = $parsedHalId;
+
+        // The same HAL document may already be linked with or without a version suffix
+        if (Episciences_Paper_DatasetsManager::hasHalDocument($docId, $halIdWithoutVersion)) {
+            return 0;
+        }
+
+        $citation = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($halIdWithoutVersion, $version));
+        $halDoc = $citation->response->docs[0] ?? null;
+
+        $isSoftware = $halDoc !== null
+            ? ($halDoc->docType_s ?? '') === 'SOFTWARE'
+            : strcasecmp($resourceType, Episciences_Paper_Dataset::SOFTWARE_CODE) === 0;
+
+        $metatext = [];
+
+        if (!empty($halDoc->citationFull_s)) {
+            $metatext['citationFull'] = $halDoc->citationFull_s;
+        }
+
+        if ($isSoftware) {
+            if (!empty($halDoc->swhidId_s[0])) {
+                $metatext['swhidId'] = $halDoc->swhidId_s[0];
+            }
+
+            $codeMeta = json_decode(Episciences_SoftwareHeritageTools::getCodeMetaFromHal($halId), true);
+
+            if (!empty($codeMeta)) {
+                $metatext['codemeta'] = $codeMeta;
+            }
+        }
+
+        $metadataId = null;
+
+        if ($metatext !== []) {
+            $datasetMetadata = new Episciences_Paper_DatasetMetadata();
+            $datasetMetadata->setMetatext(json_encode($metatext, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $metadataId = Episciences_Paper_DatasetsMetadataManager::insert([$datasetMetadata]);
+        }
+
+        return Episciences_Paper_DatasetsManager::addDatasetFromSubmission(
+            $docId,
+            Episciences_Paper_Dataset::HAL_CODE,
+            $isSoftware ? $halIdWithoutVersion : $halId,
+            $isSoftware ? Episciences_Paper_Dataset::SOFTWARE_CODE : Episciences_Paper_Dataset::PUBLICATION,
+            $metadataId,
+            $options
+        );
+    }
+
     public static function processDatasets(Episciences_Paper|int $paper, ?array $allDatasets = []): int
     {
         $affectedRows = 0;
@@ -2878,13 +2948,17 @@ class Episciences_Submit
                 } elseif ($typeLd === Episciences_Paper_Dataset::HANDLE_CODE) {
                     $value = Episciences_Tools::cleanHandle($value);
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
+                } elseif ($typeLd === Episciences_Paper_Dataset::HAL_CODE) {
+                    $affectedRows += self::addHalDataset($docId, $value, (string)($datasets['resource_type'] ?? ''), $options);
                 }
-                if (!empty($noProcessed)) {
-                    $affectedRows += $affectedRows = self::forceAddingDatasets($current, $noProcessed);
-                }
-
             }
         }
+
+        // Once, after the loop: values whose DOI lookup failed are stored as is
+        if (!empty($noProcessed)) {
+            $affectedRows += self::forceAddingDatasets($current, $noProcessed);
+        }
+
         return $affectedRows;
 
     }
