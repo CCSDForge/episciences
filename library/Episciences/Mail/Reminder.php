@@ -1137,9 +1137,11 @@ class Episciences_Mail_Reminder
 
 
             if ((int)$data['TMP_USER'] === 1) {
-                $user = new Episciences_User_Tmp;
+                // not Episciences_User_Tmp::find(): it returns [false] (not empty) for a missing row
+                $user = Episciences_TmpUsersManager::findById($data['UID']);
 
-                if (empty($user->find($data['UID']))) {
+                if (!$user) {
+                    $user = new Episciences_User_Tmp;
                     // the temporary reviewer no longer exists (no name, no email, no personal link):
                     // the assigned editors are still told that the invitation is pending, so that they can invite someone else
                     if ($this->getRecipient() !== 'editor') {
