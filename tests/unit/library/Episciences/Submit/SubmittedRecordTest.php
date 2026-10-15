@@ -23,7 +23,7 @@ final class SubmittedRecordTest extends TestCase
 
     public function testRememberedRecordIsReturnedWithoutFetchingTheRepository(): void
     {
-        SubmittedRecord::remember('1', 'arxiv:1234.5678', 2.0, '<record>searched</record>');
+        SubmittedRecord::remember('1', 'arxiv:1234.5678', 2.0, ['record' => '<record>searched</record>']);
 
         self::assertSame(
             '<record>searched</record>',
@@ -31,11 +31,59 @@ final class SubmittedRecordTest extends TestCase
         );
     }
 
+    public function testValuesComputedFromTheRepositoryAreReturnedWithTheRecord(): void
+    {
+        SubmittedRecord::remember('4', 'zenodo-version-2', 3.0, [
+            'record' => '<record>searched</record>',
+            'conceptIdentifier' => '10.5281/zenodo.1234',
+            'hookVersion' => '3',
+            'update' => '20240102T030405',
+            'xslt' => '<div>not remembered</div>',
+        ]);
+
+        self::assertSame(
+            [
+                'record' => '<record>searched</record>',
+                'conceptIdentifier' => '10.5281/zenodo.1234',
+                'hookVersion' => 3.0,
+                'update' => '20240102T030405',
+            ],
+            SubmittedRecord::resolveDocument('4', 'zenodo-version-2', 3.0)
+        );
+    }
+
+    public function testDocumentWithoutComputedValuesHasNone(): void
+    {
+        SubmittedRecord::remember('1', 'doc-a', 1.0, ['record' => '<record>a</record>']);
+        SubmittedRecord::remember('1', 'doc-b', 1.0, ['record' => '<record>b</record>', 'conceptIdentifier' => '', 'hookVersion' => null, 'update' => '']);
+
+        $none = ['conceptIdentifier' => null, 'hookVersion' => null, 'update' => null];
+        self::assertSame(['record' => '<record>a</record>'] + $none, SubmittedRecord::resolveDocument('1', 'doc-a', 1.0));
+        self::assertSame(['record' => '<record>b</record>'] + $none, SubmittedRecord::resolveDocument('1', 'doc-b', 1.0));
+    }
+
+    public function testResponseWithoutRecordIsNotRemembered(): void
+    {
+        SubmittedRecord::remember('1', 'doc-a', 1.0, ['conceptIdentifier' => '10.5281/zenodo.1234']);
+
+        self::assertEmpty((new Zend_Session_Namespace('submitted_records'))->records);
+    }
+
+    public function testRecordRememberedInTheFormerFormatIsFetchedAgain(): void
+    {
+        // A session opened before the other values were remembered holds the record alone
+        $session = new Zend_Session_Namespace('submitted_records');
+        $session->records = [sha1('0|doc-a|1') => '<record>a</record>'];
+
+        self::assertNull(SubmittedRecord::resolveDocument('0', 'doc-a', 1.0), 'fetched again from the (unknown) repository');
+        self::assertSame([], $session->records, 'the former entry is forgotten');
+    }
+
     public function testRecordIsKeyedByRepositoryIdentifierAndVersion(): void
     {
-        SubmittedRecord::remember('1', 'doc-a', 1.0, '<record>a</record>');
-        SubmittedRecord::remember('1', 'doc-b', 1.0, '<record>b</record>');
-        SubmittedRecord::remember('1', 'doc-a', 2.0, '<record>a2</record>');
+        SubmittedRecord::remember('1', 'doc-a', 1.0, ['record' => '<record>a</record>']);
+        SubmittedRecord::remember('1', 'doc-b', 1.0, ['record' => '<record>b</record>']);
+        SubmittedRecord::remember('1', 'doc-a', 2.0, ['record' => '<record>a2</record>']);
 
         self::assertSame('<record>a</record>', SubmittedRecord::resolve('1', 'doc-a', 1.0));
         self::assertSame('<record>b</record>', SubmittedRecord::resolve('1', 'doc-b', 1.0));
@@ -45,10 +93,10 @@ final class SubmittedRecordTest extends TestCase
     public function testOnlyTheLatestSearchesAreRemembered(): void
     {
         for ($i = 0; $i < 12; $i++) {
-            SubmittedRecord::remember('1', 'doc-' . $i, 1.0, '<record>' . $i . '</record>');
+            SubmittedRecord::remember('1', 'doc-' . $i, 1.0, ['record' => '<record>' . $i . '</record>']);
         }
 
-        $records = (new Zend_Session_Namespace('submitted_records'))->records;
+        $records = array_column((new Zend_Session_Namespace('submitted_records'))->records, 'record');
 
         self::assertCount(10, $records);
         self::assertContains('<record>11</record>', $records);
@@ -57,14 +105,14 @@ final class SubmittedRecordTest extends TestCase
 
     public function testNothingIsRememberedForAnotherDocumentOrVersion(): void
     {
-        SubmittedRecord::remember('1', 'doc-a', 1.0, '<record>a</record>');
+        SubmittedRecord::remember('1', 'doc-a', 1.0, ['record' => '<record>a</record>']);
 
         // A different document, version or repository never gets the remembered record:
         // it is fetched again (the repository 0 does not exist, so nothing comes back)
         self::assertNull(SubmittedRecord::resolve('0', 'doc-a', 1.0));
         self::assertNull(SubmittedRecord::resolve('0', 'doc-b', 1.0));
 
-        $records = (new Zend_Session_Namespace('submitted_records'))->records;
+        $records = array_column((new Zend_Session_Namespace('submitted_records'))->records, 'record');
         self::assertContains('<record>a</record>', $records, 'the remembered record is still there');
     }
 
@@ -75,7 +123,7 @@ final class SubmittedRecordTest extends TestCase
 
     public function testRememberedRecordIsConsumedAndCannotBeResolvedTwice(): void
     {
-        SubmittedRecord::remember('0', 'doc-a', 1.0, '<record>a</record>');
+        SubmittedRecord::remember('0', 'doc-a', 1.0, ['record' => '<record>a</record>']);
 
         self::assertSame('<record>a</record>', SubmittedRecord::resolve('0', 'doc-a', 1.0));
         self::assertNull(SubmittedRecord::resolve('0', 'doc-a', 1.0), 'a second submission fetches again');
@@ -83,12 +131,12 @@ final class SubmittedRecordTest extends TestCase
 
     public function testRememberedRecordIsForgottenOnceResolved(): void
     {
-        SubmittedRecord::remember('1', 'doc-a', 1.0, '<record>a</record>');
-        SubmittedRecord::remember('1', 'doc-b', 1.0, '<record>b</record>');
+        SubmittedRecord::remember('1', 'doc-a', 1.0, ['record' => '<record>a</record>']);
+        SubmittedRecord::remember('1', 'doc-b', 1.0, ['record' => '<record>b</record>']);
 
         self::assertSame('<record>a</record>', SubmittedRecord::resolve('1', 'doc-a', 1.0));
 
-        $records = (new Zend_Session_Namespace('submitted_records'))->records;
+        $records = array_column((new Zend_Session_Namespace('submitted_records'))->records, 'record');
 
         self::assertCount(1, $records);
         self::assertContains('<record>b</record>', $records);
