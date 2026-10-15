@@ -1379,8 +1379,8 @@ function getLicensesForm(button, docId) {
     getEditingPopover(
         button,
         docId,
-        '/administratepaper/getlicenselistform',
-        '/administratepaper/savespdxlicense',
+        JS_PREFIX_URL + 'administratepaper/getlicenselistform',
+        JS_PREFIX_URL + 'administratepaper/savespdxlicense',
         'paper-license-link'
     );
 

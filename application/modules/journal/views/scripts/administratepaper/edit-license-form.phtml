@@ -2,7 +2,7 @@
 $id = 'license-value-' . $this->docId;
 ?>
 <div style="width: 400px">
-    <form action="/administratepaper/savespdxlicense" id="licence-form-<?= $this->docId ?>"
+    <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'savespdxlicense']) ?>" id="licence-form-<?= $this->docId ?>"
           style="height : 34px;">
 
         <div class="pull-right" style="padding-left : 10px;">
