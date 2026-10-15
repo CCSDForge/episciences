@@ -5269,15 +5269,41 @@ class AdministratepaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $selectedUserId = (int)$request->getPost('selectedUserId');
 
+        if (!$request->isPost()) {
+            return;
+        }
+
+        $selectedUserId = (int)$request->getPost('selectedUserId');
+        $docId = (int)$request->getPost('docId');
+
+        $paper = $docId ? Episciences_PapersManager::get($docId, false) : null;
+
+        if (!$paper || $paper->getRvid() !== RVID) {
+            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($this->view->translate("Le document demandé n’existe pas."));
+            $this->_helper->redirector->gotoUrl($this->_helper->url('list', self::ADMINISTRATE_PAPER_CONTROLLER));
+            return;
+        }
+
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($this->view->translate('Erreur: modification non autorisée'));
+            $this->_helper->redirector->gotoUrl(self::ADMINPAPER_URL_STR . $docId);
+            return;
+        }
+
+        // same permissions as the paper management page the form comes from (redirects otherwise)
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+
+        if (!$this->checkPermissions($review, $paper)) {
+            return;
+        }
 
         // create an episciences account from a CAS account
         if ($selectedUserId) {
 
             $user = new Episciences_User();
 
-            $docId = (int)$request->getPost('docId');
             if ($user->hasLocalData($selectedUserId) && $user->hasRoles($selectedUserId)) {
                 $addcoAuthor = $this->addRoleCoAuthor($docId, $selectedUserId);
                 if ($addcoAuthor) {
@@ -5294,7 +5320,8 @@ class AdministratepaperController extends PaperDefaultController
                 $user->setIs_valid();
                 $user->setRegistrationDate();
                 $user->setModificationDate();
-                $screenName = $user->getScreenName();
+                // Inserted into HTML flash messages
+                $screenName = $this->view->escape($user->getScreenName());
 
                 if ($user->save()) {
                     $success = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté en tant que co-auteur du document");

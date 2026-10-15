@@ -622,7 +622,10 @@ class AdministratepaperControllerTest extends TestCase
         // so everything before that comment belongs to the success path.
         $casElsePos = strpos($method, '// Récupération des données CAS');
         $this->assertNotFalse($casElsePos, '"Récupération des données CAS" comment not found — cannot isolate success branch in addcoauthorAction');
-        $successBranch = substr($method, 0, $casElsePos);
+        // The success branch starts at the "hasLocalData && hasRoles" test (the checks before it report errors)
+        $successStart = strpos($method, '$user->hasLocalData(');
+        $this->assertNotFalse($successStart);
+        $successBranch = substr($method, $successStart, $casElsePos - $successStart);
 
         $this->assertStringNotContainsString(
             "setNamespace('error')",
@@ -659,6 +662,66 @@ class AdministratepaperControllerTest extends TestCase
             $hasRoleCheck,
             'BUG #5: addcoauthorAction must check user role (isAdministrator/isSecretary/isEditor/checkPermissions) before adding a co-author — any logged-in user can currently trigger this action'
         );
+    }
+
+    // ---------------------------------------------------------------
+    // addcoauthorAction — paper-level checks
+    // ---------------------------------------------------------------
+
+    /**
+     * The paper, the request token and the paper permissions are checked
+     * before any co-author is added.
+     *
+     * @dataProvider addcoauthorChecksProvider
+     */
+    public function testAddcoauthorActionChecksBeforeAddingTheCoAuthor(string $check): void
+    {
+        $method = $this->extractMethod('addcoauthorAction');
+
+        $checkPos = strpos($method, $check);
+        $addPos = strpos($method, 'addRoleCoAuthor(');
+
+        $this->assertNotFalse($checkPos, "addcoauthorAction must contain: $check");
+        $this->assertNotFalse($addPos);
+        $this->assertLessThan($addPos, $checkPos, "$check must come before addRoleCoAuthor()");
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function addcoauthorChecksProvider(): array
+    {
+        return [
+            'POST only' => ['$request->isPost()'],
+            'paper of the journal' => ['$paper->getRvid() !== RVID'],
+            'request token' => ['Episciences_Csrf_Helper::validateRequestToken($request)'],
+            'paper permissions' => ['$this->checkPermissions($review, $paper)'],
+        ];
+    }
+
+    public function testAddcoauthorActionReadsTheDocidBeforeTheChecks(): void
+    {
+        $method = $this->extractMethod('addcoauthorAction');
+
+        $docIdPos = strpos($method, "\$docId = (int)\$request->getPost('docId')");
+        $this->assertNotFalse($docIdPos);
+        $this->assertLessThan(strpos($method, '$this->checkPermissions('), $docIdPos);
+        $this->assertSame(1, substr_count($method, "getPost('docId')"), 'docId must be read once, then checked');
+    }
+
+    public function testCoauthorFormSendsTheRequestToken(): void
+    {
+        $view = file_get_contents(APPLICATION_PATH . '/modules/journal/views/scripts/partials/coauthors.phtml');
+
+        $this->assertStringContainsString('name="csrf_token"', $view);
+        $this->assertStringContainsString('Episciences_Csrf_Helper::getSessionToken()', $view);
+    }
+
+    public function testAddcoauthorActionEscapesTheScreenNameInFlashMessages(): void
+    {
+        $method = $this->extractMethod('addcoauthorAction');
+
+        $this->assertStringContainsString('$screenName = $this->view->escape($user->getScreenName())', $method);
     }
 
     // ---------------------------------------------------------------
