@@ -702,6 +702,26 @@ XML;
         ], $result);
     }
 
+    public function testExtractDescriptionsWithoutAbstractNeverPromotesNonOtherDescriptions(): void
+    {
+        $xml = <<<'XML'
+<?xml version="1.0"?>
+<resource xmlns="http://datacite.org/schema/kernel-4">
+    <descriptions>
+        <description descriptionType="TechnicalInfo" xml:lang="en">Software requirements</description>
+        <description descriptionType="Methods" xml:lang="en">Survey protocol</description>
+        <description descriptionType="Other" xml:lang="fra">Résumé</description>
+    </descriptions>
+</resource>
+XML;
+        $metadata = simplexml_load_string($xml);
+        $metadata->registerXPathNamespace('datacite', Episciences_Repositories_BAOBAB_Hooks::DATACITE_NS);
+
+        $result = $this->invokePrivate('extractDescriptions', [$metadata, 'en']);
+
+        self::assertSame([['value' => 'Résumé', 'language' => 'fr']], $result);
+    }
+
     public function testExtractLicenceUrlLooksBeyondFirstRightsEntry(): void
     {
         $json = ['metadata' => ['rights' => [

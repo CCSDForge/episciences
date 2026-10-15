@@ -556,7 +556,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      */
     private static function extractDescriptions(SimpleXMLElement $metadata, string $language): array
     {
-        $descriptions = Episciences_Repositories_Common::extractDescriptions($metadata, $language, true, true);
+        $descriptions = Episciences_Repositories_Common::extractDescriptions($metadata, $language, false, true, 'Abstract');
         $coveredLanguages = array_column($descriptions, 'language');
 
         foreach (Episciences_Repositories_Common::extractDescriptions($metadata, $language, false, true, 'Other') as $description) {
