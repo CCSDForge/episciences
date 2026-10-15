@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('csrf_token', csrfToken);
 
         // Send POST request to backend
-        fetch('/administratepaper/changecontributor', {
+        fetch(JS_PREFIX_URL + 'administratepaper/changecontributor', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',

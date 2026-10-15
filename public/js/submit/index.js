@@ -3,7 +3,7 @@ $(document).ready(function () {
     let $searchDocDocId = $('#search_doc-docId');
     let $versionBloc = $('#search_doc-version-element');
     let $isDataverseRepo = false;
-    let $submitEntry = $("a[href='/submit/index']");
+    let $submitEntry = $("a[href='" + JS_PREFIX_URL + "submit/index']");
 
     setPlaceholder();
 
@@ -198,7 +198,7 @@ $(document).ready(function () {
 
     function checkDataverse() {
         const searchDocRepoId = document.getElementById('search_doc-repoId');
-        const submitEntry = document.querySelector("a[href='/submit/index']");
+        const submitEntry = document.querySelector("a[href='" + JS_PREFIX_URL + "submit/index']");
 
         if (!searchDocRepoId) return;
 

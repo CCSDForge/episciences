@@ -110,7 +110,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 
                 </td>
                 <td style="text-align:right;">
-                    <a href="/user/view?userid="<?= $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $user['uid']])?>"><span data-toggle="tooltip"
+                    <a href="<?= PREFIX_URL ?>user/view/userid/<?= (int)$user['uid'] ?>"><span data-toggle="tooltip"
                                                                                   title="<?php echo $this->translate("Voir ce compte."); ?>"
                                                                                   class="fa-regular fa-address-card"></span></a>&nbsp;
                     <?php if (Episciences_Auth::isSecretary()) : ?>
@@ -123,7 +123,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                         <?php endif; ?>
                     <?php endif; ?>
                     <?php if ($user['uid'] == Episciences_Auth::getUid() && !Episciences_Auth::isImpersonating()) : ?>
-                        <a href="/user/edit"> <span data-toggle="tooltip"
+                        <a href="<?= PREFIX_URL ?>user/edit"> <span data-toggle="tooltip"
                                                     title="<?php echo $this->translate("Modifier mon compte."); ?>"
                                                     class="darkgrey glyphicon glyphicon-edit"></span>
                         </a>&nbsp;

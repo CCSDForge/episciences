@@ -7,7 +7,7 @@
                 </span>
             <?php endif; ?>
             <img class="user-photo-thumb"
-                 src="/user/photo/size/thumb?v=<?= Episciences_Auth::getPhotoVersion() ?>"
+                 src="<?= PREFIX_URL ?>user/photo/size/thumb?v=<?= Episciences_Auth::getPhotoVersion() ?>"
                  alt="<?= $this->translate('Ma photo') ?>"/>
             &nbsp;<?= $this->escape(Episciences_Auth::getScreenName()) ?>
             <b class="caret"></b>
@@ -85,7 +85,7 @@
                         </button>
                     </form>
                 <?php endif; ?>
-                <span><a href="/user/logout" class="btn btn-default btn-xs"><i
+                <span><a href="<?= PREFIX_URL ?>user/logout" class="btn btn-default btn-xs"><i
                                 class="fas fa-sign-out-alt"></i>&nbsp;<?= $this->translate("Déconnexion") ?></a></span>
             </li>
         </ul>
