@@ -2786,10 +2786,13 @@ class Episciences_Submit
 
     /**
      * Stores a HAL link the way a manual addition does
-     * (AdministratelinkeddataController::addldAction()): the bare HAL id rather
-     * than the URL, with HAL's full citation as metadata when HAL returns one.
-     * A software deposit (HAL docType_s, or the related identifier's
-     * resource_type) is stored as software, with its SWHID when HAL has one.
+     * (AdministratelinkeddataController::addldAction()), with HAL's full
+     * citation as metadata when HAL returns one:
+     * - a software deposit (HAL docType_s SOFTWARE) is stored as software under
+     *   its HAL id without version, with its SWHID and codemeta;
+     * - anything else is stored as a publication under its HAL id as found.
+     * The related identifier's resource_type only decides when HAL does not
+     * answer: HAL's own document type wins otherwise.
      *
      * @param array<string, mixed> $options
      */
@@ -2803,19 +2806,17 @@ class Episciences_Submit
 
         [$halId, $halIdWithoutVersion, $version] = $parsedHalId;
 
-        // The same HAL document may already be linked with or without its version suffix
-        foreach (array_unique([$halId, $halIdWithoutVersion]) as $storedValue) {
-            if (Episciences_Paper_DatasetsManager::findByValue($docId, $storedValue) !== null) {
-                return 0;
-            }
+        // The same HAL document may already be linked with or without a version suffix
+        if (Episciences_Paper_DatasetsManager::hasHalDocument($docId, $halIdWithoutVersion)) {
+            return 0;
         }
 
-        $metadataId = null;
         $citation = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($halIdWithoutVersion, $version));
         $halDoc = $citation->response->docs[0] ?? null;
 
-        $isSoftware = strcasecmp($resourceType, Episciences_Paper_Dataset::SOFTWARE_CODE) === 0
-            || ($halDoc->docType_s ?? '') === 'SOFTWARE';
+        $isSoftware = $halDoc !== null
+            ? ($halDoc->docType_s ?? '') === 'SOFTWARE'
+            : strcasecmp($resourceType, Episciences_Paper_Dataset::SOFTWARE_CODE) === 0;
 
         $metatext = [];
 
@@ -2823,9 +2824,19 @@ class Episciences_Submit
             $metatext['citationFull'] = $halDoc->citationFull_s;
         }
 
-        if ($isSoftware && !empty($halDoc->swhidId_s[0])) {
-            $metatext['swhidId'] = $halDoc->swhidId_s[0];
+        if ($isSoftware) {
+            if (!empty($halDoc->swhidId_s[0])) {
+                $metatext['swhidId'] = $halDoc->swhidId_s[0];
+            }
+
+            $codeMeta = json_decode(Episciences_SoftwareHeritageTools::getCodeMetaFromHal($halId), true);
+
+            if (!empty($codeMeta)) {
+                $metatext['codemeta'] = $codeMeta;
+            }
         }
+
+        $metadataId = null;
 
         if ($metatext !== []) {
             $datasetMetadata = new Episciences_Paper_DatasetMetadata();
@@ -2836,7 +2847,7 @@ class Episciences_Submit
         return Episciences_Paper_DatasetsManager::addDatasetFromSubmission(
             $docId,
             Episciences_Paper_Dataset::HAL_CODE,
-            $halId,
+            $isSoftware ? $halIdWithoutVersion : $halId,
             $isSoftware ? Episciences_Paper_Dataset::SOFTWARE_CODE : Episciences_Paper_Dataset::PUBLICATION,
             $metadataId,
             $options
@@ -2940,12 +2951,14 @@ class Episciences_Submit
                 } elseif ($typeLd === Episciences_Paper_Dataset::HAL_CODE) {
                     $affectedRows += self::addHalDataset($docId, $value, (string)($datasets['resource_type'] ?? ''), $options);
                 }
-                if (!empty($noProcessed)) {
-                    $affectedRows += $affectedRows = self::forceAddingDatasets($current, $noProcessed);
-                }
-
             }
         }
+
+        // Once, after the loop: values whose DOI lookup failed are stored as is
+        if (!empty($noProcessed)) {
+            $affectedRows += self::forceAddingDatasets($current, $noProcessed);
+        }
+
         return $affectedRows;
 
     }
