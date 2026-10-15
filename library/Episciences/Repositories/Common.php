@@ -394,7 +394,8 @@ class Episciences_Repositories_Common
             $identifier = (string)$relatedId;
             $relationType = (string)$relatedId['relationType'];
             $relatedIdentifierType = (string)$relatedId['relatedIdentifierType'];
-            $ressourceType = (string)$relatedId['resource_type'];
+            // DataCite's attribute, lowercased to match Zenodo's REST resource_type ("software", "dataset"...)
+            $ressourceType = strtolower((string)$relatedId['resourceTypeGeneral']);
 
             if ($ressourceType === ''){
                 $ressourceType = 'dataset';
