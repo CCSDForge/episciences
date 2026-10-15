@@ -67,12 +67,10 @@ final class CommonModuleAclCoverageTest extends TestCase
      */
     public static function managementEndpoints(): iterable
     {
-        yield 'findusers'                   => ['user-findusers'];
         yield 'findcasusers'                => ['user-findcasusers'];
         yield 'ajaxfindusersbymail'         => ['user-ajaxfindusersbymail'];
         yield 'findusersbyfirstnameandname' => ['user-findusersbyfirstnameandname'];
         yield 'ajaxfindcasuser'             => ['user-ajaxfindcasuser'];
-        yield 'getmails'                    => ['user-getmails'];
         yield 'rolesform'                   => ['user-rolesform'];
     }
 

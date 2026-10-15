@@ -47,15 +47,15 @@
                             </button>
                         </a>
                         <?php if ($template['PARENTID']) : ?>
-                            <a class="delete-template"
-                               href="<?= $this->url(['controller' => 'administratemail', 'action' => 'deletetemplate', 'id' => $template['ID']]) ?>"
-                               title="<?= $this->translate($deleteTemplateTitle) ?>">
-                                <button class="btn btn-default btn-xs" data-toggle="tooltip"
+                            <form class="delete-template-form" method="post" action="<?= $this->url(['controller' => 'administratemail', 'action' => 'deletetemplate']) ?>" style="display: inline">
+                                <input type="hidden" name="id" value="<?= (int)$template['ID'] ?>">
+                                <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
+                                <button type="submit" class="btn btn-default btn-xs" data-toggle="tooltip"
                                         title="<?= $this->translate($deleteTemplateTitle) ?>"
-                                        role="button" >
+                                        aria-label="<?= $this->escape($this->translate('Rétablir le template par défaut :') . ' ' . $this->translate($template['KEY'] . Episciences_Mail_TemplatesManager::SUFFIX_TPL_NAME)) ?>">
                                     <span class="glyphicon glyphicon-trash"></span>&nbsp;<?= $this->translate('Rétablir') ?>
                                 </button>
-                            </a>
+                            </form>
 
                         <?php endif; ?>
                     <?php endif; ?>

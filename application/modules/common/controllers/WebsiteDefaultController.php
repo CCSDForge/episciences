@@ -35,7 +35,10 @@ class WebsiteDefaultController extends Episciences_Controller_Action
     {
         $common = new Ccsd_Website_Common(RVID, ['languages' => Episciences_Translation_Plugin::getAvailableLanguages()]);
         $form = $common->getForm();
-        if ($this->getRequest()->isPost() && $form->isValid($this->getRequest()->getPost())) {
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
+        if ($this->getRequest()->isPost() && !$this->_validateCsrf()) {
+            $this->addCsrfError();
+        } elseif ($this->getRequest()->isPost() && $form->isValid($this->getRequest()->getPost())) {
             $common->save($form->getValues());
             unset($this->_session->website);
             Zend_Registry::set('languages', $form->getValue('languages'));
@@ -51,7 +54,10 @@ class WebsiteDefaultController extends Episciences_Controller_Action
     public function styleAction()
     {
         $styles = new Episciences_Website_Style();
-        if ($this->getRequest()->isPost() && $styles->getForm()->isValid($this->getRequest()->getParams())) {
+        Episciences_Csrf_Helper::addSessionTokenElement($styles->getForm());
+        if ($this->getRequest()->isPost() && !$this->_validateCsrf()) {
+            $this->addCsrfError();
+        } elseif ($this->getRequest()->isPost() && $styles->getForm()->isValid($this->getRequest()->getParams())) {
             $styles->save($styles->getForm()->getValues());
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
         }
@@ -132,6 +138,12 @@ class WebsiteDefaultController extends Episciences_Controller_Action
         }
 
         if (isset($params['method']) && $request->isPost()) {
+            if (!$this->_validateCsrf()) {
+                $this->addCsrfError();
+                $this->_helper->redirector->goToUrl($request->getRequestUri());
+                return;
+            }
+
             if ($params['method'] === 'remove') {
                 //Suppression d'un fichier
                 // Keep only the file name so the removal stays within $dir.
@@ -190,24 +202,20 @@ class WebsiteDefaultController extends Episciences_Controller_Action
     }
 
     /**
+     * Flash the message shown when a form is submitted with a missing or wrong token
+     */
+    private function addCsrfError(): void
+    {
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage(Zend_Registry::get('Zend_Translate')->translate('Votre session a expiré, veuillez réessayer.'));
+    }
+
+    /**
      * Valide le jeton CSRF pour les requêtes AJAX et POST
      * @return bool
      */
     protected function _validateCsrf()
     {
-        $request = $this->getRequest();
-        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        $expectedToken = $session->csrfToken;
-
-        if (!$expectedToken) {
-            return false;
-        }
-
-        if ($request->isXmlHttpRequest()) {
-            return $request->getHeader('X-CSRF-Token') === $expectedToken;
-        }
-
-        return $request->getPost('csrf_token') === $expectedToken;
+        return Episciences_Csrf_Helper::validateRequestToken($this->getRequest());
     }
 
     /**
@@ -232,8 +240,11 @@ class WebsiteDefaultController extends Episciences_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+        $isMenuSubmission = $request->isPost() && !$request->getPost('lang');
 
-        if ($request->isPost() && !$request->getPost('lang')) {
+        if ($isMenuSubmission && !$this->_validateCsrf()) {
+            $this->addCsrfError();
+        } elseif ($isMenuSubmission) {
             $valid = true;
             $pagesDisplay = [];
 
@@ -504,12 +515,15 @@ class WebsiteDefaultController extends Episciences_Controller_Action
             // Delete
             if ($this->getRequest()->getPost('action') === 'delete') {
                 $delId = (int) ($post['newsid'] ?? 0);
-                if ($delId > 0) {
-                    $newsObj->delete($delId);
+                if ($newsObj->delete($delId)) {
                     Episciences_JournalNews::deleteByLegacyId($delId);
                     $this->_helper->FlashMessenger
                         ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)
                         ->addMessage("L'actualité a été supprimée.");
+                } else {
+                    $this->_helper->FlashMessenger
+                        ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                        ->addMessage("Actualité introuvable.");
                 }
                 $this->redirect($this->url(['controller' => 'website', 'action' => 'news']));
                 return;
@@ -517,9 +531,16 @@ class WebsiteDefaultController extends Episciences_Controller_Action
 
             // Add / edit
             $newsid = (int) ($post['newsid'] ?? 0);
+            if ($newsid > 0 && !$newsObj->belongsToSite($newsid)) {
+                $this->_helper->FlashMessenger
+                    ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                    ->addMessage("Actualité introuvable.");
+                $this->redirect('/website/news');
+                return;
+            }
             $form   = $newsObj->getForm($newsid);
             if ($form->isValid($post)) {
-                $newsObj->save(array_merge($form->getValues(), ['uid' => Episciences_Auth::getUid()]));
+                $newsObj->save(array_merge($form->getValues(), ['newsid' => $newsid, 'uid' => Episciences_Auth::getUid()]));
                 $this->_helper->FlashMessenger
                     ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)
                     ->addMessage("Les modifications ont bien été enregistrées.");

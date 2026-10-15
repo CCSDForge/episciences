@@ -595,9 +595,11 @@ class PaperController extends PaperDefaultController
                     $message .= ', ';
                     $message .= $this->view->translate('car il est identique à celui déjà enregistré.');
                 } else {
+                    $previousPassword = $paper->getPassword();
                     $paper->setPassword($postedPwd, true);
 
-                    if ($paper->save()) {
+                    // the password is left unchanged when encryption fails
+                    if ($paper->getPassword() !== $previousPassword && $paper->save()) {
                         $message = $this->view->translate("Votre mot de passe a bien été enregistré.");
                         $isErrors = false;
                     }
@@ -4282,20 +4284,43 @@ class PaperController extends PaperDefaultController
         $this->view->isAuthor = $paper->isOwner();
     }
 
-    public function cslAction()
+    /**
+     * CSL-JSON export of a paper of the journal, restricted to the users allowed to see it
+     * (same rule as the paper page); answers 404 with an empty list otherwise.
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    public function cslAction(): void
     {
-
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
-        $request = $this->getRequest();
-        $params = $request->getParams();
-        if (isset($params['id'])) {
-            echo \Episciences\Paper\Export::getCsl($params['id']);
 
+        $docId = $this->getRequest()->getParam('id');
+        $paper = is_numeric($docId) ? $this->findPaper((int)$docId) : null;
+        $response = $this->getResponse();
+        $response->setHeader('Content-Type', 'application/json; charset=UTF-8', true);
+
+        if (!$paper || $paper->isDeleted() || $paper->isRemoved() || $this->isRestrictedAccess($paper)) {
+            $response->setHttpResponseCode(404);
+            $response->setBody('[]');
+            return;
         }
 
-        header('Content-Type: application/json; charset=UTF-8');
-        exit();
+        $response->setBody($this->getCsl($paper));
+    }
+
+    /**
+     * Paper of the current journal
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function findPaper(int $docId): ?Episciences_Paper
+    {
+        return Episciences_PapersManager::get($docId, false, RVID) ?: null;
+    }
+
+    protected function getCsl(Episciences_Paper $paper): string
+    {
+        return \Episciences\Paper\Export::getCsl($paper->getDocid());
     }
 
     private function anonymiseIfNecessaryAndFormatScreeName(array &$comments, $isOwner): void

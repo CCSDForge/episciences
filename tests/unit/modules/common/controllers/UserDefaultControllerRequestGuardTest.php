@@ -7,8 +7,8 @@ namespace unit\modules\common\controllers;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Regression guards for the request preconditions of two UserDefaultController
- * actions (deleteAction, saverolesAction).
+ * Regression guards for the request preconditions of UserDefaultController actions
+ * (deleteAction is covered by UserDeleteActionTest).
  *
  * ZF1 module controllers are not Composer-autoloaded and require the full request
  * stack to instantiate, so — consistent with the other controller tests in this
@@ -37,31 +37,6 @@ final class UserDefaultControllerRequestGuardTest extends TestCase
         $stop = $candidates ? min($candidates) : strlen($this->source);
 
         return substr($this->source, (int) $start, $stop - (int) $start);
-    }
-
-    // -----------------------------------------------------------------------
-    // deleteAction — POST + secretary
-    // -----------------------------------------------------------------------
-
-    public function testDeleteActionRequiresPost(): void
-    {
-        $method = $this->extractMethod('deleteAction');
-        self::assertStringContainsString('isPost()', $method,
-            'deleteAction must only handle POST requests');
-    }
-
-    public function testDeleteActionRequiresSecretary(): void
-    {
-        $method = $this->extractMethod('deleteAction');
-        self::assertStringContainsString('Episciences_Auth::isSecretary()', $method,
-            'deleteAction must require the secretary role');
-    }
-
-    public function testDeleteActionAnswers403WhenPreconditionsFail(): void
-    {
-        $method = $this->extractMethod('deleteAction');
-        self::assertMatchesRegularExpression('/setHttpResponseCode\(\s*403\s*\)/', $method,
-            'deleteAction must answer 403 when its preconditions are not met');
     }
 
     // -----------------------------------------------------------------------
@@ -96,15 +71,6 @@ final class UserDefaultControllerRequestGuardTest extends TestCase
     // -----------------------------------------------------------------------
     // Request tokens (Episciences_Csrf_Helper)
     // -----------------------------------------------------------------------
-
-    public function testDeleteActionValidatesPerUserToken(): void
-    {
-        $method = $this->extractMethod('deleteAction');
-        self::assertStringContainsString("'user_delete_' . (int)\$userId", $method,
-            'deleteAction must build the token name from the target user id');
-        self::assertStringContainsString('Episciences_Csrf_Helper::validateToken', $method,
-            'deleteAction must validate the request token');
-    }
 
     public function testSaveRolesActionValidatesPerUserToken(): void
     {

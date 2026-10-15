@@ -25,7 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
+- The session cookie is now sent with the `SameSite=Lax` attribute (configurable with `resources.session.cookie_samesite`).
+- `enrichment:extract-biblio-refs` reports papers whose host is not allowed by the Biblioref service, or whose PDF contains no reference, as skipped instead of failed, so they no longer fail the cron run.
 - The document files of a paper (comments, copy-editing, data descriptor) follow the access rules of the paper pages.
+- Saving the roles of a user no longer disables their paper assignments when the current user is not allowed to edit their editor roles.
+- A user whose roles are all unchecked keeps the member role, so they stay in the journal user list.
 
 [RT#293890]:
 - Sorting by invitation status does not reflect the actual situation:
@@ -38,8 +42,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without any identity, which made the paper page fail.
 - [#1009](https://github.com/CCSDForge/episciences/pull/1009): remove redundant account linking confirmation when emails match
 - Avoid suggesting that an invitation be linked to another account if it has already been accepted, has expired or has been cancelled.
+- Mail templates: editing, saving and reverting a template now only apply to a default template or a template of the current journal;
+  the revert is submitted as a confirmed form instead of a link, and an expired session shows a message instead of an error page.
 - A refused paper resubmitted through the inbox (COAR Notify) keeps the submission date of the refused paper,
   which is shared by all the versions of a paper, instead of getting the current date.
+- The website settings (menu, style, languages), the page content, the mail templates, the mailing form, the rating grids, and the volume and section management actions now check the form token before saving or deleting.
+- The website public resources page now checks the form token before adding or removing a file.
 
 [RT#301096]:
 - An editor (or guest editor) assigned to a paper could not access its previous versions:

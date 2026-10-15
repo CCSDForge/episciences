@@ -111,6 +111,7 @@
                     $.ajax({
                         url: JS_PREFIX_URL + "grid/sortcriterion",
                         type: 'POST',
+                        headers: {'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''},
                         data: {sorted: $(this).sortable("toArray"), rgid: <?php echo $this->grid->getId(); ?>},
                         dataType: "json",
                         success: function (result) {
@@ -148,13 +149,16 @@
             }
             ?>
 
-            <a href="<?= $this->url(['controller' => 'grid', 'action' => 'copy', 'from' => $this->defaultGrid->getId(), 'to' => $this->grid->getId()]) ?>">
-                <button type="button"
+            <form action="<?= $this->url(['controller' => 'grid', 'action' => 'copy']) ?>" method="post" style="display:inline">
+                <input type="hidden" name="csrf_token" value="<?= $this->escape(Episciences_Csrf_Helper::getSessionToken()) ?>">
+                <input type="hidden" name="from" value="<?= (int)$this->defaultGrid->getId() ?>">
+                <input type="hidden" name="to" value="<?= (int)$this->grid->getId() ?>">
+                <button type="submit"
                         class="btn btn-default" <?= $isEmptySource || !$isEmptyDestination ? 'disabled' : '' ?>
                         title="<?= $this->translate($title) ?>">
                     <?php echo $this->translate('Copier grille par défaut'); ?>
                 </button>
-            </a>
+            </form>
 
         <?php endif; ?>
 

@@ -33,6 +33,8 @@ final class JournalScopeGuardTest extends TestCase
     /** @var list<string> SQL of the SELECT statements sent to the adapter */
     private array $selects = [];
 
+    private ?Zend_Controller_Response_HttpTestCase $response = null;
+
     protected function setUp(): void
     {
         $this->previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -134,14 +136,29 @@ final class JournalScopeGuardTest extends TestCase
     /**
      * @param class-string $class
      * @param array<string, mixed> $post
+     * @param array<string, string> $headers
      */
-    private function dispatchAction(string $class, string $action, array $post): string
+    private function dispatchAction(string $class, string $action, array $post, bool $withToken = true, array $headers = []): string
     {
+        // The scope checks come after the form token one: send a valid token
+        \Zend_Session::$_unitTestEnabled = true;
+        $session = new \Zend_Session_Namespace(SESSION_NAMESPACE);
+        $session->csrfToken = 'scope-guard-token';
+        if ($withToken) {
+            $post['csrf_token'] = 'scope-guard-token';
+        }
+
+        // The test request keeps what an earlier one posted
+        $_POST = [];
+
         $request = new Zend_Controller_Request_HttpTestCase();
         $request->setMethod('POST')->setPost($post);
-        $response = new Zend_Controller_Response_HttpTestCase();
+        foreach ($headers as $name => $value) {
+            $request->setHeader($name, $value);
+        }
+        $this->response = new Zend_Controller_Response_HttpTestCase();
 
-        $controller = new $class($request, $response);
+        $controller = new $class($request, $this->response);
 
         ob_start();
         try {
@@ -218,5 +235,75 @@ final class JournalScopeGuardTest extends TestCase
         foreach ($this->selects as $sql) {
             self::assertMatchesRegularExpression('/\bRVID = ' . RVID . '\b/', $sql);
         }
+    }
+
+    /**
+     * @return array<string, array{class-string, string, array<string, mixed>, string}>
+     */
+    public static function writeActionsProvider(): array
+    {
+        // The delete buttons show the answer as the reason of the failure
+        $expired = 'Votre session a expiré, veuillez réessayer.';
+
+        return [
+            'volume delete' => [\VolumeController::class, 'deleteAction', ['params' => ['id' => '7']], $expired],
+            'section delete' => [\SectionController::class, 'deleteAction', ['ajax' => '1', 'params' => ['id' => '7']], $expired],
+            'volume save editors' => [\VolumeController::class, 'saveeditorsAction', ['vid' => '7', 'editors' => ['1']], ''],
+            'section save editors' => [\SectionController::class, 'saveeditorsAction', ['sid' => '7', 'editors' => ['1']], ''],
+        ];
+    }
+
+    /**
+     * Without the form token nothing is looked up, written or deleted.
+     *
+     * @param class-string $class
+     * @param array<string, mixed> $post
+     * @dataProvider writeActionsProvider
+     */
+    public function testWriteActionsRefuseARequestWithoutToken(string $class, string $action, array $post, string $expectedOutput): void
+    {
+        $this->captureSelects('fetchRow', ['VID' => 7, 'SID' => 7, 'RVID' => RVID]);
+        $this->adapter->expects(self::never())->method('delete');
+        $this->adapter->expects(self::never())->method('insert');
+        $this->adapter->expects(self::never())->method('update');
+
+        $output = $this->dispatchAction($class, $action, $post, false);
+
+        self::assertSame($expectedOutput, $output);
+        self::assertSame([], $this->selects);
+    }
+
+    /**
+     * @return array<string, array{class-string}>
+     */
+    public static function sortActionsProvider(): array
+    {
+        return [
+            'volumes' => [\VolumeController::class],
+            'sections' => [\SectionController::class],
+        ];
+    }
+
+    /**
+     * A re-ordering without the form token is refused with a 403, nothing is updated.
+     *
+     * @param class-string $class
+     * @dataProvider sortActionsProvider
+     */
+    public function testSortActionsRefuseARequestWithoutToken(string $class): void
+    {
+        $this->adapter->expects(self::never())->method('fetchCol');
+        $this->adapter->expects(self::never())->method('update');
+
+        $output = $this->dispatchAction(
+            $class,
+            'sortAction',
+            ['sorted' => ['item_1', 'item_2']],
+            false,
+            ['X-Requested-With' => 'XMLHttpRequest']
+        );
+
+        self::assertSame('', $output);
+        self::assertSame(403, $this->response?->getHttpResponseCode());
     }
 }

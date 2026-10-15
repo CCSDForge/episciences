@@ -207,10 +207,10 @@ class Episciences_Auth_PluginTest extends TestCase
     public static function restrictedActionProvider(): array
     {
         return [
-            'exact spelling' => ['user', 'findusers'],
-            'case variant' => ['user', 'findUsers'],
-            'upper case' => ['USER', 'FINDUSERS'],
-            'delimiter variant' => ['user', 'find-users'],
+            'exact spelling' => ['user', 'findcasusers'],
+            'case variant' => ['user', 'findCasUsers'],
+            'upper case' => ['USER', 'FINDCASUSERS'],
+            'delimiter variant' => ['user', 'find-cas-users'],
         ];
     }
 

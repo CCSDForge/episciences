@@ -322,28 +322,32 @@
 
                     </xsl:when>
                     <xsl:otherwise>
-                        <xsl:for-each select="metadata/oai_dc:dc/dc:rights">
+                        <!-- No SPDX licence yet (missing or legacy rights only): the licence must still be editable,
+                             the edit button is on the same line as the last licence -->
+                        <xsl:variable name="doc_rights_list" select="metadata/oai_dc:dc/dc:rights[not(contains(., 'info:eu-repo/semantics/'))]"/>
+                        <xsl:for-each select="$doc_rights_list">
                             <xsl:variable name="doc_rights" select="."/>
-                            <xsl:if test="not (contains($doc_rights, 'info:eu-repo/semantics/'))">
-                                <div class="small">
-                                    <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
-                                    <a rel="noopener" target="_blank" id='paper-license-link'>
-                                        <xsl:if test="not(contains($doc_rights, '[CC_NO]')) and (starts-with($doc_rights, 'http://') or starts-with($doc_rights, 'https://'))">
-                                            <xsl:attribute name="href">
-                                                <xsl:value-of select="$doc_rights"/>
-                                            </xsl:attribute>
-                                        </xsl:if>
-                                        <xsl:value-of select="php:function('Ccsd_Tools::translate', string($doc_rights))"/>
-                                    </a>
-                                </div>
-                            </xsl:if>
-                        </xsl:for-each>
-                        <!-- No SPDX licence yet (missing or legacy rights only): the licence must still be editable -->
-                        <xsl:if test="$canEditLicense = '1'">
                             <div class="small">
-                                <xsl:if test="not(metadata/oai_dc:dc/dc:rights[not(contains(., 'info:eu-repo/semantics/'))])">
-                                    <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
+                                <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
+                                <a rel="noopener" target="_blank" id='paper-license-link'>
+                                    <xsl:if test="not(contains($doc_rights, '[CC_NO]')) and (starts-with($doc_rights, 'http://') or starts-with($doc_rights, 'https://'))">
+                                        <xsl:attribute name="href">
+                                            <xsl:value-of select="$doc_rights"/>
+                                        </xsl:attribute>
+                                    </xsl:if>
+                                    <xsl:value-of select="php:function('Ccsd_Tools::translate', string($doc_rights))"/>
+                                </a>
+                                <xsl:if test="position() = last()">
+                                    <!-- for-each changes the context node: the button needs the paper root -->
+                                    <xsl:for-each select="/*">
+                                        <xsl:call-template name="license-edit-button"/>
+                                    </xsl:for-each>
                                 </xsl:if>
+                            </div>
+                        </xsl:for-each>
+                        <xsl:if test="not($doc_rights_list) and $canEditLicense = '1'">
+                            <div class="small">
+                                <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
                                 <xsl:call-template name="license-edit-button"/>
                             </div>
                         </xsl:if>

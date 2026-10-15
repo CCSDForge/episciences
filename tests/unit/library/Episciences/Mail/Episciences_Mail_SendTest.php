@@ -139,7 +139,8 @@ final class Episciences_Mail_SendTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->primeReviewsManagerCache(null);
+        // Leave no journal in the cache: a primed `false` would make find(RVCODE) fail in the next tests
+        \Episciences_ReviewsManager::clearCache();
         parent::tearDown();
     }
 

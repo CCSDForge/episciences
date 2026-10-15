@@ -2,6 +2,7 @@
 
 use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\Paper\Spdx\LicenseCodeManager;
+use Episciences\Paper\Spdx\LicenseManager;
 use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 use Psr\Log\LogLevel;
@@ -4647,14 +4648,19 @@ class AdministratepaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId, false);
 
-        if (!$paper instanceof Episciences_Paper) {
+        // a paper of another journal is handled as not found
+        if (!$paper instanceof Episciences_Paper || $paper->getRvid() !== RVID) {
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
 
         $this->_helper->layout->disableLayout();
+        $review = $paper->findReview();
+
         $this->view->docId = $paper->getDocid();
-        $this->view->licence = $paper->getLicence();
+        $this->view->licenseCode = $paper->getSpdxLicenseCode() ?? $review?->getDefaultLicense();
+        // null: no restriction, all the recommended licenses are offered
+        $this->view->allowedLicenses = $review?->getAllowedLicenses() ?: null;
         $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-license-form.phtml');
     }
 
@@ -4683,8 +4689,10 @@ class AdministratepaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId);
 
-        if (!$paper) {
-            echo false;
+        // a paper of another journal is handled as not found
+        if (!$paper instanceof Episciences_Paper || $paper->getRvid() !== RVID) {
+            $this->getResponse()->setHttpResponseCode(404);
+            $this->sendJsonError("Échec de l'enregistrement de la licence : article introuvable.");
             return;
         }
 
@@ -4700,8 +4708,22 @@ class AdministratepaperController extends PaperDefaultController
         $oldLicense = LicenseCodeManager::getCode($paper->getDocid());
 
         // If the license to save is the same as the current one, warn the user
-        if ($oldLicense === $currentSpdxCode) {
+        // (checked first: the current license may predate the journal's allowed licenses)
+        if (is_string($oldLicense) && LicenseManager::containsCode($currentSpdxCode, [$oldLicense])) {
             echo json_encode(['warning' => 'La licence actuelle est déjà définie.'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return;
+        }
+
+        $allowedLicenses = $paper->findReview()?->getAllowedLicenses() ?? [];
+
+        // The paper current license is always accepted, even when it is only resolved from the license URL:
+        // the form pre-selects it, even if it is not allowed by the journal
+        if (
+            $allowedLicenses !== [] &&
+            !LicenseManager::containsCode($currentSpdxCode, $allowedLicenses) &&
+            !LicenseManager::containsCode($currentSpdxCode, array_filter([$paper->getSpdxLicenseCode()]))
+        ) {
+            $this->sendJsonError("Échec de l'enregistrement de la licence : cette licence n'est pas autorisée par la revue.");
             return;
         }
 

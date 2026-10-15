@@ -328,6 +328,8 @@ return [
     "Échec de l'enregistrement de la licence : aucun code de licence fourni." => 'Failed to save the licence: no licence code provided.',
     "Échec de l'enregistrement de la licence : code SPDX invalide." => 'Failed to save the licence: invalid SPDX code.',
     "Échec de l'enregistrement de la licence : action non autorisée." => 'Failed to save the licence: action not allowed.',
+    "Échec de l'enregistrement de la licence : cette licence n'est pas autorisée par la revue." => 'Failed to save the licence: this licence is not allowed by the journal.',
+    "Échec de l'enregistrement de la licence : article introuvable." => 'Failed to save the licence: paper not found.',
     
     // License save warnings
     "La licence actuelle est déjà définie." => 'The current license is already set.',

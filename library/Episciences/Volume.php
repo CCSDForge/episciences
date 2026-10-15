@@ -991,6 +991,8 @@ class Episciences_Volume
             // Sanitize user input to prevent XSS
             $sanitizedValues = $this->sanitizeMetadataValues($decodedValues);
 
+            $sanitizedValues = $this->discardForeignMetadataId($sanitizedValues);
+
             // Add required fields
             $sanitizedValues['vid'] = $this->getVid();
             $sanitizedValues['position'] = $position;
@@ -1131,6 +1133,28 @@ class Episciences_Volume
         }
 
         return $sanitized;
+    }
+
+    /**
+     * A client-supplied metadata id is only honoured for a row that already belongs to this volume;
+     * otherwise it is dropped so that a new row is created instead of overwriting another one.
+     * The id is normalised to an integer: a float such as 7.5 would match key 7 here but no row in the UPDATE,
+     * and the cleanup of old metadata would then delete row 7.
+     *
+     * @param array<string, mixed> $values
+     * @return array<string, mixed>
+     */
+    private function discardForeignMetadataId(array $values): array
+    {
+        $id = isset($values['id']) ? filter_var($values['id'], FILTER_VALIDATE_INT) : false;
+
+        if ($id === false || !array_key_exists($id, $this->getMetadatas())) {
+            unset($values['id']);
+        } else {
+            $values['id'] = $id;
+        }
+
+        return $values;
     }
 
     /**

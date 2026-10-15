@@ -15,6 +15,8 @@ $(document).ready(function () {
         }
 
         data.params = params;
+        data.csrf_token =
+            document.querySelector('meta[name="csrf-token"]')?.content || '';
         bootbox.setDefaults({ locale: locale });
         bootbox.confirm(translate('Êtes-vous sûr ?'), function (result) {
             if (result) {

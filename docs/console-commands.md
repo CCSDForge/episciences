@@ -202,22 +202,32 @@ php scripts/console.php enrichment:extract-biblio-refs [options]
 
 | Option | Description |
 |--------|-------------|
-| `--docid <id>` | Process only this DOCID (any status) |
+| `--docid <id>` | Process only this DOCID (ignores status filter) |
 | `--rvcode <code>` | Restrict processing to one journal |
 | `--dry-run` | Log what would be sent without calling the API |
-| `--published` | Also include `STATUS_PUBLISHED` papers (default: `STATUS_SUBMITTED` only) |
-| `--accepted` | Also include `STATUS_ACCEPTED` papers (default: `STATUS_SUBMITTED` only) |
+| `--submitted` | Filter on `STATUS_SUBMITTED` papers (`0`) |
+| `--ok-for-reviewing` | Filter on `STATUS_OK_FOR_REVIEWING` papers (`1`) |
+| `--being-reviewed` | Filter on `STATUS_BEING_REVIEWED` papers (`2`) |
+| `--accepted` | Filter on `STATUS_ACCEPTED` papers (`4`) |
+| `--accepted-final-version` | Filter on `STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING` papers (`28`) |
+| `--ce-ready-to-publish` | Filter on `STATUS_CE_READY_TO_PUBLISH` papers (`23`) |
+| `--approved-by-author` | Filter on `STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION` papers (`33`) |
+| `--published` | Filter on `STATUS_PUBLISHED` papers (`16`). Never selected by default: one-off catch-up for imported papers or papers published before extraction existed |
 | `--api-url <url>` | Override `EPISCIENCES_BIBLIOREF[URL]` at runtime (e.g. Docker-internal address) |
 
-By default the command targets papers with `STATUS_SUBMITTED`. Use `--published` and/or `--accepted` to broaden the scope. When `--docid` is given, no status filter is applied.
+References only need to be extracted when a new DOCID is created (new submission or new version). By default (when no status option is specified), the command processes every status a new DOCID can be created with (`submitted`, `ok-for-reviewing`, `being-reviewed`, `accepted`, `accepted-final-version`, `ce-ready-to-publish`, `approved-by-author`). When one or more status options are provided, processing is restricted exclusively to those requested statuses. Published papers are only processed with `--published`. When `--docid` is given, no status filter is applied.
 
-Each API call has a 360-second timeout (GROBID extraction can take several minutes). The command returns exit code 1 if any calls fail, so cron alerts fire on partial failures.
+The command outputs a summary table at the end of execution showing the result and reference count for each DOCID. Papers already extracted are only listed with `-v`.
+
+Each API call has a 360-second timeout (GROBID extraction can take several minutes). The command returns exit code 1 if any calls fail, so cron alerts fire on partial failures. Papers whose host is not allowed by the service (`Invalid URL`) or whose PDF contains no reference are reported as skipped and do not fail the run.
+
+> **Technical documentation:** see [biblioref-extraction.md](biblioref-extraction.md) for full architecture and lifecycle details.
 
 > **Docker note:** if the script runs inside a Docker container that cannot resolve the public hostname configured in `pwd.json`, use `--api-url` to point to the Docker-internal service address:
 > ```bash
 > php scripts/console.php enrichment:extract-biblio-refs \
 >   --api-url=http://citations-php-fpm \
->   --published
+>   --being-reviewed
 > ```
 
 Recommended cron schedule: daily (e.g. every night at 00:30).

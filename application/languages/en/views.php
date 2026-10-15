@@ -485,8 +485,11 @@ return array(
     'Information importante' => 'Important Information',
     'Licence manquante' => 'Missing license',
     'Licence non reconnue' => 'Unrecognized license',
+    'Licence non conforme' => 'Non-compliant license',
     'Définir la licence' => 'Set the license',
-    'La licence choisie ne correspond pas à la licence choisie par la revue.' => 'The license selected does not match the license selected by the journal.',
+    'Modifier la licence' => 'Edit the license',
+    'La licence de cette publication ne fait pas partie des licences acceptées par la revue.' => 'The license of this publication is not one of the licenses accepted by the journal.',
+    "La licence de cette publication n'a pas pu être identifiée parmi les licences SPDX." => 'The license of this publication could not be identified among the SPDX licenses.',
     'Merci de préciser la licence pour cette publication avant sa mise en ligne.' => 'Kindly indicate the license for this publication before it is published.',
     "Opter pour un autre fichier principal" => "Opt for a different primary file",
     'Fichier principal' => "Primary file",
@@ -1412,6 +1415,7 @@ return array(
     "paper-submitted" => "View their articles",
     "paper-view" => "View an article",
     "review-settings" => "Edit journal settings",
+    "review-licenses" => "Edit journal licenses",
     "review-staff" => "View the list of editorial members",
     "reviewer-invitation" => "Manage their invitation to review an article",
     "rss-papers" => "View the RSS feed of published articles",
@@ -1621,6 +1625,7 @@ return array(
     "la version de l'article à mettre à jour doit être supérieure à la version précédente." => "the version of the article to be updated must be greater than the previous version.",
     "Une erreur interne s'est produite, veuillez recommencer." => "An internal error has occurred, please try again.",
     "Une erreur s'est produite pendant l'enregistrement de votre article." => "An error occurred while saving your article.",
+    "Votre session a expiré, veuillez réessayer." => "Your session has expired, please try again.",
     "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre article n'a pas été enregistré. Les informations saisies ont été conservées, merci de sélectionner à nouveau vos fichiers puis de valider le formulaire." => "Your session has expired or the page has been open for too long: for security reasons, your article was not saved. The information you entered has been kept; please select your files again and submit the form.",
     "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre nouvelle version n'a pas été enregistrée. Merci de recharger cette page puis de soumettre à nouveau votre nouvelle version." => "Your session has expired or the page has been open for too long: for security reasons, your new version was not saved. Please reload this page and submit your new version again.",
     //Soumission d'une notice vide
@@ -2685,6 +2690,12 @@ return array(
      // Website > menu
     'Choisissez une page' => 'Select a page',
 
+    // Journal licenses settings
+    "Licences" => "Licenses",
+    "Licence par défaut" => "Default license",
+    "Pré-sélectionnée lors du choix de la licence d'un article qui n'en a pas encore" => "Pre-selected when choosing the license of an article that does not have one yet",
+    "Licences autorisées" => "Allowed licenses",
+    "Aucune sélection : toutes les licences recommandées sont proposées." => "No selection: all the recommended licenses are offered.",
     // Read-only maintenance mode
     "Maintenance en cours" => "Maintenance in progress",
     "Le site est temporairement en consultation seule : cette page n'est pas disponible pendant la maintenance. Merci de réessayer plus tard." => "The website is temporarily read-only: this page is not available during maintenance. Please try again later.",
