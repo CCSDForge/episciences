@@ -427,6 +427,8 @@ class Episciences_Paper
     private $_solrData = [];
     private $_history;
     private $_latestVersionId;
+    /** @var Episciences_Paper|false|null false until computed, see findLatestVersionForAssignmentCheck() */
+    private Episciences_Paper|false|null $_latestVersionForAssignmentCheck = false;
     private $_suggestedEditors;
     /** @var Episciences_Editor[] $_editors */
     private $_editors = [];
@@ -2423,18 +2425,21 @@ class Episciences_Paper
             $review = Episciences_ReviewsManager::find(RVID);
             $review->loadSettings();
 
-            $isEditor = $this->isEditorForReportVisibility(
-                $user,
-                $review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) == 1
-            );
-
             if ($user->getUid() == $this->getUid()) {
                 // user is the paper contributor
                 $visibility = [
                     Episciences_Rating_Criterion::VISIBILITY_PUBLIC,
                     Episciences_Rating_Criterion::VISIBILITY_CONTRIBUTOR
                 ];
-            } elseif (Episciences_Auth::isChiefEditor() || Episciences_Auth::isSecretary() || $isEditor) {
+            } elseif (
+                Episciences_Auth::isChiefEditor() ||
+                Episciences_Auth::isSecretary() ||
+                // last, as it may query the assignments
+                $this->isEditorForReportVisibility(
+                    $user,
+                    $review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS) == 1
+                )
+            ) {
                 // user is an editor
                 $visibility = [
                     Episciences_Rating_Criterion::VISIBILITY_PUBLIC,
@@ -5179,18 +5184,24 @@ class Episciences_Paper
     /**
      * Build the latest version of this paper, only to check its editor and copy editor assignments:
      * the returned object holds the identifiers only, not the paper data.
+     * The result is kept for the lifetime of this object, so that the assignments of the latest version
+     * are fetched once, however many checks are made.
      *
-     * @return Episciences_Paper|null null when this paper is the latest version or when it cannot be found
+     * @return Episciences_Paper|null null when this paper is the latest version or when no version is found
      */
     protected function findLatestVersionForAssignmentCheck(): ?Episciences_Paper
     {
+        if ($this->_latestVersionForAssignmentCheck !== false) {
+            return $this->_latestVersionForAssignmentCheck;
+        }
+
         $latestDocId = (int)$this->getLatestVersionId();
 
         if ($latestDocId === 0 || $latestDocId === $this->getDocid()) {
-            return null;
+            return $this->_latestVersionForAssignmentCheck = null;
         }
 
-        return (new Episciences_Paper())
+        return $this->_latestVersionForAssignmentCheck = (new Episciences_Paper())
             ->setDocid($latestDocId)
             ->setPaperid($this->getPaperid());
     }

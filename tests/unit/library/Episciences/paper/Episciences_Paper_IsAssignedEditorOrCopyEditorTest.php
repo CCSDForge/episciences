@@ -221,4 +221,28 @@ final class Episciences_Paper_IsAssignedEditorOrCopyEditorTest extends TestCase
             'latest version not found' => [false],
         ];
     }
+
+    /**
+     * @dataProvider latestVersionIdToKeepProvider
+     */
+    public function testFindLatestVersionForAssignmentCheckLooksUpTheLatestVersionOnce(string|false $latestVersionId): void
+    {
+        $paper = $this->createPartialMock(Episciences_Paper::class, ['getLatestVersionId', 'getDocid', 'getPaperid']);
+        $paper->expects(self::once())->method('getLatestVersionId')->willReturn($latestVersionId);
+        $paper->method('getDocid')->willReturn(10);
+        $paper->method('getPaperid')->willReturn(10);
+
+        $first = $this->findLatestVersionForAssignmentCheck($paper);
+
+        self::assertSame($first, $this->findLatestVersionForAssignmentCheck($paper));
+    }
+
+    public static function latestVersionIdToKeepProvider(): array
+    {
+        return [
+            'previous version' => ['12'],
+            'this paper is the latest version' => ['10'],
+            'latest version not found' => [false],
+        ];
+    }
 }
