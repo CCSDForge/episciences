@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\AppRegistry;
 use Episciences\Submit\SubmittedRecord;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
@@ -185,23 +186,23 @@ class SubmitController extends DefaultController
 
         $formValues = $this->mergeFormValuesWithPost($form->getValues(), $post);
 
-        // Never trust the record posted by the form: use the one of the searched document
+        // Never trust the record (nor the concept identifier) posted by the form: use those of the searched document
         $searchDoc = (array)($formValues['search_doc'] ?? []);
-        $record = SubmittedRecord::resolve(
+        $document = SubmittedRecord::resolveDocument(
             (string)($searchDoc['repoId'] ?? ''),
             (string)($searchDoc['docId'] ?? ''),
             (float)($searchDoc['version'] ?? 1),
             ((int)($searchDoc['newVersionOf'] ?? 0)) ?: null
         );
 
-        if ($record === null) {
+        if ($document === null) {
             $this->_helper->FlashMessenger
                 ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
                 ->addMessage($this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article."));
             return;
         }
 
-        $formValues['xml'] = $record;
+        $formValues = Episciences_Submit::applySubmittedDocument($formValues, $document);
 
         if ($canReplace) {
             [$result, $message] = $this->handlePaperReplacement($formValues);
@@ -301,9 +302,25 @@ class SubmitController extends DefaultController
         // restricted to the current journal and to its owner.
         $oldPaper = Episciences_PapersManager::get((int)($formValues['old_docid'] ?? 0), false);
 
-        if (!$oldPaper instanceof Episciences_Paper || !$this->canCurrentUserReplace($oldPaper)) {
+        if (!$oldPaper instanceof Episciences_Paper || $oldPaper->getRvid() !== RVID) {
+            $oldPaper = null;
+        }
+
+        $error = Episciences_Submit::getReplacementError(
+            $oldPaper,
+            $oldPaper?->isOwner() ?? false,
+            $this->canResubmitRefusedPaper()
+        );
+
+        if ($error !== null || $oldPaper === null) {
+            AppRegistry::getMonoLogger()?->warning('Paper replacement rejected', [
+                'old_docid' => $formValues['old_docid'] ?? null,
+                'uid' => Episciences_Auth::getUid(),
+                'reason' => $error,
+            ]);
+
             $translator = Zend_Registry::get('Zend_Translate');
-            $result = ['code' => 0, 'message' => $translator->translate("Aucune modification n'a été enregistrée")];
+            $result = ['code' => 0, 'message' => $translator->translate($error ?? Episciences_Submit::REPLACEMENT_ERROR_NOT_FOUND)];
             return [$result, '<strong>' . $result['message'] . '</strong>'];
         }
 
@@ -314,8 +331,8 @@ class SubmitController extends DefaultController
         $formValues['old_paper_vid'] = $oldPaper->getVid();
         $formValues['old_paper_sid'] = $oldPaper->getSid();
 
-        // A new version keeps the submission date of the paper it replaces, a resubmitted refused paper gets a new one
-        if ($oldPaper->canBeReplaced()) {
+        // A paper replaced in place keeps its submission date, a resubmitted refused paper gets a new one
+        if ($oldPaper->canBeReplacedInPlace()) {
             $formValues['old_submissiondate'] = $oldPaper->getSubmission_date();
         } else {
             unset($formValues['old_submissiondate']);
@@ -336,19 +353,10 @@ class SubmitController extends DefaultController
     }
 
     /**
-     * The paper must belong to the current journal and to the current user;
-     * a refused paper can only be resubmitted if the journal allows it.
+     * Whether the current journal accepts a new submission of a refused paper.
      */
-    private function canCurrentUserReplace(Episciences_Paper $oldPaper): bool
+    private function canResubmitRefusedPaper(): bool
     {
-        if ($oldPaper->getRvid() !== RVID || !$oldPaper->isOwner()) {
-            return false;
-        }
-
-        if (!$oldPaper->isRefused()) {
-            return true;
-        }
-
         $settings = Zend_Registry::isRegistered('reviewSettings') ? (array)Zend_Registry::get('reviewSettings') : [];
 
         return !empty($settings[Episciences_Review::SETTING_CAN_RESUBMIT_REFUSED_PAPER]);
@@ -501,12 +509,13 @@ class SubmitController extends DefaultController
     {
         $response = SubmittedRecord::clean($response, (string)$params['repoId']);
 
-        // The record stored at submission is this one, never the one posted back by the form
+        // The document stored at submission is this one, never the one posted back by the form,
+        // which identifies it with the identifier and version given by the repository (h_doc, h_version)
         SubmittedRecord::remember(
             (string)$params['repoId'],
-            (string)$params['docId'],
-            (float)$params['version'],
-            (string)$response['record']
+            (string)($response['hookId'] ?? $params['docId']),
+            (float)($response['hookVersion'] ?? $params['version']),
+            $response
         );
 
         // Determine data display options

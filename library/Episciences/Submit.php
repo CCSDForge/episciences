@@ -5,6 +5,7 @@ use Episciences\Files\File;
 use Episciences\Files\Uploader;
 use Episciences\Paper\DataDescriptor;
 use Episciences\Paper\DataDescriptorManager;
+use Episciences\Submit\SubmittedRecord;
 use Episciences\Trait\UrlBuilder;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -1666,7 +1667,7 @@ class Episciences_Submit
 
     /**
      * @param Episciences_Paper|DataSet $paper
-     * @param array $data
+     * @param array<string, mixed> $data
      * @return void
      */
 
@@ -1677,6 +1678,12 @@ class Episciences_Submit
         }
 
         $oldDocId = (int)Ccsd_Tools::ifsetor($data['old_docid'], 0);
+
+        // Only a paper replaced in place gets new files and datasets: a paper kept as a row of its own keeps them
+        if ($oldDocId !== (int)$paper->getDocid()) {
+            return;
+        }
+
         Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($oldDocId, $paper->getRepoid());
         Episciences_Paper_FilesManager::deleteByDocId($oldDocId);
     }
@@ -2298,7 +2305,7 @@ class Episciences_Submit
 
         // Default submission status and date
         $values['STATUS'] = Episciences_Paper::STATUS_SUBMITTED;
-        $values['SUBMISSION_DATE'] = $data['old_submissiondate'] ?? date("Y-m-d H:i:s");
+        $values['SUBMISSION_DATE'] = date("Y-m-d H:i:s");
 
         // Metadata
         $values['RECORD'] = $data['xml'];
@@ -2324,14 +2331,19 @@ class Episciences_Submit
 
         if ($canReplace) {
             $oldStatus = $data['old_paper_status'] ?? null;
-            $isUpdatable = in_array($oldStatus, [
-                Episciences_Paper::STATUS_SUBMITTED,
-                Episciences_Paper::STATUS_OK_FOR_REVIEWING
-            ], true);
+            // Only a paper that has not been reviewed yet is updated in place. A refused paper that the journal
+            // accepts to receive again keeps its row: the new version is a new row with the same paper id
+            $isUpdatable = in_array($oldStatus, Episciences_Paper::STATUS_REPLACEABLE_IN_PLACE, true);
 
             if (isset($data['old_docid']) && $isUpdatable) {
                 $values['DOCID'] = (int)$data['old_docid'];
                 $values['STATUS'] = (int)Ccsd_Tools::ifsetor($oldStatus, $values['STATUS']);
+
+                // The paper replaced in place keeps its submission date (set from the stored paper).
+                // A refused paper submitted again is a new submission: it gets the current date
+                if (!empty($data['old_submissiondate'])) {
+                    $values['SUBMISSION_DATE'] = $data['old_submissiondate'];
+                }
             }
 
             $values['PAPERID'] = (int)Ccsd_Tools::ifsetor($data['old_paperid'], 0);
@@ -2347,6 +2359,66 @@ class Episciences_Submit
         return $values;
     }
 
+
+    public const REPLACEMENT_ERROR_NOT_FOUND = "Le document que vous souhaitez remplacer est introuvable. Merci de relancer la recherche de votre document.";
+    public const REPLACEMENT_ERROR_NOT_OWNER = "Seul l'auteur d'un document peut en déposer une nouvelle version. Si vous êtes l'auteur, merci de vous connecter avec le compte utilisé lors de la première soumission.";
+    public const REPLACEMENT_ERROR_NOT_REPLACEABLE = "Le processus de publication de cet article est en cours, vous ne pourrez donc pas le remplacer.";
+
+    /**
+     * Tell why a stored paper cannot be replaced by a new version.
+     *
+     * @param Episciences_Paper|null $storedPaper the paper to replace, as stored in the database
+     * @param bool $isOwner whether the user who submits the new version owns the stored paper
+     * @param bool $canResubmitRefused whether the journal accepts a new submission of a refused paper
+     * @return string|null a translatable message, or null if the paper can be replaced
+     */
+    public static function getReplacementError(?Episciences_Paper $storedPaper, bool $isOwner, bool $canResubmitRefused): ?string
+    {
+        if ($storedPaper === null) {
+            return self::REPLACEMENT_ERROR_NOT_FOUND;
+        }
+
+        if (!$isOwner) {
+            return self::REPLACEMENT_ERROR_NOT_OWNER;
+        }
+
+        $isResubmittable = $canResubmitRefused && $storedPaper->getStatus() === Episciences_Paper::STATUS_REFUSED;
+
+        return ($storedPaper->canBeReplacedInPlace() || $isResubmittable) ? null : self::REPLACEMENT_ERROR_NOT_REPLACEABLE;
+    }
+
+    /**
+     * Set the values of the searched document, as resolved on the server (record, concept identifier, version,
+     * update datetime), in place of those posted by the form.
+     *
+     * @param array<string, mixed> $formValues
+     * @param array{record: string, conceptIdentifier: ?string, hookVersion: ?float, update: ?string} $document
+     * @return array<string, mixed>
+     */
+    public static function applySubmittedDocument(array $formValues, array $document): array
+    {
+        $formValues['xml'] = $document[SubmittedRecord::RECORD];
+
+        foreach ([
+            'concept_identifier' => $document[SubmittedRecord::CONCEPT_IDENTIFIER],
+            Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME => $document[SubmittedRecord::UPDATE_DATETIME],
+        ] as $key => $value) {
+            unset($formValues[$key]);
+
+            if ($value !== null) {
+                $formValues[$key] = $value;
+            }
+        }
+
+        $version = $document[SubmittedRecord::VERSION];
+
+        if ($version !== null) {
+            $formValues['h_version'] = $version;
+            $formValues['search_doc'] = ['version' => $version, 'h_version' => $version] + (array)($formValues['search_doc'] ?? []);
+        }
+
+        return $formValues;
+    }
 
     /**
      * @param array $post

@@ -1860,6 +1860,23 @@ class PaperController extends PaperDefaultController
 
         Episciences_Submit::normalizeSubmissionParameters($post);
 
+        // Never trust the document posted by the form (record, concept identifier, version): use the searched one
+        $document = SubmittedRecord::resolveDocument(
+            (string)($post[self::SEARCH_DOC_STR]['h_repoId'] ?? ''),
+            (string)($post[self::SEARCH_DOC_STR]['h_docId'] ?? ''),
+            $this->resolveCurrentVersion($post, $paper),
+            (int)$paper->getDocid() ?: null
+        );
+
+        if ($document === null) {
+            $this->redirectWithError(
+                "Une erreur s'est produite pendant l'enregistrement de votre article.",
+                $paper
+            );
+            return;
+        }
+
+        $post = Episciences_Submit::applySubmittedDocument($post, $document);
         $currentVersion = $this->resolveCurrentVersion($post, $paper);
 
         if ($currentVersion < $paper->getVersion()) {
@@ -1895,23 +1912,7 @@ class PaperController extends PaperDefaultController
         $copyEditors = $paper->getCopyEditors(true, true);
         $coAuthors = $paper->getCoAuthors();
 
-        // Never trust the record posted by the form: use the one of the searched document
-        $record = SubmittedRecord::resolve(
-            (string)($post[self::SEARCH_DOC_STR]['h_repoId'] ?? ''),
-            (string)($post[self::SEARCH_DOC_STR]['h_docId'] ?? ''),
-            $currentVersion,
-            (int)$paper->getDocid() ?: null
-        );
-
-        if ($record === null) {
-            $this->redirectWithError(
-                "Une erreur s'est produite pendant l'enregistrement de votre article.",
-                $paper
-            );
-            return;
-        }
-
-        $newPaper = $this->initializeNewPaper($paper, $post, $currentVersion, $reassignReviewers, $isAlreadyAccepted, $record);
+        $newPaper = $this->initializeNewPaper($paper, $post, $currentVersion, $reassignReviewers, $isAlreadyAccepted, $document['record']);
 
         if ($newPaper->alreadyExists()) {
             $this->redirectWithError(
@@ -2109,7 +2110,10 @@ class PaperController extends PaperDefaultController
         return isset($post['h_version']) ? (float)$post['h_version'] : ($paper->getVersion() + 1);
     }
 
-    private function resolveConceptIdentifier(array $post)
+    /**
+     * @param array<string, mixed> $post posted values, once the searched document has been applied (Episciences_Submit::applySubmittedDocument())
+     */
+    private function resolveConceptIdentifier(array $post): ?string
     {
         return $post['concept_identifier'] ?? null;
     }

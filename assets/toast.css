@@ -27,7 +27,7 @@
 /* Toast Container */
 #toast-container {
     position: fixed;
-    bottom: 24px;
+    top: 24px;
     right: 24px;
     z-index: var(--toast-z-index);
     display: flex;
@@ -56,7 +56,7 @@
     line-height: 1.45;
     pointer-events: auto;
     opacity: 0;
-    transform: translateY(16px) scale(0.96);
+    transform: translateY(-16px) scale(0.96);
     transition:
         opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
         transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
@@ -107,7 +107,7 @@
 
 .toast-item.toast-hiding {
     opacity: 0 !important;
-    transform: translateY(12px) scale(0.92) !important;
+    transform: translateY(-12px) scale(0.92) !important;
 }
 
 /* Left Accent Border per status */
@@ -284,7 +284,7 @@
 /* Mobile responsiveness */
 @media (max-width: 480px) {
     #toast-container {
-        bottom: 12px;
+        top: 12px;
         right: 12px;
         left: 12px;
         width: auto;
