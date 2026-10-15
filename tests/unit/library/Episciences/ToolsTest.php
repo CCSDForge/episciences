@@ -1600,6 +1600,28 @@ class ToolsTest extends TestCase
     }
 
     // ============================================================================
+    // Tests for splitHalIdentifier()
+    // ============================================================================
+
+    /**
+     * @dataProvider halIdentifierProvider
+     */
+    public function testSplitHalIdentifier(string $value, ?array $expected): void
+    {
+        self::assertSame($expected, Episciences_Tools::splitHalIdentifier($value));
+    }
+
+    public static function halIdentifierProvider(): array
+    {
+        return [
+            'HAL URL without version' => ['https://hal.science/hal-05478157', ['hal-05478157', 'hal-05478157', 0]],
+            'HAL URL with version' => ['https://hal.science/hal-05478157v2', ['hal-05478157v2', 'hal-05478157', 2]],
+            'bare HAL id' => ['tel-01234567', ['tel-01234567', 'tel-01234567', 0]],
+            'no HAL id' => ['https://example.org/record/1', null],
+        ];
+    }
+
+    // ============================================================================
     // Tests for checkIsArxivUrl()
     // ============================================================================
 

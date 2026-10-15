@@ -96,28 +96,6 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         self::assertTrue($this->invoke('isDataCiteShapedRepo', [(int)Episciences_Repositories::ARCHE_ID]));
     }
 
-    // parseHalIdentifier(): a HAL link is stored by its bare HAL id, the way a
-    // manual addition from the linked data administration stores it; the
-    // version is split off only to query HAL for the citation.
-
-    /**
-     * @dataProvider halIdentifierProvider
-     */
-    public function testParseHalIdentifier(string $value, ?array $expected): void
-    {
-        self::assertSame($expected, $this->invoke('parseHalIdentifier', [$value]));
-    }
-
-    public static function halIdentifierProvider(): array
-    {
-        return [
-            'HAL URL without version' => ['https://hal.science/hal-05478157', ['hal-05478157', 'hal-05478157', 0]],
-            'HAL URL with version' => ['https://hal.science/hal-05478157v2', ['hal-05478157v2', 'hal-05478157', 2]],
-            'bare HAL id' => ['tel-01234567', ['tel-01234567', 'tel-01234567', 0]],
-            'no HAL id' => ['https://example.org/record/1', null],
-        ];
-    }
-
     public function testIsDataCiteShapedRepoRejectsOtherRepos(): void
     {
         $result = $this->invoke('isDataCiteShapedRepo', [(int)Episciences_Repositories::HAL_REPO_ID]);

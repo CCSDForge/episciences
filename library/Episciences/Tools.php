@@ -2109,6 +2109,31 @@ class Episciences_Tools
     }
 
     /**
+     * Splits the HAL id found in a value (bare id or URL) from its version suffix.
+     *
+     * @return array{0: string, 1: string, 2: int}|null [HAL id as found, HAL id
+     *         without its version suffix, version (0 when none)], or null when
+     *         the value carries no HAL id
+     */
+    public static function splitHalIdentifier(string $value): ?array
+    {
+        $halMatch = self::getHalIdInString($value);
+
+        if (empty($halMatch)) {
+            return null;
+        }
+
+        $halId = $halMatch[0];
+        $versionSuffix = $halMatch[1] ?? '';
+
+        if ($versionSuffix === '') {
+            return [$halId, $halId, 0];
+        }
+
+        return [$halId, substr($halId, 0, -strlen($versionSuffix)), (int)ltrim($versionSuffix, 'v')];
+    }
+
+    /**
      * Check if a string is a HAL URL containing a valid HAL identifier
      * @param string $url
      * @return bool
