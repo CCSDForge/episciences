@@ -14,6 +14,8 @@ class Episciences_Paper_LicenceManager
     const ARXIV_DOI_PREFIX = '10.48550/arxiv.';
     const ZENODO_DOI_PREFIX = '10.5281/zenodo.';
     const DATACITE_DOI_API = 'https://api.datacite.org/dois/';
+    // Seconds; the licence is fetched during Paper::save(), a slow BAOBAB must not block it
+    const BAOBAB_TIMEOUT = 10;
 
     /**
      * @param string|int $repoId
@@ -58,7 +60,8 @@ class Episciences_Paper_LicenceManager
         return in_array($repoId, [
                 Episciences_Repositories::ARXIV_REPO_ID,
                 Episciences_Repositories::ZENODO_REPO_ID,
-                Episciences_Repositories::ARCHE_ID
+                Episciences_Repositories::ARCHE_ID,
+                Episciences_Repositories::BAOBAB_REPO_ID
         ], true);
     }
 
@@ -149,7 +152,10 @@ class Episciences_Paper_LicenceManager
     public static function getLicenceFromBaobab(string $identifier): string
     {
         try {
-            $json = Episciences_Tools::callApi(Episciences_Repositories_BAOBAB_Hooks::API_RECORDS_URL . '/' . $identifier);
+            $json = Episciences_Tools::callApi(
+                Episciences_Repositories_BAOBAB_Hooks::API_RECORDS_URL . '/' . $identifier,
+                ['headers' => ['Content-type' => 'application/json'], 'timeout' => self::BAOBAB_TIMEOUT]
+            );
         } catch (GuzzleException $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
             return '';

@@ -2785,38 +2785,17 @@ class Episciences_Submit
     }
 
     /**
-     * @return array{0: string, 1: string, 2: int}|null [HAL id as found, HAL id
-     *         without its version suffix, version (0 when none)], or null when
-     *         the value carries no HAL id
-     */
-    private static function parseHalIdentifier(string $value): ?array
-    {
-        $halMatch = Episciences_Tools::getHalIdInString($value);
-
-        if (empty($halMatch)) {
-            return null;
-        }
-
-        $halId = $halMatch[0];
-        $versionSuffix = $halMatch[1] ?? '';
-
-        if ($versionSuffix === '') {
-            return [$halId, $halId, 0];
-        }
-
-        return [$halId, substr($halId, 0, -strlen($versionSuffix)), (int)ltrim($versionSuffix, 'v')];
-    }
-
-    /**
      * Stores a HAL link the way a manual addition does
      * (AdministratelinkeddataController::addldAction()): the bare HAL id rather
      * than the URL, with HAL's full citation as metadata when HAL returns one.
+     * A software deposit (HAL docType_s, or the related identifier's
+     * resource_type) is stored as software, with its SWHID when HAL has one.
      *
      * @param array<string, mixed> $options
      */
-    private static function addHalDataset(int $docId, string $value, array $options): int
+    private static function addHalDataset(int $docId, string $value, string $resourceType, array $options): int
     {
-        $parsedHalId = self::parseHalIdentifier($value);
+        $parsedHalId = Episciences_Tools::splitHalIdentifier($value);
 
         if ($parsedHalId === null) {
             return 0;
@@ -2824,19 +2803,33 @@ class Episciences_Submit
 
         [$halId, $halIdWithoutVersion, $version] = $parsedHalId;
 
-        if (Episciences_Paper_DatasetsManager::findByValue($docId, $halId) !== null) {
-            return 0;
+        // The same HAL document may already be linked with or without its version suffix
+        foreach (array_unique([$halId, $halIdWithoutVersion]) as $storedValue) {
+            if (Episciences_Paper_DatasetsManager::findByValue($docId, $storedValue) !== null) {
+                return 0;
+            }
         }
 
         $metadataId = null;
         $citation = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($halIdWithoutVersion, $version));
+        $halDoc = $citation->response->docs[0] ?? null;
 
-        if (!empty($citation->response->docs[0]->citationFull_s)) {
+        $isSoftware = strcasecmp($resourceType, Episciences_Paper_Dataset::SOFTWARE_CODE) === 0
+            || ($halDoc->docType_s ?? '') === 'SOFTWARE';
+
+        $metatext = [];
+
+        if (!empty($halDoc->citationFull_s)) {
+            $metatext['citationFull'] = $halDoc->citationFull_s;
+        }
+
+        if ($isSoftware && !empty($halDoc->swhidId_s[0])) {
+            $metatext['swhidId'] = $halDoc->swhidId_s[0];
+        }
+
+        if ($metatext !== []) {
             $datasetMetadata = new Episciences_Paper_DatasetMetadata();
-            $datasetMetadata->setMetatext(json_encode(
-                ['citationFull' => $citation->response->docs[0]->citationFull_s],
-                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-            ));
+            $datasetMetadata->setMetatext(json_encode($metatext, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
             $metadataId = Episciences_Paper_DatasetsMetadataManager::insert([$datasetMetadata]);
         }
 
@@ -2844,7 +2837,7 @@ class Episciences_Submit
             $docId,
             Episciences_Paper_Dataset::HAL_CODE,
             $halId,
-            Episciences_Paper_Dataset::PUBLICATION,
+            $isSoftware ? Episciences_Paper_Dataset::SOFTWARE_CODE : Episciences_Paper_Dataset::PUBLICATION,
             $metadataId,
             $options
         );
@@ -2945,7 +2938,7 @@ class Episciences_Submit
                     $value = Episciences_Tools::cleanHandle($value);
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
                 } elseif ($typeLd === Episciences_Paper_Dataset::HAL_CODE) {
-                    $affectedRows += self::addHalDataset($docId, $value, $options);
+                    $affectedRows += self::addHalDataset($docId, $value, (string)($datasets['resource_type'] ?? ''), $options);
                 }
                 if (!empty($noProcessed)) {
                     $affectedRows += $affectedRows = self::forceAddingDatasets($current, $noProcessed);

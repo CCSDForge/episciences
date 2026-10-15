@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 - BAOBAB submissions now store the licence, the ROR of affiliations (including an organisational author's own ROR) and the translated abstracts filed as other descriptions.
-- Links to HAL found in a repository's related identifiers are now stored as linked publications.
+- Links to HAL found in a repository's related identifiers are now stored as linked publications, or as linked software for a HAL software deposit.
 - BAOBAB submissions accept an ARK resolver URL (e.g. `https://pidslink.ren.africa/ark:/50962/...`) as well as a bare ARK or a record URL.
 
 ### Changed
