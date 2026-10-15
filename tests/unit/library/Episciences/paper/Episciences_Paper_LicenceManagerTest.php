@@ -137,6 +137,7 @@ final class Episciences_Paper_LicenceManagerTest extends TestCase {
             'ArXiv - rate limit' => [Episciences_Repositories::ARXIV_REPO_ID, true],
             'Zenodo - rate limit' => [Episciences_Repositories::ZENODO_REPO_ID, true],
             'ARCHE - rate limit' => [Episciences_Repositories::ARCHE_ID, true],
+            'BAOBAB - no rate limit, fetched inside Paper::save()' => [Episciences_Repositories::BAOBAB_REPO_ID, false],
             'Unknown repo - no rate limit' => ['999', false],
         ];
     }

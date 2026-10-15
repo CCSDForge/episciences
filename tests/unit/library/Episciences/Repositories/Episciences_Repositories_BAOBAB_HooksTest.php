@@ -312,7 +312,10 @@ XML;
 
     public function testExtractFromDataCiteBuildsExpectedBody(): void
     {
-        [$body, $relatedIdentifiers] = $this->invokePrivate('extractFromDataCite', [self::DATACITE_FIXTURE, 'en']);
+        $dataCite = $this->invokePrivate('parseDataCite', [self::DATACITE_FIXTURE]);
+        self::assertInstanceOf(\SimpleXMLElement::class, $dataCite);
+
+        [$body, $relatedIdentifiers] = $this->invokePrivate('extractFromDataCite', [$dataCite, 'en']);
 
         self::assertSame('A preprint about baobab trees', $body['title'][0]['value']);
         self::assertSame('en', $body['title'][0]['language']);
@@ -339,18 +342,15 @@ XML;
         self::assertSame('10.5281/zenodo.15868466', $relatedIdentifiers[1]['identifier']);
     }
 
-    public function testExtractFromDataCiteThrowsOnInvalidXml(): void
+    public function testParseDataCiteRestoresLibxmlErrorMode(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-
-        set_error_handler(static function () {
-            return true; // silence the libxml warning
-        });
+        $previous = libxml_use_internal_errors(false);
 
         try {
-            $this->invokePrivate('extractFromDataCite', ['not valid xml', 'en']);
+            self::assertNull($this->invokePrivate('parseDataCite', ['not valid xml']));
+            self::assertFalse(libxml_use_internal_errors(), 'libxml error mode must be restored');
         } finally {
-            restore_error_handler();
+            libxml_use_internal_errors($previous);
         }
     }
 
@@ -760,10 +760,10 @@ XML;
     }
 
     // =========================================================================
-    // hasDataCiteResource() — an unusable OAI-PMH answer triggers the REST fallback
+    // parseDataCite() — an unusable OAI-PMH answer triggers the REST fallback
     // =========================================================================
 
-    public function testHasDataCiteResourceInOaiRecord(): void
+    public function testParseDataCiteAcceptsOaiRecord(): void
     {
         $xml = <<<'XML'
 <?xml version="1.0"?>
@@ -774,15 +774,15 @@ XML;
 </OAI-PMH>
 XML;
 
-        self::assertTrue($this->invokePrivate('hasDataCiteResource', [$xml]));
+        self::assertInstanceOf(\SimpleXMLElement::class, $this->invokePrivate('parseDataCite', [$xml]));
     }
 
     /**
      * @dataProvider unusableDataCiteProvider
      */
-    public function testHasDataCiteResourceRejectsUnusableAnswers(string $xml): void
+    public function testParseDataCiteRejectsUnusableAnswers(string $xml): void
     {
-        self::assertFalse($this->invokePrivate('hasDataCiteResource', [$xml]));
+        self::assertNull($this->invokePrivate('parseDataCite', [$xml]));
     }
 
     public static function unusableDataCiteProvider(): array
@@ -791,6 +791,28 @@ XML;
             'empty' => [''],
             'not XML' => ['<html>Server error'],
             'deleted record' => ['<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/"><GetRecord><record><header status="deleted"><identifier>oai:x</identifier></header></record></GetRecord></OAI-PMH>'],
+        ];
+    }
+
+    // =========================================================================
+    // fetchRecord() — only a record id reaches the API
+    // =========================================================================
+
+    /**
+     * @dataProvider notARecordIdProvider
+     */
+    public function testFetchRecordRejectsNonRecordIdWithoutCallingTheApi(string $identifier): void
+    {
+        self::assertNull(Episciences_Repositories_BAOBAB_Hooks::fetchRecord($identifier));
+    }
+
+    public static function notARecordIdProvider(): array
+    {
+        return [
+            'unresolved ARK' => ['ark:/50962/abc123'],
+            'path traversal' => ['../communities/x'],
+            'query string' => ['abc?q=1'],
+            'empty' => [''],
         ];
     }
 }

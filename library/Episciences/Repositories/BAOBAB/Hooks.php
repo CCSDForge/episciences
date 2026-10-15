@@ -37,6 +37,19 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     public const DATACITE_MIME_TYPE = 'application/vnd.datacite.datacite+xml';
     public const ROR_URL_PREFIX = 'https://ror.org/';
     public const ROR_URL_PREFIX_PATTERN = '#^(?:https?://)?(?:www\.)?ror\.org/#i';
+    // Seconds; every call runs inside an interactive request (submission, Paper::save())
+    public const API_TIMEOUT = 10;
+    // An InvenioRDM record id is a single URL path segment ("xkpt8-rjr81")
+    public const RECORD_ID_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9._-]*$/';
+
+    /**
+     * Last record fetched by fetchRecord(): the submission fetches it in
+     * hookApiRecords(), then Paper::save() needs it again for the licence.
+     * A single entry, so a batch over many records does not grow it.
+     *
+     * @var array{0: string, 1: array<string, mixed>}|null
+     */
+    private static ?array $lastRecord = null;
     public const ROR_ID_PATTERN = '/^0[a-hj-km-np-tv-z0-9]{6}[0-9]{2}$/';
     public const ARK_PATTERN = '#^(?:https?://[^/]+/)?(ark:/?\d+/[^?\#\s]+)#';
 
@@ -51,20 +64,16 @@ class Episciences_Repositories_BAOBAB_Hooks implements
             return [];
         }
 
-        $identifier = $hookParams[Episciences_Repositories_Common::META_IDENTIFIER];
+        $identifier = (string)$hookParams[Episciences_Repositories_Common::META_IDENTIFIER];
 
         try {
-            $json = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $identifier);
+            $json = self::fetchRecord($identifier);
         } catch (GuzzleException $e) {
             throw new Ccsd_Error($e->getMessage(), (int)$e->getCode());
         }
 
-        if ($json === false) {
+        if ($json === null) {
             throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
-        }
-
-        if (!is_array($json)) {
-            throw new Ccsd_Error('Unexpected API response format');
         }
 
         $data = $json;
@@ -77,14 +86,10 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         $relatedIdentifiers = [];
 
         $repoId = $hookParams['repoId'] ?? Episciences_Repositories::BAOBAB_REPO_ID;
-        $dataciteXml = self::fetchDataCite($repoId, $identifier);
+        $dataCite = self::fetchDataCite($repoId, $identifier);
 
-        if ($dataciteXml !== null) {
-            try {
-                [$body, $relatedIdentifiers] = self::extractFromDataCite($dataciteXml, $language);
-            } catch (InvalidArgumentException $e) {
-                Episciences_View_Helper_Log::log($e->getMessage());
-            }
+        if ($dataCite !== null) {
+            [$body, $relatedIdentifiers] = self::extractFromDataCite($dataCite, $language);
         }
 
         if (empty($body['title'])) {
@@ -290,6 +295,38 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     }
 
     /**
+     * REST JSON of a record, or null when the identifier is not a record id
+     * (e.g. an ARK left unresolved by hookCleanIdentifiers()) or the record does
+     * not exist.
+     *
+     * @return array<string, mixed>|null
+     * @throws GuzzleException
+     */
+    public static function fetchRecord(string $identifier): ?array
+    {
+        if (self::$lastRecord !== null && self::$lastRecord[0] === $identifier) {
+            return self::$lastRecord[1];
+        }
+
+        if (preg_match(self::RECORD_ID_PATTERN, $identifier) !== 1) {
+            return null;
+        }
+
+        $json = Episciences_Tools::callApi(
+            self::API_RECORDS_URL . '/' . rawurlencode($identifier),
+            ['headers' => ['Content-type' => 'application/json'], 'timeout' => self::API_TIMEOUT]
+        );
+
+        if (!is_array($json)) {
+            return null;
+        }
+
+        self::$lastRecord = [$identifier, $json];
+
+        return $json;
+    }
+
+    /**
      * @param array<string, mixed> $hookParams
      * @return array<string, mixed>
      * @throws Ccsd_Error
@@ -320,7 +357,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
             foreach ([$rights['props']['url'] ?? null, $rights['link'] ?? null] as $candidate) {
                 $url = trim((string)$candidate);
 
-                if (self::isSafeHttpUrl($url)) {
+                if (Episciences_Tools::isHttpUrl($url)) {
                     return $url;
                 }
             }
@@ -329,22 +366,13 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         return '';
     }
 
-    private static function isSafeHttpUrl(string $url): bool
-    {
-        $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
-
-        return in_array($scheme, ['http', 'https'], true)
-            && filter_var($url, FILTER_VALIDATE_URL) !== false
-            && preg_match('/["\'<>\s]/', $url) !== 1;
-    }
-
     /**
-     * DataCite XML of the record: over OAI-PMH when metadata_sources.base_url is
-     * set, otherwise (or if OAI-PMH fails or returns no DataCite resource, e.g. a
-     * deleted record) through the REST API's content negotiation, which serves
+     * DataCite metadata of the record: over OAI-PMH when metadata_sources.base_url
+     * is set, otherwise (or if OAI-PMH fails or returns no DataCite resource, e.g.
+     * a deleted record) through the REST API's content negotiation, which serves
      * the same InvenioRDM serializer.
      */
-    private static function fetchDataCite(int|string $repoId, string $identifier): ?string
+    private static function fetchDataCite(int|string $repoId, string $identifier): ?SimpleXMLElement
     {
         $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
         $oaiIdentifier = Episciences_Repositories::getIdentifier($repoId, $identifier);
@@ -352,9 +380,10 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         if ($baseUrl !== null && $baseUrl !== '' && $oaiIdentifier !== null) {
             try {
                 $xml = Episciences_Repositories_Common::getRecord($baseUrl, $oaiIdentifier, 'datacite');
+                $dataCite = is_string($xml) ? self::parseDataCite($xml) : null;
 
-                if (is_string($xml) && self::hasDataCiteResource($xml)) {
-                    return $xml;
+                if ($dataCite !== null) {
+                    return $dataCite;
                 }
             } catch (Ccsd_Error $e) {
                 Episciences_View_Helper_Log::log($e->getMessage());
@@ -363,34 +392,40 @@ class Episciences_Repositories_BAOBAB_Hooks implements
 
         try {
             $xml = Episciences_Tools::callApi(
-                self::API_RECORDS_URL . '/' . $identifier,
-                ['headers' => ['Accept' => self::DATACITE_MIME_TYPE]]
+                self::API_RECORDS_URL . '/' . rawurlencode($identifier),
+                ['headers' => ['Accept' => self::DATACITE_MIME_TYPE], 'timeout' => self::API_TIMEOUT]
             );
         } catch (GuzzleException $e) {
             Episciences_View_Helper_Log::log($e->getMessage());
             return null;
         }
 
-        return is_string($xml) && self::hasDataCiteResource($xml) ? $xml : null;
+        return is_string($xml) ? self::parseDataCite($xml) : null;
     }
 
-    private static function hasDataCiteResource(string $xml): bool
+    /**
+     * Parses an OAI-PMH answer or a bare DataCite document, with the "datacite"
+     * prefix registered. Null when the XML is unusable or carries no DataCite
+     * resource.
+     */
+    private static function parseDataCite(string $xml): ?SimpleXMLElement
     {
         if (trim($xml) === '') {
-            return false;
+            return null;
         }
 
-        libxml_use_internal_errors(true);
+        $previousUseErrors = libxml_use_internal_errors(true);
         $document = simplexml_load_string($xml);
         libxml_clear_errors();
+        libxml_use_internal_errors($previousUseErrors);
 
         if ($document === false) {
-            return false;
+            return null;
         }
 
         $document->registerXPathNamespace('datacite', self::DATACITE_NS);
 
-        return !empty($document->xpath('//datacite:resource'));
+        return empty($document->xpath('//datacite:resource')) ? null : $document;
     }
 
     /**
@@ -416,7 +451,10 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         $query = sprintf('pids.ark.identifier:"%s"', $normalizedArk);
 
         try {
-            $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '?q=' . urlencode($query));
+            $response = Episciences_Tools::callApi(
+                self::API_RECORDS_URL . '?q=' . urlencode($query),
+                ['headers' => ['Content-type' => 'application/json'], 'timeout' => self::API_TIMEOUT]
+            );
         } catch (GuzzleException $e) {
             return null;
         }
@@ -436,25 +474,15 @@ class Episciences_Repositories_BAOBAB_Hooks implements
 
     /**
      * Compiles the Dublin Core body and the raw related identifiers from the
-     * DataCite XML obtained over OAI-PMH. The document uses a default
+     * DataCite document returned by fetchDataCite(). It uses a default
      * namespace (no "datacite:" prefix at the source); registering the prefix on
      * our side is enough for the xpaths below to resolve regardless.
      *
+     * @param SimpleXMLElement $metadata as returned by parseDataCite()
      * @return array{0: array<string, mixed>, 1: array<int, array<string, string>>}
-     * @throws InvalidArgumentException if the XML cannot be parsed
      */
-    private static function extractFromDataCite(string $xmlString, string $language): array
+    private static function extractFromDataCite(SimpleXMLElement $metadata, string $language): array
     {
-        libxml_use_internal_errors(true);
-        $metadata = simplexml_load_string($xmlString);
-        libxml_clear_errors();
-
-        if ($metadata === false) {
-            throw new InvalidArgumentException('Invalid DataCite XML');
-        }
-
-        $metadata->registerXPathNamespace('datacite', self::DATACITE_NS);
-
         $titles = Episciences_Repositories_Common::extractMultilingualContent($metadata, '//datacite:titles/datacite:title', $language);
         $subjects = Episciences_Repositories_Common::extractMultilingualContent($metadata, '//datacite:subjects/datacite:subject', $language);
         $descriptions = self::extractDescriptions($metadata, $language);
