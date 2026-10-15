@@ -36,6 +36,7 @@ class Episciences_Paper_LicenceManager
             Episciences_Repositories::ARXIV_REPO_ID => self::getDataciteLicence(self::ARXIV_DOI_PREFIX . $identifier),
             Episciences_Repositories::ZENODO_REPO_ID => self::getDataciteLicence(self::ZENODO_DOI_PREFIX . $identifier),
             Episciences_Repositories::ARCHE_ID => self::getLicenceFromArcheDatacite($identifier),
+            Episciences_Repositories::BAOBAB_REPO_ID => self::getLicenceFromBaobab($identifier),
             default => ''
         };
 
@@ -135,6 +136,30 @@ class Episciences_Paper_LicenceManager
         }
 
         return self::cleanLicence($license);
+    }
+
+
+    /**
+     * BAOBAB (InvenioRDM) exposes the licence in its REST JSON; no DataCite DOI
+     * exists to query the DataCite API with, unlike Zenodo.
+     *
+     * @param string $identifier the InvenioRDM record id
+     * @return string
+     */
+    public static function getLicenceFromBaobab(string $identifier): string
+    {
+        try {
+            $json = Episciences_Tools::callApi(Episciences_Repositories_BAOBAB_Hooks::API_RECORDS_URL . '/' . $identifier);
+        } catch (GuzzleException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return '';
+        }
+
+        if (!is_array($json)) {
+            return '';
+        }
+
+        return self::cleanLicence(Episciences_Repositories_BAOBAB_Hooks::extractLicenceUrl($json));
     }
 
 
@@ -263,6 +288,12 @@ class Episciences_Paper_LicenceManager
             $result = [
                     'licence' => $callArrayResp,
                     'sourceId' => Episciences_Repositories::ARCHE_ID,
+                    'cacheData' => $callArrayResp
+            ];
+        } elseif ($repoId === Episciences_Repositories::BAOBAB_REPO_ID) {
+            $result = [
+                    'licence' => $callArrayResp,
+                    'sourceId' => Episciences_Repositories::BAOBAB_REPO_ID,
                     'cacheData' => $callArrayResp
             ];
         }

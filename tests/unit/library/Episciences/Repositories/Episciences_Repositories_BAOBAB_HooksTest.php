@@ -340,6 +340,29 @@ XML;
     // extractDescriptions() — Abstract preferred, falls back to any description
     // =========================================================================
 
+    public function testExtractDescriptionsKeepsTranslatedAbstractFromOtherDescription(): void
+    {
+        $xml = <<<'XML'
+<?xml version="1.0"?>
+<resource xmlns="http://datacite.org/schema/kernel-4">
+    <descriptions>
+        <description descriptionType="Abstract">Résumé en français</description>
+        <description descriptionType="Other" xml:lang="eng">English abstract</description>
+        <description descriptionType="TechnicalInfo">Notes techniques</description>
+    </descriptions>
+</resource>
+XML;
+        $metadata = simplexml_load_string($xml);
+        $metadata->registerXPathNamespace('datacite', Episciences_Repositories_BAOBAB_Hooks::DATACITE_NS);
+
+        $result = $this->invokePrivate('extractDescriptions', [$metadata, 'fr']);
+
+        self::assertSame([
+            ['value' => 'Résumé en français', 'language' => 'fr'],
+            ['value' => 'English abstract', 'language' => 'en'],
+        ], $result);
+    }
+
     public function testExtractDescriptionsFallsBackToDocumentLanguage(): void
     {
         $xml = <<<'XML'
@@ -406,6 +429,99 @@ XML;
         self::assertSame([['name' => 'WACREN']], $authors[0]['affiliation']);
     }
 
+    public function testExtractAuthorsFromJsonKeepsRorOfVocabularyAffiliation(): void
+    {
+        $creators = [
+            [
+                'person_or_org' => ['given_name' => 'Omo', 'family_name' => 'Oaiya'],
+                'affiliations' => [
+                    [
+                        'id' => '006rqpt26',
+                        'name' => 'West and Central African Research and Education Network',
+                        'identifiers' => [
+                            ['identifier' => '006rqpt26', 'scheme' => 'ror'],
+                            ['identifier' => 'grid.463700.6', 'scheme' => 'grid'],
+                        ],
+                    ],
+                    ['name' => 'UbuntuNet Alliance'],
+                ],
+            ],
+        ];
+
+        [, $authors] = $this->invokePrivate('extractAuthorsFromJson', [$creators]);
+
+        self::assertSame([
+            [
+                'name' => 'West and Central African Research and Education Network',
+                'id' => [['id' => 'https://ror.org/006rqpt26', 'id-type' => 'ROR']],
+            ],
+            ['name' => 'UbuntuNet Alliance'],
+        ], $authors[0]['affiliation']);
+    }
+
+    public function testExtractAuthorsFromJsonFallsBackToBareAffiliationIdForRor(): void
+    {
+        $creators = [
+            [
+                'person_or_org' => ['given_name' => 'Jane', 'family_name' => 'Doe'],
+                'affiliations' => [['id' => '006rqpt26', 'name' => 'WACREN']],
+            ],
+        ];
+
+        [, $authors] = $this->invokePrivate('extractAuthorsFromJson', [$creators]);
+
+        self::assertSame('https://ror.org/006rqpt26', $authors[0]['affiliation'][0]['id'][0]['id']);
+    }
+
+    public function testExtractAuthorsFromJsonKeepsOrganisationalCreatorName(): void
+    {
+        $creators = [
+            [
+                'person_or_org' => [
+                    'type' => 'organizational',
+                    'name' => 'West and Central African Research and Education Network',
+                    'identifiers' => [['identifier' => '006rqpt26', 'scheme' => 'ror']],
+                ],
+            ],
+        ];
+
+        [$creatorsDc, $authors] = $this->invokePrivate('extractAuthorsFromJson', [$creators]);
+
+        self::assertSame(['West and Central African Research and Education Network'], $creatorsDc);
+        self::assertSame('West and Central African Research and Education Network', $authors[0]['family']);
+        self::assertArrayNotHasKey('orcid', $authors[0]);
+    }
+
+    public function testExtractAuthorsFromJsonKeepsOrganisationalCreatorRorAsAffiliation(): void
+    {
+        $creators = [
+            [
+                'person_or_org' => ['given_name' => 'Belhamel', 'family_name' => 'Kamel'],
+                'affiliations' => [
+                    ['name' => 'Directory of Open Access Journals'],
+                    ['name' => 'University of Bejaia'],
+                ],
+            ],
+            [
+                'person_or_org' => [
+                    'type' => 'organizational',
+                    'name' => 'Directory of Open Access Journals',
+                    'identifiers' => [['identifier' => '05amyt365', 'scheme' => 'ror']],
+                ],
+            ],
+        ];
+
+        [, $authors] = $this->invokePrivate('extractAuthorsFromJson', [$creators]);
+
+        $doaj = [
+            'name' => 'Directory of Open Access Journals',
+            'id' => [['id' => 'https://ror.org/05amyt365', 'id-type' => 'ROR']],
+        ];
+
+        self::assertSame([$doaj, ['name' => 'University of Bejaia']], $authors[0]['affiliation']);
+        self::assertSame([$doaj], $authors[1]['affiliation']);
+    }
+
     public function testExtractAuthorsFromJsonWithoutOrcidNorAffiliation(): void
     {
         $creators = [
@@ -433,5 +549,78 @@ XML;
 
         self::assertSame([], $creatorsDc);
         self::assertSame([], $authors);
+    }
+
+    public function testFilterOutCommunityLinksRemovesSelfDepositLink(): void
+    {
+        $relatedIdentifiers = [
+            ['identifier' => 'https://baobab.wacren.net/uploads/zpsm4-76246', 'relation' => 'IsMetadataFor', 'resource_type' => 'dataset', 'scheme' => 'url'],
+            ['identifier' => 'https://baobab.wacren.net/uploads/other-record', 'relation' => 'IsMetadataFor', 'resource_type' => 'dataset', 'scheme' => 'url'],
+        ];
+
+        $result = $this->invokePrivate('filterOutCommunityLinks', [$relatedIdentifiers, 'zpsm4-76246']);
+
+        self::assertCount(1, $result);
+        self::assertSame('https://baobab.wacren.net/uploads/other-record', $result[0]['identifier']);
+    }
+
+    public function testFilterOutCommunityLinksRemovesSelfRecordLinkWithTrailingSlash(): void
+    {
+        $relatedIdentifiers = [
+            ['identifier' => 'https://baobab.wacren.net/records/zpsm4-76246/', 'relation' => 'IsIdenticalTo', 'resource_type' => 'dataset', 'scheme' => 'url'],
+            ['identifier' => 'https://hal.science/hal-05478157', 'relation' => 'Describes', 'resource_type' => 'dataset', 'scheme' => 'url'],
+        ];
+
+        $result = $this->invokePrivate('filterOutCommunityLinks', [$relatedIdentifiers, 'zpsm4-76246']);
+
+        self::assertSame(['https://hal.science/hal-05478157'], array_column($result, 'identifier'));
+    }
+
+    public function testExtractDescriptionsKeepsOnlyAbstractsWhenAllLanguagesCovered(): void
+    {
+        $xml = <<<'XML'
+<?xml version="1.0"?>
+<resource xmlns="http://datacite.org/schema/kernel-4">
+    <descriptions>
+        <description descriptionType="Abstract" xml:lang="en">Abstract</description>
+        <description descriptionType="Methods" xml:lang="en">Methods</description>
+    </descriptions>
+</resource>
+XML;
+        $metadata = simplexml_load_string($xml);
+        $metadata->registerXPathNamespace('datacite', Episciences_Repositories_BAOBAB_Hooks::DATACITE_NS);
+
+        $result = $this->invokePrivate('extractDescriptions', [$metadata, 'en']);
+
+        self::assertSame([['value' => 'Abstract', 'language' => 'en']], $result);
+    }
+
+    // =========================================================================
+    // extractLicenceUrl()
+    // =========================================================================
+
+    public function testExtractLicenceUrlFromVocabularyLicence(): void
+    {
+        $json = ['metadata' => ['rights' => [[
+            'id' => 'cc-by-4.0',
+            'props' => ['url' => 'https://creativecommons.org/licenses/by/4.0/', 'scheme' => 'spdx'],
+        ]]]];
+
+        self::assertSame('https://creativecommons.org/licenses/by/4.0/', Episciences_Repositories_BAOBAB_Hooks::extractLicenceUrl($json));
+    }
+
+    public function testExtractLicenceUrlFallsBackToCustomLicenceLink(): void
+    {
+        $json = ['metadata' => ['rights' => [[
+            'title' => ['en' => 'Custom licence'],
+            'link' => 'https://example.org/licence',
+        ]]]];
+
+        self::assertSame('https://example.org/licence', Episciences_Repositories_BAOBAB_Hooks::extractLicenceUrl($json));
+    }
+
+    public function testExtractLicenceUrlEmptyWithoutRights(): void
+    {
+        self::assertSame('', Episciences_Repositories_BAOBAB_Hooks::extractLicenceUrl(['metadata' => []]));
     }
 }

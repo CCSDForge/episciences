@@ -199,6 +199,24 @@ final class Episciences_Paper_LicenceManagerTest extends TestCase {
         $this->assertEquals('', $result);
     }
 
+    public function testExtractLicenceDataForBaobabUsesBaobabAsSource(): void
+    {
+        $method = self::$reflection->getMethod('extractLicenceData');
+        $method->setAccessible(true);
+
+        $result = $method->invoke(
+            null,
+            Episciences_Repositories::BAOBAB_REPO_ID,
+            'https://creativecommons.org/licenses/by/4.0'
+        );
+
+        self::assertSame([
+            'licence' => 'https://creativecommons.org/licenses/by/4.0',
+            'sourceId' => Episciences_Repositories::BAOBAB_REPO_ID,
+            'cacheData' => 'https://creativecommons.org/licenses/by/4.0',
+        ], $result);
+    }
+
     /**
      * getLicenceFromArcheDatacite() must stop when the XML cannot be parsed,
      * otherwise it would call a method on a false value. Verified at source
