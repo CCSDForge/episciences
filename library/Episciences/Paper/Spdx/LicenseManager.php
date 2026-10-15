@@ -138,7 +138,9 @@ class LicenseManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $query = self::allQuery('name');
         $query->where('code = ?', $code);
-        return $db?->fetchOne($query);
+        // fetchOne() returns false for an unknown code (or an empty license table)
+        $name = $db?->fetchOne($query);
 
+        return is_string($name) ? $name : null;
     }
 }
