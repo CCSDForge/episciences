@@ -356,7 +356,6 @@ class FileController extends DefaultController
             uid: $uid,
             review: $review,
             isSecretary: Episciences_Auth::isSecretary(),
-            isGuestEditor: Episciences_Auth::isGuestEditor(),
             isEditor: Episciences_Auth::isEditor(),
             isCopyEditor: Episciences_Auth::isCopyEditor(),
             isReportsVisibleToAuthor: $paper->isReportsVisibleToAuthor(),
