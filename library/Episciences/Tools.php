@@ -932,14 +932,16 @@ class Episciences_Tools
     /**
      * Name of a language in the interface language ("fr" displayed as
      * "Français" in French, "French" in English), for metadata language labels.
-     * Accepts ISO 639-1 and 639-2/3 codes; an unknown code is returned as is.
+     * Accepts ISO 639-1 and 639-2/3 codes, optionally followed by a script or
+     * region subtag ("fr-CA", "pt_BR"); an unknown code is returned as is.
      *
-     * @param string|null $langCode e.g. 'fr', 'eng'
+     * @param string|null $langCode e.g. 'fr', 'eng', 'fr-CA'
      * @param string|null $displayLocale defaults to the interface language
      */
     public static function getLanguageName(?string $langCode, ?string $displayLocale = null): string
     {
-        $code = strtolower(trim((string)$langCode));
+        $subtags = explode('_', str_replace('-', '_', trim((string)$langCode)));
+        $code = strtolower(array_shift($subtags));
 
         if ($code === '') {
             return '';
@@ -949,7 +951,8 @@ class Episciences_Tools
 
         try {
             if (Languages::exists($code)) {
-                $name = Languages::getName($code, $displayLocale);
+                // Symfony names known variants ("français canadien") and falls back to the base language otherwise
+                $name = Languages::getName(self::normalizeLanguageTag($code, $subtags), $displayLocale);
             } elseif (Languages::alpha3CodeExists($code)) {
                 $name = Languages::getAlpha3Name($code, $displayLocale);
             } else {
@@ -960,6 +963,20 @@ class Episciences_Tools
         }
 
         return mb_strtoupper(mb_substr($name, 0, 1)) . mb_substr($name, 1);
+    }
+
+    /**
+     * ICU form of a language tag: script in title case, region in upper case ("zh_Hant", "fr_CA").
+     *
+     * @param string[] $subtags
+     */
+    private static function normalizeLanguageTag(string $language, array $subtags): string
+    {
+        foreach (array_filter($subtags, static fn(string $subtag): bool => $subtag !== '') as $subtag) {
+            $language .= '_' . (strlen($subtag) === 4 ? ucfirst(strtolower($subtag)) : strtoupper($subtag));
+        }
+
+        return $language;
     }
 
     /**
