@@ -95,7 +95,7 @@ final class ReplacementLookupTest extends TestCase
     /**
      * @return array<string, array{int}>
      */
-    public static function newVersionOnRequestOnlyProvider(): array
+    public static function notReplacedInPlaceProvider(): array
     {
         return [
             'paper ready to publish' => [Episciences_Paper::STATUS_CE_READY_TO_PUBLISH],
@@ -103,8 +103,8 @@ final class ReplacementLookupTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('newVersionOnRequestOnlyProvider')]
-    public function testSubmissionFormPointsToTheNewVersionPageForAPaperNotReplacedInPlace(int $status): void
+    #[\PHPUnit\Framework\Attributes\DataProvider('notReplacedInPlaceProvider')]
+    public function testSubmissionFormReportsThePublicationInProgressForAPaperNotReplacedInPlace(int $status): void
     {
         $docId = $this->insertPaper(RVID, self::OWNER_UID, $status);
         $paper = Episciences_PapersManager::partialGet($docId, RVID);
@@ -114,9 +114,14 @@ final class ReplacementLookupTest extends TestCase
         $newer = $paper->manageNewVersionErrors(['version' => 2, 'isNewVersionOf' => false, 'rvId' => RVID]);
         $same = $paper->manageNewVersionErrors(['version' => 1, 'isNewVersionOf' => false, 'rvId' => RVID]);
 
+        // No new version has been requested by the journal: the author is not pointed to a new version page
         self::assertIsArray($newer);
         self::assertStringContainsString(
-            $translator->translate('Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, '),
+            $translator->translate(\Episciences_Submit::REPLACEMENT_ERROR_NOT_REPLACEABLE),
+            $newer['message']
+        );
+        self::assertStringNotContainsString(
+            $translator->translate('pour répondre à la demande de modification.'),
             $newer['message']
         );
         // A version that is not newer is still reported as already existing

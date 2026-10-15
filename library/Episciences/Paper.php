@@ -3970,10 +3970,8 @@ class Episciences_Paper
 
         $isMainSubmission = array_key_exists('isNewVersionOf', $options) && !$options['isNewVersionOf']; // first submission
         // The submission form only replaces a paper in place: a paper further in the publication process is not offered
+        // and is reported as such (no new version requested by the journal, so no new version page to point to)
         $isReplaceable = ($isMainSubmission && !$isEpiNotify) ? $this->canBeReplacedInPlace() : $this->canBeReplaced();
-        // Such a paper gets its new version through the new version page, like a revision
-        $isNewerVersionOnRequestOnly = !$isReplaceable && $this->canBeReplaced()
-            && isset($options['version']) && $options['version'] > $this->getVersion();
 
         // Base UI helpers
         $span = $isFromCli ? '' : '<span class="fas fa-exclamation-circle"></span>';
@@ -4077,7 +4075,6 @@ class Episciences_Paper
                     in_array($status, self::STATUS_WITH_EXPECTED_REVISION, true)
                     || in_array($status, self::All_STATUS_WAITING_FOR_FINAL_VERSION, true)
                     || $status === self::STATUS_OBSOLETE
-                    || $isNewerVersionOnRequestOnly
                 )
             ) {
 
