@@ -897,6 +897,10 @@ class Episciences_Submit
 
         $id = self::cleanIdentifier($id, $repoId);
 
+        if (self::isVersionSuffixedRepository($repoId)) {
+            self::extractVersionSuffix($id, $version);
+        }
+
         try {
             // Load hooks, version, identifier, paper
             $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', [
@@ -1074,6 +1078,27 @@ class Episciences_Submit
         }
 
         return $id;
+    }
+
+    /**
+     * HAL and arXiv identifiers may carry a version suffix (e.g. hal-01234567v4, 2310.02192v4).
+     */
+    private static function isVersionSuffixedRepository($repoId): bool
+    {
+        return Episciences_Repositories::isFromHalRepository((int)$repoId)
+            || Episciences_Repositories::getLabel($repoId) === 'arXiv';
+    }
+
+    /**
+     * Remove a trailing version suffix ("v4") from the identifier and use it as the document version.
+     * The suffix takes precedence over the version field, as the submission form does client-side.
+     */
+    private static function extractVersionSuffix(string &$id, ?float &$version): void
+    {
+        if (preg_match('/^(.+?)v(\d+)$/', $id, $matches)) {
+            $id = $matches[1];
+            $version = Episciences_Repositories_Common::normalizeVersion($matches[2]);
+        }
     }
 
     /**
