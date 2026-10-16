@@ -1422,7 +1422,9 @@ class Episciences_Submit
 
     /**
      * @param Episciences_Paper $paper
-     * @param array $datasets
+     * @param array<string, array<int|string, string|array{value: string, relation?: string}>> $datasets
+     *        values per type; a value is either a plain identifier or
+     *        ['value' => identifier, 'relation' => relation type]
      * @return int
      */
     public static function forceAddingDatasets(Episciences_Paper $paper, array $datasets = []): int
@@ -1441,13 +1443,16 @@ class Episciences_Submit
                 $code = Episciences_Paper_Dataset::UNDEFINED_CODE;
             }
 
-            $tmpData['relationship'] = $dataset['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+            $defaultRelationship = $dataset['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+            unset($dataset['relation']);
+
             $tmpData['code'] = $code;
             $tmpData['name'] = Episciences_Paper_Dataset::$_datasetsLabel[$code];
             $tmpData['link'] = Episciences_Paper_Dataset::$_datasetsLink[$code];
 
             foreach ($dataset as $value) {
-                $tmpData['value'] = $value;
+                $tmpData['relationship'] = is_array($value) ? ($value['relation'] ?? $defaultRelationship) : $defaultRelationship;
+                $tmpData['value'] = is_array($value) ? $value['value'] : $value;
                 $data[] = $tmpData;
             }
         }
@@ -2937,11 +2942,12 @@ class Episciences_Submit
                         $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $code, $idMetaDataLastId, $options);
 
                     } else {
-                        // forceAddingDatasets() expects an array of plain identifier
-                        // values per type (no 'relation' key, or it would itself be
-                        // iterated and inserted as a spurious dataset value): append,
-                        // don't overwrite, so failures don't lose siblings sharing $typeLd.
-                        $noProcessed[$typeLd][] = $value;
+                        // Each value carries its own relation type: append, don't
+                        // overwrite, so failures don't lose siblings sharing $typeLd.
+                        $noProcessed[$typeLd][] = [
+                            'value' => $value,
+                            'relation' => $options['relationship'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE,
+                        ];
                     }
                 } elseif ($typeLd === Episciences_Paper_Dataset::SOFTWARE_CODE) {
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
