@@ -567,4 +567,36 @@ XML;
         $invalidRecord = '<not-valid-xml';
         self::assertSame($invalidRecord, $method->invoke(null, $invalidRecord));
     }
+
+    // =========================================================================
+    // extractVersionSuffix() — private, tested via ReflectionMethod
+    // =========================================================================
+
+    /**
+     * @dataProvider versionSuffixProvider
+     */
+    public function testExtractVersionSuffix(string $id, ?float $version, string $expectedId, ?float $expectedVersion): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'extractVersionSuffix');
+        $method->setAccessible(true);
+
+        $method->invokeArgs(null, [&$id, &$version]);
+
+        self::assertSame($expectedId, $id);
+        self::assertSame($expectedVersion, $version);
+    }
+
+    public static function versionSuffixProvider(): array
+    {
+        return [
+            'HAL with suffix, no version' => ['hal-01234567v4', null, 'hal-01234567', 4.0],
+            'HAL with suffix overrides version field' => ['hal-01234567v4', 1.0, 'hal-01234567', 4.0],
+            'HAL without suffix keeps version' => ['hal-01234567', 2.0, 'hal-01234567', 2.0],
+            'arXiv new format with suffix' => ['2310.02192v12', 1.0, '2310.02192', 12.0],
+            'arXiv old format with suffix' => ['hep-th/9704188v2', null, 'hep-th/9704188', 2.0],
+            'arXiv without suffix' => ['2310.02192', null, '2310.02192', null],
+            'bare "v4" is not an identifier' => ['v4', 1.0, 'v4', 1.0],
+            'v without digits is kept' => ['hal-01234567v', 1.0, 'hal-01234567v', 1.0],
+        ];
+    }
 }
