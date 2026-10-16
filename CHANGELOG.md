@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - A paper whose repository lists related works is now reindexed when one of them is added, even when another one could not be resolved.
+- Fix identifier extraction from URLs pasted on the submission form: HAL pages with a path suffix (`/document`, `/file/...`), arXiv `/pdf/`, `/html/`, `www.` and old-style (`hep-th/9704188`) links, bioRxiv/medRxiv `/content/` links, Zenodo `/record/` and `/doi/` links and IACR ePrint `.pdf` links now fill the identifier field with the repository identifier and the version field with a number (the URL version, `1` if the URL gives none). A version typed by the author is no longer cleared when the identifier has no version suffix, and `v0` is no longer read as a version (`public/js/submit/identifier.js`).
 - BAOBAB submissions no longer lose their abstract, keywords and dates when OAI-PMH is not configured or fails: the DataCite record is then fetched from the REST API.
 - BAOBAB links from a record to its own deposit page are no longer considered as related works.
 - Removing the chief editor role of a user who stays editor (or the reverse) no longer disables their paper assignments as editor.

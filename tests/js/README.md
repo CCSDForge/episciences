@@ -53,12 +53,12 @@ See `.github/workflows/` for CI configuration.
   - Tests performance and security (ReDoS protection)
   - 17 test cases covering edge cases and real-world examples
 
+- `submitIdentifier.test.js` - Tests for `public/js/submit/identifier.js` (imported directly, no copy)
+  - `SubmitIdentifier.parse()` - Extracts the identifier and the version from a pasted identifier or URL
+  - Covers HAL, arXiv, bioRxiv/medRxiv, Zenodo, IACR ePrint, handle, BAOBAB and Dataverse URLs, direct identifiers
+
 - `submitFunctions.test.js` - Tests for submit form processing functions
-  - `removeVersionFromIdentifier()` - Extracts version numbers from identifiers (7 tests)
-  - `processUrlIdentifier()` - Processes URLs and extracts identifiers (18 tests)
   - `setPlaceholder()` - Sets form placeholder text based on repository type (8 tests)
-  - Tests all example identifiers: ArXiv, HAL, Dataverse URLs, direct identifiers
-  - Covers error handling, edge cases, and real-world scenarios
 
 - `checkDataverse.test.js` - Tests for dataverse repository detection
   - `checkDataverse()` - Async function that checks if repository is Dataverse type (13 tests)
