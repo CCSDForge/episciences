@@ -43,7 +43,7 @@ final class Episciences_Mail_ReminderTest extends TestCase
 
     protected function tearDown(): void
     {
-        // reviewSettings is set by some tests: do not leak it to the following ones
+        // reviewSettings is set by a test: do not leak it to the following ones
         if (\Zend_Registry::isRegistered('reviewSettings')) {
             \Zend_Registry::getInstance()->offsetUnset('reviewSettings');
         }
@@ -816,7 +816,7 @@ final class Episciences_Mail_ReminderTest extends TestCase
         $supervisors = [1 => $this->createSupervisorMock(1, 'chief@example.com')];
         $this->setPrivateProperty($reminder, '_supervisorsCache', $supervisors);
         // conflicts of interest disabled: no database access in keepOnlyUsersWithoutConflict()
-        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => 0]);
+        $this->setPrivateProperty($reminder, '_journalSettingsCache', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => 0]);
 
         $paper = $this->createMock(\Episciences_Paper::class);
         $paper->method('getDocid')->willReturn(7);
@@ -901,7 +901,6 @@ final class Episciences_Mail_ReminderTest extends TestCase
 
     public function testCoiDisabledKeepsAllSupervisorsWithoutQueryingConflicts(): void
     {
-        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => 0]);
         $adapter = $this->useMockAdapter();
         $adapter->expects($this->never())->method('fetchCol');
 
@@ -910,14 +909,37 @@ final class Episciences_Mail_ReminderTest extends TestCase
             2 => $this->createSupervisorMock(2, 'secretary@example.com'),
         ];
 
-        $context = $this->loadSupervisorFilterContext($supervisors);
+        $context = $this->loadSupervisorFilterContext($supervisors, 0);
 
         $this->assertSame([1, 2], array_keys($context['supervisors']));
     }
 
+    public function testJournalSettingsOfTheReminderTakePrecedenceOverTheRegistry(): void
+    {
+        // settings left in the registry by another journal must not be used
+        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => 1]);
+        $adapter = $this->useMockAdapter();
+        $adapter->expects($this->never())->method('fetchCol');
+
+        $context = $this->loadSupervisorFilterContext([
+            1 => $this->createSupervisorMock(1, 'chief@example.com'),
+        ], 0);
+
+        $this->assertSame([1], array_keys($context['supervisors']));
+    }
+
+    public function testSetRvidResetsJournalSettings(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+        $this->setPrivateProperty($reminder, '_journalSettingsCache', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => 1]);
+
+        $reminder->setRvid(2);
+
+        $this->assertNull($this->getPrivateProperty($reminder, '_journalSettingsCache'));
+    }
+
     public function testCoiEnabledKeepsOnlySupervisorsWhoDeclaredNoConflictOnThePaper(): void
     {
-        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => 1]);
         $wheres = [];
         // only supervisor 1 answered "no": 2 declared a conflict, 3 answered "later", 4 did not answer
         $this->useMockAdapter([1], $wheres);
@@ -929,7 +951,7 @@ final class Episciences_Mail_ReminderTest extends TestCase
             4 => $this->createSupervisorMock(4, 'undeclared@example.com'),
         ];
 
-        $context = $this->loadSupervisorFilterContext($supervisors, 70);
+        $context = $this->loadSupervisorFilterContext($supervisors, 1, 70);
 
         $this->assertSame([1], array_keys($context['supervisors']));
         // the query is restricted to the "no" answers given on this paper
@@ -940,15 +962,42 @@ final class Episciences_Mail_ReminderTest extends TestCase
 
     public function testCoiEnabledWithoutAnyNoConflictAnswerKeepsNoSupervisor(): void
     {
-        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => 1]);
         $this->useMockAdapter([]);
 
         $context = $this->loadSupervisorFilterContext([
             1 => $this->createSupervisorMock(1, 'chief@example.com'),
-        ]);
+        ], 1);
 
         $this->assertSame([], $context['supervisors']);
         // no supervisor left: the co-authors are not loaded
+        $this->assertSame([], $context['coAuthorUids']);
+    }
+
+    public function testCoAuthorLookupFailureKeepsNoSupervisor(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+        $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
+        $this->setPrivateProperty($reminder, '_supervisorsCache', [
+            1 => $this->createSupervisorMock(1, 'chief@example.com'),
+        ]);
+        $this->setPrivateProperty($reminder, '_journalSettingsCache', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => 0]);
+
+        $paper = $this->createMock(\Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(7);
+        $paper->method('getPaperid')->willReturn(7);
+        $paper->method('getUid')->willReturn(100);
+        $paper->method('getCoAuthors')->willThrowException(new \Zend_Db_Statement_Exception('lookup failed'));
+
+        // trigger_error() would be turned into an exception by PHPUnit
+        set_error_handler(static fn(): bool => true, E_USER_NOTICE);
+        try {
+            $context = $this->invokePrivateMethod($reminder, 'getSupervisorFilterContext', [$paper]);
+        } finally {
+            restore_error_handler();
+        }
+
+        // co-authors unknown: a supervisor who is also a co-author could not be excluded
+        $this->assertSame([], $context['supervisors']);
         $this->assertSame([], $context['coAuthorUids']);
     }
 
@@ -957,7 +1006,6 @@ final class Episciences_Mail_ReminderTest extends TestCase
      */
     public function testAuthorCoAuthorAndReviewerAreExcludedEvenWithoutConflict(int $isCoiEnabled): void
     {
-        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => $isCoiEnabled]);
         // all of them declared "no conflict" (ignored when COI is disabled)
         $this->useMockAdapter([1, 100, 50, 200]);
 
@@ -969,6 +1017,7 @@ final class Episciences_Mail_ReminderTest extends TestCase
             50 => $this->createSupervisorMock(50, 'coauthor@example.com'),
             200 => $this->createSupervisorMock(200, 'reviewer@example.com'),
         ]);
+        $this->setPrivateProperty($reminder, '_journalSettingsCache', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => $isCoiEnabled]);
 
         $paper = $this->createMock(\Episciences_Paper::class);
         $paper->method('getDocid')->willReturn(7);
@@ -1171,11 +1220,12 @@ final class Episciences_Mail_ReminderTest extends TestCase
     }
 
     /** Supervisor filter context of a paper written by user 100 with co-author 50. */
-    private function loadSupervisorFilterContext(array $supervisors, int $paperId = 7): array
+    private function loadSupervisorFilterContext(array $supervisors, int $isCoiEnabled, int $paperId = 7): array
     {
         $reminder = new Episciences_Mail_Reminder();
         $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
         $this->setPrivateProperty($reminder, '_supervisorsCache', $supervisors);
+        $this->setPrivateProperty($reminder, '_journalSettingsCache', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => $isCoiEnabled]);
 
         $paper = $this->createMock(\Episciences_Paper::class);
         $paper->method('getDocid')->willReturn($paperId);

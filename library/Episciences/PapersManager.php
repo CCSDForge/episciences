@@ -4630,16 +4630,17 @@ class Episciences_PapersManager
      * @param int $paperId
      * @param array $recipients
      * @param int|null $rvId journal used for role checks; required in CLI where the RVID constant is not defined
+     * @param array|null $journalSettings settings of the journal; read from the registry ('reviewSettings') when null
      * @return void
      */
-    public static function keepOnlyUsersWithoutConflict(int $paperId, array &$recipients = [], ?int $rvId = null): void
+    public static function keepOnlyUsersWithoutConflict(int $paperId, array &$recipients = [], ?int $rvId = null, ?array $journalSettings = null): void
     {
 
         $isCoiEnabled = false;
 
 
         try {
-            $journalSettings = Zend_Registry::get('reviewSettings');
+            $journalSettings ??= Zend_Registry::get('reviewSettings');
             $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
         } catch (Zend_Exception $e) {
             trigger_error($e->getMessage());

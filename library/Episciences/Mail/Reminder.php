@@ -100,6 +100,12 @@ class Episciences_Mail_Reminder
     private array $_supervisorFilterContextCache = [];
 
     /**
+     * Settings of the reminder's journal, loaded once per instance (reset by setRvid())
+     * @var array|null
+     */
+    private ?array $_journalSettingsCache = null;
+
+    /**
      * Episciences_Mail_Reminder constructor.
      * @param array|null $options
      * @throws Zend_Exception
@@ -421,6 +427,7 @@ class Episciences_Mail_Reminder
     public function setRvid($rvid): self
     {
         $this->_rvid = $rvid;
+        $this->_journalSettingsCache = null;
         return $this;
     }
 
@@ -1955,7 +1962,7 @@ class Episciences_Mail_Reminder
         if (!empty($supervisors)) {
 
             Episciences_PapersManager::keepOnlyUsersWithoutConflict((int)$paper->getPaperid(),
-                $supervisors, (int)$this->getRvid());
+                $supervisors, (int)$this->getRvid(), $this->getJournalSettings());
         }
 
         // co-authors are only needed to filter the remaining supervisors
@@ -1965,6 +1972,8 @@ class Episciences_Mail_Reminder
                 $coAuthorUids = array_keys($paper->getCoAuthors());
             } catch (Zend_Db_Statement_Exception $e) {
                 trigger_error($e->getMessage());
+                // co-authors unknown: no supervisor can be safely kept for this paper
+                $supervisors = [];
             }
         }
 
@@ -1973,6 +1982,27 @@ class Episciences_Mail_Reminder
             'coAuthorUids' => $coAuthorUids,
             'supervisors' => $supervisors,
         ];
+    }
+
+    /**
+     * Settings of the reminder's journal, loaded once per instance.
+     *
+     * @return array
+     */
+    private function getJournalSettings(): array
+    {
+        if ($this->_journalSettingsCache === null) {
+            $review = Episciences_ReviewsManager::find($this->getRvid());
+
+            if ($review) {
+                $review->loadSettings();
+                $this->_journalSettingsCache = $review->getSettings();
+            } else {
+                $this->_journalSettingsCache = [];
+            }
+        }
+
+        return $this->_journalSettingsCache;
     }
 
     /**

@@ -132,8 +132,6 @@ try {
         // journal settings
         $website = new Ccsd_Website_Common($review->getRvid(), ['sidField' => 'SID']);
         $review->loadSettings();
-        // read by Episciences_PapersManager::keepOnlyUsersWithoutConflict()
-        Zend_Registry::set('reviewSettings', $review->getSettings());
         // reminders already sent in this journal (key => recipient role), @see Episciences_Mail_Reminder::getDeduplicationKey()
         $sentKeys = [];
 
