@@ -180,7 +180,7 @@ class Episciences_Mail_Reminder
             return false;
         }
 
-        $constant_name = 'Episciences_Mail_TemplatesManager::TYPE_' . strtoupper(self::$_typeKey[$this->getType()] . '_' . $this->getRecipient() . '_version');
+        $constant_name = self::getTemplateConstantName($this->getType(), (string)$this->getRecipient());
         $cleanedConstName = str_replace('Episciences_Mail_TemplatesManager::', '', $constant_name);
 
         if (defined($constant_name)) {
@@ -1942,6 +1942,29 @@ class Episciences_Mail_Reminder
         }
 
         return $recipients;
+    }
+
+    /**
+     * Name of the TemplatesManager constant holding the default template of a reminder type for a recipient role.
+     * Chief editors and secretaries share the editor template when the reminder type has no version of its own.
+     *
+     * @param int $type
+     * @param string $recipient
+     * @return string
+     */
+    public static function getTemplateConstantName(int $type, string $recipient): string
+    {
+        $buildName = static fn(string $role): string => 'Episciences_Mail_TemplatesManager::TYPE_' . strtoupper(self::$_typeKey[$type] . '_' . $role . '_version');
+        $constantName = $buildName($recipient);
+
+        if (
+            !defined($constantName) &&
+            in_array($recipient, [Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_SECRETARY], true)
+        ) {
+            return $buildName(Episciences_Acl::ROLE_EDITOR);
+        }
+
+        return $constantName;
     }
 
     /**

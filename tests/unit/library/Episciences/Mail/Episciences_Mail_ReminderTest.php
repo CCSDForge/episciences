@@ -201,53 +201,66 @@ final class Episciences_Mail_ReminderTest extends TestCase
     // Template constants for supervisor roles
     // -------------------------------------------------------------------------
 
-    public function testSupervisorTemplateConstantsAreDefined(): void
+    public function testEveryMappedRecipientResolvesToADefinedTemplateConstant(): void
     {
-        $constants = [
-            'TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_CHIEF_EDITOR_VERSION',
-            'TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_SECRETARY_VERSION',
-            'TYPE_REMINDER_BEFORE_RATING_DEADLINE_CHIEF_EDITOR_VERSION',
-            'TYPE_REMINDER_BEFORE_RATING_DEADLINE_SECRETARY_VERSION',
-            'TYPE_REMINDER_AFTER_RATING_DEADLINE_CHIEF_EDITOR_VERSION',
-            'TYPE_REMINDER_AFTER_RATING_DEADLINE_SECRETARY_VERSION',
-        ];
-
-        foreach ($constants as $const) {
-            self::assertTrue(
-                defined("Episciences_Mail_TemplatesManager::$const"),
-                "Constant $const must be defined in TemplatesManager"
-            );
+        foreach (Episciences_Mail_Reminder::MAPPING_REMINDER_RECIPIENTS as $type => $roles) {
+            foreach ($roles as $role) {
+                $constantName = Episciences_Mail_Reminder::getTemplateConstantName($type, $role);
+                self::assertTrue(defined($constantName), "$constantName (type $type, $role) must be defined");
+            }
         }
     }
 
-    public function testSupervisorTemplateConstantsPointToEditorTemplates(): void
+    /**
+     * @dataProvider supervisorReviewReminderProvider
+     */
+    public function testSupervisorsShareTheEditorTemplateOfReviewReminders(int $type, string $role, string $editorTemplate): void
     {
-        // All supervisor versions should alias to the editor version
         self::assertSame(
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION,
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_CHIEF_EDITOR_VERSION
-        );
-        self::assertSame(
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION,
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_SECRETARY_VERSION
-        );
-        self::assertSame(
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION,
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_CHIEF_EDITOR_VERSION
-        );
-        self::assertSame(
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION,
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_SECRETARY_VERSION
-        );
-        self::assertSame(
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION,
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_CHIEF_EDITOR_VERSION
-        );
-        self::assertSame(
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION,
-            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_SECRETARY_VERSION
+            $editorTemplate,
+            constant(Episciences_Mail_Reminder::getTemplateConstantName($type, $role))
         );
     }
+
+    public static function supervisorReviewReminderProvider(): array
+    {
+        $cases = [];
+        $editorTemplates = [
+            Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION => Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION,
+            Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE => Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION,
+            Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE => Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION,
+        ];
+
+        foreach ($editorTemplates as $type => $template) {
+            foreach ([\Episciences_Acl::ROLE_CHIEF_EDITOR, \Episciences_Acl::ROLE_SECRETARY] as $role) {
+                $cases["type $type, $role"] = [$type, $role, $template];
+            }
+        }
+
+        return $cases;
+    }
+
+    public function testChiefEditorKeepsItsOwnTemplateWhenDefined(): void
+    {
+        self::assertSame(
+            'Episciences_Mail_TemplatesManager::TYPE_REMINDER_REVIEWED_ARTICLE_CHIEF_EDITOR_VERSION',
+            Episciences_Mail_Reminder::getTemplateConstantName(
+                Episciences_Mail_Reminder::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE, \Episciences_Acl::ROLE_CHIEF_EDITOR
+            )
+        );
+    }
+
+    public function testOtherRolesDoNotFallBackToTheEditorTemplate(): void
+    {
+        // no author version for this type: the missing template is reported, not replaced
+        self::assertSame(
+            'Episciences_Mail_TemplatesManager::TYPE_REMINDER_NOT_ENOUGH_REVIEWERS_AUTHOR_VERSION',
+            Episciences_Mail_Reminder::getTemplateConstantName(
+                Episciences_Mail_Reminder::TYPE_NOT_ENOUGH_REVIEWERS, \Episciences_Acl::ROLE_AUTHOR
+            )
+        );
+    }
+
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
