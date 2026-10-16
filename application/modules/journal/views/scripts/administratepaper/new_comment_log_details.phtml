@@ -196,8 +196,8 @@ $files = Episciences_Tools::isJson($attachments) ? (array)json_decode($attachmen
             $type = $log['detail']['comment']['type'];
             $docId = $log['detail']['comment']['docid'];
 
-            if (in_array($type, [Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION])) { // tmp version comments
-                $attachmentUrl = 'tmp_files/' . $docId . '/' . $file;
+            if (in_array($type, [Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION])) { // tmp version comments: files stored by paper
+                $attachmentUrl = 'tmp_files/' . ($log['paperid'] ?? $docId) . '/' . $file;
             } elseif (!in_array($type, array_merge(Episciences_CommentsManager::$_copyEditingRequestTypes, Episciences_CommentsManager::$_copyEditingAnswerTypes))) { //other comments
                 $attachmentUrl = 'docfiles/comments/' . $docId . '/' . $file;
 
