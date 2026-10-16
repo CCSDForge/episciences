@@ -868,6 +868,41 @@ final class Episciences_Mail_ReminderTest extends TestCase
         $this->assertSame('Title', $recipients[0]['tags'][\Episciences_Mail_Tags::TAG_ARTICLE_TITLE]);
     }
 
+    public function testSupervisorsReceiveThePaperManagementLinkInsteadOfTheInvitationLink(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+        $reminder->setRecipient(\Episciences_Acl::ROLE_CHIEF_EDITOR);
+        $this->setPrivateProperty($reminder, '_supervisorFilterContextCache', [7 => [
+            'authorUid' => 100,
+            'coAuthorUids' => [],
+            'supervisors' => [1 => $this->createSupervisorMock(1, 'chief@example.com')],
+        ]]);
+
+        $paper = $this->createMock(\Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(7);
+        $paper->method('getTitle')->willReturn('Title');
+
+        $invitationLink = 'https://journal.example.org/reviewer/invitation/id/3/lang/';
+        $localizedTags = static fn(string $lang): array => [
+            \Episciences_Mail_Tags::TAG_INVITATION_LINK => $invitationLink . $lang . '/tmp/token',
+            \Episciences_Mail_Tags::TAG_INVITATION_DATE => 'date-' . $lang,
+        ];
+        $managementLink = 'https://journal.example.org/administratepaper/view/id/7';
+
+        // the shared tags are built with the reviewer's language and contain the personal link
+        $recipients = $this->invokePrivateMethod($reminder, 'getSupervisorRecipients', [
+            $paper, null, 'tmp-reviewer@example.com', 'Reviewer Name', $localizedTags('fr'), '2026-10-01',
+            Episciences_Mail_Reminder::withPaperManagementLink($localizedTags, $managementLink),
+        ]);
+
+        $this->assertCount(1, $recipients);
+        $tags = $recipients[0]['tags'];
+        $this->assertSame($managementLink, $tags[\Episciences_Mail_Tags::TAG_INVITATION_LINK]);
+        $this->assertStringNotContainsString('/tmp/', implode(' ', $tags));
+        // the other language-dependent tags are kept
+        $this->assertSame('date-' . $recipients[0]['lang'], $tags[\Episciences_Mail_Tags::TAG_INVITATION_DATE]);
+    }
+
     /**
      * @dataProvider emptyReviewerEmailProvider
      */
@@ -1191,6 +1226,8 @@ final class Episciences_Mail_ReminderTest extends TestCase
         $supervisor = $this->createMock(\Episciences_User::class);
         $supervisor->method('getUid')->willReturn($uid);
         $supervisor->method('getEmail')->willReturn($email);
+        // getLangueid(true) always returns a language (journal default as fallback)
+        $supervisor->method('getLangueid')->willReturn('en');
         return $supervisor;
     }
 

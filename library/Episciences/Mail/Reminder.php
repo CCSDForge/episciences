@@ -1205,8 +1205,11 @@ class Episciences_Mail_Reminder
             } elseif ($this->isSupervisorRecipient()) {
                 // a temporary reviewer has no account UID
                 $reviewerUid = (int)$data['TMP_USER'] === 1 ? null : (int)$data['UID'];
+                $supervisorTags = self::withPaperManagementLink(
+                    $localizedTags, $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
+                );
                 array_push($recipients, ...$this->getSupervisorRecipients(
-                    $paper, $reviewerUid, $user->getEmail(), $fullname, $tags, $data['INVITATION_DATE'], $localizedTags
+                    $paper, $reviewerUid, $user->getEmail(), $fullname, $tags, $data['INVITATION_DATE'], $supervisorTags
                 ));
             } else {
 
@@ -1939,6 +1942,21 @@ class Episciences_Mail_Reminder
         }
 
         return $recipients;
+    }
+
+    /**
+     * The invitation link is intended for the reviewer and the assigned editors only:
+     * supervisors receive the paper management page instead.
+     *
+     * @param callable $localizedTags fn(string $lang): array tags depending on the recipient's language
+     * @param string $paperManagementUrl
+     * @return callable fn(string $lang): array
+     */
+    public static function withPaperManagementLink(callable $localizedTags, string $paperManagementUrl): callable
+    {
+        return static fn(string $tagLang): array => array_merge($localizedTags($tagLang), [
+            Episciences_Mail_Tags::TAG_INVITATION_LINK => $paperManagementUrl,
+        ]);
     }
 
     /**
