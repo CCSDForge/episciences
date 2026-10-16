@@ -41,17 +41,19 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     public const API_TIMEOUT = 10;
     // An InvenioRDM record id is a single URL path segment ("xkpt8-rjr81")
     public const RECORD_ID_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9._-]*$/';
+    public const ROR_ID_PATTERN = '/^0[a-hj-km-np-tv-z0-9]{6}[0-9]{2}$/';
+    public const ARK_PATTERN = '#^(?:https?://[^/]+/)?(ark:/?\d+/[^?\#\s]+)#';
+    // Seconds; long enough to cover a submission, short enough for a long-running script not to reuse a stale record
+    public const RECORD_CACHE_TTL = 60;
 
     /**
      * Last record fetched by fetchRecord(): the submission fetches it in
      * hookApiRecords(), then Paper::save() needs it again for the licence.
      * A single entry, so a batch over many records does not grow it.
      *
-     * @var array{0: string, 1: array<string, mixed>}|null
+     * @var array{0: string, 1: array<string, mixed>, 2: int}|null [record id, REST JSON, fetch timestamp]
      */
     private static ?array $lastRecord = null;
-    public const ROR_ID_PATTERN = '/^0[a-hj-km-np-tv-z0-9]{6}[0-9]{2}$/';
-    public const ARK_PATTERN = '#^(?:https?://[^/]+/)?(ark:/?\d+/[^?\#\s]+)#';
 
     /**
      * @param array<string, mixed> $hookParams
@@ -304,7 +306,11 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      */
     public static function fetchRecord(string $identifier): ?array
     {
-        if (self::$lastRecord !== null && self::$lastRecord[0] === $identifier) {
+        if (
+            self::$lastRecord !== null
+            && self::$lastRecord[0] === $identifier
+            && time() - self::$lastRecord[2] < self::RECORD_CACHE_TTL
+        ) {
             return self::$lastRecord[1];
         }
 
@@ -321,7 +327,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
             return null;
         }
 
-        self::$lastRecord = [$identifier, $json];
+        self::$lastRecord = [$identifier, $json, time()];
 
         return $json;
     }
