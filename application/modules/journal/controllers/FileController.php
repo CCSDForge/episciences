@@ -147,6 +147,65 @@ class FileController extends DefaultController
     }
 
     /**
+     * The files of the temporary versions are shared by all the versions of the paper: the user must be allowed
+     * on one of them (see DocumentFilePolicy::isTemporaryVersionFileAllowed()).
+     */
+    protected function isAllowedToReadTemporaryVersionFile(int $paperId): bool
+    {
+        try {
+            $versions = $this->findPaperVersions($paperId);
+
+            if ($versions === []) {
+                return false;
+            }
+
+            $review = $this->findJournal();
+            $uid = (int)Episciences_Auth::getUid();
+
+            foreach ($versions as $paper) {
+                if (DocumentFilePolicy::isTemporaryVersionFileAllowed(
+                    $paper->isOwnerOrCoAuthor(),
+                    static::isConflictDetected($paper, $review),
+                    static::isEditorialStaff($paper, $review->getSettings()),
+                    array_key_exists($uid, $paper->getReviewers())
+                )) {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (Exception $e) {
+            // Refused, but not to be mistaken for a missing file
+            AppRegistry::getMonoLogger()?->warning('Temporary version file access check failed', [
+                'paperId' => $paperId,
+                'exception' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Versions of the paper in the current journal
+     *
+     * @return Episciences_Paper[]
+     * @throws Exception
+     */
+    protected function findPaperVersions(int $paperId): array
+    {
+        $versions = [];
+
+        foreach (Episciences_PapersManager::getDocIdsFromPaperId($paperId) as $row) {
+            $paper = $this->findPaper((int)$row['DOCID']);
+
+            if ($paper) {
+                $versions[] = $paper;
+            }
+        }
+
+        return $versions;
+    }
+
+    /**
      * @throws Exception
      */
     protected function findPaper(int $docId): ?Episciences_Paper
@@ -208,34 +267,25 @@ class FileController extends DefaultController
         $this->loadFile($baseDir, $relativePath, true);
     }
 
-    // Accès à la version temporaire d'un document
+    /**
+     * Files of the temporary versions of a paper: the route segment is the paper id, the files being stored by paper
+     */
     public function tmpAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $params = $this->getRequest()->getParams();
 
-        $docId = (int)$params['docId'];
-        $filename = $params['filename'];
-        $extension = $params['extension'];
-        $file = $filename . '.' . $extension;
+        $paperId = (int)($params['docId'] ?? 0);
+        $file = ($params['filename'] ?? '') . '.' . ($params['extension'] ?? '');
 
-        $this->loadFile(Episciences_PapersManager::buildDocumentPath($docId) . '/tmp', $file);
-    }
+        // 404 rather than 403: do not disclose that the file exists
+        if ($paperId <= 0 || !SafeFileName::isBare($file) || !$this->isAllowedToReadTemporaryVersionFile($paperId)) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
 
-    // Accès aux fichiers joints d'un document
-    public function paperAction(): void
-    {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-        $params = $this->getRequest()->getParams();
-
-        $docId = (int)$params['docId'];
-        $filename = $params['filename'];
-        $extension = $params['extension'];
-        $file = $filename . '.' . $extension;
-
-        $this->loadFile(Episciences_PapersManager::buildDocumentPath($docId) . '/ratings', $file);
+        $this->loadFile(Episciences_PapersManager::buildDocumentPath($paperId) . '/tmp', $file);
     }
 
     // access to a rating report attachment

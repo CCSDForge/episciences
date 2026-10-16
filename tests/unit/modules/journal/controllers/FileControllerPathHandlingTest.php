@@ -55,7 +55,7 @@ final class FileControllerPathHandlingTest extends TestCase
     {
         // Each read action must call loadFile() with a base directory argument
         // (REVIEW_FILES_PATH or a document directory), i.e. the 2-arg form.
-        foreach (['indexAction', 'tmpAction', 'paperAction'] as $action) {
+        foreach (['indexAction', 'tmpAction'] as $action) {
             $method = $this->extractMethod($action);
             self::assertMatchesRegularExpression(
                 '/loadFile\(\s*(REVIEW_FILES_PATH|Episciences_PapersManager::buildDocumentPath)/',
