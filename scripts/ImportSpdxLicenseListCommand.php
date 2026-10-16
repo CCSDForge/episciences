@@ -137,7 +137,8 @@ class ImportSpdxLicenseListCommand extends AbstractCommand
 CREATE TABLE IF NOT EXISTS `$tableName` (
   `code` varchar(64) COLLATE utf8mb4_general_ci NOT NULL PRIMARY KEY,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `recommended` tinyint(1) NOT NULL DEFAULT '0'
+  `recommended` tinyint(1) NOT NULL DEFAULT '0',
+  KEY `recommended` (`recommended`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 SQL;
     }
