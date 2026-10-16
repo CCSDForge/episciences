@@ -30,6 +30,41 @@ final class Episciences_Paper_Authors_HalTeiParserTest extends TestCase
     }
 
     /**
+     * Verify HAL middle names are kept in given_name and fullname, first_name holding the first forename
+     */
+    public function testGetAuthorInfoFromXmlTeiKeepsMiddleNames(): void
+    {
+        $personName = simplexml_load_string(
+            '<persName>
+                <forename type="first">Heath</forename>
+                <forename type="middle">B</forename>
+                <surname>Henninger</surname>
+            </persName>'
+        );
+
+        $result = Episciences_Paper_Authors_HalTeiParser::getAuthorInfoFromXmlTei($personName, []);
+
+        self::assertSame('Heath B', $result[0]['given_name']);
+        self::assertSame('Heath', $result[0]['first_name']);
+        self::assertSame('Henninger', $result[0]['family']);
+        self::assertSame('Heath B Henninger', $result[0]['fullname']);
+    }
+
+    /**
+     * Verify a persName without any forename yields empty given and first names
+     */
+    public function testGetAuthorInfoFromXmlTeiWithoutForename(): void
+    {
+        $personName = simplexml_load_string('<persName><surname>Collective</surname></persName>');
+
+        $result = Episciences_Paper_Authors_HalTeiParser::getAuthorInfoFromXmlTei($personName, []);
+
+        self::assertSame('', $result[0]['given_name']);
+        self::assertSame('', $result[0]['first_name']);
+        self::assertSame('Collective', $result[0]['fullname']);
+    }
+
+    /**
      * Verify multiple affiliations are extracted with numeric indices (bug fix regression test)
      *
      * This specifically tests the SimpleXML foreach fix: affiliations must be

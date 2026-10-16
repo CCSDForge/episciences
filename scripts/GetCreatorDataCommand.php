@@ -108,10 +108,14 @@ class GetCreatorDataCommand extends Command
             : 'OpenAIRE: anonymous fallback mode (no client credentials configured) — throttling at 60s/request'
         );
 
+        // Author corrections from HAL TEI, listed at the end in verbose mode: [paper ID, message]
+        $corrections = [];
+
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
             $docId   = (int) $value['DOCID'];
             $doiTrim = trim($value['DOI']);
+            Episciences_Paper_Authors_EnrichmentService::resetCorrections();
 
             if ($noCache && $doiTrim !== '') {
                 $cacheDir = dirname(APPLICATION_PATH) . '/cache/';
@@ -122,7 +126,9 @@ class GetCreatorDataCommand extends Command
             }
 
             $paper = Episciences_PapersManager::get($docId, false);
-            Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
+            if (!$dryRun) {
+                Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
+            }
 
             if ($doiTrim !== '' && !$dryRun) {
                 $response = $oaClient->fetchPublication($doiTrim, $paperId);
@@ -137,35 +143,12 @@ class GetCreatorDataCommand extends Command
                 }
             }
 
-            if ((int) $value['REPOID'] === (int) Episciences_Repositories::HAL_REPO_ID && !$dryRun) {
-                $identifier = trim($value['IDENTIFIER']);
-                $version    = (int) $value['VERSION'];
+            if ((int) $value['REPOID'] === (int) Episciences_Repositories::HAL_REPO_ID) {
+                $this->enrichFromHalTei($paper, trim($value['IDENTIFIER']), (int) $value['VERSION'], $dryRun);
+            }
 
-                $selectAuthor = Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId);
-                $decodeAuthor = [];
-                foreach ($selectAuthor as $authorsDb) {
-                    $decodeAuthor = json_decode($authorsDb['authors'], true, 512, JSON_THROW_ON_ERROR);
-                }
-
-                Episciences_Paper_AuthorsManager::getHalTei($identifier, $version);
-                $cacheTeiHal = Episciences_Paper_AuthorsManager::getHalTeiCache($identifier, $version);
-
-                if ($cacheTeiHal !== '') {
-                    $xmlString = simplexml_load_string($cacheTeiHal);
-                    if (is_object($xmlString) && $xmlString->count() > 0) {
-                        $authorTei = Episciences_Paper_AuthorsManager::getAuthorsFromHalTei($xmlString);
-                        if (!empty($authorTei)) {
-                            $affiInfo = Episciences_Paper_AuthorsManager::getAffiFromHalTei($xmlString);
-                            $authorTei = Episciences_Paper_AuthorsManager::mergeAuthorInfoAndAffiTei($authorTei, $affiInfo);
-                            $formattedAuthorsForDb = Episciences_Paper_AuthorsManager::mergeInfoDbAndInfoTei($decodeAuthor, $authorTei);
-                            $newAuthorInfos = new Episciences_Paper_Authors();
-                            $newAuthorInfos->setAuthors(json_encode($formattedAuthorsForDb, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
-                            $newAuthorInfos->setPaperId($paperId);
-                            $newAuthorInfos->setAuthorsId(array_key_first($selectAuthor));
-                            Episciences_Paper_AuthorsManager::update($newAuthorInfos);
-                        }
-                    }
-                }
+            foreach (Episciences_Paper_Authors_EnrichmentService::getCorrections() as $correction) {
+                $corrections[] = [$paperId, $correction];
             }
 
             if (!$dryRun) {
@@ -182,10 +165,58 @@ class GetCreatorDataCommand extends Command
         $progressBar->finish();
         $stdoutHandler?->setProgressBar(null);
         $io->newLine();
+
+        if ($io->isVerbose()) {
+            $sectionTitle = $dryRun ? 'Corrections that would be applied from HAL TEI' : 'Corrections applied from HAL TEI';
+            $io->section($sectionTitle . ' (' . count($corrections) . ')');
+            if ($corrections === []) {
+                $io->text('No correction.');
+            } else {
+                $io->table(['Paper ID', 'Correction'], $corrections);
+            }
+        }
+
         $io->success('Author data enrichment completed.');
         $logger->info('Author enrichment completed');
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Merge HAL TEI data (names, ORCID, affiliations) into the paper authors.
+     * In dry-run mode the corrections are computed (and listed with -v) but not written;
+     * a paper without author record is then evaluated on the records an insertion would create.
+     *
+     * @throws JsonException
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    private function enrichFromHalTei(Episciences_Paper $paper, string $identifier, int $version, bool $dryRun): void
+    {
+        $paperId = (int) $paper->getPaperid();
+        $selectAuthor = Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId);
+        $dbAuthors = Episciences_Paper_Authors_Repository::getDecodedAuthors($paperId);
+
+        if ($dbAuthors === [] && $dryRun) {
+            $dbAuthors = Episciences_Paper_Authors_Repository::buildFromPaper($paper);
+        }
+
+        $teiAuthors = Episciences_Paper_Authors_EnrichmentService::getHalTeiAuthors($identifier, $version);
+
+        if ($teiAuthors === []) {
+            return;
+        }
+
+        $enrichedAuthors = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        if ($dryRun || $selectAuthor === []) {
+            return;
+        }
+
+        $newAuthorInfos = new Episciences_Paper_Authors();
+        $newAuthorInfos->setAuthors(json_encode($enrichedAuthors, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
+        $newAuthorInfos->setPaperId($paperId);
+        $newAuthorInfos->setAuthorsId(array_key_first($selectAuthor));
+        Episciences_Paper_AuthorsManager::update($newAuthorInfos);
     }
 
     private function bootstrap(): void
