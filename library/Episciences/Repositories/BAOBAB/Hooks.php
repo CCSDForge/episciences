@@ -51,7 +51,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      * hookApiRecords(), then Paper::save() needs it again for the licence.
      * A single entry, so a batch over many records does not grow it.
      *
-     * @var array{0: string, 1: array<string, mixed>, 2: int}|null [record id, REST JSON, fetch timestamp]
+     * @var array{0: string, 1: array<string, mixed>, 2: int}|null [record id, REST JSON, monotonic fetch time in nanoseconds (hrtime)]
      */
     private static ?array $lastRecord = null;
 
@@ -309,7 +309,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         if (
             self::$lastRecord !== null
             && self::$lastRecord[0] === $identifier
-            && time() - self::$lastRecord[2] < self::RECORD_CACHE_TTL
+            && hrtime(true) - self::$lastRecord[2] < self::RECORD_CACHE_TTL * 1_000_000_000
         ) {
             return self::$lastRecord[1];
         }
@@ -327,7 +327,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
             return null;
         }
 
-        self::$lastRecord = [$identifier, $json, time()];
+        self::$lastRecord = [$identifier, $json, hrtime(true)];
 
         return $json;
     }
