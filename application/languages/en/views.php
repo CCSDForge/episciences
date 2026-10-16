@@ -1381,7 +1381,6 @@ return array(
     "export-datacite" => "Export OpenAIRE",
     "export-dc" => "Export DC",
     "export-tei" => "Export TEI",
-    "file-paper" => "Access the files attached to a document",
     "file-report" => "Access the files attached to a review",
     "file-tmp" => "Access the temporary version of a document",
     "grid-add" => "Review grid: Create a grid",

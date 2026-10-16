@@ -251,7 +251,6 @@ return [
     "export-datacite" => "Export OpenAIRE",
     "export-dc" => "Export DC",
     "export-tei" => "Export TEI",
-    "file-paper" => "Accéder aux fichiers joints d'un document",
     "file-report" => "Accéder aux fichiers attachés d'une relecture",
     "file-tmp" => "Accéder à la version temporaire d'un document",
     "grid-add" => "Grille de relecture : Créer une grille",
