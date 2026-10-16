@@ -19,7 +19,7 @@ class Episciences_Paper_Authors_HalTeiParser
      * Extract all authors with their affiliations and ORCIDs from a TEI XML document
      *
      * @param SimpleXMLElement $teiDocument full TEI XML document
-     * @return array<int, array{given_name: string, family: string, fullname: string, affiliations?: array, orcid?: string}>
+     * @return array<int, array{given_name: string, first_name: string, family: string, fullname: string, affiliations?: array, orcid?: string}>
      */
     public static function getAuthorsFromHalTei(SimpleXMLElement $teiDocument): array
     {
@@ -56,16 +56,34 @@ class Episciences_Paper_Authors_HalTeiParser
     /**
      * Extract author name information from a TEI persName element
      *
+     * HAL splits given names into <forename type="first"> and <forename type="middle">.
+     * All forenames are kept in "given_name"; "first_name" holds the first one only,
+     * because OAI-DC derived records (stored in DB) only carry the first given name.
+     *
      * @param SimpleXMLElement|null $personName TEI persName element
      * @param array $parsedAuthors accumulated authors array
      * @return array updated authors array with new entry appended
      */
     public static function getAuthorInfoFromXmlTei(?SimpleXMLElement $personName, array $parsedAuthors): array
     {
+        $forenames = [];
+
+        foreach ($personName->forename as $forenameNode) {
+            $forename = trim((string)$forenameNode);
+
+            if ($forename !== '') {
+                $forenames[] = $forename;
+            }
+        }
+
+        $givenName = implode(' ', $forenames);
+        $surname = (string)$personName->surname;
+
         $parsedAuthors[] = [
-            'given_name' => (string)$personName->forename,
-            'family' => (string)$personName->surname,
-            'fullname' => rtrim($personName->forename . ' ' . $personName->surname),
+            'given_name' => $givenName,
+            'first_name' => $forenames[0] ?? '',
+            'family' => $surname,
+            'fullname' => trim($givenName . ' ' . $surname),
         ];
 
         return $parsedAuthors;
