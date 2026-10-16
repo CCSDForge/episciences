@@ -3,10 +3,13 @@
 namespace unit\library\Episciences\submit;
 
 use Episciences_Paper;
+use Episciences_Repositories;
 use Episciences_Submit;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use ReflectionProperty;
 use Zend_Exception;
+use Zend_Registry;
 
 /**
  * Tests for Episciences_Submit.
@@ -597,6 +600,58 @@ XML;
             'arXiv without suffix' => ['2310.02192', null, '2310.02192', null],
             'bare "v4" is not an identifier' => ['v4', 1.0, 'v4', 1.0],
             'v without digits is kept' => ['hal-01234567v', 1.0, 'hal-01234567v', 1.0],
+            'v0 is not a version' => ['hal-01234567v0', 1.0, 'hal-01234567v0', 1.0],
+        ];
+    }
+
+    // =========================================================================
+    // isVersionSuffixedRepository() — private, tested via ReflectionMethod
+    // =========================================================================
+
+    /**
+     * @dataProvider versionSuffixedRepositoryProvider
+     */
+    public function testIsVersionSuffixedRepository(int $repoId, bool $expected): void
+    {
+        $sources = [
+            1 => ['name' => 'HAL', 'type' => 'repository'],
+            2 => ['name' => 'arXiv', 'type' => 'repository'],
+            4 => ['name' => 'Zenodo', 'type' => 'repository'],
+            98 => ['name' => 'ADspace', 'type' => 'dspace'],
+            99 => ['name' => 'ADataverse', 'type' => 'dataverse'],
+        ];
+
+        $hadSources = Zend_Registry::isRegistered('metadataSources');
+        $previousSources = $hadSources ? Zend_Registry::get('metadataSources') : null;
+        $cache = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $cache->setAccessible(true);
+        $previousCache = $cache->getValue();
+
+        try {
+            Zend_Registry::set('metadataSources', $sources);
+            $cache->setValue(null, []);
+
+            $method = new ReflectionMethod(Episciences_Submit::class, 'isVersionSuffixedRepository');
+            $method->setAccessible(true);
+
+            self::assertSame($expected, $method->invoke(null, $repoId));
+        } finally {
+            if ($hadSources) {
+                Zend_Registry::set('metadataSources', $previousSources);
+            }
+            $cache->setValue(null, $previousCache);
+        }
+    }
+
+    public static function versionSuffixedRepositoryProvider(): array
+    {
+        return [
+            'HAL' => [1, true],
+            'arXiv' => [2, true],
+            'Zenodo' => [4, false],
+            'DSpace' => [98, false],
+            'Dataverse' => [99, false],
+            'unknown repository' => [9999, false],
         ];
     }
 }

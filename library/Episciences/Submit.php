@@ -986,7 +986,7 @@ class Episciences_Submit
             // Repository-specific checks
             if (Episciences_Repositories::isFromHalRepository($repoId)) {
                 self::assertHalSubmissionAllowed($result['record'], $id, $identifier, $oai);
-            } elseif (Episciences_Repositories::getLabel($repoId) === 'arXiv') {
+            } elseif (Episciences_Repositories::isFromArxivRepository((int)$repoId)) {
                 self::assertArxivVersionExists($oai, $identifier, $version !== null ? (int)$version : null);
             }
 
@@ -1086,16 +1086,17 @@ class Episciences_Submit
     private static function isVersionSuffixedRepository($repoId): bool
     {
         return Episciences_Repositories::isFromHalRepository((int)$repoId)
-            || Episciences_Repositories::getLabel($repoId) === 'arXiv';
+            || Episciences_Repositories::isFromArxivRepository((int)$repoId);
     }
 
     /**
      * Remove a trailing version suffix ("v4") from the identifier and use it as the document version.
      * The suffix takes precedence over the version field, as the submission form does client-side.
+     * "v0" is not a valid version and is left untouched.
      */
     private static function extractVersionSuffix(string &$id, ?float &$version): void
     {
-        if (preg_match('/^(.+?)v(\d+)$/', $id, $matches)) {
+        if (preg_match('/^(.+?)v([1-9]\d*)$/', $id, $matches)) {
             $id = $matches[1];
             $version = Episciences_Repositories_Common::normalizeVersion($matches[2]);
         }

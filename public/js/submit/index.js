@@ -166,14 +166,14 @@ $(document).ready(function () {
     //Extracts version information from an identifier string and populates the version field.
     function removeVersionFromIdentifier(identifier) {
         const versionField = document.getElementById('search_doc-version');
-        const versionMatch = identifier.match(/v(\d+)$/);
+        const versionMatch = identifier.match(/v([1-9]\d*)$/);
 
         if (versionMatch && versionField) {
             // Extract the version number (without the 'v' prefix)
             versionField.value = versionMatch[1];
 
             // Return identifier without the version
-            return identifier.replace(/v\d+$/, '');
+            return identifier.replace(/v[1-9]\d*$/, '');
         }
 
         // If no version found, clear the version field and return original identifier
