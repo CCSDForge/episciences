@@ -1717,12 +1717,12 @@ class Episciences_Mail_Reminder
      *
      * Conflicts of interest are handled upstream by Episciences_PapersManager::keepOnlyUsersWithoutConflict().
      *
-     * @param array $supervisors Array of [uid => email] pairs
+     * @param Episciences_User[] $supervisors keyed by UID
      * @param int $authorUid Author UID
      * @param array $coAuthorUids Array of co-author UIDs
      * @param int|null $reviewerUid Reviewer UID (null if TMP_USER)
      * @param string|null $reviewerEmail Reviewer email for fallback check
-     * @return array Filtered supervisors [uid => email]
+     * @return Episciences_User[] kept supervisors, keyed by UID
      */
     public static function filterSupervisors(
         array $supervisors,
@@ -1738,7 +1738,9 @@ class Episciences_Mail_Reminder
         $filtered = [];
         $reviewerEmailLower = !empty($reviewerEmail) ? strtolower($reviewerEmail) : null;
 
-        foreach ($supervisors as $uid => $email) {
+        foreach ($supervisors as $uid => $supervisor) {
+            $email = $supervisor->getEmail();
+
             // Skip supervisors without email: nothing to send, and strtolower(null) is deprecated
             if (empty($email)) {
                 continue;
@@ -1764,7 +1766,7 @@ class Episciences_Mail_Reminder
                 continue;
             }
 
-            $filtered[$uid] = $email;
+            $filtered[$uid] = $supervisor;
         }
 
         return $filtered;
@@ -1898,30 +1900,18 @@ class Episciences_Mail_Reminder
         }
 
         $context = $this->getSupervisorFilterContext($paper);
-        $supervisors = $context['supervisors'];
 
-        if (empty($supervisors)) {
-            return [];
-        }
-
-        $supervisorEmails = [];
-        foreach ($supervisors as $uid => $supervisor) {
-            $supervisorEmails[$uid] = $supervisor->getEmail();
-        }
-
-        $keptUids = array_keys(self::filterSupervisors(
-            $supervisorEmails,
+        $supervisors = self::filterSupervisors(
+            $context['supervisors'],
             $context['authorUid'],
             $context['coAuthorUids'],
             $reviewerUid,
             $reviewerEmail
-        ));
+        );
 
         $recipients = [];
 
-        foreach ($keptUids as $uid) {
-            /** @var Episciences_User $supervisor */
-            $supervisor = $supervisors[$uid];
+        foreach ($supervisors as $supervisor) {
             $supervisorLang = $supervisor->getLangueid(true);
 
             $recipients[] = [

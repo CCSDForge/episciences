@@ -669,8 +669,17 @@ final class Episciences_Mail_ReminderTest extends TestCase
         array $expectedUids,
         string $message
     ): void {
+        // the data set gives [uid => email]: the filter receives the supervisors themselves
+        $users = [];
+        foreach ($supervisors as $uid => $email) {
+            $user = $this->createMock(\Episciences_User::class);
+            $user->method('getUid')->willReturn($uid);
+            $user->method('getEmail')->willReturn($email);
+            $users[$uid] = $user;
+        }
+
         $result = Episciences_Mail_Reminder::filterSupervisors(
-            $supervisors,
+            $users,
             $authorUid,
             $coAuthorUids,
             $reviewerUid,
@@ -678,6 +687,9 @@ final class Episciences_Mail_ReminderTest extends TestCase
         );
 
         self::assertSame($expectedUids, array_keys($result), $message);
+        foreach ($result as $uid => $supervisor) {
+            self::assertSame($users[$uid], $supervisor, 'The kept supervisors should be returned as is');
+        }
     }
 
     public static function filterSupervisorsDataProvider(): array
