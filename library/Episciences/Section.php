@@ -231,7 +231,7 @@ class Episciences_Section
             ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
             ->join(['ur' => T_USER_ROLES], 'ur.UID = a.UID')
             ->where('ur.ROLEID IN (?)', [Episciences_Acl::ROLE_GUEST_EDITOR, Episciences_Acl::ROLE_EDITOR, Episciences_Acl::ROLE_CHIEF_EDITOR])
-            ->where('ur.RVID = ?', RVID);
+            ->where('ur.RVID = ?', $this->getRvid() ?: (defined('RVID') ? RVID : 0));
 
         $result = $this->_db->fetchAssoc($select);
         $editors = [];
