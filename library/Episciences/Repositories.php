@@ -44,7 +44,6 @@ class Episciences_Repositories
 
     public const EPI_USER_ID = '12';
     public const HAL_LABEL = 'HAL';
-    public const ARXIV_LABEL = 'arXiv';
 
     /** @var array<int|string, array<string, mixed>> */
     private static array $_repositories = [];
@@ -328,7 +327,7 @@ class Episciences_Repositories
 
     public static function isFromArxivRepository(int $repoId): bool
     {
-        return self::getLabel($repoId) === self::ARXIV_LABEL;
+        return $repoId === (int)self::ARXIV_REPO_ID;
     }
 
 
