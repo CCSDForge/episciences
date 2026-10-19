@@ -153,20 +153,21 @@ class FileController extends DefaultController
     protected function isAllowedToReadTemporaryVersionFile(int $paperId): bool
     {
         try {
-            $versions = $this->findPaperVersions($paperId);
-
-            if ($versions === []) {
-                return false;
-            }
-
             $review = $this->findJournal();
             $uid = (int)Episciences_Auth::getUid();
+            $hasConflict = null;
+            // Only the assignment to the paper depends on the version
+            $isStaffOfEveryPaper = static::isEditorialStaffOfEveryPaper($review->getSettings());
 
-            foreach ($versions as $paper) {
+            // The versions are loaded one at a time: the first one granting access ends the check
+            foreach ($this->findPaperVersions($paperId) as $paper) {
+                // Conflicts of interest are declared for the paper, not for a version
+                $hasConflict ??= static::isConflictDetected($paper, $review);
+
                 if (DocumentFilePolicy::isTemporaryVersionFileAllowed(
                     $paper->isOwnerOrCoAuthor(),
-                    static::isConflictDetected($paper, $review),
-                    static::isEditorialStaff($paper, $review->getSettings()),
+                    $hasConflict,
+                    $isStaffOfEveryPaper || $paper->isAssignedEditorOrCopyEditor($uid),
                     array_key_exists($uid, $paper->getReviewers())
                 )) {
                     return true;
@@ -185,24 +186,29 @@ class FileController extends DefaultController
     }
 
     /**
-     * Versions of the paper in the current journal
+     * Versions of the paper in the current journal, each one loaded when it is reached
      *
-     * @return Episciences_Paper[]
+     * @return iterable<Episciences_Paper>
      * @throws Exception
      */
-    protected function findPaperVersions(int $paperId): array
+    protected function findPaperVersions(int $paperId): iterable
     {
-        $versions = [];
+        // Not Episciences_PapersManager::getDocIdsFromPaperId(), which hides a database error behind an empty list
+        $docIds = Zend_Db_Table_Abstract::getDefaultAdapter()
+            ->select()
+            ->from(T_PAPERS, ['DOCID'])
+            ->where('PAPERID = ?', $paperId)
+            ->where('RVID = ?', RVID)
+            ->query()
+            ->fetchAll(Zend_Db::FETCH_COLUMN);
 
-        foreach (Episciences_PapersManager::getDocIdsFromPaperId($paperId) as $row) {
-            $paper = $this->findPaper((int)$row['DOCID']);
+        foreach ($docIds as $docId) {
+            $paper = $this->findPaper((int)$docId);
 
             if ($paper) {
-                $versions[] = $paper;
+                yield $paper;
             }
         }
-
-        return $versions;
     }
 
     /**
@@ -498,7 +504,7 @@ class FileController extends DefaultController
             $docId = (int)$request->getPost('docId');
             $paperId = (int)$request->getPost('paperId');
 
-            if (!$this->isAllowedToHandleDocumentFiles($docId, $paperId)) {
+            if (!$this->isAllowedToHandleDocumentFiles($path, $docId, $paperId)) {
                 $this->getResponse()->setHttpResponseCode(403);
                 echo Zend_Json::encode(['status' => 'error']);
                 return;
@@ -599,7 +605,7 @@ class FileController extends DefaultController
             return;
         }
 
-        if (!$this->isAllowedToHandleDocumentFiles($docId, $paperId)) {
+        if (!$this->isAllowedToHandleDocumentFiles($path, $docId, $paperId)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
@@ -677,9 +683,14 @@ class FileController extends DefaultController
      * When an upload or a removal targets a document's storage (docId or paperId
      * given), the user must be related to the paper: contributor, reviewer,
      * copy editor or editor of the paper, or allowed to manage it.
+     * The files of the temporary versions follow the rule of their reading (see tmpAction()).
      */
-    private function isAllowedToHandleDocumentFiles(int $docId, int $paperId): bool
+    protected function isAllowedToHandleDocumentFiles(string $path, int $docId, int $paperId): bool
     {
+        if ($path === 'tmp_attachments') {
+            return $this->isAllowedToHandleTemporaryVersionFiles($docId, $paperId);
+        }
+
         if (!$docId && !$paperId) {
             // session-scoped attachments directory: no document involved
             return true;
@@ -704,6 +715,24 @@ class FileController extends DefaultController
             || $paper->getEditor($uid)
             || $paper->getCopyEditor($uid)
             || $paper->getReviewer($uid);
+    }
+
+    /**
+     * The files of the temporary versions are stored by paper (see buildStorageFolder()): uploading or removing
+     * one is reserved to the users allowed to read it.
+     */
+    private function isAllowedToHandleTemporaryVersionFiles(int $docId, int $paperId): bool
+    {
+        if (!$paperId && $docId) {
+            try {
+                $paperId = (int)$this->findPaper($docId)?->getPaperid();
+            } catch (Exception $e) {
+                return false;
+            }
+        }
+
+        // Without a paper, the files would be stored in a "0/tmp/" directory
+        return $paperId > 0 && $this->isAllowedToReadTemporaryVersionFile($paperId);
     }
 
     /**

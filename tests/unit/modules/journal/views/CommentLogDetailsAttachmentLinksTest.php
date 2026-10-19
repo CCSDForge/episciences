@@ -17,12 +17,22 @@ final class CommentLogDetailsAttachmentLinksTest extends TestCase
     private const PAPERID = 10;
     private const DOCID = 15;
 
-    private mixed $previousLocale = null;
+    private const REGISTRY_KEYS = ['Zend_Locale', 'Zend_Translate'];
+
+    /** @var array<string, mixed> registry entries present before the test */
+    private array $previousRegistry = [];
 
     protected function setUp(): void
     {
+        $this->previousRegistry = [];
+
+        foreach (self::REGISTRY_KEYS as $key) {
+            if (\Zend_Registry::isRegistered($key)) {
+                $this->previousRegistry[$key] = \Zend_Registry::get($key);
+            }
+        }
+
         // The template formats the comment date with the locale of the request
-        $this->previousLocale = \Zend_Registry::isRegistered('Zend_Locale') ? \Zend_Registry::get('Zend_Locale') : null;
         \Zend_Registry::set('Zend_Locale', new \Zend_Locale('fr'));
         \Zend_Registry::set(
             'Zend_Translate',
@@ -32,12 +42,19 @@ final class CommentLogDetailsAttachmentLinksTest extends TestCase
 
     protected function tearDown(): void
     {
-        if ($this->previousLocale !== null) {
-            \Zend_Registry::set('Zend_Locale', $this->previousLocale);
+        foreach (self::REGISTRY_KEYS as $key) {
+            if (array_key_exists($key, $this->previousRegistry)) {
+                \Zend_Registry::set($key, $this->previousRegistry[$key]);
+            } elseif (\Zend_Registry::isRegistered($key)) {
+                \Zend_Registry::getInstance()->offsetUnset($key);
+            }
         }
     }
 
-    private function render(int $commentType): string
+    /**
+     * @param string[] $files
+     */
+    private function render(int $commentType, array $files = ['answer.pdf']): string
     {
         $view = new Zend_View();
         $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/');
@@ -50,7 +67,7 @@ final class CommentLogDetailsAttachmentLinksTest extends TestCase
                 'comment' => [
                     'type' => $commentType,
                     'docid' => self::DOCID,
-                    'file' => json_encode(['answer.pdf']),
+                    'file' => json_encode($files),
                 ],
             ],
         ];
@@ -71,5 +88,13 @@ final class CommentLogDetailsAttachmentLinksTest extends TestCase
         $html = $this->render(Episciences_CommentsManager::TYPE_AUTHOR_COMMENT);
 
         self::assertStringContainsString('href="/docfiles/comments/' . self::DOCID . '/answer.pdf"', $html);
+    }
+
+    public function testFileNameIsEncodedInTheLink(): void
+    {
+        $html = $this->render(Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION, ['réponse #2?.pdf']);
+
+        self::assertStringContainsString('href="/tmp_files/' . self::PAPERID . '/r%C3%A9ponse%20%232%3F.pdf"', $html);
+        self::assertMatchesRegularExpression('/>\s*réponse #2\?\.pdf\s*</u', $html);
     }
 }

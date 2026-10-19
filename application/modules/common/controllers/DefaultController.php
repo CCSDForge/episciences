@@ -113,10 +113,21 @@ class DefaultController extends Zend_Controller_Action
      */
     protected static function isEditorialStaff(Episciences_Paper $paper, array $journalSettings): bool
     {
+        return static::isEditorialStaffOfEveryPaper($journalSettings) ||
+            $paper->isAssignedEditorOrCopyEditor((int)Episciences_Auth::getUid());
+    }
+
+    /**
+     * The part of isEditorialStaff() that does not depend on the paper: the roles of the logged user handle
+     * every paper of the journal.
+     *
+     * @param array<string, mixed> $journalSettings
+     */
+    protected static function isEditorialStaffOfEveryPaper(array $journalSettings): bool
+    {
         return Episciences_Auth::isSecretary() ||
             (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS] ?? null) === '0' && Episciences_Auth::isEditor()) ||
-            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS] ?? null) === '0' && Episciences_Auth::isCopyEditor()) ||
-            $paper->isAssignedEditorOrCopyEditor((int)Episciences_Auth::getUid());
+            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS] ?? null) === '0' && Episciences_Auth::isCopyEditor());
     }
 
     protected function redirectWithFlashMessageIfPaperIsRemovedOrDeleted(Episciences_Paper $paper, bool $forceRedirection = true): void

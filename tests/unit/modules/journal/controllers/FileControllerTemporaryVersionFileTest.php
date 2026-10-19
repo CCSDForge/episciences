@@ -211,4 +211,106 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
         self::assertSame([], $delivered);
         self::assertSame([], $lookedUp);
     }
+
+    /**
+     * Upload and removal of the files of the temporary versions (FileController::isAllowedToHandleDocumentFiles())
+     *
+     * @param Episciences_Paper[] $versions
+     * @return array{bool, list<int>} access granted, paper ids looked up
+     */
+    private function runHandleCheck(array $versions, int $docId, int $paperId, ?Episciences_Paper $version = null): array
+    {
+        $journal = $this->createMock(Episciences_Review::class);
+        $journal->method('getSettings')->willReturn([]);
+
+        $controller = new class (
+            new Zend_Controller_Request_HttpTestCase(),
+            new Zend_Controller_Response_HttpTestCase(),
+            ['versions' => $versions, 'journal' => $journal, 'version' => $version]
+        ) extends \FileController {
+            /** @var list<int> */
+            public array $lookedUp = [];
+
+            public function check(int $docId, int $paperId): bool
+            {
+                return $this->isAllowedToHandleDocumentFiles('tmp_attachments', $docId, $paperId);
+            }
+
+            protected function findPaper(int $docId): ?Episciences_Paper
+            {
+                return $this->getInvokeArg('version');
+            }
+
+            protected function findPaperVersions(int $paperId): array
+            {
+                $this->lookedUp[] = $paperId;
+                return $this->getInvokeArg('versions');
+            }
+
+            protected function findJournal(): Episciences_Review
+            {
+                return $this->getInvokeArg('journal');
+            }
+
+            public static function isConflictDetected(Episciences_Paper $paper, Episciences_Review $journal = null): bool
+            {
+                return FileControllerTemporaryVersionFileTest::$hasConflict;
+            }
+        };
+
+        return [$controller->check($docId, $paperId), $controller->lookedUp];
+    }
+
+    public function testAuthorCanHandleTheTemporaryVersionFiles(): void
+    {
+        $this->logInAs();
+
+        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 15, self::PAPERID);
+
+        self::assertTrue($allowed);
+        self::assertSame([self::PAPERID], $lookedUp);
+    }
+
+    public function testUnassignedEditorCannotHandleTheTemporaryVersionFiles(): void
+    {
+        // Allowed to manage the papers of the journal, but encapsulated and not assigned to this one
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+
+        [$allowed] = $this->runHandleCheck([$this->version()], 15, self::PAPERID);
+
+        self::assertFalse($allowed);
+    }
+
+    public function testEditorInConflictOfInterestCannotHandleTheTemporaryVersionFiles(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+        self::$hasConflict = true;
+
+        [$allowed] = $this->runHandleCheck([$this->version(['assigned' => true])], 15, self::PAPERID);
+
+        self::assertFalse($allowed);
+    }
+
+    public function testPaperIdIsTakenFromTheVersionWhenOnlyTheDocIdIsGiven(): void
+    {
+        $this->logInAs();
+        $version = $this->createMock(Episciences_Paper::class);
+        $version->method('getPaperid')->willReturn(self::PAPERID);
+
+        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 15, 0, $version);
+
+        self::assertTrue($allowed);
+        self::assertSame([self::PAPERID], $lookedUp);
+    }
+
+    public function testTemporaryVersionFilesWithoutPaperAreRefused(): void
+    {
+        // Not the session-scoped attachments directory: the files would be written in a "0/tmp/" directory
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+
+        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 0, 0);
+
+        self::assertFalse($allowed);
+        self::assertSame([], $lookedUp);
+    }
 }
