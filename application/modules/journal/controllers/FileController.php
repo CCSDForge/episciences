@@ -621,6 +621,12 @@ class FileController extends DefaultController
             return;
         }
 
+        // Only the uploads not submitted yet can be removed: the files of a saved answer are read by the editors
+        if ($path === 'tmp_attachments' && $this->isSubmittedTemporaryVersionFile($paperId, $filename)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         $baseDir = $this->buildStorageFolder($path, $paperId, $docId, $pcId);
         $filepath = $this->resolveSafePath($baseDir, $filename);
 
@@ -744,6 +750,28 @@ class FileController extends DefaultController
             return (int)$this->findPaper($docId)?->getPaperid();
         } catch (Exception $e) {
             return null;
+        }
+    }
+
+    /**
+     * The file is attached to an answer already saved with a temporary version of the paper
+     * (see Episciences_CommentsManager::isTemporaryVersionAnswerAttachment()). Considered submitted when the
+     * lookup fails, so that it is not removed.
+     */
+    protected function isSubmittedTemporaryVersionFile(int $paperId, string $file): bool
+    {
+        try {
+            return Episciences_CommentsManager::isTemporaryVersionAnswerAttachment(
+                Episciences_PapersManager::getDocIdsByPaperIdInJournal($paperId, RVID),
+                $file
+            );
+        } catch (Exception $e) {
+            AppRegistry::getMonoLogger()?->warning('Temporary version file lookup failed', [
+                'paperId' => $paperId,
+                'file' => $file,
+                'exception' => $e->getMessage(),
+            ]);
+            return true;
         }
     }
 

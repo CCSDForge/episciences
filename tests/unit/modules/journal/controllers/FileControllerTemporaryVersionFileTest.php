@@ -405,4 +405,98 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
         self::assertFalse($allowed);
         self::assertSame([], $lookedUp);
     }
+
+    /**
+     * FileController::deleteAction() on the temporary versions directory, for a user allowed to handle its files
+     *
+     * @return array{int, list<array{int, string}>} HTTP response code, submitted files looked up
+     */
+    private function runDeleteAction(bool $isSubmitted): array
+    {
+        \Zend_Session::$_unitTestEnabled = true;
+        $session = new \Zend_Session_Namespace(SESSION_NAMESPACE);
+        $session->csrfToken = 'tmp-files-token';
+        // The test request keeps what an earlier one posted
+        $_POST = [];
+
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod('POST')->setPost([
+            'csrf_token' => 'tmp-files-token',
+            'path' => 'tmp_attachments',
+            'paperId' => (string)self::PAPERID,
+            'file' => 'answer.pdf',
+        ]);
+        $response = new Zend_Controller_Response_HttpTestCase();
+
+        $controller = new class ($request, $response, ['isSubmitted' => $isSubmitted]) extends \FileController {
+            /** @var list<array{int, string}> */
+            public array $lookedUp = [];
+
+            protected function isAllowedToHandleDocumentFiles(string $path, int $docId, int $paperId): bool
+            {
+                return true;
+            }
+
+            protected function isSubmittedTemporaryVersionFile(int $paperId, string $file): bool
+            {
+                $this->lookedUp[] = [$paperId, $file];
+                return $this->getInvokeArg('isSubmitted');
+            }
+        };
+
+        try {
+            $controller->deleteAction();
+        } finally {
+            unset($session->csrfToken);
+        }
+
+        return [$response->getHttpResponseCode(), $controller->lookedUp];
+    }
+
+    public function testFileOfASubmittedAnswerIsNotRemoved(): void
+    {
+        $this->logInAs();
+
+        [$code, $lookedUp] = $this->runDeleteAction(true);
+
+        self::assertSame(403, $code);
+        self::assertSame([[self::PAPERID, 'answer.pdf']], $lookedUp);
+    }
+
+    public function testUploadNotSubmittedYetCanBeRemoved(): void
+    {
+        $this->logInAs();
+
+        [$code, $lookedUp] = $this->runDeleteAction(false);
+
+        self::assertSame(200, $code);
+        self::assertSame([[self::PAPERID, 'answer.pdf']], $lookedUp);
+    }
+
+    public function testFileIsConsideredSubmittedWhenTheLookupFails(): void
+    {
+        $previousAdapter = \Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = $this->getMockBuilder($previousAdapter::class)
+            ->setConstructorArgs([$previousAdapter->getConfig()])
+            ->onlyMethods(['fetchCol'])
+            ->getMock();
+        $adapter->method('fetchCol')->willThrowException(new \Zend_Db_Statement_Exception('Database unavailable'));
+        \Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+
+        $controller = new class (
+            new Zend_Controller_Request_HttpTestCase(),
+            new Zend_Controller_Response_HttpTestCase()
+        ) extends \FileController {
+            public function check(int $paperId, string $file): bool
+            {
+                return $this->isSubmittedTemporaryVersionFile($paperId, $file);
+            }
+        };
+
+        try {
+            self::assertTrue($controller->check(self::PAPERID, 'answer.pdf'));
+        } finally {
+            \Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
 }
