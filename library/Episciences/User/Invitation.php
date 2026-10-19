@@ -147,9 +147,19 @@ class Episciences_User_Invitation
         }
 
         // Only a pending row is reached through an invitation link: status rows (accepted, declined, cancelled) get no link token
-        $token = $this->isPendingRow() ? InvitationToken::generateRowSecret() : null;
-        if ($token !== null) {
-            $values['TOKEN'] = $token;
+        $token = null;
+        if ($this->isPendingRow()) {
+            if ($this->getInvitationToken()->isConfigured()) {
+                $token = InvitationToken::generateRowSecret();
+                $values['TOKEN'] = $token;
+            } else {
+                // a row value without the global secret would make every link generation throw after this insert:
+                // the invitation is sent as a legacy one instead
+                trigger_error(
+                    sprintf('The reviewer invitation link secret (%s) is not configured: invitation sent without a link token', InvitationToken::SECRET_CONSTANT_NAME),
+                    E_USER_WARNING
+                );
+            }
         }
 
         // Insertion en BDD
@@ -181,6 +191,11 @@ class Episciences_User_Invitation
     {
         $status = $this->getStatus();
         return $status === null || $status === '' || $status === self::STATUS_PENDING;
+    }
+
+    protected function getInvitationToken(): InvitationToken
+    {
+        return new InvitationToken();
     }
 
     public function getToken(): ?string

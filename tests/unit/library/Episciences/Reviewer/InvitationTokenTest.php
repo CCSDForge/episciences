@@ -101,6 +101,12 @@ final class InvitationTokenTest extends TestCase
         self::assertFalse($this->token->isValid(7, self::ROW_SECRET, $presented));
     }
 
+    public function testIsConfiguredOnlyWithANonEmptySecret(): void
+    {
+        self::assertTrue($this->token->isConfigured());
+        self::assertFalse((new InvitationToken(''))->isConfigured());
+    }
+
     public function testComputeFailsClosedWithoutSecret(): void
     {
         $this->expectException(LogicException::class);

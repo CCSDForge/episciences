@@ -16,6 +16,8 @@ use LogicException;
  * mechanism have no row value and no link token (legacy invitations).
  *
  * An empty global secret is a configuration error: generating or checking a token then throws (fail closed).
+ * New invitations are then saved without a row value, so they are sent as legacy invitations
+ * (see Episciences_User_Invitation::save()).
  */
 final class InvitationToken
 {
@@ -33,6 +35,11 @@ final class InvitationToken
     public function __construct(?string $secret = null)
     {
         $this->secret = $secret ?? self::configuredSecret();
+    }
+
+    public function isConfigured(): bool
+    {
+        return $this->secret !== '';
     }
 
     /**

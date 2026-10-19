@@ -2,6 +2,7 @@
 
 namespace unit\library\Episciences\user;
 
+use Episciences\Reviewer\InvitationToken;
 use Episciences_Review;
 use Episciences_User_Invitation;
 use Episciences_User_InvitationAnswer;
@@ -306,9 +307,27 @@ class Episciences_User_InvitationTest extends TestCase
         return $inserted;
     }
 
+    /**
+     * Pending invitation whose global link secret is $secret (independent of the test environment configuration)
+     */
+    private function pendingInvitation(string $secret): Episciences_User_Invitation
+    {
+        return new class(['aid' => 5], $secret) extends Episciences_User_Invitation {
+            public function __construct(array $options, private readonly string $secret)
+            {
+                parent::__construct($options);
+            }
+
+            protected function getInvitationToken(): InvitationToken
+            {
+                return new InvitationToken($this->secret);
+            }
+        };
+    }
+
     public function testSavingAPendingInvitationStoresARandomRowSecret(): void
     {
-        $invitation = new Episciences_User_Invitation(['aid' => 5]);
+        $invitation = $this->pendingInvitation('secret');
 
         $inserted = $this->saveAndCaptureInsert($invitation);
 
@@ -317,10 +336,25 @@ class Episciences_User_InvitationTest extends TestCase
         $this->assertSame(55, $invitation->getId());
     }
 
+    /**
+     * Without the global secret, a row value would make every link generation throw after the insert:
+     * the invitation is saved as a legacy one (no row value, former link)
+     */
+    public function testSavingAPendingInvitationWithoutGlobalSecretStoresNoRowSecret(): void
+    {
+        $invitation = $this->pendingInvitation('');
+
+        $inserted = $this->saveAndCaptureInsert($invitation);
+
+        $this->assertArrayNotHasKey('TOKEN', $inserted);
+        $this->assertNull($invitation->getToken());
+        $this->assertNull((new InvitationToken('secret'))->forInvitation($invitation));
+    }
+
     public function testTwoPendingInvitationsGetDifferentRowSecrets(): void
     {
-        $first = $this->saveAndCaptureInsert(new Episciences_User_Invitation(['aid' => 5]));
-        $second = $this->saveAndCaptureInsert(new Episciences_User_Invitation(['aid' => 5]));
+        $first = $this->saveAndCaptureInsert($this->pendingInvitation('secret'));
+        $second = $this->saveAndCaptureInsert($this->pendingInvitation('secret'));
 
         $this->assertNotSame($first['TOKEN'], $second['TOKEN']);
     }
