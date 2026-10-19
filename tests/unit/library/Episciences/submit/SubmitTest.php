@@ -638,6 +638,8 @@ XML;
         } finally {
             if ($hadSources) {
                 Zend_Registry::set('metadataSources', $previousSources);
+            } else {
+                Zend_Registry::getInstance()->offsetUnset('metadataSources');
             }
             $cache->setValue(null, $previousCache);
         }
