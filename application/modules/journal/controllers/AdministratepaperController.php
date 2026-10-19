@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Reviewer\InvitationToken;
 use Episciences\Paper\Spdx\LicenseCodeManager;
 use Episciences\Paper\Spdx\LicenseManager;
 use Episciences\Paper\Spdx\LicenseSpdxResolver;
@@ -1749,7 +1750,11 @@ class AdministratepaperController extends PaperDefaultController
         if (array_key_exists('locale', $reviewer)) {
             $url_params['lang'] = $reviewer['locale'];
         }
-        if ($reviewer['invitation_type'] == 3) {
+        $linkToken = (new InvitationToken())->forInvitation($invitation);
+        if ($linkToken !== null) {
+            $url_params[InvitationToken::URL_PARAM] = $linkToken;
+        } elseif ($reviewer['invitation_type'] == 3) {
+            // legacy invitation (no link token)
             $url_params['tmp'] = md5($reviewer['email']);
         }
 

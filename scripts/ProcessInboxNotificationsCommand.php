@@ -19,6 +19,7 @@ use Episciences\Notify\NotifySourceRegistry;
 use Episciences\Notify\PayloadValidator;
 use Episciences\Notify\PreprintUrlParser;
 use Episciences\Console\ProgressAwareStreamHandler;
+use Episciences\Reviewer\InvitationToken;
 use Episciences\Translation\TranslatorFactory;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
@@ -1585,6 +1586,11 @@ class ProcessInboxNotificationsCommand extends Command
                     $domain,
                     $oInvitation->getId()
                 );
+
+                $linkToken = (new InvitationToken())->forInvitation($oInvitation);
+                if ($linkToken !== null) {
+                    $invitationUrl .= '&' . InvitationToken::URL_PARAM . '=' . $linkToken;
+                }
 
                 $oAssignment->setInvitation_id($oInvitation->getId());
                 $oAssignment->save();
