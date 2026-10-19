@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Form\Validate\DeadlineUnit;
+use Episciences\Reviewer\InvitationToken;
 
 class Episciences_User_Invitation
 {
@@ -36,6 +37,11 @@ class Episciences_User_Invitation
      */
     protected $_status;
 
+    /**
+     * Per-invitation random value used to derive the link token (null for a legacy invitation or a status row)
+     * @see InvitationToken
+     */
+    protected ?string $_token = null;
 
     /**
      * Date de l'envoi
@@ -140,10 +146,17 @@ class Episciences_User_Invitation
             $values['SENDER_UID'] = $this->getSender_uid();
         }
 
+        // Only a pending row is reached through an invitation link: status rows (accepted, declined, cancelled) get no link token
+        $token = $this->isPendingRow() ? InvitationToken::generateRowSecret() : null;
+        if ($token !== null) {
+            $values['TOKEN'] = $token;
+        }
+
         // Insertion en BDD
         if ($db->insert(T_USER_INVITATIONS, $values)) {
             $id = (int) $db->lastInsertId();
             $this->setId($id);
+            $this->setToken($token);
         } else {
             return false;
         }
@@ -159,6 +172,20 @@ class Episciences_User_Invitation
     public function getId()
     {
         return $this->_id;
+    }
+
+    /**
+     * A row with no status is stored with the column default ('pending')
+     */
+    public function isPendingRow(): bool
+    {
+        $status = $this->getStatus();
+        return $status === null || $status === '' || $status === self::STATUS_PENDING;
+    }
+
+    public function getToken(): ?string
+    {
+        return $this->_token;
     }
 
     /**
@@ -244,6 +271,11 @@ class Episciences_User_Invitation
     public function setStatus($_status)
     {
         $this->_status = $_status;
+    }
+
+    public function setToken(?string $token): void
+    {
+        $this->_token = ($token === null || $token === '') ? null : $token;
     }
 
     /**
