@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace unit\modules\journal\controllers;
 
 use Episciences\Reviewer\InvitationToken;
+use Episciences_Paper;
 use Episciences_User;
 use Episciences_User_Assignment;
 use Episciences_User_Invitation;
@@ -15,7 +16,9 @@ use ReflectionMethod;
 use Zend_Auth;
 use Zend_Auth_Storage_NonPersistent;
 use Zend_Controller_Request_HttpTestCase;
+use Zend_Controller_Front;
 use Zend_Controller_Response_HttpTestCase;
+use Zend_Db_Table_Abstract;
 use Zend_View;
 
 /**
@@ -49,9 +52,19 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
             new Zend_Controller_Request_HttpTestCase(),
             new Zend_Controller_Response_HttpTestCase()
         ) extends \ReviewerController {
+            public ?string $redirectedTo = null;
+
             protected function getInvitationToken(): InvitationToken
             {
                 return new InvitationToken('access-test-secret');
+            }
+
+            /**
+             * @param array<string, mixed> $options
+             */
+            public function redirect($url, array $options = []): void
+            {
+                $this->redirectedTo = $url;
             }
         };
         $this->controller->view = new Zend_View();
@@ -307,5 +320,87 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
 
         self::assertFalse($this->isAuthorized($this->invitation(null, false), $this->assignment()));
         self::assertSame('Vous avez déjà répondu à cette invitation.', $this->controller->view->errors);
+    }
+
+    // -------------------------------------------------------------------------
+    // acceptance by a reviewer with an account who is not logged in
+    // -------------------------------------------------------------------------
+
+    /**
+     * Runs accept() for an account invitation while nobody is logged in: the visitor is sent to the login page
+     * @param array<string, mixed> $params parameters of the invitation request
+     */
+    private function acceptWhileLoggedOut(array $params): string
+    {
+        $router = Zend_Controller_Front::getInstance()->getRouter();
+        if (!$router->hasRoute('default')) {
+            $router->addDefaultRoutes();
+        }
+
+        $this->controller->view->addHelperPath(dirname(APPLICATION_PATH) . '/library/Episciences/View/Helper', 'Episciences_View_Helper_');
+        foreach ($params as $name => $value) {
+            $this->controller->getRequest()->setParam($name, $value);
+        }
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $method = new ReflectionMethod(\ReviewerController::class, 'accept');
+        $method->setAccessible(true);
+        $method->invoke($this->controller, $this->invitation(), $this->assignment(), $paper, ['submitaccept' => '1']);
+
+        self::assertNotNull($this->controller->redirectedTo, 'the visitor is sent to the login page');
+
+        return (string)$this->controller->redirectedTo;
+    }
+
+    /**
+     * Once logged in, the account may not be the invited one: it needs the link token again
+     */
+    public function testLoginRedirectKeepsTheLinkToken(): void
+    {
+        $url = $this->acceptWhileLoggedOut([InvitationToken::URL_PARAM => self::linkToken(), 'tmp' => md5(self::TMP_EMAIL)]);
+
+        self::assertStringContainsString('/user/login/', $url);
+        self::assertStringContainsString('/forward-action/invitation/', $url);
+        self::assertStringContainsString('/id/' . self::INVITATION_ID, $url);
+        self::assertStringContainsString('/' . InvitationToken::URL_PARAM . '/' . self::linkToken(), $url);
+        self::assertStringContainsString('/tmp/' . md5(self::TMP_EMAIL), $url);
+    }
+
+    public function testLoginRedirectDropsEmptyAndNonStringLinkParameters(): void
+    {
+        $url = $this->acceptWhileLoggedOut([InvitationToken::URL_PARAM => ['x'], 'tmp' => '']);
+
+        self::assertStringContainsString('/user/login/', $url);
+        self::assertStringNotContainsString('/' . InvitationToken::URL_PARAM . '/', $url);
+        self::assertStringNotContainsString('/tmp/', $url);
+    }
+
+    // -------------------------------------------------------------------------
+    // invitation whose assignment no longer exists
+    // -------------------------------------------------------------------------
+
+    public function testInvitationWithoutAssignmentIsReportedAsMissing(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = $this->getMockBuilder($previousAdapter::class)
+            ->setConstructorArgs([$previousAdapter->getConfig()])
+            ->onlyMethods(['fetchRow'])
+            ->getMock();
+        // first the invitation row, then no assignment row (an assignment id no other test caches)
+        $adapter->method('fetchRow')->willReturnOnConsecutiveCalls(
+            ['ID' => self::INVITATION_ID, 'AID' => 987654321, 'STATUS' => Episciences_User_Invitation::STATUS_PENDING],
+            false
+        );
+
+        Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+        try {
+            $this->controller->getRequest()->setParam('id', (string)self::INVITATION_ID);
+            $this->controller->invitationAction();
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+
+        self::assertSame(["Cette invitation n'existe pas !"], $this->controller->view->errors);
+        self::assertNull($this->controller->view->invitation);
     }
 }
