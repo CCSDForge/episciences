@@ -93,6 +93,43 @@
             <?php endif; ?>
         </table>
         <?php break; ?>
+    <?php case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_LINKED: ?>
+        <?php
+        $invited = (array)($this->log['detail']['invited'] ?? []);
+        $linkedTo = (array)($this->log['detail']['linked_to'] ?? []);
+        ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?= $this->translate("Invitation associée le") ?></td>
+                <td class="small"><?= $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Invitation envoyée à") ?></td>
+                <td class="small">
+                    <?= $this->escape($invited['fullname'] ?? '') ?>
+                    <?php if (!empty($invited['email'])): ?>
+                        &lt;<?= $this->escape($invited['email']) ?>&gt;
+                    <?php endif; ?>
+                    <?php if (!empty($invited['tmp'])): ?>
+                        (<?= $this->translate("relecteur sans compte") ?>)
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Associée au compte") ?></td>
+                <td class="small">
+                    <?= $this->escape($linkedTo['fullname'] ?? '') ?>
+                    <?php if (!empty($linkedTo['email'])): ?>
+                        &lt;<?= $this->escape($linkedTo['email']) ?>&gt;
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Association automatique (adresses e-mail identiques)") ?></td>
+                <td class="small"><?= $this->translate(!empty($this->log['detail']['automatic']) ? 'Oui' : 'Non') ?></td>
+            </tr>
+        </table>
+        <?php break; ?>
     <?php case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED: ?>
         <table class="log-details">
             <tr>
