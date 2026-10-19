@@ -54,13 +54,13 @@ final class CommentLogDetailsAttachmentLinksTest extends TestCase
     /**
      * @param string[] $files
      */
-    private function render(int $commentType, array $files = ['answer.pdf']): string
+    private function render(int $commentType, array $files = ['answer.pdf'], ?int $paperId = self::PAPERID): string
     {
         $view = new Zend_View();
         $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/');
         $view->addHelperPath(dirname(APPLICATION_PATH) . '/library/Episciences/View/Helper', 'Episciences_View_Helper_');
         $view->log = [
-            'paperid' => self::PAPERID,
+            'paperid' => $paperId,
             'docid' => self::DOCID,
             'date' => '2026-10-16 10:00:00',
             'detail' => [
@@ -81,6 +81,15 @@ final class CommentLogDetailsAttachmentLinksTest extends TestCase
         $html = $this->render(Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION);
 
         self::assertStringContainsString('href="/tmp_files/' . self::PAPERID . '/answer.pdf"', $html);
+    }
+
+    public function testTemporaryVersionFileIsNotLinkedWithoutPaperId(): void
+    {
+        // The docid would only match the paper id for the first version: no link rather than another paper's file
+        $html = $this->render(Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION, ['answer.pdf'], null);
+
+        self::assertStringNotContainsString('tmp_files/', $html);
+        self::assertMatchesRegularExpression('/>\s*answer\.pdf\s*</u', $html);
     }
 
     public function testOtherCommentFileIsLinkedWithTheDocId(): void

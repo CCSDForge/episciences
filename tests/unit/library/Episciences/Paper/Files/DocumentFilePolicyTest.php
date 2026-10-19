@@ -215,4 +215,21 @@ final class DocumentFilePolicyTest extends TestCase
         self::assertTrue(DocumentFilePolicy::isTemporaryVersionFileAllowed(false, false, true, false));
         self::assertFalse(DocumentFilePolicy::isTemporaryVersionFileAllowed(false, true, true, false));
     }
+
+    public function testAuthorWritesTheTemporaryVersionFiles(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isTemporaryVersionFileWritable(true, false, false));
+    }
+
+    public function testEditorialStaffWritesTheTemporaryVersionFilesUnlessInConflictOfInterest(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isTemporaryVersionFileWritable(false, false, true));
+        self::assertFalse(DocumentFilePolicy::isTemporaryVersionFileWritable(false, true, true));
+    }
+
+    public function testAnyOtherMemberDoesNotWriteTheTemporaryVersionFiles(): void
+    {
+        // Reviewers among them: they read the author's answer but must not alter it
+        self::assertFalse(DocumentFilePolicy::isTemporaryVersionFileWritable(false, false, false));
+    }
 }
