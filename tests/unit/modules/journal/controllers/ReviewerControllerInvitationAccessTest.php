@@ -13,6 +13,7 @@ use Episciences_User_Tmp;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use ReflectionProperty;
 use Zend_Auth;
 use Zend_Auth_Storage_NonPersistent;
 use Zend_Controller_Request_HttpTestCase;
@@ -39,6 +40,7 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     private const INVALID_LINK = 'Lien non valide; le jeton transmis dans la requête est erroné.';
 
     private mixed $previousAuthStorage;
+    /** @var \ReviewerController&object{redirectedTo: string|null} */
     private \ReviewerController $controller;
 
     protected function setUp(): void
@@ -342,10 +344,21 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
             $this->controller->getRequest()->setParam($name, $value);
         }
 
+        // the URL is assembled on the current route: start from none, as on /reviewer/invitation (default route),
+        // whatever request an earlier test routed
+        $currentRoute = new ReflectionProperty($router, '_currentRoute');
+        $currentRoute->setAccessible(true);
+        $previousRoute = $currentRoute->getValue($router);
+        $currentRoute->setValue($router, null);
+
         $paper = $this->createMock(Episciences_Paper::class);
         $method = new ReflectionMethod(\ReviewerController::class, 'accept');
         $method->setAccessible(true);
-        $method->invoke($this->controller, $this->invitation(), $this->assignment(), $paper, ['submitaccept' => '1']);
+        try {
+            $method->invoke($this->controller, $this->invitation(), $this->assignment(), $paper, ['submitaccept' => '1']);
+        } finally {
+            $currentRoute->setValue($router, $previousRoute);
+        }
 
         self::assertNotNull($this->controller->redirectedTo, 'the visitor is sent to the login page');
 
