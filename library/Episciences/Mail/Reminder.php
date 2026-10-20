@@ -1076,6 +1076,20 @@ class Episciences_Mail_Reminder
     }
 
     /**
+     * Whether buildInvitationUrl() can produce a working link: an invitation with a row value
+     * needs the global secret (a legacy URL would be refused by the invitation page).
+     */
+    public static function canBuildInvitationUrl(?string $rowSecret, ?InvitationToken $invitationToken = null): bool
+    {
+        if ($rowSecret === null || $rowSecret === '') {
+            return true;
+        }
+
+        $invitationToken ??= new InvitationToken();
+        return $invitationToken->isConfigured();
+    }
+
+    /**
      * fetch recipients for unanswered invitations reminder
      * @param $debug
      * @param $date
@@ -1163,6 +1177,15 @@ class Episciences_Mail_Reminder
             $paper = Episciences_PapersManager::get($data['DOCID']);
             // filter papers that don't need reminders
             if (!$paper || in_array($paper->getStatus(), $filters, true)) {
+                continue;
+            }
+
+            // skip this invitation only: an exception here would stop the reminders of every journal
+            if (!self::canBuildInvitationUrl($data['TOKEN'] ?? null)) {
+                trigger_error(
+                    sprintf('Unanswered invitation reminder skipped for invitation %s: %s is not configured', $data['INVITATION_ID'], InvitationToken::SECRET_CONSTANT_NAME),
+                    E_USER_WARNING
+                );
                 continue;
             }
 

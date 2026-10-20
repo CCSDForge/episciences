@@ -1368,4 +1368,37 @@ final class Episciences_Mail_ReminderTest extends TestCase
             Episciences_Mail_Reminder::buildInvitationUrl(self::REVIEW_URL, 7, 'en', null, 'invited@example.org', new InvitationToken(''))
         );
     }
+
+    // -------------------------------------------------------------------------
+    // canBuildInvitationUrl() — invitations skipped by the reminder
+    // -------------------------------------------------------------------------
+
+    public function testInvitationWithASecretCannotBeLinkedWithoutTheGlobalSecret(): void
+    {
+        self::assertFalse(Episciences_Mail_Reminder::canBuildInvitationUrl(self::ROW_SECRET, new InvitationToken('')));
+    }
+
+    public function testInvitationWithASecretCanBeLinkedWithTheGlobalSecret(): void
+    {
+        self::assertTrue(Episciences_Mail_Reminder::canBuildInvitationUrl(self::ROW_SECRET, new InvitationToken('reminder-test-secret')));
+    }
+
+    /**
+     * @dataProvider legacyRowSecretProvider
+     */
+    public function testLegacyInvitationCanAlwaysBeLinked(?string $rowSecret): void
+    {
+        self::assertTrue(Episciences_Mail_Reminder::canBuildInvitationUrl($rowSecret, new InvitationToken('')));
+    }
+
+    /**
+     * @return array<string, array{0: ?string}>
+     */
+    public static function legacyRowSecretProvider(): array
+    {
+        return [
+            'null' => [null],
+            'empty' => [''],
+        ];
+    }
 }
