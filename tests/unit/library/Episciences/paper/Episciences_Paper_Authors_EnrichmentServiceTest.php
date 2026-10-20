@@ -547,6 +547,43 @@ final class Episciences_Paper_Authors_EnrichmentServiceTest extends TestCase
     }
 
     /**
+     * DC authors are kept when the TEI lists other people or another order, even with the same count
+     */
+    public function testBuildAuthorsFromHalTeiFallsBackOnDcWhenFamilyNamesDiffer(): void
+    {
+        $dcAuthors = [
+            ['fullname' => 'Eva Herbst', 'given' => 'Eva', 'family' => 'Herbst'],
+            ['fullname' => 'Philipp Moroder', 'given' => 'Philipp', 'family' => 'Moroder'],
+        ];
+
+        $swappedTeiAuthors = [
+            ['given_name' => 'Philipp', 'first_name' => 'Philipp', 'family' => 'Moroder', 'fullname' => 'Philipp Moroder'],
+            ['given_name' => 'Eva C', 'first_name' => 'Eva', 'family' => 'Herbst', 'fullname' => 'Eva C Herbst'],
+        ];
+
+        $otherTeiAuthors = [
+            ['given_name' => 'Eva C', 'first_name' => 'Eva', 'family' => 'Herbst', 'fullname' => 'Eva C Herbst'],
+            ['given_name' => 'Jean', 'first_name' => 'Jean', 'family' => 'Dupont', 'fullname' => 'Jean Dupont'],
+        ];
+
+        self::assertSame($dcAuthors, Episciences_Paper_Authors_EnrichmentService::buildAuthorsFromHalTei($dcAuthors, $swappedTeiAuthors));
+        self::assertSame($dcAuthors, Episciences_Paper_Authors_EnrichmentService::buildAuthorsFromHalTei($dcAuthors, $otherTeiAuthors));
+    }
+
+    /**
+     * Family names are compared without case and accents
+     */
+    public function testBuildAuthorsFromHalTeiIgnoresCaseAndAccentsOfFamilyNames(): void
+    {
+        $dcAuthors = [['fullname' => 'Eric Lefevre', 'given' => 'Eric', 'family' => 'LEFEVRE']];
+        $teiAuthors = [['given_name' => 'Éric', 'first_name' => 'Éric', 'family' => 'Lefèvre', 'fullname' => 'Éric Lefèvre']];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::buildAuthorsFromHalTei($dcAuthors, $teiAuthors);
+
+        self::assertSame([['fullname' => 'Éric Lefèvre', 'given' => 'Éric', 'family' => 'Lefèvre']], $result);
+    }
+
+    /**
      * A TEI author without forename is stored with a null given name, like DC authors
      */
     public function testBuildAuthorsFromHalTeiStoresNullGivenNameWhenMissing(): void

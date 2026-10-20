@@ -87,15 +87,23 @@ class Episciences_Paper_Authors_EnrichmentService
 
         $teiAuthors = Episciences_Paper_Authors_HalTeiParser::getAuthorsFromHalTei($teiDocument);
         $teiAffiliations = Episciences_Paper_Authors_HalTeiParser::getAffiFromHalTei($teiDocument);
+        $resolvedAuthors = Episciences_Paper_Authors_HalTeiParser::mergeAuthorInfoAndAffiTei($teiAuthors, $teiAffiliations);
 
-        return Episciences_Paper_Authors_HalTeiParser::mergeAuthorInfoAndAffiTei($teiAuthors, $teiAffiliations);
+        if ($teiAuthors !== [] && $resolvedAuthors === []) {
+            \Episciences\AppRegistry::getMonoLogger()?->warning(
+                'HAL TEI of ' . $identifier . ' v' . $version . ' ignored: an author affiliation references an unknown structure'
+            );
+        }
+
+        return $resolvedAuthors;
     }
 
     /**
      * Build DB author records directly from HAL TEI authors (names with middle names, ORCID, affiliations)
      *
      * The OAI-DC authors stay the reference for the author list: TEI records are only used
-     * when both sources list the same number of authors, otherwise the DC records are returned.
+     * when both sources list the same authors (same family names, in the same order),
+     * otherwise the DC records are returned.
      *
      * @param array<int, array<string, mixed>> $dcAuthors authors built from OAI-DC metadata
      * @param array<int, array<string, mixed>> $teiAuthors authors parsed from TEI
@@ -103,7 +111,7 @@ class Episciences_Paper_Authors_EnrichmentService
      */
     public static function buildAuthorsFromHalTei(array $dcAuthors, array $teiAuthors): array
     {
-        if ($teiAuthors === [] || count($teiAuthors) !== count($dcAuthors)) {
+        if (!self::haveSameFamilyNames($dcAuthors, $teiAuthors)) {
             return $dcAuthors;
         }
 
@@ -129,6 +137,33 @@ class Episciences_Paper_Authors_EnrichmentService
         self::recordCorrection('Authors inserted from HAL TEI instead of OAI-DC: ' . implode(', ', array_column($authors, self::KEY_FULLNAME)));
 
         return array_values($authors);
+    }
+
+    /**
+     * Check that OAI-DC and TEI list the same authors: same count, same family names in the same order
+     * (case and accent insensitive)
+     *
+     * @param array<int, array<string, mixed>> $dcAuthors authors built from OAI-DC metadata
+     * @param array<int, array<string, mixed>> $teiAuthors authors parsed from TEI
+     */
+    private static function haveSameFamilyNames(array $dcAuthors, array $teiAuthors): bool
+    {
+        if ($teiAuthors === [] || count($teiAuthors) !== count($dcAuthors)) {
+            return false;
+        }
+
+        $normalize = static fn(mixed $family): string
+            => mb_strtolower(Episciences_Tools::replaceAccents(trim((string)$family)));
+
+        $teiAuthors = array_values($teiAuthors);
+
+        foreach (array_values($dcAuthors) as $position => $dcAuthor) {
+            if ($normalize($dcAuthor[self::KEY_FAMILY] ?? '') !== $normalize($teiAuthors[$position][self::KEY_FAMILY] ?? '')) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
