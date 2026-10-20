@@ -87,9 +87,8 @@ build: ## Build all docker containers
 	@echo "Building Docker containers..."
 	$(DOCKER_COMPOSE) build
 
-up: ## Start all docker containers
-	@echo "Starting Docker containers..."
-	$(DOCKER_COMPOSE) up -d
+# Shared by `up` and `up-xdebug`: hosts entries and service URLs
+define PRINT_SERVICES
 	@echo "====================================================================="
 	@echo "Development Environment Started Successfully!"
 	@echo "====================================================================="
@@ -105,11 +104,18 @@ up: ## Start all docker containers
 	@echo "  Apache Solr : http://localhost:8983/solr"
 	@echo "  Mailpit     : https://mailpit.episciences.org/"
 	@echo "====================================================================="
+endef
+
+up: ## Start all docker containers
+	@echo "Starting Docker containers..."
+	$(DOCKER_COMPOSE) up -d
+	$(PRINT_SERVICES)
 
 up-xdebug: ## Start all docker containers with Xdebug step-debugging enabled
 	@echo "Starting Docker containers with Xdebug enabled..."
 	$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.xdebug.yml up -d
-	@echo "Xdebug is active. Attach your IDE to host.docker.internal:9003 to step-debug."
+	$(PRINT_SERVICES)
+	@echo "🐞 Xdebug is active. Attach your IDE to host.docker.internal:9003 to step-debug."
 
 down: ## Stop all docker containers and remove orphans
 	@echo "Stopping Docker containers..."
