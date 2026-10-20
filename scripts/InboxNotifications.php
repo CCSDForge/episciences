@@ -8,6 +8,7 @@ use Episciences\Notify\NotifySourceConfig;
 use Episciences\Notify\NotifySourceRegistry;
 use Episciences\Notify\PayloadValidator;
 use Episciences\Notify\PreprintUrlParser;
+use Episciences\Reviewer\InvitationToken;
 use scripts\AbstractScript;
 
 require_once "AbstractScript.php";
@@ -1346,6 +1347,11 @@ class InboxNotifications extends AbstractScript
                 DOMAIN,
                 $oInvitation->getId()
             );
+
+            $linkToken = (new InvitationToken())->forInvitation($oInvitation);
+            if ($linkToken !== null) {
+                $invitationUrl .= '&' . InvitationToken::URL_PARAM . '=' . $linkToken;
+            }
 
             $oAssignment->setInvitation_id($oInvitation->getId());
             $oAssignment->save();
