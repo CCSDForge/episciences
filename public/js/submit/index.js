@@ -80,7 +80,7 @@ $(document).ready(function () {
     // @see public/js/submit/identifier.js
 
     $searchDocDocId.change(function () {
-        const input = $(this).val().trim();
+        const input = this.value.trim();
         if (!input) {
             return;
         }
@@ -93,14 +93,17 @@ $(document).ready(function () {
             isRequiredVersion: isRequiredVersion && versionField !== null,
         });
 
-        $(this).val(identifier);
+        this.value = identifier;
         SubmitIdentifier.applyVersion(versionField, version);
     });
 
     // Once edited by the author, the version field is no longer cleared automatically
-    $('#search_doc-version').on('input', function () {
-        delete this.dataset.fromIdentifier;
-    });
+    const versionInput = document.getElementById('search_doc-version');
+    if (versionInput) {
+        versionInput.addEventListener('input', function () {
+            delete this.dataset.fromIdentifier;
+        });
+    }
 
     function checkDataverse() {
         const searchDocRepoId = document.getElementById('search_doc-repoId');

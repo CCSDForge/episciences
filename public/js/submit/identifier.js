@@ -43,10 +43,6 @@ const SubmitIdentifier = (() => {
     // "v0" is not a valid version
     const VERSION_SUFFIX = /^(.+?)v([1-9]\d*)$/;
 
-    // Version used for a URL that does not give one, as done server-side
-    // (@see SubmitController::extractVersion())
-    const DEFAULT_VERSION = 1;
-
     /**
      * Version as a positive number ("2" => 2, "1.1" => 1.1), or null.
      *
@@ -160,8 +156,10 @@ const SubmitIdentifier = (() => {
     /**
      * Extract the identifier and the version from the identifier field input.
      *
-     * For a URL, the version is always set when the repository requires one:
-     * the version given by the URL, DEFAULT_VERSION otherwise.
+     * No default version is returned for a URL without one: the field is left to
+     * the author, and an empty version means 1 server-side
+     * (@see SubmitController::extractVersion()). Without a version, HAL and arXiv
+     * URLs point to the latest version, not to version 1.
      *
      * @param {string} input - bare identifier or repository URL
      * @param {Object} [options]
@@ -189,8 +187,7 @@ const SubmitIdentifier = (() => {
             return fromUrl;
         }
 
-        const { identifier, version } = splitVersion(fromUrl.identifier);
-        return { identifier, version: version ?? DEFAULT_VERSION };
+        return splitVersion(fromUrl.identifier);
     }
 
     /**

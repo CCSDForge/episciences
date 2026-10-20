@@ -43,13 +43,13 @@ describe('SubmitIdentifier.parse', () => {
     describe('HAL URLs', () => {
         test.each([
             ['https://hal.science/hal-05191818v1', 'hal-05191818', 1],
-            ['https://hal.science/hal-05191818', 'hal-05191818', 1],
+            ['https://hal.science/hal-05191818', 'hal-05191818', null],
             ['https://hal.science/hal-01234567v2/document', 'hal-01234567', 2],
             ['https://hal.science/hal-01234567v2/document/', 'hal-01234567', 2],
             [
                 'https://hal.science/hal-01234567/file/paper.pdf',
                 'hal-01234567',
-                1,
+                null,
             ],
             ['https://inria.hal.science/hal-01234567v3', 'hal-01234567', 3],
             [
@@ -58,8 +58,12 @@ describe('SubmitIdentifier.parse', () => {
                 1,
             ],
             ['https://hal.science/hal-01234567v2?lang=en', 'hal-01234567', 2],
-            ['https://hal.science/hal-01234567v0', 'hal-01234567', 1],
-            ['https://hal.science/hal-01234567v0/document', 'hal-01234567', 1],
+            ['https://hal.science/hal-01234567v0', 'hal-01234567', null],
+            [
+                'https://hal.science/hal-01234567v0/document',
+                'hal-01234567',
+                null,
+            ],
         ])('%s', (input, identifier, version) => {
             expect(parse(input)).toEqual({ identifier, version });
         });
@@ -68,7 +72,7 @@ describe('SubmitIdentifier.parse', () => {
     describe('arXiv URLs', () => {
         test.each([
             ['https://arxiv.org/abs/2310.02192v1', '2310.02192', 1],
-            ['https://arxiv.org/abs/2310.02192', '2310.02192', 1],
+            ['https://arxiv.org/abs/2310.02192', '2310.02192', null],
             ['https://arxiv.org/pdf/2310.02192v2', '2310.02192', 2],
             ['https://arxiv.org/pdf/2310.02192v2.pdf', '2310.02192', 2],
             ['https://arxiv.org/html/2310.02192v2', '2310.02192', 2],
@@ -76,7 +80,7 @@ describe('SubmitIdentifier.parse', () => {
             ['https://export.arxiv.org/abs/2310.02192v2', '2310.02192', 2],
             ['https://arxiv.org/abs/2310.02192v2?context=cs', '2310.02192', 2],
             ['https://arxiv.org/abs/hep-th/9704188v2', 'hep-th/9704188', 2],
-            ['https://arxiv.org/abs/math.GT/0309136', 'math.GT/0309136', 1],
+            ['https://arxiv.org/abs/math.GT/0309136', 'math.GT/0309136', null],
         ])('%s', (input, identifier, version) => {
             expect(parse(input)).toEqual({ identifier, version });
         });
@@ -89,10 +93,10 @@ describe('SubmitIdentifier.parse', () => {
             ).toBe('number');
         });
 
-        test('defaults to 1 when the URL gives none', () => {
+        test('is not set when the URL gives none (latest version, left to the author)', () => {
             expect(parse('https://hal.science/hal-01234567')).toEqual({
                 identifier: 'hal-01234567',
-                version: 1,
+                version: null,
             });
         });
 
@@ -105,13 +109,13 @@ describe('SubmitIdentifier.parse', () => {
             ).toBe(1.1);
         });
 
-        test('defaults to 1 when the version parameter is not a number', () => {
+        test('is not set when the version parameter is not a number', () => {
             expect(
                 parse(
                     'https://demo.dataverse.org/dataset.xhtml?persistentId=doi:10.70122/FK2/ABC&version=DRAFT',
                     { isDataverseRepo: true }
                 ).version
-            ).toBe(1);
+            ).toBeNull();
         });
 
         test('is not set when the repository does not require one', () => {
@@ -153,7 +157,7 @@ describe('SubmitIdentifier.parse', () => {
             [
                 'https://www.biorxiv.org/content/10.1101/339747',
                 '10.1101/339747',
-                1,
+                null,
             ],
         ])('%s', (input, identifier, version) => {
             expect(parse(input)).toEqual({ identifier, version });
@@ -228,12 +232,12 @@ describe('SubmitIdentifier.parse', () => {
             [
                 'https://darus.uni-stuttgart.de/dataset.xhtml?persistentId=doi:10.18419/DARUS-2277',
                 'doi:10.18419/DARUS-2277',
-                1,
+                null,
             ],
             [
                 'https://darus.uni-stuttgart.de/dataset.xhtml?someOtherParam=value',
                 'dataset.xhtml',
-                1,
+                null,
             ],
         ])('%s', (input, identifier, version) => {
             expect(parse(input, { isDataverseRepo: true })).toEqual({
@@ -247,13 +251,13 @@ describe('SubmitIdentifier.parse', () => {
         test('uses the path of a URL with query parameters', () => {
             expect(
                 parse('https://example.com/resource?id=123&format=pdf')
-            ).toEqual({ identifier: 'resource', version: 1 });
+            ).toEqual({ identifier: 'resource', version: null });
         });
 
         test('uses the path of a malformed host', () => {
             expect(parse('https://.com/path')).toEqual({
                 identifier: 'path',
-                version: 1,
+                version: null,
             });
         });
 
@@ -309,6 +313,14 @@ describe('SubmitIdentifier.applyVersion', () => {
         SubmitIdentifier.applyVersion(versionField, null);
 
         expect(versionField.value).toBe('4');
+    });
+
+    test('keeps a version typed by the author when a URL without version is pasted', () => {
+        versionField.value = '3';
+        const { version } = parse('https://arxiv.org/abs/2310.02192');
+        SubmitIdentifier.applyVersion(versionField, version);
+
+        expect(versionField.value).toBe('3');
     });
 
     test('does nothing without a version field', () => {
