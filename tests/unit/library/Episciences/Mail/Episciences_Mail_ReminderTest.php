@@ -263,6 +263,30 @@ final class Episciences_Mail_ReminderTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // getLostLoginTags
+    // -------------------------------------------------------------------------
+
+    public function testGetLostLoginTagsFillsCurrentAndObsoleteTags(): void
+    {
+        $tags = Episciences_Mail_Reminder::getLostLoginTags('https://journal.example.org');
+
+        self::assertSame([
+            \Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => 'https://journal.example.org/user/lostlogin',
+            \Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => 'https://journal.example.org/user/lostlogin',
+        ], $tags);
+    }
+
+    public function testGetLostLoginTagsKeepsTheJournalPathPrefix(): void
+    {
+        $tags = Episciences_Mail_Reminder::getLostLoginTags('https://manager.example.org/journal/');
+
+        self::assertSame(
+            'https://manager.example.org/journal/user/lostlogin',
+            $tags[\Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN]
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
 
