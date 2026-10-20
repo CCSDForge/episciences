@@ -915,6 +915,10 @@ class Episciences_Submit
 
         $id = self::cleanIdentifier($id, $repoId);
 
+        if (self::isVersionSuffixedRepository($repoId)) {
+            self::extractVersionSuffix($id, $version);
+        }
+
         try {
             // Load hooks, version, identifier, paper
             $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', [
@@ -1004,7 +1008,7 @@ class Episciences_Submit
             // Repository-specific checks
             if (Episciences_Repositories::isFromHalRepository($repoId)) {
                 self::assertHalSubmissionAllowed($result['record'], $id, $identifier, $oai);
-            } elseif (Episciences_Repositories::getLabel($repoId) === 'arXiv') {
+            } elseif (Episciences_Repositories::isFromArxivRepository((int)$repoId)) {
                 self::assertArxivVersionExists($oai, $identifier, $version !== null ? (int)$version : null);
             }
 
@@ -1099,6 +1103,28 @@ class Episciences_Submit
         }
 
         return $id;
+    }
+
+    /**
+     * HAL and arXiv identifiers may carry a version suffix (e.g. hal-01234567v4, 2310.02192v4).
+     */
+    private static function isVersionSuffixedRepository($repoId): bool
+    {
+        return Episciences_Repositories::isFromHalRepository((int)$repoId)
+            || Episciences_Repositories::isFromArxivRepository((int)$repoId);
+    }
+
+    /**
+     * Remove a trailing version suffix ("v4") from the identifier and use it as the document version.
+     * The suffix takes precedence over the version field, as the submission form does client-side.
+     * "v0" is not a valid version and is left untouched.
+     */
+    private static function extractVersionSuffix(string &$id, ?float &$version): void
+    {
+        if (preg_match('/^(.+?)v([1-9]\d*)$/', $id, $matches)) {
+            $id = $matches[1];
+            $version = Episciences_Repositories_Common::normalizeVersion($matches[2]);
+        }
     }
 
     /**
@@ -1266,11 +1292,11 @@ class Episciences_Submit
      */
     private static function assertArxivVersionExists(
         ?Episciences_Oai_Client $oai,
-        string                  $identifier,
+        ?string                 $identifier,
         ?int                    $version
     ): void
     {
-        if (!$oai || $version === null) {
+        if (!$oai || $identifier === null || $version === null) {
             return;
         }
 

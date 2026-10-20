@@ -179,14 +179,14 @@ $(document).ready(function () {
         // auto-detected instead (isRequiredVersion === false: Zenodo, ARCHE, BAOBAB...)
         // can have identifiers that end in "v" + digits by pure coincidence of their
         // own slug format (e.g. BAOBAB's "s9g8r-v1011"), which must not be split.
-        const versionMatch = isRequiredVersion ? identifier.match(/v(\d+)$/) : null;
+        const versionMatch = isRequiredVersion ? identifier.match(/v([1-9]\d*)$/) : null;
 
         if (versionMatch && versionField) {
             // Extract the version number (without the 'v' prefix)
             versionField.value = versionMatch[1];
 
             // Return identifier without the version
-            return identifier.replace(/v\d+$/, '');
+            return identifier.replace(/v[1-9]\d*$/, '');
         }
 
         // If no version found, clear the version field and return original identifier

@@ -41,14 +41,14 @@ function removeVersionFromIdentifier(identifier, options = {}) {
     // version must be typed inline (HAL, arXiv); repositories whose version is
     // auto-detected (isRequiredVersion === false) may have identifiers that end
     // in "v" + digits by coincidence of their own slug format.
-    const versionMatch = isRequiredVersion ? identifier.match(/v(\d+)$/) : null;
+    const versionMatch = isRequiredVersion ? identifier.match(/v([1-9]\d*)$/) : null;
 
     if (versionMatch && versionField) {
         // Extract the version number (without the 'v' prefix)
         versionField.value = versionMatch[1];
 
         // Return identifier without the version
-        return identifier.replace(/v\d+$/, '');
+        return identifier.replace(/v[1-9]\d*$/, '');
     }
 
     // If no version found, clear the version field and return original identifier
