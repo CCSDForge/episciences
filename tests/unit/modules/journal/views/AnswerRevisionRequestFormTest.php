@@ -59,6 +59,8 @@ final class AnswerRevisionRequestFormTest extends TestCase
 
         $view = new Zend_View();
         $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/');
+        // url() with PREFIX_URL, as registered by the application
+        $view->addHelperPath(dirname(APPLICATION_PATH) . '/library/Episciences/View/Helper', 'Episciences_View_Helper_');
         $view->paper = $paper;
         $view->review = $review;
         $view->current_demand = ['PCID' => self::PCID];
