@@ -1076,7 +1076,7 @@ class Episciences_Mail_Reminder
             // dates and link depend on the language of the recipient
             $localizedTags = static fn(string $tagLang): array => [
                 Episciences_Mail_Tags::TAG_INVITATION_LINK => self::buildInvitationUrl(
-                    $review->getUrl(),
+                    $review->getBackEndUrl(),
                     (int)$data['INVITATION_ID'],
                     $tagLang,
                     $data['TOKEN'] ?? null,
