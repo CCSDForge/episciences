@@ -89,6 +89,29 @@ final class PaperControllerContributorGuardTest extends TestCase
     }
 
     /**
+     * The temporary version form and its save also apply the rule of the files the version is uploaded with
+     * (see PaperControllerTemporaryVersionAccessTest for the rule itself).
+     *
+     * @dataProvider temporaryVersionEndpoints
+     */
+    public function testTemporaryVersionEndpointAppliesTheFileRule(string $action): void
+    {
+        $method = $this->extractMethod($action);
+
+        self::assertStringContainsString('isAllowedToWriteTemporaryVersion(', $method,
+            "$action must only accept the users allowed to upload the files of the temporary version");
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function temporaryVersionEndpoints(): iterable
+    {
+        yield 'tmpversion'     => ['tmpversionAction'];
+        yield 'savetmpversion' => ['savetmpversionAction'];
+    }
+
+    /**
      * Abandoning the publication process must apply the same conditions as the
      * button display: staff, owner or paper editor depending on the settings.
      */

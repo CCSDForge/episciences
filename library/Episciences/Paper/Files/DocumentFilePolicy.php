@@ -20,6 +20,9 @@ use Episciences_CommentsManager;
  * - reviewers read the data descriptor and the files of the comments they are shown: their exchanges
  *   with the author and the author's cover letter. Copy-editing files are not for them. A conflict of
  *   interest, which concerns the editorial role, does not withdraw what the reviewing page shows them.
+ *
+ * The files of the temporary versions are stored by paper, not by version (see isTemporaryVersionFileAllowed() and
+ * isTemporaryVersionFileWritable()).
  */
 final class DocumentFilePolicy
 {
@@ -87,6 +90,44 @@ final class DocumentFilePolicy
         }
 
         return $isReviewer && self::isShownToReviewer($folder, $commentTypes);
+    }
+
+    /**
+     * Files of the temporary versions, kept in the directory of the paper and shown with the revision answer
+     * and the temporary version: the author and co-authors, the editorial staff of the paper unless they are
+     * in conflict of interest, and the reviewers, who are given the temporary version to review.
+     *
+     * @param bool $isOwnerOrCoAuthor the user is the owner or a co-author of the paper
+     * @param bool $hasConflict the user is in conflict of interest with the paper (declared or not answered yet)
+     * @param bool $isEditorialStaff the user handles the paper for the journal (see class description)
+     * @param bool $isReviewer the user is a reviewer of a version of the paper
+     */
+    public static function isTemporaryVersionFileAllowed(
+        bool $isOwnerOrCoAuthor,
+        bool $hasConflict,
+        bool $isEditorialStaff,
+        bool $isReviewer
+    ): bool
+    {
+        return self::isTemporaryVersionFileWritable($isOwnerOrCoAuthor, $hasConflict, $isEditorialStaff) || $isReviewer;
+    }
+
+    /**
+     * Upload and removal of the files of the temporary versions, part of the answer to a revision request: the
+     * author and co-authors, and the editorial staff of the paper unless they are in conflict of interest.
+     * The reviewers read these files (see isTemporaryVersionFileAllowed()) but must not alter the author's answer.
+     *
+     * @param bool $isOwnerOrCoAuthor the user is the owner or a co-author of the paper
+     * @param bool $hasConflict the user is in conflict of interest with the paper (declared or not answered yet)
+     * @param bool $isEditorialStaff the user handles the paper for the journal (see class description)
+     */
+    public static function isTemporaryVersionFileWritable(
+        bool $isOwnerOrCoAuthor,
+        bool $hasConflict,
+        bool $isEditorialStaff
+    ): bool
+    {
+        return $isOwnerOrCoAuthor || ($isEditorialStaff && !$hasConflict);
     }
 
     /**

@@ -55,8 +55,23 @@ class Episciences_ToolsTest extends TestCase
     /**
      * Regression S5: $fileName from JSON payload injected into href and link text
      * without encoding — allows XSS and path traversal.
-     * The fix uses urlencode() for the href and htmlspecialchars() for the display text.
+     * The fix encodes the file name in the href (buildTmpFileUrl(), see testBuildTmpFileUrl*()) and uses
+     * htmlspecialchars() for the href and the display text.
      */
+    public function testBuildTmpFileUrlLinksWithThePaperId(): void
+    {
+        self::assertSame('/tmp_files/10/answer.pdf', Episciences_Tools::buildTmpFileUrl(10, 'answer.pdf'));
+    }
+
+    public function testBuildTmpFileUrlEncodesTheFileNameAsAPathSegment(): void
+    {
+        // A space is "%20", not "+"; "#", "?", "%" and quotes do not end or alter the link
+        self::assertSame(
+            '/tmp_files/10/r%C3%A9ponse%20%232%3F%25%22.pdf',
+            Episciences_Tools::buildTmpFileUrl(10, 'réponse #2?%".pdf')
+        );
+    }
+
     public function testBuildHtmlTmpDocUrlsEscapesFileName(): void
     {
         $method = new ReflectionMethod(Episciences_Tools::class, 'buildHtmlTmpDocUrls');
@@ -64,9 +79,9 @@ class Episciences_ToolsTest extends TestCase
         $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
 
         self::assertStringContainsString(
-            'urlencode($fileName)',
+            'self::buildTmpFileUrl(',
             $source,
-            'Security S5: $fileName must be urlencode()d in the href attribute'
+            'Security S5: $fileName must be encoded by buildTmpFileUrl() in the href attribute'
         );
         self::assertMatchesRegularExpression(
             '/htmlspecialchars\s*\(\s*\$href/',
