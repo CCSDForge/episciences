@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix paper status/revision emails sent from modals being logged as `CODE_MAIL_SENT` in the paper history even when `writeMail()` failed (`PaperDefaultController::sendMailFromModal()`).
 - Fix submission acknowledgment never reaching the author (and co-authors) when no editorial committee member is left to notify, e.g. a chief editor submitting to their own journal (`Episciences_Submit::sendNotifications()`, regression from v1.0.54).
 - Fix conflict-of-interest filtering of submission recipients comparing UIDs against list positions instead of UID values (`Episciences_Submit::filterConflictRecipients()`).
+- Fix HAL and arXiv submissions keeping the version suffix in the stored identifier (e.g. `2310.02192v2` instead of `2310.02192`) with a mismatching version: the trailing `vN` is now removed server-side and used as the document version (`Episciences_Submit::getDoc()`).
 
 ### Changed
 
