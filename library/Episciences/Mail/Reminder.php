@@ -1063,7 +1063,7 @@ class Episciences_Mail_Reminder
                     $localizedTags, self::buildAdminPaperUrl($paper->getDocid(), $journalOptions)
                 );
                 array_push($recipients, ...$this->getSupervisorRecipients(
-                    $paper, $reviewerUid, $user->getEmail(), $fullname, $tags, $data['INVITATION_DATE'], $supervisorTags
+                    $paper, $reviewerUid, $user->getEmail(), $fullname, array_merge($commonTags, $tags), $data['INVITATION_DATE'], $supervisorTags
                 ));
             } else {
 
@@ -1211,7 +1211,7 @@ class Episciences_Mail_Reminder
                 }
             }
         } elseif ($this->isSupervisorRecipient()) {
-            $recipients = $this->getReviewingDeadlineSupervisorRecipients($tmp, $filters, $review);
+            $recipients = $this->getReviewingDeadlineSupervisorRecipients($tmp, $filters, $review, $commonTags);
         } else {
             foreach ($tmp as $data) {
 
@@ -1371,7 +1371,7 @@ class Episciences_Mail_Reminder
                 }
             }
         } elseif ($this->isSupervisorRecipient()) {
-            $recipients = $this->getReviewingDeadlineSupervisorRecipients($tmp, $filters, $review);
+            $recipients = $this->getReviewingDeadlineSupervisorRecipients($tmp, $filters, $review, $commonTags);
         } else {
             foreach ($tmp as $data) {
 
@@ -1901,10 +1901,11 @@ class Episciences_Mail_Reminder
      * @param array $rows Reviewing rows (DOCID, UID, DEADLINE)
      * @param array $filters Paper statuses that don't need reminders
      * @param Episciences_Review $review
+     * @param array $commonTags Tags shared by all recipients (lost login link)
      * @return array
      * @throws Zend_Db_Statement_Exception
      */
-    private function getReviewingDeadlineSupervisorRecipients(array $rows, array $filters, Episciences_Review $review): array
+    private function getReviewingDeadlineSupervisorRecipients(array $rows, array $filters, Episciences_Review $review, array $commonTags = []): array
     {
         $recipients = [];
         // papers loaded once: a paper has one row per reviewer
@@ -1920,11 +1921,11 @@ class Episciences_Mail_Reminder
             $reviewer = new Episciences_User;
             $reviewer->findWithCAS($data['UID']);
 
-            $tags = [
+            $tags = array_merge($commonTags, [
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions)
-            ];
+            ]);
 
             array_push($recipients, ...$this->getSupervisorRecipients(
                 $paper, (int)$data['UID'], $reviewer->getEmail(), $reviewer->getScreenName(), $tags, $data['DEADLINE']
