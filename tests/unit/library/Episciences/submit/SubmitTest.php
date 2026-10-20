@@ -2,6 +2,7 @@
 
 namespace unit\library\Episciences\submit;
 
+use Episciences_Oai_Client;
 use Episciences_Paper;
 use Episciences_Repositories;
 use Episciences_Submit;
@@ -666,7 +667,10 @@ XML;
         $method = new ReflectionMethod(Episciences_Submit::class, 'assertArxivVersionExists');
         $method->setAccessible(true);
 
+        $oai = $this->createMock(Episciences_Oai_Client::class);
+        $oai->expects(self::never())->method('getArXivRawRecord');
+
         // No OAI identifier template configured: nothing to check, no TypeError
-        self::assertNull($method->invoke(null, null, null, 1));
+        self::assertNull($method->invoke(null, $oai, null, 1));
     }
 }
