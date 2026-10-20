@@ -2,6 +2,7 @@
 
 use Episciences\Files\Uploader;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
+use Episciences\Reviewer\InvitationToken;
 use Episciences\Submit\SubmittedRecord;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
@@ -1699,11 +1700,15 @@ class PaperController extends PaperDefaultController
             $invitation_deadline = $oInvitation->getExpiration_date();
 
             // link to rating invitation page
-            $invitation_url = $this->view->url([
+            $invitationUrlParams = [
                 self::CONTROLLER => 'reviewer',
                 self::ACTION => 'invitation',
-                'id' => $oInvitation->getId()]);
-            $invitation_url = APPLICATION_URL . $invitation_url;
+                'id' => $oInvitation->getId()];
+            $linkToken = (new InvitationToken())->forInvitation($oInvitation);
+            if ($linkToken !== null) {
+                $invitationUrlParams[InvitationToken::URL_PARAM] = $linkToken;
+            }
+            $invitation_url = APPLICATION_URL . $this->view->url($invitationUrlParams);
 
             // update assignment with invitation_id
             $oAssignment->setInvitation_id($oInvitation->getId());

@@ -349,6 +349,7 @@ return array(
     Episciences_Paper_Logger::CODE_REVIEWER_INVITATION => "Reviewer invitation",
     Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED => "Accepted invitation",
     Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED => "Declined invitation",
+    Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_LINKED => "Invitation linked to another account",
     Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT => "Reviewer unassignment",
     Episciences_Paper_Logger::CODE_REVIEWER_ASSIGNMENT => "Reviewer assignment",
     Episciences_Paper_Logger::CODE_REVIEWING_IN_PROGRESS => "Ongoing review",

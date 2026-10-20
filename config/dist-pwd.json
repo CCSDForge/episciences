@@ -87,6 +87,9 @@
   "ALTCHA": {
     "HMAC_SECRET": "generate-a-long-random-secret-eg-openssl-rand-hex-32"
   },
+  "REVIEWER_INVITATION": {
+    "HMAC_SECRET": ""
+  },
   "ENDPOINTS": {
     "INDEXING_HOST": "solr-hostname-for-indexing.example.com",
     "INDEXING_PROTOCOL": "HTTP",

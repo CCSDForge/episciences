@@ -2,6 +2,7 @@
 
 namespace unit\library\Episciences\Mail;
 
+use Episciences\Reviewer\InvitationToken;
 use Episciences_Mail_Reminder;
 use Episciences_Mail_RemindersManager;
 use Episciences_Mail_TemplatesManager;
@@ -1323,5 +1324,81 @@ final class Episciences_Mail_ReminderTest extends TestCase
             $rc->getConstants(),
             static fn ($v) => is_int($v)
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // buildInvitationUrl() — unanswered invitation reminder link
+    // -------------------------------------------------------------------------
+
+    private const REVIEW_URL = 'https://journal.example.org';
+    private const ROW_SECRET = '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff';
+
+    public function testInvitationUrlCarriesTheLinkTokenWhenTheRowHasASecret(): void
+    {
+        $token = new InvitationToken('reminder-test-secret');
+
+        self::assertSame(
+            self::REVIEW_URL . '/reviewer/invitation/id/7/lang/fr/token/' . $token->compute(7, self::ROW_SECRET),
+            Episciences_Mail_Reminder::buildInvitationUrl(self::REVIEW_URL, 7, 'fr', self::ROW_SECRET, null, $token)
+        );
+    }
+
+    public function testTemporaryUserInvitationWithASecretNoLongerCarriesTheMd5(): void
+    {
+        $token = new InvitationToken('reminder-test-secret');
+
+        self::assertSame(
+            self::REVIEW_URL . '/reviewer/invitation/id/7/lang/en/token/' . $token->compute(7, self::ROW_SECRET),
+            Episciences_Mail_Reminder::buildInvitationUrl(self::REVIEW_URL, 7, 'en', self::ROW_SECRET, 'invited@example.org', $token)
+        );
+    }
+
+    public function testLegacyInvitationKeepsItsFormerUrl(): void
+    {
+        self::assertSame(
+            self::REVIEW_URL . '/reviewer/invitation/id/7/lang/fr',
+            Episciences_Mail_Reminder::buildInvitationUrl(self::REVIEW_URL, 7, 'fr', null, null, new InvitationToken(''))
+        );
+    }
+
+    public function testLegacyTemporaryUserInvitationKeepsTheMd5(): void
+    {
+        self::assertSame(
+            self::REVIEW_URL . '/reviewer/invitation/id/7/lang/en/tmp/' . md5('invited@example.org'),
+            Episciences_Mail_Reminder::buildInvitationUrl(self::REVIEW_URL, 7, 'en', null, 'invited@example.org', new InvitationToken(''))
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // canBuildInvitationUrl() — invitations skipped by the reminder
+    // -------------------------------------------------------------------------
+
+    public function testInvitationWithASecretCannotBeLinkedWithoutTheGlobalSecret(): void
+    {
+        self::assertFalse(Episciences_Mail_Reminder::canBuildInvitationUrl(self::ROW_SECRET, new InvitationToken('')));
+    }
+
+    public function testInvitationWithASecretCanBeLinkedWithTheGlobalSecret(): void
+    {
+        self::assertTrue(Episciences_Mail_Reminder::canBuildInvitationUrl(self::ROW_SECRET, new InvitationToken('reminder-test-secret')));
+    }
+
+    /**
+     * @dataProvider legacyRowSecretProvider
+     */
+    public function testLegacyInvitationCanAlwaysBeLinked(?string $rowSecret): void
+    {
+        self::assertTrue(Episciences_Mail_Reminder::canBuildInvitationUrl($rowSecret, new InvitationToken('')));
+    }
+
+    /**
+     * @return array<string, array{0: ?string}>
+     */
+    public static function legacyRowSecretProvider(): array
+    {
+        return [
+            'null' => [null],
+            'empty' => [''],
+        ];
     }
 }
