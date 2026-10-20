@@ -324,6 +324,25 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
         self::assertSame(0, self::$conflictLookups);
     }
 
+    public function testAnonymousUserIsRefusedWithoutAnyLookup(): void
+    {
+        // Not logged in: even a paper or an assignment recorded with an uid of 0 must not grant access
+        [$code, $log] = $this->runTmpAction(['roles' => self::roles(['owner' => true, 'coAuthor' => true, 'reviewer' => true])]);
+
+        self::assertSame(404, $code);
+        self::assertSame([], $log->delivered);
+        self::assertSame([], $log->lookedUp);
+        self::assertSame([], $log->roleLookups);
+    }
+
+    public function testAnonymousUserCannotHandleTheTemporaryVersionFiles(): void
+    {
+        [$allowed, $lookedUp] = $this->runHandleCheck(['owner' => true], 0, self::PAPERID);
+
+        self::assertFalse($allowed);
+        self::assertSame([], $lookedUp);
+    }
+
     public function testReviewerOfAVersionIsAllowed(): void
     {
         $this->logInAs([Episciences_Acl::ROLE_REVIEWER]);

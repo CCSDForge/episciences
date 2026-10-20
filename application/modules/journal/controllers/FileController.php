@@ -166,6 +166,13 @@ class FileController extends DefaultController
      */
     private function isAllowedOnTemporaryVersionFiles(int $paperId, bool $toWrite): bool
     {
+        $uid = (int)Episciences_Auth::getUid();
+
+        // Never anonymous: an uid of 0 must not match an owner or an assignment
+        if ($uid <= 0) {
+            return false;
+        }
+
         try {
             $docIds = $this->getPaperDocIds($paperId);
 
@@ -174,7 +181,6 @@ class FileController extends DefaultController
             }
 
             $review = $this->findJournal();
-            $uid = (int)Episciences_Auth::getUid();
             // As Episciences_Paper::isOwnerOrCoAuthor(): the user signed in as another one counts as well
             $originalUid = Episciences_Auth::getOriginalIdentity()?->getUid();
             $authorUids = array_values(array_unique(null === $originalUid ? [$uid] : [$uid, (int)$originalUid]));
