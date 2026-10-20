@@ -198,8 +198,11 @@ class Episciences_Paper_Authors_HalTeiParser
      * Replace affiliation structure references (e.g. "struct-1234") with their resolved details
      *
      * @param array $authorsWithStructRefs authors with raw structure references
+     * An inconsistent TEI (an author pointing to a structure absent from listOrg) is not trusted:
+     * an empty array is returned so that callers fall back on OAI-DC or skip the enrichment.
+     *
      * @param array $affiliationsByStructId affiliation details keyed by structure ID
-     * @return array authors with resolved affiliation details
+     * @return array authors with resolved affiliation details, empty if a reference cannot be resolved
      */
     public static function mergeAuthorInfoAndAffiTei(array $authorsWithStructRefs, array $affiliationsByStructId): array
     {
@@ -209,6 +212,10 @@ class Episciences_Paper_Authors_HalTeiParser
             }
 
             foreach ($author[self::KEY_AFFILIATIONS] as $affiIndex => $structRef) {
+                if (!isset($affiliationsByStructId[$structRef])) {
+                    return [];
+                }
+
                 $resolvedAffiliation = [self::KEY_NAME => $affiliationsByStructId[$structRef][self::KEY_NAME]];
 
                 if (array_key_exists(self::IDNO_TYPE_ROR, $affiliationsByStructId[$structRef])) {

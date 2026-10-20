@@ -239,6 +239,27 @@ final class Episciences_Paper_Authors_HalTeiParserTest extends TestCase
     }
 
     /**
+     * Verify an affiliation reference missing from listOrg discards the whole TEI result
+     */
+    public function testMergeAuthorInfoAndAffiTeiReturnsEmptyOnUnresolvedStructRef(): void
+    {
+        $authors = [
+            [
+                'given_name' => 'Marie',
+                'family' => 'Curie',
+                'fullname' => 'Marie Curie',
+                'affiliations' => ['struct-100', 'struct-999'],
+            ],
+        ];
+
+        $affiliations = [
+            'struct-100' => ['name' => 'Sorbonne', 'ROR' => 'https://ror.org/0000001'],
+        ];
+
+        self::assertSame([], Episciences_Paper_Authors_HalTeiParser::mergeAuthorInfoAndAffiTei($authors, $affiliations));
+    }
+
+    /**
      * Verify full pipeline: getAuthorsFromHalTei extracts and produces correct structure
      */
     public function testGetAuthorsFromHalTeiFullPipeline(): void
