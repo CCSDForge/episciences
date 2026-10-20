@@ -1060,7 +1060,7 @@ class Episciences_Mail_Reminder
                 // a temporary reviewer has no account UID
                 $reviewerUid = (int)$data['TMP_USER'] === 1 ? null : (int)$data['UID'];
                 $supervisorTags = self::withPaperManagementLink(
-                    $localizedTags, $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
+                    $localizedTags, self::buildAdminPaperUrl($paper->getDocid(), $journalOptions)
                 );
                 array_push($recipients, ...$this->getSupervisorRecipients(
                     $paper, $reviewerUid, $user->getEmail(), $fullname, $tags, $data['INVITATION_DATE'], $supervisorTags
@@ -1909,6 +1909,7 @@ class Episciences_Mail_Reminder
         $recipients = [];
         // papers loaded once: a paper has one row per reviewer
         $papers = [];
+        $journalOptions = ['rvCode' => $review->getCode(), Episciences_Review::IS_NEW_FRONT_SWITCHED => $review->isNewFrontSwitched()];
 
         foreach ($rows as $data) {
             $paper = $papers[$data['DOCID']] ??= Episciences_PapersManager::get($data['DOCID']);
@@ -1922,7 +1923,7 @@ class Episciences_Mail_Reminder
             $tags = [
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
+                Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions)
             ];
 
             array_push($recipients, ...$this->getSupervisorRecipients(
