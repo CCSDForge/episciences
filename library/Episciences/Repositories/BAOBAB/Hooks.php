@@ -447,12 +447,9 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      */
     private static function resolveArk(string $ark): ?string
     {
-        $normalizedArk = preg_replace('#^ark:/?#', 'ark:/', $ark);
-        $query = sprintf('pids.ark.identifier:"%s"', $normalizedArk);
-
         try {
             $response = Episciences_Tools::callApi(
-                self::API_RECORDS_URL . '?q=' . urlencode($query),
+                self::buildArkSearchUrl($ark),
                 ['headers' => ['Content-type' => 'application/json'], 'timeout' => self::API_TIMEOUT]
             );
         } catch (GuzzleException $e) {
@@ -470,6 +467,21 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         }
 
         return $hits[0]['id'] ?? null;
+    }
+
+    /**
+     * Every version of a record carries its own ARK, but the search API only
+     * returns the latest version of each record unless "allversions" is set:
+     * without it, the ARK of an earlier version matches nothing.
+     */
+    private static function buildArkSearchUrl(string $ark): string
+    {
+        $normalizedArk = preg_replace('#^ark:/?#', 'ark:/', $ark);
+
+        return self::API_RECORDS_URL . '?' . http_build_query([
+            'q' => sprintf('pids.ark.identifier:"%s"', $normalizedArk),
+            'allversions' => 'true',
+        ]);
     }
 
     /**

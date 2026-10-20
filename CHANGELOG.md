@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - HAL affiliations no longer keep the ROR of another affiliation of the same author, a defect left in the data by a former enrichment bug: `enrichment:creators` now realigns such a ROR on the HAL TEI (or removes it when the HAL structure has none), while a ROR set manually is kept.
 - `enrichment:creators --dry-run` no longer creates missing author records.
+- A BAOBAB submission by the ARK of a version other than the latest one no longer fails with "identifier does not exist": the ARK is now searched across all the versions of the records.
 - A paper whose repository lists related works is now reindexed when one of them is added, even when another one could not be resolved.
 - Fix identifier extraction from URLs pasted on the submission form: HAL pages with a path suffix (`/document`, `/file/...`), arXiv `/pdf/`, `/html/`, `www.` and old-style (`hep-th/9704188`) links, bioRxiv/medRxiv `/content/` links, Zenodo `/record/` and `/doi/` links and IACR ePrint `.pdf` links now fill the identifier field with the repository identifier and the version field with the version given by the URL, as a number. A version typed by the author is no longer cleared or replaced when the identifier or the URL has no version suffix, and `v0` is no longer read as a version (`public/js/submit/identifier.js`).
 - BAOBAB submissions no longer lose their abstract, keywords and dates when OAI-PMH is not configured or fails: the DataCite record is then fetched from the REST API.
