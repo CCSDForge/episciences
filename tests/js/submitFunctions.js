@@ -1,4 +1,4 @@
-// Extracted from public/js/submit/index.js for testing
+// Extracted from public/js/submit/index.js for testing (identifier parsing: see public/js/submit/identifier.js)
 
 // Mock DOM functions for testing
 let mockDom = {};
@@ -17,115 +17,12 @@ function mockQuerySelector(selector) {
 
 // Mock global variables
 let mockGlobals = {
-    $isDataverseRepo: false,
-    isRequiredVersion: true,
     examples: {},
     translate: text => text,
 };
 
 function setMockGlobals(globals) {
     mockGlobals = { ...mockGlobals, ...globals };
-}
-
-// Extracted function: removeVersionFromIdentifier
-function removeVersionFromIdentifier(identifier, options = {}) {
-    const {
-        mockVersionField = null,
-        isRequiredVersion = mockGlobals.isRequiredVersion,
-    } = options;
-
-    // For testing, use mockVersionField if provided, otherwise try DOM
-    const versionField =
-        mockVersionField || mockGetElementById('search_doc-version');
-    // A trailing "vN" is only a real version marker for repositories where the
-    // version must be typed inline (HAL, arXiv); repositories whose version is
-    // auto-detected (isRequiredVersion === false) may have identifiers that end
-    // in "v" + digits by coincidence of their own slug format.
-    const versionMatch = isRequiredVersion ? identifier.match(/v([1-9]\d*)$/) : null;
-
-    if (versionMatch && versionField) {
-        // Extract the version number (without the 'v' prefix)
-        versionField.value = versionMatch[1];
-
-        // Return identifier without the version
-        return identifier.replace(/v[1-9]\d*$/, '');
-    }
-
-    // If no version found, clear the version field and return original identifier
-    if (versionField) {
-        versionField.value = '';
-    }
-    return identifier;
-}
-
-// Extracted function: processUrlIdentifier
-function processUrlIdentifier(input, options = {}) {
-    const {
-        mockVersionField = null,
-        isDataverseRepo = mockGlobals.$isDataverseRepo,
-        isRequiredVersion = mockGlobals.isRequiredVersion,
-    } = options;
-
-    try {
-        const url = new URL(input);
-        let identifier = '';
-        let versionFromUrl = null;
-
-        // Handle different repository types
-        if (isDataverseRepo || url.search) {
-            // For Dataverse repos or URLs with query parameters
-            if (url.search.includes('persistentId=')) {
-                identifier =
-                    url.searchParams.get('persistentId') ||
-                    url.search.replace(/^\?.*persistentId=/, '').split('&')[0];
-
-                // Check for version parameter in URL
-                const versionParam = url.searchParams.get('version');
-                if (versionParam) {
-                    versionFromUrl = versionParam;
-                    const versionField =
-                        mockVersionField ||
-                        mockGetElementById('search_doc-version');
-                    if (versionField) {
-                        // Keep full version number (e.g. "1.1", "2.0", "1.5")
-                        versionField.value = versionParam;
-                    }
-                }
-            } else {
-                // Fallback to pathname if no persistentId found
-                identifier = url.pathname.replace(/^\/+|\/+$/g, '');
-            }
-        } else {
-            // For non-Dataverse repos without query parameters
-            // Remove leading path segments and slashes
-            identifier = url.pathname
-                .replace(/^\/+/, '') // Remove leading slashes
-                .replace(/\/\w+\/$/, '') // Remove trailing /word/ pattern
-                .replace(/\/+$/, ''); // Remove trailing slashes
-        }
-
-        // Clean up empty identifier
-        if (!identifier.trim()) {
-            identifier = url.pathname.replace(/^\/+|\/+$/g, '') || url.href;
-        }
-
-        // Only call removeVersionFromIdentifier if we didn't already handle version from URL params
-        if (versionFromUrl) {
-            return identifier; // Don't process further since we already handled the version
-        } else {
-            return removeVersionFromIdentifier(identifier, {
-                mockVersionField,
-                isRequiredVersion,
-            });
-        }
-    } catch (error) {
-        // If URL parsing fails, return the original input
-        console.warn('URL parsing failed for:', input, error);
-        return removeVersionFromIdentifier(input, {
-            mockVersionField,
-            isRequiredVersion,
-        });
-    }
 }
 
 // Extracted function: setPlaceholder (simplified for testing)
@@ -167,8 +64,6 @@ function createMockElement(value = '', attributes = {}) {
 }
 
 module.exports = {
-    removeVersionFromIdentifier,
-    processUrlIdentifier,
     setPlaceholder,
     setMockDom,
     setMockGlobals,

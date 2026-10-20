@@ -918,19 +918,53 @@ class Episciences_CommentsManager
         $types = [];
 
         foreach ($db->fetchAll($select) as $row) {
-            // Several files are stored as a JSON list (author / editor exchanges), a single one as a plain name
-            $files = json_decode((string)$row['FILE'], true);
-
-            if (!is_array($files)) {
-                $files = [$row['FILE']];
-            }
-
-            if (in_array($file, $files, true)) {
+            if (in_array($file, self::attachedFiles((string)$row['FILE']), true)) {
                 $types[] = (int)$row['TYPE'];
             }
         }
 
         return array_values(array_unique($types));
+    }
+
+    /**
+     * The file is attached to an answer already saved with a temporary version, on one of these paper versions.
+     * The temporary versions directory of a paper is shared by its answers and by the uploads not submitted yet.
+     *
+     * @param int[] $docIds the versions of the paper: the answer is saved on the version it answers
+     */
+    public static function isTemporaryVersionAnswerAttachment(array $docIds, string $file): bool
+    {
+        if ($docIds === []) {
+            return false;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPER_COMMENTS, ['FILE'])
+            ->where('DOCID IN (?)', $docIds)
+            ->where('TYPE = ?', self::TYPE_REVISION_ANSWER_TMP_VERSION)
+            ->where('FILE IS NOT NULL')
+            ->where("FILE != ''");
+
+        foreach ($db->fetchCol($select) as $files) {
+            if (in_array($file, self::attachedFiles((string)$files), true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Several files are stored as a JSON list (author / editor exchanges), a single one as a plain name
+     *
+     * @return array<int|string, mixed>
+     */
+    private static function attachedFiles(string $files): array
+    {
+        $decoded = json_decode($files, true);
+
+        return is_array($decoded) ? $decoded : [$files];
     }
 
     /**

@@ -1346,6 +1346,15 @@ class Episciences_Tools
     }
 
     /**
+     * Link to a file of the temporary versions, stored by paper (see FileController::tmpAction()). The file name is
+     * a path segment: encoded, a "#", "?" or "%" in it does not break the link. Not HTML-escaped.
+     */
+    public static function buildTmpFileUrl(int $paperId, string $fileName): string
+    {
+        return '/tmp_files/' . $paperId . '/' . rawurlencode($fileName);
+    }
+
+    /**
      * Construit les liens vers les fichiers joints à une réponse avec une version temporaire
      * @param array $domElements
      * @return string
@@ -1394,10 +1403,8 @@ class Episciences_Tools
             return $text;
         }
 
-        $cHref = sprintf('%stmp_files/%s/', PREFIX_URL, $paperId);
-
         foreach ($result as $index => $fileName) {
-            $href = $cHref . urlencode($fileName);
+            $href = rtrim(PREFIX_URL, '/') . self::buildTmpFileUrl((int)$paperId, (string)$fileName);
             $text .= '<a target="_blank" href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">';
             $text .= $fileExp . ' ' . ($index + 1) . ' > ' . htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8');
             $text .= '</a>';

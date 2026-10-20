@@ -194,4 +194,42 @@ final class DocumentFilePolicyTest extends TestCase
         self::assertFalse(DocumentFilePolicy::isPublic(DocumentFilePolicy::FOLDER_COMMENTS, true));
         self::assertFalse(DocumentFilePolicy::isPublic(DocumentFilePolicy::FOLDER_COPY_EDITING, true));
     }
+
+    public function testAnyOtherMemberDoesNotReadTheTemporaryVersionFiles(): void
+    {
+        self::assertFalse(DocumentFilePolicy::isTemporaryVersionFileAllowed(false, false, false, false));
+    }
+
+    public function testAuthorReadsTheTemporaryVersionFiles(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isTemporaryVersionFileAllowed(true, false, false, false));
+    }
+
+    public function testReviewerReadsTheTemporaryVersionFiles(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isTemporaryVersionFileAllowed(false, false, false, true));
+    }
+
+    public function testEditorialStaffReadsTheTemporaryVersionFilesUnlessInConflictOfInterest(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isTemporaryVersionFileAllowed(false, false, true, false));
+        self::assertFalse(DocumentFilePolicy::isTemporaryVersionFileAllowed(false, true, true, false));
+    }
+
+    public function testAuthorWritesTheTemporaryVersionFiles(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isTemporaryVersionFileWritable(true, false, false));
+    }
+
+    public function testEditorialStaffWritesTheTemporaryVersionFilesUnlessInConflictOfInterest(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isTemporaryVersionFileWritable(false, false, true));
+        self::assertFalse(DocumentFilePolicy::isTemporaryVersionFileWritable(false, true, true));
+    }
+
+    public function testAnyOtherMemberDoesNotWriteTheTemporaryVersionFiles(): void
+    {
+        // Reviewers among them: they read the author's answer but must not alter it
+        self::assertFalse(DocumentFilePolicy::isTemporaryVersionFileWritable(false, false, false));
+    }
 }

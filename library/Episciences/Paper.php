@@ -2264,7 +2264,7 @@ class Episciences_Paper
 
                     $fTmp = [
                         'name' => $fileName,
-                        'link' => sprintf('%s/tmp_files/%s/%s', $journalUrl, $this->getPaperid(), urlencode($fileName))
+                        'link' => $journalUrl . Episciences_Tools::buildTmpFileUrl((int)$this->getPaperid(), (string)$fileName)
                     ];
 
                     $processedFile[] = $fTmp;

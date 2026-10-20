@@ -147,6 +147,82 @@ class FileController extends DefaultController
     }
 
     /**
+     * The files of the temporary versions are shared by all the versions of the paper: the user must be allowed
+     * on one of them (see DocumentFilePolicy::isTemporaryVersionFileAllowed()).
+     */
+    protected function isAllowedToReadTemporaryVersionFile(int $paperId): bool
+    {
+        return $this->isAllowedOnTemporaryVersionFiles($paperId, false);
+    }
+
+    /**
+     * @param bool $toWrite upload or removal (see DocumentFilePolicy::isTemporaryVersionFileWritable()), else reading
+     */
+    private function isAllowedOnTemporaryVersionFiles(int $paperId, bool $toWrite): bool
+    {
+        try {
+            $review = $this->findJournal();
+            $uid = (int)Episciences_Auth::getUid();
+            $hasConflict = null;
+            // Only the assignment to the paper depends on the version
+            $isStaffOfEveryPaper = static::isEditorialStaffOfEveryPaper($review->getSettings());
+
+            // The versions are loaded one at a time, the latest first: the first one granting access ends the check
+            foreach ($this->findPaperVersions($paperId) as $paper) {
+                $isOwnerOrCoAuthor = $paper->isOwnerOrCoAuthor();
+                // Not isAssignedEditorOrCopyEditor(), which loads the latest version again: it is one of the versions
+                $isEditorialStaff = $isStaffOfEveryPaper || $paper->getEditor($uid) || $paper->getCopyEditor($uid);
+
+                // Only withdraws the access of the editorial staff: not looked up for the others. Declared for the
+                // paper, not for a version: looked up once.
+                if ($isEditorialStaff) {
+                    $hasConflict ??= static::isConflictDetected($paper, $review);
+                }
+
+                $isAllowed = $toWrite
+                    ? DocumentFilePolicy::isTemporaryVersionFileWritable($isOwnerOrCoAuthor, (bool)$hasConflict, $isEditorialStaff)
+                    : DocumentFilePolicy::isTemporaryVersionFileAllowed(
+                        $isOwnerOrCoAuthor,
+                        (bool)$hasConflict,
+                        $isEditorialStaff,
+                        array_key_exists($uid, $paper->getReviewers())
+                    );
+
+                if ($isAllowed) {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (Exception $e) {
+            // Refused, but not to be mistaken for a missing file
+            AppRegistry::getMonoLogger()?->warning('Temporary version file access check failed', [
+                'paperId' => $paperId,
+                'exception' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Versions of the paper in the current journal, the latest first (see
+     * Episciences_PapersManager::getDocIdsByPaperIdInJournal()), each one loaded when it is reached
+     *
+     * @return iterable<Episciences_Paper>
+     * @throws Exception
+     */
+    protected function findPaperVersions(int $paperId): iterable
+    {
+        foreach (Episciences_PapersManager::getDocIdsByPaperIdInJournal($paperId, RVID) as $docId) {
+            $paper = $this->findPaper($docId);
+
+            if ($paper) {
+                yield $paper;
+            }
+        }
+    }
+
+    /**
      * @throws Exception
      */
     protected function findPaper(int $docId): ?Episciences_Paper
@@ -208,34 +284,25 @@ class FileController extends DefaultController
         $this->loadFile($baseDir, $relativePath, true);
     }
 
-    // Accès à la version temporaire d'un document
+    /**
+     * Files of the temporary versions of a paper: the route segment is the paper id, the files being stored by paper
+     */
     public function tmpAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $params = $this->getRequest()->getParams();
 
-        $docId = (int)$params['docId'];
-        $filename = $params['filename'];
-        $extension = $params['extension'];
-        $file = $filename . '.' . $extension;
+        $paperId = (int)($params['docId'] ?? 0);
+        $file = ($params['filename'] ?? '') . '.' . ($params['extension'] ?? '');
 
-        $this->loadFile(Episciences_PapersManager::buildDocumentPath($docId) . '/tmp', $file);
-    }
+        // 404 rather than 403: do not disclose that the file exists
+        if ($paperId <= 0 || !SafeFileName::isBare($file) || !$this->isAllowedToReadTemporaryVersionFile($paperId)) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
 
-    // Accès aux fichiers joints d'un document
-    public function paperAction(): void
-    {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-        $params = $this->getRequest()->getParams();
-
-        $docId = (int)$params['docId'];
-        $filename = $params['filename'];
-        $extension = $params['extension'];
-        $file = $filename . '.' . $extension;
-
-        $this->loadFile(Episciences_PapersManager::buildDocumentPath($docId) . '/ratings', $file);
+        $this->loadFile(Episciences_PapersManager::buildDocumentPath($paperId) . '/tmp', $file);
     }
 
     // access to a rating report attachment
@@ -446,9 +513,9 @@ class FileController extends DefaultController
             $path = (string)$request->getPost('path');
             $pcId = (int)$request->getPost('pcId');
             $docId = (int)$request->getPost('docId');
-            $paperId = (int)$request->getPost('paperId');
+            $paperId = $this->resolvePaperId($docId, (int)$request->getPost('paperId'));
 
-            if (!$this->isAllowedToHandleDocumentFiles($docId, $paperId)) {
+            if ($paperId === null || !$this->isAllowedToHandleDocumentFiles($path, $docId, $paperId)) {
                 $this->getResponse()->setHttpResponseCode(403);
                 echo Zend_Json::encode(['status' => 'error']);
                 return;
@@ -538,7 +605,7 @@ class FileController extends DefaultController
         $filename = (string)$request->getPost('file');
         $docId = (int)$request->getPost('docId');
         $pcId = (int)$request->getPost('pcId');
-        $paperId = (int)$request->getPost('paperId');
+        $paperId = $this->resolvePaperId($docId, (int)$request->getPost('paperId'));
 
         // Only a flat file name is expected here; strip any directory component
         // to neutralise path traversal (e.g. "../../somefile").
@@ -549,7 +616,13 @@ class FileController extends DefaultController
             return;
         }
 
-        if (!$this->isAllowedToHandleDocumentFiles($docId, $paperId)) {
+        if ($paperId === null || !$this->isAllowedToHandleDocumentFiles($path, $docId, $paperId)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        // Only the uploads not submitted yet can be removed: the files of a saved answer are read by the editors
+        if ($path === 'tmp_attachments' && $this->isSubmittedTemporaryVersionFile($paperId, $filename)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
@@ -627,9 +700,14 @@ class FileController extends DefaultController
      * When an upload or a removal targets a document's storage (docId or paperId
      * given), the user must be related to the paper: contributor, reviewer,
      * copy editor or editor of the paper, or allowed to manage it.
+     * The files of the temporary versions have their own rule (see isAllowedToHandleTemporaryVersionFiles()).
      */
-    private function isAllowedToHandleDocumentFiles(int $docId, int $paperId): bool
+    protected function isAllowedToHandleDocumentFiles(string $path, int $docId, int $paperId): bool
     {
+        if ($path === 'tmp_attachments') {
+            return $this->isAllowedToHandleTemporaryVersionFiles($paperId);
+        }
+
         if (!$docId && !$paperId) {
             // session-scoped attachments directory: no document involved
             return true;
@@ -657,6 +735,67 @@ class FileController extends DefaultController
     }
 
     /**
+     * The paper id of the version when a docId is given, else the paper id given: resolved once for the access
+     * check, the storage folder and the link to the file, so that they cannot disagree. A paper id given with the
+     * docId must be the one of the version.
+     * Like the save paths of the temporary versions, a version without paper id falls back to its docId.
+     *
+     * @return int|null null when the version cannot be loaded or does not belong to the paper id given
+     */
+    protected function resolvePaperId(int $docId, int $paperId): ?int
+    {
+        if (!$docId) {
+            return $paperId;
+        }
+
+        try {
+            $paper = $this->findPaper($docId);
+        } catch (Exception $e) {
+            return null;
+        }
+
+        if (!$paper) {
+            return null;
+        }
+
+        $versionPaperId = (int)$paper->getPaperid() ?: (int)$paper->getDocid();
+
+        return !$paperId || $paperId === $versionPaperId ? $versionPaperId : null;
+    }
+
+    /**
+     * The file is attached to an answer already saved with a temporary version of the paper
+     * (see Episciences_CommentsManager::isTemporaryVersionAnswerAttachment()). Considered submitted when the
+     * lookup fails, so that it is not removed.
+     */
+    protected function isSubmittedTemporaryVersionFile(int $paperId, string $file): bool
+    {
+        try {
+            return Episciences_CommentsManager::isTemporaryVersionAnswerAttachment(
+                Episciences_PapersManager::getDocIdsByPaperIdInJournal($paperId, RVID),
+                $file
+            );
+        } catch (Exception $e) {
+            AppRegistry::getMonoLogger()?->warning('Temporary version file lookup failed', [
+                'paperId' => $paperId,
+                'file' => $file,
+                'exception' => $e->getMessage(),
+            ]);
+            return true;
+        }
+    }
+
+    /**
+     * The files of the temporary versions are stored by paper (see buildStorageFolder()): uploading or removing
+     * one is reserved to the authors and the editorial staff, the reviewers only read them.
+     */
+    private function isAllowedToHandleTemporaryVersionFiles(int $paperId): bool
+    {
+        // Without a paper, the files would be stored in a "0/tmp/" directory
+        return $paperId > 0 && $this->isAllowedOnTemporaryVersionFiles($paperId, true);
+    }
+
+    /**
      * return storage folder
      * @param string $path
      * @param int $paperId
@@ -667,14 +806,6 @@ class FileController extends DefaultController
      */
     private function buildStorageFolder(string $path = "", int $paperId = 0, int $docId = 0, int $pcId = 0): string
     {
-        if ($docId && !$paperId) {
-            $paper = Episciences_PapersManager::get($docId);
-
-            if ($paper) {
-                $paperId = $paper->getPaperid();
-            }
-        }
-
         if ($path === 'tmp_attachments') {
             $folder = $paperId . '/tmp/';
         } elseif ($path === 'comment_attachments') {
@@ -705,7 +836,8 @@ class FileController extends DefaultController
     private function buildFileUrl(string $fileName, string $path, int $paperId, int $docId, int $pcId): string
     {
         if ($path === 'tmp_attachments') {
-            $fileUrl = 'tmp_files/' . $paperId . '/' . $fileName;
+            // Relative to PREFIX_URL, like the other links built here
+            $fileUrl = ltrim(Episciences_Tools::buildTmpFileUrl($paperId, $fileName), '/');
         } elseif ($path === 'comment_attachments') {
             $fileUrl = 'docfiles/comments/' . $docId . '/' . $fileName;
         } elseif ($path === 'ce_attachments') {
