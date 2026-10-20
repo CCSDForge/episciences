@@ -271,6 +271,10 @@ class PaperController extends PaperDefaultController
                 (!$isConflictDetected && $commonTest)
             );
 
+        // Same rule as the temporary version form and its save (see isAllowedToWriteTemporaryVersion())
+        $this->view->isAllowedToWriteTemporaryVersion = Episciences_Auth::isLogged() &&
+            DocumentFilePolicy::isTemporaryVersionFileWritable($paper->isOwnerOrCoAuthor(), $isConflictDetected, $commonTest);
+
 
         // paper password bloc
 

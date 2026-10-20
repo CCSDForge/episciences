@@ -508,6 +508,8 @@ class Episciences_Submit
 
     /**
      * save a temporary version of a paper
+     * @deprecated Not called anymore: temporary versions are recorded by PaperController::savetmpversionAction(),
+     *             with the files of the answer uploaded through FileController::uploadAction(). To be removed.
      * @param Episciences_Paper $paper
      * @return array
      * @throws Zend_Db_Adapter_Exception

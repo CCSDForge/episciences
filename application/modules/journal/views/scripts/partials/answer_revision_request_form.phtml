@@ -60,7 +60,8 @@ if (!$paper->isRevisionRequested()){
                     </li>
 
 
-                    <?php if ($this->review->getSetting(Episciences_Review::SETTING_CAN_ANSWER_WITH_TMP_VERSION)) : ?>
+                    <?php // Offered to the users allowed to record it (see PaperController::isAllowedToWriteTemporaryVersion()) ?>
+                    <?php if ($this->isAllowedToWriteTemporaryVersion && $this->review->getSetting(Episciences_Review::SETTING_CAN_ANSWER_WITH_TMP_VERSION)) : ?>
                         <li>
                             <a href="/paper/tmpversion?id=<?php echo $this->current_demand['PCID']; ?>"
                                title="<?php echo $this->translate('Envoyer une version temporaire'); ?>"
