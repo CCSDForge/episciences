@@ -1737,6 +1737,11 @@ return array(
     "Vous avez déjà répondu à cette invitation." => "You've already answered this invitation.",
     "invitation acceptée le " => "invitation accepted on ",
     "invitation refusée le " => "invitation declined on ",
+    "Invitation associée le" => "Invitation linked on",
+    "Invitation envoyée à" => "Invitation sent to",
+    "Associée au compte" => "Linked to the account",
+    "Association automatique (adresses e-mail identiques)" => "Automatic linking (same e-mail address)",
+    "relecteur sans compte" => "reviewer without an account",
     "Délai avant remise de la relecture, une fois l'invitation acceptée :" => "Delay before review delivery, once the invitation has been accepted:",
 
     "Détails" => "Details",

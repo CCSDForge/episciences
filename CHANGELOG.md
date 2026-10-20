@@ -84,6 +84,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The language of abstracts and keywords on the paper pages is shown as a badge with the language name, in the interface language, instead of an ISO code in brackets.
 - A command line script called with an unknown option now exits with an error code instead of 0,
   so a cron or a CI job is no longer told it succeeded.
+- Reviewer invitation links now carry a per-invitation key; links of invitations sent before this change keep working.
+  Linking an invitation to another account is recorded in the paper history.
+  **Deployment**, before deploying the code on every environment: apply `src/mysql/History/2026-10-16-user_invitation_token.sql`
+  and set `REVIEWER_INVITATION.HMAC_SECRET` in `config/pwd.json` (e.g. `openssl rand -hex 32`); without it, new
+  invitations are sent without a key (former links) and a warning is logged.
 
 ### Added
 - [#893](https://github.com/CCSDForge/episciences/issues/893) Allow users to select and normalize the licence of a paper using SPDX identifiers.

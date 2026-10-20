@@ -89,6 +89,7 @@ class ActivityController extends PaperDefaultController
     private const REVIEW_EVENT_COLUMN_ORDER = [
         Episciences_Paper_Logger::CODE_REVIEWER_ASSIGNMENT,
         Episciences_Paper_Logger::CODE_REVIEWER_INVITATION,
+        Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_LINKED,
         Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED,
         Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED,
         Episciences_Paper_Logger::CODE_REVIEWING_IN_PROGRESS,

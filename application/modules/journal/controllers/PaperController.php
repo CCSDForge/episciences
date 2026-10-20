@@ -2,6 +2,7 @@
 
 use Episciences\Files\Uploader;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
+use Episciences\Reviewer\InvitationToken;
 use Episciences\Submit\SubmittedRecord;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
@@ -1686,14 +1687,19 @@ class PaperController extends PaperDefaultController
             $invitation_deadline = $oInvitation->getExpiration_date();
 
             // link to rating invitation page
+            $invitationUrlParams = [
+                self::CONTROLLER => 'reviewer',
+                self::ACTION => 'invitation',
+                'id' => $oInvitation->getId()];
+            $linkToken = (new InvitationToken())->forInvitation($oInvitation);
+            if ($linkToken !== null) {
+                $invitationUrlParams[InvitationToken::URL_PARAM] = $linkToken;
+            }
             // self::buildBaseUrl() (no path prefix) is used rather than APPLICATION_URL because
             // APPLICATION_URL already embeds PREFIX_URL (the review code) on manager deployments,
             // and $this->view->url() also prefixes its output with PREFIX_URL - concatenating both
             // would duplicate the review code in the URL.
-            $invitation_url = self::buildBaseUrl() . $this->view->url([
-                self::CONTROLLER => 'reviewer',
-                self::ACTION => 'invitation',
-                'id' => $oInvitation->getId()]);
+            $invitation_url = self::buildBaseUrl() . $this->view->url($invitationUrlParams);
 
             // update assignment with invitation_id
             $oAssignment->setInvitation_id($oInvitation->getId());

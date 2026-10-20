@@ -477,6 +477,9 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('NEXT_BASE_URL', '');
         define('NEXT_REVALIDATION_SECRET', '');
 
+        // Reviewer invitation link token
+        define('REVIEWER_INVITATION_HMAC_SECRET', '');
+
         // ========================================
         // Protocol constants
         // From defineProtocol()
