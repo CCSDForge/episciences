@@ -201,12 +201,12 @@ $files = Episciences_Tools::isJson($attachments) ? (array)json_decode($attachmen
             if (in_array($type, [Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION])) { // tmp version comments: files stored by paper
                 // Never the docid: it only matches the paper id for the first version
                 $paperId = (int)($log['paperid'] ?? 0);
-                $attachmentUrl = $paperId > 0 ? Episciences_Tools::buildTmpFileUrl($paperId, (string)$file) : '';
+                $attachmentUrl = $paperId > 0 ? rtrim(PREFIX_URL, '/') . Episciences_Tools::buildTmpFileUrl($paperId, (string)$file) : '';
             } elseif (!in_array($type, array_merge(Episciences_CommentsManager::$_copyEditingRequestTypes, Episciences_CommentsManager::$_copyEditingAnswerTypes))) { //other comments
-                $attachmentUrl = '/docfiles/comments/' . $docId . '/' . $urlFile;
+                $attachmentUrl = PREFIX_URL . 'docfiles/comments/' . $docId . '/' . $urlFile;
 
             } else { //copy editing comments
-                $attachmentUrl = '/docfiles/ce/' . $docId . '/' . $urlFile . '/' . $log['detail']['comment']['pcid'];
+                $attachmentUrl = PREFIX_URL . 'docfiles/ce/' . $docId . '/' . $urlFile . '/' . $log['detail']['comment']['pcid'];
             }
             ?>
             <?= '<div class="small">'; ?>

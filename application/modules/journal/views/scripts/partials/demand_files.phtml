@@ -55,7 +55,7 @@ $filesList = is_array($files) ? $files :
     <?php
     // The names come from the comment, not from the disk: encoded as a path segment, then escaped
     $fileUrl = $isTmpVersionComment
-        ? Episciences_Tools::buildTmpFileUrl((int)$paperId, (string)$file)
+        ? rtrim(PREFIX_URL, '/') . Episciences_Tools::buildTmpFileUrl((int)$paperId, (string)$file)
         : $href . '/' . rawurlencode((string)$file) . $urlSuffix;
     ?>
     <div class="file-attachment">
