@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Files\Uploader;
+use Episciences\Paper\Files\DocumentFilePolicy;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Submit\SubmittedRecord;
 use GuzzleHttp\Exception\GuzzleException;
@@ -1400,8 +1401,9 @@ class PaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($oComment->getDocid(), false);
 
-        // The form discloses the revision request: contributor or staff only.
-        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
+        // The form discloses the revision request: contributor or staff only, among them the users allowed to
+        // record the temporary version (see isAllowedToWriteTemporaryVersion()).
+        if (!$paper || !$this->isPaperContributorOrManager($paper) || !$this->isAllowedToWriteTemporaryVersion($paper)) {
             $this->getResponse()->setHttpResponseCode(403);
             $this->_helper->viewRenderer->setNoRender();
             return;
@@ -1444,8 +1446,9 @@ class PaperController extends PaperDefaultController
         $docId = $request->getQuery(self::DOC_ID_STR);
         $paper = Episciences_PapersManager::get($docId, false);
 
-        // Temporary versions are recorded on the contributor's paper: contributor or staff only.
-        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
+        // Temporary versions are recorded on the contributor's paper: contributor or staff only, under the rule of
+        // the files they are uploaded with (see isAllowedToWriteTemporaryVersion()).
+        if (!$paper || !$this->isPaperContributorOrManager($paper) || !$this->isAllowedToWriteTemporaryVersion($paper)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
@@ -1988,6 +1991,37 @@ class PaperController extends PaperDefaultController
     {
         return $paper->getRvid() === RVID
             && ($paper->isOwnerOrCoAuthor() || Episciences_Auth::isAllowedToManagePaper());
+    }
+
+    /**
+     * A temporary version answers a revision request with files, uploaded under the rule of the temporary version
+     * files (see DocumentFilePolicy::isTemporaryVersionFileWritable() and FileController::uploadAction()): the
+     * author and co-authors, and the editorial staff of the paper unless they are in conflict of interest.
+     * Without this, a user allowed to record the version could not upload its files.
+     */
+    protected function isAllowedToWriteTemporaryVersion(Episciences_Paper $paper): bool
+    {
+        if ($paper->isOwnerOrCoAuthor()) {
+            return true;
+        }
+
+        try {
+            $journal = $this->findJournal();
+
+            if (!$journal) {
+                return false;
+            }
+
+            return DocumentFilePolicy::isTemporaryVersionFileWritable(
+                false,
+                static::isConflictDetected($paper, $journal),
+                static::isEditorialStaff($paper, $journal->getSettings())
+            );
+        } catch (Exception $e) {
+            // Refused: the version would be recorded without its files
+            trigger_error($e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -4335,6 +4369,21 @@ class PaperController extends PaperDefaultController
     protected function findPaper(int $docId): ?Episciences_Paper
     {
         return Episciences_PapersManager::get($docId, false, RVID) ?: null;
+    }
+
+    /**
+     * Current journal, with its settings
+     */
+    protected function findJournal(): ?Episciences_Review
+    {
+        $journal = Episciences_ReviewsManager::find(RVID);
+
+        if (!$journal) {
+            return null;
+        }
+
+        $journal->loadSettings();
+        return $journal;
     }
 
     protected function getCsl(Episciences_Paper $paper): string
