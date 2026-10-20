@@ -656,4 +656,17 @@ XML;
             'unknown repository' => [9999, false],
         ];
     }
+
+    // =========================================================================
+    // assertArxivVersionExists() — private, tested via ReflectionMethod
+    // =========================================================================
+
+    public function testAssertArxivVersionExistsSkipsWithoutOaiIdentifier(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'assertArxivVersionExists');
+        $method->setAccessible(true);
+
+        // No OAI identifier template configured: nothing to check, no TypeError
+        self::assertNull($method->invoke(null, null, null, 1));
+    }
 }

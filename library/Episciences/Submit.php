@@ -1310,11 +1310,11 @@ class Episciences_Submit
      */
     private static function assertArxivVersionExists(
         ?Episciences_Oai_Client $oai,
-        string                  $identifier,
+        ?string                 $identifier,
         ?int                    $version
     ): void
     {
-        if (!$oai || $version === null) {
+        if (!$oai || $identifier === null || $version === null) {
             return;
         }
 
