@@ -203,7 +203,7 @@ final class SubmittedRecordTest extends TestCase
         $xsl->load(APPLICATION_PATH . '/../public/xsl/' . $stylesheet);
 
         $processor = new XSLTProcessor();
-        $processor->registerPHPFunctions('Ccsd_Tools::translate');
+        $processor->registerPHPFunctions(['Ccsd_Tools::translate', 'Episciences_Tools::isHttpUrl']);
         $processor->importStylesheet($xsl);
 
         return (string) $processor->transformToXml($xml);

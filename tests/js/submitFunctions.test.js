@@ -94,6 +94,16 @@ describe('Submit Functions', () => {
             expect(result).toBe('hal-05191818');
             expect(mockVersionField.value).toBe('1');
         });
+
+        test('should not treat v0 as a version', () => {
+            const mockVersionField = createMockElement('');
+            const result = removeVersionFromIdentifier('hal-05191818v0', {
+                mockVersionField,
+            });
+
+            expect(result).toBe('hal-05191818v0');
+            expect(mockVersionField.value).toBe('');
+        });
     });
 
     describe('processUrlIdentifier', () => {

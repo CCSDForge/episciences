@@ -655,6 +655,23 @@ XML;
         self::assertSame('dataset', $result[0]['resource_type']);
     }
 
+    public function testExtractRelatedIdentifiersReadsResourceTypeGeneral(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:relatedIdentifiers>
+        <datacite:relatedIdentifier relationType="IsSupplementedBy" relatedIdentifierType="URL" resourceTypeGeneral="Software">https://hal.science/hal-01234567</datacite:relatedIdentifier>
+    </datacite:relatedIdentifiers>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = Episciences_Repositories_Common::extractRelatedIdentifiersFromMetadata($metadata);
+
+        self::assertSame('software', $result[0]['resource_type']);
+    }
+
     // =========================================================================
     // assembleData() — FILES and RELATED_IDENTIFIERS
     // =========================================================================

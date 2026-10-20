@@ -394,7 +394,8 @@ class Episciences_Repositories_Common
             $identifier = (string)$relatedId;
             $relationType = (string)$relatedId['relationType'];
             $relatedIdentifierType = (string)$relatedId['relatedIdentifierType'];
-            $ressourceType = (string)$relatedId['resource_type'];
+            // DataCite's attribute, lowercased to match Zenodo's REST resource_type ("software", "dataset"...)
+            $ressourceType = strtolower((string)$relatedId['resourceTypeGeneral']);
 
             if ($ressourceType === ''){
                 $ressourceType = 'dataset';
@@ -733,19 +734,31 @@ class Episciences_Repositories_Common
      * every existing caller keeps its exact prior behavior when opting in only
      * to what it already relied on.
      *
+     * $onlyDescriptionType, when given, keeps only that descriptionType (no
+     * fallback to the other descriptions) and overrides $preferAbstractType.
+     *
      * @return array<int, array<string, string>>
      */
     public static function extractDescriptions(
         SimpleXMLElement $metadata,
         string $language,
         bool $preferAbstractType = false,
-        bool $convertLanguageCodeToAlpha2 = false
+        bool $convertLanguageCodeToAlpha2 = false,
+        ?string $onlyDescriptionType = null
     ): array {
         $xpath = '//datacite:descriptions/datacite:description';
-        $nodes = $preferAbstractType ? $metadata->xpath($xpath . '[@descriptionType="Abstract"]') : [];
 
-        if (empty($nodes)) {
-            $nodes = $metadata->xpath($xpath);
+        if ($onlyDescriptionType !== null) {
+            $nodes = array_filter(
+                $metadata->xpath($xpath) ?: [],
+                static fn(SimpleXMLElement $node): bool => (string)$node['descriptionType'] === $onlyDescriptionType
+            );
+        } else {
+            $nodes = $preferAbstractType ? $metadata->xpath($xpath . '[@descriptionType="Abstract"]') : [];
+
+            if (empty($nodes)) {
+                $nodes = $metadata->xpath($xpath);
+            }
         }
 
         $descriptions = [];

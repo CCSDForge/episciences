@@ -1600,6 +1600,28 @@ class ToolsTest extends TestCase
     }
 
     // ============================================================================
+    // Tests for splitHalIdentifier()
+    // ============================================================================
+
+    /**
+     * @dataProvider halIdentifierProvider
+     */
+    public function testSplitHalIdentifier(string $value, ?array $expected): void
+    {
+        self::assertSame($expected, Episciences_Tools::splitHalIdentifier($value));
+    }
+
+    public static function halIdentifierProvider(): array
+    {
+        return [
+            'HAL URL without version' => ['https://hal.science/hal-05478157', ['hal-05478157', 'hal-05478157', 0]],
+            'HAL URL with version' => ['https://hal.science/hal-05478157v2', ['hal-05478157v2', 'hal-05478157', 2]],
+            'bare HAL id' => ['tel-01234567', ['tel-01234567', 'tel-01234567', 0]],
+            'no HAL id' => ['https://example.org/record/1', null],
+        ];
+    }
+
+    // ============================================================================
     // Tests for checkIsArxivUrl()
     // ============================================================================
 
@@ -3024,4 +3046,56 @@ class ToolsTest extends TestCase
         $this->assertSame($expected, Episciences_Tools::formatText($input));
     }
 
+
+    /**
+     * @dataProvider languageNameProvider
+     */
+    public function testGetLanguageName(?string $code, string $locale, string $expected): void
+    {
+        self::assertSame($expected, Episciences_Tools::getLanguageName($code, $locale));
+    }
+
+    public static function languageNameProvider(): array
+    {
+        return [
+            'alpha-2 in French' => ['fr', 'fr', 'Français'],
+            'alpha-2 in English' => ['fr', 'en', 'French'],
+            'English in French' => ['en', 'fr', 'Anglais'],
+            'alpha-3 code' => ['eng', 'fr', 'Anglais'],
+            'upper case code' => ['FR', 'en', 'French'],
+            'bibliographic alpha-3 code' => ['fre', 'en', 'French'],
+            'regional tag with hyphen' => ['fr-CA', 'fr', 'Français canadien'],
+            'regional tag in lower case' => ['pt_br', 'en', 'Brazilian Portuguese'],
+            'script subtag' => ['zh-hant', 'en', 'Traditional Chinese'],
+            'unknown region falls back to the language' => ['fr-XX', 'en', 'French'],
+            'unknown language with region kept as is' => ['xx-CA', 'fr', 'xx-CA'],
+            'unknown code kept as is' => ['xx-unknown', 'fr', 'xx-unknown'],
+            'empty code' => ['', 'fr', ''],
+            'null code' => [null, 'fr', ''],
+        ];
+    }
+
+    /**
+     * @dataProvider httpUrlProvider
+     */
+    public function testIsHttpUrl(string $url, bool $expected): void
+    {
+        self::assertSame($expected, Episciences_Tools::isHttpUrl($url));
+    }
+
+    public static function httpUrlProvider(): array
+    {
+        return [
+            'https' => ['https://creativecommons.org/licenses/by/4.0/', true],
+            'http' => ['http://example.org/licence', true],
+            'upper case scheme' => ['HTTPS://example.org/licence', true],
+            'javascript scheme' => ['javascript:alert(1)', false],
+            'data scheme' => ['data:text/html,<b>x</b>', false],
+            'relative path' => ['/licence', false],
+            'free text' => ['CC BY 4.0', false],
+            'quote breaking out of the attribute' => ['https://example.org/"onmouseover="x', false],
+            'whitespace' => ['https://example.org/a b', false],
+            'empty' => ['', false],
+        ];
+    }
 }

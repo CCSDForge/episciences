@@ -24,7 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [2021](changelogs/CHANGELOG-2021.md)
 
 ## Unreleased
+### Added
+- BAOBAB submissions now store the licence, the ROR of affiliations (including an organisational author's own ROR) and the translated abstracts filed as other descriptions.
+- Links to HAL found in a repository's related identifiers are now stored as linked publications, or as linked software for a HAL software deposit.
+- BAOBAB submissions accept an ARK resolver URL (e.g. `https://pidslink.ren.africa/ark:/50962/...`) as well as a bare ARK or a record URL.
+
 ### Fixed
+- A paper whose repository lists related works is now reindexed when one of them is added, even when another one could not be resolved.
+- BAOBAB submissions no longer lose their abstract, keywords and dates when OAI-PMH is not configured or fails: the DataCite record is then fetched from the REST API.
+- BAOBAB links from a record to its own deposit page are no longer considered as related works.
 - Removing the chief editor role of a user who stays editor (or the reverse) no longer disables their paper assignments as editor.
 - The session cookie is now sent with the `SameSite=Lax` attribute (configurable with `resources.session.cookie_samesite`).
 - `enrichment:extract-biblio-refs` reports papers whose host is not allowed by the Biblioref service, or whose PDF contains no reference, as skipped instead of failed, so they no longer fail the cron run.
@@ -73,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The continuous integration workflows now generate the configuration and the database the PHPUnit
   bootstrap requires. The test suite was aborting before its first test and reporting success: no
   PHP test had ever actually run on CI.
+- The language of abstracts and keywords on the paper pages is shown as a badge with the language name, in the interface language, instead of an ISO code in brackets.
 - A command line script called with an unknown option now exits with an error code instead of 0,
   so a cron or a CI job is no longer told it succeeded.
 
@@ -80,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#893](https://github.com/CCSDForge/episciences/issues/893) Allow users to select and normalize the licence of a paper using SPDX identifiers.
 - [#1285](https://github.com/CCSDForge/episciences/pull/1285) Read-only maintenance mode (`EPISCIENCES.READ_ONLY_MODE` in `pwd.json`, optional `READ_ONLY_MODE_START` / `READ_ONLY_MODE_END` planned schedule): public consultation stays available while the web application sends no write query to the database. Only public guest pages that do not write are served (`GET`/`HEAD`, whoever is logged in, OAI-PMH unfiltered); everything else answers HTTP 503 with `Retry-After`; logging out stays possible; paper visits are not recorded. A single maintenance banner (journals and portal) shows the maintenance in progress, announces an upcoming one from its planned start, or the free `RENDER_ALERT_BANNER` message (now Bootstrap-styled and optional). See `docs/read-only-mode.md`.
 
+- [#974](https://github.com/CCSDForge/episciences/issues/974) The unanswered reviewer invitation reminder and the reminders before and after the reviewing deadline can now be sent to chief editors and editorial secretaries. 
 - [#1216](https://github.com/CCSDForge/episciences/pull/1216) Paper illustration (graphical abstract): required text alternative (WCAG 1.1.1) and optional free-text license, stored as `graphical_abstract_alt` and `graphical_abstract_license` next to `graphical_abstract_file` in `PAPERS.DOCUMENT` and exposed in the JSON v2 export; the license is shown as the image caption.
 - [#865](https://github.com/CCSDForge/episciences/issues/865), [#1208](https://github.com/CCSDForge/episciences/pull/1208) Allow administrators and chief editors to change the contributor (owner) of a paper. A modal dialog lets users search for and select a new contributor, with an option to add the former contributor as co-author (checked by default) so they continue receiving notifications. Both the new and former contributors receive email notifications. The action is logged with full details (old/new contributor, co-author status) and displayed in the paper history timeline.
 - [#1168](https://github.com/CCSDForge/episciences/pull/1168) Add `journal:create` CLI command (`scripts/CreateJournalCommand.php`, `make create-journal`) to create a new journal — inserting its `REVIEW` row, cloning settings/menu/pages/appearance from a template journal (excluding editorial identity, outgoing notifications and secrets), creating its `data/<rvcode>/` directory tree, and granting an existing user the administrator role. Business logic lives in `Episciences\Journal\Provisioning\{JournalSpec,ReviewRowWriter,SettingsCloner,DataDirectoryProvisioner,WebsiteCloner,ClonableWebsiteStyle,ClonableWebsiteHeader,PagesCloner,AdminRoleAssigner,Report,JournalCreator}`. See `docs/journal-provisioning.md`.
@@ -210,6 +220,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrate Next.js cache revalidation off the legacy `queue_messages` table and its cron consumer (`scripts/NextRevalidationQueue.php`) onto the same Symfony Messenger + Doctrine DBAL infrastructure as Solr indexing, on its own `next_revalidation` transport so a slow Solr document build never blocks a cheap revalidation POST. The Messenger plumbing itself (transports, buses, worker event dispatcher, bounded-retry dispatch, dispatch-failure store) is extracted out of the Solr-only code into a generic `Episciences\Messenger\*` library that both producers now share, and `solr:worker`/`solr:queue` are replaced by transport-agnostic `episciences:worker`/`episciences:queue --transport=<solr_index|next_revalidation>` commands (see `docs/console-commands.md#messenger-queues`, `docs/next-revalidation.md`). `RevalidationService::revalidateOrEnqueue()` (synchronous POST with queue fallback) is removed — every call site is now fully asynchronous — and `next:revalidate-cache` gains a variadic tag argument and a `--queue` option.
 - [#1179](https://github.com/CCSDForge/episciences/pull/1179) Bump `monolog/monolog` to `^3.0` (`psr/log` to `3.x`) and add `Episciences\Log\LoggerFactory` (`rotating()` / `cli()`), routing the previously duplicated `RotatingFileHandler`/CLI logger setup through it (`MonologFactory`, `Notify/Hal`, `Notify/Reader`, both CAS adapters, `AbstractScript`, the Messenger queue/worker commands, `Solr/BootstrapsSolrEnvironment`), and dropping `Episciences\Messenger\Log\CliLoggerFactory`. `ProgressAwareStreamHandler::write()` is adapted to the Monolog 3 `LogRecord` handler contract, and `ScholexplorerApiClient::create()` now builds an explicit fallback logger (Monolog 2 removed the implicit `php://stderr` handler-less fallback, so records would otherwise be silently dropped). Log lines now use Monolog 3's default ISO 8601 timestamp instead of the previous `Y-m-d H:i:s` format.
 - [#1178](https://github.com/CCSDForge/episciences/pull/1178) Extract available repository version lookup into `Episciences\Paper\RepositoryVersionsService`, make collaborators injectable, distinguish Dataverse major and minor versions, and handle Guzzle exceptions on bioRxiv and Dataverse API calls.
+- Fix HAL and arXiv submissions keeping the version suffix in the stored identifier (e.g. `2310.02192v2` instead of `2310.02192`) with a mismatching version: the trailing `vN` is now removed server-side and used as the document version (`Episciences_Submit::getDoc()`).
 
 ### Changed
 

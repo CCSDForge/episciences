@@ -919,6 +919,10 @@ class Episciences_Submit
 
         $id = self::cleanIdentifier($id, $repoId);
 
+        if (self::isVersionSuffixedRepository($repoId)) {
+            self::extractVersionSuffix($id, $version);
+        }
+
         try {
             // Load hooks, version, identifier, paper
             $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', [
@@ -1008,7 +1012,7 @@ class Episciences_Submit
             // Repository-specific checks
             if (Episciences_Repositories::isFromHalRepository($repoId)) {
                 self::assertHalSubmissionAllowed($result['record'], $id, $identifier, $oai);
-            } elseif (Episciences_Repositories::getLabel($repoId) === 'arXiv') {
+            } elseif (Episciences_Repositories::isFromArxivRepository((int)$repoId)) {
                 self::assertArxivVersionExists($oai, $identifier, $version !== null ? (int)$version : null);
             }
 
@@ -1103,6 +1107,28 @@ class Episciences_Submit
         }
 
         return $id;
+    }
+
+    /**
+     * HAL and arXiv identifiers may carry a version suffix (e.g. hal-01234567v4, 2310.02192v4).
+     */
+    private static function isVersionSuffixedRepository($repoId): bool
+    {
+        return Episciences_Repositories::isFromHalRepository((int)$repoId)
+            || Episciences_Repositories::isFromArxivRepository((int)$repoId);
+    }
+
+    /**
+     * Remove a trailing version suffix ("v4") from the identifier and use it as the document version.
+     * The suffix takes precedence over the version field, as the submission form does client-side.
+     * "v0" is not a valid version and is left untouched.
+     */
+    private static function extractVersionSuffix(string &$id, ?float &$version): void
+    {
+        if (preg_match('/^(.+?)v([1-9]\d*)$/', $id, $matches)) {
+            $id = $matches[1];
+            $version = Episciences_Repositories_Common::normalizeVersion($matches[2]);
+        }
     }
 
     /**
@@ -1270,11 +1296,11 @@ class Episciences_Submit
      */
     private static function assertArxivVersionExists(
         ?Episciences_Oai_Client $oai,
-        string                  $identifier,
+        ?string                 $identifier,
         ?int                    $version
     ): void
     {
-        if (!$oai || $version === null) {
+        if (!$oai || $identifier === null || $version === null) {
             return;
         }
 
@@ -2755,6 +2781,76 @@ class Episciences_Submit
             || Episciences_Repositories::isDspace($repoId);
     }
 
+    /**
+     * Stores a HAL link the way a manual addition does
+     * (AdministratelinkeddataController::addldAction()), with HAL's full
+     * citation as metadata when HAL returns one:
+     * - a software deposit (HAL docType_s SOFTWARE) is stored as software under
+     *   its HAL id without version, with its SWHID and codemeta;
+     * - anything else is stored as a publication under its HAL id as found.
+     * The related identifier's resource_type only decides when HAL does not
+     * answer: HAL's own document type wins otherwise.
+     *
+     * @param array<string, mixed> $options
+     */
+    private static function addHalDataset(int $docId, string $value, string $resourceType, array $options): int
+    {
+        $parsedHalId = Episciences_Tools::splitHalIdentifier($value);
+
+        if ($parsedHalId === null) {
+            return 0;
+        }
+
+        [$halId, $halIdWithoutVersion, $version] = $parsedHalId;
+
+        // The same HAL document may already be linked with or without a version suffix
+        if (Episciences_Paper_DatasetsManager::hasHalDocument($docId, $halIdWithoutVersion)) {
+            return 0;
+        }
+
+        $citation = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($halIdWithoutVersion, $version));
+        $halDoc = $citation->response->docs[0] ?? null;
+
+        $isSoftware = $halDoc !== null
+            ? ($halDoc->docType_s ?? '') === 'SOFTWARE'
+            : strcasecmp($resourceType, Episciences_Paper_Dataset::SOFTWARE_CODE) === 0;
+
+        $metatext = [];
+
+        if (!empty($halDoc->citationFull_s)) {
+            $metatext['citationFull'] = $halDoc->citationFull_s;
+        }
+
+        if ($isSoftware) {
+            if (!empty($halDoc->swhidId_s[0])) {
+                $metatext['swhidId'] = $halDoc->swhidId_s[0];
+            }
+
+            $codeMeta = json_decode(Episciences_SoftwareHeritageTools::getCodeMetaFromHal($halId), true);
+
+            if (!empty($codeMeta)) {
+                $metatext['codemeta'] = $codeMeta;
+            }
+        }
+
+        $metadataId = null;
+
+        if ($metatext !== []) {
+            $datasetMetadata = new Episciences_Paper_DatasetMetadata();
+            $datasetMetadata->setMetatext(json_encode($metatext, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $metadataId = Episciences_Paper_DatasetsMetadataManager::insert([$datasetMetadata]);
+        }
+
+        return Episciences_Paper_DatasetsManager::addDatasetFromSubmission(
+            $docId,
+            Episciences_Paper_Dataset::HAL_CODE,
+            $isSoftware ? $halIdWithoutVersion : $halId,
+            $isSoftware ? Episciences_Paper_Dataset::SOFTWARE_CODE : Episciences_Paper_Dataset::PUBLICATION,
+            $metadataId,
+            $options
+        );
+    }
+
     public static function processDatasets(Episciences_Paper|int $paper, ?array $allDatasets = []): int
     {
         $affectedRows = 0;
@@ -2849,13 +2945,17 @@ class Episciences_Submit
                 } elseif ($typeLd === Episciences_Paper_Dataset::HANDLE_CODE) {
                     $value = Episciences_Tools::cleanHandle($value);
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
+                } elseif ($typeLd === Episciences_Paper_Dataset::HAL_CODE) {
+                    $affectedRows += self::addHalDataset($docId, $value, (string)($datasets['resource_type'] ?? ''), $options);
                 }
-                if (!empty($noProcessed)) {
-                    $affectedRows += $affectedRows = self::forceAddingDatasets($current, $noProcessed);
-                }
-
             }
         }
+
+        // Once, after the loop: values whose DOI lookup failed are stored as is
+        if (!empty($noProcessed)) {
+            $affectedRows += self::forceAddingDatasets($current, $noProcessed);
+        }
+
         return $affectedRows;
 
     }

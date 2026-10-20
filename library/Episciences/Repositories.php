@@ -397,6 +397,11 @@ class Episciences_Repositories
 
     }
 
+    public static function isFromArxivRepository(int $repoId): bool
+    {
+        return $repoId === (int)self::ARXIV_REPO_ID;
+    }
+
 
     /**
      * @return array<string, array<string, mixed>>

@@ -34,16 +34,11 @@ class AdministratelinkeddataController extends Episciences_Controller_Action
         $versionHal = 0;
         // isolate hal id if url is given here
         if ($typeLd === 'url') {
-            $getHalIdentifierInUrl = Episciences_Tools::getHalIdInString($rawValueLd);
-            if (!empty($getHalIdentifierInUrl)) {
+            $halIdentifier = Episciences_Tools::splitHalIdentifier($rawValueLd);
+            if ($halIdentifier !== null) {
                 $typeLd = 'hal';
-                $rawValueLd = $getHalIdentifierInUrl[0];
+                [, $rawValueLd, $versionHal] = $halIdentifier;
                 $valueLd = htmlspecialchars($rawValueLd, ENT_QUOTES, 'UTF-8');
-                if (isset($getHalIdentifierInUrl[1])) {
-                    $rawValueLd = str_replace($getHalIdentifierInUrl[1],'',$rawValueLd);
-                    $valueLd = htmlspecialchars($rawValueLd, ENT_QUOTES, 'UTF-8');
-                    $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
-                }
             }
             //isolate swh in url
             $getSwhDirIdentifierInUrl = Episciences_Tools::getSoftwareHeritageDirId($rawValueLd);
@@ -54,13 +49,13 @@ class AdministratelinkeddataController extends Episciences_Controller_Action
             }
         }
         if ($inputTypeLd === 'software' && $typeLd === 'hal') {
-            $getHalIdentifierInUrl = Episciences_Tools::getHalIdInString($rawValueLd);
             $valueWithVers = $rawValueLd;
-            if (!empty($getHalIdentifierInUrl)) {
-                $rawValueLd = $getHalIdentifierInUrl[0];
-                if (isset($getHalIdentifierInUrl[1])) {
-                    $rawValueLd = str_replace($getHalIdentifierInUrl[1],'',$rawValueLd);
-                    $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
+            $halIdentifier = Episciences_Tools::splitHalIdentifier($rawValueLd);
+            if ($halIdentifier !== null) {
+                [, $rawValueLd, $version] = $halIdentifier;
+                // Keep the version already taken from a URL when this value no longer carries it
+                if ($version > 0) {
+                    $versionHal = $version;
                 }
             }
             $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($rawValueLd,$versionHal));
@@ -85,16 +80,14 @@ class AdministratelinkeddataController extends Episciences_Controller_Action
             $epiDM->setMetatext(json_encode($arraySoftware, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_FORCE_OBJECT));
             $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
         } elseif (($inputTypeLd === 'dataset' || $inputTypeLd === 'publication') && $typeLd === 'hal') {
-            $getHalIdentifierInUrl = Episciences_Tools::getHalIdInString($rawValueLd);
             // Default to the raw value so it is defined even for a HAL id without a version.
             $rawValueLdWithoutVersion = $rawValueLd;
-            if (!empty($getHalIdentifierInUrl)) {
-                $typeLd = 'hal';
-                $rawValueLd = $getHalIdentifierInUrl[0];
-                $rawValueLdWithoutVersion = $rawValueLd;
-                if (isset($getHalIdentifierInUrl[1])) {
-                    $rawValueLdWithoutVersion = str_replace($getHalIdentifierInUrl[1],'',$rawValueLd);
-                    $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
+            $halIdentifier = Episciences_Tools::splitHalIdentifier($rawValueLd);
+            if ($halIdentifier !== null) {
+                [$rawValueLd, $rawValueLdWithoutVersion, $version] = $halIdentifier;
+                // Keep the version already taken from a URL when this value no longer carries it
+                if ($version > 0) {
+                    $versionHal = $version;
                 }
             }
             $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($rawValueLdWithoutVersion,$versionHal));

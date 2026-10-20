@@ -314,7 +314,7 @@ class Episciences_Volume
             ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
             ->join(['ur' => T_USER_ROLES], 'ur.UID = a.UID')
             ->where('ur.ROLEID IN (?)', $roles)
-            ->where('ur.RVID = ?', RVID);
+            ->where('ur.RVID = ?', $this->getRvid() ?: (defined('RVID') ? RVID : 0));
     }
 
     /**

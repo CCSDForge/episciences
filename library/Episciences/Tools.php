@@ -10,6 +10,8 @@ use GuzzleHttp\Exception\GuzzleException;
 use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use League\HTMLToMarkdown\HtmlConverter;
+use Symfony\Component\Intl\Exception\MissingResourceException;
+use Symfony\Component\Intl\Languages;
 
 class Episciences_Tools
 {
@@ -925,6 +927,56 @@ class Episciences_Tools
         $text = preg_replace('#<(?!/?(?:' . $knownTags . ')(?:\s[^<>]*)?/?>)#i', '&lt;', $text) ?? $text;
 
         return $purifier->purifyHtml(self::latexToUtf8($text, true));
+    }
+
+    /**
+     * Name of a language in the interface language ("fr" displayed as
+     * "Français" in French, "French" in English), for metadata language labels.
+     * Accepts ISO 639-1 and 639-2/3 codes, optionally followed by a script or
+     * region subtag ("fr-CA", "pt_BR"); an unknown code is returned as is.
+     *
+     * @param string|null $langCode e.g. 'fr', 'eng', 'fr-CA'
+     * @param string|null $displayLocale defaults to the interface language
+     */
+    public static function getLanguageName(?string $langCode, ?string $displayLocale = null): string
+    {
+        $subtags = explode('_', str_replace('-', '_', trim((string)$langCode)));
+        $code = strtolower(array_shift($subtags));
+
+        if ($code === '') {
+            return '';
+        }
+
+        $displayLocale ??= self::getLocale();
+
+        try {
+            if (Languages::exists($code)) {
+                // Symfony names known variants ("français canadien") and falls back to the base language otherwise
+                $name = Languages::getName(self::normalizeLanguageTag($code, $subtags), $displayLocale);
+            } elseif (Languages::alpha3CodeExists($code)) {
+                $name = Languages::getAlpha3Name($code, $displayLocale);
+            } else {
+                return (string)$langCode;
+            }
+        } catch (MissingResourceException $e) {
+            return (string)$langCode;
+        }
+
+        return mb_strtoupper(mb_substr($name, 0, 1)) . mb_substr($name, 1);
+    }
+
+    /**
+     * ICU form of a language tag: script in title case, region in upper case ("zh_Hant", "fr_CA").
+     *
+     * @param string[] $subtags
+     */
+    private static function normalizeLanguageTag(string $language, array $subtags): string
+    {
+        foreach (array_filter($subtags, static fn(string $subtag): bool => $subtag !== '') as $subtag) {
+            $language .= '_' . (strlen($subtag) === 4 ? ucfirst(strtolower($subtag)) : strtoupper($subtag));
+        }
+
+        return $language;
     }
 
     /**
@@ -2054,6 +2106,45 @@ class Episciences_Tools
         $matches = [];
         preg_match("~[a-z]+[_-][0-9]{8}(v[0-9]*)?~", $url, $matches);
         return $matches;
+    }
+
+    /**
+     * Splits the HAL id found in a value (bare id or URL) from its version suffix.
+     *
+     * @return array{0: string, 1: string, 2: int}|null [HAL id as found, HAL id
+     *         without its version suffix, version (0 when none)], or null when
+     *         the value carries no HAL id
+     */
+    public static function splitHalIdentifier(string $value): ?array
+    {
+        $halMatch = self::getHalIdInString($value);
+
+        if (empty($halMatch)) {
+            return null;
+        }
+
+        $halId = $halMatch[0];
+        $versionSuffix = $halMatch[1] ?? '';
+
+        if ($versionSuffix === '') {
+            return [$halId, $halId, 0];
+        }
+
+        return [$halId, substr($halId, 0, -strlen($versionSuffix)), (int)ltrim($versionSuffix, 'v')];
+    }
+
+    /**
+     * Whether a value can safely become an href: an absolute http(s) URL
+     * (scheme in any case) with no quote, angle bracket or whitespace. Also
+     * called from the paper stylesheets through php:function.
+     */
+    public static function isHttpUrl(string $url): bool
+    {
+        $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true)
+            && filter_var($url, FILTER_VALIDATE_URL) !== false
+            && preg_match('/["\'<>\s]/', $url) !== 1;
     }
 
     /**

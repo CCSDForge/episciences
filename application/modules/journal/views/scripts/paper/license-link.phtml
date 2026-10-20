@@ -2,10 +2,12 @@
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
 $licence = $paper->getLicence();
+// Same rule as the paper stylesheets: only an http(s) licence becomes a link
+$isLinkable = Episciences_Tools::isHttpUrl($licence);
 ?>
 <div class="small">
     <?= $this->escape($this->translate('Licence : ')) ?>
-    <a rel="noopener" target="_blank" id="paper-license-link" href="<?= $this->escape($licence) ?>">
+    <a rel="noopener" target="_blank" id="paper-license-link"<?php if ($isLinkable) : ?> href="<?= $this->escape($licence) ?>"<?php endif; ?>>
         <?= $this->escape(Ccsd_Tools::translateLicense($licence)) ?>
     </a>
 

@@ -463,6 +463,25 @@ final class Episciences_RepositoriesTest extends TestCase
     }
 
     // =========================================================================
+    // isFromArxivRepository()
+    // =========================================================================
+
+    public function testIsFromArxivRepositoryTrueForArxiv(): void
+    {
+        self::assertTrue(Episciences_Repositories::isFromArxivRepository(2));
+    }
+
+    public function testIsFromArxivRepositoryFalseForHal(): void
+    {
+        self::assertFalse(Episciences_Repositories::isFromArxivRepository(1));
+    }
+
+    public function testIsFromArxivRepositoryFalseForUnknownRepo(): void
+    {
+        self::assertFalse(Episciences_Repositories::isFromArxivRepository(9999));
+    }
+
+    // =========================================================================
     // getRepositoriesByLabel()
     // =========================================================================
 
