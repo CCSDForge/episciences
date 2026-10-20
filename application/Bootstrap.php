@@ -288,6 +288,9 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
                         'action' => 'index'
                     ],
                 ));
+
+            // $this->_helper->url($action, $controller) bypasses the router: keep the journal prefix
+            Zend_Controller_Action_HelperBroker::addHelper(new Episciences_Controller_Action_Helper_Url());
         }
     }
 

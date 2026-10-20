@@ -15,6 +15,7 @@ use RecursiveIteratorIterator;
  *
  * Internal URLs must be built with JS_PREFIX_URL (JavaScript), PREFIX_URL or $this->url() (views, PHP),
  * and the redirector / gotoSimple() / gotoRoute() calls must pass the PREFIX_ROUTE parameter.
+ * $this->_helper->url($action, $controller) is prefixed by Episciences_Controller_Action_Helper_Url.
  * An internal URL is a path starting with the name of a journal controller.
  *
  * Mostly triggered by the merges from main / staging, where the prefix does not exist.
@@ -90,6 +91,33 @@ final class HardcodedInternalUrlsTest extends TestCase
         }
 
         self::assertSame([], $violations, $this->buildMessage($violations, 'a [PREFIX_ROUTE => RVCODE] parameter'));
+    }
+
+    /**
+     * Zend_Controller_Action_Helper_Url::simple() ($this->_helper->url($action, $controller)) builds the URL
+     * without the router: Bootstrap replaces it with a helper adding PREFIX_URL, which must not be bypassed
+     */
+    public function testUrlActionHelperKeepsTheJournalPrefix(): void
+    {
+        $bootstrap = (string)file_get_contents(self::ROOT . '/application/Bootstrap.php');
+
+        self::assertStringContainsString(
+            'addHelper(new Episciences_Controller_Action_Helper_Url())',
+            $bootstrap,
+            'application/Bootstrap.php must register Episciences_Controller_Action_Helper_Url in _initRoutes()'
+        );
+
+        $violations = [];
+
+        foreach ($this->findFiles(self::PHP_DIRS, '.php') as $file) {
+            array_push($violations, ...$this->collect(
+                $file,
+                '~\bZend_Controller_Action_Helper_Url\b~',
+                static fn(array $match, string $content, string $code): bool => !str_contains($code, 'extends Zend_Controller_Action_Helper_Url')
+            ));
+        }
+
+        self::assertSame([], $violations, $this->buildMessage($violations, '$this->_helper->url() or $this->url([...])'));
     }
 
     /**
