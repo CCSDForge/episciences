@@ -13,6 +13,12 @@ class FileController extends DefaultController
     /** Content types the browser may display instead of downloading */
     private const INLINE_CONTENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
+    /** Upload paths whose files are stored by version (docId): the paper id is not used */
+    private const VERSION_STORAGE_PATHS = ['comment_attachments', 'ce_attachments'];
+
+    /** @var array<int, int[]> versions of the papers looked up during the request, by paper id */
+    private array $paperDocIds = [];
+
     public function indexAction(): void
     {
         $this->_helper->layout()->disableLayout();
@@ -161,39 +167,37 @@ class FileController extends DefaultController
     private function isAllowedOnTemporaryVersionFiles(int $paperId, bool $toWrite): bool
     {
         try {
-            $review = $this->findJournal();
-            $uid = (int)Episciences_Auth::getUid();
-            $hasConflict = null;
-            // Only the assignment to the paper depends on the version
-            $isStaffOfEveryPaper = static::isEditorialStaffOfEveryPaper($review->getSettings());
+            $docIds = $this->getPaperDocIds($paperId);
 
-            // The versions are loaded one at a time, the latest first: the first one granting access ends the check
-            foreach ($this->findPaperVersions($paperId) as $paper) {
-                $isOwnerOrCoAuthor = $paper->isOwnerOrCoAuthor();
-                // Not isAssignedEditorOrCopyEditor(), which loads the latest version again: it is one of the versions
-                $isEditorialStaff = $isStaffOfEveryPaper || $paper->getEditor($uid) || $paper->getCopyEditor($uid);
-
-                // Only withdraws the access of the editorial staff: not looked up for the others. Declared for the
-                // paper, not for a version: looked up once.
-                if ($isEditorialStaff) {
-                    $hasConflict ??= static::isConflictDetected($paper, $review);
-                }
-
-                $isAllowed = $toWrite
-                    ? DocumentFilePolicy::isTemporaryVersionFileWritable($isOwnerOrCoAuthor, (bool)$hasConflict, $isEditorialStaff)
-                    : DocumentFilePolicy::isTemporaryVersionFileAllowed(
-                        $isOwnerOrCoAuthor,
-                        (bool)$hasConflict,
-                        $isEditorialStaff,
-                        array_key_exists($uid, $paper->getReviewers())
-                    );
-
-                if ($isAllowed) {
-                    return true;
-                }
+            if ($docIds === []) {
+                return false;
             }
 
-            return false;
+            $review = $this->findJournal();
+            $uid = (int)Episciences_Auth::getUid();
+            // As Episciences_Paper::isOwnerOrCoAuthor(): the user signed in as another one counts as well
+            $originalUid = Episciences_Auth::getOriginalIdentity()?->getUid();
+            $authorUids = array_values(array_unique(null === $originalUid ? [$uid] : [$uid, (int)$originalUid]));
+
+            // Roles on any of the versions, read at once: being allowed on one of them is enough
+            $roles = $this->findUserRolesOnVersions($docIds, $uid, $authorUids);
+            $isOwnerOrCoAuthor = $roles['owner'] || $roles['coAuthor'];
+            $isEditorialStaff = static::isEditorialStaffOfEveryPaper($review->getSettings()) || $roles['editor'] || $roles['copyEditor'];
+
+            $isAllowed = static fn(bool $hasConflict): bool => $toWrite
+                ? DocumentFilePolicy::isTemporaryVersionFileWritable($isOwnerOrCoAuthor, $hasConflict, $isEditorialStaff)
+                : DocumentFilePolicy::isTemporaryVersionFileAllowed($isOwnerOrCoAuthor, $hasConflict, $isEditorialStaff, $roles['reviewer']);
+
+            // The conflict of interest only withdraws the access of the editorial staff: looked up when it decides
+            if ($isAllowed(true)) {
+                return true;
+            }
+
+            if (!$isAllowed(false)) {
+                return false;
+            }
+
+            return $isAllowed($this->isConflictDetectedOnPaper($docIds, $review));
         } catch (Exception $e) {
             // Refused, but not to be mistaken for a missing file
             AppRegistry::getMonoLogger()?->warning('Temporary version file access check failed', [
@@ -205,21 +209,54 @@ class FileController extends DefaultController
     }
 
     /**
-     * Versions of the paper in the current journal, the latest first (see
-     * Episciences_PapersManager::getDocIdsByPaperIdInJournal()), each one loaded when it is reached
+     * The conflict of interest is declared for the paper, not for a version: read with the first version found
      *
-     * @return iterable<Episciences_Paper>
+     * @param int[] $docIds
      * @throws Exception
      */
-    protected function findPaperVersions(int $paperId): iterable
+    private function isConflictDetectedOnPaper(array $docIds, Episciences_Review $review): bool
     {
-        foreach (Episciences_PapersManager::getDocIdsByPaperIdInJournal($paperId, RVID) as $docId) {
+        foreach ($docIds as $docId) {
             $paper = $this->findPaper($docId);
 
             if ($paper) {
-                yield $paper;
+                return static::isConflictDetected($paper, $review);
             }
         }
+
+        // No version to read it from: no access given to the editorial staff
+        return true;
+    }
+
+    /**
+     * Versions of the paper in the current journal, the latest first, looked up once per request
+     *
+     * @return int[]
+     * @throws Exception
+     */
+    private function getPaperDocIds(int $paperId): array
+    {
+        return $this->paperDocIds[$paperId] ??= $this->findPaperDocIds($paperId);
+    }
+
+    /**
+     * @return int[]
+     * @throws Exception
+     */
+    protected function findPaperDocIds(int $paperId): array
+    {
+        return Episciences_PapersManager::getDocIdsByPaperIdInJournal($paperId, RVID);
+    }
+
+    /**
+     * @param int[] $docIds
+     * @param int[] $authorUids
+     * @return array{owner: bool, coAuthor: bool, editor: bool, copyEditor: bool, reviewer: bool}
+     * @throws Exception
+     */
+    protected function findUserRolesOnVersions(array $docIds, int $uid, array $authorUids): array
+    {
+        return Episciences_PapersManager::getUserRolesOnVersions($docIds, $uid, $authorUids);
     }
 
     /**
@@ -513,7 +550,7 @@ class FileController extends DefaultController
             $path = (string)$request->getPost('path');
             $pcId = (int)$request->getPost('pcId');
             $docId = (int)$request->getPost('docId');
-            $paperId = $this->resolvePaperId($docId, (int)$request->getPost('paperId'));
+            $paperId = $this->resolveStoragePaperId($path, $docId, (int)$request->getPost('paperId'));
 
             if ($paperId === null || !$this->isAllowedToHandleDocumentFiles($path, $docId, $paperId)) {
                 $this->getResponse()->setHttpResponseCode(403);
@@ -605,7 +642,7 @@ class FileController extends DefaultController
         $filename = (string)$request->getPost('file');
         $docId = (int)$request->getPost('docId');
         $pcId = (int)$request->getPost('pcId');
-        $paperId = $this->resolvePaperId($docId, (int)$request->getPost('paperId'));
+        $paperId = $this->resolveStoragePaperId($path, $docId, (int)$request->getPost('paperId'));
 
         // Only a flat file name is expected here; strip any directory component
         // to neutralise path traversal (e.g. "../../somefile").
@@ -735,6 +772,16 @@ class FileController extends DefaultController
     }
 
     /**
+     * The paper id for the storage folder of the path (see buildStorageFolder()): the files of the comments and of
+     * the copy editing are stored by version, the paper id given is left as is; for the other paths, see
+     * resolvePaperId()
+     */
+    private function resolveStoragePaperId(string $path, int $docId, int $paperId): ?int
+    {
+        return in_array($path, self::VERSION_STORAGE_PATHS, true) ? $paperId : $this->resolvePaperId($docId, $paperId);
+    }
+
+    /**
      * The paper id of the version when a docId is given, else the paper id given: resolved once for the access
      * check, the storage folder and the link to the file, so that they cannot disagree. A paper id given with the
      * docId must be the one of the version.
@@ -771,10 +818,7 @@ class FileController extends DefaultController
     protected function isSubmittedTemporaryVersionFile(int $paperId, string $file): bool
     {
         try {
-            return Episciences_CommentsManager::isTemporaryVersionAnswerAttachment(
-                Episciences_PapersManager::getDocIdsByPaperIdInJournal($paperId, RVID),
-                $file
-            );
+            return Episciences_CommentsManager::isTemporaryVersionAnswerAttachment($this->getPaperDocIds($paperId), $file);
         } catch (Exception $e) {
             AppRegistry::getMonoLogger()?->warning('Temporary version file lookup failed', [
                 'paperId' => $paperId,
