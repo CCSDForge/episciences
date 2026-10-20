@@ -354,6 +354,22 @@ class Episciences_Mail_Reminder
     }
 
     /**
+     * Lost login link tags added to every reminder of a journal, whatever its recipient.
+     *
+     * @param string $journalUrl Journal URL, e.g. Episciences_Review::getUrl()
+     * @return array<string, string>
+     */
+    public static function getLostLoginTags(string $journalUrl): array
+    {
+        $lostLoginLink = rtrim($journalUrl, '/') . '/user/lostlogin';
+
+        return [
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink,
+            Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink, // present in custom templates
+        ];
+    }
+
+    /**
      * returns recipients list
      * @return mixed
      */
