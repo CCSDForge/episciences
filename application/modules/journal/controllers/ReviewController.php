@@ -169,7 +169,7 @@ class ReviewController extends Episciences_Controller_Action
                 if ($review->saveLicenseSettings()) {
                     $message = sprintf('<strong>%s</strong>', $this->view->translate('Les modifications ont bien été enregistrées.'));
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
-                    $url = $this->_helper->url($request->getActionName(), $request->getControllerName());
+                    $url = $this->url(['action' => $request->getActionName(), 'controller' => $request->getControllerName()]);
                     $this->_helper->redirector->gotoUrl($url);
                     return;
                 }
