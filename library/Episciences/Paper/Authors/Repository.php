@@ -195,6 +195,9 @@ class Episciences_Paper_Authors_Repository
     /**
      * Copy authors from paper metadata into the authors table
      *
+     * For HAL papers, authors are built from the HAL TEI (middle names, ORCID, affiliations with ROR)
+     * when it lists the same authors as the OAI-DC metadata.
+     *
      * @return int number of inserted rows
      */
     public static function insertFromPaper(Episciences_Paper $paper): int
@@ -205,6 +208,21 @@ class Episciences_Paper_Authors_Repository
             return 0;
         }
 
+        return self::insert([
+            [
+                'authors' => json_encode(self::buildFromPaper($paper), self::JSON_ENCODE_FLAGS),
+                'paperId' => $paperId
+            ]
+        ]);
+    }
+
+    /**
+     * Build the author records of a paper from its metadata, without writing them
+     *
+     * @return array<int, array<string, mixed>> authors ready for DB storage
+     */
+    public static function buildFromPaper(Episciences_Paper $paper): array
+    {
         $metadataAuthors = $paper->getMetadata('authors');
         $formattedAuthors = [];
 
@@ -219,12 +237,32 @@ class Episciences_Paper_Authors_Repository
             ];
         }
 
-        return self::insert([
-            [
-                'authors' => json_encode($formattedAuthors, self::JSON_ENCODE_FLAGS),
-                'paperId' => $paperId
-            ]
-        ]);
+        if (Episciences_Repositories::isFromHalRepository((int)$paper->getRepoid())) {
+            $formattedAuthors = self::buildFromHalTei($paper, $formattedAuthors);
+        }
+
+        return $formattedAuthors;
+    }
+
+    /**
+     * Replace OAI-DC authors with HAL TEI authors; keep the DC authors if the TEI cannot be used
+     *
+     * @param array<int, array<string, mixed>> $dcAuthors authors built from OAI-DC metadata
+     * @return array<int, array<string, mixed>>
+     */
+    private static function buildFromHalTei(Episciences_Paper $paper, array $dcAuthors): array
+    {
+        try {
+            $teiAuthors = Episciences_Paper_Authors_EnrichmentService::getHalTeiAuthors(
+                (string)$paper->getIdentifier(),
+                (int)$paper->getVersion()
+            );
+        } catch (\Psr\Cache\InvalidArgumentException $e) {
+            \Episciences\AppRegistry::getMonoLogger()?->warning('HAL TEI unavailable for paper ' . $paper->getPaperid() . ': ' . $e->getMessage());
+            return $dcAuthors;
+        }
+
+        return Episciences_Paper_Authors_EnrichmentService::buildAuthorsFromHalTei($dcAuthors, $teiAuthors);
     }
 
     /**
