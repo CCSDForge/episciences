@@ -59,6 +59,8 @@ class Episciences_Paper_Authors_HalTeiParser
      * HAL splits given names into <forename type="first"> and <forename type="middle">.
      * All forenames are kept in "given_name"; "first_name" holds the first one only,
      * because OAI-DC derived records (stored in DB) only carry the first given name.
+     * A forename reduced to a single letter is an initial and is written with a period ("C" -> "C."),
+     * since HAL returns initials with or without it.
      *
      * @param SimpleXMLElement|null $personName TEI persName element
      * @param array $parsedAuthors accumulated authors array
@@ -70,6 +72,10 @@ class Episciences_Paper_Authors_HalTeiParser
 
         foreach ($personName->forename as $forenameNode) {
             $forename = trim((string)$forenameNode);
+
+            if (preg_match('/^\p{L}$/u', $forename) === 1) {
+                $forename .= '.';
+            }
 
             if ($forename !== '') {
                 $forenames[] = $forename;

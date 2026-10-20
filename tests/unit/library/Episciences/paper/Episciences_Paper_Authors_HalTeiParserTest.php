@@ -44,10 +44,30 @@ final class Episciences_Paper_Authors_HalTeiParserTest extends TestCase
 
         $result = Episciences_Paper_Authors_HalTeiParser::getAuthorInfoFromXmlTei($personName, []);
 
-        self::assertSame('Heath B', $result[0]['given_name']);
+        self::assertSame('Heath B.', $result[0]['given_name']);
         self::assertSame('Heath', $result[0]['first_name']);
         self::assertSame('Henninger', $result[0]['family']);
-        self::assertSame('Heath B Henninger', $result[0]['fullname']);
+        self::assertSame('Heath B. Henninger', $result[0]['fullname']);
+    }
+
+    /**
+     * Verify initials get a single period, whether HAL returns them with or without one
+     */
+    public function testGetAuthorInfoFromXmlTeiWritesInitialsWithPeriod(): void
+    {
+        $personName = simplexml_load_string(
+            '<persName>
+                <forename type="first">J</forename>
+                <forename type="middle">R.</forename>
+                <surname>Smith</surname>
+            </persName>'
+        );
+
+        $result = Episciences_Paper_Authors_HalTeiParser::getAuthorInfoFromXmlTei($personName, []);
+
+        self::assertSame('J. R.', $result[0]['given_name']);
+        self::assertSame('J.', $result[0]['first_name']);
+        self::assertSame('J. R. Smith', $result[0]['fullname']);
     }
 
     /**

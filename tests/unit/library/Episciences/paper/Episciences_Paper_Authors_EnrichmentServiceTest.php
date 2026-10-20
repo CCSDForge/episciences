@@ -458,6 +458,47 @@ final class Episciences_Paper_Authors_EnrichmentServiceTest extends TestCase
     }
 
     /**
+     * A DB initial without period is matched with the TEI one and completed with its period
+     */
+    public function testMergeAddsMissingPeriodToInitials(): void
+    {
+        $dbAuthors = [
+            ['fullname' => 'Eva C Herbst', 'given' => 'Eva C', 'family' => 'Herbst'],
+        ];
+
+        $teiAuthors = [
+            ['fullname' => 'Eva C. Herbst', 'given_name' => 'Eva C.', 'first_name' => 'Eva', 'family' => 'Herbst', 'orcid' => '0000-0001-2345-6789'],
+        ];
+
+        Episciences_Paper_Authors_EnrichmentService::resetCorrections();
+        $result = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        self::assertSame('Eva C.', $result[0]['given']);
+        self::assertSame('Eva C. Herbst', $result[0]['fullname']);
+        self::assertSame('0000-0001-2345-6789', $result[0]['orcid']);
+        self::assertContains('Initials completed: Eva C Herbst -> Eva C. Herbst', Episciences_Paper_Authors_EnrichmentService::getCorrections());
+        self::assertSame($result, Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($result, $teiAuthors));
+    }
+
+    /**
+     * A DB given name differing from the TEI one by its accents only is kept as is
+     */
+    public function testMergeKeepsAccentsOfDbGivenName(): void
+    {
+        $dbAuthors = [
+            ['fullname' => 'Éva Herbst', 'given' => 'Éva', 'family' => 'Herbst'],
+        ];
+
+        $teiAuthors = [
+            ['fullname' => 'Eva Herbst', 'given_name' => 'Eva', 'first_name' => 'Eva', 'family' => 'Herbst'],
+        ];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        self::assertSame($dbAuthors, $result);
+    }
+
+    /**
      * A DB given name that differs from the TEI first forename is never overwritten
      */
     public function testMergeDoesNotOverwriteDifferentGivenName(): void

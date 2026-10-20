@@ -195,11 +195,12 @@ class Episciences_Paper_Authors_EnrichmentService
      * Check whether a DB author and a TEI author represent the same person (by name)
      *
      * Authors inserted from OAI-DC lack middle names, so the TEI name is also compared
-     * without its middle names (first forename + surname).
+     * without its middle names (first forename + surname). Initials match with or without
+     * their period ("Eva C Smith" = "Eva C. Smith").
      *
      * @param array $dbAuthor single author from database
      * @param array $teiAuthor single author from TEI
-     * @return bool true if names match (exact or accent-insensitive)
+     * @return bool true if names match (accent and period insensitive)
      */
     private static function matchAuthorByName(array $dbAuthor, array $teiAuthor): bool
     {
@@ -210,9 +211,10 @@ class Episciences_Paper_Authors_EnrichmentService
             $teiFullnames[] = trim($teiAuthor[self::KEY_TEI_FIRST_NAME] . ' ' . $teiAuthor[self::KEY_FAMILY]);
         }
 
+        $dbKey = self::normalizeNameForMatching($dbFullname);
+
         foreach ($teiFullnames as $teiFullname) {
-            if (($dbFullname === $teiFullname)
-                || (Episciences_Tools::replaceAccents($teiFullname) === Episciences_Tools::replaceAccents($dbFullname))) {
+            if (self::normalizeNameForMatching($teiFullname) === $dbKey) {
                 return true;
             }
         }
@@ -221,10 +223,27 @@ class Episciences_Paper_Authors_EnrichmentService
     }
 
     /**
-     * Complete the DB given name with the TEI middle names (e.g. "Eva" -> "Eva C")
+     * Name comparison key: accents removed, periods ignored ("Éva C. Smith" -> "Eva C Smith")
+     */
+    private static function normalizeNameForMatching(string $name): string
+    {
+        return self::removePeriods(Episciences_Tools::replaceAccents($name));
+    }
+
+    /**
+     * Remove periods and collapse spaces, so that "J.R." and "J. R." both give "J R"
+     */
+    private static function removePeriods(string $name): string
+    {
+        return trim((string)preg_replace('/\s+/u', ' ', str_replace('.', ' ', $name)));
+    }
+
+    /**
+     * Complete the DB given name with the TEI middle names (e.g. "Eva" -> "Eva C.")
+     * or with the periods of its initials (e.g. "Eva C" -> "Eva C.")
      *
-     * Only applied when the DB given name is the TEI first forename alone,
-     * so that names already edited or completed are left untouched.
+     * Only applied when the DB given name is the TEI first forename alone, or the TEI given
+     * name without its periods, so that names already edited or completed are left untouched.
      *
      * @param array<int|string, array<string, mixed>> &$dbAuthors full authors array (modified by reference)
      * @param int|string $authorIndex index of the author being enriched
@@ -237,18 +256,23 @@ class Episciences_Paper_Authors_EnrichmentService
         $teiFirstName = $teiAuthor[self::KEY_TEI_FIRST_NAME] ?? '';
         $dbGivenName = (string)($dbAuthor[self::KEY_GIVEN] ?? '');
 
-        if ($teiFirstName === '' || $teiGivenName === $teiFirstName) {
+        if ($teiGivenName === '' || $dbGivenName === $teiGivenName) {
             return;
         }
 
-        if (Episciences_Tools::replaceAccents($dbGivenName) !== Episciences_Tools::replaceAccents($teiFirstName)) {
+        $isMissingMiddleNames = $teiFirstName !== '' && $teiGivenName !== $teiFirstName
+            && self::normalizeNameForMatching($dbGivenName) === self::normalizeNameForMatching($teiFirstName);
+        $isMissingPeriods = self::removePeriods($dbGivenName) === self::removePeriods($teiGivenName);
+
+        if (!$isMissingMiddleNames && !$isMissingPeriods) {
             return;
         }
 
         $dbAuthors[$authorIndex][self::KEY_GIVEN] = $teiGivenName;
         $dbAuthors[$authorIndex][self::KEY_FULLNAME] = trim($teiGivenName . ' ' . ($dbAuthor[self::KEY_FAMILY] ?? ''));
 
-        self::recordCorrection('Middle name added: ' . $dbAuthor[self::KEY_FULLNAME] . ' -> ' . $dbAuthors[$authorIndex][self::KEY_FULLNAME]);
+        $label = $isMissingMiddleNames ? 'Middle name added: ' : 'Initials completed: ';
+        self::recordCorrection($label . $dbAuthor[self::KEY_FULLNAME] . ' -> ' . $dbAuthors[$authorIndex][self::KEY_FULLNAME]);
     }
 
     /**
