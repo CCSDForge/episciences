@@ -55,6 +55,7 @@ See `.github/workflows/` for CI configuration.
 
 - `submitIdentifier.test.js` - Tests for `public/js/submit/identifier.js` (imported directly, no copy)
   - `SubmitIdentifier.parse()` - Extracts the identifier and the version from a pasted identifier or URL
+  - `SubmitIdentifier.applyVersion()` - Fills the version field, never clearing a version typed by the author
   - Covers HAL, arXiv, bioRxiv/medRxiv, Zenodo, IACR ePrint, handle, BAOBAB and Dataverse URLs, direct identifiers
 
 - `submitFunctions.test.js` - Tests for submit form processing functions

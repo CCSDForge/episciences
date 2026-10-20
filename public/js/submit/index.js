@@ -94,29 +94,13 @@ $(document).ready(function () {
         });
 
         $(this).val(identifier);
-        updateVersionField(versionField, version);
+        SubmitIdentifier.applyVersion(versionField, version);
     });
 
     // Once edited by the author, the version field is no longer cleared automatically
     $('#search_doc-version').on('input', function () {
         delete this.dataset.fromIdentifier;
     });
-
-    // Fill the version field with the version found in the identifier. When there is none,
-    // only clear a value previously filled from an identifier, never one typed by the author.
-    function updateVersionField(versionField, version) {
-        if (!versionField) {
-            return;
-        }
-
-        if (version !== null) {
-            versionField.value = String(version);
-            versionField.dataset.fromIdentifier = '1';
-        } else if (versionField.dataset.fromIdentifier) {
-            versionField.value = '';
-            delete versionField.dataset.fromIdentifier;
-        }
-    }
 
     function checkDataverse() {
         const searchDocRepoId = document.getElementById('search_doc-repoId');

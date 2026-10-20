@@ -58,6 +58,8 @@ describe('SubmitIdentifier.parse', () => {
                 1,
             ],
             ['https://hal.science/hal-01234567v2?lang=en', 'hal-01234567', 2],
+            ['https://hal.science/hal-01234567v0', 'hal-01234567', 1],
+            ['https://hal.science/hal-01234567v0/document', 'hal-01234567', 1],
         ])('%s', (input, identifier, version) => {
             expect(parse(input)).toEqual({ identifier, version });
         });
@@ -261,5 +263,55 @@ describe('SubmitIdentifier.parse', () => {
                 version: null,
             });
         });
+    });
+});
+
+describe('SubmitIdentifier.applyVersion', () => {
+    let versionField;
+
+    beforeEach(() => {
+        versionField = document.createElement('input');
+    });
+
+    test('fills the field with the version found', () => {
+        SubmitIdentifier.applyVersion(versionField, 2);
+
+        expect(versionField.value).toBe('2');
+        expect(versionField.dataset.fromIdentifier).toBe('1');
+    });
+
+    test('keeps a decimal version', () => {
+        SubmitIdentifier.applyVersion(versionField, 1.1);
+
+        expect(versionField.value).toBe('1.1');
+    });
+
+    test('clears a version previously filled from an identifier', () => {
+        SubmitIdentifier.applyVersion(versionField, 2);
+        SubmitIdentifier.applyVersion(versionField, null);
+
+        expect(versionField.value).toBe('');
+        expect(versionField.dataset.fromIdentifier).toBeUndefined();
+    });
+
+    test('keeps a version typed by the author', () => {
+        versionField.value = '3';
+        SubmitIdentifier.applyVersion(versionField, null);
+
+        expect(versionField.value).toBe('3');
+    });
+
+    test('keeps a version edited by the author after being filled from an identifier', () => {
+        SubmitIdentifier.applyVersion(versionField, 2);
+        // What the input listener of public/js/submit/index.js does
+        delete versionField.dataset.fromIdentifier;
+        versionField.value = '4';
+        SubmitIdentifier.applyVersion(versionField, null);
+
+        expect(versionField.value).toBe('4');
+    });
+
+    test('does nothing without a version field', () => {
+        expect(() => SubmitIdentifier.applyVersion(null, 2)).not.toThrow();
     });
 });

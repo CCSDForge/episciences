@@ -35,9 +35,10 @@ const SubmitIdentifier = (() => {
         },
     ];
 
-    // HAL (any portal): the first path segment is the identifier, e.g. /hal-01234567v2/document
+    // HAL (any portal): the first path segment is the identifier, e.g. /hal-01234567v2/document.
+    // A "v0" suffix is not a version: it is left out of the identifier.
     const HAL_PATH =
-        /^\/([a-z][a-z0-9_]*(?:-[a-z][a-z0-9_]*)*-\d{6,}(?:v\d+)?)(?:\/|$)/i;
+        /^\/([a-z][a-z0-9_]*(?:-[a-z][a-z0-9_]*)*-\d{6,}(?:v[1-9]\d*)?)(?:v0)?(?:\/|$)/i;
 
     // "v0" is not a valid version
     const VERSION_SUFFIX = /^(.+?)v([1-9]\d*)$/;
@@ -192,7 +193,29 @@ const SubmitIdentifier = (() => {
         return { identifier, version: version ?? DEFAULT_VERSION };
     }
 
-    return { parse, splitVersion, matchUrlRule };
+    /**
+     * Fill the version field with the version found in the identifier. When there
+     * is none, only clear a value previously filled from an identifier, never one
+     * typed by the author (the input listener drops the data-from-identifier flag).
+     *
+     * @param {HTMLInputElement|null} versionField
+     * @param {number|null} version
+     */
+    function applyVersion(versionField, version) {
+        if (!versionField) {
+            return;
+        }
+
+        if (version !== null) {
+            versionField.value = String(version);
+            versionField.dataset.fromIdentifier = '1';
+        } else if (versionField.dataset.fromIdentifier) {
+            versionField.value = '';
+            delete versionField.dataset.fromIdentifier;
+        }
+    }
+
+    return { parse, splitVersion, matchUrlRule, applyVersion };
 })();
 
 // CommonJS export for Jest testing
