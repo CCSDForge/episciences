@@ -28,8 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BAOBAB submissions now store the licence, the ROR of affiliations (including an organisational author's own ROR) and the translated abstracts filed as other descriptions.
 - Links to HAL found in a repository's related identifiers are now stored as linked publications, or as linked software for a HAL software deposit.
 - BAOBAB submissions accept an ARK resolver URL (e.g. `https://pidslink.ren.africa/ark:/50962/...`) as well as a bare ARK or a record URL.
+- HAL papers: authors are now built from the HAL TEI (middle names, ORCID, affiliations with their ROR) when it lists the same authors as the OAI-DC record; existing authors are completed with their HAL middle names. Initials are always written with a period (`Eva C. Smith`), whether HAL returns `C` or `C.`.
+- `enrichment:creators -v` lists the author corrections made from HAL TEI; with `--dry-run` it lists them without writing anything.
 
 ### Fixed
+- HAL affiliations no longer keep the ROR of another affiliation of the same author, a defect left in the data by a former enrichment bug: `enrichment:creators` now realigns such a ROR on the HAL TEI (or removes it when the HAL structure has none), while a ROR set manually is kept.
+- `enrichment:creators --dry-run` no longer creates missing author records.
+- A BAOBAB submission by the ARK of a version other than the latest one no longer fails with "identifier does not exist": the ARK is now searched across all the versions of the records.
 - A paper whose repository lists related works is now reindexed when one of them is added, even when another one could not be resolved.
 - Fix identifier extraction from URLs pasted on the submission form: HAL pages with a path suffix (`/document`, `/file/...`), arXiv `/pdf/`, `/html/`, `www.` and old-style (`hep-th/9704188`) links, bioRxiv/medRxiv `/content/` links, Zenodo `/record/` and `/doi/` links and IACR ePrint `.pdf` links now fill the identifier field with the repository identifier and the version field with the version given by the URL, as a number. A version typed by the author is no longer cleared or replaced when the identifier or the URL has no version suffix, and `v0` is no longer read as a version (`public/js/submit/identifier.js`).
 - BAOBAB submissions no longer lose their abstract, keywords and dates when OAI-PMH is not configured or fails: the DataCite record is then fetched from the REST API.

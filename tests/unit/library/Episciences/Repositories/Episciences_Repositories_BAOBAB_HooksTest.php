@@ -170,6 +170,24 @@ XML;
         ];
     }
 
+    /**
+     * The search API only returns the latest version of each record by default:
+     * the ARK of an earlier version (each version has its own) must be searched
+     * across all versions to resolve.
+     */
+    public function testArkSearchUrlSearchesAllVersions(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_BAOBAB_Hooks::class, 'buildArkSearchUrl');
+        $method->setAccessible(true);
+
+        $url = $method->invoke(null, 'ark:50962/bb678540q9n4wdcb');
+        parse_str((string)parse_url($url, PHP_URL_QUERY), $query);
+
+        self::assertStringStartsWith(Episciences_Repositories_BAOBAB_Hooks::API_RECORDS_URL . '?', $url);
+        self::assertSame('pids.ark.identifier:"ark:/50962/bb678540q9n4wdcb"', $query['q']);
+        self::assertSame('true', $query['allversions']);
+    }
+
     // =========================================================================
     // hookIsRequiredVersion() / hookIsIdentifierCommonToAllVersions()
     // =========================================================================
