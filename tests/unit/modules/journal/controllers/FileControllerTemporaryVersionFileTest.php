@@ -261,17 +261,23 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
      * and deleteAction() do
      *
      * @param Episciences_Paper[] $versions
+     * @param Episciences_Paper|RuntimeException|false|null $version the version of the docId: by default one of
+     *                                                               the paper, false when it is not found
      * @return array{bool, list<int>} access granted, paper ids looked up
      */
     private function runHandleCheck(
         array $versions,
         int $docId,
         int $paperId,
-        Episciences_Paper|RuntimeException|null $version = null
+        Episciences_Paper|RuntimeException|false|null $version = null
     ): array
     {
         $journal = $this->createMock(Episciences_Review::class);
         $journal->method('getSettings')->willReturn([]);
+
+        if ($version === null) {
+            $version = $this->versionOfDocId(self::PAPERID, $docId);
+        }
 
         $controller = new class (
             new Zend_Controller_Request_HttpTestCase(),
@@ -295,7 +301,7 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
                     throw $version;
                 }
 
-                return $version;
+                return $version ?: null;
             }
 
             protected function findPaperVersions(int $paperId): array
@@ -368,16 +374,63 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
         self::assertFalse($allowed);
     }
 
+    /**
+     * Version loaded for the docId given (see FileController::resolvePaperId())
+     */
+    private function versionOfDocId(int $paperId, int $docId): Episciences_Paper
+    {
+        $version = $this->createMock(Episciences_Paper::class);
+        $version->method('getPaperid')->willReturn($paperId);
+        $version->method('getDocid')->willReturn($docId);
+
+        return $version;
+    }
+
     public function testPaperIdIsTakenFromTheVersionWhenOnlyTheDocIdIsGiven(): void
     {
         $this->logInAs();
-        $version = $this->createMock(Episciences_Paper::class);
-        $version->method('getPaperid')->willReturn(self::PAPERID);
 
-        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 15, 0, $version);
+        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 15, 0);
 
         self::assertTrue($allowed);
         self::assertSame([self::PAPERID], $lookedUp);
+    }
+
+    public function testPaperIdOfAnotherPaperThanTheVersionIsRefused(): void
+    {
+        // Allowed on the paper of the version: the paper id given must not point the files elsewhere
+        $this->logInAs();
+
+        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 15, 555);
+
+        self::assertFalse($allowed);
+        self::assertSame([], $lookedUp);
+    }
+
+    public function testVersionOfTheDocIdNotFoundIsRefused(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+
+        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 15, self::PAPERID, false);
+
+        self::assertFalse($allowed);
+        self::assertSame([], $lookedUp);
+    }
+
+    public function testVersionWithoutPaperIdFallsBackToItsDocId(): void
+    {
+        // As the save paths of the temporary versions do (getPaperid() ?: docId)
+        $this->logInAs();
+
+        [$allowed, $lookedUp] = $this->runHandleCheck(
+            [$this->version(['author' => true])],
+            15,
+            15,
+            $this->versionOfDocId(0, 15)
+        );
+
+        self::assertTrue($allowed);
+        self::assertSame([15], $lookedUp);
     }
 
     public function testFailureWhileLoadingTheVersionOfTheDocIdIsRefused(): void

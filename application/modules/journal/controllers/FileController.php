@@ -735,22 +735,32 @@ class FileController extends DefaultController
     }
 
     /**
-     * The paper id given, else the one of the version: resolved once for the access check, the storage folder and
-     * the link to the file, so that they cannot disagree
+     * The paper id of the version when a docId is given, else the paper id given: resolved once for the access
+     * check, the storage folder and the link to the file, so that they cannot disagree. A paper id given with the
+     * docId must be the one of the version.
+     * Like the save paths of the temporary versions, a version without paper id falls back to its docId.
      *
-     * @return int|null null when the version cannot be loaded
+     * @return int|null null when the version cannot be loaded or does not belong to the paper id given
      */
     protected function resolvePaperId(int $docId, int $paperId): ?int
     {
-        if ($paperId || !$docId) {
+        if (!$docId) {
             return $paperId;
         }
 
         try {
-            return (int)$this->findPaper($docId)?->getPaperid();
+            $paper = $this->findPaper($docId);
         } catch (Exception $e) {
             return null;
         }
+
+        if (!$paper) {
+            return null;
+        }
+
+        $versionPaperId = (int)$paper->getPaperid() ?: (int)$paper->getDocid();
+
+        return !$paperId || $paperId === $versionPaperId ? $versionPaperId : null;
     }
 
     /**
