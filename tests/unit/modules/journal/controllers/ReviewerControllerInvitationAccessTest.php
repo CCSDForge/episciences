@@ -372,20 +372,40 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     {
         $url = $this->acceptWhileLoggedOut([InvitationToken::URL_PARAM => self::linkToken(), 'tmp' => md5(self::TMP_EMAIL)]);
 
-        self::assertStringContainsString('/user/login/', $url);
-        self::assertStringContainsString('/forward-action/invitation/', $url);
-        self::assertStringContainsString('/id/' . self::INVITATION_ID, $url);
-        self::assertStringContainsString('/' . InvitationToken::URL_PARAM . '/' . self::linkToken(), $url);
-        self::assertStringContainsString('/tmp/' . md5(self::TMP_EMAIL), $url);
+        $params = self::loginRedirectParams($url);
+        self::assertSame('invitation', $params['forward-action'] ?? null);
+        self::assertSame((string)self::INVITATION_ID, $params['id'] ?? null);
+        self::assertSame(self::linkToken(), $params[InvitationToken::URL_PARAM] ?? null);
+        self::assertSame(md5(self::TMP_EMAIL), $params['tmp'] ?? null);
     }
 
     public function testLoginRedirectDropsEmptyAndNonStringLinkParameters(): void
     {
         $url = $this->acceptWhileLoggedOut([InvitationToken::URL_PARAM => ['x'], 'tmp' => '']);
 
-        self::assertStringContainsString('/user/login/', $url);
-        self::assertStringNotContainsString('/' . InvitationToken::URL_PARAM . '/', $url);
-        self::assertStringNotContainsString('/tmp/', $url);
+        $params = self::loginRedirectParams($url);
+        self::assertArrayNotHasKey(InvitationToken::URL_PARAM, $params);
+        self::assertArrayNotHasKey('tmp', $params);
+    }
+
+    /**
+     * Parameters of the login redirect URL, whether the URL helper writes them as path
+     * segments (/user/login/id/7) or, with a path prefix, as a query string (/user/login?id=7)
+     */
+    private static function loginRedirectParams(string $url): array
+    {
+        $path = (string)parse_url($url, PHP_URL_PATH);
+        self::assertStringContainsString('/user/login', $path);
+
+        $segments = explode('/', trim(substr($path, strpos($path, '/user/login') + strlen('/user/login')), '/'));
+        $params = [];
+        for ($i = 0; $i + 1 < count($segments); $i += 2) {
+            $params[urldecode($segments[$i])] = urldecode($segments[$i + 1]);
+        }
+
+        parse_str((string)parse_url($url, PHP_URL_QUERY), $query);
+
+        return array_merge($params, $query);
     }
 
     // -------------------------------------------------------------------------
