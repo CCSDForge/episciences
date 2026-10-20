@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace unit\modules\journal\controllers;
 
 use Episciences\User\UserNotFoundException;
+use Episciences_Paper;
+use Episciences_Paper_Logger;
 use Episciences_User;
 use Episciences_User_Assignment;
 use Episciences_User_Invitation;
@@ -22,16 +24,21 @@ use Zend_Session_Namespace;
  *
  * An invitation sent to an address can only be linked automatically to an account holding that
  * very address; any other account has to confirm, and nothing is written before it does.
- * checkAndProcessLinkedInvitation() is run for real with mocked invitation and assignment.
+ * An author of the paper can never link the invitation. Every link is logged in the paper history.
+ * checkAndProcessLinkedInvitation() is run for real with mocked invitation, assignment and paper.
  */
 final class ReviewerControllerLinkedInvitationTest extends TestCase
 {
     private const LOGGED_UID = 100;
     private const INVITED_UID = 200;
+    private const AUTHOR_UID = 300;
     private const SESSION = 'linked_invitation_test';
 
     private mixed $previousAuthStorage;
     private \ReviewerController $controller;
+
+    /** @var MockObject&Episciences_Paper */
+    private $paper;
 
     protected function setUp(): void
     {
@@ -51,6 +58,22 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
                 return new Zend_Session_Namespace('linked_invitation_test');
             }
         };
+
+        $this->paper = $this->paper();
+    }
+
+    /**
+     * @return MockObject&Episciences_Paper
+     */
+    private function paper(bool $loggedIsCoAuthor = false)
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(self::AUTHOR_UID);
+        $paper->method('isCoAuthorByUid')->willReturnCallback(
+            static fn(int $uid): bool => $loggedIsCoAuthor && $uid === self::LOGGED_UID
+        );
+
+        return $paper;
     }
 
     protected function tearDown(): void
@@ -59,10 +82,10 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
         $_POST = []; // setPost() writes the global
     }
 
-    private function logIn(string $email = 'logged@example.org'): void
+    private function logIn(string $email = 'logged@example.org', int $uid = self::LOGGED_UID): void
     {
         Zend_Auth::getInstance()->getStorage()->write(
-            new Episciences_User(['UID' => self::LOGGED_UID, 'EMAIL' => $email])
+            new Episciences_User(['UID' => $uid, 'EMAIL' => $email, 'FIRSTNAME' => 'Logged', 'LASTNAME' => 'Account'])
         );
     }
 
@@ -105,7 +128,7 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
         $method = new ReflectionMethod(\ReviewerController::class, 'checkAndProcessLinkedInvitation');
         $method->setAccessible(true);
 
-        return $method->invoke($this->controller, new Zend_Controller_Request_HttpTestCase(), $invitation, $assignment);
+        return $method->invoke($this->controller, new Zend_Controller_Request_HttpTestCase(), $invitation, $assignment, $this->paper);
     }
 
     public function testNothingHappensForAnonymousVisitors(): void
@@ -222,7 +245,7 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
         $request->setMethod('POST')->setPost(['linkInvitation' => 'acceptToLink']);
         $method = new ReflectionMethod(\ReviewerController::class, 'checkAndProcessLinkedInvitation');
         $method->setAccessible(true);
-        $result = $method->invoke($this->controller, $request, $this->invitation(), $assignment);
+        $result = $method->invoke($this->controller, $request, $this->invitation(), $assignment, $this->paper);
 
         self::assertSame('acceptToLink', $result['decision']);
         self::assertArrayNotHasKey(7, (array)(new Zend_Session_Namespace(self::SESSION))->linkedInvitationIds);
@@ -254,5 +277,131 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
         }
 
         self::assertSame(['isAlreadyLinked' => false], $result);
+    }
+
+    // -------------------------------------------------------------------------
+    // author guard
+    // -------------------------------------------------------------------------
+
+    public function testSubmitterCanNeverLinkTheInvitation(): void
+    {
+        $this->logIn('same@example.org', self::AUTHOR_UID);
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'same@example.org']));
+        $assignment->expects(self::never())->method('save');
+        $assignment->expects(self::never())->method('setUid');
+        $this->paper->expects(self::never())->method('log');
+
+        self::assertSame(['isAuthor' => true], $this->check($this->invitation(), $assignment));
+    }
+
+    public function testCoAuthorCanNeverLinkTheInvitation(): void
+    {
+        $this->paper = $this->paper(true);
+        $this->logIn('same@example.org');
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'same@example.org']));
+        $assignment->expects(self::never())->method('save');
+        $this->paper->expects(self::never())->method('log');
+
+        self::assertSame(['isAuthor' => true], $this->check($this->invitation(), $assignment));
+    }
+
+    public function testAuthorIsRefusedBeforeTheConfirmationStep(): void
+    {
+        $this->paper = $this->paper(true);
+        $this->confirmationRequest();
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'other@example.org']));
+        $assignment->expects(self::never())->method('save');
+
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod('POST')->setPost(['linkInvitation' => 'acceptToLink']);
+        $method = new ReflectionMethod(\ReviewerController::class, 'checkAndProcessLinkedInvitation');
+        $method->setAccessible(true);
+
+        self::assertSame(['isAuthor' => true], $method->invoke($this->controller, $request, $this->invitation(), $assignment, $this->paper));
+    }
+
+    // -------------------------------------------------------------------------
+    // traceability
+    // -------------------------------------------------------------------------
+
+    /**
+     * Captures the paper log entry (action, uid, detail)
+     * @return \ArrayObject<string, mixed>
+     */
+    private function expectLinkLog(): \ArrayObject
+    {
+        $logged = new \ArrayObject();
+        $this->paper->expects(self::once())->method('log')->willReturnCallback(
+            static function (string $action, int $uid, array $detail) use ($logged): bool {
+                $logged['action'] = $action;
+                $logged['uid'] = $uid;
+                $logged['detail'] = $detail;
+                return true;
+            }
+        );
+
+        return $logged;
+    }
+
+    public function testAutomaticLinkIsLogged(): void
+    {
+        $this->logIn('same@example.org');
+        $assignment = $this->assignment(new Episciences_User(['UID' => self::INVITED_UID, 'EMAIL' => 'same@example.org', 'FIRSTNAME' => 'Invited', 'LASTNAME' => 'Reviewer']));
+        $assignment->method('getId')->willReturn(42);
+        $assignment->method('save')->willReturn(true);
+        $logged = $this->expectLinkLog();
+
+        $this->check($this->invitation(), $assignment);
+
+        self::assertSame(Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_LINKED, $logged['action']);
+        self::assertSame(self::LOGGED_UID, $logged['uid']);
+        $detail = $logged['detail'];
+        self::assertSame(7, $detail['invitation_id']);
+        self::assertSame(42, $detail['assignment_id']);
+        self::assertTrue($detail['automatic']);
+        self::assertSame(['uid' => self::INVITED_UID, 'fullname' => 'Invited Reviewer', 'email' => 'same@example.org', 'tmp' => false], $detail['invited']);
+        self::assertSame(['uid' => self::LOGGED_UID, 'fullname' => 'Logged Account', 'email' => 'same@example.org'], $detail['linked_to']);
+        self::assertSame('Logged Account', $detail['user']['fullname']);
+    }
+
+    public function testConfirmedLinkIsLoggedAsNotAutomatic(): void
+    {
+        $this->confirmationRequest();
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'other@example.org']));
+        $assignment->method('save')->willReturn(true);
+        $logged = $this->expectLinkLog();
+
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod('POST')->setPost(['linkInvitation' => 'acceptToLink']);
+        $method = new ReflectionMethod(\ReviewerController::class, 'checkAndProcessLinkedInvitation');
+        $method->setAccessible(true);
+        $method->invoke($this->controller, $request, $this->invitation(), $assignment, $this->paper);
+
+        self::assertFalse($logged['detail']['automatic']);
+        self::assertSame('other@example.org', $logged['detail']['invited']['email']);
+        self::assertSame('logged@example.org', $logged['detail']['linked_to']['email']);
+    }
+
+    public function testLinkOfATemporaryUserInvitationIsLoggedAsSuch(): void
+    {
+        $this->logIn('same@example.org');
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'same@example.org']));
+        $assignment->method('isTmp_user')->willReturn(true);
+        $assignment->method('save')->willReturn(true);
+        $logged = $this->expectLinkLog();
+
+        $this->check($this->invitation(), $assignment);
+
+        self::assertTrue($logged['detail']['invited']['tmp']);
+    }
+
+    public function testFailedLinkIsNotLogged(): void
+    {
+        $this->logIn('same@example.org');
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'same@example.org']));
+        $assignment->method('save')->willReturn(false);
+        $this->paper->expects(self::never())->method('log');
+
+        self::assertSame(['isAlreadyLinked' => false], $this->check($this->invitation(), $assignment));
     }
 }

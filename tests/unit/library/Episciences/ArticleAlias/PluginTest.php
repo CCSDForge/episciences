@@ -6,6 +6,7 @@ namespace unit\library\Episciences\ArticleAlias;
 
 use Episciences_ArticleAlias_Plugin;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 use Zend_Controller_Front;
 use Zend_Controller_Request_Http;
 use Zend_Controller_Router_Rewrite;
@@ -20,6 +21,22 @@ final class PluginTest extends TestCase
 {
     private const PAPER_ID = '18700';
     private const PUBLISHED_DOC_ID = 18732;
+
+    private ReflectionProperty $currentRoute;
+    private mixed $previousRoute;
+
+    protected function setUp(): void
+    {
+        // Routing a request changes the router's current route: restore it for the next tests
+        $this->currentRoute = new ReflectionProperty(Zend_Controller_Router_Rewrite::class, '_currentRoute');
+        $this->currentRoute->setAccessible(true);
+        $this->previousRoute = $this->currentRoute->getValue($this->router());
+    }
+
+    protected function tearDown(): void
+    {
+        $this->currentRoute->setValue($this->router(), $this->previousRoute);
+    }
 
     /**
      * @dataProvider aliasedPathProvider
@@ -92,15 +109,20 @@ final class PluginTest extends TestCase
     private function route(string $path): Zend_Controller_Request_Http
     {
         $request = new Zend_Controller_Request_Http('http://localhost' . $path);
+        $this->router()->route($request);
+
+        return $request;
+    }
+
+    private function router(): Zend_Controller_Router_Rewrite
+    {
         $router = Zend_Controller_Front::getInstance()->getRouter();
 
         if (!$router instanceof Zend_Controller_Router_Rewrite) {
             self::fail('The front controller router is not a Zend_Controller_Router_Rewrite');
         }
 
-        $router->route($request);
-
-        return $request;
+        return $router;
     }
 
     private function plugin(int $publishedDocId = self::PUBLISHED_DOC_ID): Episciences_ArticleAlias_Plugin

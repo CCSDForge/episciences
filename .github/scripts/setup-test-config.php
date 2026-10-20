@@ -137,6 +137,10 @@ unset($config['EPISCIENCES']['ENABLE_NEXT_FRONT']);
 // needed for the assertion to mean anything.
 $config['OPENALEX']['APIKEY'] = 'ci-openalex-api-key';
 
+// The template leaves the reviewer invitation secret empty, which makes the link token fail
+// closed; the test environment needs a value for the invitation pages to work.
+$config['REVIEWER_INVITATION']['HMAC_SECRET'] = 'ci-reviewer-invitation-hmac-secret';
+
 writeFileOrFail(
     $root . '/tests/config/pwd.json',
     json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL,

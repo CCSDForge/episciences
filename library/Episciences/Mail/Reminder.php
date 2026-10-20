@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Reviewer\InvitationToken;
+
 class Episciences_Mail_Reminder
 {
     // event types triggering a reminder
@@ -397,6 +399,22 @@ class Episciences_Mail_Reminder
         }
 
         $this->setRecipients($recipients);
+    }
+
+    /**
+     * Lost login link tags added to every reminder of a journal, whatever its recipient.
+     *
+     * @param string $journalUrl Journal URL, e.g. Episciences_Review::getUrl()
+     * @return array<string, string>
+     */
+    public static function getLostLoginTags(string $journalUrl): array
+    {
+        $lostLoginLink = rtrim($journalUrl, '/') . '/user/lostlogin';
+
+        return [
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink,
+            Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink, // present in custom templates
+        ];
     }
 
     /**
@@ -1046,6 +1064,48 @@ class Episciences_Mail_Reminder
     }
 
     /**
+     * Invitation page URL sent in an unanswered invitation reminder.
+     * An invitation with a row value (USER_INVITATION.TOKEN) gets its link token;
+     * a legacy one keeps its former URL (md5 of the e-mail for a reviewer without an account).
+     */
+    public static function buildInvitationUrl(
+        string           $reviewUrl,
+        int              $invitationId,
+        string           $lang,
+        ?string          $rowSecret,
+        ?string          $tmpUserEmail,
+        ?InvitationToken $invitationToken = null
+    ): string
+    {
+        $url = $reviewUrl . '/reviewer/invitation/id/' . $invitationId . '/lang/' . $lang;
+
+        if ($rowSecret !== null && $rowSecret !== '') {
+            $invitationToken ??= new InvitationToken();
+            return $url . '/' . InvitationToken::URL_PARAM . '/' . $invitationToken->compute($invitationId, $rowSecret);
+        }
+
+        if ($tmpUserEmail !== null) {
+            $url .= '/tmp/' . md5($tmpUserEmail);
+        }
+
+        return $url;
+    }
+
+    /**
+     * Whether buildInvitationUrl() can produce a working link: an invitation with a row value
+     * needs the global secret (a legacy URL would be refused by the invitation page).
+     */
+    public static function canBuildInvitationUrl(?string $rowSecret, ?InvitationToken $invitationToken = null): bool
+    {
+        if ($rowSecret === null || $rowSecret === '') {
+            return true;
+        }
+
+        $invitationToken ??= new InvitationToken();
+        return $invitationToken->isConfigured();
+    }
+
+    /**
      * fetch recipients for unanswered invitations reminder
      * @param $debug
      * @param $date
@@ -1077,7 +1137,7 @@ class Episciences_Mail_Reminder
                 array('ui1' => T_USER_INVITATIONS),
                 array(
                     'INVITATION_ID' => 'ui1.ID',
-                    //'ui1.TOKEN',
+                    'TOKEN' => 'ui1.TOKEN',
                     'ASSIGNMENT_ID' => 'ui1.AID',
                     'ua.UID',
                     'ua.TMP_USER',
@@ -1136,12 +1196,19 @@ class Episciences_Mail_Reminder
                 continue;
             }
 
+            // skip this invitation only: an exception here would stop the reminders of every journal
+            if (!self::canBuildInvitationUrl($data['TOKEN'] ?? null)) {
+                trigger_error(
+                    sprintf('Unanswered invitation reminder skipped for invitation %s: %s is not configured', $data['INVITATION_ID'], InvitationToken::SECRET_CONSTANT_NAME),
+                    E_USER_WARNING
+                );
+                continue;
+            }
+
             $lang = $this->_defaultLanguage;
             $fullname = 'is probably undefined';
-            $invitation_url = $review->getUrl() . "/reviewer/invitation/id/" . $data['INVITATION_ID'] . '/lang/';
-            $invitation_url_suffix = '';
+            $tmpUserEmail = null;
             $isReviewerFound = true;
-
 
             if ((int)$data['TMP_USER'] === 1) {
                 // not Episciences_User_Tmp::find(): it returns [false] (not empty) for a missing row
@@ -1159,7 +1226,7 @@ class Episciences_Mail_Reminder
                     $user->generateScreen_name();
                     $fullname = $user->getFullName();
                     $lang = $user->getLangueid(true);
-                    $invitation_url_suffix = '/tmp/' . md5($user->getEmail());
+                    $tmpUserEmail = (string)$user->getEmail();
                 }
 
             } else {
@@ -1171,7 +1238,13 @@ class Episciences_Mail_Reminder
 
             // dates and link depend on the language of the recipient
             $localizedTags = static fn(string $tagLang): array => [
-                Episciences_Mail_Tags::TAG_INVITATION_LINK => $invitation_url . $tagLang . $invitation_url_suffix,
+                Episciences_Mail_Tags::TAG_INVITATION_LINK => self::buildInvitationUrl(
+                    $review->getUrl(),
+                    (int)$data['INVITATION_ID'],
+                    $tagLang,
+                    $data['TOKEN'] ?? null,
+                    $tmpUserEmail
+                ),
                 Episciences_Mail_Tags::TAG_INVITATION_DATE => Episciences_View_Helper_Date::Date($data['INVITATION_DATE'], $tagLang),
                 Episciences_Mail_Tags::TAG_EXPIRATION_DATE => Episciences_View_Helper_Date::Date($data['EXPIRATION_DATE'], $tagLang)
             ];

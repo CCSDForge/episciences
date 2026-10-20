@@ -9,6 +9,7 @@ return array(
         Episciences_Paper_Logger::CODE_REVIEWER_INVITATION => "Invitation d'un relecteur",
         Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED => "Invitation de relecture acceptée",
         Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED => "Invitation de relecture refusée",
+        Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_LINKED => "Invitation de relecture associée à un autre compte",
         Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT => "Suppression d'un relecteur",
         Episciences_Paper_Logger::CODE_REVIEWER_ASSIGNMENT => "Assignation d'un relecteur",
         Episciences_Paper_Logger::CODE_REVIEWING_IN_PROGRESS => "Relecture en cours",
