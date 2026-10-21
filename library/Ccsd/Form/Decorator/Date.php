@@ -7,7 +7,7 @@ class Ccsd_Form_Decorator_Date extends Zend_Form_Decorator_HtmlTag
 	
     public $values = array ();
     
-    //public $init;
+    public $init;
     
     public function setElement ($element)
     {
