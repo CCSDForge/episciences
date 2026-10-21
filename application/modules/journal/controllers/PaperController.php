@@ -1505,6 +1505,8 @@ class PaperController extends PaperDefaultController
         $tmpPaper = clone($paper);
         $tmpPaper->setDocid(null);
         $tmpPaper->setPaperid($paperId);
+        // A tmp version is always submitted through the application, even if the previous one was imported
+        $tmpPaper->setFlag('submitted');
 
         $isAssignedReviewers = $reassignReviewers && $reviewers;
 
@@ -2117,6 +2119,8 @@ class PaperController extends PaperDefaultController
         $newPaper = clone $paper;
         $newPaper->setDocid(null);
         $newPaper->setPaperid($paperId);
+        // A new version is always submitted through the application, even if the previous one was imported
+        $newPaper->setFlag('submitted');
 
         $status = $this->determineNewPaperStatus($newPaper, $post, $reassignReviewers, $isAlreadyAccepted);
         $newPaper->setStatus($status);

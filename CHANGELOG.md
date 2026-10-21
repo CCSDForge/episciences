@@ -73,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [RT#294893]:
 - Updating an existing assignment no longer resets its date (`WHEN`).
 
+- [#1298](https://github.com/CCSDForge/episciences/pull/1298): Fix new and temporary versions of an imported paper being saved as imported: the version is cloned from the previous one and kept its `FLAG`, which is now reset to `submitted` (`PaperController::initializeNewPaper()`, `PaperController::savetmpversionAction()`).
 - Fix editor-to-author message notifications being lost or reported as sent when they were not: a plain exception while notifying another assigned editor no longer skips the author email, the author send result is checked, and the editor is warned when a notification could not be queued (`PaperDefaultController::newCommentNotifyManager()`, `AuthorEditorCommunicationControllerTrait`).
 - Fix paper status/revision emails sent from modals being logged as `CODE_MAIL_SENT` in the paper history even when `writeMail()` failed (`PaperDefaultController::sendMailFromModal()`).
 - Fix submission acknowledgment never reaching the author (and co-authors) when no editorial committee member is left to notify, e.g. a chief editor submitting to their own journal (`Episciences_Submit::sendNotifications()`, regression from v1.0.54).
