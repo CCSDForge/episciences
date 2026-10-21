@@ -239,6 +239,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update dependencies.
 - [#1205](https://github.com/CCSDForge/episciences/pull/1205) Store the board role labels (`editorial_board`, `technical_board`, ..., `former_member`) as plain text in `views.php`, like in `js.php`; the tag icon is now added by `Episciences_Acl::getRoleLabelHtml()` in the role badges (user lists, contacts, mailing lists, permissions, role editing), which also escapes the label. The users-by-role chart on the stats page no longer strips HTML from the labels.
 
+## v1.0.57 - 2026-10-21
+
+### Added
+- [zbJATS] `zbjats:zip` caches the downloaded PDF and zbJATS XML files (Symfony Cache) instead of writing loose files, supports the new front-end URLs and gains a `--remove-cache` option to fetch everything again.
+- [Bibliographic references] `enrichment:extract-biblio-refs`: review status options, reference counts per DOCID at the end of the run; published papers are only processed with the opt-in `--published` option. See `docs/biblioref-extraction.md`.
+
+### Changed
+- The application runs on PHP 8.3: the Docker image uses PHP 8.3. PHP 8.1 remains supported.
+- The continuous integration workflows now generate the configuration and the database the PHPUnit
+  bootstrap requires. The test suite was aborting before its first test and reporting success: no
+  PHP test had ever actually run on CI.
+- A command line script called with an unknown option now exits with an error code instead of 0,
+  so a cron or a CI job is no longer told it succeeded.
+- Sitemap: only public front-end URLs are advertised (whitelist of public pages, articles by paper id without duplicates, `/boards` added, `/news` and `/articles-accepted` only when the journal has content for them).
+- Cancelling a modification request no longer requires a new comment: the form is linked to the current status of the paper.
+- The new version form is hardened.
+- Update dependencies.
+
+### Fixed
+[RT#293890]:
+- Sorting by invitation status does not reflect the actual situation:
+    A reviewer’s report is categorised as an "Additional reviewer’s report",
+    whereas this should only occur in cases where an editor adds a review directly 
+- The dashboard does not display pending invitations that were sent via a temporary account.
+- Reviewers were listed once per assignment history row on the paper page, instead of once per invitation.
+- An expired invitation no longer keeps its paper pinned to the reviewer's assigned papers list.
+- A reviewer holding a temporary account and invited more than once on the same paper was returned
+  without any identity, which made the paper page fail.
+
+[RT#301096]:
+- An editor (or guest editor) assigned to a paper could not access its previous versions:
+  the assignment is now checked on the latest version.
+- Permissions are now also checked on obsolete versions in the paper management page.
+- On the page of a previous version, the assigned editor (or guest editor) can now see the reviews
+  and the non-public details.
+- A guest editor (or copy editor) assigned to a paper could not download the review report
+  attachments ("File not found"): the download permission now relies on the assignment check,
+  same as the review display.
+
+[RT#296918]:
+- Updating a paper to the latest version of its HAL or Zenodo deposit failed: a HAL connection error no longer interrupts the process and only Zenodo versions newer than the current one are offered.
+
+[RT#297893]:
+- Repository versions posted as a new version (e.g. `v1.2.3`) are normalised the same way for every repository; an invalid value no longer makes the update fail.
+
+[RT#294893]:
+- Updating an existing assignment no longer resets its date (`WHEN`).
+
+- [#1298](https://github.com/CCSDForge/episciences/pull/1298): Fix new and temporary versions of an imported paper being saved as imported: the version is cloned from the previous one and kept its `FLAG`, which is now reset to `submitted` (`PaperController::initializeNewPaper()`, `PaperController::savetmpversionAction()`).
+- Fix editor-to-author message notifications being lost or reported as sent when they were not: a plain exception while notifying another assigned editor no longer skips the author email, the author send result is checked, and the editor is warned when a notification could not be queued (`PaperDefaultController::newCommentNotifyManager()`, `AuthorEditorCommunicationControllerTrait`).
+- Fix paper status/revision emails sent from modals being logged as `CODE_MAIL_SENT` in the paper history even when `writeMail()` failed (`PaperDefaultController::sendMailFromModal()`).
+- Fix submission acknowledgment never reaching the author (and co-authors) when no editorial committee member is left to notify, e.g. a chief editor submitting to their own journal (`Episciences_Submit::sendNotifications()`, regression from v1.0.54).
+- Fix conflict-of-interest filtering of submission recipients comparing UIDs against list positions instead of UID values (`Episciences_Submit::filterConflictRecipients()`).
+- Fix HAL and arXiv submissions keeping the version suffix in the stored identifier (e.g. `2310.02192v2` instead of `2310.02192`) with a mismatching version: the trailing `vN` is now removed server-side and used as the document version (`Episciences_Submit::getDoc()`).
+- [Zenodo] Fix a new version stored with the Zenodo identifier in `VERSION` instead of an incremented version number, and `IDENTIFIER` never updated (`AdministratepaperController::savenewpostedversionAction()`).
+- [Zenodo] All the affiliations of each creator, with their ROR identifiers, are now imported from the DataCite OAI-PMH record; the REST API only returns one affiliation per creator. Applies to new imports only.
+- [Zenodo] A description whose language has no ISO 639-1 code no longer overwrites another abstract.
+- [#793](https://github.com/CCSDForge/episciences/issues/793) [arXiv] Only the first `dc:description` is kept as the abstract; the following ones (author comments, publication notes) are discarded.
+- Bibliographical references were dropped when a paper document was regenerated from the command line: the PDF URL is now built from the paper's own journal and front-end version (`Episciences_Paper::getBibRef()`).
+- Papers without a graphical abstract rendered a broken image (`/public/documents/{docId}/null`).
+- Volume numbers that are not numeric (e.g. `S1`) were truncated when saving the volume form.
+- The email change form now checks the availability of the address actually saved.
+- OAI-PMH client: a non-XML `GetRecord` response (e.g. an HTML error page) now raises a `Ccsd_Error` instead of a `TypeError`.
+- `zbjats:zip` no longer reports a ZIP archive as created when no file was written, defines `RVID` from `--rvid`, and processes every journal of a multi-journal run (volume papers are filtered by the volume's own journal).
+- Fix the redirection after saving the refused papers monitoring.
+- `php console.php` failed for every command because `enrichment:extract-biblio-refs` could not be loaded before the application bootstrap.
+
 ## v1.0.56.1 - 2026-08-04
 
 ### Added
