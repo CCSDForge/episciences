@@ -239,6 +239,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update dependencies.
 - [#1205](https://github.com/CCSDForge/episciences/pull/1205) Store the board role labels (`editorial_board`, `technical_board`, ..., `former_member`) as plain text in `views.php`, like in `js.php`; the tag icon is now added by `Episciences_Acl::getRoleLabelHtml()` in the role badges (user lists, contacts, mailing lists, permissions, role editing), which also escapes the label. The users-by-role chart on the stats page no longer strips HTML from the labels.
 
+### Fixed
+
+- Fix a fatal error during bootstrap (`TypeError` from `Episciences_Auth::getRoles()`) when the roles of the logged-in user cached in the session had been loaded for another journal: the user now falls back to the member role (`Episciences_Auth::getRoles()`).
+
 ## v1.0.57 - 2026-10-21
 
 ### Added
@@ -287,7 +291,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [RT#294893]:
 - Updating an existing assignment no longer resets its date (`WHEN`).
 
-- [#1298](https://github.com/CCSDForge/episciences/pull/1298): Fix new and temporary versions of an imported paper being saved as imported: the version is cloned from the previous one and kept its `FLAG`, which is now reset to `submitted` (`PaperController::initializeNewPaper()`, `PaperController::savetmpversionAction()`).
+- [#1298](https://github.com/CCSDForge/episciences/pull/1298): Fix new and temporary versions of an imported paper being saved as imported: the version is cloned from the previous one and kept its `FLAG`, which is now reset to `submitted` (`PaperController::initializeNewPaper()`, `PaperController::savetmpversionAction()`, `ProcessInboxNotificationsCommand::saveNewVersion()`).
 - Fix editor-to-author message notifications being lost or reported as sent when they were not: a plain exception while notifying another assigned editor no longer skips the author email, the author send result is checked, and the editor is warned when a notification could not be queued (`PaperDefaultController::newCommentNotifyManager()`, `AuthorEditorCommunicationControllerTrait`).
 - Fix paper status/revision emails sent from modals being logged as `CODE_MAIL_SENT` in the paper history even when `writeMail()` failed (`PaperDefaultController::sendMailFromModal()`).
 - Fix submission acknowledgment never reaching the author (and co-authors) when no editorial committee member is left to notify, e.g. a chief editor submitting to their own journal (`Episciences_Submit::sendNotifications()`, regression from v1.0.54).

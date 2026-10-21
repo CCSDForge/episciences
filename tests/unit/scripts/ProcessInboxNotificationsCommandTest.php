@@ -487,4 +487,24 @@ class ProcessInboxNotificationsCommandTest extends TestCase
         $this->assertNotFalse($protocolPos);
         $this->assertLessThan($protocolPos, $httpsPos);
     }
+
+    public function testNewVersionFlagIsResetToSubmittedAfterClone(): void
+    {
+        $source = $this->commandSource();
+        $start = strpos($source, 'private function saveNewVersion(');
+        $this->assertNotFalse($start);
+
+        $end = strpos($source, 'private function ', $start + 1);
+        $method = substr($source, $start, $end === false ? null : $end - $start);
+
+        $clonePos = strpos($method, 'clone $context');
+        $flagPos = strpos($method, "\$newPaper->setFlag('submitted')");
+        $savePos = strpos($method, '$newPaper->save()');
+
+        $this->assertNotFalse($clonePos);
+        $this->assertNotFalse($flagPos, 'saveNewVersion() must reset the FLAG of the new version to submitted.');
+        $this->assertNotFalse($savePos);
+        $this->assertLessThan($flagPos, $clonePos, 'The FLAG must be reset after the previous version is cloned.');
+        $this->assertLessThan($savePos, $flagPos, 'The FLAG must be reset before the new version is saved.');
+    }
 }

@@ -1384,6 +1384,8 @@ class ProcessInboxNotificationsCommand extends Command
         $newPaper = clone $context;
         $newPaper->setDocid(null);
         $newPaper->setPaperid($paperId);
+        // A new version is always submitted through the application, even if the previous one was imported
+        $newPaper->setFlag('submitted');
         $newPaper->setWhen();
         $newPaper->setVersion($newPaperData['version']);
         $newPaper->setRecord($newPaperData['record']);
