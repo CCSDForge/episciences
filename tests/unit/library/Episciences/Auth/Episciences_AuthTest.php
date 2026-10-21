@@ -72,6 +72,17 @@ class Episciences_AuthTest extends TestCase
         self::assertSame([Episciences_Acl::ROLE_MEMBER], $roles);
     }
 
+    public function testGetRolesFallsBackToMemberWhenNoRoleForCurrentJournal(): void
+    {
+        $user = $this->createMock(Episciences_User::class);
+        $user->method('getUid')->willReturn(42);
+        $user->method('getRoles')->willReturn(null);
+        $this->loginUser($user);
+
+        $roles = Episciences_Auth::getRoles();
+        self::assertSame([Episciences_Acl::ROLE_MEMBER], $roles);
+    }
+
     public function testGetRolesReturnsMultipleRoles(): void
     {
         $user = $this->createMockUser(42, [Episciences_Acl::ROLE_EDITOR, Episciences_Acl::ROLE_REVIEWER]);
