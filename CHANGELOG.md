@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The "Add a file (Foreword, Erratum, Addendum, ...)" dialog of the volume creation and edition pages is no longer empty.
 - The dialogs of the paper page and of the mail templates page are displayed at half the page width again.
 - Multi-value, date, referential and thesaurus form fields no longer carry the internal `pathDir` and `relPublicDirPath` properties as HTML attributes.
+- Multi-value and date form fields no longer raise "Creation of dynamic property" deprecations (PHP 8.2+) when rendered: their decorators now declare the JavaScript function names and indices they receive.
 - HAL affiliations no longer keep the ROR of another affiliation of the same author, a defect left in the data by a former enrichment bug: `enrichment:creators` now realigns such a ROR on the HAL TEI (or removes it when the HAL structure has none), while a ROR set manually is kept.
 - `enrichment:creators --dry-run` no longer creates missing author records.
 - A BAOBAB submission by the ARK of a version other than the latest one no longer fails with "identifier does not exist": the ARK is now searched across all the versions of the records.
