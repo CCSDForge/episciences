@@ -265,11 +265,7 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public function getRoles(int $rvId = RVID): ?array
     {
-        if ($this->_roles === null) {
-            $this->_roles = $this->loadRoles();
-        }
-
-        return (is_array($this->_roles) && array_key_exists($rvId, $this->_roles)) ? $this->_roles[$rvId] : null;
+        return $this->getAllRoles()[$rvId] ?? null;
     }
 
 
@@ -387,12 +383,35 @@ class Episciences_User extends Ccsd_User_Models_User
         return $this;
     }
 
-    public function getAllRoles()
+    /**
+     * @return array<int, array<int, string>> roles indexed by journal (RVID)
+     */
+    public function getAllRoles(): array
     {
         if ($this->_roles === null) {
             $this->_roles = $this->loadRoles();
         }
+
+        // The roles may have been loaded for another journal (the identity is kept in a session
+        // shared by the journals of the same host): without any role in the current journal,
+        // a registered user is a member, as in loadRoles()
+        if (defined('RVID') && $this->getUid() && !isset($this->_roles[RVID])) {
+            $this->_roles[RVID] = [Episciences_Acl::ROLE_MEMBER];
+        }
+
         return $this->_roles;
+    }
+
+    /**
+     * Replace the roles of one journal, keeping the roles of the other journals
+     * @param array<int, string> $roles
+     */
+    public function setJournalRoles(int $rvId, array $roles): self
+    {
+        $allRoles = $this->getAllRoles();
+        $allRoles[$rvId] = $roles;
+
+        return $this->setRoles($allRoles);
     }
 
     /**
@@ -1108,8 +1127,7 @@ class Episciences_User extends Ccsd_User_Models_User
             if (PHP_SAPI !== 'cli') {
                 $user = Episciences_Auth::getInstance()->getIdentity();
                 if ($uid === Episciences_Auth::getUid()) {
-                    $userRoles[$rvId] = $roles;
-                    $user->setRoles($userRoles);
+                    $user->setJournalRoles($rvId, (array)$roles);
                     Episciences_Auth::updateIdentity($user);
                 }
             }
@@ -1551,13 +1569,10 @@ class Episciences_User extends Ccsd_User_Models_User
         if (!empty($currentRoles)) {
             $this->multipleRolesUnsetMemberRole($currentRoles);
             $this->saveUserRoles($this->getUid(), $currentRoles, $rvId);
-            $userRoles[$rvId] = $currentRoles;
-        } else {
-            $userRoles[$rvId] = $selfRoles;
+            return $this->setJournalRoles($rvId, $currentRoles);
         }
-        $this->setRoles($userRoles);
 
-        return $this;
+        return $this->setJournalRoles($rvId, $selfRoles);
     }
 
 
