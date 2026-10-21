@@ -51,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   PHP test had ever actually run on CI.
 - A command line script called with an unknown option now exits with an error code instead of 0,
   so a cron or a CI job is no longer told it succeeded.
+- The application runs on PHP 8.3: the Docker image uses PHP 8.3. PHP 8.1 remains supported.
 
 ### Added
 
