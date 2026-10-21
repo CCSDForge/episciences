@@ -92,7 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so a cron or a CI job is no longer told it succeeded.
 - Reviewer invitation links now carry a per-invitation key; links of invitations sent before this change keep working.
   Linking an invitation to another account is recorded in the paper history.
-  **Deployment**, before deploying the code on every environment: apply `src/mysql/History/2026-10-16-user_invitation_token.sql`
+  **Deployment**, before deploying the code on every environment: apply `src/mysql/2026-10-16-user_invitation_token.sql`
   and set `REVIEWER_INVITATION.HMAC_SECRET` in `config/pwd.json` (e.g. `openssl rand -hex 32`); without it, new
   invitations are sent without a key (former links) and a warning is logged.
 
