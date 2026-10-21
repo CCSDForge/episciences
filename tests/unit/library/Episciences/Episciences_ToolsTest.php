@@ -80,5 +80,21 @@ class Episciences_ToolsTest extends TestCase
         );
     }
 
+    /**
+     * The statistics start date must be strictly YYYY-MM-DD: the API rejects any other format.
+     */
+    public function testIsValidSQLDate(): void
+    {
+        self::assertTrue(Episciences_Tools::isValidSQLDate('2026-01-05'));
+        self::assertTrue(Episciences_Tools::isValidSQLDate('2024-02-29'));
+
+        self::assertFalse(Episciences_Tools::isValidSQLDate('2026-1-5'));
+        self::assertFalse(Episciences_Tools::isValidSQLDate('2026-02-30'));
+        self::assertFalse(Episciences_Tools::isValidSQLDate('2026-13-01'));
+        self::assertFalse(Episciences_Tools::isValidSQLDate('05/01/2026'));
+        self::assertFalse(Episciences_Tools::isValidSQLDate('2026-01-05 10:00:00'));
+        self::assertFalse(Episciences_Tools::isValidSQLDate('abc'));
+    }
+
 }
 

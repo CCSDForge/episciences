@@ -1921,8 +1921,12 @@ class Episciences_Review
             'maxsizelignt' => '10',
             'description' => "Il est possible de renseigner une date de début de statistiques au format: AAAA-MM-JJ",
             'decorators' => $checkboxDecorators,
-            'pattern' => '(\d{4})-(0?[1-9]|1[0-2])-(0?[1-9]|[12]\d|30|31)',
-            'validators' => [new Zend_Validate_Date('Y-m-d')]
+            'pattern' => '\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])',
+            // Strict YYYY-MM-DD check (Zend_Validate_Date is lenient), as expected by the API statistics filter
+            'validators' => [
+                (new Zend_Validate_Callback([Episciences_Tools::class, 'isValidSQLDate']))
+                    ->setMessage("'%value%' does not appear to be a valid date", Zend_Validate_Callback::INVALID_VALUE)
+            ]
         ]);
 
         return $form;
