@@ -555,7 +555,7 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
 
             $this->errors ($errors, !$this->_conditionValidators);
 
-            if ($this->zfBreakChainOnFailure) {
+            if ($this->_validatorBreakChainOnFailures[$key] ?? false) {
                 break;
             }
         }
