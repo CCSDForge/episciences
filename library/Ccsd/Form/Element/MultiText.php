@@ -438,7 +438,7 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
     }
 
     /**
-     * @param string $value
+     * @param string|array<int|string, mixed> $value
      * @param null $context
      * @return bool
      */
