@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,10 +14,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * routing new-account affiliations through the same disassemble step used on profile edits)
  * back into the canonical `{"label": ..., "rorId": ...}` object shape used everywhere else.
  */
+#[AsCommand(name: 'users:normalize-affiliations', description: 'Normalize legacy string-based USER.affiliations entries into {label, rorId} objects.')]
 class NormalizeUserAffiliationsCommand extends Command
 {
-    protected static $defaultName = 'users:normalize-affiliations';
-
     public const DEFAULT_BUFFER = 500;
 
     private const SEPARATOR = '#';
@@ -24,7 +24,6 @@ class NormalizeUserAffiliationsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Normalize legacy string-based USER.affiliations entries into {label, rorId} objects.')
             ->addOption('uid', null, InputOption::VALUE_REQUIRED, 'Process only this UID.')
             ->addOption('buffer', null, InputOption::VALUE_REQUIRED, 'Number of users to process per page.', self::DEFAULT_BUFFER)
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Report what would change without writing to the database.');

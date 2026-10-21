@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Episciences\User\SuLogger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -15,14 +16,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Supports IPv4 (/16 mask, e.g. 1.1.1.1 -> 1.1.0.0) and IPv6 (/48 mask).
  */
+#[AsCommand(name: 'user:anonymize-su-logs', description: 'Anonymize IP addresses in user_su_log records older than the retention threshold (default 1 year)')]
 class AnonymizeSuLogsCommand extends Command
 {
-    protected static $defaultName = 'user:anonymize-su-logs';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Anonymize IP addresses in user_su_log records older than the retention threshold (default 1 year)')
             ->addOption('days', 'd', InputOption::VALUE_REQUIRED, 'Retention threshold in days', '365');
     }
 

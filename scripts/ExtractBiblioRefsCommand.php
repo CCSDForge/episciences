@@ -9,6 +9,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -23,10 +24,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Skips execution entirely when EPISCIENCES_BIBLIOREF['ENABLE'] is false.
  */
+#[AsCommand(name: 'enrichment:extract-biblio-refs', description: 'Pre-extract bibliographic references for papers via the Biblioref API (designed for cron)')]
 class ExtractBiblioRefsCommand extends Command
 {
-    protected static $defaultName = 'enrichment:extract-biblio-refs';
-
     /**
      * Statuses a new DOCID (new submission or new version) can be created with.
      * Extraction is only needed when a DOCID is created: later status changes keep the same document.
@@ -76,7 +76,6 @@ class ExtractBiblioRefsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Pre-extract bibliographic references for papers via the Biblioref API (designed for cron)')
             ->addOption('docid',             null, InputOption::VALUE_REQUIRED, 'Process only this DOCID (ignores status filter)')
             ->addOption('rvcode',            null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)')
             ->addOption('dry-run',           null, InputOption::VALUE_NONE,     'Show what would be processed without calling the API')

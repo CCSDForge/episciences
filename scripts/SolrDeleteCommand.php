@@ -8,6 +8,7 @@ use Episciences\Solr\Indexing\Client\SolariumClientFactory;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Solr\Indexing\Messenger\Handler\DeletePaperMessageHandler;
 use Episciences\Solr\Indexing\Messenger\Message\DeletePaperMessage;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -19,11 +20,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * DOCID or by raw query — see library/Episciences/Solr/Indexing/ for the
  * underlying implementation.
  */
+#[AsCommand(name: 'solr:delete', description: 'Enqueue (or synchronously run) a Solr deletion, by DOCID or by raw query')]
 class SolrDeleteCommand extends Command
 {
     use BootstrapsSolrEnvironment;
-
-    protected static $defaultName = 'solr:delete';
 
     /**
      * Matches any Solr delete query that wipes every document for a single
@@ -44,7 +44,6 @@ class SolrDeleteCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Enqueue (or synchronously run) a Solr deletion, by DOCID or by raw query')
             ->addOption('docid', null, InputOption::VALUE_REQUIRED, 'Delete this DOCID.')
             ->addOption('query', null, InputOption::VALUE_REQUIRED, "Raw Solr delete query, e.g. 'docid:19'. TRUSTED INPUT ONLY.")
             ->addOption('sync', null, InputOption::VALUE_NONE, 'Run the deletion immediately instead of enqueuing it.');

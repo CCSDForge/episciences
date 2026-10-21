@@ -8,6 +8,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -19,15 +20,14 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/getClassificationMsc.php (JournalScript)
  */
+#[AsCommand(name: 'enrichment:classifications-msc', description: 'Enrich MSC 2020 classification data from zbMath Open API')]
 class GetClassificationMscCommand extends Command
 {
-    protected static $defaultName = 'enrichment:classifications-msc';
     private const ONE_MONTH = 3600 * 24 * 31;
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Enrich MSC 2020 classification data from zbMath Open API')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }

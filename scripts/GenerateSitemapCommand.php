@@ -6,6 +6,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,10 +18,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/makeSitemap.php (standalone Symfony Console app)
  */
+#[AsCommand(name: 'sitemap:generate', description: 'Generate a sitemap for one journal or all active journals.')]
 class GenerateSitemapCommand extends Command
 {
-    protected static $defaultName = 'sitemap:generate';
-
     /**
      * Static paths always advertised for every journal.
      */
@@ -48,7 +48,6 @@ class GenerateSitemapCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Generate a sitemap for one journal or all active journals.')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'The RV code of the journal — mutually exclusive with --all.')
             ->addOption('all',    null, InputOption::VALUE_NONE,     'Process all active journals (STATUS = 1) — mutually exclusive with --rvcode.')
             ->addOption('pretty', null, InputOption::VALUE_NONE,     'Pretty-print the XML sitemap.');

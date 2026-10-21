@@ -6,6 +6,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -26,10 +27,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Since January 2024, MaxMind uses R2 presigned URLs for database downloads.
  * Requests are redirected to Cloudflare R2 storage; allow_redirects must be enabled.
  */
+#[AsCommand(name: 'geoip:update', description: 'Download and install the MaxMind GeoLite2-City database')]
 class UpdateGeoIpCommand extends Command
 {
-    protected static $defaultName = 'geoip:update';
-
     /** Required constant names derived from the GEO_IP section in pwd.json. */
     private const REQUIRED_CONSTANTS = [
         'GEO_IP_DATABASE_PATH',
@@ -46,7 +46,6 @@ class UpdateGeoIpCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Download and install the MaxMind GeoLite2-City database')
             ->addOption('force', null, InputOption::VALUE_NONE, 'Re-download even if the database is up to date')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show what would be done without writing');
     }

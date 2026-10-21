@@ -13,6 +13,7 @@ use Episciences\Messenger\Enqueue\AbstractDbalEnqueueFailureStore;
 use Episciences\Messenger\Transport\TransportConfig;
 use Episciences\Messenger\Transport\TransportFactory;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -29,14 +30,12 @@ use Symfony\Component\Messenger\Stamp\TransportMessageIdStamp;
  * Kernel/bundle system to auto-register them). Operates on one Messenger
  * queue, selected by --transport via TransportProfileRegistry.
  */
+#[AsCommand(name: 'episciences:queue', description: 'Inspect and manage one Messenger queue (see --transport).')]
 class EpisciencesQueueCommand extends Command
 {
-    protected static $defaultName = 'episciences:queue';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Inspect and manage one Messenger queue (see --transport).')
             ->addOption('transport', null, InputOption::VALUE_REQUIRED, 'Which queue to operate on: ' . implode(', ', TransportProfileRegistry::names()) . '.')
             ->addOption('stats', null, InputOption::VALUE_NONE, 'Show pending and failed message counts.')
             ->addOption('list-failed', null, InputOption::VALUE_NONE, 'List failed messages.')

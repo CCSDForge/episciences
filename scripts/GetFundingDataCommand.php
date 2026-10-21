@@ -6,6 +6,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -18,14 +19,12 @@ use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
  *
  * Replaces: scripts/getFundingData.php (JournalScript)
  */
+#[AsCommand(name: 'enrichment:funding', description: 'Enrich funding data from OpenAIRE Research Graph and HAL')]
 class GetFundingDataCommand extends Command
 {
-    protected static $defaultName = 'enrichment:funding';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Enrich funding data from OpenAIRE Research Graph and HAL')
             ->addOption('doi', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by DOI')
             ->addOption('paperid', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by paper ID')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')

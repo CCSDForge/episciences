@@ -7,6 +7,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -18,9 +19,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/createDoajVolumeExports.php (JournalScript)
  */
+#[AsCommand(name: 'doaj:export-volumes', description: 'Create DOAJ XML volume exports for one journal or all journals.')]
 class CreateDoajVolumeExportsCommand extends Command
 {
-    protected static $defaultName = 'doaj:export-volumes';
     public const APICALLVOL = 'volumes?page=1&itemsPerPage=1000&rvcode=';
 
     private Logger $logger;
@@ -29,7 +30,6 @@ class CreateDoajVolumeExportsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Create DOAJ XML volume exports for one journal or all journals.')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Journal RV code, or "allJournals"')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulate without writing files or updating cache')
             ->addOption('ignore-cache', null, InputOption::VALUE_NONE, 'Bypass cache and force re-export')
