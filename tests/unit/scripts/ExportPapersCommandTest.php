@@ -30,7 +30,7 @@ class ExportPapersCommandTest extends TestCase
     public function testCommandDefinitionDoesNotCollideWithApplicationOptions(): void
     {
         $application = new Application();
-        $application->add(new ExportPapersCommand());
+        $application->addCommand(new ExportPapersCommand());
 
         $command = $application->find('export:papers');
         $command->mergeApplicationDefinition();

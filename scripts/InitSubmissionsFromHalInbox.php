@@ -13,7 +13,7 @@ use Symfony\Component\Console\Application;
 
 $application = new Application('Episciences CLI', '1.0.0');
 $command     = new ProcessInboxNotificationsCommand();
-$application->add($command);
+$application->addCommand($command);
 $application->setDefaultCommand((string) $command->getName(), true);
 
 $application->run();

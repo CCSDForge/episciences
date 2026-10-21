@@ -23,7 +23,7 @@ class SolrDeleteCommandTest extends TestCase
     protected function setUp(): void
     {
         $application = new Application();
-        $application->add(new SolrDeleteCommand());
+        $application->addCommand(new SolrDeleteCommand());
         $this->command = $application->find('solr:delete');
         $this->commandTester = new CommandTester($this->command);
     }

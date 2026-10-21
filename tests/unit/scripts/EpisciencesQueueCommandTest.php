@@ -24,7 +24,7 @@ class EpisciencesQueueCommandTest extends TestCase
     protected function setUp(): void
     {
         $application = new Application();
-        $application->add(new EpisciencesQueueCommand());
+        $application->addCommand(new EpisciencesQueueCommand());
         $this->command = $application->find('episciences:queue');
         $this->commandTester = new CommandTester($this->command);
     }
