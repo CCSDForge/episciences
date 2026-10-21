@@ -4775,7 +4775,9 @@ class Episciences_Paper
     }
 
     /**
-     * Check for date inconsistencies with the paper creation date (WHEN) for published papers
+     * Check for date inconsistencies for published papers:
+     * - submission date after the paper creation date (WHEN)
+     * - publication date before the acceptance date
      *
      * @return bool True if published paper has date inconsistencies
      */
@@ -4802,7 +4804,7 @@ class Episciences_Paper
         // We previously utilised 'WhenDate'; however, as the publication date may be updated shortly after release - for instance,
         // to accommodate moderation delays on preprint servers - it is more robust to use the acceptance date.
         $acceptanceDate = $this->parseDateSafely($this->getAcceptanceDate());
-        if ($publicationDate !== null && $publicationDate < $acceptanceDate) {
+        if ($publicationDate !== null && $acceptanceDate !== null && $publicationDate < $acceptanceDate) {
             return true;
         }
 
@@ -4817,7 +4819,8 @@ class Episciences_Paper
      * 2. It exhibits data inconsistencies characteristic of imported legacy data:
      *    - Publication date is before or equal to submission date
      *    - Either date is from before 2013 (legacy data era)
-     *    - For published papers: dates are inconsistent with the paper creation date
+     *    - For published papers: submission date is after the paper creation date (WHEN),
+     *      or publication date is before the acceptance date
      *
      * @return bool True if paper is imported
      */

@@ -144,25 +144,33 @@ final class Episciences_Paper_IsImportedTest extends TestCase
     }
 
     /**
-     * Test isImported returns true when published paper has publication before WHEN
+     * Test isImported returns true when published paper has publication before acceptance
      */
-    public function testIsImportedWithPublicationBeforeWhenForPublished(): void
+    public function testIsImportedWithPublicationBeforeAcceptanceForPublished(): void
     {
-        $paper = $this->createPartialMock(Episciences_Paper::class, [
-            'getFlag',
-            'getPublication_date',
-            'getSubmission_date',
-            'getWhen',
-            'getStatus'
-        ]);
+        $paper = $this->createPublishedPaperMock('2023-06-10 10:00:00');
 
-        $paper->method('getFlag')->willReturn('submitted');
-        $paper->method('getPublication_date')->willReturn('2023-05-01 10:00:00');
-        $paper->method('getSubmission_date')->willReturn('2023-05-05 09:00:00');
-        $paper->method('getWhen')->willReturn('2023-05-10 08:00:00');
-        $paper->method('getStatus')->willReturn(Episciences_Paper::STATUS_PUBLISHED);
+        self::assertTrue($paper->isImported(), 'Published paper with publication before acceptance should be detected as imported');
+    }
 
-        self::assertTrue($paper->isImported(), 'Published paper with publication before WHEN should be detected as imported');
+    /**
+     * Test isImported returns false when published paper has publication after acceptance
+     */
+    public function testIsImportedWithPublicationAfterAcceptanceForPublished(): void
+    {
+        $paper = $this->createPublishedPaperMock('2023-05-20 10:00:00');
+
+        self::assertFalse($paper->isImported(), 'Published paper with publication after acceptance should not be detected as imported');
+    }
+
+    /**
+     * Test isImported handles null acceptance date gracefully for published papers
+     */
+    public function testIsImportedWithNullAcceptanceDateForPublished(): void
+    {
+        $paper = $this->createPublishedPaperMock(null);
+
+        self::assertFalse($paper->isImported(), 'Published paper with null acceptance date should not be detected as imported');
     }
 
     /**
@@ -354,6 +362,34 @@ final class Episciences_Paper_IsImportedTest extends TestCase
         // Date inconsistencies should only apply to published papers
         // In this case, publication is before submission which should trigger import
         self::assertTrue($paper->isImported(), 'Paper with publication before submission should be imported regardless of status');
+    }
+
+    /**
+     * Published paper whose dates only exercise the acceptance date check:
+     * submission (2023-05-05) before WHEN (2023-05-06), publication on 2023-06-01
+     *
+     * @param string|null $acceptanceDate
+     * @return Episciences_Paper
+     */
+    private function createPublishedPaperMock(?string $acceptanceDate): Episciences_Paper
+    {
+        $paper = $this->createPartialMock(Episciences_Paper::class, [
+            'getFlag',
+            'getPublication_date',
+            'getSubmission_date',
+            'getWhen',
+            'getStatus',
+            'getAcceptanceDate'
+        ]);
+
+        $paper->method('getFlag')->willReturn('submitted');
+        $paper->method('getPublication_date')->willReturn('2023-06-01 10:00:00');
+        $paper->method('getSubmission_date')->willReturn('2023-05-05 09:00:00');
+        $paper->method('getWhen')->willReturn('2023-05-06 08:00:00');
+        $paper->method('getStatus')->willReturn(Episciences_Paper::STATUS_PUBLISHED);
+        $paper->method('getAcceptanceDate')->willReturn($acceptanceDate);
+
+        return $paper;
     }
 
     /**
