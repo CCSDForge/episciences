@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Fix dates being silently ignored or misread when detecting imported papers: the default submission date of an unsaved paper and ISO 8601 dates are now taken into account, a date without time is set to midnight instead of the current time, and impossible dates such as `2023-02-30` are rejected instead of rolling over (`Episciences_Paper::isImported()`).
+
+### Performances
+- Cache the acceptance date on the paper object, so building the paper XML no longer queries the paper log twice for published papers (`Episciences_Paper::getAcceptanceDate()`).
+
 ## v1.0.57 - 2026-10-21
 
 ### Added
