@@ -1,4 +1,5 @@
 var openedPopover = null;
+var openedRolesButton = null;
 
 $(function () {
     // Initialize user autocomplete using the utility function
@@ -11,6 +12,69 @@ function subForm() {
     $('#selectedUserId').val('0');
     $('#fuser').submit();
 }
+
+/**
+ * Bootstrap popover placement callback for the roles form: opens the popover
+ * on the side of the button with the most room, and caps the height of the
+ * roles list so the whole popover (including the submit button) fits in the viewport.
+ */
+function placeRolesPopover(tip, element) {
+    var margin = 20; // popover arrow + breathing room
+    var rect = element.getBoundingClientRect();
+    var spaceBelow = window.innerHeight - rect.bottom - margin;
+    var spaceAbove = rect.top - margin;
+    var placement = spaceBelow >= spaceAbove ? 'bottom' : 'top';
+
+    var list = tip.querySelector('.roles-form-list');
+    if (list) {
+        // Height of everything but the roles list (buttons, paddings). When Bootstrap 3.2
+        // first calls this, the tip is not attached to the DOM yet and cannot be measured:
+        // fall back to an estimate, corrected by refreshRolesPopover() once it is displayed.
+        var reservedHeight =
+            tip.offsetHeight > 0 ? tip.offsetHeight - list.offsetHeight : 80;
+        var available = Math.max(spaceBelow, spaceAbove) - reservedHeight;
+        list.style.maxHeight = Math.max(available, 150) + 'px';
+    }
+
+    return placement;
+}
+
+/**
+ * Recomputes the placement and the list height of the opened roles popover,
+ * e.g. when the window is resized or the page is scrolled while it is open.
+ * Relies on Bootstrap 3 tooltip internals (getPosition, getCalculatedOffset, applyPlacement).
+ */
+function refreshRolesPopover() {
+    var popover = openedRolesButton && $(openedRolesButton).data('bs.popover');
+    if (!popover || !popover.$tip || !popover.$tip.is(':visible')) {
+        return;
+    }
+
+    var tip = popover.$tip[0];
+    var placement = placeRolesPopover(tip, openedRolesButton);
+    popover.$tip.removeClass('top bottom').addClass(placement);
+
+    var offset = popover.getCalculatedOffset(
+        placement,
+        popover.getPosition(),
+        tip.offsetWidth,
+        tip.offsetHeight
+    );
+    popover.applyPlacement(offset, placement);
+}
+
+var rolesPopoverRefreshPending = false;
+$(window).on('resize scroll', function () {
+    // Throttle to one refresh per animation frame
+    if (rolesPopoverRefreshPending) {
+        return;
+    }
+    rolesPopoverRefreshPending = true;
+    window.requestAnimationFrame(function () {
+        rolesPopoverRefreshPending = false;
+        refreshRolesPopover();
+    });
+});
 
 function getRoles(button, uid) {
     // Destruction des anciens popups
@@ -49,11 +113,14 @@ function getRoles(button, uid) {
         $(button)
             .popover({
                 container: 'body',
-                placement: 'bottom',
+                placement: placeRolesPopover,
                 html: true,
                 content: result,
             })
             .popover('show');
+        openedRolesButton = button;
+        // Fix the initial estimate now that the real heights can be measured
+        refreshRolesPopover();
 
         $('form[action="/user/saveroles"]').on('submit', function () {
             $(this).parent().html(getLoader());
