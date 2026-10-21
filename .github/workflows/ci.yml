@@ -32,10 +32,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Setup PHP 8.1
+      - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: '8.3'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, zip
           coverage: none
           tools: composer:v2
@@ -44,9 +44,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: vendor
-          key: ${{ runner.os }}-php8.1-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-php8.3-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
-            ${{ runner.os }}-php8.1-composer-
+            ${{ runner.os }}-php8.3-composer-
 
       - name: Install PHP dependencies
         run: composer install --no-progress --prefer-dist --optimize-autoloader
@@ -106,7 +106,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['8.1', '8.2', '8.3']
+        php-version: ['8.3']
     
     services:
       mysql:
@@ -127,7 +127,7 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, zip
-          coverage: ${{ matrix.php-version == '8.1' && 'xdebug' || 'none' }}
+          coverage: ${{ matrix.php-version == '8.3' && 'xdebug' || 'none' }}
           tools: composer:v2
           
       - name: Cache Composer dependencies
@@ -174,13 +174,13 @@ jobs:
             ${{ runner.os }}-php${{ matrix.php-version }}-phpunit-
 
       - name: Run PHP tests
-        run: vendor/bin/phpunit ${{ matrix.php-version == '8.1' && '--coverage-clover=coverage-php.xml' || '--no-coverage' }}
+        run: vendor/bin/phpunit ${{ matrix.php-version == '8.3' && '--coverage-clover=coverage-php.xml' || '--no-coverage' }}
         env:
           PWD_PATH: ${{ github.workspace }}/tests/config
           
       - name: Upload PHP coverage
         uses: codecov/codecov-action@v7
-        if: matrix.php-version == '8.1'
+        if: matrix.php-version == '8.3'
         with:
           files: ./coverage-php.xml
           flags: php

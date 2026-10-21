@@ -6,6 +6,7 @@
  */
 class FolderDefaultController extends Zend_Controller_Action
 {
+    protected ?string $_action = null;
 
     public function init ()
     {

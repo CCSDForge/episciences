@@ -18,10 +18,9 @@ This directory contains automated CI/CD workflows for the Episciences project.
    - Runs Jest tests under **Node.js 20.x LTS**
    - Collects coverage and uploads to Codecov (`flag:javascript`)
 3. **PHP Tests (PHPUnit)**:
-   - Matrix testing across **PHP 8.1, 8.2, and 8.3**
+   - Tests run on **PHP 8.3**
    - Standalone **MySQL 8.4** service container with automated schema/seed provisioning
-   - Code coverage generated via Xdebug on **PHP 8.1** and uploaded to Codecov (`flag:php`)
-   - Optimized PHP 8.2 & 8.3 execution with `--no-coverage`
+   - Code coverage generated via Xdebug on **PHP 8.3** and uploaded to Codecov (`flag:php`)
    - Test suites separation (`unit` and `integration`) with `.phpunit.cache` caching
 4. **Integration Status**:
    - Aggregates results from quality, JS, and PHP jobs
