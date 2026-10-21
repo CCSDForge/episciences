@@ -18,13 +18,14 @@ class Episciences_Auth extends Ccsd_Auth
      */
     public static function getRoles(): array
     {
-        if (self::isLogged()) {
-            $roles = self::getInstance()->getIdentity()->getRoles();
-        } else {
-            $roles = [Episciences_Acl::ROLE_GUEST];
+        if (!self::isLogged()) {
+            return [Episciences_Acl::ROLE_GUEST];
         }
 
-        return $roles;
+        // The identity's roles may have been loaded (and cached in the session)
+        // for another journal, in which case the current RVID has no entry:
+        // a logged-in user is at least a member, as in Episciences_User::loadRoles()
+        return self::getInstance()->getIdentity()->getRoles() ?? [Episciences_Acl::ROLE_MEMBER];
     }
 
     public static function getFullName(): ?string

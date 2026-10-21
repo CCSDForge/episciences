@@ -239,6 +239,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update dependencies.
 - [#1205](https://github.com/CCSDForge/episciences/pull/1205) Store the board role labels (`editorial_board`, `technical_board`, ..., `former_member`) as plain text in `views.php`, like in `js.php`; the tag icon is now added by `Episciences_Acl::getRoleLabelHtml()` in the role badges (user lists, contacts, mailing lists, permissions, role editing), which also escapes the label. The users-by-role chart on the stats page no longer strips HTML from the labels.
 
+### Fixed
+
+- Fix a fatal error during bootstrap (`TypeError` from `Episciences_Auth::getRoles()`) when the roles of the logged-in user cached in the session had been loaded for another journal: the user now falls back to the member role (`Episciences_Auth::getRoles()`).
+
 ## v1.0.57 - 2026-10-21
 
 ### Added
