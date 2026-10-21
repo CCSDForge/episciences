@@ -455,6 +455,9 @@ class Episciences_Paper
     // variable for the export Enrichment
     /** @var string */
     private $_flag = 'submitted';
+    /** @var bool Whether $_acceptanceDate has been loaded from the paper log */
+    private bool $_acceptanceDateLoaded = false;
+    private ?string $_acceptanceDate = null;
     private $_authors;
     /** @var Episciences_Paper_Licence $_licence */
     private $_licence;
@@ -626,6 +629,8 @@ class Episciences_Paper
     public function setPaperid($id): self
     {
         $this->_paperId = (int)$id;
+        // The acceptance date is read from the log by PAPERID
+        $this->_acceptanceDateLoaded = false;
         return $this;
     }
 
@@ -646,6 +651,8 @@ class Episciences_Paper
             Episciences_Paper_Logger::log($this->getPaperid(), $this->getDocid(), $action, $uid, $detail, $date, $this->getRvid());
 
             if ($action === Episciences_Paper_Logger::CODE_STATUS) {
+                // A new status may be an acceptance: reload the acceptance date on next access
+                $this->_acceptanceDateLoaded = false;
                 $this->postPaperStatus();
             }
 
@@ -4703,27 +4710,51 @@ class Episciences_Paper
     }
 
     /**
-     * Safely parse a date string to DateTime object
+     * Date formats accepted by parseDateSafely(), tried in order.
+     * '!' resets the missing fields so a date without time is at midnight.
+     */
+    private const PARSABLE_DATE_FORMATS = [
+        'Y-m-d H:i:s',
+        '!Y-m-d',
+        'Y-m-d\TH:i:sP',   // ISO 8601 with offset, e.g. 2023-05-15T10:30:45+02:00
+        'Y-m-d\TH:i:s.uP', // ISO 8601 with microseconds and offset
+        'Y-m-d\TH:i:s',    // ISO 8601 without offset
+    ];
+
+    /**
+     * Safely parse a date to a DateTime object
      *
-     * @param string|null $date Date string in 'Y-m-d H:i:s' format
+     * Zend_Db_Expr('NOW()') (set by setSubmission_date() on an unsaved paper) is read as the current date.
+     *
+     * @param string|Zend_Db_Expr|null $date Date string in one of the PARSABLE_DATE_FORMATS
      * @return DateTime|null DateTime object or null if parsing fails or input is null
      */
-    private function parseDateSafely(?string $date): ?DateTime
+    private function parseDateSafely(string|Zend_Db_Expr|null $date): ?DateTime
     {
+        if ($date instanceof Zend_Db_Expr) {
+            return strtoupper(trim((string)$date)) === 'NOW()' ? new DateTime() : null;
+        }
+
         if ($date === null || $date === '') {
             return null;
         }
 
-        try {
-            $dateTime = DateTime::createFromFormat('Y-m-d H:i:s', $date);
+        foreach (self::PARSABLE_DATE_FORMATS as $format) {
+            $dateTime = DateTime::createFromFormat($format, $date);
             if ($dateTime === false) {
-                // Try alternative format without time
-                $dateTime = DateTime::createFromFormat('Y-m-d', $date);
+                continue;
             }
-            return $dateTime !== false ? $dateTime : null;
-        } catch (Exception $e) {
-            return null;
+
+            // Reject overflowing values such as 2023-02-30, which would silently roll over
+            $errors = DateTime::getLastErrors();
+            if ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0)) {
+                return null;
+            }
+
+            return $dateTime;
         }
+
+        return null;
     }
 
     /**
@@ -5341,17 +5372,23 @@ class Episciences_Paper
     }
 
     /**
+     * Get the acceptance date from the paper log.
+     * The result is kept on the object; it is reloaded after a status log or a PAPERID change.
      *
-     * get acceptance date form paper log
      * @return string|null
      */
     public function getAcceptanceDate(): ?string
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $this->loadHistoryByStatuesQuery([self::STATUS_TMP_VERSION_ACCEPTED, self::STATUS_ACCEPTED], 'date');
-        $sql->limit(1);
-        $result = $db?->fetchOne($sql);
-        return $result ?: null;
+        if (!$this->_acceptanceDateLoaded) {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $sql = $this->loadHistoryByStatuesQuery([self::STATUS_TMP_VERSION_ACCEPTED, self::STATUS_ACCEPTED], 'date');
+            $sql->limit(1);
+            $result = $db?->fetchOne($sql);
+            $this->_acceptanceDate = $result ?: null;
+            $this->_acceptanceDateLoaded = true;
+        }
+
+        return $this->_acceptanceDate;
     }
 
     /**

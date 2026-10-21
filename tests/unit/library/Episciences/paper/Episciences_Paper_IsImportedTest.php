@@ -341,6 +341,123 @@ final class Episciences_Paper_IsImportedTest extends TestCase
     }
 
     /**
+     * Test parseDateSafely sets a date without time to midnight
+     */
+    public function testParseDateSafelyWithDateOnlyIsMidnight(): void
+    {
+        $result = $this->getPrivateMethod('parseDateSafely')->invoke(new Episciences_Paper(), '2023-05-15');
+
+        self::assertInstanceOf(\DateTime::class, $result);
+        self::assertSame('2023-05-15 00:00:00', $result->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * Test parseDateSafely accepts ISO 8601 dates
+     *
+     * @dataProvider iso8601DateProvider
+     */
+    public function testParseDateSafelyWithIso8601(string $date, string $expectedUtc): void
+    {
+        $result = $this->getPrivateMethod('parseDateSafely')->invoke(new Episciences_Paper(), $date);
+
+        self::assertInstanceOf(\DateTime::class, $result);
+        self::assertSame($expectedUtc, $result->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'));
+    }
+
+    public static function iso8601DateProvider(): array
+    {
+        return [
+            'with offset' => ['2023-05-15T10:30:45+02:00', '2023-05-15 08:30:45'],
+            'with Z' => ['2023-05-15T10:30:45Z', '2023-05-15 10:30:45'],
+            'with microseconds' => ['2023-05-15T10:30:45.123456+00:00', '2023-05-15 10:30:45'],
+        ];
+    }
+
+    /**
+     * Test parseDateSafely accepts ISO 8601 dates without offset
+     */
+    public function testParseDateSafelyWithIso8601WithoutOffset(): void
+    {
+        $result = $this->getPrivateMethod('parseDateSafely')->invoke(new Episciences_Paper(), '2023-05-15T10:30:45');
+
+        self::assertInstanceOf(\DateTime::class, $result);
+        self::assertSame('2023-05-15 10:30:45', $result->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * Test parseDateSafely rejects overflowing dates instead of rolling them over
+     */
+    public function testParseDateSafelyRejectsOverflowingDate(): void
+    {
+        $method = $this->getPrivateMethod('parseDateSafely');
+
+        self::assertNull($method->invoke(new Episciences_Paper(), '2023-02-30 10:00:00'));
+        self::assertNull($method->invoke(new Episciences_Paper(), '2023-02-30'));
+    }
+
+    /**
+     * Test parseDateSafely reads Zend_Db_Expr('NOW()') as the current date
+     */
+    public function testParseDateSafelyWithNowExpression(): void
+    {
+        $before = new \DateTime();
+        $result = $this->getPrivateMethod('parseDateSafely')->invoke(new Episciences_Paper(), new \Zend_Db_Expr('NOW()'));
+        $after = new \DateTime();
+
+        self::assertInstanceOf(\DateTime::class, $result);
+        self::assertGreaterThanOrEqual($before, $result);
+        self::assertLessThanOrEqual($after, $result);
+    }
+
+    /**
+     * Test parseDateSafely returns null for any other SQL expression
+     */
+    public function testParseDateSafelyWithOtherExpression(): void
+    {
+        $result = $this->getPrivateMethod('parseDateSafely')->invoke(new Episciences_Paper(), new \Zend_Db_Expr('CURDATE()'));
+
+        self::assertNull($result);
+    }
+
+    /**
+     * Test the default submission date of an unsaved paper is taken into account
+     */
+    public function testIsImportedWithDefaultSubmissionDate(): void
+    {
+        $paper = new Episciences_Paper();
+        $paper->setSubmission_date(); // Zend_Db_Expr('NOW()')
+        $paper->setPublication_date('2024-05-15 10:00:00');
+
+        self::assertTrue($paper->isImported(), 'Publication before the default submission date should be detected as imported');
+    }
+
+    /**
+     * Test getAcceptanceDate returns the cached value without querying the log
+     */
+    public function testGetAcceptanceDateUsesCachedValue(): void
+    {
+        $paper = new Episciences_Paper();
+        $this->setAcceptanceDateCache($paper, '2023-05-20 10:00:00');
+
+        self::assertSame('2023-05-20 10:00:00', $paper->getAcceptanceDate());
+    }
+
+    /**
+     * Test setPaperid invalidates the cached acceptance date
+     */
+    public function testSetPaperidInvalidatesAcceptanceDateCache(): void
+    {
+        $paper = new Episciences_Paper();
+        $this->setAcceptanceDateCache($paper, '2023-05-20 10:00:00');
+
+        $paper->setPaperid(42);
+
+        $loaded = new \ReflectionProperty(Episciences_Paper::class, '_acceptanceDateLoaded');
+        $loaded->setAccessible(true);
+        self::assertFalse($loaded->getValue($paper), 'A PAPERID change must force the acceptance date to be reloaded');
+    }
+
+    /**
      * Test isImported does not detect date inconsistencies for non-published papers
      */
     public function testIsImportedIgnoresDateInconsistenciesForNonPublished(): void
@@ -390,6 +507,15 @@ final class Episciences_Paper_IsImportedTest extends TestCase
         $paper->method('getAcceptanceDate')->willReturn($acceptanceDate);
 
         return $paper;
+    }
+
+    private function setAcceptanceDateCache(Episciences_Paper $paper, ?string $acceptanceDate): void
+    {
+        foreach (['_acceptanceDate' => $acceptanceDate, '_acceptanceDateLoaded' => true] as $name => $value) {
+            $property = new \ReflectionProperty(Episciences_Paper::class, $name);
+            $property->setAccessible(true);
+            $property->setValue($paper, $value);
+        }
     }
 
     /**
