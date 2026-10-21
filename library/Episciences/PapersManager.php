@@ -777,7 +777,7 @@ class Episciences_PapersManager
         Episciences_Tools::multi_ksort($result);
 
         if ($key === 'STATUS') {
-            uksort($result, 'self::statusCmp');
+            uksort($result, self::statusCmp(...));
         }
 
 
