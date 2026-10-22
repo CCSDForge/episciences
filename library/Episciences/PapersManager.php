@@ -4860,6 +4860,95 @@ class Episciences_PapersManager
 
         return array_map('intval', $db->fetchCol($select));
     }
+
+    /**
+     * Roles of a user on any of the versions given, read the way Episciences_Paper reads them on each version:
+     * owner of the version (isOwner()), co-author (getCoAuthors()), and editor, copy editor or reviewer whose latest
+     * assignment to the version is active (getEditors(), getCopyEditors(), getReviewers()).
+     * A single query, instead of loading every version with its editors, copy editors and reviewers.
+     *
+     * @param int[] $docIds versions of the paper
+     * @param int $uid user looked up as editor, copy editor or reviewer
+     * @param int[] $authorUids users looked up as owner or co-author (see Episciences_Paper::isOwnerOrCoAuthor())
+     * @return array{owner: bool, coAuthor: bool, editor: bool, copyEditor: bool, reviewer: bool}
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getUserRolesOnVersions(array $docIds, int $uid, array $authorUids): array
+    {
+        $roles = ['owner' => false, 'coAuthor' => false, 'editor' => false, 'copyEditor' => false, 'reviewer' => false];
+
+        if ($docIds === []) {
+            return $roles;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $docIds = array_map('intval', $docIds);
+        $authorUids = array_map('intval', $authorUids);
+        $none = new Zend_Db_Expr('SELECT 1 FROM DUAL WHERE FALSE');
+
+        $owner = $authorUids === [] ? $none : $db->select()
+            ->from(T_PAPERS, [new Zend_Db_Expr('1')])
+            ->where('DOCID IN (?)', $docIds)
+            ->where('UID IN (?)', $authorUids);
+
+        $coAuthor = $authorUids === [] ? $none : $db->select()
+            ->from(T_ASSIGNMENTS, [new Zend_Db_Expr('1')])
+            ->where('ITEMID IN (?)', $docIds)
+            ->where('ROLEID = ?', Episciences_Acl::ROLE_CO_AUTHOR)
+            ->where('UID IN (?)', $authorUids);
+
+        $row = $db->fetchRow(sprintf(
+            'SELECT EXISTS(%s) AS `owner`, EXISTS(%s) AS `coAuthor`, EXISTS(%s) AS `editor`, EXISTS(%s) AS `copyEditor`, EXISTS(%s) AS `reviewer`',
+            $owner,
+            $coAuthor,
+            self::getLatestActiveAssignmentQuery($docIds, $uid, Episciences_Acl::ROLE_EDITOR),
+            self::getLatestActiveAssignmentQuery($docIds, $uid, Episciences_Acl::ROLE_COPY_EDITOR),
+            self::getLatestActiveAssignmentQuery($docIds, $uid, Episciences_Acl::ROLE_REVIEWER)
+        ));
+
+        foreach (array_keys($roles) as $role) {
+            $roles[$role] = !empty($row[$role]);
+        }
+
+        return $roles;
+    }
+
+    /**
+     * Active latest assignment of the user to one of the versions, as getAssignmentRoleQuery() (editors, copy
+     * editors: known users only) and getReviewers() (reviewers: invited users without an account left aside) read it
+     *
+     * @param int[] $docIds
+     */
+    private static function getLatestActiveAssignmentQuery(array $docIds, int $uid, string $role): Zend_Db_Select
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $isReviewer = $role === Episciences_Acl::ROLE_REVIEWER;
+
+        $latest = $db->select()
+            ->from(['l' => T_ASSIGNMENTS], [new Zend_Db_Expr('MAX(l.`WHEN`)')])
+            ->where('l.ITEM = ?', 'paper')
+            ->where('l.ITEMID = a.ITEMID')
+            ->where('l.ROLEID = a.ROLEID')
+            ->where('l.UID = a.UID');
+
+        $select = $db->select()
+            ->from(['a' => T_ASSIGNMENTS], [new Zend_Db_Expr('1')])
+            ->where('a.ITEM = ?', 'paper')
+            ->where('a.ITEMID IN (?)', $docIds)
+            ->where('a.ROLEID = ?', $role)
+            ->where('a.UID = ?', $uid)
+            ->where('a.STATUS = ?', Episciences_User_Assignment::STATUS_ACTIVE);
+
+        if ($isReviewer) {
+            $latest->where('l.TMP_USER = 0');
+            $select->where('a.TMP_USER = 0');
+        } else {
+            $select->join(['u' => T_USERS], 'u.UID = a.UID', []);
+        }
+
+        return $select->where('a.`WHEN` = (' . $latest . ')');
+    }
+
     /**
      * @param int $docId
      * @param int|null $rvId
