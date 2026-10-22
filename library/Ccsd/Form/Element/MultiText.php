@@ -402,6 +402,22 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
     }
 
     /**
+     * Put a validator first in the validation chain
+     *
+     * Unlike setValidators(), which resets them through clearValidators(), this keeps the
+     * breakChainOnFailure flag of the validators already in the chain.
+     *
+     * @param array{validator: string, breakChainOnFailure: bool} $validator
+     */
+    protected function prependValidator(array $validator): void
+    {
+        $validators = $this->getValidators();
+        array_unshift($validators, $validator);
+        $this->_validators = [];
+        $this->addValidators($validators);
+    }
+
+    /**
      * @param $validator
      */
     public function setConditionValidators ($validator)
@@ -480,10 +496,7 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
                 return false;
             }
 
-            $validators = $this->getValidators();
-            $notEmpty   = array('validator' => 'NotEmpty', 'breakChainOnFailure' => false);
-            array_unshift($validators, $notEmpty);
-            $this->setValidators($validators);
+            $this->prependValidator(array('validator' => 'NotEmpty', 'breakChainOnFailure' => false));
         }
 
         $this->initValidators();
@@ -521,11 +534,13 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
                     }
                 }
 
+                // Result of this validator only: a previous failure must not make it break the chain
+                $validatorResult = true;
                 if (!empty($value)) {
-                    $this->execValidators ($validator, $result, $messages, $errors, $value, $context);
+                    $this->execValidators ($validator, $validatorResult, $messages, $errors, $value, $context);
                 }
 
-                if ($result) {
+                if ($validatorResult) {
                     continue;
                 }
             } elseif ($validator->isValid($value, $context)) {
@@ -543,17 +558,20 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
 
             $result = false;
 
-            // À refaire proprement
+            // Messages indexed by value position are flattened and their errors reported for the
+            // whole group; the others (by language, by message key) are merged under their key so
+            // that the messages of the previous validators are kept
+            $groupValidate = !$this->_conditionValidators;
             foreach ($messages as $messkey => $message) {
                 if (is_numeric($messkey)) {
-                    $this->_messages = array_merge($this->_messages, $message);
-                    $this->_conditionValidators = false;
+                    $this->_messages = array_merge($this->_messages, (array) $message);
+                    $groupValidate = true;
                 } else {
-                    $this->_messages = array_merge($this->_messages, $messages);
+                    $this->_messages = array_replace_recursive($this->_messages, [$messkey => $message]);
                 }
             }
 
-            $this->errors ($errors, !$this->_conditionValidators);
+            $this->errors ($errors, $groupValidate);
 
             if ($this->_validatorBreakChainOnFailures[$key] ?? false) {
                 break;
