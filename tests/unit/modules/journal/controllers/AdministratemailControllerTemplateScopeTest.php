@@ -264,7 +264,7 @@ final class AdministratemailControllerTemplateScopeTest extends TestCase
         $controller->templatesAction();
         $controller->view->addScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/');
         // Script URLs of the editor, defined by public/const.php outside of the tests
-        foreach (['VENDOR_TINYMCE_JQUERY', 'VENDOR_TINYMCE', 'TINYMCE_DIR'] as $constant) {
+        foreach (['VENDOR_TINYMCE', 'TINYMCE_DIR'] as $constant) {
             if (!defined($constant)) {
                 define($constant, '');
             }

@@ -13,7 +13,6 @@ defineSimpleConstants();
 defineSQLTableConstants();
 defineApplicationConstants();
 defineJournalConstants();
-defineVendorCssLibraries();
 defineVendorJsLibraries();
 
 // Load database constants

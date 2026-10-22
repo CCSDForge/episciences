@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `enrichment:creators -v` lists the author corrections made from HAL TEI; with `--dry-run` it lists them without writing anything.
 
 ### Fixed
+- Restore jQuery UI datepicker/autocomplete theme lost during the self-host migration.
+- Bundle jQuery UI's `disable-selection` module to prevent JavaScript errors.
+- Stop double-execution of `bootstrap.min.js` via raw script echo in volumes/sections partial.
+- Correlate the clear-file button by input ID instead of list position.
 - [#1345](https://github.com/CCSDForge/episciences/issues/1345): authors can edit the relationship of an existing related work (the access rule did not match the action name). Authors can only add, edit or remove linked data while the paper is not published; editorial roles still can afterwards.
 - [#1298](https://github.com/CCSDForge/episciences/pull/1298): new versions received through the inbox (COAR Notify) of an imported paper are no longer saved as imported either (`ProcessInboxNotificationsCommand::saveNewVersion()`).
 - `episciences:queue --retry` shows the error of the message handler again when the retried message fails, instead of the generic Messenger message.
@@ -92,6 +96,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - submitting a refused paper again only renames ("-REFUSED" suffix) the versions of that paper in its journal, never another paper sharing its identifier.
 
 ### Changed
+- Upgrade `@fortawesome/fontawesome-free` to 7.3.0 and `tinymce` to 8.7.0.
+- Self-host all third-party vendor assets (jQuery, jQuery UI, DOMPurify, Tom Select, SortableJS, TinyMCE, MathJax, Bootstrap, Font Awesome, Cookie Consent, Bootbox, Chart.js, DataTables) via Webpack bundles instead of loading them from external CDNs (like `cdnjs`).
+- Upgrade MathJax from v2.7.7 to v4.1.3 (self-hosted).
+- Replace archived jQuery File Upload with FilePond.
+- Replace `jquery.fastLiveFilter` with vanilla JS implementation.
+- Remove `jquery-url-parser` (`purl`) dependency in favor of vanilla `parseUrl()`.
 - OpenCitations client migrated to API v2 (DOI sent with its `doi:` scheme, throttling and retry on HTTP 429).
   **Deployment**: set `OPENCITATIONS.APIURL` to `https://api.opencitations.net/index/v2/citations/` in
   `config/pwd.json` (a warning is logged while the v1 URL is still configured).
@@ -157,6 +167,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performances
 
+- Skip loading editor-only JavaScript assets (TinyMCE, FilePond, etc.) on the paper view page for anonymous visitors to reduce page load size by ~1MB.
 - [#1143](https://github.com/CCSDForge/episciences/pull/1143) Memoise the paper's primary volume on the `Episciences_Paper` instance, so `toJson()`, `getXml()` and `XmlExportManager::xmlExport()` share a single lookup instead of loading it twice: 38 to 34 queries per paper export.
 - Stop reloading volume settings from `Episciences_Volume::getProceedingInfo()`; every caller reaches it through `isProceeding()`, which already needs them loaded.
 - Load every volume's settings in one query on `/browse/volumes` via `Episciences_VolumesManager::loadSettingsForVolumes()`, instead of one query per volume.
@@ -236,6 +247,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove unused `jquery.ui.autocomplete.html.js` vendor dependency.
+- Remove unused `bootstrap-colorpicker` widget (and its `colorpicker` CSS class hooks in `website/style` and `website/header` admin forms) — not self-hosted as part of the vendor asset migration since it had no actual usage.
+- Remove obsolete `cdnjs.cloudflare.com` preconnect and dns-prefetch link tags.
 - Remove legacy interactive `scripts/update_papers.php` script (replaced by `import:papers` CLI command).
 - Drop the redundant `!$previousPaper->hasHook` guard from `Episciences_Submit::assertDateTimeVersion()`. The branch is selected by the `UPDATE_DATETIME` key, which only ever reaches the result from a repository's `hookApiRecords()`, so the guard added nothing — and it dereferenced a nullable `Episciences_Paper`, raising `Attempt to read property "hasHook" on null` whenever `partialGet()` returned nothing for an existing `docId`. `Episciences_Paper::$hasHook` now has no caller left and is marked `@deprecated`.
 - Remove the dead `hasHook` plumbing left behind now that repository capabilities are asked for explicitly: the `hasHook` JavaScript global on the article and submission pages (declared, assigned from `/submit/ajaxhashook`, never read), the `hasHook` view variable of the version-number form, and the `h_hasHook` hidden form element, whose value came from a `$defaults['hasHook']` key that had been commented out. `/submit/ajaxhashook` now answers `isRequiredVersion` only.

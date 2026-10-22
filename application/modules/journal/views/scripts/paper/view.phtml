@@ -445,19 +445,7 @@ $style = ['width' => '50%'];
 echo $this->partial('partials/modal.phtml', ['style' => $style]);
 ?>
 
-<?php
-$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
-$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
-$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
-$this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
-$this->jQuery()->addJavascriptFile('/js/paper/copy_editing_form.js');
-$this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js');
-$this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
-$this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
-$this->jQuery()->addJavascriptFile('/js/user/affiliations.js');
-$this->jQuery()->addJavascriptFile('/js/paper/biblioRef.js');
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
-?>
+<?= $this->render('paper/view_scripts.phtml') ?>
 <script>
     let isRequiredVersion = <?= json_encode($this->isRequiredVersion) ?>;
     let isFromZSubmit = <?= $this->isFromZSubmit ?>;

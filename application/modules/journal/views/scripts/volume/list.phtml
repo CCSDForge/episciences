@@ -4,17 +4,16 @@ if ($this->volumes) {
     $this->layout()->pageTitle = $this->translate('Volumes') . '<span class="badge badge-secondary" style="margin-left: 5px;">' . count($this->volumes) . '</span>';
 }
 
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
 $this->jQuery()->addJavascriptFile('/js/library/es.dataTables.delete-buttons.js');
-$this->jQuery()->addJavascriptFile(VENDOR_SORTABLE_JS);
+$this->getHelper('webpackAssets')->queueScript('sortablejs');
 $this->jQuery()->addJavascriptFile('/js/library/reorder-datatable.js');
 $this->jQuery()->addJavascriptFile('/js/volume/datatable.js');
 $this->jQuery()->addJavascriptFile('/js/administratepaper/editor-availability.js');
 $this->jQuery()->addJavascriptFile('/js/editors/volume-assignment.js');
 $this->jQuery()->addJavascriptFile('/js/library/episciences.copy-to-clipboard.js');
 
-$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+$this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
 
 ?>
     <div class="form-actions">

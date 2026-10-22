@@ -15,18 +15,17 @@ echo $form;
 ?>
 <hr/>
 <?php
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
 $this->jQuery()->addJavascriptFile('/js/administratepaper/editor-availability.js');
 $this->jQuery()->addJavascriptFile('/js/administratepaper/editorsAndCopyEditors-assignment.js');
-$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+$this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
 $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker-" . Zend_Registry::get('lang') . ".js");
 $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
-$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+$this->getHelper('webpackAssets')->queueStylesheet('jquery-ui-theme');
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
-$this->jQuery()->addStylesheet(VENDOR_TOM_SELECT_CSS);
-$this->jQuery()->addJavascriptFile(VENDOR_TOM_SELECT);
+$this->getHelper('webpackAssets')->queueStylesheet('tom-select');
+$this->getHelper('webpackAssets')->queueScript('tom-select');
 $this->jQuery()->addJavascriptFile('/js/common/tomselect-filters.js');
 ?>
 

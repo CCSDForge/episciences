@@ -1,6 +1,6 @@
 $(document).ready(function () {
     $('.dataTable').on('click', 'a.delete', function () {
-        var url = $(this).url();
+        var url = parseUrl(this.getAttribute('href'));
         var parent = $(this).closest('.reviewer');
         var action = url.attr('path');
         var params = url.param();
