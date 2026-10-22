@@ -1122,15 +1122,13 @@ class Episciences_User extends Ccsd_User_Models_User
             $this->_db->query($sql);
         }
 
-        if (!empty($roles)) {
-            // Si on update les rôles de son propre compte, il faut mettre à jour la session
-            if (PHP_SAPI !== 'cli') {
-                $user = Episciences_Auth::getInstance()->getIdentity();
-                if ($uid === Episciences_Auth::getUid()) {
-                    $user->setJournalRoles($rvId, (array)$roles);
-                    Episciences_Auth::updateIdentity($user);
-                }
-            }
+        // Si on update les rôles de son propre compte, il faut mettre à jour la session
+        // Reload them from the database: the submitted roles only hold the roles the caller may edit,
+        // and an empty submission must also remove the former roles from the session
+        if (PHP_SAPI !== 'cli' && $uid === Episciences_Auth::getUid()) {
+            $user = Episciences_Auth::getInstance()->getIdentity();
+            $user->setJournalRoles($rvId, $this->fetchJournalRoles($uid, $rvId));
+            Episciences_Auth::updateIdentity($user);
         }
 
         // Détecter les rôles retirés et désactiver leurs assignments si nécessaire
@@ -1157,6 +1155,25 @@ class Episciences_User extends Ccsd_User_Models_User
         return true;
     }
 
+
+    /**
+     * Roles of a user in one journal, as saved in the database; member if none, as in loadRoles()
+     *
+     * @internal public for unit tests only, called by saveUserRoles()
+     *
+     * @return array<int, string>
+     */
+    public function fetchJournalRoles(int $uid, int $rvId): array
+    {
+        $roles = $this->_db->fetchCol(
+            $this->_db->select()
+                ->from(T_USER_ROLES, 'ROLEID')
+                ->where('UID = ?', $uid)
+                ->where('RVID = ?', $rvId)
+        ) ?: [];
+
+        return $roles ?: [Episciences_Acl::ROLE_MEMBER];
+    }
 
     /**
      * Roles actually removed by a save: current roles that are editable by the caller and no longer submitted

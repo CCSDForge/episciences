@@ -19,18 +19,22 @@ use Zend_Db_Select;
  * @covers \Episciences_User::getAllRoles
  * @covers \Episciences_User::setJournalRoles
  * @covers \Episciences_User::addRole
+ * @covers \Episciences_User::fetchJournalRoles
  */
 final class Episciences_UserJournalRolesTest extends TestCase
 {
     private const OTHER_RVID = RVID + 1000;
 
-    /** @param array<int, list<string>> $roles */
-    private function createUserWithRoles(array $roles): Episciences_User
+    /**
+     * @param array<int, list<string>> $roles
+     * @param list<string> $savedRoles roles returned by the database for one journal
+     */
+    private function createUserWithRoles(array $roles, array $savedRoles = []): Episciences_User
     {
         $db = $this->createMock(Zend_Db_Adapter_Abstract::class);
         $db->method('select')->willReturnCallback(static fn() => new Zend_Db_Select($db));
         $db->method('quote')->willReturnCallback(static fn($value) => "'" . $value . "'");
-        $db->method('fetchCol')->willReturn([]);
+        $db->method('fetchCol')->willReturn($savedRoles);
         $db->method('fetchOne')->willReturn(false);
 
         $user = new Episciences_User();
@@ -96,5 +100,23 @@ final class Episciences_UserJournalRolesTest extends TestCase
 
         self::assertSame([Episciences_Acl::ROLE_AUTHOR], array_values($user->getRoles()));
         self::assertSame([Episciences_Acl::ROLE_EDITOR], $user->getRoles(self::OTHER_RVID));
+    }
+
+    public function testFetchJournalRolesReturnsTheSavedRoles(): void
+    {
+        // The saved roles include the roles the caller may not edit (e.g. author), which are not submitted
+        $user = $this->createUserWithRoles([], [Episciences_Acl::ROLE_SECRETARY, Episciences_Acl::ROLE_AUTHOR]);
+
+        self::assertSame(
+            [Episciences_Acl::ROLE_SECRETARY, Episciences_Acl::ROLE_AUTHOR],
+            $user->fetchJournalRoles(42, RVID)
+        );
+    }
+
+    public function testFetchJournalRolesWithoutSavedRoleFallsBackToMember(): void
+    {
+        $user = $this->createUserWithRoles([]);
+
+        self::assertSame([Episciences_Acl::ROLE_MEMBER], $user->fetchJournalRoles(42, RVID));
     }
 }
