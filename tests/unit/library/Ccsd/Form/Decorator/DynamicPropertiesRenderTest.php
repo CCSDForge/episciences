@@ -8,6 +8,8 @@ use Ccsd_Form_Element_MultiTextSimple;
 use Ccsd_Form_Element_MultiTextSimpleLang;
 use PHPUnit\Framework\TestCase;
 use Zend_Form_Element;
+use Zend_Registry;
+use Zend_Translate;
 use Zend_View;
 
 /**
@@ -22,6 +24,14 @@ class DynamicPropertiesRenderTest extends TestCase
     protected function setUp(): void
     {
         $this->deprecations = [];
+        // The decorators translate their button labels: the test bootstrap does not register a translator
+        if (!Zend_Registry::isRegistered('Zend_Translate')) {
+            Zend_Registry::set('Zend_Translate', new Zend_Translate([
+                'adapter' => Zend_Translate::AN_ARRAY,
+                'content' => ['' => ''],
+                'locale'  => 'en',
+            ]));
+        }
         // Record every deprecation, not only the dynamic property ones: an error handler
         // returning false would hand them to the PHP handler, which never fails the test
         set_error_handler(function (int $errno, string $errstr): bool {
