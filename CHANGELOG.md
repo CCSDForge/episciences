@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the properties that were created dynamically (deprecated since PHP 8.2) are now declared, and the PHP 8.2
   and 8.3 polyfills are no longer direct dependencies.
 
+### Fixed
+- Multi-value and date form fields no longer raise "Creation of dynamic property" deprecations (PHP 8.2+) when rendered: their decorators now declare the JavaScript function names and indices they receive.
+- Sorting papers by status and decoding the subject of a mail without subject no longer raise PHP deprecations.
+- The `Import` and `setNumVol` scripts no longer create dynamic properties (deprecated since PHP 8.2).
+
 ## v1.0.57.1 - 2026-10-22
 
 ### Fixed
