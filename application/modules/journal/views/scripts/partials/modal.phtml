@@ -16,7 +16,11 @@
 
             <div class="modal-body">
                 <div class="row">
+                <?php if ($this->form instanceof Zend_Form) : ?>
+                    <?= $this->form ?>
+                <?php else : ?>
                     <script>$(this).parent('.modal-body').html(getLoader());</script>
+                <?php endif; ?>
                 </div>
             </div>
 

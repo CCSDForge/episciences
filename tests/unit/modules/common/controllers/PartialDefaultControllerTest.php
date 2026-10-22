@@ -78,10 +78,23 @@ final class PartialDefaultControllerTest extends TestCase
         $html = $this->render($view, [
             'style' => ['x' => '" onload="alert(1)'],
             'content' => '<script>alert(1)</script>',
+            'form' => '<script>alert(1)</script>',
         ]);
 
         self::assertStringNotContainsString('onload', $html);
         self::assertStringNotContainsString('alert(1)', $html);
+    }
+
+    public function testJournalModalRendersTheFormGivenByTheView(): void
+    {
+        $form = new \Zend_Form();
+        $form->setView(new \Zend_View());
+        $form->addElement('text', 'mTitle');
+
+        $html = $this->render('journal/views/scripts/partials/modal.phtml', ['form' => $form]);
+
+        self::assertStringContainsString('id="mTitle"', $html);
+        self::assertStringNotContainsString('getLoader()', $html);
     }
 
     /**
