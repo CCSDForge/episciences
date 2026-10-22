@@ -6,8 +6,6 @@
 abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi implements Ccsd_Form_Interface_Javascript
 {
     use Ccsd_Form_Trait_ImplementFunctionJS;
-    public $pathDir = __DIR__ ;
-    public $relPublicDirPath = "../../../public"; 
 	
     const DISPLAY_ADVANCED = 'advanced';
     const DISPLAY_SIMPLE   = 'simple';
