@@ -2,11 +2,13 @@
 
 namespace unit\library\Ccsd\Form\Decorator;
 
+use Ccsd_Form_Decorator_Group;
 use Ccsd_Form_Element_Date;
 use Ccsd_Form_Element_MultiTextArea;
 use Ccsd_Form_Element_MultiTextSimple;
 use Ccsd_Form_Element_MultiTextSimpleLang;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 use Zend_Form_Element;
 use Zend_View;
 
@@ -79,5 +81,19 @@ class DynamicPropertiesRenderTest extends TestCase
 
         self::assertStringContainsString($expectedValue, $html);
         self::assertSame([], array_values(array_unique($this->deprecations)));
+    }
+
+    public function testGroupOnlySetsThePublicPropertiesOfASubDecorator(): void
+    {
+        $subDecorator = new class {
+            public $init;
+            protected $indice;
+        };
+        $hasPublicProperty = new ReflectionMethod(Ccsd_Form_Decorator_Group::class, 'hasPublicProperty');
+        $hasPublicProperty->setAccessible(true);
+
+        self::assertTrue($hasPublicProperty->invoke(null, $subDecorator, 'init'));
+        self::assertFalse($hasPublicProperty->invoke(null, $subDecorator, 'indice'));
+        self::assertFalse($hasPublicProperty->invoke(null, $subDecorator, 'add'));
     }
 }
