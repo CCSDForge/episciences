@@ -69,6 +69,8 @@ final class Episciences_PapersManager_RenameIdentifierTest extends TestCase
         $refused = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_REFUSED);
         $obsolete = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_OBSOLETE);
         $otherJournal = $this->insertPaper(RVID + 1, 999002, Episciences_Paper::STATUS_SUBMITTED);
+        // Same paper id in another journal: the journal condition is checked on its own
+        $samePaperOtherJournal = $this->insertPaper(RVID + 1, $paperId, Episciences_Paper::STATUS_REFUSED);
         $otherPaper = $this->insertPaper(RVID, 999003, Episciences_Paper::STATUS_SUBMITTED);
 
         $renamed = Episciences_PapersManager::renameIdentifier(
@@ -82,6 +84,7 @@ final class Episciences_PapersManager_RenameIdentifierTest extends TestCase
         self::assertSame(self::IDENTIFIER . '-REFUSED', $this->identifierOf($refused));
         self::assertSame(self::IDENTIFIER . '-REFUSED', $this->identifierOf($obsolete));
         self::assertSame(self::IDENTIFIER, $this->identifierOf($otherJournal));
+        self::assertSame(self::IDENTIFIER, $this->identifierOf($samePaperOtherJournal));
         self::assertSame(self::IDENTIFIER, $this->identifierOf($otherPaper));
     }
 
