@@ -93,7 +93,13 @@ final class Episciences_PapersManager_RenameIdentifierTest extends TestCase
         $paperId = 999001;
         $obsolete = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_OBSOLETE, 1);
         $refused = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_REFUSED, 2);
+        // Same paper id in another journal, renamed there: its identifier is not restored
         $otherJournal = $this->insertPaper(RVID + 1, $paperId, Episciences_Paper::STATUS_REFUSED);
+        $this->db->update(
+            T_PAPERS,
+            ['IDENTIFIER' => self::IDENTIFIER . Episciences_Paper::REFUSED_IDENTIFIER_SUFFIX],
+            ['DOCID = ?' => $otherJournal]
+        );
 
         Episciences_PapersManager::renameIdentifier(
             self::IDENTIFIER,
@@ -113,7 +119,10 @@ final class Episciences_PapersManager_RenameIdentifierTest extends TestCase
         self::assertTrue($paper->restoreRefusedIdentifier());
         self::assertSame(self::IDENTIFIER, $this->identifierOf($refused));
         self::assertSame(self::IDENTIFIER, $this->identifierOf($obsolete));
-        self::assertSame(self::IDENTIFIER, $this->identifierOf($otherJournal));
+        self::assertSame(
+            self::IDENTIFIER . Episciences_Paper::REFUSED_IDENTIFIER_SUFFIX,
+            $this->identifierOf($otherJournal)
+        );
     }
 
     public function testNothingIsRenamedWithoutAPaperOrAJournal(): void
