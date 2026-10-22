@@ -34,6 +34,8 @@ final class SolrIndexTransport
     private const RETRY_MAX_RETRIES = 5;
     private const RETRY_DELAY_MS = 5000;
     private const RETRY_MULTIPLIER = 3.0;
+    // Messenger applies a +/-10% jitter to each delay (MultiplierRetryStrategy
+    // default since Symfony 7.1).
     private const RETRY_MAX_DELAY_MS = 1_800_000;
 
     public static function config(): TransportConfig

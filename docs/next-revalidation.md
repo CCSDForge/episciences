@@ -91,7 +91,7 @@ One `POST` is sent per tag. The endpoint does not accept multiple tags in a sing
 | `5xx` | Server error | Retried with backoff |
 | Network / DNS / connect timeout | Transport-level failure | Retried with backoff |
 
-Backoff schedule: 1s → 4s → 16s → 60s (4 attempts), landing in `messenger_failed` after roughly 81s if still failing — short on purpose, since a tag revalidated 30 minutes late is worthless (the ISR TTL would have expired on its own by then). Compare with the Solr indexing queue's much longer 5s–30min backoff, appropriate there because a delayed *index* update has no equivalent TTL fallback.
+Backoff schedule: 1s → 4s → 16s → 60s (4 attempts, each delay randomised by ±10% by Messenger's default jitter), landing in `messenger_failed` after roughly 81s if still failing — short on purpose, since a tag revalidated 30 minutes late is worthless (the ISR TTL would have expired on its own by then). Compare with the Solr indexing queue's much longer 5s–30min backoff, appropriate there because a delayed *index* update has no equivalent TTL fallback.
 
 ---
 
