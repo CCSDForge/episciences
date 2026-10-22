@@ -35,9 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The "Add a file (Foreword, Erratum, Addendum, ...)" dialog of the volume creation and edition pages is no longer empty.
 - The dialogs of the paper page and of the mail templates page are displayed at half the page width again.
 - Multi-value, date, referential and thesaurus form fields no longer carry the internal `pathDir` and `relPublicDirPath` properties as HTML attributes.
-- Multi-value and date form fields no longer raise "Creation of dynamic property" deprecations (PHP 8.2+) when rendered: their decorators now declare the JavaScript function names and indices they receive.
+- Multi-value and date form fields no longer raise PHP deprecations when rendered: their decorators now declare the JavaScript function names and indices they receive ("Creation of dynamic property", PHP 8.2+), and a date field without CSS class no longer passes null to `strpos()`.
 - Sorting papers by status and decoding the subject of a mail without subject no longer raise PHP deprecations.
-- Multi-value form fields now stop validating at a validator set to break the chain on failure, instead of always running every validator.
+- Multi-value form fields now stop validating at a validator set to break the chain on failure, instead of always running every validator, including on required and multilingual fields; a validator that succeeds no longer stops the chain because an earlier one failed.
+- Multi-value form fields now validate each value again after a first failure (they used to validate the whole list at once, reporting a wrong "invalid type" error, until the end of the request), keep the messages of every failing validator of a language, and no longer fail with a TypeError when they have custom error messages.
 - HAL affiliations no longer keep the ROR of another affiliation of the same author, a defect left in the data by a former enrichment bug: `enrichment:creators` now realigns such a ROR on the HAL TEI (or removes it when the HAL structure has none), while a ROR set manually is kept.
 - `enrichment:creators --dry-run` no longer creates missing author records.
 - A BAOBAB submission by the ARK of a version other than the latest one no longer fails with "identifier does not exist": the ARK is now searched across all the versions of the records.
