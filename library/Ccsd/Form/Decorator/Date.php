@@ -40,7 +40,7 @@ class Ccsd_Form_Decorator_Date extends Zend_Form_Decorator_HtmlTag
         		. Ccsd_Form::getDefaultTranslator()->translate("Cliquer ici pour ouvrir le calendrier") . "' class=\"input-group-addon calendar-trigger\" onclick=\"" . $this->init . "('" . $element->getAttrib('id') . "');\"><i class=\"glyphicon glyphicon-calendar\"></i></span>";
 
         $class = 'form-control input-sm datepicker';
-        if (strpos($element->getAttrib('class'), 'meta-complete') !== false) {
+        if (strpos((string) $element->getAttrib('class'), 'meta-complete') !== false) {
             $class .= ' meta-complete';
         }
         $element->setAttrib('class', $class);

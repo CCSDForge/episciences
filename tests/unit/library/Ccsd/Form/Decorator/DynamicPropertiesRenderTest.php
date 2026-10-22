@@ -11,8 +11,8 @@ use Zend_Form_Element;
 use Zend_View;
 
 /**
- * Rendering the multi-value and date elements must not create dynamic properties
- * on their decorators (deprecated since PHP 8.2).
+ * Rendering the multi-value and date elements must not raise any deprecation, such as
+ * the creation of dynamic properties on their decorators (deprecated since PHP 8.2).
  */
 class DynamicPropertiesRenderTest extends TestCase
 {
@@ -22,13 +22,12 @@ class DynamicPropertiesRenderTest extends TestCase
     protected function setUp(): void
     {
         $this->deprecations = [];
+        // Record every deprecation, not only the dynamic property ones: an error handler
+        // returning false would hand them to the PHP handler, which never fails the test
         set_error_handler(function (int $errno, string $errstr): bool {
-            if (str_contains($errstr, 'Creation of dynamic property')) {
-                $this->deprecations[] = $errstr;
-                return true;
-            }
-            return false;
-        }, E_DEPRECATED);
+            $this->deprecations[] = $errstr;
+            return true;
+        }, E_DEPRECATED | E_USER_DEPRECATED);
     }
 
     protected function tearDown(): void
@@ -71,7 +70,7 @@ class DynamicPropertiesRenderTest extends TestCase
      * @dataProvider elementProvider
      * @param callable(): Zend_Form_Element $factory
      */
-    public function testRenderingCreatesNoDynamicProperty(callable $factory, string $expectedValue): void
+    public function testRenderingRaisesNoDeprecation(callable $factory, string $expectedValue): void
     {
         $element = $factory();
         $element->setView(new Zend_View());
