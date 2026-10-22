@@ -3,8 +3,6 @@
 class Ccsd_Form_Element_Date extends Zend_Form_Element_Text implements Ccsd_Form_Interface_Javascript
 {
 	use Ccsd_Form_Trait_ImplementFunctionJS;
-    public $pathDir = __DIR__ ;
-    public $relPublicDirPath =  "../../../public"; 
 	
     public function init()
     {

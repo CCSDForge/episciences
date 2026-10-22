@@ -47,11 +47,9 @@ trait Ccsd_Form_Trait_GenerateFunctionJS {
      */
     private function generate ($prefix, $s)
     {
-        $prefixPath = $this->getElement()->pathDir . "/" .  $this->getElement()->relPublicDirPath;
+        $sJSFile = $this->getElement()->getJsTemplateDir() . '/' . $prefix . "$s.js";
 
-        $sJSFile = realpath( $prefixPath . '/js/form/decorator/' . $prefix . "$s.js" );
-
-        if (!file_exists($sJSFile)) {
+        if (!is_file($sJSFile)) {
             return false;
         }
         
