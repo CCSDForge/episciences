@@ -707,7 +707,7 @@ class UserDefaultController extends Zend_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        $userUid = !$request->isPost() ? (int)$request->getParam('userid') : (int)$request->getPost('UID');
+        $userUid = (int)$request->getParam('userid');
 
         $user = new Episciences_User();
         $userId = (!empty($userUid) && Episciences_Auth::isSecretary()) ? $userUid : Episciences_Auth::getUid();
@@ -730,7 +730,7 @@ class UserDefaultController extends Zend_Controller_Action
         $userDefaults = $casUserDefaults->toArray();
         $userDefaults = array_merge($userDefaults, $localUserDefaults);
         $form = new Episciences_User_Form_Edit(['UID' => $userId]);
-        $form->setAction($this->view->url());
+        $form->setAction($this->view->url((int)$userId !== (int)Episciences_Auth::getUid() ? ['userid' => $userId] : []));
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Enregistrer les modifications',
             'class' => 'btn btn-primary'
