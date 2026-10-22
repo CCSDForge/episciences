@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- The application now requires PHP 8.3: the Composer constraint and the continuous integration use PHP 8.3,
+  the properties that were created dynamically (deprecated since PHP 8.2) are now declared, and the PHP 8.2
+  and 8.3 polyfills are no longer direct dependencies.
+
 ## v1.0.57.1 - 2026-10-22
 
 ### Fixed
