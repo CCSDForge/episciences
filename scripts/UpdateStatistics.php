@@ -44,7 +44,7 @@ class UpdateStatistics extends Command
     /**
      * Configure the command options
      */
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('update:statistics')
             ->setDescription('Update statistics for the site')
@@ -64,7 +64,7 @@ class UpdateStatistics extends Command
      * @param OutputInterface $output Command output
      * @return int Exit code
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $startTime = microtime(true);
         $this->io = new SymfonyStyle($input, $output);
