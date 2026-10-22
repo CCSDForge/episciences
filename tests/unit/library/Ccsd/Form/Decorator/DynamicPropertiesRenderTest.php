@@ -81,13 +81,28 @@ class DynamicPropertiesRenderTest extends TestCase
 
         self::assertStringContainsString($expectedValue, $html);
         self::assertSame([], array_values(array_unique($this->deprecations)));
+        $this->assertEveryHandlerCallsANamedFunction($html);
+    }
+
+    /**
+     * The JS function names are passed on to the decorators by Ccsd_Form_Decorator_Group or set by
+     * buildJS(): a decorator not declaring them would render handlers such as onclick="(this, ...)"
+     */
+    private function assertEveryHandlerCallsANamedFunction(string $html): void
+    {
+        preg_match_all('/onclick=(["\'])(.*?)\1/s', $html, $matches);
+
+        self::assertNotEmpty($matches[2], 'No onclick handler rendered');
+        foreach ($matches[2] as $handler) {
+            self::assertMatchesRegularExpression('/^[A-Za-z_$][\w$]*\(/', $handler);
+        }
     }
 
     public function testGroupOnlySetsThePublicPropertiesOfASubDecorator(): void
     {
         $subDecorator = new class {
-            public $init;
-            protected $indice;
+            public ?string $init = null;
+            protected ?string $indice = null;
         };
         $hasPublicProperty = new ReflectionMethod(Ccsd_Form_Decorator_Group::class, 'hasPublicProperty');
         $hasPublicProperty->setAccessible(true);
