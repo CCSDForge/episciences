@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `enrichment:creators -v` lists the author corrections made from HAL TEI; with `--dry-run` it lists them without writing anything.
 
 ### Fixed
+- [#1345](https://github.com/CCSDForge/episciences/issues/1345): members who may manage a paper's linked data can edit the relationship of an existing related work (the access rule did not match the action name).
 - [#1298](https://github.com/CCSDForge/episciences/pull/1298): new versions received through the inbox (COAR Notify) of an imported paper are no longer saved as imported either (`ProcessInboxNotificationsCommand::saveNewVersion()`).
 - `episciences:queue --retry` shows the error of the message handler again when the retried message fails, instead of the generic Messenger message.
 - The "Add a file (Foreword, Erratum, Addendum, ...)" dialog of the volume creation and edition pages is no longer empty.
