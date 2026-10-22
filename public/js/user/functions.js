@@ -33,7 +33,8 @@ function placeRolesPopover(tip, element) {
         var reservedHeight =
             tip.offsetHeight > 0 ? tip.offsetHeight - list.offsetHeight : 80;
         var available = Math.max(spaceBelow, spaceAbove) - reservedHeight;
-        list.style.maxHeight = Math.max(available, 150) + 'px';
+        // Never exceed the available space; keep a small floor so the list stays usable
+        list.style.maxHeight = Math.max(available, 40) + 'px';
     }
 
     return placement;
@@ -64,7 +65,7 @@ function refreshRolesPopover() {
 }
 
 var rolesPopoverRefreshPending = false;
-$(window).on('resize scroll', function () {
+function scheduleRolesPopoverRefresh() {
     // Throttle to one refresh per animation frame
     if (rolesPopoverRefreshPending) {
         return;
@@ -74,6 +75,11 @@ $(window).on('resize scroll', function () {
         rolesPopoverRefreshPending = false;
         refreshRolesPopover();
     });
+}
+
+window.addEventListener('resize', scheduleRolesPopoverRefresh);
+window.addEventListener('scroll', scheduleRolesPopoverRefresh, {
+    passive: true,
 });
 
 function getRoles(button, uid) {
