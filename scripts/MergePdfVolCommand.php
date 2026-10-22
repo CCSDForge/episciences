@@ -55,7 +55,7 @@ class MergePdfVolCommand extends Command
         $this->logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'mergePdfVol_' . date('Y-m-d') . '.log', Level::Info
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

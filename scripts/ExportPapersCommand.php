@@ -77,7 +77,7 @@ final class ExportPapersCommand extends Command
             EPISCIENCES_LOG_PATH . 'export-papers_' . date('Y-m-d') . '.log',
             Level::Debug
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

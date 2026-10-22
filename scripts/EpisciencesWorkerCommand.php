@@ -63,7 +63,7 @@ class EpisciencesWorkerCommand extends Command
         $io->title($profile->label() . ' worker');
 
         $profile->bootstrap();
-        $logger = LoggerFactory::cli($profile->logPrefix() . 'Worker', !$io->isQuiet());
+        $logger = LoggerFactory::cli($profile->logPrefix() . 'Worker', !$io->isQuiet() && !$io->isSilent());
 
         $connection = DbalConnectionFactory::fromZendAdapter(Zend_Db_Table_Abstract::getDefaultAdapter());
         $transportConfig = $profile->config();

@@ -283,7 +283,7 @@ class UpdateGeoIpCommand extends Command
             EPISCIENCES_LOG_PATH . 'updateGeoIp_' . date('Y-m-d') . '.log',
             Level::Info
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
         return $logger;

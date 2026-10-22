@@ -53,7 +53,7 @@ class ClearOpenAireCacheCommand extends Command
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'openAireCachePurge_' . date('Y-m-d') . '.log', Level::Info
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

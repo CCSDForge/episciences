@@ -121,7 +121,7 @@ class ZbjatsZipperCommand extends Command
         $this->logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'zbjatsZipper_' . date('Y-m-d') . '.log', Level::Debug
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

@@ -65,7 +65,7 @@ class CreateDoajVolumeExportsCommand extends Command
         $failed = false;
 
         foreach ($allJournals as $journal) {
-            $this->initLoggerForJournal($journal, $io->isQuiet());
+            $this->initLoggerForJournal($journal, $io->isQuiet() || $io->isSilent());
             try {
                 if ($removeCache) {
                     $cache = new FilesystemAdapter('doaj-volume-export', 0, CACHE_PATH_METADATA . $journal);

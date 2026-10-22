@@ -86,7 +86,7 @@ trait BootstrapsSolrEnvironment
 
     private function createSolrLogger(SymfonyStyle $io, string $channel): Logger
     {
-        return LoggerFactory::cli($channel, !$io->isQuiet());
+        return LoggerFactory::cli($channel, !$io->isQuiet() && !$io->isSilent());
     }
 
     /**

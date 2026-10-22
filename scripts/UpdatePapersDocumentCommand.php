@@ -65,7 +65,7 @@ class UpdatePapersDocumentCommand extends Command
 
         // In JSON mode stdout must stay clean for piping to jq — log to stderr only.
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $handle = $isJsonOutput ? 'php://stderr' : 'php://stdout';
             $stdoutHandler = new ProgressAwareStreamHandler($handle, Level::Info);
             $logger->pushHandler($stdoutHandler);

@@ -58,7 +58,7 @@ class GetDoiCommand extends Command
         // log lines mid-bar-redraw, since the bar overwrites its line with a bare carriage
         // return, not a fresh newline.
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }

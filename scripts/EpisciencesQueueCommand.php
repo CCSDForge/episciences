@@ -83,7 +83,7 @@ class EpisciencesQueueCommand extends Command
         $io->title($profile->label());
 
         $profile->bootstrap();
-        $logger = LoggerFactory::cli($profile->logPrefix() . 'Queue', !$io->isQuiet());
+        $logger = LoggerFactory::cli($profile->logPrefix() . 'Queue', !$io->isQuiet() && !$io->isSilent());
 
         $connection = DbalConnectionFactory::fromZendAdapter(Zend_Db_Table_Abstract::getDefaultAdapter());
         $transportConfig = $profile->config();

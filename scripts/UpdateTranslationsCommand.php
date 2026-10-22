@@ -60,7 +60,7 @@ class UpdateTranslationsCommand extends Command
             return Command::FAILURE;
         }
 
-        $this->initLogger($logFile, $io->isQuiet());
+        $this->initLogger($logFile, $io->isQuiet() || $io->isSilent());
         $io->title('Translation update');
 
         $config = $this->loadConfig($configPath, $io);

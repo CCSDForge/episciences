@@ -45,7 +45,7 @@ class GetClassificationMscCommand extends Command
             EPISCIENCES_LOG_PATH . 'mscEnrichment_' . date('Y-m-d') . '.log', Level::Info
         ));
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }

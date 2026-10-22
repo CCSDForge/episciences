@@ -72,7 +72,7 @@ final class ImportPapersCommand extends Command
             EPISCIENCES_LOG_PATH . 'import-papers_' . date('Y-m-d') . '.log',
             Level::Debug
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

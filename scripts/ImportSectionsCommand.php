@@ -61,7 +61,7 @@ final class ImportSectionsCommand extends Command
         );
         $fileHandler->setFormatter(new LineFormatter("[%datetime%] %level_name%: %message% %context%\n", null, false, true));
         $this->logger->pushHandler($fileHandler);
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $consoleHandler = new StreamHandler('php://stdout', Level::Info);
             $consoleHandler->setFormatter(new LineFormatter("%level_name%: %message%\n", null, false, false));
             $this->logger->pushHandler($consoleHandler);

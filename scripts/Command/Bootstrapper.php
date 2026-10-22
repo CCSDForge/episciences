@@ -133,11 +133,11 @@ class Bootstrapper
         $logger->pushHandler($handler);
 
         // Console Handler (Conditional based on verbosity level)
-        // If --quiet (-q) is passed, OutputInterface::VERBOSITY_QUIET is active:
-        // no console handler is added, the logs only go to the file handler above.
+        // If --quiet (-q) or --silent is passed, no console handler is added:
+        // the logs only go to the file handler above.
         // Do NOT add a NullHandler here: it stops the propagation and the file handler would receive nothing.
 
-        if (!$io?->isQuiet()) {
+        if (!$io?->isQuiet() && !$io?->isSilent()) {
             // Normal or Verbose Mode
             // Setting the console log level
             $logLevel = Logger::INFO; // Par défaut
