@@ -38,7 +38,7 @@ log "Starting deployment of: $BRANCH"
 # Detect PHP binary
 if test -f "/usr/bin/php8.3"; then
     PHP_BIN="/usr/bin/php8.3"
-    log "Using PHP : $PHP_BIN"
+    log "Using PHP: $PHP_BIN"
 elif test -f "/usr/bin/php"; then
     PHP_BIN="/usr/bin/php"
     log "Using system PHP: $PHP_BIN"
