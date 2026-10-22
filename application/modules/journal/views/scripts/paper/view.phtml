@@ -233,8 +233,13 @@ $this->jQuery()->addJavascriptFile('/js/paper/edit_master_file.js');
         echo $this->partial('paper/paper_classifications.phtml', ['classifications' => $this->classifications]);
     }
     ?>
-    <?php $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId())) ?>
-    <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor() || $graphAbs) : ?>
+    <?php
+    $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId()));
+    $canManageGraphAbs = Episciences_Auth::isSecretary()
+        || (Episciences_Auth::isLogged() && $paper->isEditor((int)Episciences_Auth::getUid()))
+        || (!$paper->isPublished() && $paper->isOwnerOrCoAuthor());
+    ?>
+    <?php if ($canManageGraphAbs || $graphAbs) : ?>
         <?= $this->partial('paper/paper_graphical_abstract.phtml', ['paper' => $paper]) ?>
     <?php endif; ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>

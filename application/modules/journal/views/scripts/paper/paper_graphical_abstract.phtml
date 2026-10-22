@@ -1,4 +1,9 @@
-<?php $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId())) ?>
+<?php
+$graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId()));
+$canManageGraphAbs = Episciences_Auth::isSecretary()
+    || (Episciences_Auth::isLogged() && $this->paper->isEditor((int)Episciences_Auth::getUid()))
+    || (!$this->paper->isPublished() && $this->paper->isOwnerOrCoAuthor());
+?>
 <div class="panel panel-default collapsable">
     <div class="panel-heading">
         <h2 class="panel-title"><?= $this->translate('Graphical Abstract') ?></h2>
@@ -12,7 +17,7 @@
                          src="/public/documents/<?= $this->paper->getDocId() ?>/<?= $graphAbs ?>">
                 <?php endif; ?>
             </div>
-            <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor()) : ?>
+            <?php if ($canManageGraphAbs) : ?>
                 <div style="display: inline-block; margin-top: 10px;">
                     <div>
                         <input name="paper_docId" class="hidden" id="paper_docId"

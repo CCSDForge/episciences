@@ -32,18 +32,18 @@ class AdministrategraphabstractController extends Zend_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+        $docId = (int)$request->getPost('docId');
         // Reject the request if it is not a proper AJAX POST with a valid request
         // token, OR the user is not authorised.
         if (
             (!$request->isXmlHttpRequest() || !$request->isPost())
             || !Episciences_Csrf_Helper::validateRequestToken($request)
-            || (!Episciences_Auth::isAllowedToManagePaper() && !Episciences_Auth::isAuthor())
+            || !$this->canManagePaper($docId)
         ) {
             echo json_encode([false], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
             exit();
         }
-        $docId = (int)$request->getPost('docId');
         $upload = new Zend_File_Transfer_Adapter_Http();
         $file = $upload->getFileInfo();
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -96,18 +96,18 @@ class AdministrategraphabstractController extends Zend_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+        $docId = (int)$request->getPost('docId');
         // Reject the request if it is not a proper AJAX POST with a valid request
         // token, OR the user is not authorised.
         if (
             (!$request->isXmlHttpRequest() || !$request->isPost())
             || !Episciences_Csrf_Helper::validateRequestToken($request)
-            || (!Episciences_Auth::isAllowedToManagePaper() && !Episciences_Auth::isAuthor())
+            || !$this->canManagePaper($docId)
         ) {
             echo json_encode([false], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
             exit();
         }
-        $docId = (int)$request->getPost('docId');
         $file = basename((string)$request->getPost('file'));
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(".self::DOCUMENT_COL.", ".$db->quote(self::JSON_PATH_ABS_FILE).")) FROM ".T_PAPERS." WHERE DOCID = ?",[$docId]);
@@ -128,5 +128,21 @@ class AdministrategraphabstractController extends Zend_Controller_Action
         }
         $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Suppression de l'abstract graphique réussi");
         exit();
+    }
+
+    private function canManagePaper(int $docId): bool
+    {
+        if (!Episciences_Auth::isLogged() || $docId <= 0) {
+            return false;
+        }
+
+        $paper = Episciences_PapersManager::get($docId, false, RVID);
+        if (!$paper instanceof Episciences_Paper) {
+            return false;
+        }
+
+        return Episciences_Auth::isSecretary()
+            || $paper->isEditor((int)Episciences_Auth::getUid())
+            || (!$paper->isPublished() && $paper->isOwnerOrCoAuthor());
     }
 }
