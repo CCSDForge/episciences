@@ -78,10 +78,52 @@ final class PartialDefaultControllerTest extends TestCase
         $html = $this->render($view, [
             'style' => ['x' => '" onload="alert(1)'],
             'content' => '<script>alert(1)</script>',
+            'form' => '<script>alert(1)</script>',
         ]);
 
         self::assertStringNotContainsString('onload', $html);
         self::assertStringNotContainsString('alert(1)', $html);
+    }
+
+    public function testJournalModalRendersTheFormGivenByTheView(): void
+    {
+        $form = new \Zend_Form();
+        $form->setView(new \Zend_View());
+        $form->addElement('text', 'mTitle');
+
+        $html = $this->render('journal/views/scripts/partials/modal.phtml', ['form' => $form]);
+
+        self::assertStringContainsString('id="mTitle"', $html);
+        self::assertStringNotContainsString('getLoader()', $html);
+    }
+
+    public function testJournalModalAppliesTheWidthGivenByTheView(): void
+    {
+        $html = $this->render('journal/views/scripts/partials/modal.phtml', ['style' => ['width' => '50%']]);
+
+        self::assertStringContainsString('<div class="modal-dialog modal-lg" style="width: 50%;">', $html);
+    }
+
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function invalidStyleProvider(): array
+    {
+        return [
+            'not a length' => [['width' => '50%;background:url(x)']],
+            'other property' => [['height' => '50%']],
+            'not an array' => ['width: 50%'],
+        ];
+    }
+
+    /**
+     * @dataProvider invalidStyleProvider
+     */
+    public function testJournalModalIgnoresAnyOtherStyle(mixed $style): void
+    {
+        $html = $this->render('journal/views/scripts/partials/modal.phtml', ['style' => $style]);
+
+        self::assertStringContainsString('<div class="modal-dialog modal-lg">', $html);
     }
 
     /**
