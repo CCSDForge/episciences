@@ -7,6 +7,7 @@ use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -18,11 +19,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/UpdatePapersNewJsonFieldDocument.php (JournalScript)
  */
+#[AsCommand(name: 'papers:update-document', description: 'Update the DOCUMENT JSON column in the PAPERS table from Paper::toJson().')]
 class UpdatePapersDocumentCommand extends Command
 {
     use Episciences\Trait\Tools;
-
-    protected static $defaultName = 'papers:update-document';
 
     public const DEFAULT_BUFFER = 500;
 
@@ -32,7 +32,6 @@ class UpdatePapersDocumentCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Update the DOCUMENT JSON column in the PAPERS table from Paper::toJson().')
             ->addOption('docid',         null, InputOption::VALUE_REQUIRED, 'Process only this DOCID.')
             ->addOption('sqlwhere',      null, InputOption::VALUE_REQUIRED, "SQL WHERE clause to filter DOCIDs (e.g. 'DOCID > 1000'). TRUSTED INPUT ONLY — passed as-is to the query.")
             ->addOption('buffer',        null, InputOption::VALUE_REQUIRED, 'Number of papers to process per page.', self::DEFAULT_BUFFER)
@@ -66,7 +65,7 @@ class UpdatePapersDocumentCommand extends Command
 
         // In JSON mode stdout must stay clean for piping to jq — log to stderr only.
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $handle = $isJsonOutput ? 'php://stderr' : 'php://stdout';
             $stdoutHandler = new ProgressAwareStreamHandler($handle, Level::Info);
             $logger->pushHandler($stdoutHandler);

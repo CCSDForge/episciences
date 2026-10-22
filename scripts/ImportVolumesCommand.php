@@ -6,6 +6,7 @@ use Episciences\Volume\Import\Row;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,10 +23,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/importVolumes.php (JournalScript)
  */
+#[AsCommand(name: 'import:volumes', description: 'Import journal volumes from a semicolon-separated CSV file.')]
 final class ImportVolumesCommand extends Command
 {
-    protected static $defaultName = 'import:volumes';
-
     private Logger $logger;
     private int $importedCount = 0;
     private int $skippedCount  = 0;
@@ -34,7 +34,6 @@ final class ImportVolumesCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Import journal volumes from a semicolon-separated CSV file.')
             ->addOption('rvid', null, InputOption::VALUE_REQUIRED, 'Journal RVID (integer)')
             ->addOption('csv-file', null, InputOption::VALUE_REQUIRED, 'Path to the CSV file containing volumes data')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulate the import without writing to the database');
@@ -65,7 +64,7 @@ final class ImportVolumesCommand extends Command
             EPISCIENCES_LOG_PATH . 'import-volumes_' . date('Y-m-d') . '.log',
             Level::Debug
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

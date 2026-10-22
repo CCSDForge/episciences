@@ -10,6 +10,7 @@ use Episciences\Log\LoggerFactory;
 use Episciences\Messenger\Dbal\DbalConnectionFactory;
 use Episciences\Messenger\Transport\TransportFactory;
 use Episciences\Messenger\Worker\WorkerEventDispatcherFactory;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -26,16 +27,14 @@ use Symfony\Component\Messenger\Worker;
  * src/php-fpm/episciences-worker@.service) so a slow Solr document build
  * never blocks a cheap Next.js revalidation POST.
  */
+#[AsCommand(name: 'episciences:worker', description: 'Continuously consume one Messenger queue (see --transport).')]
 class EpisciencesWorkerCommand extends Command
 {
     use ParsesMemoryLimit;
 
-    protected static $defaultName = 'episciences:worker';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Continuously consume one Messenger queue (see --transport).')
             ->addOption('transport', null, InputOption::VALUE_REQUIRED, 'Which queue to consume: ' . implode(', ', TransportProfileRegistry::names()) . '.')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Stop after processing this many messages.')
             ->addOption('time-limit', null, InputOption::VALUE_REQUIRED, 'Stop after this many seconds.')
@@ -64,7 +63,7 @@ class EpisciencesWorkerCommand extends Command
         $io->title($profile->label() . ' worker');
 
         $profile->bootstrap();
-        $logger = LoggerFactory::cli($profile->logPrefix() . 'Worker', !$io->isQuiet());
+        $logger = LoggerFactory::cli($profile->logPrefix() . 'Worker', !$io->isQuiet() && !$io->isSilent());
 
         $connection = DbalConnectionFactory::fromZendAdapter(Zend_Db_Table_Abstract::getDefaultAdapter());
         $transportConfig = $profile->config();

@@ -5,6 +5,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -20,10 +21,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * no version marker (md5($doi)), so a cache hit on a pre-migration entry silently returns
  * the old format to the new extraction code instead of triggering a fresh API call.
  */
+#[AsCommand(name: 'enrichment:clear-cache', description: 'Purge the OpenAIRE Research Graph / Scholexplorer enrichment caches')]
 class ClearOpenAireCacheCommand extends Command
 {
-    protected static $defaultName = 'enrichment:clear-cache';
-
     private const OPENAIRE_CACHE_POOLS = [
         'openAireResearchGraph',
         'enrichmentAuthors',
@@ -38,7 +38,6 @@ class ClearOpenAireCacheCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Purge the OpenAIRE Research Graph / Scholexplorer enrichment caches')
             ->addOption('scholexplorer', null, InputOption::VALUE_NONE, 'Also purge the Scholexplorer cache pools')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Purge every cache pool (OpenAIRE + Scholexplorer)');
     }
@@ -54,7 +53,7 @@ class ClearOpenAireCacheCommand extends Command
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'openAireCachePurge_' . date('Y-m-d') . '.log', Level::Info
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

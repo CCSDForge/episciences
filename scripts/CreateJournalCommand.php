@@ -9,6 +9,7 @@ use Episciences\Journal\Provisioning\PagesCloner;
 use Episciences\Journal\Provisioning\ReviewRowWriter;
 use Episciences\Journal\Provisioning\SettingsCloner;
 use Episciences\Journal\Provisioning\WebsiteCloner;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -43,14 +44,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * only, and JournalCreator defines the journal constants itself once the REVIEW row and the
  * data directory both exist (see JournalCreator's docblock for the exact ordering).
  */
+#[AsCommand(name: 'journal:create', description: 'Create a new journal by cloning settings, menu, pages and appearance from a template journal.')]
 final class CreateJournalCommand extends Command
 {
-    protected static $defaultName = 'journal:create';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Create a new journal by cloning settings, menu, pages and appearance from a template journal.')
             ->addOption('code', null, InputOption::VALUE_REQUIRED, 'New journal code (rvcode)')
             ->addOption('name', null, InputOption::VALUE_REQUIRED, 'New journal name')
             ->addOption('subtitle', null, InputOption::VALUE_REQUIRED, 'New journal subtitle')

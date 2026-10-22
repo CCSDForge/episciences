@@ -5,6 +5,7 @@ use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -18,14 +19,12 @@ use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
  *
  * Replaces: scripts/getCreatorData.php (JournalScript)
  */
+#[AsCommand(name: 'enrichment:creators', description: 'Enrich author ORCID data from OpenAIRE Research Graph and HAL TEI')]
 class GetCreatorDataCommand extends Command
 {
-    protected static $defaultName = 'enrichment:creators';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Enrich author ORCID data from OpenAIRE Research Graph and HAL TEI')
             ->addOption('doi', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by DOI')
             ->addOption('paperid', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by paper ID')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
@@ -47,7 +46,7 @@ class GetCreatorDataCommand extends Command
         $logger = new Logger('creatorEnrichment');
         $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'creatorEnrichment_' . date('Y-m-d') . '.log', Level::Info));
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }

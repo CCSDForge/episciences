@@ -6,6 +6,7 @@ use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -18,16 +19,14 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/getLinkData.php (JournalScript), then the Scholexplorer API v1 client.
  */
+#[AsCommand(name: 'enrichment:links', description: 'Enrich dataset link data from Scholexplorer (OpenAIRE v3)')]
 class GetLinkDataCommand extends Command
 {
-    protected static $defaultName = 'enrichment:links';
-
     private const VALID_TYPES = ['dataset', 'software', 'all'];
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Enrich dataset link data from Scholexplorer (OpenAIRE v3)')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)')
             ->addOption('doi', null, InputOption::VALUE_REQUIRED, 'Target a single DOI')
@@ -60,7 +59,7 @@ class GetLinkDataCommand extends Command
         $logger = new Logger('linkEnrichment');
         $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'linkEnrichment_' . date('Y-m-d') . '.log', Level::Info));
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }

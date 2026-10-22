@@ -5,6 +5,7 @@ use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,16 +18,14 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
  *
  * Replaces: scripts/getLicenceDataEnrichment.php (JournalScript)
  */
+#[AsCommand(name: 'enrichment:licences', description: 'Enrich licence data for all papers from repository APIs')]
 class GetLicenceDataCommand extends Command
 {
-    protected static $defaultName = 'enrichment:licences';
-
     private const ONE_MONTH = 3600 * 24 * 31;
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Enrich licence data for all papers from repository APIs')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }
@@ -44,7 +43,7 @@ class GetLicenceDataCommand extends Command
         $logger = new Logger('licenceEnrichment');
         $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'licenceEnrichment_' . date('Y-m-d') . '.log', Level::Info));
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }

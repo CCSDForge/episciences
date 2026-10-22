@@ -13,6 +13,7 @@ use Episciences\Messenger\Enqueue\AbstractDbalEnqueueFailureStore;
 use Episciences\Messenger\Transport\TransportConfig;
 use Episciences\Messenger\Transport\TransportFactory;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -29,14 +30,12 @@ use Symfony\Component\Messenger\Stamp\TransportMessageIdStamp;
  * Kernel/bundle system to auto-register them). Operates on one Messenger
  * queue, selected by --transport via TransportProfileRegistry.
  */
+#[AsCommand(name: 'episciences:queue', description: 'Inspect and manage one Messenger queue (see --transport).')]
 class EpisciencesQueueCommand extends Command
 {
-    protected static $defaultName = 'episciences:queue';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Inspect and manage one Messenger queue (see --transport).')
             ->addOption('transport', null, InputOption::VALUE_REQUIRED, 'Which queue to operate on: ' . implode(', ', TransportProfileRegistry::names()) . '.')
             ->addOption('stats', null, InputOption::VALUE_NONE, 'Show pending and failed message counts.')
             ->addOption('list-failed', null, InputOption::VALUE_NONE, 'List failed messages.')
@@ -84,7 +83,7 @@ class EpisciencesQueueCommand extends Command
         $io->title($profile->label());
 
         $profile->bootstrap();
-        $logger = LoggerFactory::cli($profile->logPrefix() . 'Queue', !$io->isQuiet());
+        $logger = LoggerFactory::cli($profile->logPrefix() . 'Queue', !$io->isQuiet() && !$io->isSilent());
 
         $connection = DbalConnectionFactory::fromZendAdapter(Zend_Db_Table_Abstract::getDefaultAdapter());
         $transportConfig = $profile->config();
@@ -239,18 +238,28 @@ class EpisciencesQueueCommand extends Command
 
             return Command::SUCCESS;
         } catch (Throwable $e) {
-            // HandleMessageMiddleware wraps handler throwables in a
-            // HandlerFailedException — unwrap it so the real error is logged
-            // and displayed instead of the wrapper's generic message.
-            $realError = $e instanceof HandlerFailedException
-                ? ($e->getWrappedExceptions()[0] ?? $e)
-                : $e;
+            $realError = self::unwrapHandlerFailure($e);
 
             $logger->error(sprintf('episciences:queue --retry=%s failed again: %s', $id, $realError->getMessage()));
             $io->error(sprintf('Retry failed: %s', $realError->getMessage()));
 
             return Command::FAILURE;
         }
+    }
+
+    /**
+     * HandleMessageMiddleware wraps handler throwables in a
+     * HandlerFailedException — unwrap it so the real error is logged and
+     * displayed instead of the wrapper's generic message. The wrapped
+     * exceptions are keyed by handler name, not by position: take the first one.
+     */
+    private static function unwrapHandlerFailure(Throwable $e): Throwable
+    {
+        if (!$e instanceof HandlerFailedException) {
+            return $e;
+        }
+
+        return current($e->getWrappedExceptions()) ?: $e;
     }
 
     private function listDispatchFailures(TransportProfileInterface $profile, AbstractDbalEnqueueFailureStore $dispatchFailureStore, int $limit, SymfonyStyle $io): int

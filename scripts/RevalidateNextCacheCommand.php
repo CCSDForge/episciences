@@ -7,6 +7,7 @@ require_once __DIR__ . '/Next/BootstrapsNextEnvironment.php';
 use Episciences\Next\Messenger\HandlerFactory;
 use Episciences\Next\Messenger\Message\RevalidateTagMessage;
 use Episciences\Next\RevalidationService;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -25,16 +26,14 @@ use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
  *        php scripts/console.php next:revalidate-cache epijinfo article-42 volumes-epijinfo
  *        php scripts/console.php next:revalidate-cache --queue epijinfo article-42
  */
+#[AsCommand(name: 'next:revalidate-cache', description: 'Immediately trigger Next.js cache revalidation for a journal and one or more tags (bypasses the queue by default; see --queue).')]
 class RevalidateNextCacheCommand extends Command
 {
     use BootstrapsNextEnvironment;
 
-    protected static $defaultName = 'next:revalidate-cache';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Immediately trigger Next.js cache revalidation for a journal and one or more tags (bypasses the queue by default; see --queue).')
             ->addArgument('rvcode', InputArgument::REQUIRED, 'Journal code (e.g. epijinfo)')
             ->addArgument('tag', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'One or more cache tags to invalidate (e.g. article-42)')
             ->addOption('queue', null, InputOption::VALUE_NONE, 'Enqueue the tag(s) instead of POSTing immediately.');

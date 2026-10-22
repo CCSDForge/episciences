@@ -8,6 +8,7 @@ use MaxMind\Db\Reader\InvalidDatabaseException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -33,10 +34,9 @@ use geertw\IpAnonymizer\IpAnonymizer;
  *   6. Insert into PAPER_STAT (or skip if bot)
  *   7. Delete processed rows from STAT_TEMP
  */
+#[AsCommand(name: 'stats:process', description: 'Process visits from STAT_TEMP into PAPER_STAT')]
 class ProcessStatTempCommand extends Command
 {
-    protected static $defaultName = 'stats:process';
-
     private const STEP_OF_LINES = 500;
 
     /** @var array<string, int> Non-resolved IPs cache to avoid repeated reverse-DNS timeouts. */
@@ -51,7 +51,6 @@ class ProcessStatTempCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Process visits from STAT_TEMP into PAPER_STAT')
             ->addOption('date-s', null, InputOption::VALUE_REQUIRED, 'Process up to this date (yyyy-mm-dd; default: yesterday)')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Process ALL records regardless of date')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'No DB writes; display each row')
@@ -313,7 +312,7 @@ class ProcessStatTempCommand extends Command
             $logger->pushHandler(new StreamHandler($logFile, Level::Info));
         }
 
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
         return $logger;

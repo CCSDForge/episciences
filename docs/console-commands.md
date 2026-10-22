@@ -912,6 +912,10 @@ message is still worth:
 | `solr_index` | 5 | 5s, 15s, 45s, ... (×3, capped at 30min) | up to ~30min |
 | `next_revalidation` | 4 | 1s, 4s, 16s, 60s (×4) | ~81s |
 
+Each delay is randomised by ±10% (the default jitter of Messenger's
+`MultiplierRetryStrategy`), so retries of messages that failed together do
+not all hit Solr or Next.js at the same instant.
+
 A failed message stays in `messenger_failed` until inspected or retried via
 `episciences:queue --transport=<name>`.
 

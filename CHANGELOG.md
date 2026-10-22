@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `enrichment:creators -v` lists the author corrections made from HAL TEI; with `--dry-run` it lists them without writing anything.
 
 ### Fixed
+- `episciences:queue --retry` shows the error of the message handler again when the retried message fails, instead of the generic Messenger message.
 - The "Add a file (Foreword, Erratum, Addendum, ...)" dialog of the volume creation and edition pages is no longer empty.
 - The dialogs of the paper page and of the mail templates page are displayed at half the page width again.
 - Multi-value, date, referential and thesaurus form fields no longer carry the internal `pathDir` and `relPublicDirPath` properties as HTML attributes.
@@ -105,6 +106,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The application now requires PHP 8.3: the Composer constraint, the Docker image and the continuous
   integration use PHP 8.3, the properties that were created dynamically (deprecated since PHP 8.2)
   are now declared, and the PHP 8.2 and 8.3 polyfills are no longer direct dependencies.
+- Symfony components upgraded from 6.4 to 7.4 (LTS): console commands declare their name and
+  description with the `#[AsCommand]` attribute instead of the `$defaultName` property, which
+  Symfony 7 no longer reads, and are registered with `Application::addCommand()`. The new global
+  `--silent` option of the console commands also stops the log lines written to the standard output,
+  like `--quiet`. Messenger now randomises each retry delay of the `solr_index` and
+  `next_revalidation` queues by ±10%.
 
 ### Added
 - [#1285](https://github.com/CCSDForge/episciences/pull/1285) Read-only maintenance mode (`EPISCIENCES.READ_ONLY_MODE` in `pwd.json`, optional `READ_ONLY_MODE_START` / `READ_ONLY_MODE_END` planned schedule): public consultation stays available while the web application sends no write query to the database. Only public guest pages that do not write are served (`GET`/`HEAD`, whoever is logged in, OAI-PMH unfiltered); everything else answers HTTP 503 with `Retry-After`; logging out stays possible; paper visits are not recorded. A single maintenance banner (journals and portal) shows the maintenance in progress, announces an upcoming one from its planned start, or the free `RENDER_ALERT_BANNER` message (now Bootstrap-styled and optional). See `docs/read-only-mode.md`.

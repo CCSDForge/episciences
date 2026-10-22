@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Episciences\Journal\Demo\DemoSeeder;
 use Episciences\Paper\Import\ReviewResolver;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -25,14 +26,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * defineJournalConstants() can safely be called with no rvcode up front, then locked to the
  * resolved journal via lockJournal(), exactly like import:papers.
  */
+#[AsCommand(name: 'journal:seed-demo', description: 'Seed a journal with a small set of real demo submissions (volumes, sections, papers) for sandbox testing.')]
 final class SeedJournalDemoCommand extends Command
 {
-    protected static $defaultName = 'journal:seed-demo';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Seed a journal with a small set of real demo submissions (volumes, sections, papers) for sandbox testing.')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Journal RVID or RVCODE to seed')
             ->addOption('uid', null, InputOption::VALUE_REQUIRED, 'UID to own all demo papers')
             ->addOption('csv-file', null, InputOption::VALUE_REQUIRED, 'Path to the demo CSV file', __DIR__ . '/importSamples/demo-papers.csv')
