@@ -211,7 +211,8 @@ class AdministratelinkeddataController extends Zend_Controller_Action
 
     /**
      * Returns the paper of the current journal when the request is an AJAX POST
-     * and the user is a secretary, an editor assigned to the paper, or its owner or a co-author.
+     * and the user is a secretary, an editor assigned to the paper, or, as long as the paper
+     * is not published, its owner or a co-author.
      */
     private function getManageablePaper(int $docId): ?Episciences_Paper
     {
@@ -226,7 +227,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
 
         $isAllowed = Episciences_Auth::isSecretary()
             || $paper->isEditor((int)Episciences_Auth::getUid())
-            || $paper->isOwnerOrCoAuthor();
+            || (!$paper->isPublished() && $paper->isOwnerOrCoAuthor());
 
         return $isAllowed ? $paper : null;
     }
