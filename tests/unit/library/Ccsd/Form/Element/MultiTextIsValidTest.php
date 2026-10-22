@@ -4,6 +4,7 @@ namespace unit\library\Ccsd\Form\Element;
 
 use Ccsd_Form_Element_MultiTextSimple;
 use Ccsd_Form_Element_MultiTextSimpleLang;
+use Ccsd_Form_Validate_RequiredLang;
 use PHPUnit\Framework\TestCase;
 use Zend_Validate_Digits;
 use Zend_Validate_Regex;
@@ -107,6 +108,30 @@ class MultiTextIsValidTest extends TestCase
 
         self::assertFalse($element->isValid(['']));
         self::assertSame([Zend_Validate_StringLength::TOO_SHORT], array_keys($element->getMessages()));
+    }
+
+    public function testTheValidatorsOfTheWholeListStillGetAnEmptyRequiredList(): void
+    {
+        $element = new Ccsd_Form_Element_MultiTextSimpleLang('titles');
+        $element->setLanguages(['fr' => 'French']);
+        $element->setRequired(true);
+        $element->setAutoInsertNotEmptyValidator(false);
+        $element->addValidator(new Zend_Validate_StringLength(['min' => 5]));
+
+        self::assertFalse($element->isValid([]));
+        self::assertSame([Zend_Validate_StringLength::TOO_SHORT], array_keys($element->getMessages()));
+    }
+
+    public function testRequiredLangValidatesAnEmptyRequiredListAsAList(): void
+    {
+        $element = new Ccsd_Form_Element_MultiTextSimpleLang('titles');
+        $element->setLanguages(['fr' => 'French']);
+        $element->setRequired(true);
+        $element->setAutoInsertNotEmptyValidator(false);
+        $element->addValidator(new Ccsd_Form_Validate_RequiredLang(['langs' => [], 'min' => 1]));
+
+        self::assertFalse($element->isValid([]));
+        self::assertSame([Ccsd_Form_Validate_RequiredLang::TOO_SHORT], array_keys($element->getMessages()));
     }
 
     public function testCustomErrorMessagesAreReportedOnFailure(): void

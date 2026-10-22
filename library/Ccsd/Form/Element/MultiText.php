@@ -506,10 +506,11 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
 
         $this->initValidators();
 
-        // An empty list that must not be empty is validated as an empty value by every validator
-        if ($isArray && is_array($value) && empty($value)
-            && ($this->isRequired() || !$this->getAllowEmpty())
-        ) {
+        // An empty list that must not be empty is validated as an empty value by the validators
+        // of each value; the validators of the whole list (by language) still get the empty list
+        $isRequiredEmptyList = $isArray && is_array($value) && empty($value)
+            && ($this->isRequired() || !$this->getAllowEmpty());
+        if ($isRequiredEmptyList) {
             $value = '';
         }
 
@@ -545,7 +546,7 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
                 if ($validatorResult) {
                     continue;
                 }
-            } elseif ($validator->isValid($value, $context)) {
+            } elseif ($validator->isValid(($isRequiredEmptyList && !$this->_conditionValidators) ? [] : $value, $context)) {
                 continue;
             } else {
                 $result = false;
