@@ -4,10 +4,16 @@ namespace unit\scripts;
 
 use EpisciencesQueueCommand;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
+use RuntimeException;
+use stdClass;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Tester\CommandTester;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\Exception\HandlerFailedException;
+use Throwable;
 
 require_once __DIR__ . '/../../../scripts/EpisciencesQueueCommand.php';
 
@@ -83,5 +89,41 @@ class EpisciencesQueueCommandTest extends TestCase
             'Exactly one of --stats, --list-failed, --retry, --setup, --list-dispatch-failures or --retry-dispatch-failure',
             preg_replace('/\s+/', ' ', $this->commandTester->getDisplay())
         );
+    }
+
+    public function testUnwrapHandlerFailureReturnsTheErrorKeyedByHandlerName(): void
+    {
+        $handlerError = new RuntimeException('Solr is down');
+        $wrapper = new HandlerFailedException(
+            new Envelope(new stdClass()),
+            ['App\\Handler\\IndexPaperHandler::__invoke' => $handlerError]
+        );
+
+        self::assertSame($handlerError, $this->unwrapHandlerFailure($wrapper));
+    }
+
+    public function testUnwrapHandlerFailureReturnsTheFirstOfSeveralHandlerErrors(): void
+    {
+        $firstError = new RuntimeException('first');
+        $wrapper = new HandlerFailedException(
+            new Envelope(new stdClass()),
+            ['FirstHandler' => $firstError, 'SecondHandler' => new RuntimeException('second')]
+        );
+
+        self::assertSame($firstError, $this->unwrapHandlerFailure($wrapper));
+    }
+
+    public function testUnwrapHandlerFailureKeepsOtherErrors(): void
+    {
+        $error = new RuntimeException('connection refused');
+
+        self::assertSame($error, $this->unwrapHandlerFailure($error));
+    }
+
+    private function unwrapHandlerFailure(Throwable $e): Throwable
+    {
+        $method = new ReflectionMethod(EpisciencesQueueCommand::class, 'unwrapHandlerFailure');
+
+        return $method->invoke(null, $e);
     }
 }

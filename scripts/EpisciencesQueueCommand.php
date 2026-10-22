@@ -238,18 +238,28 @@ class EpisciencesQueueCommand extends Command
 
             return Command::SUCCESS;
         } catch (Throwable $e) {
-            // HandleMessageMiddleware wraps handler throwables in a
-            // HandlerFailedException — unwrap it so the real error is logged
-            // and displayed instead of the wrapper's generic message.
-            $realError = $e instanceof HandlerFailedException
-                ? ($e->getWrappedExceptions()[0] ?? $e)
-                : $e;
+            $realError = self::unwrapHandlerFailure($e);
 
             $logger->error(sprintf('episciences:queue --retry=%s failed again: %s', $id, $realError->getMessage()));
             $io->error(sprintf('Retry failed: %s', $realError->getMessage()));
 
             return Command::FAILURE;
         }
+    }
+
+    /**
+     * HandleMessageMiddleware wraps handler throwables in a
+     * HandlerFailedException — unwrap it so the real error is logged and
+     * displayed instead of the wrapper's generic message. The wrapped
+     * exceptions are keyed by handler name, not by position: take the first one.
+     */
+    private static function unwrapHandlerFailure(Throwable $e): Throwable
+    {
+        if (!$e instanceof HandlerFailedException) {
+            return $e;
+        }
+
+        return current($e->getWrappedExceptions()) ?: $e;
     }
 
     private function listDispatchFailures(TransportProfileInterface $profile, AbstractDbalEnqueueFailureStore $dispatchFailureStore, int $limit, SymfonyStyle $io): int
