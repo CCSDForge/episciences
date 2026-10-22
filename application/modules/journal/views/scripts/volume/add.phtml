@@ -8,4 +8,4 @@
     $this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
 
 echo $this->form;
-echo $this->partial('partials/modal.phtml', array('content'=>$this->metadataForm));
+echo $this->partial('partials/modal.phtml', array('form' => $this->metadataForm));

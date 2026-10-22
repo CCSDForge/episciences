@@ -9,6 +9,7 @@ use Episciences\Solr\Indexing\Client\SolariumClientFactory;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Solr\Indexing\Messenger\Handler\IndexPaperMessageHandler;
 use Episciences\Solr\Indexing\Messenger\Message\IndexPaperMessage;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,17 +22,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * docid / SQL clause / file — see library/Episciences/Solr/Indexing/ for the
  * underlying implementation.
  */
+#[AsCommand(name: 'solr:index', description: 'Enqueue (or synchronously run) Solr re-indexing for one or more papers')]
 class SolrIndexCommand extends Command
 {
     use BootstrapsSolrEnvironment;
     use ResolvesDocIdOptions;
 
-    protected static $defaultName = 'solr:index';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Enqueue (or synchronously run) Solr re-indexing for one or more papers')
             ->addOption('docid', null, InputOption::VALUE_REQUIRED, 'Index only this DOCID.')
             ->addOption('sqlwhere', null, InputOption::VALUE_REQUIRED, "SQL WHERE clause to select DOCIDs (e.g. 'STATUS = 6'). TRUSTED INPUT ONLY — passed as-is to the query.")
             ->addOption('file', null, InputOption::VALUE_REQUIRED, 'Path to a file of DOCIDs, one per line.')

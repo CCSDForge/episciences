@@ -8,6 +8,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -19,16 +20,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/getZbReviews.php (JournalScript)
  */
+#[AsCommand(name: 'enrichment:zb-reviews', description: 'Discover and store zbMATH Open reviews for published papers')]
 class GetZbReviewsCommand extends Command
 {
-    protected static $defaultName = 'enrichment:zb-reviews';
     private const ONE_MONTH = 3600 * 24 * 31;
     private const ZB_MATH_BASE_URL = 'https://zbmath.org/';
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Discover and store zbMATH Open reviews for published papers')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }
@@ -46,7 +46,7 @@ class GetZbReviewsCommand extends Command
             EPISCIENCES_LOG_PATH . 'zbReviews_' . date('Y-m-d') . '.log', Level::Info
         ));
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }

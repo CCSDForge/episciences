@@ -5,6 +5,7 @@ use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
@@ -26,10 +27,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *  - the Solr index — a reindex is queued for every modified paper unless
  *    --no-reindex is passed.
  */
+#[AsCommand(name: 'papers:clean-hal-descriptions', description: "Strip HAL's non-abstract dc:description markers from PAPERS.RECORD.")]
 class CleanHalRecordDescriptionsCommand extends Command
 {
-    protected static $defaultName = 'papers:clean-hal-descriptions';
-
     public const DEFAULT_BUFFER = 500;
 
     /** DOCIDs per delegated papers:update-document call, to keep the IN () list sane. */
@@ -38,7 +38,6 @@ class CleanHalRecordDescriptionsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription("Strip HAL's non-abstract dc:description markers from PAPERS.RECORD.")
             ->addOption('docid', null, InputOption::VALUE_REQUIRED, 'Process only this DOCID.')
             ->addOption('buffer', null, InputOption::VALUE_REQUIRED, 'Number of papers loaded per page.', self::DEFAULT_BUFFER)
             ->addOption('update-document', null, InputOption::VALUE_NONE, 'Regenerate PAPERS.DOCUMENT for modified papers by delegating to papers:update-document.')
@@ -66,7 +65,7 @@ class CleanHalRecordDescriptionsCommand extends Command
         ));
 
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }

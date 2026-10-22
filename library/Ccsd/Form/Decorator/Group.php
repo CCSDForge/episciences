@@ -13,9 +13,21 @@ class Ccsd_Form_Decorator_Group extends Zend_Form_Decorator_HtmlTag
     public $modify;
     public $delete;
     public $valid;
+    public $refresh;
     public $length;
     
     public $isBuilt = false;
+
+    /**
+     * Properties passed on to the sub-decorators: the JS function names they put in their
+     * onclick handlers (Lang: init; Multi: add, modify, delete)
+     */
+    private const SUB_DECORATOR_PROPERTIES = ['init', 'add', 'modify', 'delete'];
+
+    /**
+     * Sub-decorators receiving the language index (subIndice, also passed before, is read by none)
+     */
+    private const INDICE_DECORATORS = [Ccsd_Form_Decorator_Lang::class, Ccsd_Form_Decorator_Wrapper::class];
 
     protected $_decorators = array (
         array ('decorator' => 'HtmlTag',    'options' => array ('tag' => 'div', 'class' => 'input-group', 'style' => 'margin-bottom : 10px;', 'openOnly' => true,'placement' => Zend_Form_Decorator_Abstract::PREPEND)),           
@@ -143,25 +155,35 @@ class Ccsd_Form_Decorator_Group extends Zend_Form_Decorator_HtmlTag
 
             $d = new $class($decorator['options']);
             
-            $d->init 	= $this->init;
-            $d->add 	= $this->add;
-            $d->modify  = $this->modify;
-            $d->delete  = $this->delete;
-            $d->valid 	= $this->valid;
-            $d->refresh = $this->refresh;
-
-            if ($d instanceof Ccsd_Form_Decorator_Lang || $d instanceof Ccsd_Form_Decorator_CViewHelper) {
-                $d->indice    = $this->indice;
-                $d->subIndice = $this->subIndice;
-            } else if ($d instanceof Ccsd_Form_Decorator_Wrapper) {
-                $d->indice    = $this->indice;
+            // Only pass the JS function names and indices to the decorators that declare
+            // them: creating dynamic properties is deprecated since PHP 8.2
+            $properties = self::SUB_DECORATOR_PROPERTIES;
+            foreach (self::INDICE_DECORATORS as $indiceDecorator) {
+                if ($d instanceof $indiceDecorator) {
+                    $properties[] = 'indice';
+                    break;
+                }
             }
-            
+            foreach ($properties as $property) {
+                if (self::hasPublicProperty($d, $property)) {
+                    $d->$property = $this->$property;
+                }
+            }
+
             $d->setElement($element);
 
             $render .= @$d->render('');
         }
 
         return $content . $render;
+    }
+
+    /**
+     * property_exists() is also true for protected and private properties, which cannot be set from here
+     */
+    private static function hasPublicProperty(object $object, string $property): bool
+    {
+        return property_exists($object, $property)
+            && (new ReflectionProperty($object, $property))->isPublic();
     }
 }

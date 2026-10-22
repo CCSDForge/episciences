@@ -845,4 +845,38 @@ final class Episciences_MailTest extends TestCase
         self::assertStringNotContainsString('abc123', $details['body']);
         self::assertStringContainsString('Reset:', $details['body']);
     }
+
+    // =========================================================================
+    // getDecodedSubject()
+    // =========================================================================
+
+    public function testGetDecodedSubjectDecodesTheEncodedSubject(): void
+    {
+        // Constructor-free double: the constructor looks up the journal and the mail path
+        $mail = $this->getMockBuilder(Episciences_Mail::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSubject'])
+            ->getMock();
+        $mail->method('getSubject')->willReturn('=?UTF-8?Q?R=C3=A9vision_demand=C3=A9e?=');
+
+        self::assertSame('Révision demandée', $mail->getDecodedSubject());
+    }
+
+    public function testGetDecodedSubjectWithoutSubjectReturnsAnEmptyStringWithoutDeprecation(): void
+    {
+        $deprecations = [];
+        set_error_handler(static function (int $errno, string $errstr) use (&$deprecations): bool {
+            $deprecations[] = $errstr;
+            return true;
+        }, E_DEPRECATED);
+
+        try {
+            $subject = $this->mail->getDecodedSubject();
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame('', $subject);
+        self::assertSame([], $deprecations);
+    }
 }

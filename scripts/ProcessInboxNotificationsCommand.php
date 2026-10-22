@@ -25,6 +25,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -40,10 +41,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * @see https://notify.coar-repositories.org/patterns/request-review/
  * @see https://notify.coar-repositories.org/patterns/request-endorsement/
  */
+#[AsCommand(name: 'notify:process-inbox', description: 'Process inbound COAR Notify notifications from repository inboxes (e.g. HAL)', aliases: ['inbox:process'])]
 class ProcessInboxNotificationsCommand extends Command
 {
-    protected static $defaultName = 'notify:process-inbox';
-
     public const COAR_NOTIFY_AT_CONTEXT = [
         'https://www.w3.org/ns/activitystreams',
         'https://purl.org/coar/notify',
@@ -74,8 +74,6 @@ class ProcessInboxNotificationsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Process inbound COAR Notify notifications from repository inboxes (e.g. HAL)')
-            ->setAliases(['inbox:process'])
             ->addOption('dry-run',          null, InputOption::VALUE_NONE,     'Simulate processing without persisting changes or sending emails')
             ->addOption('delNotifs',        'd',  InputOption::VALUE_NONE,     'Delete successfully processed notifications from the inbox repository')
             ->addOption('limit',            'l',  InputOption::VALUE_REQUIRED, 'Maximum number of inbound notifications to fetch and process', NotificationsRepository::MAX_INBOUND_FETCH)
@@ -107,7 +105,7 @@ class ProcessInboxNotificationsCommand extends Command
         ));
 
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }

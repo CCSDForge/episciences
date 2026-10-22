@@ -452,7 +452,8 @@ class Episciences_Mail extends Zend_Mail
 
     public function getDecodedSubject()
     {
-        return iconv_mime_decode($this->getSubject(), 0, 'UTF-8');
+        // getSubject() is null until a subject is set
+        return iconv_mime_decode((string)$this->getSubject(), 0, 'UTF-8');
     }
 
     /**

@@ -7,6 +7,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -18,14 +19,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/getClassificationJEL.php (JournalScript)
  */
+#[AsCommand(name: 'enrichment:classifications-jel', description: 'Enrich JEL classification data from the OpenAIRE Research Graph')]
 class GetClassificationJelCommand extends Command
 {
-    protected static $defaultName = 'enrichment:classifications-jel';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Enrich JEL classification data from the OpenAIRE Research Graph')
             ->addOption('doi', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by DOI')
             ->addOption('paperid', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by paper ID')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
@@ -47,7 +46,7 @@ class GetClassificationJelCommand extends Command
             EPISCIENCES_LOG_PATH . 'jelEnrichment_' . date('Y-m-d') . '.log', Level::Info
         ));
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }

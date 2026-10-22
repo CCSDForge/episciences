@@ -7,6 +7,7 @@ use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -23,10 +24,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/importSections.php (JournalScript)
  */
+#[AsCommand(name: 'import:sections', description: 'Import journal sections from a semicolon-separated CSV file.')]
 final class ImportSectionsCommand extends Command
 {
-    protected static $defaultName = 'import:sections';
-
     private Logger $logger;
     private int $importedCount = 0;
     private int $skippedCount  = 0;
@@ -36,7 +36,6 @@ final class ImportSectionsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Import journal sections from a semicolon-separated CSV file.')
             ->addOption('csv-file', null, InputOption::VALUE_REQUIRED, 'Path to the CSV file containing sections data')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulate the import without writing to the database');
     }
@@ -62,7 +61,7 @@ final class ImportSectionsCommand extends Command
         );
         $fileHandler->setFormatter(new LineFormatter("[%datetime%] %level_name%: %message% %context%\n", null, false, true));
         $this->logger->pushHandler($fileHandler);
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $consoleHandler = new StreamHandler('php://stdout', Level::Info);
             $consoleHandler->setFormatter(new LineFormatter("%level_name%: %message%\n", null, false, false));
             $this->logger->pushHandler($consoleHandler);

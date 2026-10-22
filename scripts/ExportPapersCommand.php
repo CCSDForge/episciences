@@ -7,6 +7,7 @@ use Episciences\Paper\Import\ReviewResolver;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -28,14 +29,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Episciences\Paper\Import\ReviewResolver) — same constraint as import:papers, since RVID is a
  * process-wide PHP constant read directly by legacy code.
  */
+#[AsCommand(name: 'export:papers', description: 'Export papers to a semicolon-separated CSV file, in the same format import:papers reads.')]
 final class ExportPapersCommand extends Command
 {
-    protected static $defaultName = 'export:papers';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Export papers to a semicolon-separated CSV file, in the same format import:papers reads.')
             ->addOption('rvid', null, InputOption::VALUE_REQUIRED, 'Journal RVID (integer) or RVCODE')
             ->addOption('csv-file', null, InputOption::VALUE_REQUIRED, 'Path to write the CSV file to')
             ->addOption('volume-id', null, InputOption::VALUE_REQUIRED, 'Only export papers in this volume')
@@ -78,7 +77,7 @@ final class ExportPapersCommand extends Command
             EPISCIENCES_LOG_PATH . 'export-papers_' . date('Y-m-d') . '.log',
             Level::Debug
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

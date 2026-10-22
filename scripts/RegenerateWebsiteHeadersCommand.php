@@ -5,6 +5,7 @@ use Episciences\Journal\Provisioning\ClonableWebsiteHeader;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,10 +23,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Journals are handled without the RVID / REVIEW_PATH constants, which can only be defined once
  * per process: each journal gets its own header instance built from its code and RVID.
  */
+#[AsCommand(name: 'website:regenerate-headers', description: 'Regenerate the website header files of one journal or all journals from WEBSITE_HEADER.')]
 class RegenerateWebsiteHeadersCommand extends Command
 {
-    protected static $defaultName = 'website:regenerate-headers';
-
     /** No header file for this language: not created, since the layout shows no header today */
     public const STATUS_MISSING = 'missing';
     public const STATUS_UPDATED = 'updated';
@@ -38,7 +38,6 @@ class RegenerateWebsiteHeadersCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Regenerate the website header files of one journal or all journals from WEBSITE_HEADER.')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'The RV code of the journal — mutually exclusive with --all.')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Process every journal of the REVIEW table, whatever its status — mutually exclusive with --rvcode.')
             ->addOption('protocol', null, InputOption::VALUE_REQUIRED, 'Protocol of the journal URLs used for the logo images (https or http).', 'https')
@@ -79,7 +78,7 @@ class RegenerateWebsiteHeadersCommand extends Command
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'websiteHeaders_' . date('Y-m-d') . '.log', Level::Info
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

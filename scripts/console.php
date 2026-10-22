@@ -63,85 +63,85 @@ use Symfony\Component\Console\Application;
 $application = new Application('Episciences CLI', '1.0.0');
 
 // Register commands
-$application->add(new GenerateUsersCommand());
-$application->add(new InitDevUsersCommand());
-$application->add(new CreateBotUserCommand());
-$application->add(new AnonymizeSuLogsCommand());
+$application->addCommand(new GenerateUsersCommand());
+$application->addCommand(new InitDevUsersCommand());
+$application->addCommand(new CreateBotUserCommand());
+$application->addCommand(new AnonymizeSuLogsCommand());
 
 // Enrichment commands
-$application->add(new ExtractBiblioRefsCommand());
-$application->add(new GetCitationsDataCommand());
-$application->add(new GetCreatorDataCommand());
-$application->add(new GetLicenceDataCommand());
-$application->add(new GetLinkDataCommand());
-$application->add(new GetFundingDataCommand());
-$application->add(new GetClassificationJelCommand());
-$application->add(new ClearOpenAireCacheCommand());
-$application->add(new GetClassificationMscCommand());
-$application->add(new GetZbReviewsCommand());
+$application->addCommand(new ExtractBiblioRefsCommand());
+$application->addCommand(new GetCitationsDataCommand());
+$application->addCommand(new GetCreatorDataCommand());
+$application->addCommand(new GetLicenceDataCommand());
+$application->addCommand(new GetLinkDataCommand());
+$application->addCommand(new GetFundingDataCommand());
+$application->addCommand(new GetClassificationJelCommand());
+$application->addCommand(new ClearOpenAireCacheCommand());
+$application->addCommand(new GetClassificationMscCommand());
+$application->addCommand(new GetZbReviewsCommand());
 
 // Sitemap commands
-$application->add(new GenerateSitemapCommand());
-$application->add(new RegenerateWebsiteHeadersCommand());
+$application->addCommand(new GenerateSitemapCommand());
+$application->addCommand(new RegenerateWebsiteHeadersCommand());
 
 // Volume commands
-$application->add(new MergePdfVolCommand());
+$application->addCommand(new MergePdfVolCommand());
 
 // DOAJ commands
-$application->add(new CreateDoajVolumeExportsCommand());
-$application->add(new CheckDoajJournalsCommand());
+$application->addCommand(new CreateDoajVolumeExportsCommand());
+$application->addCommand(new CheckDoajJournalsCommand());
 
 // zbJATS commands
-$application->add(new ZbjatsZipperCommand());
+$application->addCommand(new ZbjatsZipperCommand());
 
 // Import commands
-$application->add(new ImportSectionsCommand());
-$application->add(new ImportVolumesCommand());
-$application->add(new ImportPapersCommand());
-$application->add(new ExportPapersCommand());
-$application->add(new ImportRefPpsCommand());
-$application->add(new DownloadRefPpsCommand());
+$application->addCommand(new ImportSectionsCommand());
+$application->addCommand(new ImportVolumesCommand());
+$application->addCommand(new ImportPapersCommand());
+$application->addCommand(new ExportPapersCommand());
+$application->addCommand(new ImportRefPpsCommand());
+$application->addCommand(new DownloadRefPpsCommand());
 
 // Stats commands
-$application->add(new UpdateCounterRobotsListCommand());
-$application->add(new ImportApacheLogsCommand());
-$application->add(new ProcessStatTempCommand());
-$application->add(new GenerateDownloadKpiCommand());
+$application->addCommand(new UpdateCounterRobotsListCommand());
+$application->addCommand(new ImportApacheLogsCommand());
+$application->addCommand(new ProcessStatTempCommand());
+$application->addCommand(new GenerateDownloadKpiCommand());
 
 // DOI commands
-$application->add(new GetDoiCommand());
+$application->addCommand(new GetDoiCommand());
 
 // User commands
-$application->add(new NormalizeUserAffiliationsCommand());
+$application->addCommand(new NormalizeUserAffiliationsCommand());
 
 // GeoIP commands
-$application->add(new UpdateGeoIpCommand());
+$application->addCommand(new UpdateGeoIpCommand());
 
 // Papers commands
-$application->add(new UpdatePapersDocumentCommand());
-$application->add(new UpdateLicensesCommand());
-$application->add(new ImportSpdxLicenseListCommand());
-$application->add(new CleanHalRecordDescriptionsCommand());
+$application->addCommand(new UpdatePapersDocumentCommand());
+$application->addCommand(new UpdateLicensesCommand());
+$application->addCommand(new ImportSpdxLicenseListCommand());
+$application->addCommand(new CleanHalRecordDescriptionsCommand());
 
 // Translation commands
-$application->add(new UpdateTranslationsCommand());
+$application->addCommand(new UpdateTranslationsCommand());
 
 // Solr indexing commands
-$application->add(new SolrIndexCommand());
-$application->add(new SolrDeleteCommand());
+$application->addCommand(new SolrIndexCommand());
+$application->addCommand(new SolrDeleteCommand());
 
 // Messenger queue commands (Solr indexing, Next.js revalidation)
-$application->add(new EpisciencesWorkerCommand());
-$application->add(new EpisciencesQueueCommand());
+$application->addCommand(new EpisciencesWorkerCommand());
+$application->addCommand(new EpisciencesQueueCommand());
 
 // Next.js cache revalidation commands
-$application->add(new RevalidateNextCacheCommand());
+$application->addCommand(new RevalidateNextCacheCommand());
 
 // COAR Notify inbox processing command
-$application->add(new ProcessInboxNotificationsCommand());
+$application->addCommand(new ProcessInboxNotificationsCommand());
 
 // Journal provisioning commands
-$application->add(new CreateJournalCommand());
-$application->add(new SeedJournalDemoCommand());
+$application->addCommand(new CreateJournalCommand());
+$application->addCommand(new SeedJournalDemoCommand());
 
 $application->run();

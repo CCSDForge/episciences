@@ -9,6 +9,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -20,16 +21,14 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/getDoi.php (JournalScript)
  */
+#[AsCommand(name: 'doi:manage', description: 'Manage DOI lifecycle: assign, submit to Crossref, check submission status, update metadata')]
 class GetDoiCommand extends Command
 {
-    protected static $defaultName = 'doi:manage';
-
     private const MAX_WITHOUT_CONFIRM = 20;
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Manage DOI lifecycle: assign, submit to Crossref, check submission status, update metadata')
             ->addOption('rvcode',           null, InputOption::VALUE_REQUIRED, 'Journal RV code')
             ->addOption('rvid',             null, InputOption::VALUE_REQUIRED, 'Journal RVID (integer)')
             ->addOption('paperid',          null, InputOption::VALUE_REQUIRED, 'Restrict --update to a single paper ID')
@@ -59,7 +58,7 @@ class GetDoiCommand extends Command
         // log lines mid-bar-redraw, since the bar overwrites its line with a bare carriage
         // return, not a fresh newline.
         $stdoutHandler = null;
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }

@@ -4,7 +4,12 @@ class Ccsd_Form_Decorator_Multi extends Zend_Form_Decorator_HtmlTag
 {
 
     public $values = array();
-    
+
+    // JS function names, set by Ccsd_Form_Decorator_Group
+    public $add;
+    public $modify;
+    public $delete;
+
     public function render($content)
     {
         $element = $this->getElement();

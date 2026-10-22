@@ -28,7 +28,9 @@ final class NextRevalidationTransport
     private const RETRY_MAX_RETRIES = 4;
     private const RETRY_DELAY_MS = 1_000;
     private const RETRY_MULTIPLIER = 4.0;
-    private const RETRY_MAX_DELAY_MS = 60_000; // 1s -> 4s -> 16s -> 60s, dead-letter at ~81s
+    // 1s -> 4s -> 16s -> 60s, dead-letter at ~81s. Messenger applies a
+    // +/-10% jitter to each delay (MultiplierRetryStrategy default since Symfony 7.1).
+    private const RETRY_MAX_DELAY_MS = 60_000;
 
     public static function config(): TransportConfig
     {

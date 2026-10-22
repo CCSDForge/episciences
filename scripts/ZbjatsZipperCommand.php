@@ -7,6 +7,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -27,10 +28,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/zbjatsZipper.php (JournalScript)
  */
+#[AsCommand(name: 'zbjats:zip', description: 'Download PDF + zbJATS XML per volume and package them into a ZIP archive.')]
 class ZbjatsZipperCommand extends Command
 {
-    protected static $defaultName = 'zbjats:zip';
-
     private const PDF_CACHE_TTL_SECONDS = 3600 * 24 * 365;
     private const XML_CACHE_TTL_SECONDS = 3600 * 24 * 30;
 
@@ -47,7 +47,6 @@ class ZbjatsZipperCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Download PDF + zbJATS XML per volume and package them into a ZIP archive.')
             ->addOption('rvid', null, InputOption::VALUE_REQUIRED, 'RVID (integer) or comma-separated list of RVIDs to process')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'RV code (string) or comma-separated list of RV codes to process')
             ->addOption('config', null, InputOption::VALUE_REQUIRED, 'Path to INI file containing journal list (default: scripts/zbjats/journals.ini)')
@@ -122,7 +121,7 @@ class ZbjatsZipperCommand extends Command
         $this->logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'zbjatsZipper_' . date('Y-m-d') . '.log', Level::Debug
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

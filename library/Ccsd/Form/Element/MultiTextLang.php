@@ -242,10 +242,7 @@ abstract class Ccsd_Form_Element_MultiTextLang extends Ccsd_Form_Element_MultiTe
     public function initValidators ()
     {
         if (!$this->isPluriValues() && !$this->getPluginLoader('validate')->isLoaded(self::VALIDATOR_NOT_SAME)) {
-            $validators = $this->getValidators();
-            $notSame   = array('validator' => 'NotSame', 'breakChainOnFailure' => false);
-            array_unshift($validators, $notSame);
-            $this->setValidators($validators);
+            $this->prependValidator(array('validator' => 'NotSame', 'breakChainOnFailure' => false));
         }
     }
 

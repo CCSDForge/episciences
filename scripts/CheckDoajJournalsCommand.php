@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -10,16 +11,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Symfony Console command: check journals presence in DOAJ by ISSN.
  */
+#[AsCommand(name: 'doaj:check-journals', description: 'Display the list of journals present in DOAJ by querying DOAJ API with ISSNs from database.')]
 class CheckDoajJournalsCommand extends Command
 {
-    protected static $defaultName = 'doaj:check-journals';
-
-    protected function configure(): void
-    {
-        $this
-            ->setDescription('Display the list of journals present in DOAJ by querying DOAJ API with ISSNs from database.');
-    }
-
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->bootstrap();

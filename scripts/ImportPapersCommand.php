@@ -9,6 +9,7 @@ use Episciences\Paper\Import\VolumeSectionResolver;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -35,10 +36,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/update_papers.php (JournalScript, interactive)
  */
+#[AsCommand(name: 'import:papers', description: 'Import or update papers from a semicolon-separated CSV file.')]
 final class ImportPapersCommand extends Command
 {
-    protected static $defaultName = 'import:papers';
-
     private Logger $logger;
     private int $importedCount = 0;
     private int $updatedCount = 0;
@@ -49,7 +49,6 @@ final class ImportPapersCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Import or update papers from a semicolon-separated CSV file.')
             ->addOption('csv-file', null, InputOption::VALUE_REQUIRED, 'Path to the CSV file containing papers data')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulate the import without writing to the database');
     }
@@ -73,7 +72,7 @@ final class ImportPapersCommand extends Command
             EPISCIENCES_LOG_PATH . 'import-papers_' . date('Y-m-d') . '.log',
             Level::Debug
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

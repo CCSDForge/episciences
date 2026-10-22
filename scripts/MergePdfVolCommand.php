@@ -7,6 +7,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -18,9 +19,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/mergePdfVol.php (JournalScript)
  */
+#[AsCommand(name: 'volume:merge-pdf', description: 'Merge PDFs for all volumes of one or all journals (requires pdfunite).')]
 class MergePdfVolCommand extends Command
 {
-    protected static $defaultName = 'volume:merge-pdf';
     public const APICALLVOL = 'volumes?page=1&itemsPerPage=1000&rvcode=';
 
     private Logger $logger;
@@ -28,7 +29,6 @@ class MergePdfVolCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Merge PDFs for all volumes of one or all journals (requires pdfunite).')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Journal RV code, or "allJournals"')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulate without downloading or merging PDFs')
             ->addOption('ignore-cache', null, InputOption::VALUE_NONE, 'Bypass cache and force re-merge')
@@ -55,7 +55,7 @@ class MergePdfVolCommand extends Command
         $this->logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'mergePdfVol_' . date('Y-m-d') . '.log', Level::Info
         ));
-        if (!$io->isQuiet()) {
+        if (!$io->isQuiet() && !$io->isSilent()) {
             $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 

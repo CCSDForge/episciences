@@ -6,8 +6,6 @@
 abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi implements Ccsd_Form_Interface_Javascript
 {
     use Ccsd_Form_Trait_ImplementFunctionJS;
-    public $pathDir = __DIR__ ;
-    public $relPublicDirPath = "../../../public"; 
 	
     const DISPLAY_ADVANCED = 'advanced';
     const DISPLAY_SIMPLE   = 'simple';
@@ -404,6 +402,22 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
     }
 
     /**
+     * Put a validator first in the validation chain
+     *
+     * Unlike setValidators(), which resets them through clearValidators(), this keeps the
+     * breakChainOnFailure flag of the validators already in the chain.
+     *
+     * @param array{validator: string, breakChainOnFailure: bool} $validator
+     */
+    protected function prependValidator(array $validator): void
+    {
+        $validators = $this->getValidators();
+        array_unshift($validators, $validator);
+        $this->_validators = [];
+        $this->addValidators($validators);
+    }
+
+    /**
      * @param $validator
      */
     public function setConditionValidators ($validator)
@@ -440,12 +454,17 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
     }
 
     /**
-     * @param string $value
+     * @param string|array<int|string, mixed> $value
      * @param null $context
      * @return bool
      */
     public function isValid($value, $context = null)
     {
+        // Errors of a previous validation must not be reported for this value
+        $this->_messages    = array();
+        $this->_errors      = array();
+        $this->_grouperrors = array();
+
         $this->setValue($value);
         $value = $this->getValue();
 
@@ -482,17 +501,20 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
                 return false;
             }
 
-            $validators = $this->getValidators();
-            $notEmpty   = array('validator' => 'NotEmpty', 'breakChainOnFailure' => false);
-            array_unshift($validators, $notEmpty);
-            $this->setValidators($validators);
+            $this->prependValidator(array('validator' => 'NotEmpty', 'breakChainOnFailure' => false));
         }
 
         $this->initValidators();
 
-        $this->_messages = array();
-        $this->_errors   = array();
-        $result          = true;
+        // An empty list that must not be empty is validated as an empty value by the validators
+        // of each value; the validators of the whole list (by language) still get the empty list
+        $isRequiredEmptyList = $isArray && is_array($value) && empty($value)
+            && ($this->isRequired() || !$this->getAllowEmpty());
+        if ($isRequiredEmptyList) {
+            $value = '';
+        }
+
+        $result = true;
         /** @var Zend_Validate_Interface  $validator */
         foreach ($this->getValidators() as $key => $validator) {
             if (method_exists($validator, 'setTranslator')) {
@@ -515,22 +537,16 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
                 $messages   = array();
                 $errors   = array();
 
-                if (empty($value)) {
-                    if ($this->isRequired()
-                        || (!$this->isRequired() && !$this->getAllowEmpty())
-                    ) {
-                        $value = '';
-                    }
-                }
-
+                // Result of this validator only: a previous failure must not make it break the chain
+                $validatorResult = true;
                 if (!empty($value)) {
-                    $this->execValidators ($validator, $result, $messages, $errors, $value, $context);
+                    $this->execValidators ($validator, $validatorResult, $messages, $errors, $value, $context);
                 }
 
-                if ($result) {
+                if ($validatorResult) {
                     continue;
                 }
-            } elseif ($validator->isValid($value, $context)) {
+            } elseif ($validator->isValid(($isRequiredEmptyList && !$this->_conditionValidators) ? [] : $value, $context)) {
                 continue;
             } else {
                 $result = false;
@@ -545,19 +561,22 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
 
             $result = false;
 
-            // À refaire proprement
+            // Messages indexed by value position are flattened and their errors reported for the
+            // whole group; the others (by language, by message key) are merged under their key so
+            // that the messages of the previous validators are kept
+            $groupValidate = !$this->_conditionValidators;
             foreach ($messages as $messkey => $message) {
                 if (is_numeric($messkey)) {
-                    $this->_messages = array_merge($this->_messages, $message);
-                    $this->_conditionValidators = false;
+                    $this->_messages = array_merge($this->_messages, (array) $message);
+                    $groupValidate = true;
                 } else {
-                    $this->_messages = array_merge($this->_messages, $messages);
+                    $this->_messages = array_replace_recursive($this->_messages, [$messkey => $message]);
                 }
             }
 
-            $this->errors ($errors, !$this->_conditionValidators);
+            $this->errors ($errors, $groupValidate);
 
-            if ($this->zfBreakChainOnFailure) {
+            if ($this->_validatorBreakChainOnFailures[$key] ?? false) {
                 break;
             }
         }
@@ -568,5 +587,31 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
         }
 
         return $result;
+    }
+
+    /**
+     * Custom error messages: the values of a multi-value language (keywords) are arrays,
+     * which the parent would cast to the string "Array"
+     *
+     * @return array<int|string, string>
+     */
+    protected function _getErrorMessages()
+    {
+        if (!is_array($this->_value)) {
+            return parent::_getErrorMessages();
+        }
+
+        $value = $this->_value;
+        $flatValues = [];
+        array_walk_recursive($value, static function ($v) use (&$flatValues) {
+            $flatValues[] = $v;
+        });
+
+        $this->_value = $flatValues;
+        try {
+            return parent::_getErrorMessages();
+        } finally {
+            $this->_value = $value;
+        }
     }
 }

@@ -32,6 +32,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `enrichment:creators -v` lists the author corrections made from HAL TEI; with `--dry-run` it lists them without writing anything.
 
 ### Fixed
+- [#1298](https://github.com/CCSDForge/episciences/pull/1298): new versions received through the inbox (COAR Notify) of an imported paper are no longer saved as imported either (`ProcessInboxNotificationsCommand::saveNewVersion()`).
+- `episciences:queue --retry` shows the error of the message handler again when the retried message fails, instead of the generic Messenger message.
+- The "Add a file (Foreword, Erratum, Addendum, ...)" dialog of the volume creation and edition pages is no longer empty.
+- The dialogs of the paper page and of the mail templates page are displayed at half the page width again.
+- Multi-value, date, referential and thesaurus form fields no longer carry the internal `pathDir` and `relPublicDirPath` properties as HTML attributes.
+- Multi-value and date form fields no longer raise PHP deprecations when rendered: their decorators now declare the JavaScript function names and indices they receive ("Creation of dynamic property", PHP 8.2+), and a date field without CSS class no longer passes null to `strpos()`.
+- Decoding the subject of a mail without subject no longer raises a PHP deprecation.
+- Multi-value form fields now stop validating at a validator set to break the chain on failure, instead of always running every validator, including on required and multilingual fields; a validator that succeeds no longer stops the chain because an earlier one failed.
+- Multi-value form fields now validate each value again after a first failure (they used to validate the whole list at once, reporting a wrong "invalid type" error, until the end of the request), keep the messages of every failing validator of a language, no longer report the errors of a previous validation, and no longer fail with a TypeError or show "Array" when they have custom error messages; an empty required field is now validated as empty by every validator.
 - HAL affiliations no longer keep the ROR of another affiliation of the same author, a defect left in the data by a former enrichment bug: `enrichment:creators` now realigns such a ROR on the HAL TEI (or removes it when the HAL structure has none), while a ROR set manually is kept.
 - `enrichment:creators --dry-run` no longer creates missing author records.
 - A BAOBAB submission by the ARK of a version other than the latest one no longer fails with "identifier does not exist": the ARK is now searched across all the versions of the records.
@@ -95,6 +104,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Deployment**, before deploying the code on every environment: apply `src/mysql/2026-10-16-user_invitation_token.sql`
   and set `REVIEWER_INVITATION.HMAC_SECRET` in `config/pwd.json` (e.g. `openssl rand -hex 32`); without it, new
   invitations are sent without a key (former links) and a warning is logged.
+- The application now requires PHP 8.3: the Composer constraint, the Docker image and the continuous
+  integration use PHP 8.3, the properties that were created dynamically (deprecated since PHP 8.2)
+  are now declared, and the PHP 8.2 and 8.3 polyfills are no longer direct dependencies.
+- Symfony components upgraded from 6.4 to 7.4 (LTS): console commands declare their name and
+  description with the `#[AsCommand]` attribute instead of the `$defaultName` property, which
+  Symfony 7 no longer reads, and are registered with `Application::addCommand()`. The new global
+  `--silent` option of the console commands also stops the log lines written to the standard output,
+  like `--quiet`. Messenger now randomises each retry delay of the `solr_index` and
+  `next_revalidation` queues by ±10%.
 
 ### Added
 - [#893](https://github.com/CCSDForge/episciences/issues/893) Allow users to select and normalize the licence of a paper using SPDX identifiers.
@@ -239,9 +257,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update dependencies.
 - [#1205](https://github.com/CCSDForge/episciences/pull/1205) Store the board role labels (`editorial_board`, `technical_board`, ..., `former_member`) as plain text in `views.php`, like in `js.php`; the tag icon is now added by `Episciences_Acl::getRoleLabelHtml()` in the role badges (user lists, contacts, mailing lists, permissions, role editing), which also escapes the label. The users-by-role chart on the stats page no longer strips HTML from the labels.
 
+## v1.0.57.1 - 2026-10-22
+
 ### Fixed
 
 - Fix a fatal error during bootstrap (`TypeError` from `Episciences_Auth::getRoles()`) when the roles of the logged-in user cached in the session had been loaded for another journal: the user now falls back to the member role (`Episciences_Auth::getRoles()`).
+- [#1298](https://github.com/CCSDForge/episciences/pull/1298): Fix new and temporary versions of an imported paper being saved as imported: the version is cloned from the previous one and kept its `FLAG`, which is now reset to `submitted` (`PaperController::initializeNewPaper()`, `PaperController::savetmpversionAction()`).
+- Fix `Episciences_Paper::isImported()` comparing the publication date with a missing acceptance date: the check is skipped when no acceptance date is known.
 
 ## v1.0.57 - 2026-10-21
 
@@ -291,7 +313,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [RT#294893]:
 - Updating an existing assignment no longer resets its date (`WHEN`).
 
-- [#1298](https://github.com/CCSDForge/episciences/pull/1298): Fix new and temporary versions of an imported paper being saved as imported: the version is cloned from the previous one and kept its `FLAG`, which is now reset to `submitted` (`PaperController::initializeNewPaper()`, `PaperController::savetmpversionAction()`, `ProcessInboxNotificationsCommand::saveNewVersion()`).
 - Fix editor-to-author message notifications being lost or reported as sent when they were not: a plain exception while notifying another assigned editor no longer skips the author email, the author send result is checked, and the editor is warned when a notification could not be queued (`PaperDefaultController::newCommentNotifyManager()`, `AuthorEditorCommunicationControllerTrait`).
 - Fix paper status/revision emails sent from modals being logged as `CODE_MAIL_SENT` in the paper history even when `writeMail()` failed (`PaperDefaultController::sendMailFromModal()`).
 - Fix submission acknowledgment never reaching the author (and co-authors) when no editorial committee member is left to notify, e.g. a chief editor submitting to their own journal (`Episciences_Submit::sendNotifications()`, regression from v1.0.54).
