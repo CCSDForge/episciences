@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Security
-- Co-author form of the paper management page: hardened checks.
+- Co-author form and co-author removal of the paper management page: hardened checks.
 
 ### Fixed
 
