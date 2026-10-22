@@ -7,8 +7,8 @@
 // Successfully uploaded files are tracked with a hidden "attachments[]" input per file, appended
 // to the widget, so the final form submit (e.g. AdministratemailController, copy-editing reply)
 // still lists them exactly like the previous jQuery File Upload widget did. Any "submit"/
-// "submit-modal" button in the same form is disabled while a file is uploading or in error,
-// exactly as the previous widget did.
+// "submit-modal" button, or copy-editing "ce_reply_<pcId>" send button, in the same form is
+// disabled while a file is uploading or in error.
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initUploadWidgets);
@@ -71,7 +71,9 @@ function buildRequestBody(context, extra) {
 
 function setSubmitButtonsDisabled(widget, disabled) {
     const form = widget.closest('form') || document;
-    form.querySelectorAll('button[id^="submit"]').forEach(button => {
+    form.querySelectorAll(
+        'button[id^="submit"], button[id^="ce_reply_"]'
+    ).forEach(button => {
         button.disabled = disabled;
     });
 }
@@ -238,4 +240,8 @@ function untrackAttachedFile(widget, filename) {
     if (hidden) {
         hidden.remove();
     }
+}
+
+if (typeof module !== 'undefined') {
+    module.exports = { setSubmitButtonsDisabled };
 }
