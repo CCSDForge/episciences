@@ -36,9 +36,9 @@ BRANCH="$1"
 log "Starting deployment of: $BRANCH"
 
 # Detect PHP binary
-if test -f "/usr/bin/php8.1"; then
-    PHP_BIN="/usr/bin/php8.1"
-    log "Using PHP 8.1: $PHP_BIN"
+if test -f "/usr/bin/php8.3"; then
+    PHP_BIN="/usr/bin/php8.3"
+    log "Using PHP : $PHP_BIN"
 elif test -f "/usr/bin/php"; then
     PHP_BIN="/usr/bin/php"
     log "Using system PHP: $PHP_BIN"
@@ -93,29 +93,29 @@ else
         log_error "Failed to checkout branch: $BRANCH"
         exit 1
     fi
-    
+
     log "Checking for local modifications..."
     if ! git diff-index --quiet HEAD --; then
         log_warning "Local modifications detected. Stashing changes before pull..."
-        
+
         # Stash local changes
         if ! git stash push -m "Auto-stash by deployment script $(date)"; then
             log_error "Failed to stash local changes"
             exit 1
         fi
-        
+
         STASHED_CHANGES=true
         log "Local changes stashed successfully"
     else
         STASHED_CHANGES=false
     fi
-    
+
     log "Pulling latest changes for branch: $BRANCH"
     if ! git pull; then
         log_error "Failed to pull latest changes"
         exit 1
     fi
-    
+
     # For production deployments, we keep stashed changes but don't restore them
     if [ "$STASHED_CHANGES" = true ]; then
         log "Local changes have been stashed for deployment cleanliness"
@@ -182,14 +182,14 @@ else
             log_error "yarn install failed"
             exit 1
         fi
-        
+
         # Check if yarn.lock was modified
         if [ -f "yarn.lock" ] && [ -n "$YARN_LOCK_BEFORE" ]; then
             YARN_LOCK_AFTER=$(md5sum yarn.lock 2>/dev/null || echo "")
             if [ "$YARN_LOCK_BEFORE" != "$YARN_LOCK_AFTER" ]; then
                 log_warning "yarn.lock was modified during install"
                 log "Consider updating yarn.lock in your source branch"
-                
+
                 # Show what changed
                 if git diff --name-only | grep -q "yarn.lock"; then
                     log "Changes in yarn.lock:"
