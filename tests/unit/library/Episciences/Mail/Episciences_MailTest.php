@@ -852,8 +852,12 @@ final class Episciences_MailTest extends TestCase
 
     public function testGetDecodedSubjectDecodesTheEncodedSubject(): void
     {
-        $mail = new Episciences_Mail('UTF-8');
-        $mail->setSubject('Révision demandée');
+        // Constructor-free double: the constructor looks up the journal and the mail path
+        $mail = $this->getMockBuilder(Episciences_Mail::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSubject'])
+            ->getMock();
+        $mail->method('getSubject')->willReturn('=?UTF-8?Q?R=C3=A9vision_demand=C3=A9e?=');
 
         self::assertSame('Révision demandée', $mail->getDecodedSubject());
     }
@@ -867,7 +871,7 @@ final class Episciences_MailTest extends TestCase
         }, E_DEPRECATED);
 
         try {
-            $subject = (new Episciences_Mail('UTF-8'))->getDecodedSubject();
+            $subject = $this->mail->getDecodedSubject();
         } finally {
             restore_error_handler();
         }
