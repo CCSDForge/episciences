@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Activation des filtres sur les facettes (vanilla JS, remplace jquery.fastLiveFilter.js).
-    // La liste associée est retrouvée par nom de champ (id "<field>-facet-input" ->
-    // class "<field>-facet-list") plutôt que par position dans le DOM, l'input n'étant
-    // pas le frère immédiat du <ul> (il est suivi d'un <div class="facet-content">).
+    // Facet filters (vanilla JS, replaces jquery.fastLiveFilter.js).
+    // The matching list is found by field name (id "<field>-facet-input" ->
+    // class "<field>-facet-list") rather than by DOM position, as the input is not
+    // the <ul>'s immediate sibling (a <div class="facet-content"> comes in between).
     document
         .querySelectorAll('input[id$="-facet-input"]')
         .forEach(function (input) {

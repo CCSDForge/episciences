@@ -2,6 +2,8 @@
 
 const {
     setSubmitButtonsDisabled,
+    getFileExtension,
+    getUploadErrorMessages,
 } = require('../../../public/js/library/es.filepond');
 
 function buildForm(buttonIds) {
@@ -65,4 +67,75 @@ describe('setSubmitButtonsDisabled', () => {
 
         expect(other.form.querySelector('#ce_reply_2').disabled).toBe(false);
     });
+});
+
+describe('setSubmitButtonsDisabled in a modal', () => {
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    test('disables the modal footer button, outside the form', () => {
+        document.body.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-body">
+                    <form><div class="upload_widget"></div></form>
+                </div>
+                <div class="modal-footer">
+                    <button id="submit-modal-minor-revision"></button>
+                </div>
+            </div>
+            <button id="submit-modal-other"></button>`;
+
+        setSubmitButtonsDisabled(
+            document.querySelector('.upload_widget'),
+            true
+        );
+
+        expect(
+            document.querySelector('#submit-modal-minor-revision').disabled
+        ).toBe(true);
+        expect(document.querySelector('#submit-modal-other').disabled).toBe(
+            false
+        );
+    });
+});
+
+describe('getFileExtension', () => {
+    test.each([
+        ['article.PDF', '.pdf'],
+        ['sources.tar.gz', '.gz'],
+        ['refs.bib', '.bib'],
+        ['README', ''],
+        ['.hidden', ''],
+    ])('%s -> "%s"', (filename, expected) => {
+        expect(getFileExtension(filename)).toBe(expected);
+    });
+});
+
+describe('getUploadErrorMessages', () => {
+    test('keeps an exception message as a whole', () => {
+        expect(getUploadErrorMessages('Disk full')).toEqual(['Disk full']);
+    });
+
+    test('lists validator messages', () => {
+        expect(
+            getUploadErrorMessages({
+                fileExtensionFalse: 'Bad extension',
+                fileMimeTypeFalse: 'Bad type',
+            })
+        ).toEqual(['Bad extension', 'Bad type']);
+    });
+
+    test('flattens nested messages', () => {
+        expect(getUploadErrorMessages([['Too big']])).toEqual(['Too big']);
+    });
+
+    test.each([[undefined], [''], [{}], [[]]])(
+        'falls back to a generic message for %p',
+        messages => {
+            expect(getUploadErrorMessages(messages)).toEqual([
+                'Erreur inconnue.',
+            ]);
+        }
+    );
 });

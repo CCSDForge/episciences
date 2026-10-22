@@ -43,46 +43,53 @@ $(function () {
     });
 
     function deleteAllAttachedFiles() {
-        let $ceHiddenPath = $('#attachments_path_type_' + paperCommentId);
+        const replyForm = document.getElementById(
+            'replyForm_' + paperCommentId
+        );
+        if (!replyForm) {
+            return;
+        }
 
-        let context = {
+        const ceHiddenPath = document.getElementById(
+            'attachments_path_type_' + paperCommentId
+        );
+
+        const context = {
             pcId: paperCommentId,
-            path: $ceHiddenPath.length > 0 ? $ceHiddenPath.val() : '',
-            docId: $ceHiddenPath.length > 0 ? $ceHiddenPath.attr('docId') : 0,
+            path: ceHiddenPath ? ceHiddenPath.value : '',
+            docId: ceHiddenPath ? ceHiddenPath.getAttribute('docId') : 0,
         };
 
-        let csrfMeta = document.querySelector('meta[name="csrf-token"]');
-        let csrfToken = csrfMeta ? csrfMeta.content : '';
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfMeta ? csrfMeta.content : '';
 
-        $('#replyForm_' + paperCommentId)
-            .find('.upload_filename')
-            .each(function (index, hiddenInput) {
-                let body = new URLSearchParams({
-                    ...context,
-                    file: hiddenInput.value,
-                });
-
-                fetch('/file/delete', {
-                    method: 'POST',
-                    headers: { 'X-CSRF-Token': csrfToken },
-                    body,
-                }).then(response => {
-                    // fetch() only rejects on network failure, not on HTTP error status
-                    // (403 CSRF failure, 500, ...) — only drop the tracking element once the
-                    // server has actually confirmed the deletion.
-                    if (response.ok) {
-                        hiddenInput.remove();
-                    } else {
-                        console.log(
-                            'file delete failed: ' +
-                                hiddenInput.value +
-                                ' (' +
-                                response.status +
-                                ')'
-                        );
-                    }
-                });
+        replyForm.querySelectorAll('.upload_filename').forEach(hiddenInput => {
+            const body = new URLSearchParams({
+                ...context,
+                file: hiddenInput.value,
             });
+
+            fetch('/file/delete', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': csrfToken },
+                body,
+            }).then(response => {
+                // fetch() only rejects on network failure, not on HTTP error status
+                // (403 CSRF failure, 500, ...) — only drop the tracking element once the
+                // server has actually confirmed the deletion.
+                if (response.ok) {
+                    hiddenInput.remove();
+                } else {
+                    console.log(
+                        'file delete failed: ' +
+                            hiddenInput.value +
+                            ' (' +
+                            response.status +
+                            ')'
+                    );
+                }
+            });
+        });
     }
 
     $(window).on('unload', function () {

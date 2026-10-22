@@ -1,4 +1,5 @@
 const Encore = require('@symfony/webpack-encore');
+const webpack = require('webpack');
 
 // Manually configure the runtime environment if not already configured yet by the "encore" command.
 // It's useful when you use tools that rely on webpack.config.js file.
@@ -31,10 +32,10 @@ Encore
     .addEntry('altcha', './assets/altcha.js')
     .addEntry('filepond', './assets/filepond.js')
     .addEntry('toast', './assets/toast.js')
-    // jQuery / jQuery UI: self-hosted via webpack but loaded as plain global <script> tags through
-    // VENDOR_JQUERY / VENDOR_JQUERY_UI (see public/const.php and layout.phtml), not queued via
-    // webpackAssets()->queueScript(). Each sets/uses window.jQuery so non-bundled inline scripts and
-    // ZendX_JQuery_Form_Element widgets keep working against one shared instance — see
+    // jQuery / jQuery UI: self-hosted via webpack and emitted ahead of every page script by
+    // Episciences_View_Helper_JQuery_Container::_renderScriptTags() (from entrypoints.json), not
+    // queued via webpackAssets()->queueScript(). Each sets/uses window.jQuery so non-bundled inline
+    // scripts and ZendX_JQuery_Form_Element widgets keep working against one shared instance — see
     // addExternals() below and assets/jquery.js / assets/jquery-ui.js.
     .addEntry('jquery', './assets/jquery.js')
     .addEntry('jquery-ui', './assets/jquery-ui.js')
@@ -54,8 +55,8 @@ Encore
     // /skin siblings at runtime via plain string concatenation off its own script URL, so it must be
     // copied as-is rather than tree-shaken through webpack's module graph. Only the pieces actually
     // used (theme "silver", model "dom", icons "default", skin "oxide", plugins "link image code
-    // fullscreen table" — see Ccsd_Form_Decorator_FormTinymce / FormControls and
-    // public/js/tinymce/tinymce_patch.js) are copied, keeping the same on-disk layout TinyMCE expects
+    // fullscreen table lists visualblocks" — see Ccsd_Form_Decorator_FormTinymce / FormControls,
+    // public/js/tinymce/tinymce_patch.js, paper/rating.phtml and page/render.phtml) are copied, keeping the same on-disk layout TinyMCE expects
     // relative to tinymce.min.js. None of the "to" patterns use [hash] so filenames stay literal —
     // TinyMCE's own loader doesn't consult entrypoints.json/manifest.json to resolve them.
     .copyFiles({
@@ -94,7 +95,10 @@ Encore
         { from: './node_modules/tinymce/plugins/image', to: 'tinymce/plugins/image/[name].[ext]', pattern: /plugin\.min\.js$/ },
         { from: './node_modules/tinymce/plugins/code', to: 'tinymce/plugins/code/[name].[ext]', pattern: /plugin\.min\.js$/ },
         { from: './node_modules/tinymce/plugins/fullscreen', to: 'tinymce/plugins/fullscreen/[name].[ext]', pattern: /plugin\.min\.js$/ },
-        { from: './node_modules/tinymce/plugins/table', to: 'tinymce/plugins/table/[name].[ext]', pattern: /plugin\.min\.js$/ }
+        { from: './node_modules/tinymce/plugins/table', to: 'tinymce/plugins/table/[name].[ext]', pattern: /plugin\.min\.js$/ },
+        // "lists": review rating form (paper/rating.phtml); "visualblocks": CMS page editor (page/render.phtml)
+        { from: './node_modules/tinymce/plugins/lists', to: 'tinymce/plugins/lists/[name].[ext]', pattern: /plugin\.min\.js$/ },
+        { from: './node_modules/tinymce/plugins/visualblocks', to: 'tinymce/plugins/visualblocks/[name].[ext]', pattern: /plugin\.min\.js$/ }
     ])
 
     // MathJax: self-hosted (previously loaded from cdnjs via VENDOR_MATHJAX, see public/const.php),
@@ -131,6 +135,10 @@ Encore
     // standalone and has no such requirement (see assets/filepond.js).
     .addExternals({ jquery: 'jQuery' })
 
+    // Chart.js 2.x optionally requires moment (wrapped in try/catch), only needed for time axes,
+    // which the statistics charts don't use: keep moment and its locales out of the chartjs entry.
+    .addPlugin(new webpack.IgnorePlugin({ resourceRegExp: /^moment$/, contextRegExp: /[\\/]node_modules[\\/]chart\.js[\\/]/ }))
+
     // When enabled, Webpack "splits" your files into smaller pieces for greater optimization.
     .splitEntryChunks()
 
@@ -145,10 +153,9 @@ Encore
                 test: /[\\/]node_modules[\\/].*\.js$/,
                 priority: -10,
                 reuseExistingChunk: true,
-                // jquery/jquery-ui are referenced as single static files by VENDOR_JQUERY/VENDOR_JQUERY_UI
-                // (see public/const.php, layout.phtml), not through entrypoints.json like other webpack
-                // entries — so they must stay self-contained single files instead of being split into a
-                // shared vendors chunk that a plain <script src> tag wouldn't know to also load.
+                // jquery/jquery-ui stay self-contained single files (apart from runtime.js) rather than
+                // being split into a vendors chunk shared with page entries: they are emitted first, on
+                // every page, by Episciences_View_Helper_JQuery_Container, before any queued entry.
                 chunks: (chunk) => chunk.name !== 'jquery' && chunk.name !== 'jquery-ui'
             }
         };

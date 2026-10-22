@@ -2,7 +2,10 @@
 // now self-hosted via webpack. Only used on pages rendering a DataTable.
 import 'datatables.net-bs/css/dataTables.bootstrap.min.css';
 // DataTables core 1.10.21 JS, previously loaded from cdnjs (VENDOR_JQUERY_DATATABLES).
-import 'datatables.net/js/jquery.dataTables.min.js';
+// Imported by package name, the same specifier the Bootstrap integration requires internally:
+// a file path (e.g. js/jquery.dataTables.min.js) would resolve to a second module and bundle and
+// run DataTables twice. The production build minifies it anyway.
+import 'datatables.net';
 // DataTables Bootstrap 3 integration JS, previously loaded from cdnjs (VENDOR_DATATABLES_BOOTSTRAP).
 // Both attach to the global jQuery (see addExternals in webpack.config.js).
-import 'datatables.net-bs/js/dataTables.bootstrap.min.js';
+import 'datatables.net-bs';

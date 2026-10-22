@@ -7,8 +7,9 @@
 // Successfully uploaded files are tracked with a hidden "attachments[]" input per file, appended
 // to the widget, so the final form submit (e.g. AdministratemailController, copy-editing reply)
 // still lists them exactly like the previous jQuery File Upload widget did. Any "submit"/
-// "submit-modal" button, or copy-editing "ce_reply_<pcId>" send button, in the same form is
-// disabled while a file is uploading or in error.
+// "submit-modal" button, or copy-editing "ce_reply_<pcId>" send button, in the same form (or
+// in the same modal, whose footer holds the button) is disabled while a file is uploading or in
+// error.
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initUploadWidgets);
@@ -69,13 +70,16 @@ function buildRequestBody(context, extra) {
     return formData;
 }
 
+// Modal forms keep their "Valider" button (#submit-modal, #submit-modal-<target>) in the
+// .modal-footer, outside the <form>: the whole modal content is the scope then.
 function setSubmitButtonsDisabled(widget, disabled) {
-    const form = widget.closest('form') || document;
-    form.querySelectorAll(
-        'button[id^="submit"], button[id^="ce_reply_"]'
-    ).forEach(button => {
-        button.disabled = disabled;
-    });
+    const scope =
+        widget.closest('.modal-content') || widget.closest('form') || document;
+    scope
+        .querySelectorAll('button[id^="submit"], button[id^="ce_reply_"]')
+        .forEach(button => {
+            button.disabled = disabled;
+        });
 }
 
 function createUploadWidget(input, csrfToken) {
@@ -84,8 +88,11 @@ function createUploadWidget(input, csrfToken) {
     const widget = input.closest('.upload_widget');
     const context = resolveUploadContext(widget);
     const maxFileSize = widget.dataset.maxFileSize;
-    const acceptedFileTypes = widget.dataset.allowedMimeTypes
-        ? widget.dataset.allowedMimeTypes.split(',')
+    // Filtered on the file extension only: the type declared by the browser is often empty
+    // (.bib, .sty, .cls, .bbl) or differs from the one detected by the server (a Windows .zip
+    // is "application/x-zip-compressed"), which checks the actual content type anyway.
+    const acceptedFileTypes = widget.dataset.allowedExtensions
+        ? widget.dataset.allowedExtensions.split(',')
         : undefined;
 
     const options = {
@@ -94,6 +101,8 @@ function createUploadWidget(input, csrfToken) {
         credits: false,
         maxFileSize: maxFileSize ? Number(maxFileSize) : undefined,
         acceptedFileTypes,
+        fileValidateTypeDetectType: file =>
+            Promise.resolve(getFileExtension(file.name)),
         server: {
             process: (
                 fieldName,
@@ -128,11 +137,12 @@ function createUploadWidget(input, csrfToken) {
                         return;
                     }
 
-                    if (result.status === 'error') {
-                        const messages = result.messages
-                            ? Object.values(result.messages)
-                            : [translate('Erreur inconnue.')];
-                        error(messages.join(' '));
+                    // Anything but an explicit success carrying a filename is a failure: the
+                    // server answers "[]" when the uploaded file could not be moved.
+                    if (result.status !== 'success' || !result.filename) {
+                        error(
+                            getUploadErrorMessages(result.messages).join(' ')
+                        );
                         return;
                     }
 
@@ -224,6 +234,32 @@ function createUploadWidget(input, csrfToken) {
     return pond;
 }
 
+// Lowercase extension with its leading dot (".pdf"), matched against the widget's
+// data-allowed-extensions; empty when the file name has none.
+function getFileExtension(filename) {
+    const dot = filename.lastIndexOf('.');
+    return dot > 0 ? filename.slice(dot).toLowerCase() : '';
+}
+
+// /file/upload sends its error messages either as validator messages (object) or as a single
+// exception message (string).
+function getUploadErrorMessages(messages) {
+    if (typeof messages === 'string' && messages !== '') {
+        return [messages];
+    }
+
+    if (messages && typeof messages === 'object') {
+        const list = Object.values(messages)
+            .flat()
+            .filter(message => typeof message === 'string' && message !== '');
+        if (list.length > 0) {
+            return list;
+        }
+    }
+
+    return [translate('Erreur inconnue.')];
+}
+
 function trackAttachedFile(widget, filename) {
     const hidden = document.createElement('input');
     hidden.type = 'hidden';
@@ -243,5 +279,9 @@ function untrackAttachedFile(widget, filename) {
 }
 
 if (typeof module !== 'undefined') {
-    module.exports = { setSubmitButtonsDisabled };
+    module.exports = {
+        setSubmitButtonsDisabled,
+        getFileExtension,
+        getUploadErrorMessages,
+    };
 }

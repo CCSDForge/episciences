@@ -5,6 +5,8 @@ $this->jQuery()->addJavascriptFile('/js/library/es.dataTables.delete-buttons.js'
 $this->jQuery()->addJavascriptFile('/js/user/dataTableInit.js');
 
 $this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
+// jQuery UI autocomplete of the "add a user" field (see UserDefaultController::autocomplete())
+$this->getHelper('webpackAssets')->queueStylesheet('jquery-ui-theme');
 
 ?>
 

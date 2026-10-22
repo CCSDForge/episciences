@@ -25,7 +25,7 @@ $attribsForm = $selfElement->getAttribs();
         <div class="col-md-9 col-md-offset-3" style="padding-left: 10px">
             <div id="upload_widget_<?= $pcId; ?>" class="upload_widget"
                  data-max-file-size="<?= MAX_FILE_SIZE ?: '' ?>"
-                 data-allowed-mime-types="<?= $this->escape(implode(',', ALLOWED_MIMES_TYPES)) ?>">
+                 data-allowed-extensions="<?= $this->escape(implode(',', array_map(static fn($extension) => '.' . strtolower($extension), ALLOWED_EXTENSIONS))) ?>">
                 <span id="help-block-<?= $pcId; ?>" class="help-block text-info"><?= $description; ?></span>
                 <input id="upload_input_<?= $pcId; ?>" class="upload_input" type="file" multiple/>
             </div>
