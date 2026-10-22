@@ -6,8 +6,13 @@
         padding-left: 2%;
     }
 </style>
+<?php
+// Only a width given as a CSS length is kept: the views set it, never the client
+$width = is_array($this->style) ? ($this->style['width'] ?? null) : null;
+$isCssLength = is_string($width) && preg_match('/^\d+(\.\d+)?(%|px|em|rem|vw)$/', $width);
+?>
 <div class="modal fade" id="modal-box" tabindex="-1" data-backdrop="static" data-keyboard="false" role="dialog" aria-labelledby="journalModal" aria-hidden="true" >
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg"<?php if ($isCssLength) : ?> style="width: <?= $this->escape($width) ?>;"<?php endif; ?>>
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
