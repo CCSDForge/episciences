@@ -219,7 +219,7 @@ class ExtractBiblioRefsCommand extends Command
             } else {
                 $articleUrl = Episciences_Repositories::getPaperUrl(
                     (int) $row['REPOID'],
-                    (string) $row['IDENTIFIER'],
+                    Episciences_Paper::stripRefusedSuffix((string) $row['IDENTIFIER']),
                     $row['VERSION'] !== null ? (float) $row['VERSION'] : null
                 );
             }
@@ -232,7 +232,7 @@ class ExtractBiblioRefsCommand extends Command
             if ($articleUrl === '') {
                 $articleUrl = (string) (Episciences_Repositories::getDocUrl(
                     (int) $row['REPOID'],
-                    (string) $row['IDENTIFIER'],
+                    Episciences_Paper::stripRefusedSuffix((string) $row['IDENTIFIER']),
                     $row['VERSION'] !== null ? (float) $row['VERSION'] : null
                 ) ?? '');
             }
