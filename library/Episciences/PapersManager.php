@@ -3158,7 +3158,7 @@ class Episciences_PapersManager
     {
         return [
             'docId' => $params['DOCID'],
-            'identifier' => str_replace('-REFUSED', '', $params['IDENTIFIER']),
+            'identifier' => Episciences_Paper::stripRefusedSuffix((string)$params['IDENTIFIER']),
             'repoId' => (int)$params['REPOID'],
             'version' => (float)$params['VERSION'],
             'paperId' => (int)$params['PAPERID'],
