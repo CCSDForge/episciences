@@ -32,65 +32,6 @@ final class Episciences_PapersManagerTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // sortBy()
-    // -----------------------------------------------------------------------
-
-    public function testSortByReturnsFalseForEmptyList(): void
-    {
-        self::assertFalse(Episciences_PapersManager::sortBy([], 'vid'));
-    }
-
-    public function testSortByGroupsByKey(): void
-    {
-        $p1 = $this->makePaper(Episciences_Paper::STATUS_SUBMITTED, 10);
-        $p2 = $this->makePaper(Episciences_Paper::STATUS_ACCEPTED, 20);
-
-        $result = Episciences_PapersManager::sortBy(['a' => $p1, 'b' => $p2], 'vid');
-
-        self::assertIsArray($result);
-        self::assertArrayHasKey(10, $result);
-        self::assertArrayHasKey(20, $result);
-        self::assertSame($p1, $result[10]['a']);
-        self::assertSame($p2, $result[20]['b']);
-    }
-
-    public function testSortByGroupsMultipleItemsUnderSameKey(): void
-    {
-        $p1 = $this->makePaper(Episciences_Paper::STATUS_SUBMITTED, 5);
-        $p2 = $this->makePaper(Episciences_Paper::STATUS_ACCEPTED, 5);
-
-        $result = Episciences_PapersManager::sortBy(['a' => $p1, 'b' => $p2], 'vid');
-
-        self::assertIsArray($result);
-        self::assertArrayHasKey(5, $result);
-        self::assertCount(2, $result[5]);
-    }
-
-    public function testSortByWithUnknownKeyGroupsUnderZero(): void
-    {
-        // If the method 'getunknown' does not exist on Episciences_Paper,
-        // $itemKey stays at the default 0 and the item is grouped under 0.
-        $p1 = $this->makePaper(Episciences_Paper::STATUS_SUBMITTED);
-
-        $result = Episciences_PapersManager::sortBy(['x' => $p1], 'unknownkey');
-
-        self::assertIsArray($result);
-        self::assertArrayHasKey(0, $result);
-        self::assertSame($p1, $result[0]['x']);
-    }
-
-    public function testSortByDoesNotErrorOnFirstIteration(): void
-    {
-        // Regression for Fix 4: $result was used before initialisation on the
-        // very first iteration of the foreach loop.
-        $p1 = $this->makePaper(Episciences_Paper::STATUS_SUBMITTED, 1);
-
-        // Must not emit any PHP notice/warning about undefined variable
-        $result = Episciences_PapersManager::sortBy(['a' => $p1], 'vid');
-        self::assertIsArray($result);
-    }
-
-    // -----------------------------------------------------------------------
     // sortByStatus()
     // -----------------------------------------------------------------------
 

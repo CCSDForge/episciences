@@ -753,38 +753,6 @@ class Episciences_PapersManager
     }
 
     /**
-     * Renvoie un tableau de papiers triés par la clé passée en paramètres
-     * @param $list
-     * @param $key
-     * @return false|mixed
-     */
-    public static function sortBy($list, $key)
-    {
-        if (empty($list)) {
-            return false;
-        }
-
-        $result = [];
-        foreach ($list as $id => $item) {
-            $method = 'get' . ucfirst(strtolower($key));
-            $itemKey = 0;
-            if (method_exists($item, $method)) {
-                $itemKey = $item->$method();
-            }
-            $result[$itemKey][$id] = $item;
-        }
-
-        Episciences_Tools::multi_ksort($result);
-
-        if ($key === 'STATUS') {
-            uksort($result, 'self::statusCmp');
-        }
-
-
-        return $result;
-    }
-
-    /**
      * Regroupe les papiers par statut (pour affichage pour le déposant)
      * @param $list
      * @return array
@@ -3794,25 +3762,6 @@ class Episciences_PapersManager
             $strMail .= ";";
         }
         return $strMail;
-    }
-
-    /**
-     * @param $a
-     * @param $b
-     * @return int
-     */
-    private static function statusCmp($a, $b): int
-    {
-        $a = Episciences_Paper::$_statusOrder[$a];
-        $b = Episciences_Paper::$_statusOrder[$b];
-
-        if ($a === $b) {
-            $r = 0;
-        } else {
-            $r = ($a > $b) ? 1 : -1;
-        }
-
-        return $r;
     }
 
     /**
