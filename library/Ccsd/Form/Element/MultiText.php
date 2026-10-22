@@ -460,6 +460,11 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
      */
     public function isValid($value, $context = null)
     {
+        // Errors of a previous validation must not be reported for this value
+        $this->_messages    = array();
+        $this->_errors      = array();
+        $this->_grouperrors = array();
+
         $this->setValue($value);
         $value = $this->getValue();
 
@@ -501,9 +506,14 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
 
         $this->initValidators();
 
-        $this->_messages = array();
-        $this->_errors   = array();
-        $result          = true;
+        // An empty list that must not be empty is validated as an empty value by every validator
+        if ($isArray && is_array($value) && empty($value)
+            && ($this->isRequired() || !$this->getAllowEmpty())
+        ) {
+            $value = '';
+        }
+
+        $result = true;
         /** @var Zend_Validate_Interface  $validator */
         foreach ($this->getValidators() as $key => $validator) {
             if (method_exists($validator, 'setTranslator')) {
@@ -525,14 +535,6 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
             if ($isArray && $this->_conditionValidators && is_array($value)) {
                 $messages   = array();
                 $errors   = array();
-
-                if (empty($value)) {
-                    if ($this->isRequired()
-                        || (!$this->isRequired() && !$this->getAllowEmpty())
-                    ) {
-                        $value = '';
-                    }
-                }
 
                 // Result of this validator only: a previous failure must not make it break the chain
                 $validatorResult = true;
@@ -584,5 +586,31 @@ abstract class Ccsd_Form_Element_MultiText extends Zend_Form_Element_Multi imple
         }
 
         return $result;
+    }
+
+    /**
+     * Custom error messages: the values of a multi-value language (keywords) are arrays,
+     * which the parent would cast to the string "Array"
+     *
+     * @return array<int|string, string>
+     */
+    protected function _getErrorMessages()
+    {
+        if (!is_array($this->_value)) {
+            return parent::_getErrorMessages();
+        }
+
+        $value = $this->_value;
+        $flatValues = [];
+        array_walk_recursive($value, static function ($v) use (&$flatValues) {
+            $flatValues[] = $v;
+        });
+
+        $this->_value = $flatValues;
+        try {
+            return parent::_getErrorMessages();
+        } finally {
+            $this->_value = $value;
+        }
     }
 }
