@@ -31,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and 8.3 polyfills are no longer direct dependencies.
 
 ### Fixed
+- [#1310](https://github.com/CCSDForge/episciences/pull/1310): align access and request token checks on the co-author form and co-author removal with the paper management page.
+- [#1344](https://github.com/CCSDForge/episciences/pull/1344): align permission, request token, and file upload validation for graphical abstract and linked data with the paper context.
+- [#1349](https://github.com/CCSDForge/episciences/pull/1349): profile edition form opened from the user list is submitted for the selected account.
+- [#1345](https://github.com/CCSDForge/episciences/issues/1345): authors can edit the relationship of an existing related work (the access rule did not match the action name). Authors can only add, edit or remove linked data while the paper is not published; editorial roles still can afterwards.
+- [#1332](https://github.com/CCSDForge/episciences/pull/1332): journal settings: the statistics start date is now strictly validated (YYYY-MM-DD); a malformed stored value is ignored by the statistics page instead of making it fail.
 - Multi-value and date form fields no longer raise "Creation of dynamic property" deprecations (PHP 8.2+) when rendered: their decorators now declare the JavaScript function names and indices they receive.
 - Sorting papers by status and decoding the subject of a mail without subject no longer raise PHP deprecations.
 - The `Import` and `setNumVol` scripts no longer create dynamic properties (deprecated since PHP 8.2).

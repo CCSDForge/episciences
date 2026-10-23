@@ -9,9 +9,10 @@ use PHPUnit\Framework\TestCase;
 /**
  * Regression guards for the request handling in AdministrategraphabstractController.
  *
- * Source-analysis tests (ZF1 controllers are not instantiable in isolation):
- * they assert the request guard keeps its corrected form and that the document id
- * is cast to int before being used to build filesystem paths.
+ * Source-analysis tests (the actions exit() and cannot be dispatched in a test):
+ * they assert the request token is checked before the POST parameters are used and that
+ * the document id is cast to int before being used to build filesystem paths.
+ * The authorization itself is covered by AdministrategraphabstractControllerAccessTest.
  *
  */
 final class AdministrategraphabstractControllerRequestTest extends TestCase
@@ -33,28 +34,6 @@ final class AdministrategraphabstractControllerRequestTest extends TestCase
         return $end === false
             ? substr($this->source, (int) $start)
             : substr($this->source, (int) $start, (int) $end - (int) $start);
-    }
-
-    /**
-     * The request guard must reject when the user is not allowed, i.e. the
-     * negated-and form: (...) || (!isAllowedToManagePaper() && !isAuthor()).
-     */
-    public function testRequestGuardUsesNegatedAuthorisation(): void
-    {
-        foreach (['addgraphabsAction', 'deletegraphabsAction'] as $action) {
-            $method = $this->extractMethod($action);
-
-            self::assertStringContainsString('!Episciences_Auth::isAllowedToManagePaper()', $method,
-                "$action must reject when the user cannot manage the paper");
-            self::assertStringContainsString('!Episciences_Auth::isAuthor()', $method,
-                "$action must reject when the user is not an author");
-
-            self::assertStringNotContainsString(
-                '&& (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())',
-                $method,
-                "$action must not use the earlier guard condition"
-            );
-        }
     }
 
     /**
