@@ -116,6 +116,35 @@ describe('statChartMaxWidth', function () {
     });
 });
 
+describe('stacked bars', function () {
+    it('stacks the series in one bar by category, with the total in the tooltip', function () {
+        const config = buildBarChartConfig(['2023', '2024'], datasets(), {
+            stacked: true,
+        });
+
+        expect(config.options.scales.x.stacked).toBe(true);
+        expect(config.options.scales.y.stacked).toBe(true);
+        expect(config.options.datasets.bar.categoryPercentage).toBe(
+            statGroupWidth(1)
+        );
+        expect(config.data.datasets[0].borderWidth).toEqual({ top: 2 });
+        expect(config.data.datasets[0].borderColor).toBe('#fff');
+        expect(
+            config.options.plugins.tooltip.callbacks.footer([
+                { parsed: { y: 27 } },
+                { parsed: { y: 3 } },
+            ])
+        ).toBe('Total : 30');
+    });
+
+    it('does not stack by default', function () {
+        const config = buildBarChartConfig(['2023'], datasets());
+
+        expect(config.options.scales.y.stacked).toBeUndefined();
+        expect(config.options.plugins.tooltip.callbacks).toBeUndefined();
+    });
+});
+
 describe('buildChartTable', function () {
     it('lists the values of each series by category', function () {
         const details = buildChartTable(

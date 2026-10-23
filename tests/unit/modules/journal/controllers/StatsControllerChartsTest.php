@@ -92,7 +92,30 @@ class StatsControllerChartsTest extends TestCase
         $byRepo = array_column(self::charts()['byRepo']['datasets'], 'data', 'label');
 
         $this->assertSame([3, 27, 29], $byRepo['HAL']);
-        $this->assertSame([0, 3, 6], $byRepo['Episciences']);
+        $this->assertTrue(self::charts()['byRepo']['stacked']);
+    }
+
+    /**
+     * The local repository holds the temporary versions of papers already counted in their repository
+     */
+    public function testBuildChartsData_ByRepository_LocalRepositoryLeftOut(): void
+    {
+        $byRepo = array_column(self::charts()['byRepo']['datasets'], 'data', 'label');
+        $localLabel = \Episciences_Repositories::getLabel((int)\Episciences_Repositories::EPISCIENCES_REPO_ID);
+
+        $this->assertSame('Episciences', $localLabel);
+        $this->assertArrayNotHasKey($localLabel, $byRepo);
+
+        // the repositories add up to the submissions of each year (imported papers left out)
+        $totals = [];
+
+        foreach ($byRepo as $data) {
+            foreach ($data as $i => $value) {
+                $totals[$i] = ($totals[$i] ?? 0) + $value;
+            }
+        }
+
+        $this->assertSame(self::charts()['byYear']['datasets'][0]['data'], $totals);
     }
 
     public function testBuildChartsData_Delays_YearsWithoutDelayLeftOut(): void

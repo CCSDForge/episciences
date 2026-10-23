@@ -20,7 +20,8 @@ document.addEventListener('DOMContentLoaded', function () {
         createBarChart(
             'submissions-by-repo-chart',
             years,
-            charts.byRepo.datasets
+            charts.byRepo.datasets,
+            { stacked: charts.byRepo.stacked === true }
         );
     }
 

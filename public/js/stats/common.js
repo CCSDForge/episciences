@@ -64,6 +64,8 @@ function statBarDataset(dataset, index) {
  */
 function buildBarChartConfig(labels, datasets, options = {}) {
     const horizontal = options.horizontal === true;
+    // stacked: one bar by category, made of the series (a part-to-whole), its total in the tooltip
+    const stacked = options.stacked === true;
     const valueAxis = {
         beginAtZero: true,
         grid: { color: STAT_GRID_COLOR },
@@ -80,14 +82,28 @@ function buildBarChartConfig(labels, datasets, options = {}) {
         type: 'bar',
         data: {
             labels: labels,
-            datasets: datasets.map(statBarDataset),
+            datasets: datasets.map((dataset, index) =>
+                stacked
+                    ? Object.assign(statBarDataset(dataset, index), {
+                          borderRadius: 0,
+                          // 2px surface gap between the segments
+                          borderWidth: { top: 2 },
+                          borderColor: '#fff',
+                          borderSkipped: false,
+                      })
+                    : statBarDataset(dataset, index)
+            ),
         },
         options: {
             responsive: true,
             maintainAspectRatio: false, // the height is the one of the container
             interaction: { mode: 'index', intersect: false },
             datasets: {
-                bar: { categoryPercentage: statGroupWidth(datasets.length) },
+                bar: {
+                    categoryPercentage: statGroupWidth(
+                        stacked ? 1 : datasets.length
+                    ),
+                },
             },
             scales: horizontal
                 ? { x: valueAxis, y: categoryAxis }
@@ -114,6 +130,17 @@ function buildBarChartConfig(labels, datasets, options = {}) {
 
     if (horizontal) {
         config.options.indexAxis = 'y';
+    }
+
+    if (stacked) {
+        config.options.scales.x.stacked = true;
+        config.options.scales.y.stacked = true;
+        config.options.plugins.tooltip.callbacks = {
+            footer: items =>
+                statTranslate('Total') +
+                ' : ' +
+                items.reduce((sum, item) => sum + (item.parsed.y || 0), 0),
+        };
     }
 
     if (options.valueLabels && typeof ChartDataLabels !== 'undefined') {
@@ -212,7 +239,10 @@ function createBarChart(canvasId, labels, datasets, options = {}) {
     // few categories (the page of a year): the chart is not wider than its bars need
     if (!options.horizontal && labels.length <= 2 && canvas.parentElement) {
         canvas.parentElement.style.maxWidth =
-            statChartMaxWidth(labels.length, datasets.length) + 'px';
+            statChartMaxWidth(
+                labels.length,
+                options.stacked ? 1 : datasets.length
+            ) + 'px';
     }
 
     if (typeof Chart === 'undefined') {

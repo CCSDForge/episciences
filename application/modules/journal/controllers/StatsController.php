@@ -303,6 +303,7 @@ class StatsController extends Zend_Controller_Action
         }
 
         $this->view->charts = $charts;
+        $this->view->papersWithTemporaryVersion = $this->countPapersWithTemporaryVersion($yearQuery, $startStatsAfterDate, $logger);
         $this->view->yearQuery = $yearQuery;
         $this->view->errorMessage = null;
         $this->view->isAvailableUsersStats = $isAvailableUsersStats;
@@ -363,8 +364,13 @@ class StatsController extends Zend_Controller_Action
             }
         }
 
-        $repositories = array_keys($repositories);
-        $ids = array_map(static fn($label) => (int)(Episciences_Repositories::getRepositoriesByLabel()[$label]['id'] ?? PHP_INT_MAX), $repositories);
+        // the local repository holds the temporary versions of papers already counted in their repository: not a repository
+        $repositoryIds = Episciences_Repositories::getRepositoriesByLabel();
+        $repositories = array_values(array_filter(
+            array_keys($repositories),
+            static fn($label) => (string)($repositoryIds[$label]['id'] ?? '') !== Episciences_Repositories::EPISCIENCES_REPO_ID
+        ));
+        $ids = array_map(static fn($label) => (int)($repositoryIds[$label]['id'] ?? PHP_INT_MAX), $repositories);
         array_multisort($ids, SORT_NUMERIC, $repositories);
 
         $repoDatasets = [];
@@ -389,7 +395,7 @@ class StatsController extends Zend_Controller_Action
         return [
             'years' => $years,
             'byYear' => ['datasets' => $yearsDatasets, 'imported' => $imported],
-            'byRepo' => ['datasets' => $repoDatasets, 'imported' => $imported],
+            'byRepo' => ['datasets' => $repoDatasets, 'imported' => $imported, 'stacked' => true],
             'delays' => [
                 'years' => $delayYears,
                 'datasets' => [
@@ -740,6 +746,38 @@ class StatsController extends Zend_Controller_Action
         } catch (Throwable $e) {
             $logger?->warning($e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Number of papers of the journal with a temporary version (local repository), by year of submission of the paper
+     * @param int|null $year
+     * @param string|null $startAfterDate the "startStatsAfterDate" setting of the journal
+     * @param Monolog\Logger|null $logger
+     * @return int|null null if it could not be counted
+     */
+    private function countPapersWithTemporaryVersion(?int $year, ?string $startAfterDate, ?Monolog\Logger $logger): ?int
+    {
+        try {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $select = $db->select()
+                ->from(T_PAPERS, [new Zend_Db_Expr('COUNT(DISTINCT PAPERID)')])
+                ->where('RVID = ?', RVID)
+                ->where('REPOID = ?', (int)Episciences_Repositories::EPISCIENCES_REPO_ID)
+                ->where('STATUS NOT IN (?)', [Episciences_Paper::STATUS_DELETED, Episciences_Paper::STATUS_REMOVED]);
+
+            if ($year) {
+                $select->where('YEAR(SUBMISSION_DATE) = ?', $year);
+            }
+
+            if ($startAfterDate) {
+                $select->where('SUBMISSION_DATE > ?', $startAfterDate);
+            }
+
+            return (int)$db->fetchOne($select);
+        } catch (Throwable $e) {
+            $logger?->warning($e->getMessage());
+            return null;
         }
     }
 

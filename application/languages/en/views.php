@@ -2327,6 +2327,8 @@ return array(
     'semaines' => 'weeks',
     'années' => 'years',
     "Nombre total d'utilisateurs" => 'Total number of users',
+    'articles avec version temporaire' => 'articles with a temporary version',
+    "Articles pour lesquels une version temporaire a été déposée dans Episciences, en attendant la version de l'archive ouverte. Ces versions ne sont pas comptées comme des soumissions." => 'Articles for which a temporary version was deposited in Episciences, pending the version of the open archive. These versions are not counted as submissions.',
     'En cours de publication' => 'Being published',
     "À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au " => "With the exception of user statistics, the indicators below only include data after ",
     'dont %s importés' => "including %s imported",

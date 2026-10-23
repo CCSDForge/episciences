@@ -132,6 +132,18 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                             ]) ?>
 
                         <?php endif; ?>
+
+                        <?php // counted locally: no list of papers (the lists come from the API, which applies the conflicts of interest) ?>
+                        <?php if ($this->papersWithTemporaryVersion) : ?>
+                            <?= $this->partial('stats/stat-item.phtml', [
+                                    'itemLabel' => 'articles avec version temporaire',
+                                    'itemValue' => $this->papersWithTemporaryVersion,
+                                    'help' => [
+                                            'message' => "Articles pour lesquels une version temporaire a été déposée dans Episciences, en attendant la version de l'archive ouverte. Ces versions ne sont pas comptées comme des soumissions.",
+                                            'isTooltip' => true
+                                    ],
+                            ]) ?>
+                        <?php endif; ?>
                         </ul>
                         </li>
 
