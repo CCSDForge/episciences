@@ -2291,7 +2291,6 @@ return array(
     'Accepté le' => 'Accepted on',
     'Refusé le' => 'Refused on',
     'Importé le' => 'Imported on',
-    'Déposé ou importé le' => 'Submitted or imported on',
     'importé' => 'imported',
     'Publié le' => 'Published on',
     'Pagination' => 'Pagination',

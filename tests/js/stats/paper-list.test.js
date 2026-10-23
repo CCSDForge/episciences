@@ -50,7 +50,7 @@ const DIALOG = `
     <button type="button" class="stat-papers-open" data-figure="nbRefused">View</button>
     <dialog id="stat-papers-dialog" data-url="/stats/papers" data-year="2025"
             data-titles='{"nbAccepted":"Accepted articles","nbRefused":"Refused articles"}'
-            data-column-labels='{"submitted":"Submitted on","imported":"Imported on","mixed":"Submitted or imported on","importedTag":"imported","refusalDate":"Refused on","acceptanceDate":"Accepted on","publicationDate":"Published on"}'>
+            data-column-labels='{"submitted":"Submitted on","imported":"Imported on","mixed":"Submitted on","importedTag":"imported","refusalDate":"Refused on","acceptanceDate":"Accepted on","publicationDate":"Published on"}'>
         <h2 id="stat-papers-dialog-title"></h2>
         <button type="button" class="stat-papers-close">x</button>
         <p class="stat-papers-hidden" hidden></p>
@@ -319,7 +319,7 @@ describe('Statistics papers window', function () {
         await flush();
 
         expect(headerLabels().slice(3)).toEqual([
-            'Submitted or imported on',
+            'Submitted on',
             'Refused on',
             'Accepted on',
             'Published on',

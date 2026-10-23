@@ -4,7 +4,8 @@
 $columnLabels = [
     'submitted' => $this->translate('Déposé le'),
     'imported' => $this->translate('Importé le'),
-    'mixed' => $this->translate('Déposé ou importé le'),
+    // submitted and imported papers: the imported ones are marked on their row
+    'mixed' => $this->translate('Déposé le'),
     'importedTag' => $this->translate('importé'),
     StatsController::COLUMN_REFUSAL => $this->translate('Refusé le'),
     StatsController::COLUMN_ACCEPTANCE => $this->translate('Accepté le'),
