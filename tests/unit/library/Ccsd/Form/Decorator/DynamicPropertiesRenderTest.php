@@ -21,11 +21,15 @@ class DynamicPropertiesRenderTest extends TestCase
     /** @var list<string> */
     private array $deprecations = [];
 
+    /** Whether setUp() registered the translator, so that tearDown() only removes its own */
+    private bool $translatorRegistered = false;
+
     protected function setUp(): void
     {
         $this->deprecations = [];
         // The decorators translate their button labels: the test bootstrap does not register a translator
-        if (!Zend_Registry::isRegistered('Zend_Translate')) {
+        $this->translatorRegistered = !Zend_Registry::isRegistered('Zend_Translate');
+        if ($this->translatorRegistered) {
             Zend_Registry::set('Zend_Translate', new Zend_Translate([
                 'adapter' => Zend_Translate::AN_ARRAY,
                 'content' => ['' => ''],
@@ -43,6 +47,9 @@ class DynamicPropertiesRenderTest extends TestCase
     protected function tearDown(): void
     {
         restore_error_handler();
+        if ($this->translatorRegistered) {
+            Zend_Registry::getInstance()->offsetUnset('Zend_Translate');
+        }
     }
 
     /**

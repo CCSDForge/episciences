@@ -520,10 +520,13 @@ final class Episciences_MailTest extends TestCase
 
     public function testGetDecodedSubjectDecodesTheEncodedSubject(): void
     {
-        $mail = new Episciences_Mail('UTF-8');
-        $mail->setSubject('Révision demandée');
+        // The mock skips the constructor, which sets the charset the subject is encoded with
+        $rp = new \ReflectionProperty(\Zend_Mail::class, '_charset');
+        $rp->setAccessible(true);
+        $rp->setValue($this->mail, 'UTF-8');
+        $this->mail->setSubject('Révision demandée');
 
-        self::assertSame('Révision demandée', $mail->getDecodedSubject());
+        self::assertSame('Révision demandée', $this->mail->getDecodedSubject());
     }
 
     public function testGetDecodedSubjectWithoutSubjectReturnsAnEmptyStringWithoutDeprecation(): void
@@ -535,7 +538,7 @@ final class Episciences_MailTest extends TestCase
         }, E_DEPRECATED);
 
         try {
-            $subject = (new Episciences_Mail('UTF-8'))->getDecodedSubject();
+            $subject = $this->mail->getDecodedSubject();
         } finally {
             restore_error_handler();
         }
