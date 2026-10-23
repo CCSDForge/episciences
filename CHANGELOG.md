@@ -32,11 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `enrichment:creators -v` lists the author corrections made from HAL TEI; with `--dry-run` it lists them without writing anything.
 
 ### Fixed
-- Profile edition form opened from the user list is submitted for the selected account.
-- [#1345](https://github.com/CCSDForge/episciences/issues/1345): authors can edit the relationship of an existing related work (the access rule did not match the action name). Authors can only add, edit or remove linked data while the paper is not published; editorial roles still can afterwards.
-- [#1310](https://github.com/CCSDForge/episciences/pull/1310): align access and request token checks on the co-author form and co-author removal with the paper management page.
-- [#1344](https://github.com/CCSDForge/episciences/pull/1344): align permission, request token, and file upload validation for graphical abstract and linked data with the paper context.
+- [#1310](https://github.com/CCSDForge/episciences/pull/1310): co-author form and co-author removal are now consistent with the paper management page.
+- [#1344](https://github.com/CCSDForge/episciences/pull/1344): graphical abstract and linked data forms are now consistent with the paper context.
+- [#1349](https://github.com/CCSDForge/episciences/pull/1349): profile edition form opened from the user list is submitted for the selected account.
+- [#1345](https://github.com/CCSDForge/episciences/issues/1345): authors can edit the relationship of an existing related work. Authors can add, edit or remove linked data until the paper is published; editorial roles still can afterwards.
 - [#1332](https://github.com/CCSDForge/episciences/pull/1332): journal settings: the statistics start date is now strictly validated (YYYY-MM-DD); a malformed stored value is ignored by the statistics page instead of making it fail.
+- [#1339](https://github.com/CCSDForge/episciences/pull/1339): the `Import` and `setNumVol` scripts no longer create dynamic properties (deprecated since PHP 8.2).
 - [#1298](https://github.com/CCSDForge/episciences/pull/1298): new versions received through the inbox (COAR Notify) of an imported paper are no longer saved as imported either (`ProcessInboxNotificationsCommand::saveNewVersion()`).
 - `episciences:queue --retry` shows the error of the message handler again when the retried message fails, instead of the generic Messenger message.
 - The "Add a file (Foreword, Erratum, Addendum, ...)" dialog of the volume creation and edition pages is no longer empty.
@@ -110,9 +111,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Deployment**, before deploying the code on every environment: apply `src/mysql/2026-10-16-user_invitation_token.sql`
   and set `REVIEWER_INVITATION.HMAC_SECRET` in `config/pwd.json` (e.g. `openssl rand -hex 32`); without it, new
   invitations are sent without a key (former links) and a warning is logged.
-- The application now requires PHP 8.3: the Composer constraint, the Docker image and the continuous
+- [#1339](https://github.com/CCSDForge/episciences/pull/1339): the application now requires PHP 8.3: the Composer constraint, the Docker image and the continuous
   integration use PHP 8.3, the properties that were created dynamically (deprecated since PHP 8.2)
-  are now declared, and the PHP 8.2 and 8.3 polyfills are no longer direct dependencies.
+  are now declared, the deprecated `utf8_encode()` is no longer used, and the PHP 8.2 and 8.3 polyfills are no longer direct dependencies.
 - Symfony components upgraded from 6.4 to 7.4 (LTS): console commands declare their name and
   description with the `#[AsCommand]` attribute instead of the `$defaultName` property, which
   Symfony 7 no longer reads, and are registered with `Application::addCommand()`. The new global
