@@ -2344,6 +2344,7 @@ return array(
     'publiés' => 'published',
     "Vous essayez de consulter les indicateurs statistiques pour l'année" => "You are trying to consult the statistical indicators for the year",
     "Aucune information n'est disponible pour cette page pour le moment." => "No information is available for this page at the moment.",
+    'Les indicateurs statistiques sont momentanément indisponibles.' => 'The statistical indicators are temporarily unavailable.',
     'délai soumission-acceptation' => 'Submission-acceptance time',
     'délai soumission-publication' => 'Submission-publication time',
     'Cela inclut les articles qui ont déjà été publiés' => 'This includes articles that have already been published',

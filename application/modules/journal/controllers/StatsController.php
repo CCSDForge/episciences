@@ -188,7 +188,7 @@ class StatsController extends Zend_Controller_Action
             }
 
             if (empty($dashboard)) {
-                $this->renderError($yearQuery);
+                $this->renderUnavailable($errorMessage);
                 return;
             }
 
@@ -1020,21 +1020,29 @@ class StatsController extends Zend_Controller_Action
     }
 
     /**
-     * @param int|null $yearQuery
-     * @param string $header
+     * No statistics for the requested year
+     * @param int $yearQuery
      * @return void
      */
-    private function renderError(int $yearQuery = null, string $header = 'HTTP/1.1 404 Not Found'): void
+    private function renderError(int $yearQuery): void
     {
-        Episciences_Tools::header($header);
-        $message = $this->view->translate("Vous essayez de consulter les indicateurs statistiques pour l'année");
-
-        if ($yearQuery) {
-            $message .= " <span class='stat-code'>$yearQuery</span>";
-        }
-
-        $this->view->message = $message;
+        Episciences_Tools::header('HTTP/1.1 404 Not Found');
+        // plain text: the message is escaped by the view
+        $this->view->message = $this->view->translate("Vous essayez de consulter les indicateurs statistiques pour l'année") . ' ' . $yearQuery;
         $this->view->description = "Aucune information n'est disponible pour cette page pour le moment.";
+        $this->renderScript('error/error.phtml');
+    }
+
+    /**
+     * The statistics could not be retrieved from the API
+     * @param string $description
+     * @return void
+     */
+    private function renderUnavailable(string $description): void
+    {
+        Episciences_Tools::header('HTTP/1.1 503 Service Unavailable');
+        $this->view->message = 'Les indicateurs statistiques sont momentanément indisponibles.';
+        $this->view->description = $description;
         $this->renderScript('error/error.phtml');
     }
 
