@@ -91,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - a paper that is ready to publish or approved by its author is no longer replaced from the submission form (this added a second active version and removed the files of the stored one): the message tells that the publication process is in progress;
   - the files of the replaced paper are only removed when the paper is replaced in place, so a refused paper submitted again keeps its files;
   - submitting a refused paper again only renames ("-REFUSED" suffix) the versions of that paper in its journal, never another paper sharing its identifier.
+- The "-REFUSED" suffix of a refused paper submitted again is no longer shown, whatever the status of the paper (e.g. its previous versions made obsolete), nor sent to the repositories (link to the document, HAL enrichment scripts); it is no longer removed from the database when the paper is saved, and it is removed again when the new submission is not saved, including in the COAR Notify debug and dry-run modes (`Episciences_Paper::getIdentifier()`, `Episciences_Paper::restoreRefusedIdentifier()`).
 
 ### Changed
 - OpenCitations client migrated to API v2 (DOI sent with its `doi:` scheme, throttling and retry on HTTP 429).

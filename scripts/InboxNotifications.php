@@ -504,11 +504,17 @@ class InboxNotifications extends AbstractScript
             $this->logger->warning($uResult['message']);
         }
 
+        $isRefused = $context->getStatus() === Episciences_Paper::STATUS_REFUSED;
+
         if ($this->isDebug()) {
+            // Nothing is submitted: the refused paper keeps its identifier
+            if ($isRefused) {
+                $context->restoreRefusedIdentifier();
+            }
             return false;
         }
 
-        if ($context->getStatus() === Episciences_Paper::STATUS_REFUSED) {
+        if ($isRefused) {
             return $this->handleRefusedPaperReplacement($paper, $context, $journal, $data);
         }
 
@@ -530,13 +536,20 @@ class InboxNotifications extends AbstractScript
         // Same paper id: the submission date is shared by all the versions of a paper
         $paper->setSubmission_date($context->getSubmission_date());
 
-        $isAdded = $this->getFirstSubmissionResult($paper, $journal, $data, [
-            'canBeReplaced' => true,
-            'logDetails' => [
-                'oldStatus' => Episciences_Paper::STATUS_REFUSED,
-                'oldDocId' => $context->getDocid(),
-            ],
-        ]);
+        try {
+            $isAdded = $this->getFirstSubmissionResult($paper, $journal, $data, [
+                'canBeReplaced' => true,
+                'logDetails' => [
+                    'oldStatus' => Episciences_Paper::STATUS_REFUSED,
+                    'oldDocId' => $context->getDocid(),
+                ],
+            ]);
+        } finally {
+            // The new submission has not been saved: the refused paper keeps its identifier
+            if (!$paper->getDocid()) {
+                $context->restoreRefusedIdentifier();
+            }
+        }
 
         if (!$isAdded) {
             $this->logger->critical(sprintf(

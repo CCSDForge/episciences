@@ -88,6 +88,34 @@ final class Episciences_PapersManager_RenameIdentifierTest extends TestCase
         self::assertSame(self::IDENTIFIER, $this->identifierOf($otherPaper));
     }
 
+    public function testRefusedPaperGetsItsIdentifierBackWhenItsNewSubmissionIsNotSaved(): void
+    {
+        $paperId = 999001;
+        $obsolete = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_OBSOLETE, 1);
+        $refused = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_REFUSED, 2);
+        $otherJournal = $this->insertPaper(RVID + 1, $paperId, Episciences_Paper::STATUS_REFUSED);
+
+        Episciences_PapersManager::renameIdentifier(
+            self::IDENTIFIER,
+            self::IDENTIFIER . Episciences_Paper::REFUSED_IDENTIFIER_SUFFIX,
+            $paperId,
+            RVID
+        );
+
+        $paper = new Episciences_Paper([
+            'docid' => $refused,
+            'paperid' => $paperId,
+            'rvid' => RVID,
+            'status' => Episciences_Paper::STATUS_REFUSED,
+            'identifier' => self::IDENTIFIER . Episciences_Paper::REFUSED_IDENTIFIER_SUFFIX,
+        ]);
+
+        self::assertTrue($paper->restoreRefusedIdentifier());
+        self::assertSame(self::IDENTIFIER, $this->identifierOf($refused));
+        self::assertSame(self::IDENTIFIER, $this->identifierOf($obsolete));
+        self::assertSame(self::IDENTIFIER, $this->identifierOf($otherJournal));
+    }
+
     public function testNothingIsRenamedWithoutAPaperOrAJournal(): void
     {
         $docId = $this->insertPaper(RVID, 999001, Episciences_Paper::STATUS_REFUSED);
