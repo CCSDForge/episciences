@@ -182,15 +182,23 @@ function getRoles(button, uid) {
     openedRolesButton = button;
 
     request.done(function (result) {
+        var loaderPopover = $(button).data('bs.popover');
+
         // The popover has been closed or replaced while the form was loading
         if (openedRolesButton !== button) {
+            return;
+        }
+        // Closed by the page-wide click handler, which does not reset openedRolesButton
+        if (!loaderPopover) {
+            openedRolesButton = null;
             return;
         }
 
         // Open the form on the side of the loader, unless it does not fit there
         // (checked by refreshRolesPopover() once the form can be measured)
-        var loaderTip = $(button).data('bs.popover').$tip;
-        var loaderPlacement = loaderTip.hasClass('top') ? 'top' : 'bottom';
+        var loaderPlacement = loaderPopover.$tip.hasClass('top')
+            ? 'top'
+            : 'bottom';
 
         // Destruction du popup de chargement
         $(button).popover('destroy');
@@ -223,8 +231,11 @@ function getRoles(button, uid) {
                 data: $(this).serialize() + '&uid=' + uid,
                 success: function (result) {
                     if (result == 1) {
-                        // Destruction du popup des roles
-                        closeRolesPopover();
+                        // Destruction du popup des roles, unless another user's
+                        // popover has been opened while saving
+                        if (openedRolesButton === button) {
+                            closeRolesPopover();
+                        }
                         var td = $('#localUsers_' + uid + ' td:nth-child(5)');
                         var container = $(td).find('.tags');
                         $(container).html(getLoader());
