@@ -4,28 +4,44 @@
         isset($this->submissionPublicationTimeMedian) ||
         isset($this->submissionAcceptanceTimeMedian)
 ) : ?>
+    <?php
+    // unit of the API (DAY, WEEK…) in words
+    $unitLabel = fn(?string $unit) => $this->translate(match (strtoupper((string)$unit)) {
+        'DAY' => 'jours',
+        'WEEK' => 'semaines',
+        'MONTH' => 'mois',
+        'YEAR' => 'années',
+        default => strtolower((string)$unit),
+    });
+    ?>
     <div>
-        <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Délai')?></h1>
+        <h3 class="stat-section-title"><?= $this->translate('Délai') ?></h3>
 
-        <table class="delay table table-striped">
+        <table class="delay table stat-delays">
 
             <thead>
             <tr>
                 <th scope="col"></th>
-                <th scope="col" class="stat-label"><?= sprintf($this->translate('Moyenne [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeUnit))) ?></th>
-                <th scope="col" class="stat-label"><?= sprintf($this->translate('Médiane [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeMedianUnit))) ?></th>
+                <th scope="col" class="stat-label"><?= sprintf($this->translate('Moyenne (%s)'), $unitLabel($this->submissionAcceptanceTimeUnit)) ?></th>
+                <th scope="col" class="stat-label"><?= sprintf($this->translate('Médiane (%s)'), $unitLabel($this->submissionAcceptanceTimeMedianUnit)) ?></th>
             </tr>
             </thead>
             <tbody>
 
             <tr>
-                <th class="stat-label"><?= ucfirst($this->translate('délai soumission-publication')) ?></th>
+                <th scope="row" class="stat-label">
+                    <?= ucfirst($this->translate('délai soumission-publication')) ?>
+                    <?= $this->partial('stats/paper-list.phtml', ['paperList' => $this->paperLists[StatsController::SUBMISSION_PUBLICATION_DELAY] ?? null]) ?>
+                </th>
                 <td class="stat-value"><?= $this->submissionPublicationTime ?></td>
                 <td class="stat-value"><?= $this->submissionPublicationTimeMedian ?></td>
             </tr>
 
             <tr>
-                <th class="stat-label"><?= ucfirst($this->translate('délai soumission-acceptation')) ?></th>
+                <th scope="row" class="stat-label">
+                    <?= ucfirst($this->translate('délai soumission-acceptation')) ?>
+                    <?= $this->partial('stats/paper-list.phtml', ['paperList' => $this->paperLists[StatsController::SUBMISSION_ACCEPTANCE_DELAY] ?? null]) ?>
+                </th>
                 <td class="stat-value"><?= $this->submissionAcceptanceTime ?></td>
                 <td class="stat-value"><?= $this->submissionAcceptanceTimeMedian ?></td>
             </tr>

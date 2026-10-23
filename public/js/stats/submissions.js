@@ -1,79 +1,65 @@
-$(function () {
-    let context0 = $('#all-submissions-percentage');
-    let context1 = $('#submissions-by-year-chart');
-    let context2 = $('#submissions-by-repo-chart');
-    let context3 = $('#submissions-delay-chart');
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof statsChartsFromView === 'undefined' || !statsChartsFromView) {
+        return;
+    }
 
-    let allPercentageOfSubmissionsStats = {
-        labels: seriesFromView.allSubmissionsPercentage.labels,
-        datasets: seriesFromView.allSubmissionsPercentage.datasets
-            ? seriesFromView.allSubmissionsPercentage.datasets
-            : null,
-    };
+    const charts = statsChartsFromView;
+    const years = charts.years || [];
 
-    let statsByYearData = {
-        labels: yearCategoriesFromView,
-        datasets: seriesFromView.submissionsByYear.datasets
-            ? seriesFromView.submissionsByYear.datasets
-            : null,
-    };
-
-    let statsByRepoData = {
-        labels: yearCategoriesFromView,
-        datasets: seriesFromView.submissionsByRepo.repositories.datasets
-            ? seriesFromView.submissionsByRepo.repositories.datasets
-            : null,
-    };
-
-    let submissionDelay = {
-        labels: yearCategoriesFromView,
-        datasets: seriesFromView.submissionDelay.datasets
-            ? seriesFromView.submissionDelay.datasets
-            : null,
-    };
-
-    if (
-        allPercentageOfSubmissionsStats.datasets &&
-        !isEmptyData(allPercentageOfSubmissionsStats.datasets[0].data)
-    ) {
-        createChart(
-            context0,
-            allPercentageOfSubmissionsStats,
-            seriesFromView.allSubmissionsPercentage.chartType
+    // Submissions (without the imported papers), decisions and publications by year
+    if (charts.byYear) {
+        createBarChart(
+            'submissions-by-year-chart',
+            years,
+            charts.byYear.datasets,
+            { categoryLabel: statTranslate('Année') }
         );
     }
 
-    if (
-        statsByYearData.datasets &&
-        !isEmptyData(statsByYearData.datasets[0].data)
-    ) {
-        createChart(
-            context1,
-            statsByYearData,
-            seriesFromView.submissionsByYear.chartType
+    // Submissions by repository (without the imported papers)
+    if (charts.byRepo) {
+        createBarChart(
+            'submissions-by-repo-chart',
+            years,
+            charts.byRepo.datasets,
+            {
+                stacked: charts.byRepo.stacked === true,
+                categoryLabel: statTranslate('Année'),
+            }
         );
     }
 
-    if (
-        statsByRepoData.datasets &&
-        !isEmptyData(statsByRepoData.datasets[0].data)
-    ) {
-        createChart(
-            context2,
-            statsByRepoData,
-            seriesFromView.submissionsByRepo.repositories.chartType
+    // Average delays, in days
+    if (charts.delays && charts.delays.years.length > 0) {
+        createBarChart(
+            'submissions-delay-chart',
+            charts.delays.years,
+            charts.delays.datasets,
+            {
+                categoryLabel: statTranslate('Année'),
+                format: value =>
+                    value === null || value === undefined
+                        ? '–'
+                        : value + ' ' + statTranslate('jours'),
+            }
         );
     }
 
+    // the figures of the page (CSV)
+    const figuresButton = document.querySelector('.stats-export-figures');
+
     if (
-        submissionDelay.datasets &&
-        (submissionDelay.datasets[0].data.length > 0 ||
-            submissionDelay.datasets[1].data.length > 0)
+        figuresButton &&
+        typeof statsFiguresFromView !== 'undefined' &&
+        typeof downloadCsv === 'function'
     ) {
-        createChart(
-            context3,
-            submissionDelay,
-            seriesFromView.submissionDelay.chartType
-        );
+        figuresButton.addEventListener('click', function () {
+            downloadCsv(
+                statCsvFileName([statsExportName(), 'chiffres']),
+                [[statTranslate('Indicateur'), statTranslate('Valeur')]].concat(
+                    statsFiguresFromView
+                )
+            );
+        });
     }
 });

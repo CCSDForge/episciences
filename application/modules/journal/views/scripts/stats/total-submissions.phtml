@@ -1,53 +1,37 @@
-<?php if ($this->totalArticles) : ?>
-    <div class="submissions-totals">
-    <li class="stats-item">
-        <span class="stat-label"><?= $this->translate('Total :') ?></span>
-        <span class="stat-value"><?= $this->totalArticles ?></span>&nbsp;<span class="stat-label"><?= $this->translate($this->totalArticles > 1 ? 'articles' : 'article') ?></span>
-        <?php if ($this->totalImportedArticles): ?>
-            <?php $importedMsg = $this->totalImportedArticles > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
-            <p class="help-block" style="display: inline;">
-                (<?= sprintf($this->translate($importedMsg), '<span class="stat-value">' . $this->totalImportedArticles . '</span>') ?>)
-            </p>
-        <?php endif; ?>
-        <?php if (isset($this->year)): ?>
-            <span class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                  title="<?= $this->translate('Cela inclut seulement les articles soumis cette année.') ?>"></span>
-        <?php endif; ?>
+<?php
+// Totals of the journal: stat tiles (articles, published articles), each with its imported papers
+$totalsPaperLists = $this->totalsExplained ? ($this->paperLists ?? []) : [];
+$isYear = isset($this->year);
+$importedMessage = static fn($count) => $count > 1 ? 'dont %s importés' : 'dont %s importé';
+?>
+<li class="stat-tiles-row submissions-totals">
+    <ul class="list-unstyled stat-tiles">
+        <?php if ($this->totalArticles) : ?>
+            <?= $this->partial('stats/stat-item.phtml', [
+                    'itemLabel' => $this->totalArticles > 1 ? 'articles' : 'article',
+                    'itemValue' => $this->totalArticles,
+                    'help' => $isYear ? ['message' => 'Cela inclut seulement les articles soumis cette année.', 'isTooltip' => true] : null,
+                    'context' => $this->totalImportedArticles ? ['message' => $importedMessage($this->totalImportedArticles), 'value' => $this->totalImportedArticles] : null,
+                    'paperList' => $totalsPaperLists[StatsController::NB_SUBMISSIONS] ?? null,
+                    'morePaperLists' => $this->totalImportedArticles ? [['paperList' => $totalsPaperLists[StatsController::NB_IMPORTED] ?? null, 'label' => 'Voir les articles importés (%s)']] : [],
+            ]) ?>
 
-        <?php if (isset($this->totalPublishedArticles)): ?>
-            |
-            <span class="stat-value"><?= $this->totalPublishedArticles ?></span>
-            <span class="stat-label"><?= $this->translate($this->totalPublishedArticles > 1 ? 'publiés' : 'publié') ?></span>
-            <?php if ($this->totalImportedPublished) : ?>
-                <?php $importedMsg = $this->totalImportedPublished > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
-                <p class="help-block" style="display: inline;">
-                    (<?= sprintf($this->translate($importedMsg), '<span class="stat-value">' . $this->totalImportedPublished . '</span>') ?>
-                    )
-                </p>
+            <?php if (isset($this->totalPublishedArticles)): ?>
+                <?= $this->partial('stats/stat-item.phtml', [
+                        'itemLabel' => $this->totalPublishedArticles > 1 ? 'publiés' : 'publié',
+                        'itemValue' => $this->totalPublishedArticles,
+                        'help' => $isYear ? ['message' => 'Cela inclut les articles qui ont été soumis antérieurement et publiés cette année.', 'isTooltip' => true] : null,
+                        'context' => $this->totalImportedPublished ? ['message' => $importedMessage($this->totalImportedPublished), 'value' => $this->totalImportedPublished] : null,
+                        'paperList' => $totalsPaperLists[StatsController::TOTAL_PUBLISHED_PAPERS] ?? null,
+                ]) ?>
             <?php endif; ?>
-            <?php if (isset($this->year)): ?>
-                <span class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                      title="<?= $this->translate('Cela inclut les articles qui ont été soumis antérieurement et publiés cette année.') ?>"></span>
-            <?php endif; ?>
-
+        <?php else: ?>
+            <?= $this->partial('stats/stat-item.phtml', [
+                    'itemLabel' => 'Soumissions',
+                    'itemValue' => $this->allSubmissions,
+                    'context' => $this->imported ? ['message' => $importedMessage($this->imported), 'value' => $this->imported] : null,
+                    'paperList' => $this->paperLists[StatsController::NB_SUBMISSIONS] ?? null,
+            ]) ?>
         <?php endif; ?>
-    </li>
-
-<?php else: ?>
-
-    <?php $options = [
-            'itemLabel' => 'Soumissions',
-            'itemValue' => $this->allSubmissions,
-    ];
-
-    if ($this->imported) {
-        $importedMsg = $this->imported > 1 ? 'dont %s importés' : 'dont %s importé';
-        $options['help'] = [
-                'message' => $importedMsg,
-                'value' => $this->imported
-        ];
-    }
-    ?>
-    <?= $this->partial('stats/stat-item.phtml', $options) ?>
-    </div>
-<?php endif; ?>
+    </ul>
+</li>

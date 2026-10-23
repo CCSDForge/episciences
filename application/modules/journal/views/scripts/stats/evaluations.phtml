@@ -1,7 +1,7 @@
-<?php if ($this->reviewsRequested || $this->reviewsReceived || $this->medianReviewsNumbe) : ?>
+<?php if ($this->reviewsRequested || $this->reviewsReceived || $this->medianReviewsNumber) : ?>
     <div id="evaluation">
-        <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Évaluations') ?></h1>
-        <ul class="list-unstyled">
+        <h3 class="stat-section-title"><?= $this->translate('Évaluations') ?></h3>
+        <ul class="list-unstyled stat-tiles">
             <?= $this->partial('stats/stat-item.phtml', [
                     'itemLabel' => 'Évaluations demandées',
                     'itemValue' => $this->reviewsRequested,

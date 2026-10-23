@@ -1,0 +1,60 @@
+<?php
+// Window listing the papers of a figure (see public/js/stats/paper-list.js)
+// The date columns depend on the figure: they are added by the script, with these labels
+$columnLabels = [
+    'submitted' => $this->translate('Déposé le'),
+    'imported' => $this->translate('Importé le'),
+    // submitted and imported papers: the imported ones are marked on their row
+    'mixed' => $this->translate('Déposé le'),
+    'importedTag' => $this->translate('importé'),
+    StatsController::COLUMN_REFUSAL => $this->translate('Refusé le'),
+    StatsController::COLUMN_ACCEPTANCE => $this->translate('Accepté le'),
+    StatsController::COLUMN_PUBLICATION => $this->translate('Publié le'),
+];
+?>
+<dialog id="stat-papers-dialog" class="stat-papers-dialog" aria-labelledby="stat-papers-dialog-title"
+        data-url="/stats/papers"
+        data-year="<?= $this->yearQuery ? (int)$this->yearQuery : '' ?>"
+        data-full-history="<?= $this->fullHistory ? '1' : '' ?>"
+        data-titles="<?= $this->escape(json_encode($this->paperListTitles ?? [], JSON_UNESCAPED_UNICODE)) ?>"
+        data-column-labels="<?= $this->escape(json_encode($columnLabels, JSON_UNESCAPED_UNICODE)) ?>">
+    <div class="stat-papers-dialog-header">
+        <h2 id="stat-papers-dialog-title" class="h4"></h2>
+        <button type="button" class="close stat-papers-close" aria-label="<?= $this->translate('Fermer') ?>">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+
+    <p class="stat-papers-hidden help-block" hidden></p>
+    <p class="stat-papers-message" role="status"></p>
+
+    <div class="stat-papers-toolbar">
+        <input type="search" class="form-control input-sm stat-papers-search"
+               placeholder="<?= $this->translate('Rechercher (titre, identifiant)') ?>"
+               aria-label="<?= $this->translate('Rechercher (titre, identifiant)') ?>">
+        <span class="stat-papers-count help-block"></span>
+        <button type="button" class="btn btn-default btn-xs stat-papers-export">
+            <span class="fas fa-download fa-sm" aria-hidden="true"></span>
+            <?= $this->translate('Exporter la liste (CSV)') ?>
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-condensed stat-papers-table">
+            <thead>
+            <tr>
+                <th scope="col" data-sort="docid" aria-sort="descending"><button type="button" class="btn btn-link btn-xs"><?= $this->translate('ID') ?></button></th>
+                <th scope="col" data-sort="title" aria-sort="none"><button type="button" class="btn btn-link btn-xs"><?= $this->translate('Titre') ?></button></th>
+                <th scope="col" data-sort="statusLabel" aria-sort="none"><button type="button" class="btn btn-link btn-xs"><?= $this->translate('Statut') ?></button></th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <nav class="stat-papers-pager text-center" aria-label="<?= $this->translate('Pagination') ?>">
+        <button type="button" class="btn btn-default btn-xs stat-papers-prev"><?= $this->translate('Précédente') ?></button>
+        <span class="stat-papers-page"></span>
+        <button type="button" class="btn btn-default btn-xs stat-papers-next"><?= $this->translate('Suivante') ?></button>
+    </nav>
+</dialog>

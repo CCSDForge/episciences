@@ -1,20 +1,36 @@
 <?php
 $this->layout()->pageTitle = $this->translate('Statistiques');
-$description = $this->translate('Indicateurs de statistiques pour la revue') . ' <span class="stat-code">' . RVNAME . '</span>';
-$this->layout()->description = $description;
+// the introduction of the page is part of the page (not the description of the layout, shown as a quotation)
 ?>
+<div class="stats-page" data-export-name="<?= $this->escape($this->exportName ?? 'statistiques') ?>">
+<p class="stats-intro"><?= $this->translate('Indicateurs de statistiques pour la revue') ?> <strong><?= $this->escape(RVNAME) ?></strong></p>
 <?php if ($this->errorMessage): ?>
     <div class="alert alert-danger"><?= $this->translate($this->errorMessage) ?></div>
 <?php else: ?>
     <?php $this->jQuery()->addJavascriptFile(VENDOR_CHART); ?>
     <?php $this->jQuery()->addJavascriptFile(VENDOR_CHART_PLUGIN_DATALABELS); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/index.js'); ?>
+    <?php $this->jQuery()->addJavascriptFile('/js/stats/csv.js'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/common.js'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/submissions.js'); ?>
+    <?php if ($this->paperLists): ?>
+        <?php $this->jQuery()->addJavascriptFile('/js/stats/paper-list.js'); ?>
+    <?php endif; ?>
 
-    <?php $this->jQuery()->addStylesheet(VENDOR_CHART_CSS); ?>
 
-    <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories]) ?>
+    <?php // toolbar: the years, and the switch of the start date of the statistics (administrators) ?>
+    <div class="stats-toolbar">
+        <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories, 'fullHistory' => $this->fullHistory]) ?>
+        <div class="stats-toolbar-actions">
+            <?php if (!empty($this->figuresExport)): ?>
+                <button type="button" class="btn btn-default btn-xs stats-export-figures">
+                    <span class="fas fa-download fa-sm" aria-hidden="true"></span>
+                    <?= $this->translate('Exporter les chiffres (CSV)') ?>
+                </button>
+            <?php endif; ?>
+            <?= $this->render('stats/history-switch.phtml') ?>
+        </div>
+    </div>
 
     <div class="col-md-12">
         <div id='loading-stats' style="display:none"></div>
@@ -56,16 +72,22 @@ $this->layout()->description = $description;
                 'submissionAcceptanceTimeMedianUnit' => $this->submissionAcceptanceTimeMedianUnit,
                 'submissionPublicationTimeMedian' => $this->submissionPublicationTimeMedian,
                 'submissionPublicationTimeMedianUnit' => $this->submissionPublicationTimeMedianUnit,
-                'seriesFromView' => $this->seriesJs
+                'charts' => $this->charts ?? [],
+                'papersWithTemporaryVersion' => $this->papersWithTemporaryVersion ?? null,
+                'paperLists' => $this->paperLists ?? [],
+                'totalsExplained' => $this->totalsExplained ?? false
         ]) ?>
     </div>
 
-    <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories]) ?>
+    <?php if ($this->paperLists): ?>
+        <?= $this->render('stats/papers-dialog.phtml') ?>
+    <?php endif; ?>
+
+    <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories, 'fullHistory' => $this->fullHistory]) ?>
 
     <div class="col-md-12">
         <?php if ($this->isAvailableUsersStats && $this->allUsers) : ?>
             <?php $this->jQuery()->addJavascriptFile('/js/stats/users.js'); ?>
-            <h2><?= $this->translate('Utilisateurs') ?> <?= $this->yearQuery ? ' - <span class="stat-code">' . $this->yearQuery . '</span>' : '' ?> </h2>
             <?= $this->partial('stats/users.phtml', [
                     'chart5Title' => $this->chart5Title,
                     'allUsers' => $this->allUsers
@@ -74,16 +96,9 @@ $this->layout()->description = $description;
     </div>
 
     <script>
-        let yearCategoriesFromView = <?= json_encode($this->yearCategoriesJs) ?>;
-        let allSubmissionsFromView = <?= json_encode($this->allSubmissionsJs) ?>;
-        let seriesFromView = <?= json_encode($this->seriesJs) ?>;
-        let nbUsersByRoleFromView = <?= json_encode($this->nbUsersByRole) ?>;
-        let rolesFromView = <?= json_encode($this->roles) ?>;
+        const statsChartsFromView = <?= json_encode($this->charts ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
+        const statsFiguresFromView = <?= json_encode($this->figuresExport ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
     </script>
 
 <?php endif; ?>
-
-
-
-
-
+</div>

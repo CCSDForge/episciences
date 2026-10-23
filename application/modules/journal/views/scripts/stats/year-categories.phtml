@@ -3,24 +3,25 @@
 $request = Zend_Controller_Front::getInstance()->getRequest();
 $controller = $request->getControllerName();
 $action = $request->getActionName();
+// the "all the data" state of the administrators is kept from one year to another
+$url = function (?int $year) use ($controller, $action): string {
+    $query = array_filter([
+        'year' => $year,
+        StatsController::FULL_HISTORY_PARAM => $this->fullHistory ? 1 : null,
+    ]);
+
+    return '/' . $controller . '/' . $action . ($query ? '?' . http_build_query($query) : '');
+};
 ?>
-<div class="text-center" style="margin-bottom: 10px;">
-    <?php if ($this->yearCategories) : ?>
-        <div>
-            <a id="all-submission-stats-btn"
-               class="btn btn-default btn-xs <?= !$this->yearQuery ? 'disabled' : '' ?>" <?= !$this->yearQuery ? 'aria-disabled="true"' : '' ?>
-               role="button"
-               href="<?= '/' . $controller . '/' . $action ?>">
-                <?= $this->translate('Tout') ?>
-            </a>
-
-            <?php foreach ($this->yearCategories as $year): ?>
-                <a id="submission-stats-"<?= $year ?>
-                   class="btn btn-default btn-xs <?= ($this->yearQuery === $year) ? 'disabled' : '' ?>"
-                   role="button" <?= ($this->yearQuery === $year) ? 'aria-disabled="true"' : '' ?>
-                   href="<?= '/' . $controller . '/' . $action . '?year=' . $year ?>"><?= $year ?></a>
-            <?php endforeach; ?>
-
-        </div>
-    <?php endif; ?>
-</div>
+<?php if ($this->yearCategories) : ?>
+    <nav class="stats-years" aria-label="<?= $this->escape($this->translate('Année')) ?>">
+        <a class="stats-year<?= !$this->yearQuery ? ' active' : '' ?>"
+           <?= !$this->yearQuery ? 'aria-current="page"' : '' ?>
+           href="<?= $this->escape($url(null)) ?>"><?= $this->translate('Tout') ?></a>
+        <?php foreach ($this->yearCategories as $year): ?>
+            <a class="stats-year<?= ($this->yearQuery === $year) ? ' active' : '' ?>"
+               <?= ($this->yearQuery === $year) ? 'aria-current="page"' : '' ?>
+               href="<?= $this->escape($url((int)$year)) ?>"><?= (int)$year ?></a>
+        <?php endforeach; ?>
+    </nav>
+<?php endif; ?>
