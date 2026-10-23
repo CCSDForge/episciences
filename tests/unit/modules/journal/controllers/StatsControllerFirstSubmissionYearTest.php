@@ -39,12 +39,17 @@ final class StatsControllerFirstSubmissionYearTest extends TestCase
 
         $this->adapter = $this->getMockBuilder($this->previousAdapter::class)
             ->setConstructorArgs([$this->previousAdapter->getConfig()])
-            ->onlyMethods(['fetchOne'])
+            ->onlyMethods(['fetchOne', 'fetchAll'])
             ->getMock();
         $this->adapter->method('fetchOne')->willReturnCallback(function ($select) {
             $this->selects[] = $select instanceof Zend_Db_Select ? $select->assemble() : (string)$select;
 
             return '4';
+        });
+        $this->adapter->method('fetchAll')->willReturnCallback(function ($select) {
+            $this->selects[] = $select instanceof Zend_Db_Select ? $select->assemble() : (string)$select;
+
+            return [['REPOID' => '1', 'YEAR' => '2023', 'NB' => '3']];
         });
         Zend_Db_Table_Abstract::setDefaultAdapter($this->adapter);
     }
@@ -96,4 +101,23 @@ final class StatsControllerFirstSubmissionYearTest extends TestCase
         self::assertStringNotContainsString('SUBMISSION_DATE', $this->selects[0]);
     }
 
+    // -------------------------------------------------------------------------
+    // getImportedByYearAndRepo()
+    // -------------------------------------------------------------------------
+
+    public function testImported_ByYearOfTheFirstSubmission(): void
+    {
+        $imported = $this->invoke('getImportedByYearAndRepo', '2023-01-01', null);
+
+        self::assertSame([2023 => [(string)Episciences_Repositories::getLabel(1) => 3]], $imported);
+        self::assertCount(1, $this->selects);
+
+        $sql = $this->selects[0];
+
+        self::assertStringContainsString('GROUP BY `PAPERID`', $sql);
+        self::assertStringContainsString('YEAR(FIRST_SUBMISSION_DATE)', $sql);
+        self::assertStringContainsString('COUNT(*)', $sql);
+        self::assertStringContainsString("HAVING (MIN(SUBMISSION_DATE) > '2023-01-01')", $sql);
+        self::assertStringNotContainsString("(SUBMISSION_DATE > '2023-01-01')", $sql);
+    }
 }
