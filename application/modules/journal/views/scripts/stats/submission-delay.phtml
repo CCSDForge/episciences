@@ -19,13 +19,19 @@
             <tbody>
 
             <tr>
-                <th class="stat-label"><?= ucfirst($this->translate('délai soumission-publication')) ?></th>
+                <th class="stat-label">
+                    <?= ucfirst($this->translate('délai soumission-publication')) ?>
+                    <?= $this->partial('stats/paper-list.phtml', ['paperList' => $this->paperLists[StatsController::SUBMISSION_PUBLICATION_DELAY] ?? null]) ?>
+                </th>
                 <td class="stat-value"><?= $this->submissionPublicationTime ?></td>
                 <td class="stat-value"><?= $this->submissionPublicationTimeMedian ?></td>
             </tr>
 
             <tr>
-                <th class="stat-label"><?= ucfirst($this->translate('délai soumission-acceptation')) ?></th>
+                <th class="stat-label">
+                    <?= ucfirst($this->translate('délai soumission-acceptation')) ?>
+                    <?= $this->partial('stats/paper-list.phtml', ['paperList' => $this->paperLists[StatsController::SUBMISSION_ACCEPTANCE_DELAY] ?? null]) ?>
+                </th>
                 <td class="stat-value"><?= $this->submissionAcceptanceTime ?></td>
                 <td class="stat-value"><?= $this->submissionAcceptanceTimeMedian ?></td>
             </tr>

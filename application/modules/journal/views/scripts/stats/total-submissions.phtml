@@ -1,3 +1,6 @@
+<?php
+$totalsPaperLists = $this->totalsExplained ? ($this->paperLists ?? []) : [];
+?>
 <?php if ($this->totalArticles) : ?>
     <div class="submissions-totals">
     <li class="stats-item">
@@ -8,6 +11,10 @@
             <p class="help-block" style="display: inline;">
                 (<?= sprintf($this->translate($importedMsg), '<span class="stat-value">' . $this->totalImportedArticles . '</span>') ?>)
             </p>
+        <?php endif; ?>
+        <?= $this->partial('stats/paper-list.phtml', ['paperList' => $totalsPaperLists[StatsController::NB_SUBMISSIONS] ?? null]) ?>
+        <?php if ($this->totalImportedArticles): ?>
+            <?= $this->partial('stats/paper-list.phtml', ['paperList' => $totalsPaperLists[StatsController::NB_IMPORTED] ?? null, 'label' => 'Voir les articles importés (%s)']) ?>
         <?php endif; ?>
         <?php if (isset($this->year)): ?>
             <span class="fas fa-info-circle fa-sm" data-toggle="tooltip"
@@ -29,6 +36,7 @@
                 <span class="fas fa-info-circle fa-sm" data-toggle="tooltip"
                       title="<?= $this->translate('Cela inclut les articles qui ont été soumis antérieurement et publiés cette année.') ?>"></span>
             <?php endif; ?>
+            <?= $this->partial('stats/paper-list.phtml', ['paperList' => $totalsPaperLists[StatsController::TOTAL_PUBLISHED_PAPERS] ?? null, 'label' => 'Voir les articles publiés (%s)']) ?>
 
         <?php endif; ?>
     </li>
@@ -38,6 +46,7 @@
     <?php $options = [
             'itemLabel' => 'Soumissions',
             'itemValue' => $this->allSubmissions,
+            'paperList' => $this->paperLists[StatsController::NB_SUBMISSIONS] ?? null,
     ];
 
     if ($this->imported) {

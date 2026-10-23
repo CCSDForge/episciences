@@ -11,6 +11,9 @@ $this->layout()->description = $description;
     <?php $this->jQuery()->addJavascriptFile('/js/stats/index.js'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/common.js'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/submissions.js'); ?>
+    <?php if ($this->paperLists): ?>
+        <?php $this->jQuery()->addJavascriptFile('/js/stats/paper-list.js'); ?>
+    <?php endif; ?>
 
     <?php $this->jQuery()->addStylesheet(VENDOR_CHART_CSS); ?>
 
@@ -56,7 +59,9 @@ $this->layout()->description = $description;
                 'submissionAcceptanceTimeMedianUnit' => $this->submissionAcceptanceTimeMedianUnit,
                 'submissionPublicationTimeMedian' => $this->submissionPublicationTimeMedian,
                 'submissionPublicationTimeMedianUnit' => $this->submissionPublicationTimeMedianUnit,
-                'seriesFromView' => $this->seriesJs
+                'seriesFromView' => $this->seriesJs,
+                'paperLists' => $this->paperLists ?? [],
+                'totalsExplained' => $this->totalsExplained ?? false
         ]) ?>
     </div>
 

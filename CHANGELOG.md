@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BAOBAB submissions accept an ARK resolver URL (e.g. `https://pidslink.ren.africa/ark:/50962/...`) as well as a bare ARK or a record URL.
 - HAL papers: authors are now built from the HAL TEI (middle names, ORCID, affiliations with their ROR) when it lists the same authors as the OAI-DC record; existing authors are completed with their HAL middle names. Initials are always written with a period (`Eva C. Smith`), whether HAL returns `C` or `C.`.
 - `enrichment:creators -v` lists the author corrections made from HAL TEI; with `--dry-run` it lists them without writing anything.
+- Statistics page: journal administrators can see the papers behind each figure (collapsible lists linking to the paper management pages); papers for which they declared a conflict of interest are only counted. Requires the matching Episciences API version; otherwise the page is displayed as before.
 
 ### Fixed
 - [#1310](https://github.com/CCSDForge/episciences/pull/1310): co-author form and co-author removal are now consistent with the paper management page.

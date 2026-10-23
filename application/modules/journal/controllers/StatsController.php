@@ -1,8 +1,10 @@
 <?php
 
+use Episciences\Api\DelegatedTokenClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\StreamInterface;
+use Psr\Log\NullLogger;
 
 class StatsController extends Zend_Controller_Action
 {
@@ -28,6 +30,11 @@ class StatsController extends Zend_Controller_Action
     public const SUBMISSION_ACCEPTANCE_DELAY = 'submissionAcceptanceTime';
     public const SUBMISSION_PUBLICATION_DELAY = 'submissionPublicationTime';
     public const NB_USERS = 'nbUsers';
+    public const NB_IMPORTED_PUBLISHED = 'nbImportedPublished';
+    public const NB_ACCEPTED_NOT_YET_PUBLISHED = 'nbAcceptedNotYetPublished';
+    // papers of the published total: published and imported published papers
+    public const TOTAL_PUBLISHED_PAPERS = 'totalPublished';
+    public const WITH_PAPERS_PARAM = 'withPapers';
 
 
     public const REFERENCE_YEAR = 2013;
@@ -109,11 +116,24 @@ class StatsController extends Zend_Controller_Action
         $dashboard = null;
 
         if ($askApi) {
-            try {
-                $dashboard = json_decode($this->askApi($uri, $params), true, 512, JSON_THROW_ON_ERROR);
-            } catch (GuzzleException|JsonException $e) {
-                $this->view->errorMessage = $errorMessage;
-                $logger?->warning($e->getMessage());
+            $token = $this->getDelegatedToken($logger);
+
+            if ($token !== null) {
+                try {
+                    $dashboard = json_decode($this->askApi($uri, array_merge($params, [self::WITH_PAPERS_PARAM => 'true']), $token), true, 512, JSON_THROW_ON_ERROR);
+                } catch (GuzzleException|JsonException $e) {
+                    // falls back to the statistics without the papers
+                    $logger?->warning(sprintf('Statistics of %s: the papers are not available: %s', RVCODE, $e->getMessage()));
+                }
+            }
+
+            if (empty($dashboard)) {
+                try {
+                    $dashboard = json_decode($this->askApi($uri, $params), true, 512, JSON_THROW_ON_ERROR);
+                } catch (GuzzleException|JsonException $e) {
+                    $this->view->errorMessage = $errorMessage;
+                    $logger?->warning($e->getMessage());
+                }
             }
 
             if (empty($dashboard)) {
@@ -419,15 +439,77 @@ class StatsController extends Zend_Controller_Action
         $this->view->errorMessage = null;
         $this->view->isAvailableUsersStats = $isAvailableUsersStats;
 
+        // Papers of the figures (journal administrators only)
+        $this->view->paperLists = self::getPaperLists($dashboard['value'] ?? []);
+        // without the "startAfterDate" filter, the totals are not explained by the papers
+        $this->view->totalsExplained = !isset($dashboard['value']['totalWithoutStartAfterDate']);
+
+    }
+
+    /**
+     * Papers of each figure of the dashboard, if the API returned them
+     * @param array $value the value of the dashboard
+     * @return array<string, array{docIds: int[], hidden: int}> figure => DOCIDs of the listed papers and number of papers not listed (conflict of interest)
+     */
+    public static function getPaperLists(array $value): array
+    {
+        if (!isset($value['papers']) || !is_array($value['papers'])) {
+            return [];
+        }
+
+        $hiddenPapers = isset($value['hiddenPapers']) && is_array($value['hiddenPapers']) ? $value['hiddenPapers'] : [];
+        $lists = [];
+
+        foreach ($value['papers'] as $figure => $docIds) {
+            if (!is_array($docIds)) {
+                continue;
+            }
+
+            $lists[$figure] = [
+                'docIds' => array_values(array_filter(array_map('intval', $docIds), static fn(int $docId) => $docId > 0)),
+                'hidden' => max(0, (int)($hiddenPapers[$figure] ?? 0)),
+            ];
+        }
+
+        if (isset($lists[self::NB_PUBLISHED], $lists[self::NB_IMPORTED_PUBLISHED])) {
+            $lists[self::TOTAL_PUBLISHED_PAPERS] = [
+                'docIds' => array_values(array_unique(array_merge($lists[self::NB_PUBLISHED]['docIds'], $lists[self::NB_IMPORTED_PUBLISHED]['docIds']))),
+                'hidden' => $lists[self::NB_PUBLISHED]['hidden'] + $lists[self::NB_IMPORTED_PUBLISHED]['hidden'],
+            ];
+        }
+
+        return $lists;
+    }
+
+    /**
+     * A token to get the papers of the figures, for the administrators of the journal only
+     * @param Monolog\Logger|null $logger
+     * @return string|null
+     */
+    private function getDelegatedToken(?Monolog\Logger $logger): ?string
+    {
+        if (!Episciences_Auth::isLogged() || !(Episciences_Auth::isAdministrator(RVID) || Episciences_Auth::isRoot())) {
+            return null;
+        }
+
+        $client = new DelegatedTokenClient(
+            new Client(),
+            $logger ?? new NullLogger(),
+            (string)EPISCIENCES_API_URL,
+            defined('EPISCIENCES_API_SECRET_KEY') ? (string)EPISCIENCES_API_SECRET_KEY : ''
+        );
+
+        return $client->get((int)Episciences_Auth::getUid(), RVCODE);
     }
 
     /**
      * @param string $uri
      * @param array $options
+     * @param string|null $token
      * @return StreamInterface
      * @throws GuzzleException
      */
-    private function askApi(string $uri, array $options = []): StreamInterface
+    private function askApi(string $uri, array $options = [], ?string $token = null): StreamInterface
     {
         $url = EPISCIENCES_API_URL . $uri;
 
@@ -435,6 +517,10 @@ class StatsController extends Zend_Controller_Action
             'Accept' => 'application/json',
             'Content-type' => 'application/json',
         ];
+
+        if ($token !== null) {
+            $headers['Authorization'] = 'Bearer ' . $token;
+        }
 
         $gOptions = [
             'headers' => $headers,

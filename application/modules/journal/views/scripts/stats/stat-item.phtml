@@ -3,6 +3,7 @@ $itemLabel = $this->itemLabel ?? null;
 $itemValue = $this->itemValue ?? null;
 $isRate = $this->isRate ?? false;
 $help = $this->help ?? null;
+$paperList = $this->paperList ?? null;
 
 if (!$itemLabel && !$itemValue) {
     return;
@@ -30,4 +31,5 @@ if (!$itemLabel && !$itemValue) {
                   title="<?= $this->translate($help['message']) ?>"></span>
         <?php endif; ?>
     <?php endif; ?>
+    <?= $this->partial('stats/paper-list.phtml', ['paperList' => $paperList]) ?>
 </li>

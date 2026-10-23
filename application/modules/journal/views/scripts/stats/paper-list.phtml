@@ -1,0 +1,29 @@
+<?php
+// Papers of a figure: DOCIDs of the listed papers, and number of papers not listed (conflict of interest)
+$paperList = $this->paperList ?? null;
+
+if (!is_array($paperList)) {
+    return;
+}
+
+$docIds = $paperList['docIds'] ?? [];
+$hidden = (int)($paperList['hidden'] ?? 0);
+$label = $this->label ?? 'Voir les articles (%s)';
+
+if (!$docIds && !$hidden) {
+    return;
+}
+?>
+<div class="stat-papers">
+    <?php if ($docIds): ?>
+        <details class="stat-papers-list" data-docids="<?= $this->escape(json_encode($docIds)) ?>">
+            <summary class="small"><?= sprintf($this->translate($label), count($docIds)) ?></summary>
+            <ul class="list-inline stat-papers-items"></ul>
+        </details>
+    <?php endif; ?>
+    <?php if ($hidden): ?>
+        <p class="help-block small">
+            <?= sprintf($this->translate($hidden > 1 ? "%s articles non listés : conflit d'intérêts déclaré" : "%s article non listé : conflit d'intérêts déclaré"), $hidden) ?>
+        </p>
+    <?php endif; ?>
+</div>

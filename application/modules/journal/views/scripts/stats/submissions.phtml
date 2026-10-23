@@ -46,7 +46,8 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                                         'help' => [
                                                 'message' => $importedHelpMessage,
                                                 'value' => $this->imported,
-                                        ]
+                                        ],
+                                        'paperList' => $this->paperLists[StatsController::NB_SUBMISSIONS] ?? null
                                 ]) ?>
 
                             <?php endif; ?>
@@ -65,6 +66,7 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                             <?= $this->partial('stats/stat-item.phtml', [
                                     'itemLabel' => 'articles publiés',
                                     'itemValue' => $this->allPublications,
+                                    'paperList' => $this->paperLists[StatsController::NB_PUBLISHED] ?? null
                             ]) ?>
 
                         <?php endif; ?>
@@ -78,7 +80,8 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                                     'help' => [
                                             'message' => $acceptedTooltipInfo,
                                             'isTooltip' => true
-                                    ]
+                                    ],
+                                    'paperList' => $this->paperLists[StatsController::NB_ACCEPTED] ?? null
                             ]) ?>
 
                         <?php endif; ?>
@@ -101,7 +104,8 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                                     'help' => [
                                             'message' => $refusedTooltipInfo,
                                             'isTooltip' => true
-                                    ]
+                                    ],
+                                    'paperList' => $this->paperLists[StatsController::NB_REFUSED] ?? null
                             ]) ?>
 
 
@@ -115,7 +119,8 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                                     'help' => [
                                             'message' => $otherStatusTooltipInfo,
                                             'isTooltip' => true
-                                    ]
+                                    ],
+                                    'paperList' => $this->paperLists[StatsController::NB_OTHER_STATUS] ?? null
                             ]) ?>
 
                         <?php endif; ?>
@@ -203,7 +208,8 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                                     'help' => [
                                             'message' => $acceptedNoYetPublishedTooltipInfo,
                                             'isTooltip' => true
-                                    ]
+                                    ],
+                                    'paperList' => $this->paperLists[StatsController::NB_ACCEPTED_NOT_YET_PUBLISHED] ?? null
                             ]) ?>
 
                         <?php endif; ?>

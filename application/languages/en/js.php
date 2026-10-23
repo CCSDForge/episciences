@@ -332,4 +332,7 @@ return [
     
     // License save warnings
     "La licence actuelle est déjà définie." => 'The current license is already set.',
+
+    // Statistics: papers of the figures
+    'Afficher plus' => 'Show more',
 ];
