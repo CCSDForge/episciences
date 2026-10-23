@@ -211,7 +211,8 @@ class AdministratelinkeddataController extends Episciences_Controller_Action
 
     /**
      * Returns the paper of the current journal when the request is an AJAX POST
-     * and the user is a secretary, an editor assigned to the paper, or its owner or a co-author.
+     * and the user is a secretary, an editor assigned to the paper, or, as long as the paper
+     * is not published, its owner or a co-author.
      */
     private function getManageablePaper(int $docId): ?Episciences_Paper
     {
@@ -226,7 +227,7 @@ class AdministratelinkeddataController extends Episciences_Controller_Action
 
         $isAllowed = Episciences_Auth::isSecretary()
             || $paper->isEditor((int)Episciences_Auth::getUid())
-            || $paper->isOwnerOrCoAuthor();
+            || (!$paper->isPublished() && $paper->isOwnerOrCoAuthor());
 
         return $isAllowed ? $paper : null;
     }
@@ -277,32 +278,36 @@ class AdministratelinkeddataController extends Episciences_Controller_Action
         // The paper is derived from the stored dataset, never from the request
         $paper = $datasetInDb instanceof Episciences_Paper_Dataset ? $this->getManageablePaper($datasetInDb->getDocId()) : null;
 
-        if ($paper !== null) {
-            // Sanitize all input parameters
-            $relationship = htmlspecialchars(trim($request->getPost('relationship') ?? ''), ENT_QUOTES, 'UTF-8');
-            $typeLd = filter_var(trim($request->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
-            $valueLd = htmlspecialchars(trim($request->getPost('valueLd')), ENT_QUOTES, 'UTF-8');
-            $docId = $paper->getDocid();
-            $paperId = (string)$paper->getPaperid();
-
-            $ld = new Episciences_Paper_Dataset();
-            $ld->setId($ldId);
-            $ld->setRelationship($relationship);
-            $ld->setCode($typeLd);
-            $ld->setSourceId(Episciences_Repositories::EPI_USER_ID);
-            if (Episciences_Paper_DatasetsManager::updateRelationAndTypeById($ld) > 0){
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Modification de la donnée liée bien prise en compte");
-                Episciences_Paper_Logger::log($paperId, $docId, Episciences_Paper_Logger::CODE_LD_CHANGED, Episciences_Auth::getUid(),
-                    json_encode(['typeLd' => $typeLd,
-                        'valueLd' => $valueLd,
-                        'relationship' => $relationship,
-                        'docId' => $docId,
-                        'paperId' => $paperId,
-                        'username' => Episciences_Auth::getFullName()]));
-                return json_encode([true], JSON_THROW_ON_ERROR);
-            }
+        if ($paper === null) {
+            $this->denyLinkedDataChange();
+            return;
         }
-        return json_encode([false], JSON_THROW_ON_ERROR);
+
+        // Sanitize all input parameters
+        $relationship = htmlspecialchars(trim($request->getPost('relationship') ?? ''), ENT_QUOTES, 'UTF-8');
+        $typeLd = filter_var(trim($request->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
+        $valueLd = htmlspecialchars(trim($request->getPost('valueLd')), ENT_QUOTES, 'UTF-8');
+        $docId = $paper->getDocid();
+        $paperId = (string)$paper->getPaperid();
+
+        $ld = new Episciences_Paper_Dataset();
+        $ld->setId($ldId);
+        $ld->setRelationship($relationship);
+        $ld->setCode($typeLd);
+        $ld->setSourceId(Episciences_Repositories::EPI_USER_ID);
+        if (Episciences_Paper_DatasetsManager::updateRelationAndTypeById($ld) > 0){
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Modification de la donnée liée bien prise en compte");
+            Episciences_Paper_Logger::log($paperId, $docId, Episciences_Paper_Logger::CODE_LD_CHANGED, Episciences_Auth::getUid(),
+                json_encode(['typeLd' => $typeLd,
+                    'valueLd' => $valueLd,
+                    'relationship' => $relationship,
+                    'docId' => $docId,
+                    'paperId' => $paperId,
+                    'username' => Episciences_Auth::getFullName()]));
+            echo json_encode([true], JSON_THROW_ON_ERROR);
+            return;
+        }
+        echo json_encode([false], JSON_THROW_ON_ERROR);
     }
 
 }

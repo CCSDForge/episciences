@@ -5337,15 +5337,23 @@ class AdministratepaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $selectedUserId = (int)$request->getPost('selectedUserId');
 
+        if (!$request->isPost()) {
+            return;
+        }
+
+        $selectedUserId = (int)$request->getPost('selectedUserId');
+        $docId = (int)$request->getPost('docId');
+
+        if (!$this->findPaperForCoAuthorForm($request, $docId)) {
+            return;
+        }
 
         // create an episciences account from a CAS account
         if ($selectedUserId) {
 
             $user = new Episciences_User();
 
-            $docId = (int)$request->getPost('docId');
             if ($user->hasLocalData($selectedUserId) && $user->hasRoles($selectedUserId)) {
                 $addcoAuthor = $this->addRoleCoAuthor($docId, $selectedUserId);
                 if ($addcoAuthor) {
@@ -5383,7 +5391,52 @@ class AdministratepaperController extends PaperDefaultController
         }
     }
 
-    private function addRoleCoAuthor(int $docId, int $uid): bool
+    /**
+     * Same checks as the paper management page the co-author form comes from
+     * (viewAction): paper of the current journal, request token, removed or deleted paper,
+     * own submission or conflict of interest, paper permissions.
+     * Redirects with a flash message when a check fails.
+     * @return Episciences_Paper|null null when the request has been rejected
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function findPaperForCoAuthorForm(Zend_Controller_Request_Http $request, int $docId): ?Episciences_Paper
+    {
+        $paper = $docId ? $this->findPaper($docId) : null;
+
+        if (!$paper || $paper->getRvid() !== RVID) {
+            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($this->view->translate("Le document demandé n’existe pas."));
+            $this->_helper->redirector->gotoUrl($this->_helper->url('list', self::ADMINISTRATE_PAPER_CONTROLLER));
+            return null;
+        }
+
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($this->view->translate('Erreur: modification non autorisée'));
+            $this->_helper->redirector->gotoUrl(self::ADMINPAPER_URL_STR . $docId);
+            return null;
+        }
+
+        $review = $this->findReview();
+
+        // these two redirect and exit when a check fails
+        $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
+        $this->redirectWithFlashMessageIfConflictDetected($paper, $review);
+
+        return $this->checkPermissions($review, $paper) ? $paper : null;
+    }
+
+    protected function findPaper(int $docId): ?Episciences_Paper
+    {
+        return Episciences_PapersManager::get($docId, false) ?: null;
+    }
+
+    protected function findReview(): Episciences_Review
+    {
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+        return $review;
+    }
+
+    protected function addRoleCoAuthor(int $docId, int $uid): bool
     {
         $existingCoAuthor = Episciences_User_AssignmentsManager::findAll([
             'RVID' => RVID,
@@ -5420,8 +5473,8 @@ class AdministratepaperController extends PaperDefaultController
             && isset($post['rvid'])
             && isset($post['uid'])
             && (int)$post['rvid'] === RVID
-            && Episciences_Auth::isAdministrator()) {
-            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            && Episciences_Auth::isAdministrator()
+            && Episciences_Csrf_Helper::validateRequestToken($request)) {
             $getUserAssignment = Episciences_User_AssignmentsManager::find(['RVID' => RVID, "ITEMID" => (int)$post['docId'], "UID" => (int)$post['uid']]);
             if ($getUserAssignment->getId() !== 0 && ($getUserAssignment->getRoleid() === Episciences_Acl::ROLE_CO_AUTHOR)) {
                 $row = Episciences_User_AssignmentsManager::removeAssignment($getUserAssignment->getId());
@@ -5429,7 +5482,7 @@ class AdministratepaperController extends PaperDefaultController
                     $message = Zend_Registry::get('Zend_Translate')->translate("Co-auteur retiré");
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                     echo json_encode($row, JSON_THROW_ON_ERROR);
-                    exit;
+                    return;
                 }
             }
         } else {
@@ -5437,7 +5490,6 @@ class AdministratepaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
         }
         echo json_encode(0, JSON_THROW_ON_ERROR);
-        exit;
     }
 
     /**

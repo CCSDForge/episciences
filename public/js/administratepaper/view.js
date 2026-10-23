@@ -1301,17 +1301,26 @@ function removeDoi(button, paperId, docId, doi) {
 }
 
 function removeCoAuthor(docId, uid, rvid) {
-    let removeCoAuthor = ajaxRequest(
-        JS_PREFIX_URL + 'administratepaper/ajaxrequestremovecoauthor',
-        {
-            docId: docId,
-            uid: uid,
-            rvid: rvid,
-        }
-    );
-    removeCoAuthor.done(function (response) {
-        location.reload();
-    });
+    // CSRF token expected by ajaxrequestremovecoauthorAction
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+    return fetch(JS_PREFIX_URL + 'administratepaper/ajaxrequestremovecoauthor', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': csrfMeta ? csrfMeta.content : '',
+        },
+        body: new URLSearchParams({ docId: docId, uid: uid, rvid: rvid }),
+    })
+        .then(function () {
+            // the outcome is reported by a flash message
+            location.reload();
+        })
+        .catch(function (err) {
+            console.error('[removeCoAuthor] Fetch error:', err);
+        });
 }
 
 function getRevisionDeadlineForm(button, docId, commentId = null) {
@@ -1519,5 +1528,10 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
 
 // Expose pure helpers for unit testing only.
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {validateDoiInput, updateDoiDisplay, DOI_PATTERN};
+    module.exports = {
+        validateDoiInput,
+        updateDoiDisplay,
+        DOI_PATTERN,
+        removeCoAuthor,
+    };
 }

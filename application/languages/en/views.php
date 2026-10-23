@@ -2319,7 +2319,7 @@ return array(
     // datasets
     'administratelinkeddata-addld' => 'Add a related work',
     'administratelinkeddata-removeld' => 'Remove a related work',
-    'administratelinkeddata-setnewinfoldAction' => 'Edit a relationship with a Dataset, Publication or Software',
+    'administratelinkeddata-setnewinfold' => 'Edit a relationship with a Dataset, Publication or Software',
     'Liens publications - données - logiciels' => 'Relationships with publications - datasets - software',
     'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage relationships between Publications - Datasets - Software',
     'Publication - Jeux de données - Codes sources' => 'Publications - Datasets - Software',

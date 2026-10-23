@@ -32,6 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `enrichment:creators -v` lists the author corrections made from HAL TEI; with `--dry-run` it lists them without writing anything.
 
 ### Fixed
+- Profile edition form opened from the user list is submitted for the selected account.
+- [#1345](https://github.com/CCSDForge/episciences/issues/1345): authors can edit the relationship of an existing related work (the access rule did not match the action name). Authors can only add, edit or remove linked data while the paper is not published; editorial roles still can afterwards.
+- [#1310](https://github.com/CCSDForge/episciences/pull/1310): align access and request token checks on the co-author form and co-author removal with the paper management page.
+- [#1344](https://github.com/CCSDForge/episciences/pull/1344): align permission, request token, and file upload validation for graphical abstract and linked data with the paper context.
+- [#1332](https://github.com/CCSDForge/episciences/pull/1332): journal settings: the statistics start date is now strictly validated (YYYY-MM-DD); a malformed stored value is ignored by the statistics page instead of making it fail.
 - [#1298](https://github.com/CCSDForge/episciences/pull/1298): new versions received through the inbox (COAR Notify) of an imported paper are no longer saved as imported either (`ProcessInboxNotificationsCommand::saveNewVersion()`).
 - `episciences:queue --retry` shows the error of the message handler again when the retried message fails, instead of the generic Messenger message.
 - The "Add a file (Foreword, Erratum, Addendum, ...)" dialog of the volume creation and edition pages is no longer empty.
@@ -41,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Decoding the subject of a mail without subject no longer raises a PHP deprecation.
 - Multi-value form fields now stop validating at a validator set to break the chain on failure, instead of always running every validator, including on required and multilingual fields; a validator that succeeds no longer stops the chain because an earlier one failed.
 - Multi-value form fields now validate each value again after a first failure (they used to validate the whole list at once, reporting a wrong "invalid type" error, until the end of the request), keep the messages of every failing validator of a language, no longer report the errors of a previous validation, and no longer fail with a TypeError or show "Array" when they have custom error messages; an empty required field is now validated as empty by every validator.
+- A user who submitted a paper, became a reviewer or edited their own roles in one journal lost their roles in the other journals of the same host (e.g. the manager) until they logged in again: the roles kept in the session are now updated for that journal only, and a journal without any role means member (`Episciences_User::addRole()`, `Episciences_User::saveUserRoles()`, `Episciences_User::getAllRoles()`). A user who edits their own roles no longer loses in the session the roles they may not edit (e.g. author), and no longer keeps the roles they removed: the session is now updated from the roles saved in the database.
 - HAL affiliations no longer keep the ROR of another affiliation of the same author, a defect left in the data by a former enrichment bug: `enrichment:creators` now realigns such a ROR on the HAL TEI (or removes it when the HAL structure has none), while a ROR set manually is kept.
 - `enrichment:creators --dry-run` no longer creates missing author records.
 - A BAOBAB submission by the ARK of a version other than the latest one no longer fails with "identifier does not exist": the ARK is now searched across all the versions of the records.
@@ -226,6 +232,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Review report attachments: access checks aligned with the paper assignments, as for the other paper files.
 - [#1231](https://github.com/CCSDForge/episciences/pull/1231) Website header: only administrators, chief editors, secretaries, webmasters and root can edit it, and the form requires a CSRF token. The generated header escapes every value and only keeps http(s), mailto and tel links. A submission with an invalid CSRF token is not saved: the form is shown again with an error message. Labels still accept the entities already typed, line breaks and the `b`, `strong`, `i` and `em` tags without attributes; any other markup is now shown as text. The CSS style of a label only keeps typographic properties (no positioning, background or `url()`) and its CSS classes are limited to valid class names. Run `website:regenerate-headers --all` once after deployment to rewrite the existing header files, which are otherwise only regenerated when a journal saves its header.
 - [#1216](https://github.com/CCSDForge/episciences/pull/1216) Paper illustration (graphical abstract) upload: the actual MIME type is now checked (the extension alone, case-sensitive, was trusted), SVG is no longer accepted, and access checks are tightened.
 - [#1176](https://github.com/CCSDForge/episciences/pull/1176) Update `league/commonmark` to 2.10.1 to patch DoS vulnerability in Attributes extension.

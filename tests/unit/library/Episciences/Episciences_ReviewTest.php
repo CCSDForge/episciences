@@ -708,6 +708,73 @@ class Episciences_ReviewTest extends TestCase
         ]);
         self::assertSame('2020', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_CREATION_YEAR));
     }
+
+    // =========================================================================
+    // Statistics start date form element
+    // =========================================================================
+
+    private function buildStartStatsAfterDateElement(): Zend_Form_Element
+    {
+        $method = new ReflectionMethod(Episciences_Review::class, 'addStatisticsForm');
+        $method->setAccessible(true);
+        /** @var Ccsd_Form $form */
+        $form = $method->invoke($this->review, new Ccsd_Form());
+
+        $element = $form->getElement(Episciences_Review::SETTING_START_STATS_AFTER_DATE);
+        self::assertInstanceOf(Zend_Form_Element::class, $element);
+
+        return $element;
+    }
+
+    /**
+     * @dataProvider validStartStatsAfterDateProvider
+     */
+    public function testStartStatsAfterDateAcceptsStrictDate(string $input, string $expected): void
+    {
+        $element = $this->buildStartStatsAfterDateElement();
+
+        self::assertTrue($element->isValid($input));
+        self::assertSame($expected, $element->getValue());
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function validStartStatsAfterDateProvider(): array
+    {
+        return [
+            'strict date' => ['2026-01-05', '2026-01-05'],
+            'leap day' => ['2024-02-29', '2024-02-29'],
+            'surrounding whitespace is trimmed' => [' 2026-01-05 ', '2026-01-05'],
+            'empty value (optional setting)' => ['', ''],
+        ];
+    }
+
+    /**
+     * @dataProvider invalidStartStatsAfterDateProvider
+     */
+    public function testStartStatsAfterDateRejectsMalformedDate(mixed $input): void
+    {
+        $element = $this->buildStartStatsAfterDateElement();
+
+        self::assertFalse($element->isValid($input));
+        self::assertArrayHasKey(Zend_Validate_Callback::INVALID_VALUE, $element->getMessages());
+    }
+
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function invalidStartStatsAfterDateProvider(): array
+    {
+        return [
+            'single-digit month and day' => ['2026-1-5'],
+            'impossible day' => ['2026-02-30'],
+            'impossible month' => ['2026-13-01'],
+            'other format' => ['05/01/2026'],
+            'datetime' => ['2026-01-05 10:00:00'],
+            'array value' => [['2026-01-05']],
+        ];
+    }
 }
 
 final class Episciences_Review_LoadSettingsCacheTestAdapter extends Zend_Db_Adapter_Abstract
