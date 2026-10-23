@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated the messages of the lost password and lost username pages.
 
 ### Fixed
-- The management of the site pages checks the role of the user, as the other site settings do.
+- The site settings (languages, style, pages, public resources and news) check the role of the user, as the header page does.
 - A section that still has papers can no longer be deleted: the delete button lists the papers to move first.
   Deleted and removed papers, which can no longer be moved, leave the section with it.
   Moving a paper to another section now moves all its versions, so older versions no longer keep it in its former section.

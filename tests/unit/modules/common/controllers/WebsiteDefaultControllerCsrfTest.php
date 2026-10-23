@@ -4,23 +4,19 @@ declare(strict_types=1);
 
 namespace unit\modules\common\controllers;
 
-use Ccsd_View_Helper_DisplayFlashMessages;
 use DOMDocument;
 use DOMXPath;
+use Episciences_Acl;
 use Episciences_Csrf_Helper;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use unit\modules\common\controllers\support\WebsiteControllerTestTrait;
 use WebsiteDefaultController;
-use Zend_Controller_Action_Helper_Abstract;
-use Zend_Controller_Action_Helper_FlashMessenger;
-use Zend_Controller_Action_Helper_Redirector;
-use Zend_Controller_Action_Helper_ViewRenderer;
-use Zend_Controller_Action_HelperBroker;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
-use Zend_Session;
-use Zend_Session_Namespace;
 use Zend_View;
+
+require_once __DIR__ . '/support/WebsiteControllerTestTrait.php';
 
 /**
  * Form token check of the public resources page (publicAction of WebsiteDefaultController).
@@ -30,12 +26,9 @@ use Zend_View;
  */
 final class WebsiteDefaultControllerCsrfTest extends TestCase
 {
+    use WebsiteControllerTestTrait;
+
     private const EXPIRED = 'Votre session a expiré, veuillez réessayer.';
-
-    private bool $previousUnitTestEnabled;
-
-    /** @var Zend_Controller_Action_Helper_Abstract[] */
-    private array $previousHelpers = [];
 
     private string $fileName;
 
@@ -46,20 +39,8 @@ final class WebsiteDefaultControllerCsrfTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->previousUnitTestEnabled = Zend_Session::$_unitTestEnabled;
-        Zend_Session::$_unitTestEnabled = true;
-
-        $this->previousHelpers = iterator_to_array(Zend_Controller_Action_HelperBroker::getStack(), false);
-        Zend_Controller_Action_HelperBroker::resetHelpers();
-        $viewRenderer = new Zend_Controller_Action_Helper_ViewRenderer(new Zend_View());
-        $viewRenderer->setNeverRender(true);
-        Zend_Controller_Action_HelperBroker::addHelper($viewRenderer);
-        $redirector = new Zend_Controller_Action_Helper_Redirector();
-        $redirector->setExit(false);
-        Zend_Controller_Action_HelperBroker::addHelper($redirector);
-
-        // Messages left by the other tests of the run
-        (new Zend_Controller_Action_Helper_FlashMessenger())->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->clearCurrentMessages();
+        // The public resources are managed by the secretaries and the webmasters
+        $this->logInAs(Episciences_Acl::ROLE_SECRETARY);
 
         Episciences_Csrf_Helper::getSessionToken();
 
@@ -77,17 +58,6 @@ final class WebsiteDefaultControllerCsrfTest extends TestCase
         if (is_file($file)) {
             unlink($file);
         }
-
-        (new Zend_Controller_Action_Helper_FlashMessenger())->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->clearCurrentMessages();
-        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        unset($session->csrfToken);
-        $_POST = [];
-
-        Zend_Controller_Action_HelperBroker::resetHelpers();
-        foreach ($this->previousHelpers as $helper) {
-            Zend_Controller_Action_HelperBroker::addHelper($helper);
-        }
-        Zend_Session::$_unitTestEnabled = $this->previousUnitTestEnabled;
     }
 
     /**
@@ -106,16 +76,6 @@ final class WebsiteDefaultControllerCsrfTest extends TestCase
         $controller->publicAction();
 
         return $response;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function errorMessages(): array
-    {
-        $flash = new Zend_Controller_Action_Helper_FlashMessenger();
-
-        return $flash->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->getCurrentMessages();
     }
 
     /**

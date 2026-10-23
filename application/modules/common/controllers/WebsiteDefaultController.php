@@ -34,6 +34,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function commonAction()
     {
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
+
         $common = new Ccsd_Website_Common(RVID, ['languages' => Episciences_Translation_Plugin::getAvailableLanguages()]);
         $form = $common->getForm();
         Episciences_Csrf_Helper::addSessionTokenElement($form);
@@ -54,6 +58,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function styleAction()
     {
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
+
         $styles = new Episciences_Website_Style();
         Episciences_Csrf_Helper::addSessionTokenElement($styles->getForm());
         if ($this->getRequest()->isPost() && !$this->_validateCsrf()) {
@@ -116,7 +124,9 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function publicAction(): void
     {
-
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
 
         $dir = REVIEW_PATH . 'public/';
         if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
@@ -454,6 +464,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function newsAction(): void
     {
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
+
         $newsObj = new Episciences_News();
         $newsid  = (int) $this->getRequest()->getParam('newsid', 0);
 
