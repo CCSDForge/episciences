@@ -466,6 +466,8 @@ class Episciences_Paper
     private ?string $_password = null;
     private ?string $_graphical_abstract = null;
     private ?array $_data_descriptors = null;
+    /** Deadline of the pending revision request, read and set by controllers and views */
+    public ?string $_revisionDeadline = null;
 
     /**
      * Episciences_Paper constructor.
