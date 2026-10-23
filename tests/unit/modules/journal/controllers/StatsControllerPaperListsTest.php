@@ -217,6 +217,34 @@ class StatsControllerPaperListsTest extends TestCase
         $this->assertArrayNotHasKey('allow.stats-papers', $acl['member']);
     }
 
+    // -------------------------------------------------------------------------
+    // getApiRequestOptions()
+    // -------------------------------------------------------------------------
+
+    public function testGetApiRequestOptions_Timeouts(): void
+    {
+        $options = StatsController::getApiRequestOptions(['year' => 2025]);
+
+        $this->assertSame(StatsController::API_CONNECT_TIMEOUT, $options['connect_timeout']);
+        $this->assertSame(StatsController::API_TIMEOUT, $options['timeout']);
+        $this->assertGreaterThan(0, $options['connect_timeout']);
+        $this->assertGreaterThan($options['connect_timeout'], $options['timeout']);
+        $this->assertSame(['year' => 2025], $options['query']);
+        $this->assertArrayNotHasKey('Authorization', $options['headers']);
+    }
+
+    public function testGetApiRequestOptions_WithToken(): void
+    {
+        $options = StatsController::getApiRequestOptions([], 'jwt');
+
+        $this->assertSame('Bearer jwt', $options['headers']['Authorization']);
+    }
+
+    public function testAskApi_UsesTheRequestOptions(): void
+    {
+        $this->assertStringContainsString('self::getApiRequestOptions($options, $token)', $this->extractMethod('askApi'));
+    }
+
     private function extractMethod(string $methodName): string
     {
         $source = (string)file_get_contents(APPLICATION_PATH . '/modules/journal/controllers/StatsController.php');

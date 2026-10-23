@@ -38,6 +38,9 @@ class StatsController extends Zend_Controller_Action
     // the papers of the figures are kept in session for the papers action (no DOCID in the page)
     public const PAPERS_SESSION_NAMESPACE = 'statsPapers';
     public const PAPERS_SESSION_TTL = 1800;
+    // Episciences API: the page must not wait indefinitely for an unreachable API (seconds)
+    public const API_CONNECT_TIMEOUT = 5;
+    public const API_TIMEOUT = 30;
 
 
     public const REFERENCE_YEAR = 2013;
@@ -754,8 +757,18 @@ class StatsController extends Zend_Controller_Action
      */
     private function askApi(string $uri, array $options = [], ?string $token = null): StreamInterface
     {
-        $url = EPISCIENCES_API_URL . $uri;
+        $client = new Client();
+        return $client->request('GET', EPISCIENCES_API_URL . $uri, self::getApiRequestOptions($options, $token))->getBody();
+    }
 
+    /**
+     * Guzzle options of the requests to the Episciences API
+     * @param array $query
+     * @param string|null $token
+     * @return array<string, mixed>
+     */
+    public static function getApiRequestOptions(array $query = [], ?string $token = null): array
+    {
         $headers = [
             'Accept' => 'application/json',
             'Content-type' => 'application/json',
@@ -765,14 +778,12 @@ class StatsController extends Zend_Controller_Action
             $headers['Authorization'] = 'Bearer ' . $token;
         }
 
-        $gOptions = [
+        return [
             'headers' => $headers,
-            'query' => $options
+            'query' => $query,
+            'connect_timeout' => self::API_CONNECT_TIMEOUT,
+            'timeout' => self::API_TIMEOUT,
         ];
-
-        $client = new Client();
-        return $client->request('GET', $url, $gOptions)->getBody();
-
     }
 
     /**
