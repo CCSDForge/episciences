@@ -69,7 +69,15 @@ function placeRolesPopover(tip, element, currentPlacement) {
 
     if (currentPlacement) {
         var currentSpace = currentPlacement === 'top' ? spaceAbove : spaceBelow;
-        if (currentSpace >= neededHeight) {
+        // When the list is taller than the room on both sides, it is capped anyway:
+        // keep the current side as long as the capped list stays usable there, rather
+        // than flipping whenever the button crosses the middle of the viewport
+        var minListHeight = 200;
+        var cappedListFits =
+            list &&
+            currentSpace - reservedHeight >=
+                Math.min(minListHeight, list.scrollHeight);
+        if (currentSpace >= neededHeight || cappedListFits) {
             placement = currentPlacement;
         }
     }
