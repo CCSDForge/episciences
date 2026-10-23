@@ -334,5 +334,10 @@ return [
     "La licence actuelle est déjà définie." => 'The current license is already set.',
 
     // Statistics: papers of the figures
-    'Afficher plus' => 'Show more',
+    'article(s)' => 'article(s)',
+    "article(s) non listé(s) : conflit d'intérêts déclaré" => 'article(s) not listed: declared conflict of interest',
+    "Certains articles n'ont pas été trouvés dans la revue." => 'Some articles were not found in the journal.',
+    'La liste a expiré : veuillez recharger la page.' => 'The list has expired: please reload the page.',
+    'Votre session a expiré : veuillez vous reconnecter.' => 'Your session has expired: please log in again.',
+    'Recharger la page' => 'Reload the page',
 ];

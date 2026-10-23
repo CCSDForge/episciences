@@ -1,54 +1,365 @@
 /**
- * Papers of the statistics: the DOCIDs of a figure are displayed when its list is opened, by batches.
+ * Papers of the statistics (journal administrators): a window lists the papers of a figure,
+ * loaded from /stats/papers, with search, sort and pagination.
  */
-const STAT_PAPERS_BATCH_SIZE = 100;
-const STAT_PAPERS_URL = '/administratepaper/view/id/';
+const STAT_PAPERS_PAGE_SIZE = 50;
+const STAT_PAPERS_VIEW_URL = '/administratepaper/view/id/';
+const STAT_PAPERS_STATUS_ICONS = {
+    published: 'fa-check-circle',
+    accepted: 'fa-check',
+    refused: 'fa-times-circle',
+    closed: 'fa-ban',
+    pending: 'fa-hourglass-half',
+};
 
-function appendStatPapers(details) {
-    const docIds = JSON.parse(details.dataset.docids || '[]');
-    const list = details.querySelector('.stat-papers-items');
-    const start = list.children.length;
-    const end = Math.min(start + STAT_PAPERS_BATCH_SIZE, docIds.length);
+function statPapersTranslate(key) {
+    return typeof translate === 'function' ? translate(key) : key;
+}
 
-    for (let i = start; i < end; i++) {
-        const item = document.createElement('li');
-        const link = document.createElement('a');
-        link.href = STAT_PAPERS_URL + encodeURIComponent(docIds[i]);
-        link.textContent = docIds[i];
-        link.target = '_blank';
-        link.rel = 'noopener';
-        item.appendChild(link);
-        list.appendChild(item);
+function statPapersFormatDate(isoDate) {
+    if (!isoDate) {
+        return '';
     }
 
-    let more = details.querySelector('.stat-papers-more');
+    const date = new Date(isoDate + 'T00:00:00');
 
-    if (end >= docIds.length) {
-        more?.remove();
-        return;
+    if (Number.isNaN(date.getTime())) {
+        return isoDate;
     }
 
-    if (!more) {
-        more = document.createElement('button');
-        more.type = 'button';
-        more.className = 'btn btn-default btn-xs stat-papers-more';
-        more.textContent = translate('Afficher plus');
-        more.addEventListener('click', () => appendStatPapers(details));
-        details.appendChild(more);
+    const lang = typeof locale === 'string' ? locale : undefined;
+    return date.toLocaleDateString(lang);
+}
+
+function statPapersCompare(a, b, key) {
+    const x = a[key];
+    const y = b[key];
+
+    if (x === y) {
+        return 0;
     }
+
+    // empty values last
+    if (x === null || x === undefined || x === '') {
+        return 1;
+    }
+
+    if (y === null || y === undefined || y === '') {
+        return -1;
+    }
+
+    if (typeof x === 'number' && typeof y === 'number') {
+        return x - y;
+    }
+
+    return String(x).localeCompare(String(y), undefined, {
+        sensitivity: 'base',
+        numeric: true,
+    });
+}
+
+/**
+ * Pure helper: rows filtered by the query, sorted, and the requested page
+ */
+function statPapersView(rows, query, sortKey, sortDir, page) {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+        ? rows.filter(
+              row =>
+                  String(row.title || '')
+                      .toLowerCase()
+                      .includes(q) ||
+                  String(row.docid).includes(q) ||
+                  String(row.paperid).includes(q)
+          )
+        : rows.slice();
+
+    filtered.sort((a, b) => {
+        const result = statPapersCompare(a, b, sortKey);
+        // empty values stay last whatever the direction
+        const emptyA = a[sortKey] === null || a[sortKey] === '';
+        const emptyB = b[sortKey] === null || b[sortKey] === '';
+        if (emptyA || emptyB) {
+            return result;
+        }
+        return sortDir === 'ascending' ? result : -result;
+    });
+
+    const pages = Math.max(
+        1,
+        Math.ceil(filtered.length / STAT_PAPERS_PAGE_SIZE)
+    );
+    const current = Math.min(Math.max(1, page), pages);
+    const start = (current - 1) * STAT_PAPERS_PAGE_SIZE;
+
+    return {
+        total: filtered.length,
+        page: current,
+        pages: pages,
+        rows: filtered.slice(start, start + STAT_PAPERS_PAGE_SIZE),
+    };
 }
 
 function initStatPapers() {
-    document.querySelectorAll('details.stat-papers-list').forEach(details => {
-        details.addEventListener('toggle', () => {
-            if (
-                details.open &&
-                !details.querySelector('.stat-papers-items').children.length
-            ) {
-                appendStatPapers(details);
+    const dialog = document.getElementById('stat-papers-dialog');
+
+    if (!dialog) {
+        return;
+    }
+
+    const titles = JSON.parse(dialog.dataset.titles || '{}');
+    const tbody = dialog.querySelector('tbody');
+    const titleEl = dialog.querySelector('#stat-papers-dialog-title');
+    const hiddenEl = dialog.querySelector('.stat-papers-hidden');
+    const messageEl = dialog.querySelector('.stat-papers-message');
+    const searchEl = dialog.querySelector('.stat-papers-search');
+    const countEl = dialog.querySelector('.stat-papers-count');
+    const pageEl = dialog.querySelector('.stat-papers-page');
+    const prevEl = dialog.querySelector('.stat-papers-prev');
+    const nextEl = dialog.querySelector('.stat-papers-next');
+    const headers = dialog.querySelectorAll('th[data-sort]');
+    const cache = new Map();
+
+    const state = {
+        rows: [],
+        query: '',
+        sortKey: 'docid',
+        sortDir: 'descending',
+        page: 1,
+    };
+
+    function renderRow(row) {
+        const tr = document.createElement('tr');
+
+        const idCell = document.createElement('td');
+        const link = document.createElement('a');
+        link.href = STAT_PAPERS_VIEW_URL + encodeURIComponent(row.docid);
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = row.docid;
+        idCell.appendChild(link);
+        tr.appendChild(idCell);
+
+        const titleCell = document.createElement('td');
+        titleCell.textContent = row.title;
+        tr.appendChild(titleCell);
+
+        const statusCell = document.createElement('td');
+        const icon = document.createElement('span');
+        icon.className =
+            'fas fa-sm ' +
+            (STAT_PAPERS_STATUS_ICONS[row.statusGroup] ||
+                STAT_PAPERS_STATUS_ICONS.pending);
+        icon.setAttribute('aria-hidden', 'true');
+        statusCell.appendChild(icon);
+        statusCell.appendChild(document.createTextNode(' ' + row.statusLabel));
+        tr.appendChild(statusCell);
+
+        ['submissionDate', 'publicationDate'].forEach(key => {
+            const cell = document.createElement('td');
+            cell.className = 'stat-papers-date';
+            cell.textContent = statPapersFormatDate(row[key]);
+            tr.appendChild(cell);
+        });
+
+        return tr;
+    }
+
+    function render() {
+        const view = statPapersView(
+            state.rows,
+            state.query,
+            state.sortKey,
+            state.sortDir,
+            state.page
+        );
+        state.page = view.page;
+
+        tbody.replaceChildren(...view.rows.map(renderRow));
+
+        countEl.textContent =
+            view.total + ' ' + statPapersTranslate('article(s)');
+        pageEl.textContent = view.page + ' / ' + view.pages;
+        prevEl.disabled = view.page <= 1;
+        nextEl.disabled = view.page >= view.pages;
+
+        headers.forEach(th => {
+            th.setAttribute(
+                'aria-sort',
+                th.dataset.sort === state.sortKey ? state.sortDir : 'none'
+            );
+        });
+    }
+
+    function showMessage(message, withReload = false) {
+        messageEl.textContent = message;
+        messageEl.hidden = !message;
+
+        if (withReload) {
+            const reload = document.createElement('button');
+            reload.type = 'button';
+            reload.className = 'btn btn-default btn-xs stat-papers-reload';
+            reload.textContent = statPapersTranslate('Recharger la page');
+            reload.addEventListener('click', () => window.location.reload());
+            messageEl.appendChild(document.createTextNode(' '));
+            messageEl.appendChild(reload);
+        }
+    }
+
+    function showData(data) {
+        state.rows = Array.isArray(data.rows) ? data.rows : [];
+        state.page = 1;
+
+        const hidden = Number(data.hidden) || 0;
+        hiddenEl.hidden = hidden === 0;
+        hiddenEl.textContent = hidden
+            ? hidden +
+              ' ' +
+              statPapersTranslate(
+                  "article(s) non listé(s) : conflit d'intérêts déclaré"
+              )
+            : '';
+
+        showMessage(
+            state.rows.length < (Number(data.total) || 0)
+                ? statPapersTranslate(
+                      "Certains articles n'ont pas été trouvés dans la revue."
+                  )
+                : ''
+        );
+
+        render();
+    }
+
+    async function load(figure) {
+        if (cache.has(figure)) {
+            return cache.get(figure);
+        }
+
+        const params = new URLSearchParams({ figure: figure });
+
+        if (dialog.dataset.year) {
+            params.set('year', dialog.dataset.year);
+        }
+
+        const response = await fetch(
+            dialog.dataset.url + '?' + params.toString(),
+            {
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json' },
             }
+        );
+
+        if (!response.ok) {
+            const error = new Error('HTTP ' + response.status);
+            error.status = response.status;
+            throw error;
+        }
+
+        const data = await response.json();
+        cache.set(figure, data);
+        return data;
+    }
+
+    async function open(figure) {
+        titleEl.textContent = titles[figure] || '';
+        state.rows = [];
+        state.query = '';
+        searchEl.value = '';
+        hiddenEl.hidden = true;
+        render();
+        showMessage(statPapersTranslate('Chargement…'));
+
+        if (typeof dialog.showModal === 'function') {
+            if (!dialog.open) {
+                dialog.showModal();
+            }
+        } else {
+            dialog.setAttribute('open', '');
+        }
+
+        try {
+            showData(await load(figure));
+        } catch (error) {
+            if (error.status === 404) {
+                // lists kept in session for 30 minutes
+                showMessage(
+                    statPapersTranslate(
+                        'La liste a expiré : veuillez recharger la page.'
+                    ),
+                    true
+                );
+            } else if (error.status === 403) {
+                // logged out, or the session of the user has expired
+                showMessage(
+                    statPapersTranslate(
+                        'Votre session a expiré : veuillez vous reconnecter.'
+                    ),
+                    true
+                );
+            } else {
+                showMessage(
+                    statPapersTranslate(
+                        'Une erreur est survenue, veuillez réessayer.'
+                    )
+                );
+            }
+        }
+    }
+
+    function close() {
+        if (typeof dialog.close === 'function') {
+            dialog.close();
+        } else {
+            dialog.removeAttribute('open');
+        }
+    }
+
+    document.querySelectorAll('.stat-papers-open').forEach(button => {
+        button.addEventListener('click', () => open(button.dataset.figure));
+    });
+
+    dialog.querySelector('.stat-papers-close').addEventListener('click', close);
+
+    // click on the backdrop
+    dialog.addEventListener('click', event => {
+        if (event.target === dialog) {
+            close();
+        }
+    });
+
+    searchEl.addEventListener('input', () => {
+        state.query = searchEl.value;
+        state.page = 1;
+        render();
+    });
+
+    headers.forEach(th => {
+        th.querySelector('button').addEventListener('click', () => {
+            const key = th.dataset.sort;
+            state.sortDir =
+                state.sortKey === key && state.sortDir === 'ascending'
+                    ? 'descending'
+                    : 'ascending';
+            state.sortKey = key;
+            state.page = 1;
+            render();
         });
     });
+
+    prevEl.addEventListener('click', () => {
+        state.page -= 1;
+        render();
+    });
+
+    nextEl.addEventListener('click', () => {
+        state.page += 1;
+        render();
+    });
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { statPapersView, statPapersCompare, initStatPapers };
 }
 
 if (document.readyState === 'loading') {

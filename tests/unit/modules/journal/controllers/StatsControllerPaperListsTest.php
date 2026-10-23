@@ -78,12 +78,20 @@ class StatsControllerPaperListsTest extends TestCase
     {
         $source = $this->extractMethod('getDelegatedToken');
 
-        $rightsCheck = strpos($source, 'Episciences_Auth::isAdministrator(RVID)');
+        $rightsCheck = strpos($source, 'self::canSeePapers()');
         $exchange = strpos($source, 'new DelegatedTokenClient');
 
         $this->assertNotFalse($rightsCheck);
         $this->assertNotFalse($exchange);
         $this->assertLessThan($exchange, $rightsCheck, 'The rights must be checked before the token exchange');
+    }
+
+    public function testCanSeePapers_AdministratorsOfTheJournal(): void
+    {
+        $source = $this->extractMethod('canSeePapers');
+
+        $this->assertStringContainsString('Episciences_Auth::isLogged()', $source);
+        $this->assertStringContainsString('Episciences_Auth::isAdministrator(RVID)', $source);
     }
 
     public function testIndexAction_FallsBackToTheStatisticsWithoutPapers(): void
@@ -94,6 +102,119 @@ class StatsControllerPaperListsTest extends TestCase
         $this->assertStringContainsString('self::WITH_PAPERS_PARAM => \'true\']), $token)', $source);
         // otherwise, or if this call fails: the dashboard as before, without token
         $this->assertStringContainsString('$this->askApi($uri, $params)', $source);
+    }
+
+    // -------------------------------------------------------------------------
+    // countPaperLists() / getFigureValues()
+    // -------------------------------------------------------------------------
+
+    public function testCountPaperLists_OnlyNumbersForThePage(): void
+    {
+        $counts = StatsController::countPaperLists([
+            'nbAccepted' => ['docIds' => [1, 2, 3], 'hidden' => 1],
+            'submissionAcceptanceTime' => ['docIds' => [1, 2], 'hidden' => 0],
+        ], ['nbAccepted' => 4]);
+
+        $this->assertSame(['figure' => 'nbAccepted', 'count' => 3, 'hidden' => 1, 'incomplete' => false], $counts['nbAccepted']);
+        $this->assertSame(['figure' => 'submissionAcceptanceTime', 'count' => 2, 'hidden' => 0, 'incomplete' => false], $counts['submissionAcceptanceTime']);
+        $this->assertArrayNotHasKey('docIds', $counts['nbAccepted']);
+    }
+
+    public function testCountPaperLists_ListsNotMatchingTheFigure_Incomplete(): void
+    {
+        $counts = StatsController::countPaperLists(['nbRefused' => ['docIds' => [1, 2], 'hidden' => 0]], ['nbRefused' => 5]);
+
+        $this->assertTrue($counts['nbRefused']['incomplete']);
+    }
+
+    public function testGetFigureValues_CountsOnly(): void
+    {
+        $values = StatsController::getFigureValues([
+            'nbSubmissions' => 507,
+            'nbPublished' => 38,
+            'nbImportedPublished' => 423,
+            'submissionAcceptanceTime' => ['value' => 217, 'unit' => 'DAY'],
+            'rates' => ['acceptance' => 54.3],
+        ]);
+
+        $this->assertEquals(['nbSubmissions' => 507, 'nbPublished' => 38, 'nbImportedPublished' => 423, StatsController::TOTAL_PUBLISHED_PAPERS => 461], $values);
+    }
+
+    // -------------------------------------------------------------------------
+    // getStatusGroup() / getPapersSessionKey()
+    // -------------------------------------------------------------------------
+
+    /**
+     * @dataProvider statusGroupProvider
+     */
+    public function testGetStatusGroup(int $status, string $group): void
+    {
+        $this->assertSame($group, StatsController::getStatusGroup($status));
+    }
+
+    public static function statusGroupProvider(): array
+    {
+        return [
+            'published' => [\Episciences_Paper::STATUS_PUBLISHED, 'published'],
+            'refused' => [\Episciences_Paper::STATUS_REFUSED, 'refused'],
+            'accepted' => [\Episciences_Paper::STATUS_ACCEPTED, 'accepted'],
+            'copy editing' => [\Episciences_Paper::STATUS_CE_WAITING_FOR_AUTHOR_SOURCES, 'accepted'],
+            'abandoned' => [\Episciences_Paper::STATUS_ABANDONED, 'closed'],
+            'deleted' => [\Episciences_Paper::STATUS_DELETED, 'closed'],
+            'submitted' => [\Episciences_Paper::STATUS_SUBMITTED, 'pending'],
+        ];
+    }
+
+    public function testGetPapersSessionKey_ByJournalAndYear(): void
+    {
+        $this->assertSame(RVID . '_all', StatsController::getPapersSessionKey(null));
+        $this->assertSame(RVID . '_2025', StatsController::getPapersSessionKey(2025));
+        $this->assertNotSame(StatsController::getPapersSessionKey(2024), StatsController::getPapersSessionKey(2025));
+    }
+
+    // -------------------------------------------------------------------------
+    // papersAction(): rights, session, journal
+    // -------------------------------------------------------------------------
+
+    public function testPapersAction_ChecksTheRightsBeforeReadingTheSession(): void
+    {
+        $source = $this->extractMethod('papersAction');
+
+        $rightsCheck = strpos($source, 'self::canSeePapers()');
+        $session = strpos($source, 'new Zend_Session_Namespace');
+
+        $this->assertNotFalse($rightsCheck);
+        $this->assertNotFalse($session);
+        $this->assertLessThan($session, $rightsCheck);
+        $this->assertStringContainsString('$this->sendJson(403', $source);
+    }
+
+    public function testPapersAction_OnlyThePapersKeptForTheConnectedUser(): void
+    {
+        $source = $this->extractMethod('papersAction');
+
+        $this->assertStringContainsString("(\$stored['uid'] ?? null) !== (int)Episciences_Auth::getUid()", $source);
+        $this->assertStringContainsString('$this->sendJson(404', $source);
+    }
+
+    public function testGetPaperRows_OnlyThePapersOfTheJournal(): void
+    {
+        $this->assertStringContainsString("->where('RVID = ?', RVID)", $this->extractMethod('getPaperRows'));
+    }
+
+    public function testGetPaperRows_NoDocId_NoQuery(): void
+    {
+        $this->assertSame([], StatsController::getPaperRows([]));
+        $this->assertSame([], StatsController::getPaperRows([0, -1, 'abc']));
+    }
+
+    public function testPapersAction_DeclaredForTheAdministrators(): void
+    {
+        $acl = parse_ini_file(APPLICATION_PATH . '/configs/acl.ini', true);
+
+        $this->assertArrayHasKey('allow.stats-papers', $acl['administrator']);
+        $this->assertArrayNotHasKey('allow.stats-papers', $acl['guest']);
+        $this->assertArrayNotHasKey('allow.stats-papers', $acl['member']);
     }
 
     private function extractMethod(string $methodName): string

@@ -1,29 +1,36 @@
 <?php
-// Papers of a figure: DOCIDs of the listed papers, and number of papers not listed (conflict of interest)
+// Papers of a figure: button opening the papers window, and number of papers not listed (conflict of interest)
 $paperList = $this->paperList ?? null;
 
-if (!is_array($paperList)) {
+if (!is_array($paperList) || !isset($paperList['figure'])) {
     return;
 }
 
-$docIds = $paperList['docIds'] ?? [];
+$count = (int)($paperList['count'] ?? 0);
 $hidden = (int)($paperList['hidden'] ?? 0);
 $label = $this->label ?? 'Voir les articles (%s)';
 
-if (!$docIds && !$hidden) {
+if (!$count && !$hidden) {
     return;
 }
 ?>
 <div class="stat-papers">
-    <?php if ($docIds): ?>
-        <details class="stat-papers-list" data-docids="<?= $this->escape(json_encode($docIds)) ?>">
-            <summary class="small"><?= sprintf($this->translate($label), count($docIds)) ?></summary>
-            <ul class="list-inline stat-papers-items"></ul>
-        </details>
+    <?php if ($count): ?>
+        <button type="button" class="btn btn-link btn-xs stat-papers-open" aria-haspopup="dialog"
+                data-figure="<?= $this->escape($paperList['figure']) ?>">
+            <span class="fas fa-list fa-sm" aria-hidden="true"></span>
+            <?= sprintf($this->translate($label), $count) ?>
+        </button>
     <?php endif; ?>
     <?php if ($hidden): ?>
         <p class="help-block small">
             <?= sprintf($this->translate($hidden > 1 ? "%s articles non listés : conflit d'intérêts déclaré" : "%s article non listé : conflit d'intérêts déclaré"), $hidden) ?>
+        </p>
+    <?php endif; ?>
+    <?php if (!empty($paperList['incomplete'])): ?>
+        <p class="help-block small">
+            <span class="fas fa-exclamation-triangle fa-sm" aria-hidden="true"></span>
+            <?= $this->translate("Liste incomplète : le nombre d'articles ne correspond pas au chiffre affiché") ?>
         </p>
     <?php endif; ?>
 </div>

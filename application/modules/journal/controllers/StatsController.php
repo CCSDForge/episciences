@@ -35,6 +35,9 @@ class StatsController extends Zend_Controller_Action
     // papers of the published total: published and imported published papers
     public const TOTAL_PUBLISHED_PAPERS = 'totalPublished';
     public const WITH_PAPERS_PARAM = 'withPapers';
+    // the papers of the figures are kept in session for the papers action (no DOCID in the page)
+    public const PAPERS_SESSION_NAMESPACE = 'statsPapers';
+    public const PAPERS_SESSION_TTL = 1800;
 
 
     public const REFERENCE_YEAR = 2013;
@@ -439,8 +442,11 @@ class StatsController extends Zend_Controller_Action
         $this->view->errorMessage = null;
         $this->view->isAvailableUsersStats = $isAvailableUsersStats;
 
-        // Papers of the figures (journal administrators only)
-        $this->view->paperLists = self::getPaperLists($dashboard['value'] ?? []);
+        // Papers of the figures (journal administrators only): kept in session, the page only gets their number
+        $paperLists = self::getPaperLists($dashboard['value'] ?? []);
+        $this->storePaperLists($paperLists, $yearQuery);
+        $this->view->paperLists = self::countPaperLists($paperLists, self::getFigureValues($dashboard['value'] ?? []), $logger);
+        $this->view->paperListTitles = $paperLists ? $this->getPaperListTitles() : [];
         // without the "startAfterDate" filter, the totals are not explained by the papers
         $this->view->totalsExplained = !isset($dashboard['value']['totalWithoutStartAfterDate']);
 
@@ -482,13 +488,250 @@ class StatsController extends Zend_Controller_Action
     }
 
     /**
+     * JSON: the papers of a figure of the statistics page (journal administrators only)
+     * Only the papers kept in session by indexAction() for the connected user can be returned.
+     * @return void
+     */
+    public function papersAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        if (!self::canSeePapers()) {
+            $this->sendJson(403, ['message' => 'Forbidden']);
+            return;
+        }
+
+        $request = $this->getRequest();
+        $figure = (string)$request->getParam('figure', '');
+        $year = (int)$request->getParam('year', 0) ?: null;
+
+        $stored = (new Zend_Session_Namespace(self::PAPERS_SESSION_NAMESPACE))->{self::getPapersSessionKey($year)} ?? null;
+
+        if (
+            !is_array($stored) ||
+            ($stored['uid'] ?? null) !== (int)Episciences_Auth::getUid() ||
+            !isset($stored['lists'][$figure]['docIds'])
+        ) {
+            // expired session, or a figure without papers
+            $this->sendJson(404, ['message' => 'Not found']);
+            return;
+        }
+
+        $list = $stored['lists'][$figure];
+
+        $this->sendJson(200, [
+            'figure' => $figure,
+            'total' => count($list['docIds']),
+            'hidden' => (int)$list['hidden'],
+            'rows' => self::getPaperRows($list['docIds']),
+        ]);
+    }
+
+    /**
+     * Number of papers by figure, for the page
+     * @param array<string, array{docIds: int[], hidden: int}> $paperLists
+     * @param array<string, int> $figureValues value displayed for each figure, to check the lists
+     * @param Monolog\Logger|null $logger
+     * @return array<string, array{figure: string, count: int, hidden: int, incomplete: bool}>
+     */
+    public static function countPaperLists(array $paperLists, array $figureValues = [], ?Monolog\Logger $logger = null): array
+    {
+        $counts = [];
+
+        foreach ($paperLists as $figure => $list) {
+            $count = count($list['docIds']);
+            $incomplete = isset($figureValues[$figure]) && $count + $list['hidden'] !== $figureValues[$figure];
+
+            if ($incomplete) {
+                $logger?->warning(sprintf(
+                    'Statistics of %s: %s, %d papers listed and %d hidden for a figure of %d',
+                    defined('RVCODE') ? RVCODE : '', $figure, $count, $list['hidden'], $figureValues[$figure]
+                ));
+            }
+
+            $counts[$figure] = ['figure' => $figure, 'count' => $count, 'hidden' => $list['hidden'], 'incomplete' => $incomplete];
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Values of the figures which count papers (the delays are not a number of papers)
+     * @param array $value the value of the dashboard
+     * @return array<string, int>
+     */
+    public static function getFigureValues(array $value): array
+    {
+        $figures = [
+            self::NB_SUBMISSIONS, self::NB_IMPORTED, self::NB_IMPORTED_PUBLISHED, self::NB_PUBLISHED, self::NB_ACCEPTED,
+            self::NB_REFUSED, self::NB_ACCEPTED_NOT_YET_PUBLISHED, self::NB_OTHER_STATUS,
+        ];
+        $values = [];
+
+        foreach ($figures as $figure) {
+            if (isset($value[$figure]) && is_numeric($value[$figure])) {
+                $values[$figure] = (int)$value[$figure];
+            }
+        }
+
+        if (isset($values[self::NB_PUBLISHED], $values[self::NB_IMPORTED_PUBLISHED])) {
+            $values[self::TOTAL_PUBLISHED_PAPERS] = $values[self::NB_PUBLISHED] + $values[self::NB_IMPORTED_PUBLISHED];
+        }
+
+        return $values;
+    }
+
+    /**
+     * Rows of the papers table: the papers of the journal among the given DOCIDs
+     * @param int[] $docIds
+     * @return array<int, array<string, mixed>>
+     */
+    public static function getPaperRows(array $docIds): array
+    {
+        $docIds = array_values(array_unique(array_filter(array_map('intval', $docIds), static fn(int $docId) => $docId > 0)));
+
+        if (!$docIds) {
+            return [];
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $rows = [];
+
+        foreach (array_chunk($docIds, 1000) as $chunk) {
+            $select = $db->select()
+                ->from(T_PAPERS, ['DOCID', 'PAPERID', 'RVID', 'STATUS', 'RECORD', 'IDENTIFIER', 'VERSION', 'REPOID', 'SUBMISSION_DATE', 'PUBLICATION_DATE'])
+                ->where('RVID = ?', RVID)
+                ->where('DOCID IN (?)', $chunk);
+
+            foreach ($db->fetchAll($select) as $row) {
+                $row['withxsl'] = false;
+                $rows[] = self::formatPaperRow(new Episciences_Paper($row));
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @return array{docid: int, paperid: int, title: string, status: int, statusLabel: string, statusGroup: string, submissionDate: ?string, publicationDate: ?string}
+     */
+    public static function formatPaperRow(Episciences_Paper $paper): array
+    {
+        $status = (int)$paper->getStatus();
+
+        try {
+            $title = (string)$paper->getTitle();
+            $statusLabel = (string)Zend_Registry::get('Zend_Translate')->translate((string)Episciences_PapersManager::getStatusLabel($status));
+        } catch (Throwable $e) {
+            $title = $title ?? '';
+            $statusLabel = (string)Episciences_PapersManager::getStatusLabel($status);
+        }
+
+        return [
+            'docid' => (int)$paper->getDocid(),
+            'paperid' => (int)$paper->getPaperid(),
+            'title' => $title,
+            'status' => $status,
+            'statusLabel' => $statusLabel,
+            'statusGroup' => self::getStatusGroup($status),
+            'submissionDate' => self::toDate($paper->getSubmission_date()),
+            'publicationDate' => self::toDate($paper->getPublication_date()),
+        ];
+    }
+
+    /**
+     * Group of a status, displayed with an icon next to its label
+     */
+    public static function getStatusGroup(int $status): string
+    {
+        return match (true) {
+            $status === Episciences_Paper::STATUS_PUBLISHED => 'published',
+            $status === Episciences_Paper::STATUS_REFUSED => 'refused',
+            in_array($status, Episciences_Paper::ACCEPTED_SUBMISSIONS, true) => 'accepted',
+            in_array($status, [Episciences_Paper::STATUS_OBSOLETE, Episciences_Paper::STATUS_DELETED, Episciences_Paper::STATUS_REMOVED, Episciences_Paper::STATUS_ABANDONED], true) => 'closed',
+            default => 'pending',
+        };
+    }
+
+    public static function getPapersSessionKey(?int $year): string
+    {
+        return sprintf('%d_%s', defined('RVID') ? RVID : 0, $year ?: 'all');
+    }
+
+    /**
+     * Whether the connected user can see the papers of the statistics
+     */
+    private static function canSeePapers(): bool
+    {
+        return Episciences_Auth::isLogged() && (Episciences_Auth::isAdministrator(RVID) || Episciences_Auth::isRoot());
+    }
+
+    /**
+     * Keeps the papers of the figures in session for the papers action
+     * @param array<string, array{docIds: int[], hidden: int}> $paperLists
+     */
+    private function storePaperLists(array $paperLists, ?int $year): void
+    {
+        if (!$paperLists || !self::canSeePapers()) {
+            return;
+        }
+
+        $session = new Zend_Session_Namespace(self::PAPERS_SESSION_NAMESPACE);
+        $session->{self::getPapersSessionKey($year)} = ['uid' => (int)Episciences_Auth::getUid(), 'lists' => $paperLists];
+        $session->setExpirationSeconds(self::PAPERS_SESSION_TTL);
+    }
+
+    /**
+     * Title of the papers window, by figure
+     * @return array<string, string>
+     */
+    private function getPaperListTitles(): array
+    {
+        $titles = [
+            self::NB_SUBMISSIONS => 'soumissions',
+            self::NB_IMPORTED => 'articles importés',
+            self::NB_IMPORTED_PUBLISHED => 'articles importés publiés',
+            self::NB_PUBLISHED => 'articles publiés',
+            self::TOTAL_PUBLISHED_PAPERS => 'articles publiés (importés inclus)',
+            self::NB_ACCEPTED => 'articles acceptés',
+            self::NB_REFUSED => 'articles refusés',
+            self::NB_ACCEPTED_NOT_YET_PUBLISHED => 'articles acceptés (non encore publiés)',
+            self::NB_OTHER_STATUS => 'autres statuts',
+            self::SUBMISSION_ACCEPTANCE_DELAY => 'délai soumission-acceptation',
+            self::SUBMISSION_PUBLICATION_DELAY => 'délai soumission-publication',
+        ];
+
+        return array_map(fn(string $title) => ucfirst($this->view->translate($title)), $titles);
+    }
+
+    private static function toDate(?string $date): ?string
+    {
+        return ($date && ($time = strtotime($date)) !== false) ? date('Y-m-d', $time) : null;
+    }
+
+    /**
+     * @param int $httpCode
+     * @param array<string, mixed> $payload
+     * @throws JsonException
+     */
+    private function sendJson(int $httpCode, array $payload): void
+    {
+        $this->getResponse()
+            ->setHttpResponseCode($httpCode)
+            ->setHeader('Content-Type', 'application/json', true)
+            ->setBody(json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
      * A token to get the papers of the figures, for the administrators of the journal only
      * @param Monolog\Logger|null $logger
      * @return string|null
      */
     private function getDelegatedToken(?Monolog\Logger $logger): ?string
     {
-        if (!Episciences_Auth::isLogged() || !(Episciences_Auth::isAdministrator(RVID) || Episciences_Auth::isRoot())) {
+        if (!self::canSeePapers()) {
             return null;
         }
 
