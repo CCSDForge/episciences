@@ -21,6 +21,7 @@ $paper = $this->paper; ?>
 
                 <input id="selectedUserId" name="selectedUserId" value="0" hidden>
                 <input id="docId" name="docId" value="<?= $paper->getDocid() ?>" hidden>
+                <input type="hidden" name="csrf_token" value="<?= $this->escape(Episciences_Csrf_Helper::getSessionToken()) ?>">
 
             </div>
         </form>

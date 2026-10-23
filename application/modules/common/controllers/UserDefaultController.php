@@ -716,10 +716,11 @@ class UserDefaultController extends Episciences_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        $userUid = !$request->isPost() ? (int)$request->getParam('userid') : (int)$request->getPost('UID');
+        $currentUid = (int)Episciences_Auth::getUid();
+        $userId = self::resolveEditedUserId($request, Episciences_Auth::isSecretary(), $currentUid);
+        $editUrlParams = self::editUrlParams($userId, $currentUid);
 
         $user = new Episciences_User();
-        $userId = (!empty($userUid) && Episciences_Auth::isSecretary()) ? $userUid : Episciences_Auth::getUid();
 
         // Données par défaut du compte CAS
         $ccsdUserMapper = new Ccsd_User_Models_UserMapper();
@@ -739,7 +740,7 @@ class UserDefaultController extends Episciences_Controller_Action
         $userDefaults = $casUserDefaults->toArray();
         $userDefaults = array_merge($userDefaults, $localUserDefaults);
         $form = new Episciences_User_Form_Edit(['UID' => $userId]);
-        $form->setAction($this->view->url());
+        $form->setAction($this->view->url($editUrlParams));
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Enregistrer les modifications',
             'class' => 'btn btn-primary'
@@ -755,7 +756,7 @@ class UserDefaultController extends Episciences_Controller_Action
             $post = $request->getPost();
 
             if (!array_key_exists('submit', $post)) { // Profile editing form does not display correctly when changing language
-                $this->_helper->redirector('edit', 'user', null, [PREFIX_ROUTE => RVCODE]);
+                $this->_helper->redirector('edit', 'user', null, [PREFIX_ROUTE => RVCODE] + $editUrlParams);
                 return;
             }
 
@@ -834,6 +835,25 @@ class UserDefaultController extends Episciences_Controller_Action
         }
 
         $this->view->form = $form;
+    }
+
+    /**
+     * Account edited by editAction(): the "userid" request parameter (on display and on submission)
+     * when the current user is a secretary, their own account otherwise.
+     */
+    private static function resolveEditedUserId(Zend_Controller_Request_Abstract $request, bool $isSecretary, int $currentUid): int
+    {
+        $requestedUid = (int)$request->getParam('userid');
+        return ($requestedUid > 0 && $isSecretary) ? $requestedUid : $currentUid;
+    }
+
+    /**
+     * URL parameters keeping the edited account in the edition form action and redirections.
+     * @return array<string, int>
+     */
+    private static function editUrlParams(int $editedUid, int $currentUid): array
+    {
+        return $editedUid !== $currentUid ? ['userid' => $editedUid] : [];
     }
 
     /**

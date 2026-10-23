@@ -1,4 +1,9 @@
-<?php $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId())) ?>
+<?php
+$graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId()));
+$canManageGraphAbs = Episciences_Auth::isSecretary()
+    || (Episciences_Auth::isLogged() && $this->paper->isEditor((int)Episciences_Auth::getUid()))
+    || (!$this->paper->isPublished() && !$this->paper->isRemoved() && $this->paper->isOwnerOrCoAuthor());
+?>
 <div class="panel panel-default collapsable">
     <div class="panel-heading">
         <h2 class="panel-title"><?= $this->translate('Graphical Abstract') ?></h2>
@@ -12,13 +17,13 @@
                          src="<?= sprintf('%spublic/documents/%s/%s',PREFIX_URL, $this->paper->getDocId(), $graphAbs) ?>">
                 <?php endif; ?>
             </div>
-            <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor()) : ?>
+            <?php if ($canManageGraphAbs) : ?>
                 <div style="display: inline-block; margin-top: 10px;">
                     <div>
                         <input name="paper_docId" class="hidden" id="paper_docId"
                                value="<?= $this->paper->getDocid() ?>">
                         <input name="paper_id" class="hidden" id="paper_id" value="<?= $this->paper->getPaperid() ?>">
-                        <input type="file" name="upload-gabs" id="upload-gabs" class="hidden" accept="image/*"/>
+                        <input type="file" name="upload-gabs" id="upload-gabs" class="hidden" accept="image/gif,image/jpeg,image/png,image/webp"/>
                         <label class="btn btn-default btn-sm" for="upload-gabs">
                             <i class="fa-solid fa-chart-area"
                                style="margin-right: 5px"></i><?php echo ($graphAbs !== "") ? $this->translate("Modifier l'abstract graphique") : $this->translate("Ajouter un abstract graphique") ?>

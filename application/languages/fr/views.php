@@ -323,7 +323,7 @@ return [
     'administratepaper-acceptedaskauthorvalidation' => "Article accepté - demander à l'auteur la validation de la mise en forme",
     'administratelinkeddata-addld' => 'Ajouter une relation',
     'administratelinkeddata-removeld' => 'Supprimer un jeu de données ou lien de publication',
-    'administratelinkeddata-setnewinfoldAction' => 'Éditer un jeu de données ou lien de publication',
+    'administratelinkeddata-setnewinfold' => 'Éditer un jeu de données ou lien de publication',
     'browse-accepted-docs' => 'Consulter les articles acceptés en attente de publication',
     'coi-report' => "Signaler un conflit d'intérêt",
     'export-crossref' => 'Export Crossref',

@@ -1948,8 +1948,16 @@ class Episciences_Review
             'maxsizelignt' => '10',
             'description' => "Il est possible de renseigner une date de début de statistiques au format: AAAA-MM-JJ",
             'decorators' => $checkboxDecorators,
-            'pattern' => '(\d{4})-(0?[1-9]|1[0-2])-(0?[1-9]|[12]\d|30|31)',
-            'validators' => [new Zend_Validate_Date('Y-m-d')]
+            'pattern' => '\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])',
+            // Zend_Filter_StringTrim would cast a posted array to "Array" (with a PHP warning): only trim strings
+            'filters' => [new Zend_Filter_Callback(static fn($value) => is_string($value) ? trim($value) : $value)],
+            // Strict YYYY-MM-DD check (Zend_Validate_Date is lenient), as expected by the API statistics filter.
+            // Non-string input (e.g. a posted array) is rejected here: DateTime::createFromFormat() would throw a TypeError,
+            // which Zend_Validate_Callback does not catch
+            'validators' => [
+                (new Zend_Validate_Callback(static fn($value): bool => is_string($value) && Episciences_Tools::isValidSQLDate($value)))
+                    ->setMessage("'%value%' does not appear to be a valid date", Zend_Validate_Callback::INVALID_VALUE)
+            ]
         ]);
 
         return $form;
