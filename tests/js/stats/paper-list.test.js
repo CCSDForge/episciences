@@ -21,16 +21,36 @@ function makeRows(count) {
         status: 16,
         statusLabel: 'publié',
         statusGroup: 'published',
+        imported: false,
         submissionDate: '2025-01-' + String((i % 28) + 1).padStart(2, '0'),
+        acceptanceDate:
+            i % 3 ? '2025-04-' + String((i % 28) + 1).padStart(2, '0') : null,
         publicationDate: i % 2 ? null : '2025-06-01',
     }));
+}
+
+const ACCEPTED_COLUMNS = [
+    'submissionDate',
+    'acceptanceDate',
+    'publicationDate',
+];
+
+function headerLabels() {
+    return Array.from(document.querySelectorAll('thead th')).map(th =>
+        th.textContent.trim()
+    );
+}
+
+function date(isoDate) {
+    return new Date(isoDate + 'T00:00:00').toLocaleDateString();
 }
 
 const DIALOG = `
     <button type="button" class="stat-papers-open" data-figure="nbAccepted">View</button>
     <button type="button" class="stat-papers-open" data-figure="nbRefused">View</button>
     <dialog id="stat-papers-dialog" data-url="/stats/papers" data-year="2025"
-            data-titles='{"nbAccepted":"Accepted articles","nbRefused":"Refused articles"}'>
+            data-titles='{"nbAccepted":"Accepted articles","nbRefused":"Refused articles"}'
+            data-column-labels='{"submitted":"Submitted on","imported":"Imported on","mixed":"Submitted or imported on","importedTag":"imported","refusalDate":"Refused on","acceptanceDate":"Accepted on","publicationDate":"Published on"}'>
         <h2 id="stat-papers-dialog-title"></h2>
         <button type="button" class="stat-papers-close">x</button>
         <p class="stat-papers-hidden" hidden></p>
@@ -41,8 +61,6 @@ const DIALOG = `
             <th data-sort="docid" aria-sort="descending"><button type="button">ID</button></th>
             <th data-sort="title" aria-sort="none"><button type="button">Title</button></th>
             <th data-sort="statusLabel" aria-sort="none"><button type="button">Status</button></th>
-            <th data-sort="submissionDate" aria-sort="none"><button type="button">Submitted</button></th>
-            <th data-sort="publicationDate" aria-sort="none"><button type="button">Published</button></th>
         </tr></thead><tbody></tbody></table>
         <button type="button" class="stat-papers-prev">Prev</button>
         <span class="stat-papers-page"></span>
@@ -182,6 +200,208 @@ describe('Statistics papers window', function () {
         const hidden = dialog.querySelector('.stat-papers-hidden');
         expect(hidden.hidden).toBe(false);
         expect(hidden.textContent).toContain('2');
+    });
+
+    it('accepted papers: submission, acceptance and publication dates', async function () {
+        const rows = makeRows(1);
+        rows[0].submissionDate = '2025-01-15';
+        rows[0].acceptanceDate = '2025-06-03';
+        rows[0].publicationDate = null;
+        mockFetch({
+            nbAccepted: {
+                body: {
+                    columns: ACCEPTED_COLUMNS,
+                    submissionLabel: 'submitted',
+                    total: 1,
+                    hidden: 0,
+                    rows: rows,
+                },
+            },
+        });
+
+        document.querySelector('[data-figure="nbAccepted"]').click();
+        await flush();
+
+        expect(headerLabels()).toEqual([
+            'ID',
+            'Title',
+            'Status',
+            'Submitted on',
+            'Accepted on',
+            'Published on',
+        ]);
+
+        const cells = document.querySelectorAll('tbody td.stat-papers-date');
+        expect(cells).toHaveLength(3);
+        expect(cells[0].textContent).toBe(date('2025-01-15'));
+        expect(cells[1].textContent).toBe(date('2025-06-03'));
+        expect(cells[2].textContent).toBe('');
+    });
+
+    it('refused papers: submission and refusal dates only', async function () {
+        const rows = makeRows(1);
+        rows[0].refusalDate = '2025-03-10';
+        mockFetch({
+            nbRefused: {
+                body: {
+                    columns: ['submissionDate', 'refusalDate'],
+                    submissionLabel: 'submitted',
+                    total: 1,
+                    hidden: 0,
+                    rows: rows,
+                },
+            },
+        });
+
+        document.querySelector('[data-figure="nbRefused"]').click();
+        await flush();
+
+        expect(headerLabels()).toEqual([
+            'ID',
+            'Title',
+            'Status',
+            'Submitted on',
+            'Refused on',
+        ]);
+        const cells = document.querySelectorAll('tbody td.stat-papers-date');
+        expect(cells).toHaveLength(2);
+        expect(cells[1].textContent).toBe(date('2025-03-10'));
+    });
+
+    it('imported papers: import date', async function () {
+        const rows = makeRows(2).map(row => ({ ...row, imported: true }));
+        mockFetch({
+            nbAccepted: {
+                body: {
+                    columns: ['submissionDate', 'publicationDate'],
+                    submissionLabel: 'imported',
+                    total: 2,
+                    hidden: 0,
+                    rows: rows,
+                },
+            },
+        });
+
+        document.querySelector('[data-figure="nbAccepted"]').click();
+        await flush();
+
+        expect(headerLabels().slice(3)).toEqual([
+            'Imported on',
+            'Published on',
+        ]);
+        // a single kind of papers: no mark on the rows
+        expect(document.querySelector('.stat-papers-imported')).toBeNull();
+    });
+
+    it('submissions: submitted or imported papers, refusal, acceptance and publication dates', async function () {
+        const rows = makeRows(2);
+        rows[0].imported = true;
+        rows[0].refusalDate = null;
+        rows[1].refusalDate = '2025-02-01';
+        mockFetch({
+            nbAccepted: {
+                body: {
+                    columns: [
+                        'submissionDate',
+                        'refusalDate',
+                        'acceptanceDate',
+                        'publicationDate',
+                    ],
+                    submissionLabel: 'mixed',
+                    total: 2,
+                    hidden: 0,
+                    rows: rows,
+                },
+            },
+        });
+
+        document.querySelector('[data-figure="nbAccepted"]').click();
+        await flush();
+
+        expect(headerLabels().slice(3)).toEqual([
+            'Submitted or imported on',
+            'Refused on',
+            'Accepted on',
+            'Published on',
+        ]);
+
+        // sorted by ID, descending: docid 2, then docid 1 (imported)
+        const [submitted, imported] = document.querySelectorAll('tbody tr');
+        expect(submitted.querySelector('.stat-papers-imported')).toBeNull();
+        expect(
+            imported.querySelector('.stat-papers-imported').textContent
+        ).toBe('imported');
+        expect(
+            submitted.querySelectorAll('td.stat-papers-date')[1].textContent
+        ).toBe(date('2025-02-01'));
+    });
+
+    it('resets a sort on a date column the next figure does not have', async function () {
+        mockFetch({
+            nbAccepted: {
+                body: {
+                    columns: ACCEPTED_COLUMNS,
+                    total: 1,
+                    hidden: 0,
+                    rows: makeRows(1),
+                },
+            },
+            nbRefused: {
+                body: {
+                    columns: ['submissionDate', 'refusalDate'],
+                    total: 2,
+                    hidden: 0,
+                    rows: makeRows(2),
+                },
+            },
+        });
+
+        document.querySelector('[data-figure="nbAccepted"]').click();
+        await flush();
+        document.querySelector('th[data-sort="acceptanceDate"] button').click();
+        expect(
+            document
+                .querySelector('th[data-sort="acceptanceDate"]')
+                .getAttribute('aria-sort')
+        ).toBe('ascending');
+
+        document.querySelector('[data-figure="nbRefused"]').click();
+        await flush();
+
+        expect(
+            document.querySelector('th[data-sort="acceptanceDate"]')
+        ).toBeNull();
+        expect(
+            document
+                .querySelector('th[data-sort="docid"]')
+                .getAttribute('aria-sort')
+        ).toBe('descending');
+        expect(
+            document.querySelector('tbody tr').querySelectorAll('td')
+        ).toHaveLength(5);
+    });
+
+    it('sorts by a date, the papers without one last', async function () {
+        mockFetch({
+            nbAccepted: {
+                body: {
+                    columns: ACCEPTED_COLUMNS,
+                    total: 6,
+                    hidden: 0,
+                    rows: makeRows(6),
+                },
+            },
+        });
+
+        document.querySelector('[data-figure="nbAccepted"]').click();
+        await flush();
+        document.querySelector('th[data-sort="acceptanceDate"] button').click();
+
+        const dates = Array.from(document.querySelectorAll('tbody tr')).map(
+            tr => tr.querySelectorAll('td.stat-papers-date')[1].textContent
+        );
+        expect(dates.slice(-2)).toEqual(['', '']);
+        expect(dates.slice(0, 4).every(value => value !== '')).toBe(true);
     });
 
     it('renders the titles as text', async function () {

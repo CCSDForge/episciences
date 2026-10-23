@@ -208,6 +208,144 @@ class StatsControllerPaperListsTest extends TestCase
         $this->assertSame([], StatsController::getPaperRows([0, -1, 'abc']));
     }
 
+    // -------------------------------------------------------------------------
+    // Date columns: only the dates relevant to each figure
+    // -------------------------------------------------------------------------
+
+    public function testFigureColumns(): void
+    {
+        $submission = StatsController::COLUMN_SUBMISSION;
+        $refusal = StatsController::COLUMN_REFUSAL;
+        $acceptance = StatsController::COLUMN_ACCEPTANCE;
+        $publication = StatsController::COLUMN_PUBLICATION;
+
+        $this->assertSame([
+            'nbSubmissions' => [$submission, $refusal, $acceptance, $publication],
+            'nbImported' => [$submission, $publication],
+            'nbImportedPublished' => [$submission, $publication],
+            'nbPublished' => [$submission, $publication],
+            StatsController::TOTAL_PUBLISHED_PAPERS => [$submission, $publication],
+            'nbAccepted' => [$submission, $acceptance, $publication],
+            'nbAcceptedNotYetPublished' => [$submission, $acceptance],
+            'nbRefused' => [$submission, $refusal],
+            'nbOtherStatus' => [$submission],
+            'submissionAcceptanceTime' => [$submission, $acceptance],
+            'submissionPublicationTime' => [$submission, $publication],
+        ], StatsController::FIGURE_COLUMNS);
+    }
+
+    public function testFigureColumns_AcceptanceOnlyForTheAcceptedPapersRefusalOnlyForTheRefusedOnes(): void
+    {
+        foreach (StatsController::FIGURE_COLUMNS as $figure => $columns) {
+            $this->assertSame(
+                in_array($figure, ['nbSubmissions', 'nbAccepted', 'nbAcceptedNotYetPublished', 'submissionAcceptanceTime'], true),
+                in_array(StatsController::COLUMN_ACCEPTANCE, $columns, true),
+                $figure
+            );
+            $this->assertSame(
+                in_array($figure, ['nbSubmissions', 'nbRefused'], true),
+                in_array(StatsController::COLUMN_REFUSAL, $columns, true),
+                $figure
+            );
+        }
+
+        $this->assertNotContains(StatsController::COLUMN_PUBLICATION, StatsController::FIGURE_COLUMNS['nbRefused']);
+    }
+
+    public function testColumnLogStatuses_AsTheApi(): void
+    {
+        // the API counts the accepted papers with 4 and 25 (PaperLogRepository::ACCEPTED_STATUSES), the refused ones with 5
+        $this->assertSame([4, 25], StatsController::COLUMN_LOG_STATUSES[StatsController::COLUMN_ACCEPTANCE]);
+        $this->assertSame([\Episciences_Paper::STATUS_ACCEPTED, \Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED], StatsController::COLUMN_LOG_STATUSES[StatsController::COLUMN_ACCEPTANCE]);
+        $this->assertSame([\Episciences_Paper::STATUS_REFUSED], StatsController::COLUMN_LOG_STATUSES[StatsController::COLUMN_REFUSAL]);
+    }
+
+    public function testGetStatusDates_NoPaperIdOrStatus_NoQuery(): void
+    {
+        $this->assertSame([], StatsController::getStatusDates([], [4]));
+        $this->assertSame([], StatsController::getStatusDates([0, -2, 'abc'], [4]));
+        $this->assertSame([], StatsController::getStatusDates([10], []));
+    }
+
+    public function testGetStatusDates_LatestDateInTheJournal(): void
+    {
+        $source = $this->extractMethod('getStatusDates');
+
+        $this->assertStringContainsString("MAX(DATE)", $source);
+        $this->assertStringContainsString("->where('RVID = ?', RVID)", $source);
+        $this->assertStringContainsString("->where('status IN (?)', array_map('intval', \$statuses))", $source);
+        $this->assertStringContainsString("->group('PAPERID')", $source);
+    }
+
+    public function testPaperRows_HistoryReadOnlyForTheColumnsOfTheFigure(): void
+    {
+        $this->assertStringContainsString('in_array($column, $columns, true)', $this->extractMethod('getPaperRows'));
+        $source = $this->extractMethod('papersAction');
+        $this->assertStringContainsString('self::FIGURE_COLUMNS[$figure] ?? self::DEFAULT_COLUMNS', $source);
+        $this->assertStringContainsString("'columns' => \$columns", $source);
+        $this->assertStringContainsString("'submissionLabel' => self::getSubmissionLabel(\$rows)", $source);
+    }
+
+    /**
+     * @dataProvider submissionLabelProvider
+     */
+    public function testGetSubmissionLabel(array $imported, string $label): void
+    {
+        $rows = array_map(static fn(bool $isImported) => ['imported' => $isImported], $imported);
+
+        $this->assertSame($label, StatsController::getSubmissionLabel($rows));
+    }
+
+    public static function submissionLabelProvider(): array
+    {
+        return [
+            'submitted papers' => [[false, false], 'submitted'],
+            'imported papers' => [[true, true], 'imported'],
+            'both' => [[true, false], 'mixed'],
+            'no paper' => [[], 'submitted'],
+        ];
+    }
+
+    public function testFormatPaperRow_OnlyTheDatesOfTheColumns(): void
+    {
+        $paper = new \Episciences_Paper([
+            'DOCID' => 12, 'PAPERID' => 10, 'STATUS' => \Episciences_Paper::STATUS_PUBLISHED, 'FLAG' => 'submitted',
+            'SUBMISSION_DATE' => '2025-01-15 10:00:00', 'PUBLICATION_DATE' => '2025-09-01 08:00:00', 'withxsl' => false,
+        ]);
+
+        $row = StatsController::formatPaperRow($paper, StatsController::FIGURE_COLUMNS['nbAccepted'], [StatsController::COLUMN_ACCEPTANCE => '2025-06-03 14:30:00']);
+
+        $this->assertSame(12, $row['docid']);
+        $this->assertSame(10, $row['paperid']);
+        $this->assertSame('published', $row['statusGroup']);
+        $this->assertFalse($row['imported']);
+        $this->assertSame('2025-01-15', $row['submissionDate']);
+        $this->assertSame('2025-06-03', $row['acceptanceDate']);
+        $this->assertSame('2025-09-01', $row['publicationDate']);
+        $this->assertArrayNotHasKey('refusalDate', $row);
+    }
+
+    public function testFormatPaperRow_RefusedPaper_NoPublicationDate(): void
+    {
+        $paper = new \Episciences_Paper(['DOCID' => 13, 'PAPERID' => 13, 'STATUS' => \Episciences_Paper::STATUS_REFUSED, 'SUBMISSION_DATE' => '2025-01-15 10:00:00', 'withxsl' => false]);
+
+        $row = StatsController::formatPaperRow($paper, StatsController::FIGURE_COLUMNS['nbRefused'], [StatsController::COLUMN_REFUSAL => '2025-03-10 09:00:00']);
+
+        $this->assertSame('2025-03-10', $row['refusalDate']);
+        $this->assertArrayNotHasKey('publicationDate', $row);
+        $this->assertArrayNotHasKey('acceptanceDate', $row);
+    }
+
+    public function testFormatPaperRow_ImportedPaper(): void
+    {
+        $paper = new \Episciences_Paper(['DOCID' => 14, 'PAPERID' => 14, 'STATUS' => \Episciences_Paper::STATUS_PUBLISHED, 'FLAG' => 'imported', 'SUBMISSION_DATE' => '2023-08-24 18:46:46', 'withxsl' => false]);
+
+        $row = StatsController::formatPaperRow($paper, StatsController::FIGURE_COLUMNS['nbImported']);
+
+        $this->assertTrue($row['imported']);
+        $this->assertSame('2023-08-24', $row['submissionDate']);
+    }
+
     public function testPapersAction_DeclaredForTheAdministrators(): void
     {
         $acl = parse_ini_file(APPLICATION_PATH . '/configs/acl.ini', true);

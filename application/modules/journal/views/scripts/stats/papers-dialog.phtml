@@ -1,10 +1,21 @@
 <?php
 // Window listing the papers of a figure (see public/js/stats/paper-list.js)
+// The date columns depend on the figure: they are added by the script, with these labels
+$columnLabels = [
+    'submitted' => $this->translate('Déposé le'),
+    'imported' => $this->translate('Importé le'),
+    'mixed' => $this->translate('Déposé ou importé le'),
+    'importedTag' => $this->translate('importé'),
+    StatsController::COLUMN_REFUSAL => $this->translate('Refusé le'),
+    StatsController::COLUMN_ACCEPTANCE => $this->translate('Accepté le'),
+    StatsController::COLUMN_PUBLICATION => $this->translate('Publié le'),
+];
 ?>
 <dialog id="stat-papers-dialog" class="stat-papers-dialog" aria-labelledby="stat-papers-dialog-title"
         data-url="/stats/papers"
         data-year="<?= $this->yearQuery ? (int)$this->yearQuery : '' ?>"
-        data-titles="<?= $this->escape(json_encode($this->paperListTitles ?? [], JSON_UNESCAPED_UNICODE)) ?>">
+        data-titles="<?= $this->escape(json_encode($this->paperListTitles ?? [], JSON_UNESCAPED_UNICODE)) ?>"
+        data-column-labels="<?= $this->escape(json_encode($columnLabels, JSON_UNESCAPED_UNICODE)) ?>">
     <div class="stat-papers-dialog-header">
         <h2 id="stat-papers-dialog-title" class="h4"></h2>
         <button type="button" class="close stat-papers-close" aria-label="<?= $this->translate('Fermer') ?>">
@@ -29,8 +40,6 @@
                 <th scope="col" data-sort="docid" aria-sort="descending"><button type="button" class="btn btn-link btn-xs"><?= $this->translate('ID') ?></button></th>
                 <th scope="col" data-sort="title" aria-sort="none"><button type="button" class="btn btn-link btn-xs"><?= $this->translate('Titre') ?></button></th>
                 <th scope="col" data-sort="statusLabel" aria-sort="none"><button type="button" class="btn btn-link btn-xs"><?= $this->translate('Statut') ?></button></th>
-                <th scope="col" data-sort="submissionDate" aria-sort="none"><button type="button" class="btn btn-link btn-xs"><?= $this->translate('Déposé le') ?></button></th>
-                <th scope="col" data-sort="publicationDate" aria-sort="none"><button type="button" class="btn btn-link btn-xs"><?= $this->translate('Publié le') ?></button></th>
             </tr>
             </thead>
             <tbody></tbody>

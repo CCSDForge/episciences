@@ -117,11 +117,17 @@ function initStatPapers() {
     const pageEl = dialog.querySelector('.stat-papers-page');
     const prevEl = dialog.querySelector('.stat-papers-prev');
     const nextEl = dialog.querySelector('.stat-papers-next');
-    const headers = dialog.querySelectorAll('th[data-sort]');
+    const columnLabels = JSON.parse(dialog.dataset.columnLabels || '{}');
+    const headerRow = dialog.querySelector('thead tr');
+    const fixedHeaders = headerRow.querySelectorAll('th').length;
     const cache = new Map();
 
     const state = {
         rows: [],
+        // date columns of the figure (only the relevant dates), sent by the server
+        columns: [],
+        // label of the submission date: submitted, imported or mixed
+        submissionLabel: 'submitted',
         query: '',
         sortKey: 'docid',
         sortDir: 'descending',
@@ -155,10 +161,23 @@ function initStatPapers() {
         statusCell.appendChild(document.createTextNode(' ' + row.statusLabel));
         tr.appendChild(statusCell);
 
-        ['submissionDate', 'publicationDate'].forEach(key => {
+        state.columns.forEach(key => {
             const cell = document.createElement('td');
             cell.className = 'stat-papers-date';
             cell.textContent = statPapersFormatDate(row[key]);
+
+            // submitted and imported papers in the same column: the imported ones are marked
+            if (
+                key === 'submissionDate' &&
+                state.submissionLabel === 'mixed' &&
+                row.imported
+            ) {
+                const tag = document.createElement('span');
+                tag.className = 'help-block small stat-papers-imported';
+                tag.textContent = columnLabels.importedTag || 'importé';
+                cell.appendChild(tag);
+            }
+
             tr.appendChild(cell);
         });
 
@@ -183,7 +202,7 @@ function initStatPapers() {
         prevEl.disabled = view.page <= 1;
         nextEl.disabled = view.page >= view.pages;
 
-        headers.forEach(th => {
+        headerRow.querySelectorAll('th[data-sort]').forEach(th => {
             th.setAttribute(
                 'aria-sort',
                 th.dataset.sort === state.sortKey ? state.sortDir : 'none'
@@ -206,9 +225,53 @@ function initStatPapers() {
         }
     }
 
+    function columnLabel(key) {
+        return key === 'submissionDate'
+            ? columnLabels[state.submissionLabel] || columnLabels.submitted
+            : columnLabels[key];
+    }
+
+    /**
+     * Date columns of the figure: headers after the fixed ones (ID, title, status)
+     */
+    function setColumns(columns, submissionLabel) {
+        state.columns = (Array.isArray(columns) ? columns : []).filter(
+            key => key === 'submissionDate' || columnLabels[key]
+        );
+        state.submissionLabel = submissionLabel || 'submitted';
+
+        while (headerRow.children.length > fixedHeaders) {
+            headerRow.lastElementChild.remove();
+        }
+
+        state.columns.forEach(key => {
+            const th = document.createElement('th');
+            th.scope = 'col';
+            th.dataset.sort = key;
+            th.setAttribute('aria-sort', 'none');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-link btn-xs';
+            button.textContent = columnLabel(key) || key;
+            th.appendChild(button);
+            headerRow.appendChild(th);
+        });
+
+        // the sort on a column the figure does not have is reset
+        const fixedKeys = ['docid', 'title', 'statusLabel'];
+        if (
+            !fixedKeys.includes(state.sortKey) &&
+            !state.columns.includes(state.sortKey)
+        ) {
+            state.sortKey = 'docid';
+            state.sortDir = 'descending';
+        }
+    }
+
     function showData(data) {
         state.rows = Array.isArray(data.rows) ? data.rows : [];
         state.page = 1;
+        setColumns(data.columns, data.submissionLabel);
 
         const hidden = Number(data.hidden) || 0;
         hiddenEl.hidden = hidden === 0;
@@ -267,6 +330,7 @@ function initStatPapers() {
         state.query = '';
         searchEl.value = '';
         hiddenEl.hidden = true;
+        setColumns([], null);
         render();
         showMessage(statPapersTranslate('Chargement…'));
 
@@ -334,17 +398,22 @@ function initStatPapers() {
         render();
     });
 
-    headers.forEach(th => {
-        th.querySelector('button').addEventListener('click', () => {
-            const key = th.dataset.sort;
-            state.sortDir =
-                state.sortKey === key && state.sortDir === 'ascending'
-                    ? 'descending'
-                    : 'ascending';
-            state.sortKey = key;
-            state.page = 1;
-            render();
-        });
+    // sort: the date headers change with the figure, so the clicks are listened on the header row
+    headerRow.addEventListener('click', event => {
+        const th = event.target.closest('th[data-sort]');
+
+        if (!th || !event.target.closest('button')) {
+            return;
+        }
+
+        const key = th.dataset.sort;
+        state.sortDir =
+            state.sortKey === key && state.sortDir === 'ascending'
+                ? 'descending'
+                : 'ascending';
+        state.sortKey = key;
+        state.page = 1;
+        render();
     });
 
     prevEl.addEventListener('click', () => {

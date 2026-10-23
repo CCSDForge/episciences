@@ -38,6 +38,36 @@ class StatsController extends Zend_Controller_Action
     // the papers of the figures are kept in session for the papers action (no DOCID in the page)
     public const PAPERS_SESSION_NAMESPACE = 'statsPapers';
     public const PAPERS_SESSION_TTL = 1800;
+    // date columns of the papers table: only the dates relevant to each figure
+    // (the submission date is the import date for an imported paper)
+    public const COLUMN_SUBMISSION = 'submissionDate';
+    public const COLUMN_REFUSAL = 'refusalDate';
+    public const COLUMN_ACCEPTANCE = 'acceptanceDate';
+    public const COLUMN_PUBLICATION = 'publicationDate';
+    public const FIGURE_COLUMNS = [
+        self::NB_SUBMISSIONS => [self::COLUMN_SUBMISSION, self::COLUMN_REFUSAL, self::COLUMN_ACCEPTANCE, self::COLUMN_PUBLICATION],
+        self::NB_IMPORTED => [self::COLUMN_SUBMISSION, self::COLUMN_PUBLICATION],
+        self::NB_IMPORTED_PUBLISHED => [self::COLUMN_SUBMISSION, self::COLUMN_PUBLICATION],
+        self::NB_PUBLISHED => [self::COLUMN_SUBMISSION, self::COLUMN_PUBLICATION],
+        self::TOTAL_PUBLISHED_PAPERS => [self::COLUMN_SUBMISSION, self::COLUMN_PUBLICATION],
+        self::NB_ACCEPTED => [self::COLUMN_SUBMISSION, self::COLUMN_ACCEPTANCE, self::COLUMN_PUBLICATION],
+        self::NB_ACCEPTED_NOT_YET_PUBLISHED => [self::COLUMN_SUBMISSION, self::COLUMN_ACCEPTANCE],
+        self::NB_REFUSED => [self::COLUMN_SUBMISSION, self::COLUMN_REFUSAL],
+        self::NB_OTHER_STATUS => [self::COLUMN_SUBMISSION],
+        self::SUBMISSION_ACCEPTANCE_DELAY => [self::COLUMN_SUBMISSION, self::COLUMN_ACCEPTANCE],
+        self::SUBMISSION_PUBLICATION_DELAY => [self::COLUMN_SUBMISSION, self::COLUMN_PUBLICATION],
+    ];
+    public const DEFAULT_COLUMNS = [self::COLUMN_SUBMISSION, self::COLUMN_PUBLICATION];
+    // statuses of these dates in the history of a paper, as for the figures of the API
+    // (PaperLogRepository::ACCEPTED_STATUSES and REFUSED_STATUS)
+    public const COLUMN_LOG_STATUSES = [
+        self::COLUMN_REFUSAL => [Episciences_Paper::STATUS_REFUSED],
+        self::COLUMN_ACCEPTANCE => [Episciences_Paper::STATUS_ACCEPTED, Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED],
+    ];
+    // label of the submission date column: submitted papers, imported papers, or both
+    public const SUBMISSION_LABEL_SUBMITTED = 'submitted';
+    public const SUBMISSION_LABEL_IMPORTED = 'imported';
+    public const SUBMISSION_LABEL_MIXED = 'mixed';
     // Episciences API: the page must not wait indefinitely for an unreachable API (seconds)
     public const API_CONNECT_TIMEOUT = 5;
     public const API_TIMEOUT = 30;
@@ -522,12 +552,16 @@ class StatsController extends Zend_Controller_Action
         }
 
         $list = $stored['lists'][$figure];
+        $columns = self::FIGURE_COLUMNS[$figure] ?? self::DEFAULT_COLUMNS;
+        $rows = self::getPaperRows($list['docIds'], $columns);
 
         $this->sendJson(200, [
             'figure' => $figure,
+            'columns' => $columns,
+            'submissionLabel' => self::getSubmissionLabel($rows),
             'total' => count($list['docIds']),
             'hidden' => (int)$list['hidden'],
-            'rows' => self::getPaperRows($list['docIds']),
+            'rows' => $rows,
         ]);
     }
 
@@ -588,9 +622,10 @@ class StatsController extends Zend_Controller_Action
     /**
      * Rows of the papers table: the papers of the journal among the given DOCIDs
      * @param int[] $docIds
+     * @param string[] $columns date columns (COLUMN_*) of the figure
      * @return array<int, array<string, mixed>>
      */
-    public static function getPaperRows(array $docIds): array
+    public static function getPaperRows(array $docIds, array $columns = self::DEFAULT_COLUMNS): array
     {
         $docIds = array_values(array_unique(array_filter(array_map('intval', $docIds), static fn(int $docId) => $docId > 0)));
 
@@ -603,13 +638,26 @@ class StatsController extends Zend_Controller_Action
 
         foreach (array_chunk($docIds, 1000) as $chunk) {
             $select = $db->select()
-                ->from(T_PAPERS, ['DOCID', 'PAPERID', 'RVID', 'STATUS', 'RECORD', 'IDENTIFIER', 'VERSION', 'REPOID', 'SUBMISSION_DATE', 'PUBLICATION_DATE'])
+                ->from(T_PAPERS, ['DOCID', 'PAPERID', 'RVID', 'STATUS', 'FLAG', 'RECORD', 'IDENTIFIER', 'VERSION', 'REPOID', 'SUBMISSION_DATE', 'PUBLICATION_DATE'])
                 ->where('RVID = ?', RVID)
                 ->where('DOCID IN (?)', $chunk);
 
-            foreach ($db->fetchAll($select) as $row) {
+            $papers = $db->fetchAll($select);
+            $paperIds = array_column($papers, 'PAPERID');
+            $logDates = [];
+
+            // the dates read in the history of the papers: only those of the columns of the figure
+            foreach (self::COLUMN_LOG_STATUSES as $column => $statuses) {
+                if (in_array($column, $columns, true)) {
+                    $logDates[$column] = self::getStatusDates($paperIds, $statuses);
+                }
+            }
+
+            foreach ($papers as $row) {
                 $row['withxsl'] = false;
-                $rows[] = self::formatPaperRow(new Episciences_Paper($row));
+                $paperId = (int)$row['PAPERID'];
+                $dates = array_map(static fn(array $datesByPaper) => $datesByPaper[$paperId] ?? null, $logDates);
+                $rows[] = self::formatPaperRow(new Episciences_Paper($row), $columns, $dates);
             }
         }
 
@@ -617,10 +665,54 @@ class StatsController extends Zend_Controller_Action
     }
 
     /**
-     * @param Episciences_Paper $paper
-     * @return array{docid: int, paperid: int, title: string, status: int, statusLabel: string, statusGroup: string, submissionDate: ?string, publicationDate: ?string}
+     * Latest date at which each paper (all its versions) took one of the given statuses in the journal
+     * (the latest acceptance, as the submission-acceptance delay of the API; the latest refusal)
+     * @param array $paperIds
+     * @param int[] $statuses
+     * @return array<int, string> PAPERID => date
      */
-    public static function formatPaperRow(Episciences_Paper $paper): array
+    public static function getStatusDates(array $paperIds, array $statuses): array
+    {
+        $paperIds = array_values(array_unique(array_filter(array_map('intval', $paperIds), static fn(int $paperId) => $paperId > 0)));
+
+        if (!$paperIds || !$statuses) {
+            return [];
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_LOGS, ['PAPERID', 'STATUS_DATE' => new Zend_Db_Expr('MAX(DATE)')])
+            ->where('RVID = ?', RVID)
+            ->where('PAPERID IN (?)', $paperIds)
+            ->where('status IN (?)', array_map('intval', $statuses))
+            ->group('PAPERID');
+
+        return array_map('strval', $db->fetchPairs($select));
+    }
+
+    /**
+     * Label of the submission date column, from the papers of the figure
+     * @param array<int, array{imported: bool}> $rows
+     * @return string SUBMISSION_LABEL_*
+     */
+    public static function getSubmissionLabel(array $rows): string
+    {
+        $imported = count(array_filter($rows, static fn(array $row) => !empty($row['imported'])));
+
+        return match (true) {
+            $imported === 0 => self::SUBMISSION_LABEL_SUBMITTED,
+            $imported === count($rows) => self::SUBMISSION_LABEL_IMPORTED,
+            default => self::SUBMISSION_LABEL_MIXED,
+        };
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @param string[] $columns date columns (COLUMN_*) of the figure: only these dates are returned
+     * @param array<string, ?string> $logDates dates read in the history of the paper, by column (refusal, acceptance)
+     * @return array<string, mixed> docid, paperid, title, status, statusLabel, statusGroup, imported, and the dates of the columns
+     */
+    public static function formatPaperRow(Episciences_Paper $paper, array $columns = self::DEFAULT_COLUMNS, array $logDates = []): array
     {
         $status = (int)$paper->getStatus();
 
@@ -632,16 +724,30 @@ class StatsController extends Zend_Controller_Action
             $statusLabel = (string)Episciences_PapersManager::getStatusLabel($status);
         }
 
-        return [
+        $row = [
             'docid' => (int)$paper->getDocid(),
             'paperid' => (int)$paper->getPaperid(),
             'title' => $title,
             'status' => $status,
             'statusLabel' => $statusLabel,
             'statusGroup' => self::getStatusGroup($status),
-            'submissionDate' => self::toDate($paper->getSubmission_date()),
-            'publicationDate' => self::toDate($paper->getPublication_date()),
+            'imported' => $paper->getFlag() === 'imported', // FLAG, as the imported figures of the API
         ];
+
+        $dates = [
+            self::COLUMN_SUBMISSION => $paper->getSubmission_date(),
+            self::COLUMN_REFUSAL => $logDates[self::COLUMN_REFUSAL] ?? null,
+            self::COLUMN_ACCEPTANCE => $logDates[self::COLUMN_ACCEPTANCE] ?? null,
+            self::COLUMN_PUBLICATION => $paper->getPublication_date(),
+        ];
+
+        foreach ($columns as $column) {
+            if (array_key_exists($column, $dates)) {
+                $row[$column] = self::toDate($dates[$column]);
+            }
+        }
+
+        return $row;
     }
 
     /**
