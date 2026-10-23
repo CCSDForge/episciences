@@ -3,11 +3,15 @@ use Laminas\Feed\Writer\Feed;
 
 class Episciences_Rss
 {
+    public const DEFAULT_MAX_ENTRIES = 20;
+    public const MAX_ENTRIES = 100;
+
     protected Episciences_Review $_review;
     protected Feed $_feed;
     private Zend_Translate $_translator;
 
     /**
+     * @param array<mixed> $settings
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Exception
      * @throws Zend_Feed_Exception
@@ -124,13 +128,20 @@ class Episciences_Rss
             'is' => ['status' => Episciences_Paper::STATUS_PUBLISHED],
             'order' => 'PUBLICATION_DATE DESC'];
 
-        if (array_key_exists('max', $settings)) {
-            $filters['limit'] = $settings['max'];
-        } else {
-            $filters['limit'] = 20;
-        }
+        $filters['limit'] = self::getMaxEntries($settings);
 
         return $review->getPapers($filters);
+    }
+
+    /**
+     * Number of entries of a feed: the requested 'max', bounded, or the default one
+     * @param array<mixed> $settings
+     */
+    public static function getMaxEntries(array $settings): int
+    {
+        $max = filter_var($settings['max'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        return $max === false ? self::DEFAULT_MAX_ENTRIES : min($max, self::MAX_ENTRIES);
     }
 
     /**
@@ -155,10 +166,10 @@ class Episciences_Rss
      */
     public function listNews(array $settings): void
     {
-        $max = (array_key_exists('max', $settings)) ? $settings['max'] : 20;
         $newsList = new Episciences_News();
         $feed = $this->getFeed();
-        foreach ($newsList->getListNews(false, 0, $max) as $news) {
+        // Only the news put online by the journal
+        foreach ($newsList->getListNews(true, 0, self::getMaxEntries($settings)) as $news) {
             $entry = $feed->createEntry();
             $entry->setTitle($this->_translator->translate($news['TITLE']));
             $entry->setLink(APPLICATION_URL . '/news/');
