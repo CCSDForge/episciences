@@ -112,7 +112,7 @@ final class AdministratelinkeddataControllerTest extends TestCase
         $level = ob_get_level();
         ob_start();
         try {
-            $returned = $controller->$action();
+            $controller->$action();
         } finally {
             $output = '';
             while (ob_get_level() > $level) {
@@ -120,8 +120,7 @@ final class AdministratelinkeddataControllerTest extends TestCase
             }
         }
 
-        // setnewinfoldAction() returns its answer instead of printing it
-        return $output . (is_string($returned) ? $returned : '');
+        return $output;
     }
 
     private function assertNothingWasWritten(): void

@@ -989,8 +989,11 @@ class UserDefaultController extends Zend_Controller_Action
             return;
         }
 
+        $currentUid = (int)$actingUid;
+        $userId = self::resolveEditedUserId($request, $isRoot, $currentUid);
+        $editUrlParams = self::editUrlParams($userId, $currentUid);
+
         $user = new Episciences_User();
-        $userId = (!empty($userUid) && $isRoot) ? $userUid : (int)Episciences_Auth::getUid();
 
         // Données par défaut du compte CAS
         $ccsdUserMapper = new Ccsd_User_Models_UserMapper();
@@ -1010,7 +1013,7 @@ class UserDefaultController extends Zend_Controller_Action
         $userDefaults = $casUserDefaults->toArray();
         $userDefaults = array_merge($userDefaults, $localUserDefaults);
         $form = new Episciences_User_Form_Edit(['UID' => $userId]);
-        $form->setAction($this->view->url($userId !== $actingUid ? ['userid' => $userId] : []));
+        $form->setAction($this->view->url($editUrlParams));
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Enregistrer les modifications',
             'class' => 'btn btn-primary'
@@ -1026,7 +1029,7 @@ class UserDefaultController extends Zend_Controller_Action
             $post = $request->getPost();
 
             if (!array_key_exists('submit', $post)) { // Profile editing form does not display correctly when changing language
-                $this->_helper->redirector('edit', 'user');
+                $this->_helper->redirector('edit', 'user', null, $editUrlParams);
                 return;
             }
 
@@ -1122,6 +1125,25 @@ class UserDefaultController extends Zend_Controller_Action
         $updatedUserValues['UID'] = $uid;
 
         return $updatedUserValues;
+    }
+
+    /**
+     * Account edited by editAction(): the "userid" request parameter (on display and on submission)
+     * when the current user may edit other accounts, their own account otherwise.
+     */
+    private static function resolveEditedUserId(Zend_Controller_Request_Abstract $request, bool $canEditOtherAccounts, int $currentUid): int
+    {
+        $requestedUid = (int)$request->getParam('userid');
+        return ($requestedUid > 0 && $canEditOtherAccounts) ? $requestedUid : $currentUid;
+    }
+
+    /**
+     * URL parameters keeping the edited account in the edition form action and redirections.
+     * @return array<string, int>
+     */
+    private static function editUrlParams(int $editedUid, int $currentUid): array
+    {
+        return $editedUid !== $currentUid ? ['userid' => $editedUid] : [];
     }
 
     /**
