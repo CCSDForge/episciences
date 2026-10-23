@@ -2,7 +2,7 @@
   "name": "ccsd/episciences",
   "description": "A platform for overlay journals",
   "require": {
-    "php": "~8.1",
+    "php": "~8.3",
     "ext-curl": "*",
     "ext-dom": "*",
     "ext-fileinfo": "*",
@@ -45,8 +45,6 @@
     "symfony/event-dispatcher": "^6.4",
     "symfony/filesystem": "^6.4",
     "symfony/polyfill-mbstring": "*",
-    "symfony/polyfill-php82": "*",
-    "symfony/polyfill-php83": "*",
     "symfony/polyfill-php84": "*",
     "symfony/property-access": "^6.4",
     "symfony/serializer": "^6.4",

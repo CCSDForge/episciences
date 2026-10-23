@@ -225,7 +225,6 @@ class Import extends Episciences_Paper
 
         try {
             $paper = $this -> load();
-            $this->paper = $paper;
         } catch (Exception $e) {
             $this->setError($e -> getMessage());
             return false;

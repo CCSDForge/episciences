@@ -3,10 +3,11 @@
 class Ccsd_Form_Decorator_Lang extends Zend_Form_Decorator_HtmlTag
 {
     public $indice;
-    
-   /* public $init;
-    
-    use Ccsd_Form_Trait_GenerateFunctionJS;
+
+    // JS function name, set by Ccsd_Form_Decorator_Group
+    public $init;
+
+   /* use Ccsd_Form_Trait_GenerateFunctionJS;
     
     public function setElement($element)
     {
