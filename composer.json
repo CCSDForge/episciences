@@ -2,7 +2,7 @@
   "name": "ccsd/episciences",
   "description": "A platform for overlay journals",
   "require": {
-    "php": "~8.1",
+    "php": "~8.3",
     "ext-curl": "*",
     "ext-dom": "*",
     "ext-fileinfo": "*",
