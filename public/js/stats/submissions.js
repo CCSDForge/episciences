@@ -1,31 +1,26 @@
-$(function () {
-    let context0 = $('#all-submissions-percentage');
-    let context1 = $('#submissions-by-year-chart');
-    let context2 = $('#submissions-by-repo-chart');
-    let context3 = $('#submissions-delay-chart');
-
-    let allPercentageOfSubmissionsStats = {
+document.addEventListener('DOMContentLoaded', function () {
+    const allPercentageOfSubmissionsStats = {
         labels: seriesFromView.allSubmissionsPercentage.labels,
         datasets: seriesFromView.allSubmissionsPercentage.datasets
             ? seriesFromView.allSubmissionsPercentage.datasets
             : null,
     };
 
-    let statsByYearData = {
+    const statsByYearData = {
         labels: yearCategoriesFromView,
         datasets: seriesFromView.submissionsByYear.datasets
             ? seriesFromView.submissionsByYear.datasets
             : null,
     };
 
-    let statsByRepoData = {
+    const statsByRepoData = {
         labels: yearCategoriesFromView,
         datasets: seriesFromView.submissionsByRepo.repositories.datasets
             ? seriesFromView.submissionsByRepo.repositories.datasets
             : null,
     };
 
-    let submissionDelay = {
+    const submissionDelay = {
         labels: yearCategoriesFromView,
         datasets: seriesFromView.submissionDelay.datasets
             ? seriesFromView.submissionDelay.datasets
@@ -37,7 +32,7 @@ $(function () {
         !isEmptyData(allPercentageOfSubmissionsStats.datasets[0].data)
     ) {
         createChart(
-            context0,
+            document.getElementById('all-submissions-percentage'),
             allPercentageOfSubmissionsStats,
             seriesFromView.allSubmissionsPercentage.chartType
         );
@@ -48,7 +43,7 @@ $(function () {
         !isEmptyData(statsByYearData.datasets[0].data)
     ) {
         createChart(
-            context1,
+            document.getElementById('submissions-by-year-chart'),
             statsByYearData,
             seriesFromView.submissionsByYear.chartType
         );
@@ -59,7 +54,7 @@ $(function () {
         !isEmptyData(statsByRepoData.datasets[0].data)
     ) {
         createChart(
-            context2,
+            document.getElementById('submissions-by-repo-chart'),
             statsByRepoData,
             seriesFromView.submissionsByRepo.repositories.chartType
         );
@@ -71,7 +66,7 @@ $(function () {
             submissionDelay.datasets[1].data.length > 0)
     ) {
         createChart(
-            context3,
+            document.getElementById('submissions-delay-chart'),
             submissionDelay,
             seriesFromView.submissionDelay.chartType
         );

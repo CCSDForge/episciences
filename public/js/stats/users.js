@@ -1,8 +1,11 @@
-$(function () {
-    let context = $('#users-by-roles-chart');
-    let statsByRolesData = {
+document.addEventListener('DOMContentLoaded', function () {
+    const statsByRolesData = {
         labels: rolesFromView,
         datasets: nbUsersByRoleFromView.datasets,
     };
-    createChart(context, statsByRolesData, nbUsersByRoleFromView.chartType);
+    createChart(
+        document.getElementById('users-by-roles-chart'),
+        statsByRolesData,
+        nbUsersByRoleFromView.chartType
+    );
 });

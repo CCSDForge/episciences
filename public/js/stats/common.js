@@ -1,28 +1,38 @@
-function createChart(context, data, type = null, title = '') {
-    let isPieChart = type === 'pie' || type === 'doughnut';
+/**
+ * Charts of the statistics page (Chart.js 4, chartjs-plugin-datalabels 2)
+ */
 
-    for (let i = 0; i < data.datasets.length; i++) {
-        Object.assign(data.datasets[i], { maxBarThickness: 50 }); // number (pixels)
-    }
+/**
+ * Pure helper: Chart.js configuration of a chart of the statistics page
+ * @param {object} data labels and datasets
+ * @param {string|null} type pie, doughnut, bar, barH (horizontal bars) or line; pie by default
+ * @param {string} title
+ * @returns {object}
+ */
+function buildChartConfig(data, type = null, title = '') {
+    const isPieChart = type === 'pie' || type === 'doughnut';
+    const isHorizontal = type === 'barH';
 
-    let options = {
-        legend: {
-            display: true,
-            position: 'bottom',
-        },
+    data.datasets.forEach(dataset => {
+        Object.assign(dataset, { maxBarThickness: 50 }); // pixels
+    });
+
+    const options = {
         plugins: {
-            title: {
+            legend: {
                 display: true,
+                position: 'bottom',
+            },
+            title: {
+                display: title !== '',
                 text: title,
             },
             datalabels: {
-                formatter: function (value, context) {
-                    return !isPieChart ? value : value + '%';
-                },
+                formatter: value => (isPieChart ? value + '%' : value),
                 align: isPieChart ? 'center' : 'end',
                 anchor: isPieChart ? 'center' : 'end',
                 font: {
-                    size: '8',
+                    size: 8,
                     weight: 'bold',
                 },
                 color: '#5627a8',
@@ -31,57 +41,55 @@ function createChart(context, data, type = null, title = '') {
     };
 
     if (!isPieChart) {
-        let scalesOptions = {
-            scales: {
-                xAxes: [
-                    {
-                        ticks: {
-                            beginAtZero: true,
-                        },
-                        gridLines: {
-                            display: true,
-                        },
-                        scaleLabel: {
-                            display: true,
-                            labelString: '',
-                        },
-                        afterDataLimits(scale) {
-                            // Prevent hiding data label value when the constraints of the graph are reached.
-                            scale.max += 1;
-                        },
-                    },
-                ],
-                yAxes: [
-                    {
-                        ticks: {
-                            beginAtZero: true,
-                        },
-                        gridLines: {
-                            display: true,
-                        },
-                        scaleLabel: {
-                            display: true,
-                            labelString: '',
-                        },
-                        afterDataLimits(scale) {
-                            // Prevent hiding data label value when the constraints of the graph are reached.
-                            scale.max += 20;
-                        },
-                    },
-                ],
+        const valueAxis = isHorizontal ? 'x' : 'y';
+        const categoryAxis = isHorizontal ? 'y' : 'x';
+
+        options.scales = {
+            [categoryAxis]: {
+                grid: { display: true },
+            },
+            [valueAxis]: {
+                beginAtZero: true,
+                grid: { display: true },
+                // room for the data labels at the end of the bars
+                grace: '10%',
             },
         };
-        Object.assign(options, scalesOptions);
     }
 
-    if (type === 'barH') {
-        //options['indexAxis'] = 'y'; possible migration to v3 (currently in beta version)
-        type = 'horizontalBar';
+    if (isHorizontal) {
+        options.indexAxis = 'y';
     }
 
-    return new Chart(context, {
+    if (isPieChart) {
+        // as with Chart.js 2: Chart.js 4 draws the pie and doughnut charts in a square by default
+        options.aspectRatio = 2;
+    }
+
+    return {
+        type: isHorizontal ? 'bar' : type !== null ? type : 'pie',
         data: data,
-        type: type !== null ? type : 'pie',
         options: options,
-    });
+        plugins:
+            typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : [],
+    };
+}
+
+/**
+ * @param {HTMLCanvasElement|null} canvas
+ * @param {object} data labels and datasets
+ * @param {string|null} type
+ * @param {string} title
+ * @returns {Chart|null}
+ */
+function createChart(canvas, data, type = null, title = '') {
+    if (!canvas || typeof Chart === 'undefined') {
+        return null;
+    }
+
+    return new Chart(canvas, buildChartConfig(data, type, title));
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { buildChartConfig, createChart };
 }
