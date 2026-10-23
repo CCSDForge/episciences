@@ -219,6 +219,18 @@ final class ErrorDefaultControllerTest extends TestCase
         self::assertSame(404, $response->getHttpResponseCode());
     }
 
+    public function testDenyActionAnswersForbidden(): void
+    {
+        $response = new \Zend_Controller_Response_Http();
+        $this->controller->setRequest(new \Zend_Controller_Request_Http());
+        $this->controller->setResponse($response);
+        $this->controller->view = new \Zend_View();
+
+        $this->controller->denyAction();
+
+        self::assertSame(403, $response->getHttpResponseCode());
+    }
+
     public function testReadonlyActionAnswersServiceUnavailableWithRetryAfter(): void
     {
         ReadOnlyMode::setOverride(true);

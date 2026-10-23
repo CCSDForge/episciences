@@ -38,10 +38,11 @@ class ApiController extends Zend_Controller_Action
             $doMerge = false;
         }
 
-        if ($authToken !== FUSION_TOKEN_AUTH) { // sécuriser le fait que seule notre application peut faire de la fusion de comptes
+        if (!self::isValidMergeAuthToken(defined('FUSION_TOKEN_AUTH') ? (string)FUSION_TOKEN_AUTH : '', $authToken)) { // sécuriser le fait que seule notre application peut faire de la fusion de comptes
             $httpCode = Episciences_Merge_MergingManager::HTTP_UNAUTHORIZED;
             $message = 'Authentication is required to access the resource';
             $response = ['httpStatusCode' => $httpCode, 'message' => $message];
+            $this->getResponse()->setHttpResponseCode($httpCode);
 
         } else {
             $response = Episciences_Merge_MergingManager::mergeAccounts($merger, $keeper, $token, $doMerge);
@@ -50,6 +51,15 @@ class ApiController extends Zend_Controller_Action
         $this->getResponse()
             ->setHeader('Content-type', 'application/json')
             ->setBody(Zend_Json_Encoder::encode($response));
+    }
+
+    /**
+     * Constant-time check of the account merging token. An empty or missing configured token
+     * rejects every request, so that an empty submitted token can never match it.
+     */
+    public static function isValidMergeAuthToken(string $expected, string $authToken): bool
+    {
+        return $expected !== '' && $authToken !== '' && hash_equals($expected, $authToken);
     }
 
     public function ccsdMetricsAction()

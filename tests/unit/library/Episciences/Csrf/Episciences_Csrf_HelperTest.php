@@ -418,4 +418,70 @@ class Episciences_Csrf_HelperTest extends TestCase
 
         $this->assertFalse(Episciences_Csrf_Helper::validateRequestToken($request));
     }
+
+    /**
+     * Stores a hash in the session namespace of a Zend_Form_Element_Hash built with the given salt.
+     */
+    private function storeFormHash(string $salt, string $elementName, string $hash): \Zend_Session_Namespace
+    {
+        if (!class_exists('Zend_Session')) {
+            $this->markTestSkipped('Zend_Session not available');
+        }
+
+        try {
+            $session = new \Zend_Session_Namespace('Zend_Form_Element_Hash_' . $salt . '_' . $elementName);
+        } catch (\Exception $e) {
+            $this->markTestSkipped('Session not available: ' . $e->getMessage());
+        }
+        $session->hash = $hash;
+
+        return $session;
+    }
+
+    /**
+     * Hash elements added without an explicit salt use the Zend default salt "unique": the
+     * token is looked up in that namespace, accepted once, then cleared.
+     */
+    public function testValidateFormTokenWithUniqueSaltAcceptsTheStoredHashOnce(): void
+    {
+        $session = $this->storeFormHash('unique', 'csrf_accept_42', 'stored-hash');
+
+        self::assertTrue(Episciences_Csrf_Helper::validateFormToken('csrf_accept_42', ['csrf_accept_42' => 'stored-hash'], 'unique'));
+        self::assertFalse(isset($session->hash), 'the token must be single use');
+        self::assertFalse(
+            @Episciences_Csrf_Helper::validateFormToken('csrf_accept_42', ['csrf_accept_42' => 'stored-hash'], 'unique'),
+            'a replayed token must be rejected'
+        );
+    }
+
+    /**
+     * A wrong token is rejected, and the stored one is cleared anyway.
+     */
+    public function testValidateFormTokenWithUniqueSaltRejectsAWrongHash(): void
+    {
+        $session = $this->storeFormHash('unique', 'csrf_refuse_42', 'stored-hash');
+
+        self::assertFalse(@Episciences_Csrf_Helper::validateFormToken('csrf_refuse_42', ['csrf_refuse_42' => 'forged'], 'unique'));
+        self::assertFalse(isset($session->hash));
+    }
+
+    /**
+     * A non-string posted value (e.g. csrf_x[]=...) is rejected without error.
+     */
+    public function testValidateFormTokenRejectsAnArrayValue(): void
+    {
+        $this->storeFormHash('unique', 'csrf_publish_42', 'stored-hash');
+
+        self::assertFalse(@Episciences_Csrf_Helper::validateFormToken('csrf_publish_42', ['csrf_publish_42' => ['stored-hash']], 'unique'));
+    }
+
+    /**
+     * Without salt, the element name is still used as salt (comment forms).
+     */
+    public function testValidateFormTokenDefaultsTheSaltToTheElementName(): void
+    {
+        $this->storeFormHash('csrf_comment_7', 'csrf_comment_7', 'stored-hash');
+
+        self::assertTrue(Episciences_Csrf_Helper::validateFormToken('csrf_comment_7', ['csrf_comment_7' => 'stored-hash']));
+    }
 }

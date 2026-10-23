@@ -86,9 +86,11 @@ class Episciences_Csrf_Helper
      *
      * @param string $elementName The CSRF element name (e.g., 'csrf_author_reply_form_123')
      * @param array $postData The POST data containing the token
+     * @param string|null $salt Salt of the hash element; null when it equals the element name
+     *                          (pass 'unique', the Zend_Form_Element_Hash default, for elements built without salt)
      * @return bool True if valid, false otherwise
      */
-    public static function validateFormToken(string $elementName, array $postData): bool
+    public static function validateFormToken(string $elementName, array $postData, ?string $salt = null): bool
     {
         if (!isset($postData[$elementName])) {
             return false;
@@ -100,7 +102,7 @@ class Episciences_Csrf_Helper
             //
             // In CommentsManager::getForm(), the salt equals the elementName
             // So the namespace = Zend_Form_Element_Hash_{elementName}_{elementName}
-            $salt = $elementName;
+            $salt ??= $elementName;
             $sessionName = 'Zend_Form_Element_Hash_' . $salt . '_' . $elementName;
 
             $session = new Zend_Session_Namespace($sessionName);
@@ -115,7 +117,7 @@ class Episciences_Csrf_Helper
             $postedHash = $postData[$elementName];
 
             // Validate BEFORE clearing (prevents race condition)
-            $isValid = ($storedHash === $postedHash);
+            $isValid = is_string($storedHash) && is_string($postedHash) && hash_equals($storedHash, $postedHash);
 
             // Clear the token after validation (one-time use for security)
             unset($session->hash);

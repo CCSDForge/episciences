@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `enrichment:creators -v` lists the author corrections made from HAL TEI; with `--dry-run` it lists them without writing anything.
 
 ### Fixed
+- The access denied page answers with a 403 status instead of a "page not found" error.
 - [#1310](https://github.com/CCSDForge/episciences/pull/1310): co-author form and co-author removal are now consistent with the paper management page.
 - [#1344](https://github.com/CCSDForge/episciences/pull/1344): graphical abstract and linked data forms are now consistent with the paper context.
 - [#1349](https://github.com/CCSDForge/episciences/pull/1349): profile edition form opened from the user list is submitted for the selected account.
@@ -233,6 +234,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Token checks hardened.
 - Review report attachments: access checks aligned with the paper assignments, as for the other paper files.
 - [#1231](https://github.com/CCSDForge/episciences/pull/1231) Website header: only administrators, chief editors, secretaries, webmasters and root can edit it, and the form requires a CSRF token. The generated header escapes every value and only keeps http(s), mailto and tel links. A submission with an invalid CSRF token is not saved: the form is shown again with an error message. Labels still accept the entities already typed, line breaks and the `b`, `strong`, `i` and `em` tags without attributes; any other markup is now shown as text. The CSS style of a label only keeps typographic properties (no positioning, background or `url()`) and its CSS classes are limited to valid class names. Run `website:regenerate-headers --all` once after deployment to rewrite the existing header files, which are otherwise only regenerated when a journal saves its header.
 - [#1216](https://github.com/CCSDForge/episciences/pull/1216) Paper illustration (graphical abstract) upload: the actual MIME type is now checked (the extension alone, case-sensitive, was trusted), SVG is no longer accepted, and access checks are tightened.

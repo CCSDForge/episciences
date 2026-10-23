@@ -150,6 +150,7 @@ class ErrorDefaultController extends Zend_Controller_Action
     
     public function denyAction()
     {
+        $this->getResponse()->setHttpResponseCode(403);
         $this->view->message = "Vous n'êtes pas autorisé à accéder à cette page.";
     }
 
