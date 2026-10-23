@@ -501,3 +501,36 @@
     }
   }
 }
+
+// CSV exports
+.stats-page {
+  .stats-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .stat-chart-data {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 4px 12px;
+
+    .stat-chart-table {
+      flex: 1 1 auto;
+    }
+
+    .stat-csv-button {
+      margin-top: 6px;
+    }
+  }
+
+  .fa-download {
+    margin-right: 2px;
+  }
+}
+
+.stat-papers-dialog .stat-papers-export {
+  margin-left: auto;
+}

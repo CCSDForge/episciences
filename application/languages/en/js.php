@@ -335,6 +335,13 @@ return [
 
     // Statistics: charts
     'Voir les données' => 'View the data',
+    'Télécharger (CSV)' => 'Download (CSV)',
+    'Année' => 'Year',
+    'Rôle' => 'Role',
+    'Indicateur' => 'Indicator',
+    'Valeur' => 'Value',
+    'Importé' => 'Imported',
+    'oui' => 'yes',
     'jours' => 'days',
 
     // Statistics: papers of the figures

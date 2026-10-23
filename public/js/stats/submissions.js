@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', function () {
         createBarChart(
             'submissions-by-year-chart',
             years,
-            charts.byYear.datasets
+            charts.byYear.datasets,
+            { categoryLabel: statTranslate('Année') }
         );
     }
 
@@ -21,7 +22,10 @@ document.addEventListener('DOMContentLoaded', function () {
             'submissions-by-repo-chart',
             years,
             charts.byRepo.datasets,
-            { stacked: charts.byRepo.stacked === true }
+            {
+                stacked: charts.byRepo.stacked === true,
+                categoryLabel: statTranslate('Année'),
+            }
         );
     }
 
@@ -32,11 +36,30 @@ document.addEventListener('DOMContentLoaded', function () {
             charts.delays.years,
             charts.delays.datasets,
             {
+                categoryLabel: statTranslate('Année'),
                 format: value =>
                     value === null || value === undefined
                         ? '–'
                         : value + ' ' + statTranslate('jours'),
             }
         );
+    }
+
+    // the figures of the page (CSV)
+    const figuresButton = document.querySelector('.stats-export-figures');
+
+    if (
+        figuresButton &&
+        typeof statsFiguresFromView !== 'undefined' &&
+        typeof downloadCsv === 'function'
+    ) {
+        figuresButton.addEventListener('click', function () {
+            downloadCsv(
+                statCsvFileName([statsExportName(), 'chiffres']),
+                [[statTranslate('Indicateur'), statTranslate('Valeur')]].concat(
+                    statsFiguresFromView
+                )
+            );
+        });
     }
 });

@@ -33,6 +33,10 @@ $columnLabels = [
                placeholder="<?= $this->translate('Rechercher (titre, identifiant)') ?>"
                aria-label="<?= $this->translate('Rechercher (titre, identifiant)') ?>">
         <span class="stat-papers-count help-block"></span>
+        <button type="button" class="btn btn-default btn-xs stat-papers-export">
+            <span class="fas fa-download fa-sm" aria-hidden="true"></span>
+            <?= $this->translate('Exporter la liste (CSV)') ?>
+        </button>
     </div>
 
     <div class="table-responsive">

@@ -2,7 +2,7 @@
 $this->layout()->pageTitle = $this->translate('Statistiques');
 // the introduction of the page is part of the page (not the description of the layout, shown as a quotation)
 ?>
-<div class="stats-page">
+<div class="stats-page" data-export-name="<?= $this->escape($this->exportName ?? 'statistiques') ?>">
 <p class="stats-intro"><?= $this->translate('Indicateurs de statistiques pour la revue') ?> <strong><?= $this->escape(RVNAME) ?></strong></p>
 <?php if ($this->errorMessage): ?>
     <div class="alert alert-danger"><?= $this->translate($this->errorMessage) ?></div>
@@ -10,6 +10,7 @@ $this->layout()->pageTitle = $this->translate('Statistiques');
     <?php $this->jQuery()->addJavascriptFile(VENDOR_CHART); ?>
     <?php $this->jQuery()->addJavascriptFile(VENDOR_CHART_PLUGIN_DATALABELS); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/index.js'); ?>
+    <?php $this->jQuery()->addJavascriptFile('/js/stats/csv.js'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/common.js'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/submissions.js'); ?>
     <?php if ($this->paperLists): ?>
@@ -20,7 +21,15 @@ $this->layout()->pageTitle = $this->translate('Statistiques');
     <?php // toolbar: the years, and the switch of the start date of the statistics (administrators) ?>
     <div class="stats-toolbar">
         <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories, 'fullHistory' => $this->fullHistory]) ?>
-        <?= $this->render('stats/history-switch.phtml') ?>
+        <div class="stats-toolbar-actions">
+            <?php if (!empty($this->figuresExport)): ?>
+                <button type="button" class="btn btn-default btn-xs stats-export-figures">
+                    <span class="fas fa-download fa-sm" aria-hidden="true"></span>
+                    <?= $this->translate('Exporter les chiffres (CSV)') ?>
+                </button>
+            <?php endif; ?>
+            <?= $this->render('stats/history-switch.phtml') ?>
+        </div>
     </div>
 
     <div class="col-md-12">
@@ -88,6 +97,7 @@ $this->layout()->pageTitle = $this->translate('Statistiques');
 
     <script>
         const statsChartsFromView = <?= json_encode($this->charts ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
+        const statsFiguresFromView = <?= json_encode($this->figuresExport ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
     </script>
 
 <?php endif; ?>

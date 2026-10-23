@@ -61,7 +61,10 @@ function statPapersCompare(a, b, key) {
 /**
  * Pure helper: rows filtered by the query, sorted, and the requested page
  */
-function statPapersView(rows, query, sortKey, sortDir, page) {
+/**
+ * Pure helper: rows filtered by the query and sorted (all of them: the page and the export)
+ */
+function statPapersFilterSort(rows, query, sortKey, sortDir) {
     const q = query.trim().toLowerCase();
     const filtered = q
         ? rows.filter(
@@ -85,6 +88,14 @@ function statPapersView(rows, query, sortKey, sortDir, page) {
         return sortDir === 'ascending' ? result : -result;
     });
 
+    return filtered;
+}
+
+/**
+ * Pure helper: rows filtered by the query, sorted, and the requested page
+ */
+function statPapersView(rows, query, sortKey, sortDir, page) {
+    const filtered = statPapersFilterSort(rows, query, sortKey, sortDir);
     const pages = Math.max(
         1,
         Math.ceil(filtered.length / STAT_PAPERS_PAGE_SIZE)
@@ -98,6 +109,27 @@ function statPapersView(rows, query, sortKey, sortDir, page) {
         pages: pages,
         rows: filtered.slice(start, start + STAT_PAPERS_PAGE_SIZE),
     };
+}
+
+/**
+ * Pure helper: rows of the CSV export of a list: the columns of the window, raw values
+ * @param {object[]} rows filtered and sorted
+ * @param {string[]} columns date columns of the figure
+ * @param {object} labels header labels: id, title, status, the date columns; imported (mark of the imported papers)
+ */
+function buildPapersCsvRows(rows, columns, labels) {
+    const withImported = rows.some(row => row.imported);
+    const header = [labels.id, 'PAPERID', labels.title, labels.status]
+        .concat(columns.map(column => labels[column] || column))
+        .concat(withImported ? [labels.imported] : []);
+
+    return [header].concat(
+        rows.map(row =>
+            [row.docid, row.paperid, row.title, row.statusLabel]
+                .concat(columns.map(column => row[column] || ''))
+                .concat(withImported ? [row.imported ? labels.yes : ''] : [])
+        )
+    );
 }
 
 function initStatPapers() {
@@ -123,6 +155,7 @@ function initStatPapers() {
     const cache = new Map();
 
     const state = {
+        figure: null,
         rows: [],
         // date columns of the figure (only the relevant dates), sent by the server
         columns: [],
@@ -330,6 +363,7 @@ function initStatPapers() {
     }
 
     async function open(figure) {
+        state.figure = figure;
         titleEl.textContent = titles[figure] || '';
         state.rows = [];
         state.query = '';
@@ -397,6 +431,46 @@ function initStatPapers() {
         }
     });
 
+    // export of the list (CSV): the rows filtered and sorted, all the pages
+    const exportEl = dialog.querySelector('.stat-papers-export');
+
+    if (exportEl && typeof downloadCsv === 'function') {
+        exportEl.addEventListener('click', () => {
+            const headers = Array.from(headerRow.querySelectorAll('th')).map(
+                th => th.textContent.trim()
+            );
+            const labels = {
+                id: headers[0],
+                title: headers[1],
+                status: headers[2],
+                imported: statPapersTranslate('Importé'),
+                yes: statPapersTranslate('oui'),
+            };
+            state.columns.forEach((column, i) => {
+                labels[column] = headers[fixedHeaders + i];
+            });
+
+            downloadCsv(
+                statCsvFileName([
+                    typeof statsExportName === 'function'
+                        ? statsExportName()
+                        : 'statistiques',
+                    state.figure,
+                ]),
+                buildPapersCsvRows(
+                    statPapersFilterSort(
+                        state.rows,
+                        state.query,
+                        state.sortKey,
+                        state.sortDir
+                    ),
+                    state.columns,
+                    labels
+                )
+            );
+        });
+    }
+
     searchEl.addEventListener('input', () => {
         state.query = searchEl.value;
         state.page = 1;
@@ -433,7 +507,13 @@ function initStatPapers() {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { statPapersView, statPapersCompare, initStatPapers };
+    module.exports = {
+        statPapersView,
+        statPapersFilterSort,
+        statPapersCompare,
+        buildPapersCsvRows,
+        initStatPapers,
+    };
 }
 
 if (document.readyState === 'loading') {

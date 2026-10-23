@@ -12,6 +12,11 @@ document.addEventListener('DOMContentLoaded', function () {
         'users-by-roles-chart',
         statsChartsFromView.users.labels,
         statsChartsFromView.users.datasets,
-        { horizontal: true, valueLabels: true, legend: false }
+        {
+            horizontal: true,
+            valueLabels: true,
+            legend: false,
+            categoryLabel: statTranslate('Rôle'),
+        }
     );
 });

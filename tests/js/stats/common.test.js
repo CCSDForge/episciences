@@ -10,6 +10,7 @@ const {
     statChartMaxWidth,
     buildBarChartConfig,
     buildChartTable,
+    buildChartCsvRows,
     createBarChart,
 } = require(path.join(__dirname, '../../../public/js/stats/common.js'));
 
@@ -145,6 +146,25 @@ describe('stacked bars', function () {
     });
 });
 
+describe('buildChartCsvRows', function () {
+    it('gives a header and a row by category, with the raw values', function () {
+        expect(
+            buildChartCsvRows(
+                'Year',
+                ['2023', '2024'],
+                [
+                    { label: 'Acceptance', data: [57, null] },
+                    { label: 'Publication', data: [234, 277] },
+                ]
+            )
+        ).toEqual([
+            ['Year', 'Acceptance', 'Publication'],
+            ['2023', 57, 234],
+            ['2024', '', 277],
+        ]);
+    });
+});
+
 describe('buildChartTable', function () {
     it('lists the values of each series by category', function () {
         const details = buildChartTable(
@@ -257,6 +277,24 @@ describe('createBarChart', function () {
         expect(createBarChart('missing', ['2022'], datasets())).toBeNull();
         expect(createBarChart('by-year', ['2022'], [])).toBeNull();
         expect(global.Chart).not.toHaveBeenCalled();
+    });
+
+    it('adds the CSV export of the chart under its table', function () {
+        const csv = require(
+            path.join(__dirname, '../../../public/js/stats/csv.js')
+        );
+        Object.assign(global, csv);
+        global.Chart = jest.fn();
+
+        createBarChart('by-year', ['2022', '2023', '2024'], datasets(), {
+            categoryLabel: 'Year',
+        });
+
+        expect(
+            document.querySelector('.stat-chart-data .stat-csv-button')
+        ).not.toBeNull();
+
+        Object.keys(csv).forEach(key => delete global[key]);
     });
 
     it('still shows the table view without Chart.js', function () {

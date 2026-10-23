@@ -146,6 +146,29 @@ class StatsControllerChartsTest extends TestCase
         $this->assertSame([], $charts['delays']['years']);
     }
 
+    public function testGetExportName(): void
+    {
+        $this->assertSame('statistiques-dev-tout', StatsController::getExportName('dev', null));
+        $this->assertSame('statistiques-dev-2026', StatsController::getExportName('dev', 2026));
+        $this->assertSame('statistiques-dev-2026-donnees-completes', StatsController::getExportName('dev', 2026, true));
+    }
+
+    public function testBuildFiguresExport_FiguresWithoutValueLeftOut(): void
+    {
+        $this->assertSame([
+            ['Articles', '507'],
+            ['Taux de refus (%)', '45.68'],
+            ['Autres statuts', '0'],
+        ], StatsController::buildFiguresExport([
+            ['Articles', 507],
+            ['Soumissions', null],
+            ['Taux de refus (%)', 45.68],
+            ['Délai', ''],
+            ['Autres statuts', 0],
+            ['Liste', [1, 2]],
+        ]));
+    }
+
     public function testBuildUsersChartData_SortedRootLeftOut(): void
     {
         $users = StatsController::buildUsersChartData(

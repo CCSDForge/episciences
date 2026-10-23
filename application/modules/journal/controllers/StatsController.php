@@ -329,6 +329,81 @@ class StatsController extends Zend_Controller_Action
         // without the "startAfterDate" filter, the totals are not explained by the papers
         $this->view->totalsExplained = !isset($dashboard['value']['totalWithoutStartAfterDate']);
 
+        // CSV exports: base name of the files, and the figures of the page
+        $this->view->exportName = self::getExportName(RVCODE, $yearQuery, $fullHistory);
+        $this->view->figuresExport = $this->getFiguresExport($startStatsAfterDate);
+
+    }
+
+    /**
+     * Base name of the CSV files of the page: journal, year, all the data or not
+     */
+    public static function getExportName(string $journalCode, ?int $year, bool $fullHistory = false): string
+    {
+        return implode('-', array_filter(['statistiques', $journalCode, $year ?: 'tout', $fullHistory ? 'donnees-completes' : null]));
+    }
+
+    /**
+     * Rows of the export of the figures of the page (CSV): indicator, value; the figures without value are left out
+     * @param array<int, array{0: string, 1: mixed}> $figures translated label => value
+     * @return array<int, array{0: string, 1: string}>
+     */
+    public static function buildFiguresExport(array $figures): array
+    {
+        $rows = [];
+
+        foreach ($figures as [$label, $value]) {
+            if ($value === null || $value === '' || is_array($value)) {
+                continue;
+            }
+
+            $rows[] = [(string)$label, (string)$value];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The figures of the page, as shown, for their CSV export
+     * @param string|null $startStatsAfterDate the start date applied to the statistics (null: all the data)
+     * @return array<int, array{0: string, 1: string}>
+     */
+    private function getFiguresExport(?string $startStatsAfterDate): array
+    {
+        $view = $this->view;
+        $t = fn(string $label) => ucfirst((string)$view->translate($label));
+        $days = ' (' . $view->translate('jours') . ')';
+
+        return self::buildFiguresExport([
+            [$t('Revue'), RVCODE],
+            [$t('Année'), $view->yearQuery ?: $view->translate('Tout')],
+            [$t('Données à partir du'), $startStatsAfterDate ?: $view->translate('Toutes les données')],
+            [$t('articles'), $view->totalArticles],
+            [$t('articles importés'), $view->totalImportedArticles],
+            [$t('publiés'), $view->totalPublishedArticles],
+            [$t('articles importés publiés'), $view->totalImportedPublished],
+            [$t('Soumissions'), $startStatsAfterDate ? $view->allSubmissions : null],
+            [$t('articles publiés'), $view->allPublications],
+            [$t('articles acceptés'), $view->allAcceptations],
+            [$t('articles refusés'), $view->allRefusals],
+            [$t('autres statuts'), $view->allOtherStatus],
+            [$t('articles acceptés (non encore publiés)'), $view->acceptedNotYetPublished],
+            [$t('articles avec version temporaire'), $view->papersWithTemporaryVersion],
+            [$t('articles acceptés') . ' (' . $view->translate('soumis la même année') . ')', $view->yearQuery ? $view->acceptedSubmittedSameYear : null],
+            [$t('articles publiés') . ' (' . $view->translate('soumis la même année') . ')', $view->yearQuery ? $view->publishedSubmittedSameYear : null],
+            [$t('articles refusés') . ' (' . $view->translate('soumis la même année') . ')', $view->yearQuery ? $view->refusedSubmittedSameYear : null],
+            [$t("taux d'acceptation") . ' (%)', $view->acceptanceRate],
+            [$t('taux de publication') . ' (%)', $view->publicationRate],
+            [$t('taux de refus') . ' (%)', $view->declineRate],
+            [$t('délai soumission-acceptation') . ' – ' . $view->translate('moyenne') . $days, $view->submissionAcceptanceTime],
+            [$t('délai soumission-acceptation') . ' – ' . $view->translate('médiane') . $days, $view->submissionAcceptanceTimeMedian],
+            [$t('délai soumission-publication') . ' – ' . $view->translate('moyenne') . $days, $view->submissionPublicationTime],
+            [$t('délai soumission-publication') . ' – ' . $view->translate('médiane') . $days, $view->submissionPublicationTimeMedian],
+            [$t('Évaluations demandées'), $view->reviewsRequested],
+            [$t('Évaluations reçues'), $view->reviewsReceived],
+            [$t("Nombre médian d'évaluations d'articles de recherche"), $view->medianReviewsNumber],
+            [$t("Nombre total d'utilisateurs"), $view->isAvailableUsersStats ? $view->allUsers : null],
+        ]);
     }
 
     /**

@@ -211,6 +211,36 @@ function buildChartTable(caption, labels, datasets, format = null) {
 }
 
 /**
+ * Base name of the CSV files of the page (journal, year, all the data or not), given by the page
+ */
+function statsExportName() {
+    const page =
+        typeof document !== 'undefined'
+            ? document.querySelector('.stats-page')
+            : null;
+    return (page && page.dataset.exportName) || 'statistiques';
+}
+
+/**
+ * Pure helper: rows of the CSV export of a chart: a header, then a row by category with the raw values
+ */
+function buildChartCsvRows(categoryLabel, labels, datasets) {
+    return [
+        [categoryLabel].concat(datasets.map(dataset => dataset.label)),
+    ].concat(
+        labels.map((label, i) =>
+            [label].concat(
+                datasets.map(dataset =>
+                    dataset.data[i] === null || dataset.data[i] === undefined
+                        ? ''
+                        : dataset.data[i]
+                )
+            )
+        )
+    );
+}
+
+/**
  * Draws a bar chart in its canvas, and its table view in the panel
  * @returns {Chart|null}
  */
@@ -234,6 +264,23 @@ function createBarChart(canvasId, labels, datasets, options = {}) {
                 options.format
             )
         );
+
+        // the same data as a CSV file (raw values)
+        if (typeof createCsvButton === 'function') {
+            tableContainer.appendChild(
+                createCsvButton(statTranslate('Télécharger (CSV)'), () => ({
+                    fileName: statCsvFileName([
+                        statsExportName(),
+                        canvasId.replace(/-chart$/, ''),
+                    ]),
+                    rows: buildChartCsvRows(
+                        options.categoryLabel || '',
+                        labels,
+                        datasets
+                    ),
+                }))
+            );
+        }
     }
 
     // few categories (the page of a year): the chart is not wider than its bars need
@@ -259,6 +306,8 @@ if (typeof module !== 'undefined' && module.exports) {
         statChartMaxWidth,
         buildBarChartConfig,
         buildChartTable,
+        buildChartCsvRows,
+        statsExportName,
         createBarChart,
     };
 }

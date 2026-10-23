@@ -151,6 +151,53 @@ describe('statPapersView', function () {
     });
 });
 
+describe('buildPapersCsvRows', function () {
+    const { buildPapersCsvRows } = require(SCRIPT_PATH);
+    const labels = {
+        id: 'ID',
+        title: 'Title',
+        status: 'Status',
+        submissionDate: 'Submitted on',
+        acceptanceDate: 'Accepted on',
+        imported: 'Imported',
+        yes: 'yes',
+    };
+
+    it('exports the columns of the window, raw values', function () {
+        const rows = makeRows(2);
+
+        expect(
+            buildPapersCsvRows(
+                rows,
+                ['submissionDate', 'acceptanceDate'],
+                labels
+            )
+        ).toEqual([
+            ['ID', 'PAPERID', 'Title', 'Status', 'Submitted on', 'Accepted on'],
+            [1, 1000, 'Paper 1', 'publié', '2025-01-01', ''],
+            [2, 1001, 'Paper 2', 'publié', '2025-01-02', '2025-04-02'],
+        ]);
+    });
+
+    it('marks the imported papers when the list has some', function () {
+        const rows = makeRows(2);
+        rows[1].imported = true;
+
+        const csv = buildPapersCsvRows(rows, ['submissionDate'], labels);
+
+        expect(csv[0]).toEqual([
+            'ID',
+            'PAPERID',
+            'Title',
+            'Status',
+            'Submitted on',
+            'Imported',
+        ]);
+        expect(csv[1][5]).toBe('');
+        expect(csv[2][5]).toBe('yes');
+    });
+});
+
 describe('Statistics papers window', function () {
     let script;
 
@@ -416,6 +463,56 @@ describe('Statistics papers window', function () {
         expect(fetch.mock.calls[0][0]).toBe(
             '/stats/papers?figure=nbAccepted&year=2025&fullHistory=1'
         );
+    });
+
+    it('exports all the rows filtered and sorted, not only the page', async function () {
+        document
+            .querySelector('.stat-papers-count')
+            .insertAdjacentHTML(
+                'afterend',
+                '<button type="button" class="stat-papers-export">Export</button>'
+            );
+        let exported = null;
+        global.downloadCsv = jest.fn((fileName, rows) => {
+            exported = { fileName, rows };
+        });
+        global.statCsvFileName = parts => parts.join('-') + '.csv';
+        global.statsExportName = () => 'statistiques-dev-tout';
+        new Function('module', script)(undefined);
+
+        mockFetch({
+            nbAccepted: {
+                body: {
+                    columns: ACCEPTED_COLUMNS,
+                    total: 120,
+                    hidden: 0,
+                    rows: makeRows(120),
+                },
+            },
+        });
+        document.querySelector('[data-figure="nbAccepted"]').click();
+        await flush();
+        const search = document.querySelector('.stat-papers-search');
+        search.value = 'paper 1';
+        search.dispatchEvent(new Event('input'));
+
+        document.querySelector('.stat-papers-export').click();
+
+        expect(exported.fileName).toBe('statistiques-dev-tout-nbAccepted.csv');
+        // header + the 32 matching rows (1, 10-19, 100-120), all of them: not only the page of the window
+        expect(exported.rows).toHaveLength(1 + 32);
+        expect(exported.rows[0].slice(0, 4)).toEqual([
+            'ID',
+            'PAPERID',
+            'Title',
+            'Status',
+        ]);
+        // sorted as the window: by ID, descending
+        expect(exported.rows[1][0]).toBe(120);
+
+        delete global.downloadCsv;
+        delete global.statCsvFileName;
+        delete global.statsExportName;
     });
 
     it('renders the titles as text', async function () {
