@@ -4,32 +4,37 @@ $itemValue = $this->itemValue ?? null;
 $isRate = $this->isRate ?? false;
 $help = $this->help ?? null;
 $paperList = $this->paperList ?? null;
+// optional: a context line (message with %s, value) besides a tooltip, and other lists of papers ([paperList, label])
+$context = $this->context ?? null;
+$morePaperLists = $this->morePaperLists ?? [];
 
 if (!$itemLabel && !$itemValue) {
     return;
 }
 ?>
+<?php $hasHelp = isset($help['message']) && $help['message'] !== ''; ?>
 <li class="stat-item">
     <span class="stat-label">
         <?= ucfirst($this->translate($itemLabel)) ?>
         <?php if (isset($itemLabel['clarification'])): ?>
             <span class="small">(<?= $this->translate($itemLabel['clarification']) ?>)</span>
         <?php endif; ?>
-    </span>
-    <span class="stat-value"><?= $itemValue ?></span>
-    <?php if ($isRate): ?>
-        <span class="fas fa-percent fa-sm stat-icon"></span>
-    <?php endif; ?>
-    <?php if (isset($help['message']) && $help['message'] !== ''): ?>
-        <?php if (!isset($help['isTooltip'])): ?>
-            <p class="help-block" style="display: inline;">
-                (<?= sprintf($this->translate($help['message']), '<span class="stat-value">' . ($help['value'] ?? '') . '</span>') ?>
-                )
-            </p>
-        <?php else: ?>
-            <span class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                  title="<?= $this->translate($help['message']) ?>"></span>
+        <?php if ($hasHelp && isset($help['isTooltip'])): ?>
+            <span class="fas fa-info-circle fa-sm stat-help" data-toggle="tooltip"
+                  title="<?= $this->escape($this->translate($help['message'])) ?>"
+                  aria-label="<?= $this->escape($this->translate($help['message'])) ?>"></span>
         <?php endif; ?>
-    <?php endif; ?>
+    </span>
+    <span class="stat-value"><?= $itemValue ?><?= $isRate ? '&nbsp;%' : '' ?></span>
+    <?php foreach ([$hasHelp && !isset($help['isTooltip']) ? $help : null, $context] as $contextLine): ?>
+        <?php if (!empty($contextLine['message'])): ?>
+            <p class="help-block stat-context">
+                <?= sprintf($this->translate($contextLine['message']), '<span class="stat-context-value">' . $this->escape($contextLine['value'] ?? '') . '</span>') ?>
+            </p>
+        <?php endif; ?>
+    <?php endforeach; ?>
     <?= $this->partial('stats/paper-list.phtml', ['paperList' => $paperList]) ?>
+    <?php foreach ($morePaperLists as $morePaperList): ?>
+        <?= $this->partial('stats/paper-list.phtml', ['paperList' => $morePaperList['paperList'] ?? null, 'label' => $morePaperList['label'] ?? null]) ?>
+    <?php endforeach; ?>
 </li>

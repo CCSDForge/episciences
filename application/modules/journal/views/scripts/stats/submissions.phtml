@@ -40,6 +40,8 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
 
                                 ?>
 
+                                <li class="stat-tiles-row">
+                                <ul class="list-unstyled stat-tiles">
                                 <?= $this->partial('stats/stat-item.phtml', [
                                         'itemLabel' => "Soumissions",
                                         'itemValue' => $this->allSubmissions,
@@ -49,6 +51,8 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                                         ],
                                         'paperList' => $this->paperLists[StatsController::NB_SUBMISSIONS] ?? null
                                 ]) ?>
+                                </ul>
+                                </li>
 
                             <?php endif; ?>
 
@@ -61,6 +65,8 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
 
                         <?php endif; ?>
 
+                        <li class="stat-tiles-row">
+                        <ul class="list-unstyled stat-tiles">
                         <?php if ($this->allPublications && ($this->totalPublishedArticles !== $this->allPublications)) : ?>
 
                             <?= $this->partial('stats/stat-item.phtml', [
@@ -124,36 +130,29 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                             ]) ?>
 
                         <?php endif; ?>
+                        </ul>
+                        </li>
 
                         <?php if ($isYear) : ?>
 
-                            <h1 class="help-block" style="margin-top: 10px;"></h1>
-                            <div class="submisions-same-year">
+                            <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Soumis la même année') ?></h1>
+                            <ul class="list-unstyled stat-tiles submisions-same-year">
                                 <?= $this->partial('stats/stat-item.phtml', [
-                                        'itemLabel' => [
-                                                'articles acceptés',
-                                                'clarification' => 'soumis la même année'
-                                        ],
+                                        'itemLabel' => 'articles acceptés',
                                         'itemValue' => $this->acceptedSubmittedSameYear
                                 ]) ?>
 
                                 <?= $this->partial('stats/stat-item.phtml', [
-                                        'itemLabel' => [
-                                                'articles publiés',
-                                                'clarification' => 'soumis la même année'
-                                        ],
+                                        'itemLabel' => 'articles publiés',
                                         'itemValue' => $this->publishedSubmittedSameYear
                                 ]) ?>
 
                                 <?= $this->partial('stats/stat-item.phtml', [
-                                        'itemLabel' => [
-                                                'articles refusés',
-                                                'clarification' => 'soumis la même année'
-                                        ],
+                                        'itemLabel' => 'articles refusés',
                                         'itemValue' => $this->refusedSubmittedSameYear
                                 ]) ?>
 
-                            </div>
+                            </ul>
 
 
                         <?php endif; ?>
@@ -191,6 +190,7 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                             <h1 class="help-block"
                                 style="margin-top: 10px;"><?= $this->translate('En cours de publication') ?></h1>
 
+                            <ul class="list-unstyled stat-tiles">
                             <?= $this->partial('stats/stat-item.phtml', [
                                     'itemLabel' => [
                                             'articles acceptés',
@@ -203,6 +203,7 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                                     ],
                                     'paperList' => $this->paperLists[StatsController::NB_ACCEPTED_NOT_YET_PUBLISHED] ?? null
                             ]) ?>
+                            </ul>
 
                         <?php endif; ?>
 

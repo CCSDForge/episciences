@@ -187,3 +187,70 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+// Figures: stat tiles (label, value, context), in a grid
+.stat-tiles-row {
+  list-style: none;
+}
+
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 10px 0 14px;
+  padding: 0;
+
+  > .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid #e8e7e3;
+    border-radius: 6px;
+    font-size: 1.3rem;
+    line-height: 1.3;
+  }
+
+  .stat-label {
+    font-weight: 500;
+    color: #52514e;
+  }
+
+  .stat-help {
+    margin-left: 2px;
+    color: #8a8984;
+    cursor: help;
+  }
+
+  // the number is the tile: large, proportional figures, text colour (no series colour)
+  .stat-value {
+    padding: 0;
+    background: none;
+    font-size: 2.6rem;
+    font-weight: 600;
+    line-height: 1.1;
+    color: #0b0b0b;
+    font-variant-numeric: proportional-nums;
+  }
+
+  .stat-context {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+
+  .stat-context-value {
+    font-weight: 600;
+  }
+
+  // the papers of the figure, at the bottom of the tile
+  .stat-papers {
+    margin-top: auto;
+    padding-top: 4px;
+
+    .btn-link {
+      padding-left: 0;
+    }
+  }
+}

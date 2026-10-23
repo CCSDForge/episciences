@@ -2320,6 +2320,7 @@ return array(
     "articles refusés (soumis la même année)" => "rejected articles (submitted in the same year)",
     "articles publiés (soumis la même année)" => "published articles (submitted in the same year)",
     'soumis la même année' => 'submitted in the same year',
+    'Soumis la même année' => 'Submitted in the same year',
     'En cours de publication' => 'Being published',
     "À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au " => "With the exception of user statistics, the indicators below only include data after ",
     'dont %s importés' => "including %s imported",
