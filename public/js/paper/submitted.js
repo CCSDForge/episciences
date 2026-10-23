@@ -9,6 +9,7 @@ $(document).ready(function () {
     let $reviewers = $('#reviewers');
     let $doi = $('#doi');
     let $repositories = $('#repositories');
+    let $suggestion = $('#suggestion');
     let $oTable;
     let searchLength = 3;
     const $KeyboardNavigationKeys = [37, 39, 38, 40, 36, 33, 35, 34]; // [Turn left, Turn right, Forward, Backward, Home (start), Pitch Up, End, Pitch Down ]
@@ -34,17 +35,19 @@ $(document).ready(function () {
         }
 
         $('#submit').on('click', function () {
-            let filter_status = $status.length > 0 ? $status.val() : [''];
-            let filter_volume = $volume.length > 0 ? $volume.val() : [''];
-            let filter_section = $section.length > 0 ? $section.val() : [''];
-            let filter_editors = $editors.length > 0 ? $editors.val() : [''];
+            let filter_status = $status.length > 0 ? ($status.val() ?? ['']) : [''];
+            let filter_volume = $volume.length > 0 ? ($volume.val() ?? ['']) : [''];
+            let filter_section = $section.length > 0 ? ($section.val() ?? ['']) : [''];
+            let filter_editors = $editors.length > 0 ? ($editors.val() ?? ['']) : [''];
             let filter_ratingStatus =
-                $ratingStatus.length > 0 ? $ratingStatus.val() : [''];
+                $ratingStatus.length > 0 ? ($ratingStatus.val() ?? ['']) : [''];
             let filter_reviewers =
-                $reviewers.length > 0 ? $reviewers.val() : [''];
-            let filter_doi = $doi.length > 0 ? $doi.val() : [''];
+                $reviewers.length > 0 ? ($reviewers.val() ?? ['']) : [''];
+            let filter_doi = $doi.length > 0 ? ($doi.val() ?? ['']) : [''];
             let filter_repositories =
-                $repositories.length > 0 ? $repositories.val() : [''];
+                $repositories.length > 0 ? ($repositories.val() ?? ['']) : [''];
+            let filter_suggestion =
+                $suggestion.length > 0 ? ($suggestion.val() ?? ['']) : [''];
 
             let filters = {
                 status: filter_status,
@@ -55,6 +58,7 @@ $(document).ready(function () {
                 reviewers: filter_reviewers,
                 doi: filter_doi,
                 repositories: filter_repositories,
+                suggestion: filter_suggestion,
             };
 
             let isFilter = checkFilterParams(filters);
@@ -121,6 +125,8 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
                   doi: 'doi' in filters ? filters['doi'] : [],
                   repositories:
                       'repositories' in filters ? filters['repositories'] : [],
+                  suggestion:
+                      'suggestion' in filters ? filters['suggestion'] : [],
               };
 
     let columnDefs = [];
@@ -131,7 +137,7 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
         controller === 'administratepaper' &&
         (action === 'list' || action === 'assigned')
     ) {
-        columnDefs.push({ targets: [3, 6, 7, 8], orderable: false });
+        columnDefs.push({ targets: [3], orderable: false });
         columnDefs.push({ className: 'text-center', targets: [0, 1, 2] });
     } else if (controller === 'paper') {
         if (action === 'submitted') {
@@ -242,6 +248,7 @@ function checkFilterParams(
         reviewers: [],
         doi: [],
         repositories: [],
+        suggestion: [],
     }
 ) {
     return (
@@ -261,6 +268,8 @@ function checkFilterParams(
         filters['doi'].length > 0 &&
         'repositories' in filters &&
         filters['repositories'].length > 0 &&
+        'suggestion' in filters &&
+        filters['suggestion'].length > 0 &&
         (filters['status'][0] !== '' ||
             filters['volume'][0] !== '' ||
             filters['section'][0] !== '' ||
@@ -268,7 +277,8 @@ function checkFilterParams(
             filters['ratingStatus'][0] !== '' ||
             filters['reviewers'][0] !== '' ||
             filters['doi'][0] !== '' ||
-            filters['repositories'][0] !== '')
+            filters['repositories'][0] !== '' ||
+            filters['suggestion'][0] !== '')
     );
 }
 

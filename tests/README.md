@@ -9,8 +9,18 @@
 # Run all tests (PHP + JavaScript)
 make test
 
-# PHP tests only
+# PHP tests only (all suites)
 make test-php
+
+# PHP unit tests only
+make test-php-unit
+
+# PHP integration tests only
+make test-php-integration
+
+# PHP tests with filter or suite
+make test-php FILTER=testMyMethod
+make test-php SUITE=unit
 
 # JavaScript tests only (Jest)
 make test-js
@@ -44,11 +54,37 @@ docker compose exec <php-container> bash
 ./vendor/bin/phpunit --filter testMyMethod tests/unit/library/Episciences/Episciences_ToolsTest.php
 ```
 
-### Coverage report
+### Coverage reports (PHP & JavaScript)
 
+#### JavaScript (Jest) HTML report
 ```bash
-make test-coverage
+# Generate the report
+make test-js-coverage
+
+# Open the visual HTML dashboard in your browser
+xdg-open coverage/index.html
+# or
+google-chrome coverage/index.html
 ```
+The report shows statement, branch, and line coverage percentages, with visual highlighting (green = covered, red = uncovered lines).
+
+#### PHP (PHPUnit) HTML report
+```bash
+# Generate clover XML & console summary
+make test-coverage
+
+# Or generate a navigable visual HTML report
+docker compose exec -u www-data -e XDEBUG_MODE=coverage php-fpm ./vendor/bin/phpunit --coverage-html build/coverage-html
+
+# Open in your browser
+xdg-open build/coverage-html/index.html
+```
+
+#### Online Coverage (Codecov)
+On every pull request, coverage reports are uploaded to Codecov:
+- **Dashboard:** https://app.codecov.io/gh/CCSDForge/episciences
+- **Flags:** Filter by `flag:php` for backend coverage, or `flag:javascript` for frontend coverage.
+- Pull request comments show coverage deltas (+/-%) and line-by-line diff annotations directly on GitHub.
 
 ### Static analysis (PHPStan)
 

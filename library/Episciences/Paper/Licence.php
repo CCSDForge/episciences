@@ -1,7 +1,9 @@
 <?php
 
 
-class Episciences_Paper_Licence
+use Episciences\common\AbstractCommon;
+
+class Episciences_Paper_Licence extends AbstractCommon
 {
 
     /**
@@ -25,37 +27,11 @@ class Episciences_Paper_Licence
     protected int $_sourceId;
 
     /**
-     * @var datetime
+     * @var datetime|null
      */
-    protected $_updatedAt = 'CURRENT_TIMESTAMP';
+    protected ?datetime $_updatedAt = null;
 
-    /**
-     * Episciences_Paper_Licence constructor.
-     * @param array|null $options
-     */
-    public function __construct(array $options = null)
-    {
-        if (is_array($options)) {
-            $this->setOptions($options);
-        }
-    }
-
-    /**
-     * set paper options
-     * @param array $options
-     */
-    public function setOptions(array $options): void
-    {
-        $classMethods = get_class_methods($this);
-        foreach ($options as $key => $value) {
-            $key = Episciences_Tools::convertToCamelCase($key, '_', true);
-            $method = 'set' . $key;
-            if (in_array($method, $classMethods, true)) {
-                $this->$method($value);
-            }
-        }
-    }
-
+    protected $_uid;
 
     /**
      * @return array
@@ -65,9 +41,10 @@ class Episciences_Paper_Licence
         return [
             'id' => $this->getId(),
             'licence'=> $this->getLicence(),
-            'docId' => $this->getDocId(),
+            'docId' => $this->getDocid(),
             'sourceId' => $this->getSourceId(),
             'updatedAt' => $this->getUpdatedAt(),
+            'uid' => $this->getUid()
         ];
     }
 
@@ -90,9 +67,9 @@ class Episciences_Paper_Licence
     }
 
     /**
-     * @return int
+     * @return int|null
      */
-    public function getDocId(): ?int
+    public function getDocid(): ?int
     {
         return $this->_docId;
     }
@@ -100,7 +77,7 @@ class Episciences_Paper_Licence
     /**
      * @param int $docId
      */
-    public function setDocId(int $docId): void
+    public function setDocid(int $docId): void
     {
         $this->_docId = $docId;
     }
@@ -123,28 +100,29 @@ class Episciences_Paper_Licence
         return $this;
     }
 
-
     /**
      * @return DateTime
      */
+
     public function getUpdatedAt(): DateTime
     {
-        return $this->_updatedAt;
+        return $this->_updatedAt ?? new DateTime();
     }
 
     /**
-     * @param string $updatedAt
-     * @return Episciences_Paper_Licence
+     * @param string|null $updatedAt
+     * @return $this
      * @throws Exception
      */
-    public function setUpdatedAt(string $updatedAt): self
+
+    public function setUpdatedAt(?string $updatedAt = null): self
     {
-        $this->_updatedAt = new DateTime($updatedAt);
+        $this->_updatedAt = !$updatedAt ? new DateTime() : new DateTime($updatedAt);
         return $this;
     }
 
     /**
-     * @return string
+     * @return string|null
      */
 
     public function getLicence(): ?string
@@ -162,6 +140,25 @@ class Episciences_Paper_Licence
         return $this;
     }
 
+    /**
+     * @return int|null
+     */
+    public function getUid() : ?int
+    {
+        return $this->_uid;
+    }
 
+    /**
+     * @param mixed $uid
+     */
+    public function setUid(int $uid = null): self
+    {
+        $this->_uid = $uid;
+        return $this;
+    }
 
+    public function save(): int
+    {
+        return Episciences_Paper_LicenceManager::insert($this);
+    }
 }

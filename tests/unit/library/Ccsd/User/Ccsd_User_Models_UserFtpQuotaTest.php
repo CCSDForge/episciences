@@ -3,6 +3,7 @@
 namespace unit\library\Ccsd\User;
 
 use Ccsd_User_Models_UserFtpQuota;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -14,6 +15,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers Ccsd_User_Models_UserFtpQuota
  */
+#[IgnoreDeprecations]
 class Ccsd_User_Models_UserFtpQuotaTest extends TestCase
 {
     private Ccsd_User_Models_UserFtpQuota $quota;

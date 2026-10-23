@@ -6,9 +6,13 @@ CREATE TABLE IF NOT EXISTS `mailing_lists` (
   `name` varchar(255) NOT NULL,
   `type` varchar(50) DEFAULT NULL,
   `status` tinyint(4) NOT NULL DEFAULT '1',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name_unique` (`name`),
   KEY `rvid` (`rvid`)
+  -- No index on updated_at: the table is tiny (≤ 5 rows per journal).
+  -- A full-scan is always faster than an index read at this cardinality.
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `mailing_list_users` (
@@ -28,8 +32,39 @@ CREATE TABLE IF NOT EXISTS `mailing_list_roles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------
+-- Triggers: propagate updated_at to mailing_lists when members or roles change.
+--
+-- ON UPDATE CURRENT_TIMESTAMP fires only when a column value changes. When
+-- Manager::save() updates mailing_list_users / mailing_list_roles without
+-- touching the mailing_lists row itself (e.g. editing members only), the
+-- parent timestamp would not be refreshed. These four triggers cover all
+-- insert/delete paths on both child tables and execute inside the same
+-- InnoDB transaction as the caller — no partial-update risk.
+-- ---------------------------------------------------------
+CREATE TRIGGER `trg_mlu_after_insert`
+  AFTER INSERT ON `mailing_list_users`
+  FOR EACH ROW
+    UPDATE `mailing_lists` SET `updated_at` = NOW() WHERE `id` = NEW.list_id;
+
+CREATE TRIGGER `trg_mlu_after_delete`
+  AFTER DELETE ON `mailing_list_users`
+  FOR EACH ROW
+    UPDATE `mailing_lists` SET `updated_at` = NOW() WHERE `id` = OLD.list_id;
+
+CREATE TRIGGER `trg_mlr_after_insert`
+  AFTER INSERT ON `mailing_list_roles`
+  FOR EACH ROW
+    UPDATE `mailing_lists` SET `updated_at` = NOW() WHERE `id` = NEW.list_id;
+
+CREATE TRIGGER `trg_mlr_after_delete`
+  AFTER DELETE ON `mailing_list_roles`
+  FOR EACH ROW
+    UPDATE `mailing_lists` SET `updated_at` = NOW() WHERE `id` = OLD.list_id;
+
+-- ---------------------------------------------------------
 -- View for External Program Access
--- Resolves all members (individual + roles) and aggregates them into JSON
+-- Resolves all members (individual + roles) and aggregates them into JSON.
+-- Exposes list_created_at and list_updated_at for consumers.
 -- ---------------------------------------------------------
 CREATE OR REPLACE VIEW `v_mailing_lists_resolved` AS
 WITH list_members_data AS (
@@ -62,6 +97,8 @@ SELECT
     ml.name        AS list_name,
     ml.type        AS list_type,
     IF(ml.status = 1, 'open', 'closed') AS list_status,
+    ml.created_at  AS list_created_at,
+    ml.updated_at  AS list_updated_at,
     IF(COUNT(lmd.UID) = 0,
        JSON_ARRAY(),
        JSON_ARRAYAGG(
@@ -74,4 +111,4 @@ SELECT
     ) AS members
 FROM mailing_lists ml
 LEFT JOIN list_members_data lmd ON ml.id = lmd.list_id
-GROUP BY ml.id, ml.rvid, ml.name, ml.type, ml.status;
+GROUP BY ml.id, ml.rvid, ml.name, ml.type, ml.status, ml.created_at, ml.updated_at;

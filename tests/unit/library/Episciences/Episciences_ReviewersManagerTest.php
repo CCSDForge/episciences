@@ -258,6 +258,51 @@ final class Episciences_ReviewersManagerTest extends TestCase
     }
 
     // =========================================================================
+    // refuseInvitationForm - input filtering and validation
+    // =========================================================================
+
+    public function testRefuseInvitationFormStripsTagsAndTrimsValues(): void
+    {
+        $form = $this->buildRefuseForm();
+
+        $this->assertTrue($form->isValid([
+            'suggestreviewer' => '  <b>Jane</b> Doe ',
+            'comment' => '<script>alert(1)</script>No time',
+        ]));
+
+        $values = $form->getValues();
+        $this->assertSame('Jane Doe', $values['suggestreviewer']);
+        $this->assertStringNotContainsString('<', $values['comment']);
+    }
+
+    public function testRefuseInvitationFormRejectsOversizedValues(): void
+    {
+        $this->assertFalse($this->buildRefuseForm()->isValid([
+            'suggestreviewer' => str_repeat('a', 256),
+            'comment' => 'ok',
+        ]));
+        $this->assertFalse($this->buildRefuseForm()->isValid([
+            'suggestreviewer' => 'ok',
+            'comment' => str_repeat('a', 5001),
+        ]));
+    }
+
+    private function buildRefuseForm(): \Zend_Form
+    {
+        $hadTranslate = \Zend_Registry::isRegistered('Zend_Translate');
+        $previous = $hadTranslate ? \Zend_Registry::get('Zend_Translate') : null;
+        \Zend_Registry::set('Zend_Translate', new \Zend_Translate(['adapter' => 'array', 'content' => ['x' => 'x'], 'locale' => 'en']));
+
+        try {
+            return Episciences_ReviewersManager::refuseInvitationForm();
+        } finally {
+            if ($hadTranslate) {
+                \Zend_Registry::set('Zend_Translate', $previous);
+            }
+        }
+    }
+
+    // =========================================================================
     // Helpers
     // =========================================================================
 

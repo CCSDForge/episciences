@@ -71,6 +71,14 @@ return [
     "paper_editor_unassign_tpl_name" => "Suppression de l'assignation d'un rédacteur",
     "paper_editor_unassign_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - L'édition d'un article vous a été retirée",
 
+    "paper_coi_unassign_chief_editor_copy_tpl_name" => "Déclaration de conflit d'intérêts — copie rédacteur en chef",
+    "paper_coi_unassign_chief_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Un éditeur a déclaré un conflit d'intérêts",
+
+    "paper_coi_unassign_other_editors_copy_tpl_name" => "Déclaration de conflit d'intérêts — copie autres éditeurs assignés",
+    "paper_coi_unassign_other_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Un éditeur a déclaré un conflit d'intérêts",
+
+    "paper_coi_last_editor_warning" => "Il s'agissait du dernier éditeur assigné à cet article. L'article n'a actuellement plus d'éditeur assigné.",
+
 
     // PAPER - RELECTURE ****************************************************************************************************************************
     "paper_review_tpl_group" => "Article - relecture",
@@ -199,6 +207,14 @@ return [
 
     // PAPER - COMMENTAIRES ****************************************************************************************************************************
     "paper_comment_tpl_group" => "Article - commentaires",
+
+    // Notification to the new contributor when the paper's contributor is changed
+    "paper_new_contributor_notification_tpl_name" => "Notification au nouveau contributeur",
+    "paper_new_contributor_notification_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Vous êtes le nouveau contributeur / la nouvelle contributrice de l'article",
+
+    // Notification to the former contributor when the paper's contributor is changed
+    "paper_former_contributor_notification_tpl_name" => "Notification à l'ancien contributeur",
+    "paper_former_contributor_notification_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Vous n'êtes plus le contributeur / la contributrice de l'article",
 
     // Commentaire d'un relecteur sur un article – copie destinée à l'auteur
     "paper_comment_author_copy_tpl_name" => "Commentaire d'un relecteur sur un article (copie destinée à l'auteur)",

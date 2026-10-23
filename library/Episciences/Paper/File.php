@@ -2,6 +2,7 @@
 
 class Episciences_Paper_File
 {
+    public const DEFAULT_SELF_LINK_VALUE = '#';
 
     /**
      * @var int
@@ -33,6 +34,8 @@ class Episciences_Paper_File
     /** @var string */
     protected $_selfLink;
     protected int $_source;
+
+    protected bool $_isMain = false;
 
     /** @var DateTime */
     protected $_timeModified = 'CURRENT_TIMESTAMP';
@@ -80,7 +83,7 @@ class Episciences_Paper_File
             'checksumType' => $this->getChecksumType(),
             'selfLink' => $this->getSelfLink(),
             'fileSize' => $this->getFileSize(),
-            'fileType' => $this->getFileSize(),
+            'fileType' => $this->getFileType(),
             'timeModified' => $this->getTimeModified()
         ];
     }
@@ -97,7 +100,7 @@ class Episciences_Paper_File
      * @param int $id
      * @return Episciences_Paper_File
      */
-    public function setId(int $id): Episciences_Paper_File
+    public function setId(int $id): self
     {
         $this->_id = $id;
         return $this;
@@ -131,7 +134,7 @@ class Episciences_Paper_File
      * @param string $fileName
      * @return Episciences_Paper_File
      */
-    public function setFileName(string $fileName): Episciences_Paper_File
+    public function setFileName(string $fileName): self
     {
         $this->_fileName = $fileName;
         return $this;
@@ -149,7 +152,7 @@ class Episciences_Paper_File
      * @param int $fileSize
      * @return Episciences_Paper_File
      */
-    public function setFileSize(int $fileSize): Episciences_Paper_File
+    public function setFileSize(int $fileSize): self
     {
         $this->_fileSize = $fileSize;
         return $this;
@@ -167,7 +170,7 @@ class Episciences_Paper_File
      * @param string|null $fileType
      * @return Episciences_Paper_File
      */
-    public function setFileType(string $fileType = null): Episciences_Paper_File
+    public function setFileType(string $fileType = null): self
     {
         $this->_fileType = $fileType ?? 'pdf';
         return $this;
@@ -185,7 +188,7 @@ class Episciences_Paper_File
      * @param string $checksum
      * @return Episciences_Paper_File
      */
-    public function setChecksum(string $checksum): Episciences_Paper_File
+    public function setChecksum(string $checksum): self
     {
         $this->_checksum = $checksum;
         return $this;
@@ -203,7 +206,7 @@ class Episciences_Paper_File
      * @param string|null $checksumType
      * @return Episciences_Paper_File
      */
-    public function setChecksumType(string $checksumType = null): Episciences_Paper_File
+    public function setChecksumType(string $checksumType = null): self
     {
         $this->_checksumType = $checksumType ?? 'MD5';
         return $this;
@@ -221,9 +224,9 @@ class Episciences_Paper_File
      * @param string|null $link
      * @return Episciences_Paper_File
      */
-    public function setSelfLink(string $link = null): Episciences_Paper_File
+    public function setSelfLink(string $link = null): self
     {
-        $this->_selfLink = $link ?? '#';
+        $this->_selfLink = $link ?? self::DEFAULT_SELF_LINK_VALUE;
         return $this;
     }
 
@@ -240,7 +243,7 @@ class Episciences_Paper_File
      * @return Episciences_Paper_File
      * @throws Exception
      */
-    public function setTimeModified(string $timeModified): Episciences_Paper_File
+    public function setTimeModified(string $timeModified): self
     {
         $this->_timeModified = new DateTime($timeModified);
         return $this;
@@ -285,6 +288,51 @@ class Episciences_Paper_File
     public function getDownloadLike(): ?string
     {
         return $this->_downloadLike;
+    }
+
+    public function isMain(): bool
+    {
+        return $this->_isMain;
+    }
+
+    public function setIsMain(bool $isMain = false): self
+    {
+        $this->_isMain = $isMain;
+        return $this;
+    }
+
+
+
+    public function save(): int
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $affectedRows = 0;
+        $values[] = '(' .
+                $db->quote($this->getDocId())                 . ',' .
+                $db->quote($this->getSource())                . ',' .
+                $db->quote($this->getFileName())              . ',' .
+                $db->quote($this->getChecksum())              . ',' .
+                $db->quote($this->getChecksumType())          . ',' .
+                $db->quote($this->getSelfLink())              . ',' .
+                $db->quote($this->getFileSize())              . ',' .
+                $db->quote($this->getFileType())              . ',' .
+                $db->quote($this->isMain() ? '1' : '0') .
+                ')';
+        $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_FILES) . ' (`doc_id`, `source`, `file_name`, `checksum`, `checksum_type`, `self_link`, `file_size`, `file_type`,`is_main`) VALUES ';
+        $sql .= implode(', ', $values);
+        $sql .= ' AS new_file ON DUPLICATE KEY UPDATE `file_size` = new_file.file_size, `checksum` = new_file.checksum, `checksum_type` = new_file.checksum_type, `file_type` = new_file.file_type, `file_name` = new_file.file_name, is_main = new_file.is_main';
+        try {
+            //Prepares and executes an SQL
+            /** @var Zend_Db_Statement_Interface $result */
+            $result = $db->query($sql);
+            $affectedRows = $result->rowCount();
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_ERROR);
+        }
+
+        return $affectedRows;
+
     }
 
 }

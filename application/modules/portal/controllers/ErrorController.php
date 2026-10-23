@@ -4,5 +4,8 @@ require_once APPLICATION_PATH.'/modules/common/controllers/ErrorDefaultControlle
 
 class ErrorController extends ErrorDefaultController
 {
-
+    public function init(): void
+    {
+        Zend_Layout::getMvcInstance()->setLayout('portal');
+    }
 }

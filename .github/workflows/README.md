@@ -5,111 +5,89 @@ This directory contains automated CI/CD workflows for the Episciences project.
 ## Workflows
 
 ### 🔄 `ci.yml` - Continuous Integration
-**Triggers:** 
-- **Pull requests to:** `main`, `preprod`, `preprod-epi-manager`, `main-epi-manager`
-- **Pushes to:** `main`, `preprod`, `preprod-epi-manager`, `main-epi-manager`
+**Triggers:**
+- **Pull requests and pushes to:** `main`, `preprod`, `preprod-epi-manager`, `main-epi-manager`, `staging`
+- **Paths ignored:** `docs/**`, `**.md`, `.gitignore` (documentation-only changes skip CI to save runner minutes)
 
 **Jobs:**
-- **PHP Tests** - ⏸️ Currently disabled (commented out)
-- **JavaScript Tests** - Runs Jest tests on Node.js 18.x & 20.x  
-- **Integration Status** - Reports JavaScript test results and comments on PRs
+1. **Code Quality & Build** (Fast-fail, ~45s):
+   - Dependency vulnerability checks (`composer audit --abandoned=ignore`)
+   - Static analysis with **PHPStan** (runs in advisory mode with `--error-format=github`, non-blocking for legacy code)
+   - Frontend asset compilation with **Webpack Encore** (`yarn build`)
+2. **JavaScript Tests**:
+   - Runs Jest tests under **Node.js 20.x LTS**
+   - Collects coverage and uploads to Codecov (`flag:javascript`)
+3. **PHP Tests (PHPUnit)**:
+   - Tests run on **PHP 8.3**
+   - Standalone **MySQL 8.4** service container with automated schema/seed provisioning
+   - Code coverage generated via Xdebug on **PHP 8.3** and uploaded to Codecov (`flag:php`)
+   - Test suites separation (`unit` and `integration`) with `.phpunit.cache` caching
+4. **Integration Status**:
+   - Aggregates results from quality, JS, and PHP jobs
+   - Updates a single marked comment (`<!-- ci-test-results -->`) on the pull request
 
-**Features:**
-- ✅ Automated testing on every PR
-- 📊 Code coverage reports (Codecov integration)  
-- 💬 Automatic PR comments with test results
-- 🔄 Matrix testing across multiple PHP/Node versions
-- ⚡ Dependency caching for faster builds
-
-### 🧪 `js-tests.yml` - JavaScript-only Tests
-**Triggers:** Changes to JavaScript files on:
-- **Pull requests to:** `main`, `preprod`, `preprod-epi-manager`, `main-epi-manager`
-- **Pushes to:** `main`, `preprod`, `preprod-epi-manager`, `main-epi-manager`
-- **File paths:** `public/js/**`, `tests/js/**`, `package.json`, `yarn.lock`
-
-**Features:**
-- 🎯 Focused testing - only runs when JS files change
-- 📈 Coverage reports with thresholds (80% minimum)
-- 🚀 Fast feedback for JS-only changes
+---
 
 ### 🔍 `codeql-analysis.yml` - Security Analysis
 **Triggers:** 
-- **Pull requests to:** `main`, `preprod`, `preprod-epi-manager`, `main-epi-manager`
-- **Pushes to:** `main`, `preprod`, `preprod-epi-manager`, `main-epi-manager`
+- **Pull requests and pushes to:** `main`, `preprod`, `preprod-epi-manager`, `main-epi-manager`, `staging`
 - **Scheduled:** Weekly (Sundays at 22:00 UTC)
 
 **Languages Analyzed:**
-- **JavaScript** - Security vulnerabilities in frontend code
+- **JavaScript/TypeScript** - Security vulnerabilities in frontend code
+- **Actions** - Security analysis of GitHub Actions workflows
 
-**Features:**
-- 🛡️ Automated security vulnerability detection
-- 📊 SARIF results uploaded to GitHub Security tab
-- 🕒 Regular scheduled scans for continuous monitoring
+---
 
-⚠️ **Important:** This custom workflow requires disabling GitHub's default CodeQL setup:
-- Go to **Repository Settings** → **Code security and analysis** → **CodeQL analysis**
-- Click **Configure** → **Advanced** → **Disable**
+### 📊 `phpmetrics.yml` - Weekly Code Metrics
+**Triggers:** Weekly (Sundays at midnight) & manual dispatch (`workflow_dispatch`).
+- Computes maintainability metrics and deploys an interactive report to GitHub Pages.
 
-## Usage
+---
 
-### For Developers
-Tests run automatically when you:
-1. **Open pull requests** to any protected branch (`main`, `preprod`, `preprod-epi-manager`, `main-epi-manager`)
-2. **Push commits** to a PR branch  
-3. **Push directly** to `main`, `preprod`, `preprod-epi-manager`, or `main-epi-manager` branches
+## Code Coverage Reports
 
-### Branch Strategy
-- **`main`** - Production branch, full CI on PRs and pushes
-- **`preprod`** - Pre-production branch, full CI on PRs and pushes  
-- **`preprod-epi-manager`** - Pre-production EPI manager branch, full CI on PRs and pushes
-- **`main-epi-manager`** - Main EPI manager branch, full CI on PRs and pushes
+### Viewing Coverage Online (Codecov)
+On every pull request, coverage reports are published to Codecov:
+- **Dashboard:** [https://app.codecov.io/gh/CCSDForge/episciences](https://app.codecov.io/gh/CCSDForge/episciences)
+- **Flags:**
+  - `flag:php` : Backend coverage from PHPUnit
+  - `flag:javascript` : Frontend coverage from Jest
+- Pull request comments report coverage diffs and highlight modified lines in GitHub's *Files changed* tab.
 
-### Coverage Requirements
-- **JavaScript**: 75% branches, 60% functions, 85% lines/statements (actively enforced)
-- **PHP**: Tests currently disabled
+### Viewing Coverage Locally
 
-### Manual Testing
 ```bash
-# Run JavaScript tests locally
-yarn test
+# --- JavaScript Coverage (Jest) ---
+# Generate HTML report
+make test-js-coverage
 
-# Run with coverage
-yarn test --coverage
+# Open visual HTML dashboard in your browser
+xdg-open coverage/index.html
 
-# Run PHP tests locally  
-./bin/phpunit
+# --- PHP Coverage (PHPUnit) ---
+# Generate Clover XML & terminal summary
+make test-coverage
 
-# Run with coverage
-./bin/phpunit --coverage-html coverage-html
+# Generate navigable visual HTML report
+docker compose exec -u www-data -e XDEBUG_MODE=coverage php-fpm ./vendor/bin/phpunit --coverage-html build/coverage-html
+
+# Open in your browser
+xdg-open build/coverage-html/index.html
 ```
 
-## Configuration
+---
 
-### Codecov (Optional)
-To enable coverage reporting, add `CODECOV_TOKEN` to repository secrets:
-1. Go to repository Settings → Secrets and variables → Actions
-2. Add `CODECOV_TOKEN` with your Codecov project token
+## Testing Commands in Makefile
 
-### Re-enabling PHP Tests
-To re-enable PHP tests in the future:
-1. Uncomment the `php-tests` job in `.github/workflows/ci.yml`
-2. Update the `needs: [js-tests]` to `needs: [php-tests, js-tests]` in the integration job
-3. Update the integration job's check and PR comment scripts to include PHP results
-
-### Node.js/PHP Versions
-Update the matrix in workflow files to test additional versions:
-```yaml
-strategy:
-  matrix:
-    node-version: [18.x, 20.x, 22.x]  # Add more versions
-    php-version: [8.1, 8.2, 8.3]     # Add more versions
-```
-
-## Status Badges
-
-Add these to your README.md:
-
-```markdown
-[![CI Status](https://github.com/your-org/episciences-gpl/workflows/Continuous%20Integration/badge.svg)](https://github.com/your-org/episciences-gpl/actions)
-[![JS Tests](https://github.com/your-org/episciences-gpl/workflows/JavaScript%20Tests/badge.svg)](https://github.com/your-org/episciences-gpl/actions)
-```
+| Command | Action |
+| :--- | :--- |
+| `make test` | Run all tests (PHP + JavaScript) |
+| `make test-php` | Run all PHPUnit tests in the Docker container |
+| `make test-php-unit` | Run PHP unit tests only (`--testsuite unit`) |
+| `make test-php-integration` | Run PHP integration tests only (`--testsuite integration`) |
+| `make test-php SUITE=unit FILTER=MyMethod` | Target a specific testsuite or filter pattern |
+| `make test-js` | Run JavaScript tests (Jest) |
+| `make test-js-watch` | Run JavaScript tests in watch mode |
+| `make test-js-coverage` | Run JavaScript tests with coverage report |
+| `make test-coverage` | Run all tests with coverage |

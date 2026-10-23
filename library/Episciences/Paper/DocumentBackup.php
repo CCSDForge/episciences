@@ -80,7 +80,7 @@ class Episciences_Paper_DocumentBackup
     protected function makeDocumentBackupPath(): void
     {
         $backupPath = $this->getPath();
-        if (!file_exists($backupPath) && !mkdir($backupPath, 0777, true) && !is_dir($backupPath)) {
+        if (!file_exists($backupPath) && !mkdir($backupPath, 0775, true) && !is_dir($backupPath)) {
             throw new \RuntimeException(sprintf('Directory "%s" was not created', $backupPath));
         }
     }

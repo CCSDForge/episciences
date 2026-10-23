@@ -57,7 +57,8 @@ class Episciences_Paper_DatasetsMetadataManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         try {
-            $db->delete('paper_datasets_meta',['id = ?' => $id]);
+            $db->delete(T_PAPER_DATASETS, ['id_paper_datasets_meta = ?' => $id]);
+            $db->delete(T_PAPER_DATASETS_META, ['id = ?' => $id]);
             return true;
         } catch (Zend_Db_Statement_Exception $exception) {
             return false;

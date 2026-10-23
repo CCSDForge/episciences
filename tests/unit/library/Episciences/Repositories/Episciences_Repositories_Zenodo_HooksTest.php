@@ -283,4 +283,651 @@ final class Episciences_Repositories_Zenodo_HooksTest extends TestCase
             'Bug Z2 not fixed: safeDateFormat() call not found in source'
         );
     }
+
+    // =========================================================================
+    // hookFilesProcessing() — file_type via pathinfo() regression
+    // =========================================================================
+
+    /**
+     * Verify that the old explode('.', $file['key']) pattern has been replaced
+     * by pathinfo($file['key'], PATHINFO_EXTENSION).
+     *
+     * The old approach returned the wrong result for files without extensions
+     * (full filename instead of ''). pathinfo() is the canonical fix.
+     */
+    public function testFileTypeExtractedWithPathinfo(): void
+    {
+        $source = file_get_contents(
+            (new \ReflectionClass(Episciences_Repositories_Zenodo_Hooks::class))->getFileName()
+        );
+
+        self::assertStringContainsString(
+            "pathinfo(\$file['key'], PATHINFO_EXTENSION)",
+            $source,
+            "hookFilesProcessing() must use pathinfo() for file_type extraction."
+        );
+
+        self::assertStringNotContainsString(
+            "explode('.', \$file['key'])",
+            $source,
+            "Old explode() file_type extraction must have been removed."
+        );
+    }
+
+    /**
+     * pathinfo() returns only the last segment after the last dot.
+     * For 'archive.tar.gz' it returns 'gz', not 'tar' or 'tar.gz'.
+     * This mirrors the behaviour expected in hookFilesProcessing().
+     */
+    public function testPathinfoReturnsLastExtensionForMultiDot(): void
+    {
+        self::assertSame('gz', pathinfo('archive.tar.gz', PATHINFO_EXTENSION));
+    }
+
+    /**
+     * pathinfo() returns '' for a filename with no extension.
+     * The old explode() approach returned the full filename — pathinfo() fixes that.
+     */
+    public function testPathinfoReturnsEmptyStringForNoExtension(): void
+    {
+        self::assertSame('', pathinfo('README', PATHINFO_EXTENSION));
+    }
+
+    // =========================================================================
+    // hookVersion()
+    // =========================================================================
+
+    /**
+     * When the API response contains metadata.version, hookVersion() must return it.
+     */
+    public function testHookVersionFromMetadata(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'checkResponse');
+        // checkResponse needs DB (calls hookApiRecords). Test hookVersion directly.
+        // Pass 'response' already built to bypass the API call.
+        $result = Episciences_Repositories_Zenodo_Hooks::hookVersion([
+            'response' => ['metadata' => ['version' => '3']],
+        ]);
+
+        self::assertSame(['version' => 3.0], $result);
+    }
+
+    /**
+     * When metadata.version is absent but previousVersion is set, use previousVersion + 1.
+     */
+    public function testHookVersionFallbackToPreviousVersionPlusOne(): void
+    {
+        $result = Episciences_Repositories_Zenodo_Hooks::hookVersion([
+            'response' => ['metadata' => []],
+            'context'  => ['previousVersion' => 2],
+        ]);
+
+        self::assertSame(['version' => 3.0], $result);
+    }
+
+    /**
+     * When neither metadata.version nor previousVersion is set, hookVersion() falls back to version 1.
+     */
+    public function testHookVersionFallsBackToOneWhenNoVersionInfo(): void
+    {
+        $result = Episciences_Repositories_Zenodo_Hooks::hookVersion([
+            'response' => ['metadata' => []],
+        ]);
+
+        self::assertSame(['version' => 1.0], $result);
+    }
+
+    /**
+     * A non-scalar metadata.version (array or bool) is replaced by 1 before normalization,
+     * otherwise normalizeVersion() would raise a TypeError.
+     */
+    public function testHookVersionRejectsNonScalarVersion(): void
+    {
+        $result = Episciences_Repositories_Zenodo_Hooks::hookVersion([
+            'response' => ['metadata' => ['version' => ['1.2.3']]],
+        ]);
+
+        self::assertSame(['version' => 1.0], $result);
+    }
+
+    public function testHookVersionRejectsBooleanVersion(): void
+    {
+        $result = Episciences_Repositories_Zenodo_Hooks::hookVersion([
+            'response' => ['metadata' => ['version' => true]],
+        ]);
+
+        self::assertSame(['version' => 1.0], $result);
+    }
+
+    // =========================================================================
+    // hookIsOpenAccessRight()
+    // =========================================================================
+
+    public function testHookIsOpenAccessRightOpenAccess(): void
+    {
+        $record = '<metadata><dc:rights>info:eu-repo/semantics/openAccess</dc:rights></metadata>';
+        $result = Episciences_Repositories_Zenodo_Hooks::hookIsOpenAccessRight(['record' => $record]);
+
+        self::assertSame(['isOpenAccessRight' => true], $result);
+    }
+
+    public function testHookIsOpenAccessRightClosedAccess(): void
+    {
+        $record = '<metadata><dc:rights>info:eu-repo/semantics/closedAccess</dc:rights></metadata>';
+        $result = Episciences_Repositories_Zenodo_Hooks::hookIsOpenAccessRight(['record' => $record]);
+
+        self::assertSame(['isOpenAccessRight' => false], $result);
+    }
+
+    // =========================================================================
+    // enrichmentProcessCreators() — edge cases
+    // =========================================================================
+
+    /**
+     * Creator with an empty 'name' string must be silently skipped.
+     */
+    public function testEnrichmentProcessCreatorsSkipsEmptyName(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'enrichmentProcessCreators'
+        );
+        $method->setAccessible(true);
+
+        $creators = [['name' => '']];
+
+        [$creatorsDc, $authors] = $method->invoke(null, $creators, [], []);
+
+        self::assertSame([], $creatorsDc);
+        self::assertSame([], $authors);
+    }
+
+    /**
+     * Multiple creators are all added; creatorsDc receives all names.
+     */
+    public function testEnrichmentProcessCreatorsMultipleCreators(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'enrichmentProcessCreators'
+        );
+        $method->setAccessible(true);
+
+        $creators = [
+            ['name' => 'Dupont, Alice'],
+            ['name' => 'Martin, Bob'],
+        ];
+
+        [$creatorsDc, $authors] = $method->invoke(null, $creators, [], []);
+
+        self::assertCount(2, $creatorsDc);
+        self::assertCount(2, $authors);
+        self::assertContains('Dupont, Alice', $creatorsDc);
+        self::assertContains('Martin, Bob', $creatorsDc);
+    }
+
+    // =========================================================================
+    // extractDescriptions() — private, tested via ReflectionMethod
+    // =========================================================================
+
+    /**
+     * extractDescriptions() falls back to the document language when a description
+     * node has no xml:lang attribute.
+     */
+    public function testExtractDescriptionsFallbackLanguage(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'extractDescriptions'
+        );
+        $method->setAccessible(true);
+
+        $xmlStr = <<<'XML'
+<?xml version="1.0"?>
+<root xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:descriptions>
+        <datacite:description descriptionType="Abstract">Simple abstract</datacite:description>
+    </datacite:descriptions>
+</root>
+XML;
+        $metadata = simplexml_load_string($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = $method->invoke(null, $metadata, 'fr');
+
+        self::assertNotEmpty($result);
+        self::assertSame('Simple abstract', $result[0]['value']);
+        self::assertSame('fr', $result[0]['language']);
+    }
+
+    /**
+     * extractDescriptions() filters out descriptions with empty/whitespace-only content.
+     */
+    public function testExtractDescriptionsFiltersEmpty(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'extractDescriptions'
+        );
+        $method->setAccessible(true);
+
+        $xmlStr = <<<'XML'
+<?xml version="1.0"?>
+<root xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:descriptions>
+        <datacite:description descriptionType="Abstract"></datacite:description>
+        <datacite:description descriptionType="Abstract" xml:lang="en">Real content</datacite:description>
+    </datacite:descriptions>
+</root>
+XML;
+        $metadata = simplexml_load_string($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = $method->invoke(null, $metadata, 'en');
+
+        self::assertCount(1, $result);
+        self::assertSame('Real content', $result[0]['value']);
+    }
+
+    /**
+     * extractDescriptions() must not collapse a description whose xml:lang has no
+     * alpha-2 equivalent (e.g. "cpg", the ISO 639-3 code for Cappadocian Greek) onto
+     * the document's default language. Doing so would tag it the same as another,
+     * unrelated description, and a later consumer (Episciences_Tools::xpath()) would
+     * then silently overwrite one description's text with the other's.
+     */
+    public function testExtractDescriptionsKeepsUnmappableLanguageCodeDistinct(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'extractDescriptions'
+        );
+        $method->setAccessible(true);
+
+        $xmlStr = <<<'XML'
+<?xml version="1.0"?>
+<root xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:descriptions>
+        <datacite:description descriptionType="Abstract">English abstract</datacite:description>
+        <datacite:description descriptionType="Abstract" xml:lang="cpg">Greek abstract mistagged as Cappadocian Greek</datacite:description>
+    </datacite:descriptions>
+</root>
+XML;
+        $metadata = simplexml_load_string($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = $method->invoke(null, $metadata, 'en');
+
+        self::assertCount(2, $result);
+        self::assertSame('en', $result[0]['language']);
+        self::assertSame('English abstract', $result[0]['value']);
+        self::assertNotSame('en', $result[1]['language']);
+        self::assertSame('Greek abstract mistagged as Cappadocian Greek', $result[1]['value']);
+    }
+
+    // =========================================================================
+    // Bug Z4/Z5: enrichmentProcess() with missing/empty metadata — no crash
+    // =========================================================================
+
+    /**
+     * Bug Z4 (fixed): enrichmentProcess() used to crash with
+     * "Undefined array key 'metadata'" when $data has no 'metadata' key.
+     * After fix ($data['metadata'] ?? []), it must complete without error.
+     *
+     * Bug Z5 (fixed): mb_strtolower(null) when $type is empty was a PHP 8.1
+     * deprecation. After fix (?? ''), it must produce '' cleanly.
+     */
+    public function testEnrichmentProcessWithoutMetadataKeyDoesNotCrash(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'enrichmentProcess'
+        );
+        $method->setAccessible(true);
+
+        // Non-empty data but no 'metadata' key
+        $data = [
+            'doi_url' => 'https://doi.org/10.5281/zenodo.12345',
+            'created' => '2024-01-15T10:00:00',
+        ];
+
+        $method->invokeArgs(null, [&$data]);
+
+        // Must reach here without exception; TO_COMPILE_OAI_DC should be set
+        self::assertIsArray($data);
+    }
+
+    /**
+     * Bug Z5 (fixed): when metadata has no resource_type / upload_type / publication_type,
+     * mb_strtolower(null) must not happen. The dcType must default to empty string ''.
+     */
+    public function testEnrichmentProcessWithEmptyTypeDoesNotCrash(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'enrichmentProcess'
+        );
+        $method->setAccessible(true);
+
+        $data = [
+            'doi_url'  => 'https://doi.org/10.5281/zenodo.99999',
+            'metadata' => [
+                'title'   => 'Test without type',
+                'creators' => [],
+            ],
+        ];
+
+        // Must not emit a PHP 8.1 deprecation for mb_strtolower(null)
+        $method->invokeArgs(null, [&$data]);
+
+        self::assertIsArray($data);
+        self::assertArrayHasKey(Episciences_Repositories_Common::TO_COMPILE_OAI_DC, $data);
+    }
+
+    /**
+     * enrichmentProcess() with a minimal valid metadata block correctly populates
+     * TO_COMPILE_OAI_DC with title and body.
+     */
+    public function testEnrichmentProcessPopulatesOaiDc(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'enrichmentProcess'
+        );
+        $method->setAccessible(true);
+
+        $data = [
+            'doi_url'  => 'https://doi.org/10.5281/zenodo.123',
+            'modified' => '2024-06-01T00:00:00',
+            'metadata' => [
+                'title'       => 'My Article',
+                'upload_type' => 'publication',
+                'creators'    => [
+                    ['name' => 'Doe, Jane'],
+                ],
+                'language' => 'en',
+                'keywords' => ['science', 'data'],
+            ],
+        ];
+
+        $method->invokeArgs(null, [&$data]);
+
+        self::assertArrayHasKey(Episciences_Repositories_Common::TO_COMPILE_OAI_DC, $data);
+        $body = $data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'] ?? [];
+        self::assertSame('My Article', $body['title'] ?? '');
+    }
+
+    // =========================================================================
+    // extractOaiCreators() — private, tested via ReflectionMethod
+    //
+    // Bug: the Zenodo REST API (/api/records/{id}) flattens a creator's
+    // affiliations into a single string, even when the creator has several
+    // affiliations on the record (e.g. Zenodo record 15741513: "Chambers, Sally"
+    // has 3 affiliations, only 1 was recovered before this fix). The DataCite
+    // OAI-PMH XML carries the full list with ROR identifiers.
+    // =========================================================================
+
+    private const OAI_DATACITE_XML = <<<'XML'
+<?xml version="1.0"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/">
+  <GetRecord>
+    <record>
+      <metadata>
+        <resource xmlns="http://datacite.org/schema/kernel-4">
+          <creators>
+            <creator>
+              <creatorName nameType="Personal">Candela, Gustavo</creatorName>
+              <givenName>Gustavo</givenName>
+              <familyName>Candela</familyName>
+              <nameIdentifier nameIdentifierScheme="ORCID">0000-0001-6122-0777</nameIdentifier>
+              <affiliation affiliationIdentifier="https://ror.org/05t8bcz72" affiliationIdentifierScheme="ROR">University of Alicante</affiliation>
+              <affiliation affiliationIdentifier="https://ror.org/05n09v162" affiliationIdentifierScheme="ROR">Digital Research Infrastructure for the Arts and Humanities</affiliation>
+            </creator>
+            <creator>
+              <creatorName nameType="Personal">Chambers, Sally</creatorName>
+              <givenName>Sally</givenName>
+              <familyName>Chambers</familyName>
+              <nameIdentifier nameIdentifierScheme="ORCID">0000-0002-2430-475X</nameIdentifier>
+              <affiliation affiliationIdentifier="https://ror.org/05dhe8b71" affiliationIdentifierScheme="ROR">British Library</affiliation>
+              <affiliation affiliationIdentifier="https://ror.org/05n09v162" affiliationIdentifierScheme="ROR">Digital Research Infrastructure for the Arts and Humanities</affiliation>
+              <affiliation>Ghent Centre for Digital Humanities, Ghent University, Belgium</affiliation>
+            </creator>
+            <creator>
+              <creatorName nameType="Personal">Solo, No Affiliation</creatorName>
+            </creator>
+          </creators>
+        </resource>
+      </metadata>
+    </record>
+  </GetRecord>
+</OAI-PMH>
+XML;
+
+    private function loadOaiMetadata(string $xmlString): \SimpleXMLElement
+    {
+        $metadata = simplexml_load_string($xmlString);
+        $metadata->registerXPathNamespace('oai', 'http://www.openarchives.org/OAI/2.0/');
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        return $metadata;
+    }
+
+    /**
+     * A creator with several <affiliation> elements must yield all of them, each
+     * carrying its ROR identifier when the record provides one.
+     */
+    public function testExtractOaiCreatorsReturnsAllAffiliationsWithRor(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'extractOaiCreators');
+        $method->setAccessible(true);
+
+        $creators = $method->invoke(null, $this->loadOaiMetadata(self::OAI_DATACITE_XML));
+
+        self::assertCount(3, $creators);
+
+        self::assertSame('Candela, Gustavo', $creators[0]['name']);
+        self::assertSame('0000-0001-6122-0777', $creators[0]['orcid']);
+        self::assertCount(2, $creators[0]['affiliations']);
+        self::assertSame('University of Alicante', $creators[0]['affiliations'][0]['name']);
+        self::assertSame('https://ror.org/05t8bcz72', $creators[0]['affiliations'][0]['ROR']);
+
+        self::assertSame('Chambers, Sally', $creators[1]['name']);
+        self::assertCount(3, $creators[1]['affiliations']);
+    }
+
+    /**
+     * An affiliation with no ROR attributes must still be extracted, without a 'ROR' key.
+     */
+    public function testExtractOaiCreatorsAffiliationWithoutRorHasNoRorKey(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'extractOaiCreators');
+        $method->setAccessible(true);
+
+        $creators = $method->invoke(null, $this->loadOaiMetadata(self::OAI_DATACITE_XML));
+
+        $ghentAffiliation = $creators[1]['affiliations'][2];
+        self::assertSame('Ghent Centre for Digital Humanities, Ghent University, Belgium', $ghentAffiliation['name']);
+        self::assertArrayNotHasKey('ROR', $ghentAffiliation);
+    }
+
+    /**
+     * A creator with no <affiliation> element must still be returned, with an empty list.
+     */
+    public function testExtractOaiCreatorsWithoutAffiliationReturnsEmptyList(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'extractOaiCreators');
+        $method->setAccessible(true);
+
+        $creators = $method->invoke(null, $this->loadOaiMetadata(self::OAI_DATACITE_XML));
+
+        self::assertSame('Solo, No Affiliation', $creators[2]['name']);
+        self::assertNull($creators[2]['orcid']);
+        self::assertSame([], $creators[2]['affiliations']);
+    }
+
+    // =========================================================================
+    // mergeOaiAffiliationsIntoCreators() — private, tested via ReflectionMethod
+    // =========================================================================
+
+    /**
+     * A REST creator matching an OAI creator by ORCID must receive the full
+     * OAI affiliation list, even if their names differ (e.g. diacritics/formatting).
+     */
+    public function testMergeOaiAffiliationsMatchesByOrcid(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'mergeOaiAffiliationsIntoCreators');
+        $method->setAccessible(true);
+
+        $restCreators = [
+            ['name' => 'Candela, G.', 'affiliation' => 'University of Alicante', 'orcid' => '0000-0001-6122-0777'],
+        ];
+        $oaiCreators = [
+            [
+                'name' => 'Candela, Gustavo',
+                'orcid' => '0000-0001-6122-0777',
+                'affiliations' => [
+                    ['name' => 'University of Alicante', 'ROR' => 'https://ror.org/05t8bcz72'],
+                    ['name' => 'Digital Research Infrastructure for the Arts and Humanities', 'ROR' => 'https://ror.org/05n09v162'],
+                ],
+            ],
+        ];
+
+        $result = $method->invoke(null, $restCreators, $oaiCreators);
+
+        self::assertCount(2, $result[0]['affiliations']);
+    }
+
+    /**
+     * An ORCID match must take priority over a homonym name match that appears
+     * earlier in the OAI creator list.
+     */
+    public function testMergeOaiAffiliationsOrcidMatchTakesPriorityOverEarlierHomonym(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'mergeOaiAffiliationsIntoCreators');
+        $method->setAccessible(true);
+
+        $restCreators = [
+            ['name' => 'Martin, Jean', 'affiliation' => 'Correct University', 'orcid' => '0000-0002-1825-0097'],
+        ];
+        $oaiCreators = [
+            [
+                'name' => 'Martin, Jean',
+                'orcid' => null,
+                'affiliations' => [
+                    ['name' => 'Wrong University'],
+                ],
+            ],
+            [
+                'name' => 'Martin, J.',
+                'orcid' => '0000-0002-1825-0097',
+                'affiliations' => [
+                    ['name' => 'Correct University', 'ROR' => 'https://ror.org/05t8bcz72'],
+                ],
+            ],
+        ];
+
+        $result = $method->invoke(null, $restCreators, $oaiCreators);
+
+        self::assertSame('Correct University', $result[0]['affiliations'][0]['name']);
+    }
+
+    /**
+     * Without an ORCID match, creators are matched by exact full name.
+     */
+    public function testMergeOaiAffiliationsFallsBackToExactName(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'mergeOaiAffiliationsIntoCreators');
+        $method->setAccessible(true);
+
+        $restCreators = [
+            ['name' => 'Chambers, Sally', 'affiliation' => 'British Library'],
+        ];
+        $oaiCreators = [
+            [
+                'name' => 'Chambers, Sally',
+                'orcid' => null,
+                'affiliations' => [
+                    ['name' => 'British Library', 'ROR' => 'https://ror.org/05dhe8b71'],
+                    ['name' => 'Ghent Centre for Digital Humanities, Ghent University, Belgium'],
+                ],
+            ],
+        ];
+
+        $result = $method->invoke(null, $restCreators, $oaiCreators);
+
+        self::assertCount(2, $result[0]['affiliations']);
+    }
+
+    /**
+     * A REST creator with no matching OAI creator keeps its original data untouched
+     * (no 'affiliations' key added).
+     */
+    public function testMergeOaiAffiliationsLeavesUnmatchedCreatorUntouched(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'mergeOaiAffiliationsIntoCreators');
+        $method->setAccessible(true);
+
+        $restCreators = [
+            ['name' => 'Unknown, Person', 'affiliation' => 'Somewhere'],
+        ];
+
+        $result = $method->invoke(null, $restCreators, []);
+
+        self::assertArrayNotHasKey('affiliations', $result[0]);
+        self::assertSame('Somewhere', $result[0]['affiliation']);
+    }
+
+    // =========================================================================
+    // enrichmentProcessCreators() — multi-affiliation branch (OAI enrichment)
+    // =========================================================================
+
+    /**
+     * When a creator carries the OAI-merged 'affiliations' list, enrichmentProcessCreators()
+     * must build one entry per affiliation, using AffiliationHelper::buildWithRor() when a
+     * ROR identifier is present and buildNameOnly() otherwise — instead of collapsing to
+     * the single flattened REST 'affiliation' string.
+     */
+    public function testEnrichmentProcessCreatorsUsesAllOaiAffiliations(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'enrichmentProcessCreators');
+        $method->setAccessible(true);
+
+        $creators = [
+            [
+                'name' => 'Candela, Gustavo',
+                'affiliation' => 'University of Alicante', // single flattened REST value
+                'affiliations' => [ // full OAI-merged list
+                    ['name' => 'University of Alicante', 'ROR' => 'https://ror.org/05t8bcz72'],
+                    ['name' => 'Digital Research Infrastructure for the Arts and Humanities', 'ROR' => 'https://ror.org/05n09v162'],
+                ],
+            ],
+        ];
+
+        [, $authors] = $method->invoke(null, $creators, [], []);
+
+        self::assertCount(2, $authors[0]['affiliation']);
+        self::assertSame('University of Alicante', $authors[0]['affiliation'][0]['name']);
+        self::assertSame('https://ror.org/05t8bcz72', $authors[0]['affiliation'][0]['id'][0]['id']);
+        self::assertSame('ROR', $authors[0]['affiliation'][0]['id'][0]['id-type']);
+        self::assertSame('Digital Research Infrastructure for the Arts and Humanities', $authors[0]['affiliation'][1]['name']);
+    }
+
+    /**
+     * A creator without the OAI 'affiliations' key falls back to the original
+     * single-affiliation behaviour (regression guard for the pre-existing path).
+     */
+    public function testEnrichmentProcessCreatorsFallsBackWithoutOaiAffiliations(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'enrichmentProcessCreators');
+        $method->setAccessible(true);
+
+        $creators = [
+            ['name' => 'Martin, Paul', 'affiliation' => 'CNRS'],
+        ];
+
+        [, $authors] = $method->invoke(null, $creators, [], []);
+
+        self::assertCount(1, $authors[0]['affiliation']);
+        self::assertSame(['name' => 'CNRS'], $authors[0]['affiliation'][0]);
+    }
 }

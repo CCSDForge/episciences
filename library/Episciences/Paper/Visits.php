@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Maintenance\ReadOnlyMode;
 use geertw\IpAnonymizer\IpAnonymizer;
 use Psr\Log\LogLevel;
 
@@ -17,10 +18,15 @@ class Episciences_Paper_Visits
      * The real (non-anonymized) IP is stored so the cron job (stats:process)
      * can perform GeoIP lookup, bot detection, and anonymization at processing time.
      *
-     * @throws Zend_Db_Adapter_Exception
+     * Nothing is recorded in read-only maintenance mode, and a database failure (e.g. MySQL in
+     * super_read_only) is logged instead of breaking the public consultation of the paper.
      */
     public static function add(int $docId, string $consult = self::CONSULT_TYPE_NOTICE): void
     {
+        if (ReadOnlyMode::isEnabled()) {
+            return;
+        }
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         if ($db === null) {
             return;
@@ -32,11 +38,11 @@ class Episciences_Paper_Visits
         $clientIp = null;
         if ($request instanceof Zend_Controller_Request_Http) {
             $clientIp = $request->getClientIp();
-            if (Episciences_Tools::isIPv6($clientIp)) {
+            if (is_string($clientIp) && Episciences_Tools::isIPv6($clientIp)) {
+                // Log only what is needed to diagnose IPv6/proxy handling — not the full header set.
                 Episciences_View_Helper_Log::log('Paper visits with IPv6 client: ', LogLevel::INFO, [
                     'checkProxy' => true,
                     'clientIp'   => $clientIp,
-                    'server'     => $request->getServer(),
                 ]);
             }
         }
@@ -44,13 +50,19 @@ class Episciences_Paper_Visits
         $clientIpQuoted = $db->quote((string) $clientIp);
         $ipExpr = "IFNULL(CASE WHEN IS_IPV4($clientIpQuoted) THEN INET_ATON($clientIpQuoted) ELSE INET_ATON('127.1') END, INET_ATON('127.1'))";
 
-        $db->insert(VISITS_TEMP, [
-            'DOCID'           => $docId,
-            'IP'              => new Zend_Db_Expr($ipExpr),
-            'HTTP_USER_AGENT' => self::getUserAgent(),
-            'DHIT'            => new Zend_Db_Expr('NOW()'),
-            'CONSULT'         => $consult,
-        ]);
+        try {
+            $db->insert(VISITS_TEMP, [
+                'DOCID'           => $docId,
+                'IP'              => new Zend_Db_Expr($ipExpr),
+                'HTTP_USER_AGENT' => self::getUserAgent(),
+                'DHIT'            => new Zend_Db_Expr('NOW()'),
+                'CONSULT'         => $consult,
+            ]);
+        } catch (Zend_Db_Exception $e) {
+            Episciences_View_Helper_Log::log('Cannot record paper visit: ' . $e->getMessage(), LogLevel::ERROR, [
+                'docId' => $docId,
+            ]);
+        }
     }
 
     /**

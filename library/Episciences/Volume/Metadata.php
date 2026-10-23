@@ -1,8 +1,15 @@
 <?php
 
+use Episciences\AppRegistry;
+use Episciences\Upload\PublicFileStore;
+use Episciences\Upload\SafeFileName;
+use Episciences\Upload\UploadChecker;
+use Psr\Log\LogLevel;
+
 class Episciences_Volume_Metadata
 {
     const TRANSLATION_FILE = 'volumes.php';
+    const COVER_TITLE_KEY = 'tile';
     protected $_db = null;
     private $_id;
     private $_vid;
@@ -206,6 +213,20 @@ class Episciences_Volume_Metadata
         return $this;
     }
 
+    public function isCover(): bool
+    {
+        $titles = $this->getTitles();
+        if (empty($titles)) {
+            return false;
+        }
+        foreach ($titles as $value) {
+            if ($value !== self::COVER_TITLE_KEY) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public function isPDF(): bool
     {
         $type = $this->getFileType();
@@ -247,9 +268,27 @@ class Episciences_Volume_Metadata
         return $this->_file;
     }
 
+    /**
+     * The name can come back from the browser (hidden form field) and is later joined to the volume directory
+     * (unlink, download): anything that is not a bare file name is dropped.
+     */
     public function setFile($file)
     {
-        $this->_file = $file;
+        if (SafeFileName::isBare($file)) {
+            $this->_file = $file;
+            return $this;
+        }
+
+        if ($file !== null && $file !== '') {
+            // The stored reference is lost on the next save: keep a trace to find the orphan file
+            Episciences_View_Helper_Log::log(
+                'Volume metadata file name rejected',
+                LogLevel::WARNING,
+                ['file' => is_scalar($file) ? (string)$file : gettype($file), 'vid' => $this->getVid()]
+            );
+        }
+
+        $this->_file = null;
         return $this;
     }
 
@@ -283,9 +322,31 @@ class Episciences_Volume_Metadata
         if ($this->getTmpfile()) {
             $file = $this->getTmpfile();
 
+            // The description of the file comes back from the browser: check it again before storing anything
+            $source = PublicFileStore::resolveTemporaryFile((string)($file['tmp_name'] ?? ''), REVIEW_TMP_PATH);
+            $error = $source === null
+                ? 'The file is not an upload of this journal'
+                : UploadChecker::firstPublicFileError($source, (string)($file['name'] ?? ''));
+
+            if ($error !== null) {
+                AppRegistry::getMonoLogger()?->warning('Volume file refused', ['vid' => $this->getVid(), 'reason' => $error]);
+                return false;
+            }
+
+            $file['tmp_name'] = $source;
+
             $path = REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/';
             if (!file_exists($path)) {
                 mkdir($path, 0777, true);
+            }
+
+            // setFile() would drop a name that is not bare (e.g. with a backslash): check it before
+            // the previous file is removed, or the volume would lose both files
+            $storedName = PublicFileStore::storedName((string)$file['name']);
+            $filename = SafeFileName::isBare($storedName) ? Ccsd_Tools::getNewFileName($storedName, $path) : '';
+            if (!SafeFileName::isBare($filename)) {
+                AppRegistry::getMonoLogger()?->warning('Volume file refused', ['vid' => $this->getVid(), 'reason' => 'The file name is not a bare file name']);
+                return false;
             }
 
             // Supprimer l'ancien fichier
@@ -294,9 +355,9 @@ class Episciences_Volume_Metadata
             }
 
             // Déplacer le fichier dans son dossier final
-            $filename = Ccsd_Tools::getNewFileName($file['name'], $path);
             if (file_exists($file['tmp_name'])) {
                 rename($file['tmp_name'], $path . $filename);
+                chmod($path . $filename, 0644);
             }
 
             // On enregistre le nom du fichier
@@ -307,13 +368,18 @@ class Episciences_Volume_Metadata
         if ($this->getDeletelist()) {
             foreach ($this->getDeletelist() as $item) {
                 if ($item['type'] == 'tmp_file') {
-                    if (file_exists($item['path'])) {
-                        unlink($item['path']);
+                    // The path comes back from the browser: only the uploads parked for this journal may be removed
+                    $temporaryFile = PublicFileStore::resolveTemporaryFile((string)($item['path'] ?? ''), REVIEW_TMP_PATH);
+                    if ($temporaryFile !== null) {
+                        unlink($temporaryFile);
                     }
                 } else {
-                    $path = REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/';
-                    if (file_exists($path . $item['name'])) {
-                        unlink($path . $item['name']);
+                    // Files are stored under REVIEW_PUBLIC_PATH (see save() and getFilePath());
+                    // deleting from REVIEW_FILES_PATH silently missed them and leaked the file.
+                    $path = REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/';
+                    $name = basename((string)($item['name'] ?? ''));
+                    if ($name !== '' && is_file($path . $name)) {
+                        unlink($path . $name);
                     }
                 }
             }
@@ -329,13 +395,14 @@ class Episciences_Volume_Metadata
             ];
         } catch (JsonException $e) {
             trigger_error($e->getMessage());
+            return false;
         }
         $values['VID'] = $this->getVid();
 
 
         if ($this->getId()) {
             try {
-                $this->_db->update(T_VOLUME_METADATAS, $values, ['ID = ?' => $this->getId()]);
+                $this->_db->update(T_VOLUME_METADATAS, $values, ['ID = ?' => $this->getId(), 'VID = ?' => $this->getVid()]);
             } catch (Zend_Db_Adapter_Exception $exception) {
                 error_log($exception->getMessage());
                 return false;

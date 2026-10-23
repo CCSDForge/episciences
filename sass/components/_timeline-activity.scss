@@ -1,0 +1,448 @@
+/**
+ * Activity Timeline Component (ActivityController)
+ * Single-column timeline: one vertical line on the left, one circular marker
+ * per event/recap block, wide cards to its right (all entries on the same
+ * side — grouped recap blocks make the zigzag layout unnecessary and this
+ * gives every card the full available width).
+ * Reuses existing Bootstrap 3 label/alert colors (success/info/warning/danger/primary/
+ * violet, incl. the app's custom .label-violet). The review table's date badges use the
+ * project-wide Bootstrap 5.3 badge classes instead (see sass/components/_badges.scss).
+ */
+
+.activity-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.activity-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 15px;
+}
+
+// Header card: paper's current status (title and authors are already shown by the
+// "Back to article management" page this timeline is reached from)
+.activity-header-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  background-color: $white;
+  border: 1px solid $lighter-grey;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  padding: 20px;
+  margin-bottom: 10px;
+
+  .activity-header-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-shrink: 0;
+    text-align: left;
+  }
+
+  .activity-status-caption {
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.75em;
+    color: $dark-grey;
+    margin-bottom: 4px;
+  }
+
+  .activity-status-label {
+    font-size: 1em;
+    display: inline-block;
+    white-space: normal;
+  }
+}
+
+// Filter toggles bar
+.activity-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin: 20px 0;
+
+  .activity-filters-label {
+    font-weight: bold;
+    margin-right: 4px;
+  }
+}
+
+.activity-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  label {
+    margin: 0;
+    font-weight: normal;
+    cursor: pointer;
+  }
+}
+
+// Accessible switch: a real checkbox (role="switch", labelled by the visible <label>) with
+// its native appearance replaced by a track + thumb — keyboard/screen-reader behavior stays
+// the native checkbox's, only the paint changes
+.activity-filter-switch {
+  appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  margin: 0;
+  border: 1px solid $light-grey;
+  border-radius: 11px;
+  background-color: $lighter-grey;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: $white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s ease;
+  }
+
+  &:checked {
+    background-color: $blue;
+    border-color: $blue;
+
+    &::before {
+      transform: translateX(18px);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid $blue;
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-filter-switch,
+  .activity-filter-switch::before {
+    transition: none;
+  }
+}
+
+.activity-timeline-caption {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8em;
+  color: $dark-grey;
+  margin: 30px 0 20px;
+}
+
+// Timeline: single vertical line running through the marker column
+.activity-timeline {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 188px; // date column (150px) + marker margin (20px) + half marker width (18px)
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: $lighter-grey;
+  }
+}
+
+.activity-timeline-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 24px;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.activity-timeline-date {
+  flex: 0 0 150px;
+  text-align: right;
+  padding-top: 8px;
+  font-size: 0.85em;
+  color: $dark-grey;
+
+  time {
+    display: block;
+  }
+}
+
+.activity-version-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 0.4em 0.8em;
+  font-size: 1.1em;
+}
+
+// Quick links to the version's PDF and admin page, right under its "Version N" badge
+// (see partials/activity_timeline_date.phtml) — stacked to fit the narrow date column
+.activity-version-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  margin-top: 6px;
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+// Circular marker sitting on the line — reuses .label-{color} for its background.
+// One per version/category card (not per log entry), so it stays the page's main
+// "which category is this" visual anchor — kept slightly smaller and with a thinner
+// ring than before so it reads as a marker rather than a filled badge.
+.activity-timeline-marker {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  margin: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 14px;
+  box-shadow: 0 0 0 3px $white;
+}
+
+// Avatars inside recap-block item bodies: the shared 16px .user-photo-thumb (see
+// sass/base/_base.scss) is too small to tell initials apart at a glance — enlarge and
+// align them within the activity timeline only, scoped so the "Historique" panel
+// (which reuses the same partial) keeps its original size.
+.activity-page .log-user-action .user-photo-thumb {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+}
+
+.activity-timeline-card {
+  flex: 1 1 auto;
+  min-width: 0;
+  background-color: $white;
+  border: 1px solid $lighter-grey;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  padding: 16px 20px;
+}
+
+.activity-timeline-label {
+  margin-bottom: 8px;
+}
+
+// Category badge styled like a Bootstrap panel-heading bar (see sass/base/_base.scss
+// ".panel-heading h2"), keeping whichever label-{color} background/text color it was given.
+// The negative margin is the card's own padding (16px/20px) PLUS its 1px border: matching
+// only the padding leaves the card's grey border showing as a thin frame around the colored
+// header instead of the header flushing all the way to the card's outer edge.
+.activity-category-label {
+  display: block;
+  margin: -17px -21px 12px;
+  padding: 10px 15px;
+  border-radius: 8px 8px 0 0;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: left;
+}
+
+.activity-timeline-body {
+  font-size: 0.95em;
+}
+
+// Per-version recap block (editorial, review, or messages & notifications):
+// one row per item inside the card, each with a header (label + date) and its
+// full detail body (shared with the "Historique" panel via paper_history_log_body.phtml)
+.activity-recap-block-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+// One flex row per item: [pill] [body — grows, wraps to its own line(s) when long]
+// [date — stays put, level with the pill]. The modal-opener <a> (when present) wraps
+// ONLY the pill, never the body: the body may contain its own interactive links
+// (e.g. mailto:), and nested <a> tags are invalid HTML.
+.activity-recap-block-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid $almost-white;
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.activity-recap-block-status {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// Only the modal-opener <a> variant (icon + bold title) needs to not look like a hyperlink —
+// a status-change badge (<span class="label label-status-N ...">) must keep the Bootstrap
+// label's own text color (contrast against its status color), not inherit the surrounding text
+a.activity-recap-block-status {
+  color: inherit;
+
+  &:hover,
+  &:focus {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+// Minimalist marker for every recap-block item — a muted icon + bold title instead of
+// a colored badge, so the card doesn't read as a wall of same-weight colored pills
+.activity-recap-block-icon {
+  color: $dark-grey;
+  font-size: 0.9em;
+}
+
+.activity-recap-block-title {
+  color: $darker-grey;
+  font-weight: bold;
+}
+
+.activity-recap-block-item-body {
+  font-size: 0.9em;
+  // flex-basis 0 (not auto): keeps the date from being pushed to a new line — with
+  // "auto" the browser sizes wrapping decisions on this item's unwrapped (max-content)
+  // width, which for a long status/comment is very wide even though it visually
+  // shrinks and wraps fine once laid out
+  flex: 1 1 0%;
+  min-width: 0;
+
+  // Prevent breaking right after "to"/"à" before a recipient name: only break-word
+  // inside genuinely unbreakable long tokens (e.g. a raw URL), never at the &nbsp;
+  // used to glue "to"/"à" to the following name (paper_history_logs_mail.phtml)
+  a,
+  .log-mail-recipients {
+    overflow-wrap: normal;
+  }
+
+  overflow-wrap: break-word;
+}
+
+.activity-recap-block-date {
+  flex: 0 0 auto;
+  font-size: 0.8em;
+  color: $dark-grey;
+}
+
+// Per-version reviewer recap table: one row per reviewer, one column per event type
+.activity-review-table {
+  font-size: 0.85em;
+  margin-bottom: 0;
+
+  th,
+  td {
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .activity-review-table-date-cell {
+    text-align: center;
+
+    .fa-file {
+      margin-right: 4px;
+      color: $dark-grey;
+    }
+  }
+
+  .activity-review-table-icon-col {
+    text-align: center;
+    cursor: help;
+  }
+}
+
+// Responsive: stack date above marker+card on narrow screens
+@media (max-width: 700px) {
+  .activity-timeline::before {
+    left: 20px;
+  }
+
+  .activity-timeline-row {
+    flex-direction: column;
+  }
+
+  .activity-timeline-date {
+    order: -1;
+    flex: none;
+    text-align: left;
+    padding-left: 56px;
+    margin-bottom: 4px;
+  }
+
+  .activity-version-actions {
+    align-items: flex-start;
+  }
+
+  .activity-timeline-marker {
+    position: absolute;
+    left: 20px;
+    top: 0;
+    margin: 0;
+  }
+
+  .activity-timeline-card {
+    max-width: 100%;
+    margin-left: 56px;
+  }
+}
+
+// Accessibility: reduced motion / high contrast / focus / print
+@media (prefers-reduced-motion: reduce) {
+  .activity-timeline-marker {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .activity-timeline-card {
+    border-width: 2px;
+  }
+
+  // border grew from 1px to 2px above — extend the header's negative margin to match,
+  // otherwise the extra pixel of card border shows through as a sliver around the header
+  .activity-category-label {
+    margin: -18px -22px 12px;
+  }
+
+  .activity-timeline::before {
+    width: 3px;
+  }
+}
+
+.activity-timeline-card:focus-within {
+  outline: 2px solid $blue;
+  outline-offset: 2px;
+}
+
+@media print {
+  .activity-timeline-card {
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+}

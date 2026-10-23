@@ -85,6 +85,7 @@ $(document).ready(function () {
                     full_name: user.full_name,
                     user_name: user.user_name || '',
                     label: user.label || user.full_name,
+                    locale: user.locale,
                 },
                 2
             );
@@ -214,7 +215,6 @@ function submit() {
         $.ajax({
             url: $('#invitation-form').attr('action'),
             type: 'POST',
-            datatype: 'json',
             data: $('form').serialize(),
             success: function () {
                 // refresh reviewers list
@@ -909,3 +909,36 @@ function translateInvitationDeadline(str, locale) {
     let sStr = str.split(' ');
     return sStr[0] + ' ' + translate(sStr[1], locale);
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        resetStep1,
+        findUserByMail,
+        findUsers,
+        set_reviewer_type,
+        step1,
+        validate_step1,
+        step2,
+        validate_step2,
+        setInvitationValues,
+        replaceTags,
+        show_errors,
+        reviewers_init,
+        dt_init,
+        createUser,
+        displayHomonymUsers,
+        displayDuplicateUsers,
+        checkHomonyms,
+        validateTmpFormInvitation,
+        replaceClass,
+        checkDuplicateUser,
+        displayCcsdUsers,
+        findCasUser,
+        hideElements,
+        showElements,
+        ajaxAlertFail,
+        translateInvitationDeadline,
+        submit
+    };
+}
+

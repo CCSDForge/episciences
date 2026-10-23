@@ -42,6 +42,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
     public function run(): void
     {
         defineProtocol();
+        defineApplicationConstants();
         defineSimpleConstants();
         defineSQLTableConstants();
 
@@ -317,6 +318,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
             'VERSION',
             'REPOID',
             'TYPE',
+            'RECORD',
             'CONCEPT_IDENTIFIER',
             'FLAG',
             'WHEN',
@@ -324,10 +326,6 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
             'MODIFICATION_DATE',
             'PUBLICATION_DATE',
         ];
-
-        if ($shouldUpdateRecord) { // Column 'RECORD' cannot be null, when RECORD updated
-            $cols[] = 'RECORD';
-        }
 
         $countQuery = $db?->select()->from(T_PAPERS, [new Zend_Db_Expr("COUNT(*)")]);
         $dataQuery = $db?->select()->from(T_PAPERS, $cols);

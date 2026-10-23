@@ -11,10 +11,10 @@ use coarnotify\patterns\announce_endorsement\AnnounceEndorsementItem;
 use coarnotify\core\notify\NotifyActor;
 use coarnotify\core\notify\NotifyObject;
 use coarnotify\core\notify\NotifyService;
+use Episciences\Log\LoggerFactory;
+use Episciences\Notify\CoarNotifyHttpLayer;
 use Episciences\Notify\Notification;
 use Episciences\Notify\NotificationsRepository;
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
 use Ramsey\Uuid\Uuid;
 
@@ -27,6 +27,8 @@ class Episciences_Notify_Hal
     protected Logger $logger;
     private NotificationsRepository $repository;
     private ?COARNotifyClient $client;
+    private string $targetInbox;
+    private string $targetUrl;
 
     /**
      * @return Episciences_Review
@@ -82,18 +84,24 @@ class Episciences_Notify_Hal
      * @param Episciences_Review $journal
      * @param NotificationsRepository|null $repository
      * @param COARNotifyClient|null $client
+     * @param string|null $targetInbox HAL inbox URL, defaults to NOTIFY_TARGET_HAL_INBOX
+     * @param string|null $targetUrl HAL origin URL, defaults to NOTIFY_TARGET_HAL_URL
      */
     public function __construct(
         Episciences_Paper $paper,
         Episciences_Review $journal,
         ?NotificationsRepository $repository = null,
-        ?COARNotifyClient $client = null
+        ?COARNotifyClient $client = null,
+        ?string $targetInbox = null,
+        ?string $targetUrl = null
     ) {
         $this->setJournal($journal);
         $this->setPaper($paper);
         $this->initLogging();
         $this->repository = $repository ?? NotificationsRepository::createFromConstants();
         $this->client = $client;
+        $this->targetInbox = $targetInbox ?? (defined('NOTIFY_TARGET_HAL_INBOX') ? NOTIFY_TARGET_HAL_INBOX : '');
+        $this->targetUrl = $targetUrl ?? (defined('NOTIFY_TARGET_HAL_URL') ? NOTIFY_TARGET_HAL_URL : '');
     }
 
     /**
@@ -101,13 +109,7 @@ class Episciences_Notify_Hal
      */
     private function initLogging(): void
     {
-        $cn_logger = new Logger('NotifyCOARLogger');
-
-        $handler = new RotatingFileHandler(EPISCIENCES_LOG_PATH . 'NotifyCOARLogger.log',
-            0, Logger::DEBUG, true, 0664);
-        $formatter = new LineFormatter(null, null, false, true);
-        $handler->setFormatter($formatter);
-        $cn_logger->pushHandler($handler);
+        $cn_logger = LoggerFactory::rotating('NotifyCOARLogger');
 
         $this->setLogger($cn_logger);
     }
@@ -117,6 +119,10 @@ class Episciences_Notify_Hal
      */
     public function announceEndorsement(): string
     {
+        if ($this->targetInbox === '') {
+            throw new \RuntimeException('NOTIFY_TARGET_HAL_INBOX is not configured; cannot announce endorsement to HAL.');
+        }
+
         $cn_paper = $this->getPaper();
         $cn_journal = $this->getJournal();
         $cn_logger = $this->getLogger();
@@ -139,8 +145,8 @@ class Episciences_Notify_Hal
 
         // Target: HAL repository
         $target = new NotifyService();
-        $target->setId(NOTIFY_TARGET_HAL_URL);
-        $target->setInbox(NOTIFY_TARGET_HAL_INBOX);
+        $target->setId($this->targetUrl);
+        $target->setInbox($this->targetInbox);
 
         // Object: the published paper page
         $paperUrl = sprintf('%s/%s', $cn_journal->getUrl(), $cn_paper->getPaperid());
@@ -186,7 +192,7 @@ class Episciences_Notify_Hal
         // Send via COAR Notify client
         $status = Notification::STATUS_PENDING;
         try {
-            $client = $this->client ?? new COARNotifyClient(NOTIFY_TARGET_HAL_INBOX);
+            $client = $this->client ?? new COARNotifyClient($this->targetInbox, new CoarNotifyHttpLayer());
             $response = $client->send($announcement);
             $status = ($response->getAction() === NotifyResponse::CREATED) ? 201 : 202;
         } catch (NotifyException $e) {
@@ -198,7 +204,7 @@ class Episciences_Notify_Hal
         $notification = new Notification();
         $notification->setId($notificationId);
         $notification->setFromId($cn_journal->getUrl());
-        $notification->setToId(NOTIFY_TARGET_HAL_URL);
+        $notification->setToId($this->targetUrl);
         $notification->setType(json_encode(['Announce', 'coar-notify:EndorsementAction']) ?: '');
         $notification->setStatus($status);
         $notification->setOriginal($originalJson);

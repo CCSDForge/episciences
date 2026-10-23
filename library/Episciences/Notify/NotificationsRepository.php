@@ -37,14 +37,17 @@ class NotificationsRepository
      */
     public function findInbound(int $limit = self::MAX_INBOUND_FETCH): array
     {
+        // Outdated notifications are permanently moot (the state they describe was
+        // already superseded) and are excluded so they are not refetched forever.
         $sql = 'SELECT id, fromId, toId, inReplyToId, type, status, timestamp, original, direction
                 FROM notifications
-                WHERE direction = :direction
+                WHERE direction = :direction AND status != :statusOutdated
                 ORDER BY timestamp DESC
                 LIMIT :limit';
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':direction', Notification::DIRECTION_INBOUND, \PDO::PARAM_STR);
+        $stmt->bindValue(':statusOutdated', Notification::STATUS_OUTDATED, \PDO::PARAM_INT);
         $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
         $stmt->execute();
 
@@ -78,6 +81,15 @@ class NotificationsRepository
     {
         $sql = 'DELETE FROM notifications WHERE id = :id';
         $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id', $id, \PDO::PARAM_STR);
+        $stmt->execute();
+    }
+
+    public function updateStatus(string $id, int $status): void
+    {
+        $sql = 'UPDATE notifications SET status = :status WHERE id = :id';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':status', $status, \PDO::PARAM_INT);
         $stmt->bindValue(':id', $id, \PDO::PARAM_STR);
         $stmt->execute();
     }

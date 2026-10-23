@@ -1,11 +1,13 @@
 <?php
 
-$this->jQuery()->addJavascriptFile('/js/administratepaper/volume-assignment.js');
-$this->jQuery()->addJavascriptFile('/js/administratepaper/section-assignment.js');
-
 $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
 $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+
+// CSS via helper → rendered in <head>, avoids forced reflow from a body <link>
+$this->jQuery()->addStylesheet('https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.min.css');
+
 $vid = $this->article->getVid();
+$docId = $this->article->getDocid();
 
 $disabled = '';
 $ariaDisabled = 'aria-disabled="false"';
@@ -21,6 +23,9 @@ if (!$isAllowed) {
 }
 
 ?>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
+<script src="/js/administratepaper/paper-assignment-modal.js?_=v<?= APPLICATION_VERSION ?>"></script>
 
 <?= $this->partial('partials/paper_volumes.phtml', [
         'article' => $this->article,

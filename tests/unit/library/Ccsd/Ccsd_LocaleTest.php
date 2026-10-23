@@ -4,6 +4,8 @@ namespace unit\library\Ccsd;
 
 use Ccsd_Locale;
 use PHPUnit\Framework\TestCase;
+use Zend_Locale;
+use Zend_Registry;
 
 /**
  * Unit tests for Ccsd_Locale
@@ -19,6 +21,61 @@ class Ccsd_LocaleTest extends TestCase
     protected function setUp(): void
     {
         $this->locale = new Ccsd_Locale();
+    }
+
+    protected function tearDown(): void
+    {
+        // Zend_Registry is an ArrayObject: unset the key only if a test registered it
+        if (Zend_Registry::isRegistered('Zend_Locale')) {
+            Zend_Registry::getInstance()->offsetUnset('Zend_Locale');
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // getLanguageName
+    // ------------------------------------------------------------------
+
+    public function testGetLanguageNameInEnglish(): void
+    {
+        $this->assertSame('French', Ccsd_Locale::getLanguageName('fr', 'en'));
+    }
+
+    public function testGetLanguageNameInFrench(): void
+    {
+        $this->assertSame('français', Ccsd_Locale::getLanguageName('fr', 'fr'));
+        $this->assertSame('anglais', Ccsd_Locale::getLanguageName('en', 'fr'));
+    }
+
+    public function testGetLanguageNameUnknownCodeReturnsCode(): void
+    {
+        $this->assertSame('xx', Ccsd_Locale::getLanguageName('xx', 'en'));
+    }
+
+    public function testGetLanguageNameIsCaseInsensitive(): void
+    {
+        $this->assertSame('French', Ccsd_Locale::getLanguageName('FR', 'en'));
+    }
+
+    public function testGetLanguageNameEmptyCodeReturnsEmptyString(): void
+    {
+        $this->assertSame('', Ccsd_Locale::getLanguageName(''));
+    }
+
+    public function testGetLanguageNameDefaultsToEnglishWithoutRegistry(): void
+    {
+        $this->assertSame('French', Ccsd_Locale::getLanguageName('fr'));
+    }
+
+    public function testGetLanguageNameUsesZendLocaleObjectFromRegistry(): void
+    {
+        Zend_Registry::set('Zend_Locale', new Zend_Locale('fr'));
+        $this->assertSame('anglais', Ccsd_Locale::getLanguageName('en'));
+    }
+
+    public function testGetLanguageNameUsesStringLocaleFromRegistry(): void
+    {
+        Zend_Registry::set('Zend_Locale', 'fr');
+        $this->assertSame('anglais', Ccsd_Locale::getLanguageName('en'));
     }
 
     // ------------------------------------------------------------------

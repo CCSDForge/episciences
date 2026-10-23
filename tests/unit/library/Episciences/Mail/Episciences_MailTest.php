@@ -3,8 +3,10 @@
 namespace unit\library\Episciences\Mail;
 
 use Episciences_Mail;
+use Episciences_Mail_Tags;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use Zend_Db_Table_Abstract;
 
 /**
  * Unit tests for Episciences_Mail.
@@ -398,7 +400,7 @@ final class Episciences_MailTest extends TestCase
     }
 
     // =========================================================================
-    // addTo / addCc / addBcc — empty guard (return false) — source inspection
+    // addTo / addCc / addBcc — empty guard, fluent return $this — source inspection
     // =========================================================================
 
     public function testAddToSourceContainsEmptyGuard(): void
@@ -407,7 +409,9 @@ final class Episciences_MailTest extends TestCase
         $lines  = file($method->getFileName());
         $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
         self::assertStringContainsString('empty($email)', $source);
-        self::assertStringContainsString('return false', $source);
+        // Fluent contract: the method must return $this, never break the chain with return false.
+        self::assertStringContainsString('return $this', $source);
+        self::assertStringNotContainsString('return false', $source);
     }
 
     public function testAddCcSourceContainsEmptyGuard(): void
@@ -416,7 +420,8 @@ final class Episciences_MailTest extends TestCase
         $lines  = file($method->getFileName());
         $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
         self::assertStringContainsString('empty($email)', $source);
-        self::assertStringContainsString('return false', $source);
+        self::assertStringContainsString('return $this', $source);
+        self::assertStringNotContainsString('return false', $source);
     }
 
     public function testAddBccSourceContainsEmptyGuard(): void
@@ -425,7 +430,25 @@ final class Episciences_MailTest extends TestCase
         $lines  = file($method->getFileName());
         $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
         self::assertStringContainsString('empty($email)', $source);
-        self::assertStringContainsString('return false', $source);
+        self::assertStringContainsString('return $this', $source);
+        self::assertStringNotContainsString('return false', $source);
+    }
+
+    // =========================================================================
+    // __construct() — %%REVIEW_CODE%% tag uses the review's custom mail display
+    // code (SETTING_MAIL_DISPLAY_CODE) when set, falling back to RVCODE — source
+    // inspection, since the constructor requires a live DB (Episciences_ReviewsManager::find()).
+    // =========================================================================
+
+    public function testConstructSourceFallsBackToRvcodeForReviewCodeTag(): void
+    {
+        $method = new ReflectionMethod(Episciences_Mail::class, '__construct');
+        $lines  = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertStringContainsString('$review->getMailDisplayCode()', $source);
+        self::assertStringContainsString(': RVCODE', $source);
+        self::assertStringContainsString('TAG_REVIEW_CODE, $mailDisplayCode', $source);
     }
 
     // =========================================================================
@@ -470,6 +493,37 @@ final class Episciences_MailTest extends TestCase
         );
     }
 
+    /**
+     * Regression: the DataTable search term must be bound (quoted by the adapter),
+     * never interpolated into the WHERE clause.
+     */
+    public function testDataTableMailsSearchQueryQuotesSearchTerm(): void
+    {
+        $sql = $this->buildSearchSql("'; DROP TABLE users; --");
+
+        // The quote is escaped by the adapter, so the term stays inside the string literal
+        self::assertStringContainsString("'%\\'; DROP TABLE users; --%'", $sql);
+        self::assertSame(5, substr_count($sql, 'LIKE'));
+    }
+
+    /**
+     * LIKE wildcards typed by the user must be matched literally.
+     */
+    public function testDataTableMailsSearchQueryEscapesLikeWildcards(): void
+    {
+        $sql = $this->buildSearchSql('50%_off');
+
+        self::assertSame(5, substr_count($sql, "'%50\\\\%\\\\_off%'"));
+    }
+
+    private function buildSearchSql(string $word): string
+    {
+        $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from('MAIL_LOG');
+        $method = new ReflectionMethod(Episciences_Mail::class, 'dataTableMailsSearchQuery');
+
+        return $method->invoke($this->mail, $select, $word)->assemble();
+    }
+
     // =========================================================================
     // Sanitisation logic (pure, no DB)
     // =========================================================================
@@ -508,5 +562,321 @@ final class Episciences_MailTest extends TestCase
         $safe  = array_map('intval', array_filter($input, 'is_numeric'));
 
         self::assertSame([0, 1, 999], array_values($safe));
+    }
+
+    // =========================================================================
+    // setDocid / getPaperId / static $_cache
+    //
+    // getPaperId() falls back to a real DB query (Episciences_PapersManager::
+    // partialGetQuery()) only on a cache miss, so these tests either supply
+    // $paperId explicitly to setDocid() (no query) or pre-seed the private
+    // static $_cache via reflection to force a cache hit. The real query path
+    // is not covered here for the same reason as getHistory()/log()/find():
+    // it requires a live DB (see class docblock).
+    // =========================================================================
+
+    protected function tearDown(): void
+    {
+        Episciences_Mail::clearCache();
+    }
+
+    private function seedPaperIdCache(array $cache): void
+    {
+        $rp = new \ReflectionProperty(Episciences_Mail::class, '_cache');
+        $rp->setAccessible(true);
+        $rp->setValue(null, $cache);
+    }
+
+    private function invokeGetPaperId(Episciences_Mail $mail): ?int
+    {
+        $rm = new ReflectionMethod(Episciences_Mail::class, 'getPaperId');
+        $rm->setAccessible(true);
+        return $rm->invoke($mail);
+    }
+
+    public function testSetDocidCastsDocidToInt(): void
+    {
+        $this->mail->setDocid('5', 1);
+        self::assertSame(5, $this->mail->getDocid());
+    }
+
+    public function testSetDocidUsesNormalizedDocidForTagsAndUrls(): void
+    {
+        $this->mail->setDocid('5foo', 1);
+
+        $tags = $this->mail->getTags();
+        self::assertSame(5, $tags[Episciences_Mail_Tags::TAG_PAPER_ID]);
+        self::assertSame(5, $this->mail->getDocid());
+    }
+
+    public function testSetDocidReturnsFluent(): void
+    {
+        self::assertInstanceOf(Episciences_Mail::class, $this->mail->setDocid(1, 1));
+    }
+
+    public function testSetDocidAlwaysSetsPaperIdTag(): void
+    {
+        $this->mail->setDocid(42, 42);
+        self::assertSame(42, $this->mail->getTags()[Episciences_Mail_Tags::TAG_PAPER_ID]);
+    }
+
+    public function testSetDocidWithExplicitPaperIdSetsPermanentArticleIdTag(): void
+    {
+        $this->mail->setDocid(10, 999);
+        self::assertSame(999, $this->mail->getTags()[Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID]);
+    }
+
+    public function testSetDocidWithExplicitPaperIdDoesNotConsultCache(): void
+    {
+        // seed a decoy value under the same docid: the explicit $paperId must win
+        $this->seedPaperIdCache([10 => 111]);
+
+        $this->mail->setDocid(10, 999);
+
+        self::assertSame(999, $this->mail->getTags()[Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID]);
+    }
+
+    public function testSetDocidFallsBackToCachedPaperIdWhenNoneGiven(): void
+    {
+        $this->seedPaperIdCache([10 => 777]);
+
+        $this->mail->setDocid(10);
+
+        self::assertSame(777, $this->mail->getTags()[Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID]);
+    }
+
+    public function testSetDocidRemovesStalePermanentArticleIdTagWhenResolutionFails(): void
+    {
+        // simulate an Episciences_Mail instance reused across documents: the
+        // previous document's tag must not leak into the new one
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, 555);
+        $this->seedPaperIdCache([20 => null]);
+
+        $this->mail->setDocid(20);
+
+        self::assertArrayNotHasKey(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $this->mail->getTags());
+    }
+
+    public function testGetPaperIdCacheIsKeyedPerDocid(): void
+    {
+        $this->seedPaperIdCache([1 => 100, 2 => 200]);
+
+        $rp = new \ReflectionProperty(Episciences_Mail::class, '_docid');
+        $rp->setAccessible(true);
+
+        $rp->setValue($this->mail, 1);
+        self::assertSame(100, $this->invokeGetPaperId($this->mail));
+
+        $rp->setValue($this->mail, 2);
+        self::assertSame(200, $this->invokeGetPaperId($this->mail));
+    }
+
+    public function testClearCacheResetsStaticCache(): void
+    {
+        $this->seedPaperIdCache([1 => 100]);
+
+        Episciences_Mail::clearCache();
+
+        $rp = new \ReflectionProperty(Episciences_Mail::class, '_cache');
+        $rp->setAccessible(true);
+        self::assertSame([], $rp->getValue());
+    }
+
+    // =========================================================================
+    // setDocid: generated URLs use the mail's own journal code
+    // (RVCODE is null in CLI commands processing several journals)
+    // =========================================================================
+
+    private function setReviewCode(?string $code): void
+    {
+        $rp = new \ReflectionProperty(Episciences_Mail::class, '_reviewCode');
+        $rp->setAccessible(true);
+        $rp->setValue($this->mail, $code);
+    }
+
+    public function testSetDocidBuildsUrlsWithMailReviewCode(): void
+    {
+        $this->setReviewCode('myjournal');
+        $this->mail->setDocid(42, 7);
+
+        $tags = $this->mail->getTags();
+        $baseUrl = SERVER_PROTOCOL . '://myjournal.' . DOMAIN;
+
+        self::assertSame($baseUrl . '/42', $tags[Episciences_Mail_Tags::TAG_PAPER_VIEW_URL]);
+        self::assertSame($baseUrl . '/administratepaper/view/id/42', $tags[Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL]);
+        self::assertSame($baseUrl . '/paper/rating/id/42', $tags[Episciences_Mail_Tags::TAG_PAPER_RATING_URL]);
+    }
+
+    // =========================================================================
+    // isInHistory: a single mail log entry is scoped like the history list
+    // =========================================================================
+
+    public function testIsInHistoryRejectsNonPositiveIdWithoutQuerying(): void
+    {
+        self::assertFalse($this->mail->isInHistory(0, [1, 2]));
+        self::assertFalse($this->mail->isInHistory(-5, [1, 2]));
+    }
+
+    private function assembleHistoryEntryQuery(int $id, array $docIds, array $options = []): string
+    {
+        $this->mail->setRvid(3);
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getHistoryEntryQuery');
+        $method->setAccessible(true);
+        return $method->invoke($this->mail, $id, $docIds, $options)->assemble();
+    }
+
+    public function testHistoryEntryQueryIsScopedByIdAndJournal(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10, 11]);
+
+        self::assertStringContainsString('(ID = 42)', $sql);
+        self::assertStringContainsString('(RVID = 3)', $sql);
+        self::assertStringContainsString('DOCID IN (10,11)', $sql);
+    }
+
+    public function testHistoryEntryQueryStrictModeExcludesMailsWithoutDocument(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10], ['strict' => true]);
+
+        self::assertStringNotContainsString('DOCID IS NULL', $sql);
+        self::assertStringContainsString('DOCID IN (10)', $sql);
+    }
+
+    public function testHistoryEntryQueryWithoutAllowedDocumentsOnlyKeepsOwnOrGeneralMails(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, []);
+
+        self::assertStringNotContainsString('DOCID IN', $sql);
+        self::assertStringContainsString('DOCID IS NULL OR UID', $sql);
+    }
+
+    public function testHistoryEntryQueryIgnoresSearchFilter(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10], ['search' => 'anything']);
+
+        self::assertStringNotContainsString('LIKE', $sql);
+    }
+
+    // =========================================================================
+    // Credential-bearing links must not reach the mail log
+    // =========================================================================
+
+    public function testLoggableBodyMasksTokenLink(): void
+    {
+        $url = 'https://example.org/user/resetpassword/token/abc123';
+        $this->mail->setRawBody('Reset: ' . Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $url);
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+        $logged = $method->invoke($this->mail);
+
+        self::assertStringNotContainsString('abc123', $logged);
+        self::assertStringContainsString('Reset:', $logged);
+        // The mail actually sent still carries the real link
+        self::assertStringContainsString('abc123', $this->mail->getBody());
+    }
+
+    public function testLoggableBodyMasksUsernameList(): void
+    {
+        $this->mail->setRawBody('Logins: ' . Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST, '- jdoe');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+
+        self::assertStringNotContainsString('jdoe', $method->invoke($this->mail));
+    }
+
+    public function testLoggableBodyUnchangedWithoutTokenTag(): void
+    {
+        $this->mail->setRawBody('Hello');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+
+        self::assertSame('Hello', $method->invoke($this->mail));
+    }
+
+    public function testLoggableBodyMasksUsernameAndInvitationLinks(): void
+    {
+        $this->mail->setRawBody(sprintf(
+            '%s %s %s',
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+            Episciences_Mail_Tags::TAG_INVITATION_URL,
+            Episciences_Mail_Tags::TAG_INVITATION_LINK
+        ));
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME, 'jdoe');
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_URL, 'https://example.org/inv/secret1');
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_LINK, 'https://example.org/inv/secret2');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+        $logged = $method->invoke($this->mail);
+
+        self::assertStringNotContainsString('jdoe', $logged);
+        self::assertStringNotContainsString('secret1', $logged);
+        self::assertStringNotContainsString('secret2', $logged);
+    }
+
+    public function testLogDataContentIsMasked(): void
+    {
+        $url = 'https://example.org/user/reset/token/abc123';
+        $this->mail->setRawBody('Reset: ' . Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $url);
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'buildLogData');
+        $method->setAccessible(true);
+        $data = $method->invoke($this->mail, 1, 'a@example.org', 'a@example.org', 'b@example.org', null, null, null);
+
+        self::assertStringNotContainsString('abc123', $data['CONTENT']);
+        self::assertStringContainsString('Reset:', $data['CONTENT']);
+    }
+
+    public function testFailureDetailsBodyIsMasked(): void
+    {
+        $this->mail->setRawBody('Reset: ' . Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, 'https://example.org/user/reset/token/abc123');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'buildFailureDetails');
+        $method->setAccessible(true);
+        $details = $method->invoke($this->mail);
+
+        self::assertStringNotContainsString('abc123', $details['body']);
+        self::assertStringContainsString('Reset:', $details['body']);
+    }
+
+    // =========================================================================
+    // getDecodedSubject()
+    // =========================================================================
+
+    public function testGetDecodedSubjectDecodesTheEncodedSubject(): void
+    {
+        // Constructor-free double: the constructor looks up the journal and the mail path
+        $mail = $this->getMockBuilder(Episciences_Mail::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSubject'])
+            ->getMock();
+        $mail->method('getSubject')->willReturn('=?UTF-8?Q?R=C3=A9vision_demand=C3=A9e?=');
+
+        self::assertSame('Révision demandée', $mail->getDecodedSubject());
+    }
+
+    public function testGetDecodedSubjectWithoutSubjectReturnsAnEmptyStringWithoutDeprecation(): void
+    {
+        $deprecations = [];
+        set_error_handler(static function (int $errno, string $errstr) use (&$deprecations): bool {
+            $deprecations[] = $errstr;
+            return true;
+        }, E_DEPRECATED);
+
+        try {
+            $subject = $this->mail->getDecodedSubject();
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame('', $subject);
+        self::assertSame([], $deprecations);
     }
 }

@@ -27,6 +27,7 @@ coverage-*.xml
 # Private configs
 /config/pwd.json
 /tests/config/env-test.php
+/tests/config/pwd.json
 # Mappings of Episicences journals Id HAL referential Ids
 /config/halJournalMappings.json
 
@@ -71,17 +72,30 @@ assets/node_modules/
 
 #PHPunit
 /.phpunit.result.cache
+/.phpunit.cache/
 
 /tmp/
 /docker-compose.override.yml
 /.user.ini
 /logs/
 /config/translationUpdater-config.yaml
+/config/translations-update-config.yaml
 
 /scripts/stats/stats.conf
 /scripts/stats/sites_config.csv
+/scripts/zbjats/journals.ini
 /tools/
 /.gemini/
 /scripts/checkcasusers.php
 /scripts/checkDoi.php
 /build/
+/composer
+
+# SonarQube
+/.scannerwork/
+/.sonar/
+/.phpunit.cache/
+
+# Playwright
+/playwright-report/
+/test-results/

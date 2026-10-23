@@ -33,7 +33,10 @@ class SectionController extends Zend_Controller_Action
 
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
 
-            if ($form->isValid($request->getPost())) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($request->getPost())) {
 
                 $formValues = $form->getValues();
                 $section = new Episciences_Section($formValues);
@@ -57,7 +60,7 @@ class SectionController extends Zend_Controller_Action
 
                 $this->_helper->redirector('index', 'section');
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
                 return;
@@ -93,7 +96,10 @@ class SectionController extends Zend_Controller_Action
 
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
 
-            if ($form->isValid($request->getPost())) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($request->getPost())) {
 
                 $values = $form->getValues();
                 $section->setOptions($values);
@@ -111,6 +117,19 @@ class SectionController extends Zend_Controller_Action
 
                     $message = '<strong>' . $this->view->translate("Vos modifications ont bien été prises en compte.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+
+                    if (Episciences_SectionsManager::isPublishedPapersInSection((int)$id)) {
+                        $publishedPapers = Episciences_PapersManager::getList(
+                            ['is' => ['sid' => (int)$id, 'status' => Episciences_Paper::STATUS_PUBLISHED]]
+                        );
+                        foreach ($publishedPapers as $publishedPaper) {
+                            try {
+                                \Episciences\Solr\Indexing\Enqueue\SolrIndexing::enqueueIndex($publishedPaper->getDocid());
+                            } catch (Exception $e) {
+                                trigger_error($e->getMessage());
+                            }
+                        }
+                    }
                 } else {
                     $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
@@ -118,7 +137,7 @@ class SectionController extends Zend_Controller_Action
 
                 $this->_helper->redirector('index', 'section');
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
             }
@@ -141,10 +160,14 @@ class SectionController extends Zend_Controller_Action
         $request = $this->getRequest();
         $isAjax = $request->isPost() && $request->getPost('ajax');
 
-        if ($isAjax){
+        if ($isAjax && !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            // Shown by the delete button as the reason of the failure
+            $respond = $this->view->translate('Votre session a expiré, veuillez réessayer.');
+        } elseif ($isAjax){
             $params = $request->getPost('params');
             $id = ($params['id']) ?: $request->getQuery('id');
-            $respond = Episciences_SectionsManager::delete($id);
+            // Only sections of the current journal can be deleted
+            $respond = Episciences_SectionsManager::find((int) $id, RVID) ? Episciences_SectionsManager::delete((int) $id) : false;
         }
 
         $this->_helper->viewRenderer->setNoRender();
@@ -159,11 +182,16 @@ class SectionController extends Zend_Controller_Action
     public function sortAction()
     {
         $request = $this->getRequest();
-        $params = $request->getPost();
-        $params['rvid'] = RVID;
-
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
+
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        $params = $request->getPost();
+        $params['rvid'] = RVID;
 
         Episciences_VolumesAndSectionsManager::sort($params, 'SID');
         $this->_helper->viewRenderer->setNoRender();
@@ -180,7 +208,12 @@ class SectionController extends Zend_Controller_Action
             return false;
         }
 
-        $section = Episciences_SectionsManager::find($sid);
+        $section = Episciences_SectionsManager::find($sid, RVID);
+        if (!$section) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return false;
+        }
         $currentEditors = $section->getEditors();
         $this->view->editorsForm = Episciences_SectionsManager::getEditorsForm($currentEditors);
 
@@ -196,14 +229,17 @@ class SectionController extends Zend_Controller_Action
         $request = $this->getRequest();
         $sid = ($request->getPost('sid')) ? $request->getPost('sid') : $request->getParam('sid');
 
-        if ($request->isPost()) {
+        if ($request->isPost() && Episciences_Csrf_Helper::validateRequestToken($request)) {
 
             // Rédacteurs nouvellement assignés
             $submittedEditors = $request->getPost('editors');
             $editors = ($submittedEditors) ? array_map('intval', $submittedEditors) : [];
 
             // Rédacteurs déjà assignés
-            $section = Episciences_SectionsManager::find($sid);
+            $section = Episciences_SectionsManager::find($sid, RVID);
+            if (!$section) {
+                return;
+            }
             $currentEditors = ($section->getEditors()) ? array_keys($section->getEditors()) : [];
 
             // Tri des rédacteurs ajoutés des rédacteurs supprimés
@@ -240,7 +276,12 @@ class SectionController extends Zend_Controller_Action
         $params = $request->getPost();
         $sid = $params['sid'];
 
-        $section = Episciences_SectionsManager::find($sid);
+        $section = Episciences_SectionsManager::find($sid, RVID);
+        if (!$section) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
         $editors = $section->getEditors();
 
         $this->view->editors = $editors;
@@ -307,4 +348,4 @@ class SectionController extends Zend_Controller_Action
         $this->view->section = $section;
     }
 
-}
+}

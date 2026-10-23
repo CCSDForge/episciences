@@ -1,12 +1,20 @@
 <?php
 
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Psr\Log\LogLevel;
 
 class Episciences_PapersManager
 {
 
     public const NONE_FILTER = '0';
     public const WITH_FILTER = '-1';
+    // "suggestion" filter value matching any known decision suggestion type
+    public const ANY_SUGGESTION_FILTER = 'any';
+    // Only the paper management lists offer the decision-suggestion filter
+    public const SUGGESTION_FILTER_CONTROLLER = 'administratepaper';
+    public const ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE = 'acceptedAskAuthorsFinalVersion';
 
     /**
      * @return array
@@ -76,18 +84,60 @@ class Episciences_PapersManager
 
         // order
         if (array_key_exists('order', $settings)) {
-            if (is_array($settings['order'])) {
-                foreach ($settings['order'] as $value) {
-                    $select->order(strtoupper($value));
-                }
-            } else {
-                $select->order(strtoupper($settings['order']));
+            $orders = is_array($settings['order']) ? $settings['order'] : [$settings['order']];
+            foreach ($orders as $value) {
+                $select = self::applyOrderExpression($select, $value);
             }
         } else {
             $select->order('WHEN DESC');
         }
 
         return $select;
+    }
+
+    private static function applyOrderExpression(Zend_Db_Select $select, string $value): Zend_Db_Select
+    {
+        $parts = preg_split('/\s+/', trim($value), 2);
+        $col = strtoupper($parts[0]);
+        $dir = isset($parts[1]) && strtoupper($parts[1]) === 'DESC' ? 'DESC' : 'ASC';
+
+        $fromParts = $select->getPart(Zend_Db_Select::FROM);
+
+        return match ($col) {
+            'CONTRIBUTOR_SORT' => isset($fromParts['sort_contributor'])
+                ? $select->order("sort_contributor.SCREEN_NAME $dir")
+                : $select
+                    ->joinLeft(['sort_contributor' => T_USERS], 'papers.UID = sort_contributor.UID', [])
+                    ->order("sort_contributor.SCREEN_NAME $dir"),
+            'REVIEWER_SORT'   => self::applyAssignmentSortJoin($select, 'reviewer', $dir),
+            'EDITOR_SORT'     => self::applyAssignmentSortJoin($select, 'editor', $dir),
+            'COPYEDITOR_SORT' => self::applyAssignmentSortJoin($select, 'copyeditor', $dir),
+            default           => $select->order("$col $dir"),
+        };
+    }
+
+    private static function applyAssignmentSortJoin(Zend_Db_Select $select, string $role, string $dir): Zend_Db_Select
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $alias = 'sort_' . $role;
+
+        $subQuery = $db->select()
+            ->from(
+                ['ua' => T_ASSIGNMENTS],
+                ['ITEMID', 'sort_name' => new Zend_Db_Expr('MIN(u.SCREEN_NAME)')]
+            )
+            ->join(['u' => T_USERS], 'ua.UID = u.UID', [])
+            ->where('ua.ITEM = ?', 'paper')
+            ->where('ua.ROLEID = ?', $role)
+            ->where('ua.RVID = ?', RVID)
+            ->where('ua.STATUS != ?', Episciences_User_Assignment::STATUS_INACTIVE)
+            ->group('ua.ITEMID');
+
+        $fromParts = $select->getPart(Zend_Db_Select::FROM);
+        if (!isset($fromParts[$alias])) {
+            $select->joinLeft([$alias => $subQuery], "papers.DOCID = {$alias}.ITEMID", []);
+        }
+        return $select->order("{$alias}.sort_name $dir");
     }
 
     /**
@@ -118,9 +168,19 @@ class Episciences_PapersManager
             $volumes = (array_key_exists('volumes', $settings)) ? $settings['volumes'] : [];
             $sections = (array_key_exists('sections', $settings)) ? $settings['sections'] : [];
 
-            $select = self::dataTableSearchQuery($select, $word, $volumes, $sections);
+            $select = self::dataTableSearchQuery($select, $word, $volumes, $sections, self::extractFilteredRvid($settings));
         }
         return $select;
+    }
+
+    /**
+     * @param array $settings
+     * @return int|null Journal to scope the query to, or null to fall back to the global RVID constant
+     */
+    private static function extractFilteredRvid(array $settings): ?int
+    {
+        $rvid = $settings['is']['rvid'] ?? $settings['is']['RVID'] ?? null;
+        return is_numeric($rvid) ? (int)$rvid : null;
     }
 
     /**
@@ -134,6 +194,7 @@ class Episciences_PapersManager
     {
         $validFilters = ['rvid', 'repoid', 'uid', 'docid', 'vid', 'sid', 'status'];
         if (array_key_exists('is', $settings)) {
+            $filteredRvid = self::extractFilteredRvid($settings);
             foreach ($settings['is'] as $setting => $value) {
                 if (in_array(strtolower($setting), $validFilters)) {
                     $setting = strtoupper($setting);
@@ -145,7 +206,7 @@ class Episciences_PapersManager
                         }
 
                     } else {
-                        $select = self::volumesFilter($select, $value, $isFilterInfos);
+                        $select = self::volumesFilter($select, (array)$value, $isFilterInfos, $filteredRvid);
                     }
 
                 }
@@ -164,6 +225,10 @@ class Episciences_PapersManager
 
                 if ($setting === 'repositories') {
                     $select = self::applyRepositoriesFilter($select, $value);
+                }
+
+                if ($setting === 'suggestion' && self::isSuggestionFilterAllowed()) {
+                    $select = self::applySuggestionFilter($select, $value);
                 }
             }
         }
@@ -187,12 +252,13 @@ class Episciences_PapersManager
      * @param Zend_Db_Select $select
      * @param array $value
      * @param bool $includeSecondaryVolume
+     * @param int|null $rvid Journal to scope the volume lookup to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      */
-    private static function volumesFilter(Zend_Db_Select $select, array $value, bool $includeSecondaryVolume = false): \Zend_Db_Select
+    private static function volumesFilter(Zend_Db_Select $select, array $value, bool $includeSecondaryVolume = false, ?int $rvid = null): \Zend_Db_Select
     {
         // Filtrage par volume secondaire : inclure l'article s'il appartient à un volume primaire(git#72)
-        $select1 = self::getVolumesQuery();
+        $select1 = self::getVolumesQuery(['DOCID'], $rvid);
 
         $select1->where(" st.VID IN (?)", $value);
 
@@ -207,16 +273,17 @@ class Episciences_PapersManager
 
     /**
      * @param array $fields
+     * @param int|null $rvid Journal to scope the query to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      */
-    public static function getVolumesQuery(array $fields = ['DOCID']): \Zend_Db_Select
+    public static function getVolumesQuery(array $fields = ['DOCID'], ?int $rvid = null): \Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         return $db
             ->select()
             ->from(['st' => T_PAPERS], $fields)
             ->joinLeft(['vpt' => T_VOLUME_PAPER], 'st.DOCID = vpt.DOCID', [])
-            ->where('st.RVID = ?', RVID);
+            ->where('st.RVID = ?', $rvid ?? RVID);
     }
 
     /**
@@ -455,10 +522,11 @@ class Episciences_PapersManager
      * @param String $word
      * @param array $volumes
      * @param array $sections
+     * @param int|null $rvid Journal to scope the secondary-volume lookup to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      * @throws Zend_Db_Select_Exception
      */
-    private static function dataTableSearchQuery(Zend_Db_Select $select, string $word = '', array $volumes = [], array $sections = []): \Zend_Db_Select
+    private static function dataTableSearchQuery(Zend_Db_Select $select, string $word = '', array $volumes = [], array $sections = [], ?int $rvid = null): \Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -496,7 +564,7 @@ class Episciences_PapersManager
                 //Volume primaire
                 $where .= "OR VID IN ($volumeCondition) ";
                 //Inclure les documents qui ont un volume secondaire
-                $papersWithSecondaryVolume = self::getVolumesQuery()->where("vpt.VID IN ($volumeCondition) ");
+                $papersWithSecondaryVolume = self::getVolumesQuery(['DOCID'], $rvid)->where("vpt.VID IN ($volumeCondition) ");
                 $where .= "OR DOCID IN ($papersWithSecondaryVolume) ";
             }
 
@@ -642,35 +710,46 @@ class Episciences_PapersManager
     }
 
     /**
-     * Renvoie un tableau de papiers triés par la clé passée en paramètres
-     * @param $list
-     * @param $key
-     * @return false|mixed
+     * Counts the papers of a review with a pending decision suggestion, per suggestion type.
+     * Single grouped query: the dashboard needs all three counts at once.
+     *
+     * @param int $rvId Review id
+     * @return array<int, int> [Episciences_CommentsManager::TYPE_SUGGESTION_* => count], every known
+     *                         type present, missing types counted as 0
      */
-    public static function sortBy($list, $key)
+    public static function countPendingSuggestionsByType(int $rvId): array
     {
-        if (empty($list)) {
-            return false;
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $types = Episciences_CommentsManager::$suggestionTypes;
+
+        $select = $db->select()
+            ->from(['c' => T_PAPER_COMMENTS], ['TYPE', 'nb' => new Zend_Db_Expr('COUNT(DISTINCT c.DOCID)')])
+            ->join(['p' => T_PAPERS], 'c.DOCID = p.DOCID', [])
+            ->where('p.RVID = ?', $rvId)
+            ->where('p.STATUS NOT IN (?)', self::getFinalizedStatusForSuggestions())
+            ->where(self::getPendingSuggestionCondition($types))
+            ->group('c.TYPE');
+
+        $counts = array_fill_keys($types, 0);
+
+        foreach ($db->fetchAll($select) as $row) {
+            $counts[(int)$row['TYPE']] = (int)$row['nb'];
         }
 
-        $result = [];
-        foreach ($list as $id => $item) {
-            $method = 'get' . ucfirst(strtolower($key));
-            $itemKey = 0;
-            if (method_exists($item, $method)) {
-                $itemKey = $item->$method();
-            }
-            $result[$itemKey][$id] = $item;
-        }
+        return $counts;
+    }
 
-        Episciences_Tools::multi_ksort($result);
-
-        if ($key === 'STATUS') {
-            uksort($result, 'self::statusCmp');
-        }
-
-
-        return $result;
+    /**
+     * Counts the papers of a review with a pending decision suggestion of the given type
+     *
+     * @param int $rvId Review id
+     * @param int $type Suggestion type (Episciences_CommentsManager::TYPE_SUGGESTION_*)
+     * @return int
+     */
+    public static function countPapersWithPendingSuggestions(int $rvId, int $type): int
+    {
+        return self::countPendingSuggestionsByType($rvId)[$type] ?? 0;
     }
 
     /**
@@ -793,76 +872,73 @@ class Episciences_PapersManager
         // fetch assignments (invitations don't have a docid, and are linked to an assignment)
         $select = self::getLatestInvitationByDocIdQuery($docId);
 
-        //$debugQuery = $select->__toString();
-
         $data = $db?->fetchAll($select);
 
-        //reviewers array
+        // Reviewer cache, shared by every invitation of this paper.
+        // Regular users are stored under their UID, temporary ones under $reviewers['tmp'][UID],
+        // because the two identity spaces use independent auto-increment sequences.
         $reviewers = ['tmp' => []];
 
-        //prepare array
+        // Group the assignment history rows by invitation.
+        // USER_ASSIGNMENT is insert-only: a single invitation accumulates one row per status
+        // transition ('pending' -> 'active' -> 'inactive' ...), and all of them carry the same
+        // INVITATION_AID.
         $source = [];
         foreach ($data as $row) {
 
-            if (array_key_exists($row['ASSIGNMENT_ID'], $source)) { // remove duplicated invitations
+            // WARNING -- this test does not do what its original comment ("remove duplicated
+            // invitations") claimed: it compares an ASSIGNMENT_ID against the *first-level* keys
+            // of $source, which are INVITATION_AIDs. Since the row that created the invitation
+            // always has ASSIGNMENT_ID === INVITATION_AID (Episciences_User_Invitation::setAid()
+            // stores the id of the 'pending' assignment), what it actually does is drop that
+            // original row as soon as the invitation has more than one row.
+            //
+            // It is deliberately left untouched here: removing it is a behaviour change, not a
+            // clean-up. The original row would come back, the $assignmentId === $invitationAid
+            // branch of mergeAssignmentHistory() would start firing, and ASSIGNMENT_DATE would
+            // switch from "date of the last status change" to "date of the invitation".
+            // Episciences_Mail_Reminder::getLatestInvitationDate() reads exactly that field to
+            // schedule reviewer reminders, so reminders would suddenly be computed from the
+            // invitation date instead of the acceptance date. That deserves its own pull request.
+            //
+            // Note that the guard is redundant for actual duplicates anyway: the assignment
+            // below is keyed by ASSIGNMENT_ID, so a repeated row would simply overwrite itself.
+            if (array_key_exists($row['ASSIGNMENT_ID'], $source)) {
                 continue;
             }
+
             self::addAnswersDate($row);
             $source[$row['INVITATION_AID']][$row['ASSIGNMENT_ID']] = $row;
         }
 
-        //sort array
         $invitations = [];
-        foreach ($source as $aid => $row) {
-            $reviewer = null;
-            $tmp = [];
-            foreach ($row as $id => $invitation) {
-                $isTmpUser = false;
-                //recuperation du dernier état connu de l'invitation
-                if (empty($tmp)) {
-                    $tmp = $invitation;
-                }
-                //recuperation des infos de l'invitation d'origine, s'il y a eu une réponse à l'invitation
-                if (!empty($tmp) && $aid === $id) {
-                    $tmp['ASSIGNMENT_DATE'] = $invitation['ASSIGNMENT_DATE'];
-                }
 
-                //fetch reviewer detail
-                if ($invitation['TMP_USER']) {
-                    $isTmpUser = true;
-                    if (!array_key_exists($invitation['UID'], $reviewers['tmp'])) {
-                        $reviewer = new Episciences_User_Tmp();
+        foreach ($source as $aid => $historyRows) {
 
-                        if (!empty($reviewer->find($invitation['UID']))) {
-                            $reviewer->generateScreen_name();
-                            $reviewers['tmp'][$invitation['UID']] = $reviewer;
-                        }
+            // One entry per invitation, whatever the number of history rows it holds.
+            // This push used to sit inside the loop over the history rows, which appended the
+            // very same invitation once per row: reviewers were then listed several times by
+            // sortInvitations().
+            $invitation = self::mergeAssignmentHistory($historyRows, (int)$aid);
 
-                    }
-                } elseif (!array_key_exists($invitation['UID'], $reviewers)) {
-                    $reviewer = new Episciences_Reviewer();
-                    if ($reviewer->findWithCAS($invitation['UID'])) {
-                        $reviewers[$invitation['UID']] = $reviewer;
-                    } else {
-                        trigger_error('CAS USER UID = ' . $invitation['UID'] . ' NOT FOUND', E_USER_WARNING);
-                        continue;
-                    }
-                }
-
-
-                if ($reviewer) {
-                    $tmp['reviewer'] = self::reviewerProcess($reviewer, $docId, $rvId, $isTmpUser);
-                }
-
-                $key = !$isTmpUser ? $invitation['UID'] : 'tmp_' . $invitation['UID'];
-
-                if (!array_key_exists('reviewer', $tmp) && array_key_exists($key, $reviewers)) {
-
-                    $tmp['reviewer'] = self::reviewerProcess($reviewers[$key], $docId, $rvId, $isTmpUser);
-                }
-                $invitations[$key][] = $tmp;
+            if ($invitation === []) {
+                continue;
             }
 
+            $isTmpUser = (bool)$invitation['TMP_USER'];
+            $uid = (int)$invitation['UID'];
+            $reviewer = self::findInvitationReviewer($uid, $isTmpUser, $reviewers);
+
+            if ($reviewer === null) {
+                // No CAS identity: there is nothing to display for this invitation.
+                trigger_error('CAS USER UID = ' . $uid . ' NOT FOUND', E_USER_WARNING);
+                continue;
+            }
+
+            $invitation['reviewer'] = self::reviewerProcess($reviewer, $docId, $rvId, $isTmpUser);
+
+            $key = $isTmpUser ? 'tmp_' . $uid : $uid;
+            $invitations[$key][] = $invitation;
         }
 
         if ($sorted) {
@@ -872,6 +948,87 @@ class Episciences_PapersManager
         }
 
         return $result;
+    }
+
+    /**
+     * Collapses the assignment history of a single invitation into the one row to display.
+     *
+     * USER_ASSIGNMENT is insert-only, so an invitation is represented by as many rows as it went
+     * through status transitions. Only one of them is meaningful to the caller: the most recent
+     * state of the invitation.
+     *
+     * @param array<int, array<string, mixed>> $historyRows rows of one invitation, keyed by
+     *                                                      ASSIGNMENT_ID and ordered by
+     *                                                      ASSIGNMENT_DATE DESC (most recent first)
+     * @param int $invitationAid ASSIGNMENT_ID of the row that created the invitation
+     * @return array<string, mixed> empty when $historyRows is empty
+     */
+    private static function mergeAssignmentHistory(array $historyRows, int $invitationAid): array
+    {
+        $merged = [];
+
+        foreach ($historyRows as $assignmentId => $row) {
+
+            // The query orders by ASSIGNMENT_DATE DESC: the first row is the latest known state.
+            if ($merged === []) {
+                $merged = $row;
+            }
+
+            // ... but the date of the original assignment (when the reviewer was invited) is the
+            // one worth showing once the invitation has been answered.
+            //
+            // In practice this branch only fires for invitations that still have a single row:
+            // the guard in getInvitations() drops the original row from any longer history. See
+            // the comment there before relying on this.
+            if ($assignmentId === $invitationAid) {
+                $merged['ASSIGNMENT_DATE'] = $row['ASSIGNMENT_DATE'];
+            }
+        }
+
+        return $merged;
+    }
+
+    /**
+     * Resolves, and caches, the user an invitation was sent to.
+     *
+     * @param int $uid
+     * @param bool $isTmpUser
+     * @param array<int|string, mixed> $reviewers cache shared across the invitations of a paper,
+     *                                            updated in place
+     * @return Episciences_User|null null only when the CAS lookup of a regular user fails, which
+     *                               makes the invitation undisplayable
+     */
+    private static function findInvitationReviewer(int $uid, bool $isTmpUser, array &$reviewers): ?Episciences_User
+    {
+        if ($isTmpUser) {
+
+            if (!array_key_exists($uid, $reviewers['tmp'])) {
+                $tmpReviewer = new Episciences_User_Tmp();
+
+                // find() legitimately fails when the temporary account has been removed, typically
+                // after the reviewer created a real one. The invitation is still returned rather
+                // than hidden from the editors, which is the pre-existing behaviour.
+                if (!empty($tmpReviewer->find($uid))) {
+                    $tmpReviewer->generateScreen_name();
+                }
+
+                $reviewers['tmp'][$uid] = $tmpReviewer;
+            }
+
+            return $reviewers['tmp'][$uid];
+        }
+
+        if (!array_key_exists($uid, $reviewers)) {
+            $reviewer = new Episciences_Reviewer();
+
+            if (!$reviewer->findWithCAS($uid)) {
+                return null;
+            }
+
+            $reviewers[$uid] = $reviewer;
+        }
+
+        return $reviewers[$uid];
     }
 
     /**
@@ -1605,6 +1762,75 @@ class Episciences_PapersManager
 
         return $form;
     }
+    /**
+     * Build JSON for hidden_cc / hidden_bcc (same shape as public/js/library/es.mail.js addUser).
+     */
+    private static function recipientHiddenJsonFromSemicolonString(string $semicolonMails): string
+    {
+        $semicolonMails = trim($semicolonMails);
+        if ($semicolonMails === '') {
+            return '[]';
+        }
+        $parts = array_values(array_filter(array_map('trim', explode(';', $semicolonMails))));
+        $out = [];
+        foreach ($parts as $i => $p) {
+            $out[] = [
+                'key' => 'paper-modal-init-' . $i,
+                'value' => $p,
+                'uid' => null,
+            ];
+        }
+
+        return json_encode($out, JSON_UNESCAPED_UNICODE);
+    }
+
+    private static function applyRecipientTagDecorators(\Zend_Form_Element $element, string $formId, string $field): void
+    {
+        $tagsId = $formId . '-' . $field . '-tags';
+        $decorators = $element->getDecorators();
+        $element->clearDecorators()
+            ->addDecorator(['openDiv' => 'HtmlTag'], [
+                'tag' => 'span',
+                'id' => $tagsId,
+                'placement' => 'APPEND',
+                'openOnly' => true,
+            ])
+            ->addDecorator(['closeDiv' => 'HtmlTag'], [
+                'tag' => 'span',
+                'placement' => 'APPEND',
+                'closeOnly' => true,
+            ])
+            ->addDecorators($decorators);
+    }
+
+    /**
+     * Tag containers + JSON hiddens for CC/BCC (aligned with administrate mail UI).
+     *
+     * @param Ccsd_Form|Zend_Form_SubForm $form Form or SubForm containing cc/bcc elements
+     * @param Ccsd_Form|null $hiddenFieldsForm Form to add hidden fields to (defaults to $form)
+     * @throws Zend_Form_Exception
+     */
+    private static function addMailModalCcBccWithTags(
+        $form,
+        string $formId,
+        string $ccDefaults,
+        string $bccDefaults,
+        ?Ccsd_Form $hiddenFieldsForm = null
+    ): void {
+        $targetForm = $hiddenFieldsForm ?? $form;
+        foreach (['cc' => $ccDefaults, 'bcc' => $bccDefaults] as $field => $defaults) {
+            $el = $form->getElement($field);
+            if (!$el) {
+                continue;
+            }
+            self::applyRecipientTagDecorators($el, $formId, $field);
+            $targetForm->addElement('hidden', 'hidden_' . $field, [
+                'id' => $formId . '-hidden_' . $field,
+                'value' => self::recipientHiddenJsonFromSemicolonString($defaults),
+            ]);
+            $el->setValue('');
+        }
+    }
 
     /**
      * @param $default
@@ -1644,16 +1870,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $existingMails = '';
-        if (!empty($default['coAuthor'])) {
-            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
-        }
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
             'id' => $formId . '-cc',
-            'value' => $existingMails,
             'class' => 'autocomplete'
         ]);
 
@@ -1663,6 +1884,8 @@ class Episciences_PapersManager
             'id' => $formId . '-bcc',
             'class' => 'autocomplete'
         ]);
+
+        self::addMailModalCcBccWithTags($form, $formId, '', '');
 
         // from
         $form->addElement('text', 'from', [
@@ -1741,16 +1964,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $existingMails = '';
-        if (!empty($default['coAuthor'])) {
-            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
-        }
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
             'id' => $formId . '-cc',
-            'value' => $existingMails,
             'class' => 'autocomplete'
         ]);
 
@@ -1760,6 +1978,8 @@ class Episciences_PapersManager
             'id' => $formId . '-bcc',
             'class' => 'autocomplete'
         ]);
+
+        self::addMailModalCcBccWithTags($form, $formId, '', '');
 
         // from
         $form->addElement('text', 'from', [
@@ -1838,16 +2058,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $existingMails = '';
-        if (!empty($default['coAuthor'])) {
-            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
-        }
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
             'id' => $formId . '-cc',
-            'value' => $existingMails,
             'class' => 'autocomplete'
         ]);
 
@@ -1867,6 +2082,8 @@ class Episciences_PapersManager
             'value' => $bccVal,
             'class' => 'autocomplete'
         ]);
+
+        self::addMailModalCcBccWithTags($form, $formId, '', $bccVal);
 
         // from
         $form->addElement('text', 'from', [
@@ -1967,6 +2184,9 @@ class Episciences_PapersManager
             'class' => 'autocomplete'
         ]);
 
+        // Tags + hidden_cc/bcc on parent form (same form id as modal — required by es.mail.js)
+        self::addMailModalCcBccWithTags($askeditors_subform, $formId, '', '', $form);
+
         // from
         $askeditors_subform->addElement('text', 'from', [
             'id' => $formId . '-from',
@@ -2064,26 +2284,24 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $existingMails = '';
-        if (!empty($default['coAuthor'])) {
-            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
-        }
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
             'id' => $formId . '-cc',
-            'value' => $existingMails,
             'class' => 'autocomplete'
         ]);
 
         // bcc
+        $bccDefault = Episciences_Review::forYourInformation($docId);
         $form->addElement('text', 'bcc', [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
             'id' => $formId . '-bcc',
-            'value' => Episciences_Review::forYourInformation($docId),
+            'value' => $bccDefault,
             'class' => 'autocomplete'
         ]);
+
+        self::addMailModalCcBccWithTags($form, $formId, '', $bccDefault);
 
         // from
         $form->addElement('text', 'from', [
@@ -2228,33 +2446,71 @@ class Episciences_PapersManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $paper = Episciences_PapersManager::get($docid, false);
 
+        // get() returns false when the paper does not exist: bail out before purging
+        // anything rather than crashing on $paper->getPaperid() after 8 tables are gone.
+        if (!$paper instanceof Episciences_Paper) {
+            return false;
+        }
+        // Capture rvcode before deletion for Next.js cache revalidation
+        $rvcode = null;
+        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+        if ($journal !== false) {
+            $rvcode = $journal->getCode();
+        }
+        // Purge every table atomically: a failure mid-way must not leave the paper
+        // half-deleted with dangling rows in the remaining tables.
+        $db->beginTransaction();
+        try {
+
+
         // delete from database
-        Episciences_CommentsManager::deleteByDocid($docid);
-        Episciences_Mail_LogManager::deleteByDocid($docid);
+            Episciences_CommentsManager::deleteByDocid($docid);
+            Episciences_Mail_LogManager::deleteByDocid($docid);
 
-        $db->delete(T_PAPER_VISITS, ['DOCID = ?' => $docid]);
-        $db->delete(VISITS_TEMP, ['DOCID = ?' => $docid]);
-        $db->delete(T_LOGS, ['DOCID = ?' => $docid]);
-        $db->delete(T_REVIEWER_REPORTS, ['DOCID = ?' => $docid]);
-        $db->delete(T_PAPER_SETTINGS, ['DOCID = ?' => $docid]);
-        $db->delete(T_ALIAS, ['DOCID = ?' => $docid]);
-        $db->delete(T_PAPERS, ['DOCID = ?' => $docid]);
-        $db->delete(T_VOLUME_PAPER, ['DOCID = ?' => $docid]);
-        $db->delete(T_PAPER_LICENCES, ['docid = ?' => $docid]);
-        $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
+            $db->delete(T_PAPER_VISITS, ['DOCID = ?' => $docid]);
+            $db->delete(VISITS_TEMP, ['DOCID = ?' => $docid]);
+            $db->delete(T_LOGS, ['DOCID = ?' => $docid]);
+            $db->delete(T_REVIEWER_REPORTS, ['DOCID = ?' => $docid]);
+            $db->delete(T_PAPER_SETTINGS, ['DOCID = ?' => $docid]);
+            $db->delete(T_ALIAS, ['DOCID = ?' => $docid]);
+            $db->delete(T_PAPERS, ['DOCID = ?' => $docid]);
+            $db->delete(T_VOLUME_PAPER, ['DOCID = ?' => $docid]);
+            $db->delete(T_PAPER_LICENCES, ['docid = ?' => $docid]);
+            $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
+            $db->delete(T_PAPER_PROJECTS, ['paperid = ?' => $paper->getPaperid()]);
 
-        // delete paper folder and content
+            $db->commit();
+        } catch (Exception $e) {
+            $db->rollBack();
+            trigger_error(sprintf('Failed to delete paper #%s: %s', $docid, $e->getMessage()));
+            return false;
+        }
+
+        // Filesystem and index cleanup happen only after the DB purge is committed
+        // (they cannot participate in the transaction).
         if (defined('RVCODE') && defined('REVIEW_FILES_PATH') && $docid) {
             Episciences_Tools::deleteDir(self::buildDocumentPath($docid));
         }
 
         // remove from index
-        Ccsd_Search_Solr_Indexer::addToIndexQueue([$docid], 'episciences', 'DELETE', 'episciences');
+        try {
+            SolrIndexing::enqueueDelete((int)$docid);
+        } catch (Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+        }
 
         // TODO: delete user assignments
         // TODO: delete user invitations
         // TODO: delete user invitation answers
         // TODO: if published paper, update HAL metadata
+
+        // Enqueue Next.js cache revalidation for deleted article
+        if ($rvcode !== null) {
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "article-{$docid}",
+                "articles-{$rvcode}",
+            ]);
+        }
 
         return true;
 
@@ -2281,6 +2537,7 @@ class Episciences_PapersManager
         'VERSION',
         'REPOID',
         'TYPE',
+        'RECORD',
         'CONCEPT_IDENTIFIER',
         'FLAG',
         'WHEN',
@@ -2632,10 +2889,14 @@ class Episciences_PapersManager
         // accepted - waiting for authors validation
         $template_keys['acceptedAskAuthorValidation'] = Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION;
 
+        $loadedTemplates = Episciences_Mail_TemplatesManager::findManyByKeys(
+            array_values($template_keys),
+            RVCODE
+        );
+
         foreach ($template_keys as $template_name => $template_key) {
-            $oTemplate = new Episciences_Mail_Template();
+            $oTemplate = $loadedTemplates[$template_key] ?? new Episciences_Mail_Template();
             $oTemplate->setLocale($locale);
-            $oTemplate->findByKey($template_key);
             $oTemplate->loadTranslations();
 
             $templates[$template_name] = [
@@ -2656,12 +2917,14 @@ class Episciences_PapersManager
 
         $urlHelper = new Zend_View_Helper_Url();
 
-        $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
-        $url = $site . $urlHelper->url([
+        // Use the trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection in mail links.
+        $relativeUrl = $urlHelper->url([
                 'controller' => 'paper',
                 'action' => 'view',
                 'id' => $paper->getDocid()
             ]);
+        $url = rtrim(APPLICATION_URL, '/') . '/' . ltrim($relativeUrl, '/');
+        $site = rtrim(APPLICATION_URL, '/');
 
         $defaultTags = [
             Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $contributor->getScreenName(),
@@ -2737,6 +3000,9 @@ class Episciences_PapersManager
                     Episciences_Mail_Tags::TAG_DOI => $doi ?: $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_VOLUME_ID => $volumeId,
                     Episciences_Mail_Tags::TAG_VOLUME_NAME => $volumeName,
+                    Episciences_Mail_Tags::TAG_VOLUME_NUMBER => $volume?->getVol_num() ?: $translator->translate('Aucun', $locale),
+                    Episciences_Mail_Tags::TAG_VOLUME_YEAR => $volume?->getVol_year() ?: $translator->translate('Aucune', $locale),
+                    Episciences_Mail_Tags::TAG_VOLUME_TYPE => $volume?->getVol_type() ?: $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $volBiblioRef,
                     Episciences_Mail_Tags::TAG_SECTION_ID => $paper->getSid(),
                     Episciences_Mail_Tags::TAG_SECTION_NAME => $sectionName,
@@ -2797,21 +3063,47 @@ class Episciences_PapersManager
     }
 
     /**
-     * renome l'identifiant d'un article
-     * @param $old
-     * @param $new
-     * @return bool|int
+     * Update the contributor (owner) of a paper across all versions.
+     *
+     * @param int $paperId The PAPERID (applies to all versions of the article)
+     * @param int $newUid  The UID of the new contributor
+     * @return bool True if at least one row was updated
      */
+    public static function updateContributor(int $paperId, int $newUid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $affectedRows = $db->update(
+            T_PAPERS,
+            [
+                'UID' => $newUid,
+                'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()')
+            ],
+            ['PAPERID = ?' => $paperId]
+        );
+        return $affectedRows > 0;
+    }
 
-    public static function renameIdentifier($old, $new)
+    /**
+     * Rename the identifier of the versions of a paper, in its journal only.
+     * The same document can be submitted to several journals, or as another paper: those are left untouched.
+     *
+     * @param string $old
+     * @param string $new
+     * @param int $paperId the paper whose versions are renamed
+     * @param int $rvId the journal of the paper
+     * @return bool|int the number of renamed rows, false on error
+     */
+    public static function renameIdentifier($old, $new, int $paperId, int $rvId)
     {
         try {
-            if (!is_string($old) || !is_string($new)) {
+            if (!is_string($old) || !is_string($new) || $paperId <= 0 || $rvId <= 0) {
                 return false;
             }
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $data['IDENTIFIER'] = $new;
-            $where['IDENTIFIER = ?'] = (string)$old;
+            $where['IDENTIFIER = ?'] = $old;
+            $where['PAPERID = ?'] = $paperId;
+            $where['RVID = ?'] = $rvId;
             return $db->update(T_PAPERS, $data, $where);
         } catch (Exception $e) {
             return false;
@@ -2980,7 +3272,7 @@ class Episciences_PapersManager
         Episciences_Paper $paper, array $context, int $affectedRows
     ): int
     {
-        if (Episciences_Repositories::hasHook($context['repoId'])) {
+        if (Episciences_Repositories::handlesOwnEnrichment((int)$context['repoId'])) {
             $hookData = Episciences_Repositories::callHook('hookLinkedDataProcessing', [
                 'repoId' => $context['repoId'],
                 'identifier' => $context['identifier'],
@@ -3127,23 +3419,41 @@ class Episciences_PapersManager
      */
     public static function getReviewFormattingDeposedForm(array $default): \Zend_Form
     {
-        $form = self::getModalPaperStatusCommonForm($default, 'reviewFormattingDeposed');
-        $form->setAttrib('id', 'review-formatting-deposed-form');
+        $form = self::getModalPaperStatusCommonForm(
+            $default,
+            'reviewFormattingDeposed',
+            'review-formatting-deposed-form'
+        );
         $form->setAction('/administratepaper/reviewformattingdeposed/id/' . $default['id']);
         return $form;
     }
 
     /**
      * @param array $default
-     * @param string $prefix
+     * @param string $prefix element id prefix (e.g. authorSourcesRequest-to)
+     * @param string $formElementId HTML id on &lt;form&gt; (used for CC/BCC tag containers and hidden_* fields)
      * @param bool $displayDeadlineElement
      * @return Zend_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    private static function getModalPaperStatusCommonForm(array $default, string $prefix, bool $displayDeadlineElement = false): \Zend_Form
-    {
-        $form = new Ccsd_Form(['class' => 'form-horizontal']);
+    private static function getModalPaperStatusCommonForm(
+        array $default,
+        string $prefix,
+        string $formElementId,
+        bool $displayDeadlineElement = false
+    ): \Zend_Form {
+        $form = new Ccsd_Form([
+            'class' => 'form-horizontal',
+            'id' => $formElementId,
+        ]);
+
+        $id = $default['id'] ?? 0;
+        $csrfName = sprintf('csrf_%s_%s', $prefix,(int)$id);
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
+
+
         $subjectStr = 'Subject';
         $messageStr = 'Message';
 
@@ -3166,14 +3476,22 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $existingMails = '';
-        if (!empty($default['coAuthor'])) {
-            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
-        }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $prefix . '-cc', 'value' => $existingMails]);
+        $translator = Zend_Registry::get('Zend_Translate');
+        $contactsTitle = $translator->translate('Ajouter des destinataires');
+        $form->addElement('text', 'cc', [
+            'label' => '<a class="show_contacts_button" title="' . $contactsTitle . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'id' => $prefix . '-cc',
+            'class' => 'autocomplete',
+        ]);
 
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $prefix . '-bcc']);
+        $form->addElement('text', 'bcc', [
+            'label' => '<a class="show_contacts_button" title="' . $contactsTitle . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'id' => $prefix . '-bcc',
+            'class' => 'autocomplete',
+        ]);
+
+        self::addMailModalCcBccWithTags($form, $formElementId, '', '');
 
         // from
         $form->addElement('text', 'from', [
@@ -3192,20 +3510,30 @@ class Episciences_PapersManager
             'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>']);
 
         if ($displayDeadlineElement) {
+
+            $review = Episciences_ReviewsManager::find(RVID);
+            $isRequiredRevisionDeadline = (bool)$review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE);
+
             $subjectStr = '-revision-subject'; // see /public/js/administratepaper/view.js
             $messageStr = '-revision-message';
             $minDate = date('Y-m-d');
             $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
 
-            $form->addElement('date', $prefix . '-revision-deadline', [
-                'id' => $prefix . '-revision-deadline',
-                'label' => 'Date limite de réponse',
-                'class' => 'form-control',
-                'pattern' => '[A-Za-z]{3}',
-                'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Optionnelle'),
-                'attr-mindate' => $minDate,
-                'attr-maxdate' => $maxDate
-            ]);
+            $deadlineFieldOptions = [
+                    'id' => $prefix . '-revision-deadline',
+                    'label' => 'Date limite de réponse',
+                    'class' => 'form-control',
+                    'pattern' => '[A-Za-z]{3}',
+                    'placeholder' => !$isRequiredRevisionDeadline ? Zend_Registry::get('Zend_Translate')->translate('Optionnelle') : Zend_Registry::get('Zend_Translate')->translate('Veuillez préciser une date limite'),
+                    'attr-mindate' => $minDate,
+                    'attr-maxdate' => $maxDate
+            ];
+
+            if ($isRequiredRevisionDeadline) {
+                $deadlineFieldOptions['required'] = true;
+            }
+
+            $form->addElement('date', $prefix . '-revision-deadline', $deadlineFieldOptions );
 
         }
 
@@ -3235,8 +3563,11 @@ class Episciences_PapersManager
      */
     public static function getCeAcceptFinalVersionForm(array $default): \Zend_Form
     {
-        $form = self::getModalPaperStatusCommonForm($default, 'ceAcceptFinalVersionRequest');
-        $form->setAttrib('id', 'ready-to-publish-form');
+        $form = self::getModalPaperStatusCommonForm(
+            $default,
+            'ceAcceptFinalVersionRequest',
+            'ready-to-publish-form'
+        );
         $form->setAction('/administratepaper/copyeditingacceptfinalversion/id/' . $default['id']);
         return $form;
     }
@@ -3251,8 +3582,11 @@ class Episciences_PapersManager
     public static function getWaitingForAuthorSourcesForm(array $default): \Zend_Form
     {
 
-        $form = self::getModalPaperStatusCommonForm($default, 'authorSourcesRequest');
-        $form->setAttrib('id', 'waiting-for-author-sources-form');
+        $form = self::getModalPaperStatusCommonForm(
+            $default,
+            'authorSourcesRequest',
+            'waiting-for-author-sources-form'
+        );
         $form->setAction('/administratepaper/waitingforauthorsources/id/' . $default['id']);
 
         return $form;
@@ -3268,8 +3602,11 @@ class Episciences_PapersManager
     public static function getWaitingForAuthorFormatting(array $default): \Zend_Form
     {
 
-        $form = self::getModalPaperStatusCommonForm($default, 'authorFormattingRequest');
-        $form->setAttrib('id', 'waiting-for-author-formatting-form');
+        $form = self::getModalPaperStatusCommonForm(
+            $default,
+            'authorFormattingRequest',
+            'waiting-for-author-formatting-form'
+        );
         $form->setAction('/administratepaper/waitingforauthorformatting/id/' . $default['id']);
         return $form;
     }
@@ -3282,11 +3619,10 @@ class Episciences_PapersManager
      */
     public static function getAcceptedAskAuthorFinalVersionForm(array $default): \Zend_Form
     {
-        $type = 'acceptedAskAuthorsFinalVersion';
+        $type = self::ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE;
         $formId = $type . '-form';
         $formAction = '/administratepaper/acceptedaskauhorfinalversion/id/' . $default['id'] . '/type/' . $type;
-        $form = self::getModalPaperStatusCommonForm($default, $type, true);
-        $form->setAttrib('id', $formId);
+        $form = self::getModalPaperStatusCommonForm($default, $type, $formId, true);
         $form->setAction($formAction);
         return $form;
     }
@@ -3301,8 +3637,7 @@ class Episciences_PapersManager
     {
         $formId = 'accepted-ask-author-validation-form';
         $formAction = '/administratepaper/acceptedaskauthorvalidation/id/' . $default['id'];
-        $form = self::getModalPaperStatusCommonForm($default, 'acceptedAskAuthorValidation');
-        $form->setAttrib('id', $formId);
+        $form = self::getModalPaperStatusCommonForm($default, 'acceptedAskAuthorValidation', $formId);
         $form->setAction($formAction);
         return $form;
     }
@@ -3386,24 +3721,32 @@ class Episciences_PapersManager
     /**
      * @param array $coAuthors
      * @param Ccsd_Form $form
+     * @param string $formId
      * @return void
      * @throws Zend_Form_Exception
      */
     public static function getCoAuthorsForm(array $coAuthors, Ccsd_Form $form): void
     {
-// get a copy
+        // Get co-authors emails for the hidden field
         $strMail = self::getCoAuthorsMails($coAuthors);
         $strMail = substr($strMail, 0, -1);
-        $form->addElement('hidden', 'co-author-mail', ['value' => $strMail]);
-        $form->addElement('checkbox', 'copy-co-author', array(
+
+        // Use IDs that match the JavaScript in view.js (copycoauthor, coauthormail)
+        $form->addElement('hidden', 'coauthormail', [
+            'id' => 'coauthormail',
+            'value' => $strMail
+        ]);
+        // Label uses original French key - Zend_Form translates automatically
+        $form->addElement('checkbox', 'copycoauthor', [
+            'id' => 'copycoauthor',
             'label' => "Envoyer une copie de ce message aux co-auteur",
             'decorators' => [
                 'ViewHelper',
-                ['Label', array('placement' => 'APPEND')],
-                ['HtmlTag', array('tag' => 'div', 'class' => 'col-md-9 col-md-offset-3')]
+                ['Label', ['placement' => 'APPEND']],
+                ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']]
             ],
-            'value' => '1'
-        ));
+            'value' => '1'  // Checked by default - co-authors receive a copy
+        ]);
     }
 
     /**
@@ -3419,25 +3762,6 @@ class Episciences_PapersManager
             $strMail .= ";";
         }
         return $strMail;
-    }
-
-    /**
-     * @param $a
-     * @param $b
-     * @return int
-     */
-    private static function statusCmp($a, $b): int
-    {
-        $a = Episciences_Paper::$_statusOrder[$a];
-        $b = Episciences_Paper::$_statusOrder[$b];
-
-        if ($a === $b) {
-            $r = 0;
-        } else {
-            $r = ($a > $b) ? 1 : -1;
-        }
-
-        return $r;
     }
 
     /**
@@ -3533,7 +3857,10 @@ class Episciences_PapersManager
         }
 
         if ($order) {
-            $statusQuery->order('STATUS', $order);
+            // ZF1 Zend_Db_Select::order() ignores a second argument; the direction must
+            // be part of the column expression, otherwise the sort is silently dropped.
+            $direction = (strtoupper((string)$order) === 'DESC') ? 'DESC' : 'ASC';
+            $statusQuery->order('STATUS ' . $direction);
         }
 
         return $db->fetchCol($statusQuery);
@@ -3919,6 +4246,161 @@ class Episciences_PapersManager
     }
 
     /**
+     * Is the decision-suggestion filter available in the current context?
+     *
+     * Editors' decision suggestions are confidential and only meaningful on the paper management
+     * lists. The other lists that share the filter form show the current user's own papers
+     * ("paper/submitted") or the papers they review ("paper/ratings"), where exposing the pending
+     * suggestion would be both pointless and a disclosure.
+     *
+     * Single source of truth for showing the form element (Episciences_View_Helper_PaperFilter)
+     * and for applying it to the query, so the two cannot drift apart.
+     *
+     * @return bool
+     */
+    public static function isSuggestionFilterAllowed(): bool
+    {
+        $request = Zend_Controller_Front::getInstance()->getRequest();
+
+        return $request !== null
+            && $request->getControllerName() === self::SUGGESTION_FILTER_CONTROLLER
+            && Episciences_Auth::isAllowedToManagePaper();
+    }
+
+    /**
+     * @param Zend_Db_Select $select
+     * @param array<int, int|string>|string $values
+     * @return Zend_Db_Select
+     */
+    private static function applySuggestionFilter(Zend_Db_Select $select, array|string $values): Zend_Db_Select
+    {
+        return $select->where(
+            'DOCID IN (?)',
+            self::getPapersWithPendingSuggestionQuery(self::sanitizeSuggestionTypes($values))
+        );
+    }
+
+    /**
+     * Turns raw filter input into a list of known suggestion types.
+     * Anything unknown is dropped, so an arbitrary PAPER_COMMENTS.TYPE cannot be filtered on.
+     *
+     * @param array<int, int|string>|string $values
+     * @return int[]
+     */
+    private static function sanitizeSuggestionTypes(array|string $values): array
+    {
+        $values = is_array($values) ? $values : [$values];
+
+        if (in_array(self::ANY_SUGGESTION_FILTER, $values, true)) {
+            return Episciences_CommentsManager::$suggestionTypes;
+        }
+
+        return array_values(
+            array_intersect(array_map('intval', $values), Episciences_CommentsManager::$suggestionTypes)
+        );
+    }
+
+    /**
+     * Papers of the current review with a pending decision suggestion (among $types)
+     *
+     * @param int[] $types
+     * @return Zend_Db_Select
+     */
+    private static function getPapersWithPendingSuggestionQuery(array $types): Zend_Db_Select
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        return $db->select()
+            ->from(['c' => T_PAPER_COMMENTS], ['DOCID'])
+            ->join(['p' => T_PAPERS], 'c.DOCID = p.DOCID', [])
+            ->where('p.RVID = ?', RVID)
+            ->where('p.STATUS NOT IN (?)', self::getFinalizedStatusForSuggestions())
+            ->where(self::getPendingSuggestionCondition($types));
+    }
+
+    /**
+     * SQL condition matching a pending suggestion of one of $types, each type carrying its own
+     * "already acted upon" status exclusions. Matches nothing when no known type is given.
+     *
+     * @param int[] $types
+     * @return string
+     */
+    private static function getPendingSuggestionCondition(array $types): string
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $conditions = [];
+        foreach ($types as $type) {
+            $condition = $db->quoteInto('c.TYPE = ?', $type);
+
+            $actedUponStatus = self::getActedUponStatusForSuggestionType($type);
+            if (!empty($actedUponStatus)) {
+                $condition .= ' AND ' . $db->quoteInto('p.STATUS NOT IN (?)', $actedUponStatus);
+            }
+
+            $conditions[] = "($condition)";
+        }
+
+        // No known suggestion type left: the filter must exclude everything, not match everything.
+        return empty($conditions) ? '1 = 0' : implode(' OR ', $conditions);
+    }
+
+    /**
+     * Statuses for which a decision suggestion is no longer "pending" (paper already finalized)
+     * @return int[]
+     */
+    private static function getFinalizedStatusForSuggestions(): array
+    {
+        return [
+            Episciences_Paper::STATUS_PUBLISHED,
+            Episciences_Paper::STATUS_REFUSED,
+            Episciences_Paper::STATUS_DELETED,
+            Episciences_Paper::STATUS_REMOVED,
+            Episciences_Paper::STATUS_OBSOLETE,
+            Episciences_Paper::STATUS_ABANDONED
+        ];
+    }
+
+    /**
+     * Statuses of a paper that has received an acceptance decision (Episciences_Paper::ACCEPTED_SUBMISSIONS
+     * plus the downstream validation/publication statuses it doesn't include)
+     * @return int[]
+     */
+    private static function getPostAcceptanceStatuses(): array
+    {
+        return array_merge(
+            Episciences_Paper::ACCEPTED_SUBMISSIONS,
+            [
+                Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
+                Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION
+            ]
+        );
+    }
+
+    /**
+     * Statuses indicating that a decision suggestion of the given type has already been acted upon.
+     *
+     * A suggestion stops being pending as soon as the editor in chief has taken a decision, whether
+     * that decision follows the suggestion or not: moving the paper past acceptance, or asking the
+     * author for revisions, settles all three suggestion types.
+     *
+     * @param int $type
+     * @return int[]
+     */
+    private static function getActedUponStatusForSuggestionType(int $type): array
+    {
+        return match ($type) {
+            Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
+            Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
+            Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION => array_merge(
+                [Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION, Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION],
+                self::getPostAcceptanceStatuses()
+            ),
+            default => [],
+        };
+    }
+
+    /**
      * @param int $rvId
      * @param int $limit
      * @return array
@@ -3968,6 +4450,17 @@ class Episciences_PapersManager
         return $coAuthorsList;
     }
 
+    /**
+     * Dispatches invitations into one bucket per assignment status.
+     *
+     * Every entry received is classified: this method neither deduplicates nor merges anything.
+     * getInvitations() is responsible for handing over a single entry per invitation -- a reviewer
+     * invited twice on the same paper legitimately yields two entries here.
+     *
+     * @param string|string[]|null $status status(es) to keep, null keeps everything
+     * @param array<int|string, array<int, array<string, mixed>>> $invitations invitations per reviewer key
+     * @return array<string, array<int, array<string, mixed>>>
+     */
     private static function sortInvitations($status, array $invitations = []): array
     {
 
@@ -3980,32 +4473,26 @@ class Episciences_PapersManager
         ];
 
         foreach ($invitations as $invitation_list) {
-            $invitation = array_shift($invitation_list);
+            foreach ($invitation_list as $invitation) {
 
-            //si l'invitation a expiré, on la place dans une catégorie à part
-            if (
-                $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING &&
-                self::compareToCurrentTime($invitation['EXPIRATION_DATE'])
-            ) {
-                if (
-                    (!is_array($status) && $status !== Episciences_User_Assignment::STATUS_EXPIRED) ||
-                    (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status, true))
-                ) {
-                    //si on a passé des statuts en paramètre, et que 'expired' n'en fait pas partie, on le saute
+                $assignmentStatus = $invitation['ASSIGNMENT_STATUS'];
+
+                // If the invitation has expired, its status changes to "expired."
+                $effectiveStatus = (
+                        $assignmentStatus === Episciences_User_Assignment::STATUS_PENDING &&
+                        self::compareToCurrentTime($invitation['EXPIRATION_DATE'])
+                )
+                        ? Episciences_User_Assignment::STATUS_EXPIRED
+                        : $assignmentStatus;
+
+                // Filter by status: if statuses are passed as parameters
+                // and the current status is not among them, move on to the next one
+                if (!self::matchesStatusFilter($effectiveStatus, $status)) {
                     continue;
                 }
-                $result['expired'][] = $invitation;
-            } else {
-                if (
-                    (!is_array($status) && $status !== $invitation['ASSIGNMENT_STATUS']) ||
-                    (is_array($status) && !in_array($invitation['ASSIGNMENT_STATUS'], $status, true))
-                ) {
-                    //si on a passé des statuts en paramètre, et que ce statut n'en fait pas partie, on le saute
-                    continue;
-                }
-                $result[$invitation['ASSIGNMENT_STATUS']][] = $invitation;
+
+                $result[$effectiveStatus][] = $invitation;
             }
-
         }
 
         return $result;
@@ -4096,16 +4583,18 @@ class Episciences_PapersManager
     /**
      * @param int $paperId
      * @param array $recipients
+     * @param int|null $rvId journal used for role checks; required in CLI where the RVID constant is not defined
+     * @param array|null $journalSettings settings of the journal; read from the registry ('reviewSettings') when null
      * @return void
      */
-    public static function keepOnlyUsersWithoutConflict(int $paperId, array &$recipients = []): void
+    public static function keepOnlyUsersWithoutConflict(int $paperId, array &$recipients = [], ?int $rvId = null, ?array $journalSettings = null): void
     {
 
         $isCoiEnabled = false;
 
 
         try {
-            $journalSettings = Zend_Registry::get('reviewSettings');
+            $journalSettings ??= Zend_Registry::get('reviewSettings');
             $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
         } catch (Zend_Exception $e) {
             trigger_error($e->getMessage());
@@ -4119,7 +4608,7 @@ class Episciences_PapersManager
 
             foreach ($recipients as $recipient) {
 
-                if ($recipient->hasOnlyAdministratorRole()) {
+                if ($recipient->hasOnlyAdministratorRole($rvId)) {
                     continue;
                 }
 
@@ -4140,7 +4629,7 @@ class Episciences_PapersManager
      * @param $docId
      * @return string
      */
-    public static function buildDocumentPath($docId): string
+    public static function buildDocumentPath(int $docId): string
     {
         return REVIEW_FILES_PATH . $docId;
     }
@@ -4153,17 +4642,30 @@ class Episciences_PapersManager
         return $db->fetchOne($select);
     }
 
-    public static function updateJsonDocumentData(int $docId): void
+    public static function updateJsonDocumentData(int $docId): bool
     {
+        $paper = self::get($docId, false);
+
+        if (!$paper) {
+            return false;
+        }
+
         try {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-            $paper = self::get($docId, false);
             $toJson = $paper->toJson();
             $str = sprintf('UPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', $db->quote($toJson), $docId);
             $db->query($str)->closeCursor();
         } catch (Zend_Db_Statement_Exception $e) {
             trigger_error($e->getMessage());
+            return false;
         }
+
+        // invalidate the getJsonV2 metadata cache entry (up to CACHE_EXPIRE_METADATA_PUBLISHED = 31 days)
+        // so callers going through Episciences_Paper::get('json', 2) don't keep serving the stale DOCUMENT
+        (new FilesystemAdapter(Episciences_Paper::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA))
+            ->deleteItem($paper->getPaperid() . '-getJsonV2');
+
+        return true;
     }
 
     /**
@@ -4202,78 +4704,67 @@ class Episciences_PapersManager
      * @param int $paperId
      * @param int $affectedRows
      * @return int
-     * @throws JsonException
-     * @throws \Psr\Cache\InvalidArgumentException
      */
     private static function updateRecordDataCallOpenAireTools(array|string $doiTrim, int $paperId, int $affectedRows): int
     {
-// CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
-        // BUT BEFORE CHECK GLOBAL CACHE
-        Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
-        ///////////////////////////////////////////////////////////////////////////////////////////////////
-        $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::getsGlobalOARGCache($doiTrim);
-        list($cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator) = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
+        $oaClient = \Episciences\Api\OpenAireApiClient::create();
+        $response = $oaClient->fetchPublication($doiTrim, $paperId);
 
-        if ($setsGlobalOARG->isHit() && !$setsOpenAireCreator->isHit()) {
-            //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
-            // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
-            try {
-                $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                Episciences_OpenAireResearchGraphTools::putCreatorInCache($decodeOpenAireResp, $doiTrim);
-                Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
-            } catch (JsonException $e) {
-
-                $eMsg = $e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json ';
-                // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                Episciences_OpenAireResearchGraphTools::logErrorMsg($eMsg);
-                $setsOpenAireCreator->set(json_encode([""]));
-                $cacheCreator->save($setsOpenAireCreator);
-            }
+        if ($response === null) {
+            // Network or API error — nothing was cached; skip enrichment for this paper.
+            return $affectedRows;
         }
 
-        //we need to refresh cache creator to get the new file
-        ////// CACHE CREATOR ONLY
-        [$cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator] = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
-
-        $affectedRows += Episciences_OpenAireResearchGraphTools::insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId);
-
-        ////////Funding OA and HAL
-        list($cacheFundingOA, $pathOpenAireFunding, $setOAFunding) = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
-
-        if ($setsGlobalOARG->isHit() && !$setOAFunding->isHit()) {
-            // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
-            try {
-                $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                Episciences_OpenAireResearchGraphTools::putFundingsInCache($decodeOpenAireResp, $doiTrim);
-                //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
-                Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
-
-            } catch (JsonException $e) {
-                // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                Episciences_OpenAireResearchGraphTools::logErrorMsg($e->getMessage() . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json');
-                $setOAFunding->set(json_encode([""]));
-                $cacheFundingOA->save($setOAFunding);
-            }
+        // --- Creator / ORCID enrichment ---
+        [, , $creatorItem] = $oaClient->getCreatorCacheItem($doiTrim);
+        if (!$creatorItem->isHit()) {
+            $oaClient->putCreatorInCache($response, $doiTrim);
+            [, , $creatorItem] = $oaClient->getCreatorCacheItem($doiTrim);
         }
-        try {
-            [$cacheFundingOA, $pathOpenAireFunding, $setOAFunding] = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
-        } catch (\Psr\Cache\InvalidArgumentException $e) {
-            trigger_error($e->getMessage());
+        $affectedRows += $oaClient->insertOrcidAuthorFromCache($creatorItem, $paperId);
+
+        // --- Funding enrichment ---
+        [, , $fundingItem] = $oaClient->getFundingCacheItem($doiTrim);
+        if (!$fundingItem->isHit()) {
+            $oaClient->putFundingInCache($response, $doiTrim);
+            [, , $fundingItem] = $oaClient->getFundingCacheItem($doiTrim);
         }
 
         try {
-            $fileFound = $setOAFunding->get() ? json_decode($setOAFunding->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) : null;
-        } catch (JsonException $jsonException) {
-            Episciences_OpenAireResearchGraphTools::logErrorMsg(sprintf('Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
+            $fileFound = $fundingItem->get()
+                ? json_decode(
+                    $fundingItem->get(),
+                    true,
+                    512,
+                    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+                )
+                : null;
+        } catch (JsonException $e) {
+            error_log(sprintf(
+                'OpenAIRE funding JSON decode error for paper %d: %s',
+                $paperId,
+                $e->getMessage()
+            ));
+            return $affectedRows;
         }
 
-        $globalfundingArray = [];
         if (!empty($fileFound[0])) {
-            $fundingArray = [];
-            $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB($fileFound, $fundingArray, $globalfundingArray);
-            $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::GRAPH_OPENAIRE_ID);
-            $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA($globalfundingArray, $rowInDBGraph, $paperId);
+            $globalfundingArray = [];
+            $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB(
+                $fileFound,
+                $globalfundingArray
+            );
+            $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId(
+                $paperId,
+                (int) Episciences_Repositories::GRAPH_OPENAIRE_ID
+            );
+            $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA(
+                $globalfundingArray,
+                $rowInDBGraph,
+                $paperId
+            );
         }
+
         return $affectedRows;
     }
 
@@ -4289,8 +4780,6 @@ class Episciences_PapersManager
     private static function updateRecordDataProcessFilesHook($record1, mixed $docId, mixed $repoId, array|string $identifier, mixed $enrichment, mixed $affectedRows): array
     {
         $record = $record1;
-        // delete all paper files
-        Episciences_Paper_FilesManager::deleteByDocId($docId);
 
         $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId];
 
@@ -4350,6 +4839,27 @@ class Episciences_PapersManager
         return $result;
 
     }
+
+    /**
+     * DocIds of the versions of a paper in a journal, the latest first (see Episciences_Paper::getLatestVersionId()).
+     * Unlike getDocIdsFromPaperId(), a database error is not mistaken for a paper without version: for access
+     * checks, which must not decide on an incomplete list.
+     *
+     * @return int[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getDocIdsByPaperIdInJournal(int $paperId, int $rvid): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db
+            ->select()
+            ->from(T_PAPERS, ['DOCID'])
+            ->where('PAPERID = ?', $paperId)
+            ->where('RVID = ?', $rvid)
+            ->order('WHEN DESC');
+
+        return array_map('intval', $db->fetchCol($select));
+    }
     /**
      * @param int $docId
      * @param int|null $rvId
@@ -4371,6 +4881,30 @@ class Episciences_PapersManager
         $data = $sql?->query()->fetch();
         return !empty($data) ? new Episciences_Paper($data) : null;
 
+    }
+
+    /**
+     * Tells whether a status passes the requested filter.
+     *
+     * A null filter means "no filtering": it keeps everything. Before this method existed the
+     * null case fell through a condition that rejected every status, so getInvitations() -- whose
+     * $status parameter defaults to null -- silently returned empty buckets.
+     *
+     * @param string $effectiveStatus
+     * @param string|string[]|null $status
+     * @return bool
+     */
+    private static function matchesStatusFilter(string $effectiveStatus, $status): bool
+    {
+        if ($status === null) {
+            return true;
+        }
+
+        if (is_array($status)) {
+            return in_array($effectiveStatus, $status, true);
+        }
+
+        return $effectiveStatus === $status;
     }
 
 }

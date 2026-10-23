@@ -41,9 +41,11 @@ trait Episciences_Paper_AuthorEditorCommunicationControllerTrait
                 ? $service->processReplyMessage($postData, (int)$postData['reply_to_pcid'], $authCallback)
                 : $service->processMainMessage($postData, $authCallback);
 
+            $isNotified = true;
+
             if ($result->isSuccess() && $result->getComment() instanceof \Episciences_Comment) {
                 try {
-                    $this->newCommentNotifyManager(
+                    $isNotified = $this->newCommentNotifyManager(
                         $paper,
                         $result->getComment(),
                         [],
@@ -51,10 +53,16 @@ trait Episciences_Paper_AuthorEditorCommunicationControllerTrait
                         ['coAuthors' => $service->getCoAuthorsExcludingSender()]
                     );
                 } catch (Exception $notifyException) {
-                    // Log notification failure but don't prevent success flow
-                    // The message was saved, notifications may have partially failed
-                    trigger_error('Notification error (message saved): ' . $notifyException->getMessage());
+                    // Don't prevent success flow: the message was saved, notifications may have partially failed
+                    $isNotified = false;
+                    \Episciences\AppRegistry::getMonoLogger()?->error('Notification error (message saved): ' . $notifyException->getMessage());
                 }
+            }
+
+            if (!$isNotified) {
+                $this->_helper->FlashMessenger->setNamespace('warning')->addMessage(
+                    $this->view->translate(Episciences_Paper_AuthorEditorCommunicationService::MSG_WARNING_NOTIFICATION_FAILED)
+                );
             }
 
             $this->handleCommunicationResult($result, $paper, $redirectController);

@@ -53,7 +53,7 @@ final class Episciences_Paper_LicenceManagerTest extends TestCase {
         }
     }
 
-    public function getApiResponseByRepoIdDataProvider(): array
+    public static function getApiResponseByRepoIdDataProvider(): array
     {
         return [
             'HAL repository' => [
@@ -130,13 +130,14 @@ final class Episciences_Paper_LicenceManagerTest extends TestCase {
         $this->assertEquals($expected, $result);
     }
 
-    public function shouldRateLimitDataProvider(): array
+    public static function shouldRateLimitDataProvider(): array
     {
         return [
             'HAL - no rate limit' => [Episciences_Repositories::HAL_REPO_ID, false],
             'ArXiv - rate limit' => [Episciences_Repositories::ARXIV_REPO_ID, true],
             'Zenodo - rate limit' => [Episciences_Repositories::ZENODO_REPO_ID, true],
             'ARCHE - rate limit' => [Episciences_Repositories::ARCHE_ID, true],
+            'BAOBAB - no rate limit, fetched inside Paper::save()' => [Episciences_Repositories::BAOBAB_REPO_ID, false],
             'Unknown repo - no rate limit' => ['999', false],
         ];
     }
@@ -192,10 +193,53 @@ final class Episciences_Paper_LicenceManagerTest extends TestCase {
         
         // Whitespace-only identifier should return empty string
         $result = Episciences_Paper_LicenceManager::getApiResponseByRepoId(
-            Episciences_Repositories::HAL_REPO_ID, 
-            '   ', 
+            Episciences_Repositories::HAL_REPO_ID,
+            '   ',
             1
         );
         $this->assertEquals('', $result);
+    }
+
+    public function testExtractLicenceDataForBaobabUsesBaobabAsSource(): void
+    {
+        $method = self::$reflection->getMethod('extractLicenceData');
+        $method->setAccessible(true);
+
+        $result = $method->invoke(
+            null,
+            Episciences_Repositories::BAOBAB_REPO_ID,
+            'https://creativecommons.org/licenses/by/4.0'
+        );
+
+        self::assertSame([
+            'licence' => 'https://creativecommons.org/licenses/by/4.0',
+            'sourceId' => Episciences_Repositories::BAOBAB_REPO_ID,
+            'cacheData' => 'https://creativecommons.org/licenses/by/4.0',
+        ], $result);
+    }
+
+    /**
+     * getLicenceFromArcheDatacite() must stop when the XML cannot be parsed,
+     * otherwise it would call a method on a false value. Verified at source
+     * level since the method performs a live HTTP request.
+     */
+    public function testArcheDataciteStopsOnInvalidXml(): void
+    {
+        $source = (string) file_get_contents(
+            APPLICATION_PATH . '/../library/Episciences/Paper/LicenceManager.php'
+        );
+
+        $start = strpos($source, 'function getLicenceFromArcheDatacite(');
+        self::assertNotFalse($start);
+        $body = substr($source, $start, 1200);
+
+        // The false branch returns before any further use of $metadata.
+        self::assertMatchesRegularExpression(
+            '/\$metadata === false\)\s*\{\s*trigger_error\([^;]*\);\s*return\s+\'\';/s',
+            $body
+        );
+        // The parse is wrapped to avoid surfacing libxml warnings.
+        self::assertStringContainsString('libxml_use_internal_errors(true)', $body);
+        self::assertStringContainsString('libxml_clear_errors()', $body);
     }
 }

@@ -1,4 +1,7 @@
 <?php
+
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
+
 /**
  * @deprecated
  */
@@ -225,7 +228,6 @@ class Import extends Episciences_Paper
 
         try {
             $paper = $this -> load();
-            $this->paper = $paper;
         } catch (Exception $e) {
             $this->setError($e -> getMessage());
             return false;
@@ -248,7 +250,7 @@ class Import extends Episciences_Paper
         }
 
         // indexation
-        Ccsd_Search_Solr_Indexer::addToIndexQueue(array($paper->getDocid()), 'episciences', 'UPDATE', 'episciences');
+        SolrIndexing::enqueueIndex($paper->getDocid());
 
         return true;
     }

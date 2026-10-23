@@ -34,6 +34,22 @@ class Episciences_Mail_RemindersManager
             Episciences_Acl::ROLE_EDITOR
         );
 
+        // Unanswered reviewer invitation (chief editor copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION, // editor template, @see Episciences_Mail_Reminder::loadTranslations()
+            Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION,
+            Episciences_Acl::ROLE_CHIEF_EDITOR
+        );
+
+        // Unanswered reviewer invitation (secretary copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_UNANSWERED_REVIEWER_INVITATION_EDITOR_VERSION, // editor template, @see Episciences_Mail_Reminder::loadTranslations()
+            Episciences_Mail_Reminder::TYPE_UNANSWERED_INVITATION,
+            Episciences_Acl::ROLE_SECRETARY
+        );
+
         // rappel avant deadline de relecture (copie relecteur)
         self::addReminderTemplate(
             $templates,
@@ -43,12 +59,27 @@ class Episciences_Mail_RemindersManager
         );
 
         // rappel avant deadline de relecture (copie rédacteur)
-        // !!! TODO : check construction de la constante sur Reminder.php (sur reminder before deadline / before rating deadline)
         self::addReminderTemplate(
             $templates,
             Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION,
             Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE,
             Episciences_Acl::ROLE_EDITOR
+        );
+
+        // Reminder before reviewing deadline (chief editor copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION, // editor template, @see Episciences_Mail_Reminder::loadTranslations()
+            Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE,
+            Episciences_Acl::ROLE_CHIEF_EDITOR
+        );
+
+        // Reminder before reviewing deadline (secretary copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_BEFORE_RATING_DEADLINE_EDITOR_VERSION, // editor template, @see Episciences_Mail_Reminder::loadTranslations()
+            Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE,
+            Episciences_Acl::ROLE_SECRETARY
         );
 
         // relance après deadline de relecture (copie relecteur)
@@ -65,6 +96,22 @@ class Episciences_Mail_RemindersManager
             Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION,
             Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE,
             Episciences_Acl::ROLE_EDITOR
+        );
+
+        // Reminder after reviewing deadline (chief editor copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION, // editor template, @see Episciences_Mail_Reminder::loadTranslations()
+            Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE,
+            Episciences_Acl::ROLE_CHIEF_EDITOR
+        );
+
+        // Reminder after reviewing deadline (secretary copy)
+        self::addReminderTemplate(
+            $templates,
+            Episciences_Mail_TemplatesManager::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION, // editor template, @see Episciences_Mail_Reminder::loadTranslations()
+            Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE,
+            Episciences_Acl::ROLE_SECRETARY
         );
 
         // rappel avant deadline de modification (copie auteur)
@@ -188,15 +235,16 @@ class Episciences_Mail_RemindersManager
     /**
      * Trouve un reminder par son id, et charge ses données (bdd + translations)
      * @param $id
+     * @param int $rvid only a reminder of this journal is returned
      * @return Episciences_Mail_Reminder|null
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    public static function find($id): ?Episciences_Mail_Reminder
+    public static function find($id, int $rvid): ?Episciences_Mail_Reminder
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $select = $db->select()->from(T_MAIL_REMINDERS)->where('ID = ? ', $id);
+        $select = $db->select()->from(T_MAIL_REMINDERS)->where('ID = ? ', $id)->where('RVID = ?', $rvid);
         $result = $select->query()->fetch();
 
         if ($result) {
@@ -212,13 +260,16 @@ class Episciences_Mail_RemindersManager
     /**
      * Supprime un reminder par son id
      * @param $id
-     * @return bool
+     * @param int $rvid only a reminder of this journal is deleted
+     * @return bool false when no reminder of this journal matches $id
      */
-    public static function delete($id)
+    public static function delete($id, int $rvid): bool
     {
         // Supprimer entrée en base
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $db->delete(T_MAIL_REMINDERS, array('ID = ?' => $id));
+        if (!$db->delete(T_MAIL_REMINDERS, ['ID = ?' => $id, 'RVID = ?' => $rvid])) {
+            return false;
+        }
 
         // Supprimer templates custom
         foreach (scandir(REVIEW_LANG_PATH) as $lang) {

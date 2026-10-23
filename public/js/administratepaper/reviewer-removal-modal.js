@@ -84,11 +84,9 @@ function submit() {
     $.ajax({
         url: $('#reviewer-removal-form').attr('action'),
         type: 'POST',
-        datatype: 'json',
+        dataType: 'json',
         data: $('#modal-box form').serialize(),
         success: function (response) {
-            console.log(response);
-            response = JSON.parse(response);
             if (response.status == 1) {
                 $('#modal-box').modal('hide');
 

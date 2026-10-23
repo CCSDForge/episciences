@@ -2,11 +2,15 @@
 
 namespace unit\library\Episciences\submit;
 
+use Episciences_Oai_Client;
 use Episciences_Paper;
+use Episciences_Repositories;
 use Episciences_Submit;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use ReflectionProperty;
 use Zend_Exception;
+use Zend_Registry;
 
 /**
  * Tests for Episciences_Submit.
@@ -495,5 +499,107 @@ class SubmitTest extends TestCase
         $record = '<record><dcterms:available>2099-12-31</dcterms:available></record>';
         $result = $method->invoke(null, $record);
         self::assertSame('2099-12-31', $result);
+    }
+
+    // =========================================================================
+    // extractVersionSuffix() — private, tested via ReflectionMethod
+    // =========================================================================
+
+    /**
+     * @dataProvider versionSuffixProvider
+     */
+    public function testExtractVersionSuffix(string $id, ?float $version, string $expectedId, ?float $expectedVersion): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'extractVersionSuffix');
+        $method->setAccessible(true);
+
+        $method->invokeArgs(null, [&$id, &$version]);
+
+        self::assertSame($expectedId, $id);
+        self::assertSame($expectedVersion, $version);
+    }
+
+    public static function versionSuffixProvider(): array
+    {
+        return [
+            'HAL with suffix, no version' => ['hal-01234567v4', null, 'hal-01234567', 4.0],
+            'HAL with suffix overrides version field' => ['hal-01234567v4', 1.0, 'hal-01234567', 4.0],
+            'HAL without suffix keeps version' => ['hal-01234567', 2.0, 'hal-01234567', 2.0],
+            'arXiv new format with suffix' => ['2310.02192v12', 1.0, '2310.02192', 12.0],
+            'arXiv old format with suffix' => ['hep-th/9704188v2', null, 'hep-th/9704188', 2.0],
+            'arXiv without suffix' => ['2310.02192', null, '2310.02192', null],
+            'bare "v4" is not an identifier' => ['v4', 1.0, 'v4', 1.0],
+            'v without digits is kept' => ['hal-01234567v', 1.0, 'hal-01234567v', 1.0],
+            'v0 is not a version' => ['hal-01234567v0', 1.0, 'hal-01234567v0', 1.0],
+        ];
+    }
+
+    // =========================================================================
+    // isVersionSuffixedRepository() — private, tested via ReflectionMethod
+    // =========================================================================
+
+    /**
+     * @dataProvider versionSuffixedRepositoryProvider
+     */
+    public function testIsVersionSuffixedRepository(int $repoId, bool $expected): void
+    {
+        $sources = [
+            1 => ['name' => 'HAL', 'type' => 'repository'],
+            2 => ['name' => 'arXiv', 'type' => 'repository'],
+            4 => ['name' => 'Zenodo', 'type' => 'repository'],
+            98 => ['name' => 'ADspace', 'type' => 'dspace'],
+            99 => ['name' => 'ADataverse', 'type' => 'dataverse'],
+        ];
+
+        $hadSources = Zend_Registry::isRegistered('metadataSources');
+        $previousSources = $hadSources ? Zend_Registry::get('metadataSources') : null;
+        $cache = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $cache->setAccessible(true);
+        $previousCache = $cache->getValue();
+
+        try {
+            Zend_Registry::set('metadataSources', $sources);
+            $cache->setValue(null, []);
+
+            $method = new ReflectionMethod(Episciences_Submit::class, 'isVersionSuffixedRepository');
+            $method->setAccessible(true);
+
+            self::assertSame($expected, $method->invoke(null, $repoId));
+        } finally {
+            if ($hadSources) {
+                Zend_Registry::set('metadataSources', $previousSources);
+            } else {
+                Zend_Registry::getInstance()->offsetUnset('metadataSources');
+            }
+            $cache->setValue(null, $previousCache);
+        }
+    }
+
+    public static function versionSuffixedRepositoryProvider(): array
+    {
+        return [
+            'HAL' => [1, true],
+            'arXiv' => [2, true],
+            'Zenodo' => [4, false],
+            'DSpace' => [98, false],
+            'Dataverse' => [99, false],
+            'unknown repository' => [9999, false],
+        ];
+    }
+
+    // =========================================================================
+    // assertArxivVersionExists() — private, tested via ReflectionMethod
+    // =========================================================================
+
+    public function testAssertArxivVersionExistsSkipsWithoutOaiIdentifier(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'assertArxivVersionExists');
+        $method->setAccessible(true);
+
+        $oai = $this->createMock(Episciences_Oai_Client::class);
+        $oai->expects(self::never())->method('getArXivRawRecord');
+
+        // No OAI identifier template configured: nothing to check, no TypeError
+        self::assertNull($method->invoke(null, $oai, null, 1));
     }
 }

@@ -135,24 +135,24 @@ function defineJournalConstants(string $rvCode = null): void
         //configurable constants path
         define('CONFIGURABLE_CONSTANTS_PATH', APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.configurable.constants.json');
 
+        $configurableConst = [];
+
         if (is_file(CONFIGURABLE_CONSTANTS_PATH)) {
-            /** @var array $configurableConst */
             try {
                 $configurableConst = json_decode(file_get_contents(CONFIGURABLE_CONSTANTS_PATH), true, 512, JSON_THROW_ON_ERROR);
             } catch (JsonException $e) {
+                // Uploads then fall back to PDF only
                 trigger_error($e->getMessage());
             }
-
-            $allowedExtensions = $configurableConst['allowed_extensions'] ?? ['pdf'];
-            $allowedMimesTypes = $configurableConst['allowed_mimes_types'] ?? ['application/pdf'];
-
-        } else {
-            $allowedExtensions = ['pdf'];
-            $allowedMimesTypes = ['application/pdf'];
         }
 
+        $allowedMimesByExtension = $configurableConst['allowed_mimes_by_extension'] ?? ['pdf' => ['application/pdf']];
+        $allowedExtensions = $configurableConst['allowed_extensions'] ?? array_keys($allowedMimesByExtension);
+
         define('ALLOWED_EXTENSIONS', $allowedExtensions);
-        define('ALLOWED_MIMES_TYPES', $allowedMimesTypes);
+        define('ALLOWED_MIMES_BY_EXTENSION', $allowedMimesByExtension);
+        // Every content type accepted for at least one extension
+        define('ALLOWED_MIMES_TYPES', array_values(array_unique(array_merge(...array_values($allowedMimesByExtension)))));
     }
 
     if (defined('REVIEW_PATH')) {
@@ -185,57 +185,60 @@ function defineJournalConstants(string $rvCode = null): void
 function defineSQLTableConstants(): void
 {
     $tableConstants = [
-        'T_ALIAS' => 'REVIEWER_ALIAS',
-        'T_ASSIGNMENTS' => 'USER_ASSIGNMENT',
-        'T_CAS_USERS' => 'T_UTILISATEURS',
-        'T_DOI_QUEUE' => 'doi_queue',
-        'T_DOI_QUEUE_VOLUMES' => 'doi_queue_volumes',
-        'T_LOGS' => 'PAPER_LOG',
-        'T_MAIL_LOG' => 'MAIL_LOG',
-        'T_MAIL_REMINDERS' => 'REMINDERS',
-        'T_MAIL_TEMPLATES' => 'MAIL_TEMPLATE',
-        'T_NEWS' => 'NEWS',
-        'T_JOURNAL_NEWS' => 'news',
-        'T_PAPERS' => 'PAPERS',
-        'T_PAPER_COMMENTS' => 'PAPER_COMMENTS',
-        'T_PAPER_SETTINGS' => 'PAPER_SETTINGS',
-        'T_PAPER_VISITS' => 'PAPER_STAT',
-        'T_REVIEW' => 'REVIEW',
-        'T_REVIEWER_POOL' => 'REVIEWER_POOL',
-        'T_REVIEWER_REPORTS' => 'REVIEWER_REPORT',
-        'T_REVIEW_SETTINGS' => 'REVIEW_SETTING',
-        'T_SECTIONS' => 'SECTION',
-        'T_SECTION_SETTINGS' => 'SECTION_SETTING',
-        'T_TMP_USER' => 'USER_TMP',
-        'T_USERS' => 'USER',
-        'T_USER_INVITATIONS' => 'USER_INVITATION',
-        'T_USER_INVITATION_ANSWER' => 'USER_INVITATION_ANSWER',
-        'T_USER_INVITATION_ANSWER_DETAIL' => 'USER_INVITATION_ANSWER_DETAIL',
-        'T_USER_MERGE' => 'USER_MERGE',
-        'T_USER_ROLES' => 'USER_ROLES',
-        'T_USER_TOKENS' => 'USER_TOKEN',
-        'T_VOLUMES' => 'VOLUME',
-        'T_VOLUME_METADATAS' => 'VOLUME_METADATA',
-        'T_VOLUME_PAPER' => 'VOLUME_PAPER',
-        'T_VOLUME_PAPER_POSITION' => 'VOLUME_PAPER_POSITION',
-        'T_VOLUME_SETTINGS' => 'VOLUME_SETTING',
-        'T_VOLUME_PROCEEDING' => 'volume_proceeding',
-        'VISITS_TEMP' => 'STAT_TEMP',
-        'T_PAPER_FILES' => 'paper_files',
-        'T_PAPER_DATASETS' => 'paper_datasets',
-        'T_PAPER_LICENCES' => 'paper_licences',
-        'T_PAPER_DATASETS_META' => 'paper_datasets_meta',
-        'T_PAPER_AUTHORS' => 'authors',
-        'T_PAPER_CONFLICTS' => 'paper_conflicts',
-        'T_PAPER_METADATA_SOURCES' => 'metadata_sources',
-        'T_PAPER_PROJECTS' => 'paper_projects',
-        'T_PAPER_CITATIONS' => 'paper_citations',
-        'T_PAGES' => 'pages',
-        'T_PAPER_CLASSIFICATIONS' => 'paper_classifications',
-        'T_PAPER_CLASSIFICATION_MSC2020' => 'classification_msc2020',
-        'T_PAPER_CLASSIFICATION_JEL' => 'classification_jel',
-        'T_PAPER_DATA_DESCRIPTOR' => 'data_descriptor',
-        'T_FILES' => 'files',
+            'T_ALIAS' => 'REVIEWER_ALIAS',
+            'T_ASSIGNMENTS' => 'USER_ASSIGNMENT',
+            'T_CAS_USERS' => 'T_UTILISATEURS',
+            'T_DOI_QUEUE' => 'doi_queue',
+            'T_DOI_QUEUE_VOLUMES' => 'doi_queue_volumes',
+            'T_LOGS' => 'PAPER_LOG',
+            'T_MAIL_LOG' => 'MAIL_LOG',
+            'T_MAIL_REMINDERS' => 'REMINDERS',
+            'T_MAIL_TEMPLATES' => 'MAIL_TEMPLATE',
+            'T_NEWS' => 'NEWS',
+            'T_JOURNAL_NEWS' => 'news',
+            'T_PAPERS' => 'PAPERS',
+            'T_PAPER_COMMENTS' => 'PAPER_COMMENTS',
+            'T_PAPER_SETTINGS' => 'PAPER_SETTINGS',
+            'T_PAPER_VISITS' => 'PAPER_STAT',
+            'T_REVIEW' => 'REVIEW',
+            'T_REVIEWER_POOL' => 'REVIEWER_POOL',
+            'T_REVIEWER_REPORTS' => 'REVIEWER_REPORT',
+            'T_REVIEW_SETTINGS' => 'REVIEW_SETTING',
+            'T_SECTIONS' => 'SECTION',
+            'T_SECTION_SETTINGS' => 'SECTION_SETTING',
+            'T_TMP_USER' => 'USER_TMP',
+            'T_USERS' => 'USER',
+            'T_USER_INVITATIONS' => 'USER_INVITATION',
+            'T_USER_INVITATION_ANSWER' => 'USER_INVITATION_ANSWER',
+            'T_USER_INVITATION_ANSWER_DETAIL' => 'USER_INVITATION_ANSWER_DETAIL',
+            'T_USER_MERGE' => 'USER_MERGE',
+            'T_USER_ROLES' => 'USER_ROLES',
+            'T_USER_TOKENS' => 'USER_TOKEN',
+            'T_VOLUMES' => 'VOLUME',
+            'T_VOLUME_METADATAS' => 'VOLUME_METADATA',
+            'T_VOLUME_PAPER' => 'VOLUME_PAPER',
+            'T_VOLUME_PAPER_POSITION' => 'VOLUME_PAPER_POSITION',
+            'T_VOLUME_SETTINGS' => 'VOLUME_SETTING',
+            'T_VOLUME_PROCEEDING' => 'volume_proceeding',
+            'VISITS_TEMP' => 'STAT_TEMP',
+            'T_PAPER_FILES' => 'paper_files',
+            'T_PAPER_DATASETS' => 'paper_datasets',
+            'T_PAPER_LICENCES' => 'paper_licences',
+            'T_PAPER_DATASETS_META' => 'paper_datasets_meta',
+            'T_PAPER_AUTHORS' => 'authors',
+            'T_PAPER_CONFLICTS' => 'paper_conflicts',
+            'T_PAPER_METADATA_SOURCES' => 'metadata_sources',
+            'T_PAPER_PROJECTS' => 'paper_projects',
+            'T_PAPER_CITATIONS' => 'paper_citations',
+            'T_PAGES' => 'pages',
+            'T_PAPER_CLASSIFICATIONS' => 'paper_classifications',
+            'T_PAPER_CLASSIFICATION_MSC2020' => 'classification_msc2020',
+            'T_PAPER_CLASSIFICATION_JEL' => 'classification_jel',
+            'T_PAPER_DATA_DESCRIPTOR' => 'data_descriptor',
+            'T_FILES' => 'files',
+            'T_LICENSE' => 'license_spdx',
+            'T_PAPER_LICENSE_CODE' => 'paper_license_code'
+
     ];
 
     foreach ($tableConstants as $name => $value) {
@@ -283,12 +286,13 @@ function defineVendorJsLibraries(): void
         'VENDOR_JQUERY_DATATABLES' => 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js',
         'VENDOR_JQUERY_FILE_UPLOAD' => 'https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/10.32.0/js/jquery.fileupload.min.js',
         'VENDOR_JQUERY_NESTED_SORTABLE' => 'https://cdnjs.cloudflare.com/ajax/libs/nestedSortable/1.3.4/jquery.ui.nestedSortable.min.js',
-        'VENDOR_SORTABLE_JS' => 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js',
+        'VENDOR_SORTABLE_JS' => 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.7/Sortable.min.js',
         'VENDOR_JQUERY_UI' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js', // Do not upgrade
         'VENDOR_JQUERY_URL_PARSER' => 'https://cdnjs.cloudflare.com/ajax/libs/jquery-url-parser/2.2.1/purl.min.js',
         'VENDOR_MATHJAX' => 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML',
         'VENDOR_TINYMCE' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
         'VENDOR_TINYMCE_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
+        'VENDOR_TOM_SELECT' => 'https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js',
         'VENDOR_CHART' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js',
         'VENDOR_CHART_PLUGIN_DATALABELS' => 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/0.7.0/chartjs-plugin-datalabels.min.js',
     ];
@@ -313,6 +317,7 @@ function defineVendorCssLibraries(): void
         'VENDOR_JQUERY_UI_THEME_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css',
         'VENDOR_CHART_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css',
         'VENDOR_COOKIE_CONSENT_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css',
+        'VENDOR_TOM_SELECT_CSS' => 'https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.min.css',
     ];
 
     foreach ($cssLibraries as $name => $url) {
@@ -356,12 +361,21 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         // External APIs
         define('OPENALEX_MAILTO', '');
         define('OPENALEX_APIURL', '');
+        define('OPENALEX_APIKEY', '');
         define('CROSSREF_MAILTO', '');
         define('CROSSREF_APIURL', '');
         define('CROSSREF_PLUS_API_TOKEN', '');
         define('OPENCITATIONS_MAILTO', '');
         define('OPENCITATIONS_APIURL', '');
         define('OPENCITATIONS_TOKEN', '');
+        define('OPENAIRE_AUTH_URL', '');
+        define('OPENAIRE_API_URL', '');
+        define('OPENAIRE_CLIENT_ID', '');
+        define('OPENAIRE_CLIENT_SECRET', '');
+        define('SCHOLEXPLORER_AUTH_URL', '');
+        define('SCHOLEXPLORER_API_URL', 'https://api.scholexplorer.openaire.eu/v3/Links');
+        define('SCHOLEXPLORER_CLIENT_ID', '');
+        define('SCHOLEXPLORER_CLIENT_SECRET', '');
 
         // DOI Configuration
         define('DOI_AGENCY', '');
@@ -397,7 +411,15 @@ function fixUndefinedConstantsForCodeAnalysis(): void
 
         // Other configuration
         define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
-        define('EPISCIENCES_BIBLIOREF', []);
+        define('EPISCIENCES_BIBLIOREF', ['URL' => '', 'ENABLE' => false, 'SSL_VERIFY' => true, 'TOKEN' => '']);
+
+        // Next.js cache revalidation
+        define('EPISCIENCES_ENABLE_NEXT_FRONT', false);
+        define('NEXT_BASE_URL', '');
+        define('NEXT_REVALIDATION_SECRET', '');
+
+        // Reviewer invitation link token
+        define('REVIEWER_INVITATION_HMAC_SECRET', '');
 
         // ========================================
         // Protocol constants
@@ -436,6 +458,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('REVIEW_PATH', '');
         define('CONFIGURABLE_CONSTANTS_PATH', '');
         define('ALLOWED_EXTENSIONS', []);
+        define('ALLOWED_MIMES_BY_EXTENSION', []);
         define('ALLOWED_MIMES_TYPES', []);
         define('REVIEW_TMP_PATH', '');
         define('REVIEW_URL', '');
@@ -508,6 +531,8 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('T_PAPER_CLASSIFICATION_JEL', '');
         define('T_PAPER_DATA_DESCRIPTOR', '');
         define('T_FILES', '');
+        define('T_LICENSE', '');
+        define('T_PAPER_LICENSE_CODE', '');
 
         // ========================================
         // Simple constants
@@ -544,6 +569,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('VENDOR_MATHJAX', '');
         define('VENDOR_TINYMCE', '');
         define('VENDOR_TINYMCE_JQUERY', '');
+        define('VENDOR_TOM_SELECT', '');
         define('VENDOR_CHART', '');
         define('VENDOR_CHART_PLUGIN_DATALABELS', '');
 
@@ -560,5 +586,6 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('VENDOR_JQUERY_UI_THEME_CSS', '');
         define('VENDOR_CHART_CSS', '');
         define('VENDOR_COOKIE_CONSENT_CSS', '');
+        define('VENDOR_TOM_SELECT_CSS', '');
     }
 }

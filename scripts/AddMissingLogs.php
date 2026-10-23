@@ -1,6 +1,7 @@
 <?php
 
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 
 require_once "JournalScript.php";
@@ -30,7 +31,7 @@ class AddMissingLogs extends JournalScript
 
         $this->logger = new Logger('addMissingLogs');
         try {
-            $this->logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . '/addMissingLogs.log', Logger::DEBUG));
+            $this->logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . '/addMissingLogs.log', Level::Debug));
         } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_ERROR);
         }
@@ -44,7 +45,7 @@ class AddMissingLogs extends JournalScript
                 $this->isDebug = (bool)$this->getParam('debug');
             }
 
-            $this->logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         if ($this->hasParam('ignoreimported')) {

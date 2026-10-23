@@ -65,7 +65,10 @@ class GridController extends Zend_Controller_Action
     {
         $request = $this->getRequest();
 
-        if ($request->getPost('submit')) {
+        if ($request->getPost('submit') && !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $message = '<strong>' . $this->view->translate('Votre session a expiré, veuillez réessayer.') . '</strong>';
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+        } elseif ($request->getPost('submit')) {
 
             $id = (is_numeric($request->getPost('volume'))) ? $request->getPost('volume') : 0;
             $filename = 'grid_' . $id . '.xml';
@@ -94,8 +97,16 @@ class GridController extends Zend_Controller_Action
     public function copyAction()
     {
         $request = $this->getRequest();
-        $from = $request->getQuery('from');
-        $to = $request->getQuery('to');
+
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $message = '<strong>' . $this->view->translate('Votre session a expiré, veuillez réessayer.') . '</strong>';
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            $this->_helper->redirector('list', 'grid');
+            return;
+        }
+
+        $from = (int)$request->getPost('from');
+        $to = (int)$request->getPost('to');
 
         $source_grid = new Episciences_Rating_Grid;
         if (!$source_grid->loadXML(REVIEW_GRIDS_PATH . 'grid_' . $from . '.xml')) {
@@ -134,6 +145,11 @@ class GridController extends Zend_Controller_Action
         $this->_helper->getHelper('layout')->disableLayout();
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            echo '<strong>' . $this->view->translate('Votre session a expiré, veuillez réessayer.') . '</strong>';
+            return;
+        }
+
         /** @var array $params */
         $params = $request->getPost('params');
         $rgid =(int) $params['rgid'];
@@ -189,7 +205,10 @@ class GridController extends Zend_Controller_Action
 
         if ($request->getPost('submit')) {
 
-            if ($form->isValid($_POST)) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($_POST)) {
 
                 if ($this->savecriterion($oGrid, $oCriterion)) {
                     $message = '<strong>' . $this->view->translate("Le nouveau critère a bien été ajouté.") . '</strong>';
@@ -201,7 +220,7 @@ class GridController extends Zend_Controller_Action
                 $this->_helper->redirector('list', 'grid');
 
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }
@@ -338,7 +357,10 @@ class GridController extends Zend_Controller_Action
 
         if ($request->getPost('submit')) {
 
-            if ($form->isValid($request->getPost())) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($request->getPost())) {
 
                 if ($this->savecriterion($oGrid, $oCriterion, 'separator')) {
                     $message = '<strong>' . $this->view->translate("Le nouveau séparateur a bien été ajouté.") . '</strong>';
@@ -350,7 +372,7 @@ class GridController extends Zend_Controller_Action
                 $this->_helper->redirector('list', 'grid');
 
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }
@@ -388,7 +410,10 @@ class GridController extends Zend_Controller_Action
         $post = $request->getPost();
 
         if ($request->getPost('submit')) {
-            if ($form->isValid($_POST)) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($_POST)) {
 
                 if ($this->savecriterion($oGrid, $oCriterion, 'separator')) {
                     $message = '<strong>' . $this->view->translate("Le séparateur a bien été modifié.") . '</strong>';
@@ -400,7 +425,7 @@ class GridController extends Zend_Controller_Action
                 $this->_helper->redirector('list', 'grid');
 
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
             }
@@ -444,7 +469,10 @@ class GridController extends Zend_Controller_Action
 
         if ($request->getPost('submit')) {
 
-            if ($form->isValid($_POST)) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($_POST)) {
 
                 if ($this->savecriterion($oGrid, $oCriterion)) {
                     $message = '<strong>' . $this->view->translate("Le critère a bien été modifié.") . '</strong>';
@@ -456,7 +484,7 @@ class GridController extends Zend_Controller_Action
                 $this->_helper->redirector('list', 'grid');
 
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
             }
@@ -471,7 +499,13 @@ class GridController extends Zend_Controller_Action
         $this->_helper->getHelper('layout')->disableLayout();
 
         $request = $this->getRequest();
-        $params = $request->getParam('params');
+
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            echo $this->view->translate('Votre session a expiré, veuillez réessayer.');
+            return;
+        }
+
+        $params = $request->getPost('params');
 
 
         $rgid = filter_var($params['rgid'], FILTER_SANITIZE_NUMBER_INT);
@@ -499,12 +533,18 @@ class GridController extends Zend_Controller_Action
     public function sortcriterionAction()
     {
         $request = $this->getRequest();
+        $this->_helper->viewRenderer->setNoRender();
+        $this->_helper->getHelper('layout')->disableLayout();
+
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         $params = $request->getPost();
         $params['rvid'] = RVID;
 
         $respond = Episciences_GridsManager::sortCriterion($params);
-        $this->_helper->viewRenderer->setNoRender();
-        $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
     }
 

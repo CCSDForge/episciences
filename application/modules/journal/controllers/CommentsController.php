@@ -95,6 +95,14 @@ class CommentsController extends PaperController
         }
 
 
+        // The files live in the directory of the paper the comment belongs to, not in the one named by the request
+        if ($comment->getDocid() !== $docid) {
+            $message = $this->view->translate("Le commentaire demandé n’existe pas.");
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            $this->_helper->redirector->gotoUrl($url);
+            return;
+        }
+
         if ($comment->getUid() !== Episciences_Auth::getUid()) {
             $message = $this->view->translate("Vous n'avez pas les autorisations nécessaires pour supprimer ce fichier.");
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
@@ -339,6 +347,8 @@ class CommentsController extends PaperController
         }
 
         /** @var Zend_Controller_Request_Http $request */
+        // Defined before the try so it is still set if the form build throws below.
+        $form = null;
         try {
             $form = Episciences_CommentsManager::getEditAuthorCommentForm($oldComment);
             if (

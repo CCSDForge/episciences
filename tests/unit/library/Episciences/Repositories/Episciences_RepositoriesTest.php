@@ -106,14 +106,30 @@ final class Episciences_RepositoriesTest extends TestCase
         ];
     }
 
+    private bool $hadMetadataSources;
+    /** @var mixed */
+    private $originalMetadataSources;
+
     protected function setUp(): void
     {
+        $this->hadMetadataSources = Zend_Registry::isRegistered('metadataSources');
+        if ($this->hadMetadataSources) {
+            $this->originalMetadataSources = Zend_Registry::get('metadataSources');
+        }
         Zend_Registry::set('metadataSources', self::$fakeSources);
         $this->resetRepositoriesCache();
     }
 
     protected function tearDown(): void
     {
+        // Zend_Registry is a process-wide singleton: restore whatever was registered
+        // before this test so the fake sources above don't leak into other test files
+        // running later in the same PHPUnit process.
+        if ($this->hadMetadataSources) {
+            Zend_Registry::set('metadataSources', $this->originalMetadataSources);
+        } else {
+            Zend_Registry::getInstance()->offsetUnset('metadataSources');
+        }
         $this->resetRepositoriesCache();
     }
 
@@ -444,6 +460,25 @@ final class Episciences_RepositoriesTest extends TestCase
     {
         // getLabel returns '' → str_contains('', 'HAL') = false
         self::assertFalse(Episciences_Repositories::isFromHalRepository(9999));
+    }
+
+    // =========================================================================
+    // isFromArxivRepository()
+    // =========================================================================
+
+    public function testIsFromArxivRepositoryTrueForArxiv(): void
+    {
+        self::assertTrue(Episciences_Repositories::isFromArxivRepository(2));
+    }
+
+    public function testIsFromArxivRepositoryFalseForHal(): void
+    {
+        self::assertFalse(Episciences_Repositories::isFromArxivRepository(1));
+    }
+
+    public function testIsFromArxivRepositoryFalseForUnknownRepo(): void
+    {
+        self::assertFalse(Episciences_Repositories::isFromArxivRepository(9999));
     }
 
     // =========================================================================

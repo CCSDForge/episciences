@@ -7,6 +7,9 @@
  */
 class Ccsd_User_Models_UserMapper {
 
+    /** @var array<int, array<string, mixed>> Request-level cache keyed by UID */
+    private static array $_cache = [];
+
     /** @var Zend_Db_Table_Abstract */
     protected $_dbTable;
 
@@ -116,7 +119,10 @@ class Ccsd_User_Models_UserMapper {
             ));
 
             if (1 != $result) {
-                return false;
+                // 0 rows affected: either the UID is gone (real failure) or the
+                // UPDATE was a same-second no-op (MySQL reports 0 when the row's
+                // data is already identical). Only the former is an error.
+                return $this->uidExists((int)$user->getUid()) ? $user->getUid() : false;
             } else {
                 return $user->getUid();
             }
@@ -176,6 +182,24 @@ class Ccsd_User_Models_UserMapper {
      */
     public function find($uid, Ccsd_User_Models_User $user = null) {
 
+        $uid = (int) $uid;
+
+        if (isset(self::$_cache[$uid])) {
+            $cached = self::$_cache[$uid];
+            if ($user !== null) {
+                $user->setUid($cached['UID'])
+                    ->setUsername($cached['USERNAME'])
+                    ->setEmail($cached['EMAIL'])
+                    ->setCiv($cached['CIV'])
+                    ->setLastname($cached['LASTNAME'])
+                    ->setFirstname($cached['FIRSTNAME'])
+                    ->setMiddlename($cached['MIDDLENAME'])
+                    ->setTime_registered($cached['TIME_REGISTERED'])
+                    ->setTime_modified($cached['TIME_MODIFIED'])
+                    ->setValid($cached['VALID']);
+            }
+            return (object) $cached;
+        }
 
         $select = $this->getDbTable()->select()->where('UID = ?', $uid);
 
@@ -229,6 +253,99 @@ class Ccsd_User_Models_UserMapper {
         }
 
         return $rows;
+    }
+
+    /**
+     * Returns the most recently modified VALID account matching the given email.
+     *
+     * When several valid accounts share the same email, the one with the most
+     * recent TIME_MODIFIED is returned.
+     *
+     * @param string $email
+     * @return array{UID: int, USERNAME: string, EMAIL: string, CIV: ?string, FIRSTNAME: ?string, LASTNAME: ?string}|null
+     * @throws Exception
+     */
+    public function findMostRecentValidByEmail(string $email): ?array
+    {
+        $select = $this->getDbTable()->select()
+            ->from($this->getDbTable(), ['UID', 'USERNAME', 'EMAIL', 'CIV', 'FIRSTNAME', 'LASTNAME'])
+            ->where('EMAIL = ?', $email)
+            ->where('VALID = ?', 1)
+            ->order('TIME_MODIFIED DESC')
+            ->limit(1);
+
+        $row = $this->getDbTable()->fetchRow($select);
+
+        if (!$row) {
+            return null;
+        }
+
+        $data = $row->toArray();
+
+        return [
+            'UID' => (int)$data['UID'],
+            'USERNAME' => (string)$data['USERNAME'],
+            'EMAIL' => (string)$data['EMAIL'],
+            'CIV' => isset($data['CIV']) ? (string)$data['CIV'] : null,
+            'FIRSTNAME' => isset($data['FIRSTNAME']) ? (string)$data['FIRSTNAME'] : null,
+            'LASTNAME' => isset($data['LASTNAME']) ? (string)$data['LASTNAME'] : null,
+        ];
+    }
+
+    /**
+     * Checks whether a username already exists, regardless of the VALID flag
+     * (a username is globally unique in the CAS users table).
+     *
+     * @param string $username
+     * @return bool
+     * @throws Exception
+     */
+    public function usernameExists(string $username): bool
+    {
+        $select = $this->getDbTable()->select()
+            ->from($this->getDbTable(), ['UID'])
+            ->where('USERNAME = ?', $username)
+            ->limit(1);
+
+        return (bool)$this->getDbTable()->fetchRow($select);
+    }
+
+    /**
+     * Returns the UIDs of every account currently using the given email, ordered
+     * by UID so that callers picking the first match (e.g. to resolve which
+     * duplicate account to attach to) get a deterministic result.
+     * Comparison is delegated to MySQL (utf8mb3_general_ci: case- and
+     * trailing-space-insensitive), consistently with the form validator.
+     *
+     * @return int[]
+     */
+    public function findUidsByEmail(string $email): array
+    {
+        $select = $this->getDbTable()->select()
+            ->from($this->getDbTable(), ['UID'])
+            ->where('EMAIL = ?', $email)
+            ->order('UID ASC');
+
+        $uids = [];
+
+        foreach ($this->getDbTable()->fetchAll($select) as $row) {
+            $uids[] = (int)$row['UID'];
+        }
+
+        return $uids;
+    }
+
+    /**
+     * Checks whether an account with the given UID still exists.
+     */
+    public function uidExists(int $uid): bool
+    {
+        $select = $this->getDbTable()->select()
+            ->from($this->getDbTable(), ['UID'])
+            ->where('UID = ?', $uid)
+            ->limit(1);
+
+        return (bool)$this->getDbTable()->fetchRow($select);
     }
 
     /**

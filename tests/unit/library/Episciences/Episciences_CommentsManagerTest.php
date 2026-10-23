@@ -10,12 +10,16 @@ use PHPUnit\Framework\TestCase;
  *
  * Tests cover: constants, static typed arrays, and the methods
  * that short-circuit before touching the database.
- * All DB-dependent methods (getList, getParents, getComment…) are excluded.
+ * Cache hit tests inject a pre-populated ArrayAdapter to bypass DB.
  *
  * @covers Episciences_CommentsManager
  */
 class Episciences_CommentsManagerTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Episciences_CommentsManager::setCachePool(new \Symfony\Component\Cache\Adapter\ArrayAdapter());
+    }
     // ---------------------------------------------------------------
     // Integer TYPE_* constants
     // ---------------------------------------------------------------
@@ -508,5 +512,70 @@ class Episciences_CommentsManagerTest extends TestCase
         // replyTo=1      → (int)1 > 0 → passes →  = 1 → proceed to DB
         // This test documents the design; the DB-reaching path is an integration concern.
         $this->assertTrue(true); // assertion to avoid risky-test warning
+    }
+
+    // ---------------------------------------------------------------
+    // Cache pool wiring
+    // ---------------------------------------------------------------
+
+    public function testGetCachePoolReturnsArrayAdapterByDefault(): void
+    {
+        $pool = Episciences_CommentsManager::getCachePool();
+        $this->assertInstanceOf(\Symfony\Component\Cache\Adapter\ArrayAdapter::class, $pool);
+    }
+
+    public function testSetCachePoolChangesPoolInstance(): void
+    {
+        $mockPool = $this->createMock(\Psr\Cache\CacheItemPoolInterface::class);
+        Episciences_CommentsManager::setCachePool($mockPool);
+        $this->assertSame($mockPool, Episciences_CommentsManager::getCachePool());
+    }
+
+    // ---------------------------------------------------------------
+    // getList() — cache hit path (no DB needed)
+    // ---------------------------------------------------------------
+
+    public function testGetListReturnsCachedValueOnHit(): void
+    {
+        $pool = new \Symfony\Component\Cache\Adapter\ArrayAdapter();
+        $docId = 42;
+        $settings = [];
+        $fetchReviewer = true;
+        $cachedValue = [100 => ['PCID' => 100, 'MESSAGE' => 'cached comment']];
+
+        $key = 'comments_list_' . $docId . '_' . md5(serialize($settings) . '_' . ($fetchReviewer ? '1' : '0'));
+        $item = $pool->getItem($key);
+        $item->set($cachedValue);
+        $pool->save($item);
+
+        Episciences_CommentsManager::setCachePool($pool);
+
+        $result = Episciences_CommentsManager::getList($docId, $settings, $fetchReviewer);
+        $this->assertSame($cachedValue, $result);
+    }
+
+    public function testGetListCacheKeyVariesWithSettings(): void
+    {
+        $pool = new \Symfony\Component\Cache\Adapter\ArrayAdapter();
+        $docId = 7;
+
+        $valueA = [['MESSAGE' => 'for uid 1']];
+        $valueB = [['MESSAGE' => 'all comments']];
+
+        $keyA = 'comments_list_' . $docId . '_' . md5(serialize(['UID' => 1]) . '_1');
+        $keyB = 'comments_list_' . $docId . '_' . md5(serialize([]) . '_1');
+
+        $itemA = $pool->getItem($keyA);
+        $itemA->set($valueA);
+        $pool->save($itemA);
+
+        $itemB = $pool->getItem($keyB);
+        $itemB->set($valueB);
+        $pool->save($itemB);
+
+        Episciences_CommentsManager::setCachePool($pool);
+
+        $this->assertSame($valueA, Episciences_CommentsManager::getList($docId, ['UID' => 1]));
+        $this->assertSame($valueB, Episciences_CommentsManager::getList($docId, []));
     }
 }

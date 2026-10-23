@@ -1,5 +1,17 @@
 <?php
+
+use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Reviewer\InvitationToken;
+use Episciences\Paper\Spdx\LicenseCodeManager;
+use Episciences\Paper\Spdx\LicenseManager;
+use Episciences\Paper\Spdx\LicenseSpdxResolver;
+use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
+use Psr\Log\LogLevel;
+
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
+
+use Episciences\Paper\RepositoryVersionsService;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
 /**
  * Class AdministratepaperController
@@ -7,18 +19,19 @@ require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultControl
 class AdministratepaperController extends PaperDefaultController
 {
     use Episciences_Paper_AuthorEditorCommunicationControllerTrait;
+    use Episciences_Paper_AccessControlControllerTrait;
     public const ACTION_ASSIGNED = 'assigned';
     public const DATATABLE_COLUMNS = [
         '0' => 'paperid',
         '1' => 'docid',
         '2' => 'status',
-        '3' => '',//  ***
+        '3' => '',
         '4' => 'vid',
         '5' => 'sid',
-        '6' => '', // ***
-        '7' => '',// ***
-        '8' => '',// *** (désactiver dans js/paper/submitted.js) sinon prévoir une jointure si nécessaire
-        '9' => '',
+        '6' => 'reviewer_sort',
+        '7' => 'editor_sort',
+        '8' => 'copyeditor_sort',
+        '9' => 'contributor_sort',
         '10' => 'when',
         '11' => 'publication_date'
     ];
@@ -116,6 +129,46 @@ class AdministratepaperController extends PaperDefaultController
             $papers = $review->getPapers($settings, true);
 
             $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+
+            // Prime the Episciences_User static request-level memory cache (Eager Loading)
+            $uidsToPreload = [];
+            foreach ($papers as $paper) {
+                if ($paper->getUid()) {
+                    $uidsToPreload[] = (int)$paper->getUid();
+                }
+            }
+
+            $paperIds = array_map(static function ($p) {
+                return (int)$p->getDocid();
+            }, $papers);
+
+            if (!empty($paperIds)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                $assignSelect = $db->select()
+                    ->from(T_ASSIGNMENTS, ['UID'])
+                    ->where('ITEM = ?', 'paper')
+                    ->where('ITEMID IN (?)', $paperIds);
+                $assignedUids = $db->fetchCol($assignSelect);
+                if (!empty($assignedUids)) {
+                    foreach ($assignedUids as $uid) {
+                        $uidsToPreload[] = (int)$uid;
+                    }
+                }
+            }
+
+            $uidsToPreload = array_unique(array_filter($uidsToPreload));
+
+            if (!empty($uidsToPreload)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                foreach (array_chunk($uidsToPreload, 1000) as $chunk) {
+                    $preloadSelect = $db->select()
+                        ->from(T_USERS)
+                        ->where('UID IN (?)', $chunk);
+                    foreach ($db->fetchAll($preloadSelect) as $row) {
+                        Episciences_User::setStaticCache((int)$row['UID'], $row);
+                    }
+                }
+            }
 
             foreach ($papers as &$paper) {
                 $paper->loadSubmitter(false);
@@ -351,6 +404,45 @@ class AdministratepaperController extends PaperDefaultController
 
             $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
 
+            // Prime the Episciences_User static request-level memory cache (Eager Loading)
+            $uidsToPreload = [];
+            foreach ($papers as $paper) {
+                if ($paper->getUid()) {
+                    $uidsToPreload[] = (int)$paper->getUid();
+                }
+            }
+
+            $paperIds = array_map(static function ($p) {
+                return (int)$p->getDocid();
+            }, $papers);
+
+            if (!empty($paperIds)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                $assignSelect = $db->select()
+                    ->from(T_ASSIGNMENTS, ['UID'])
+                    ->where('ITEM = ?', 'paper')
+                    ->where('ITEMID IN (?)', $paperIds);
+                $assignedUids = $db->fetchCol($assignSelect);
+                if (!empty($assignedUids)) {
+                    foreach ($assignedUids as $uid) {
+                        $uidsToPreload[] = (int)$uid;
+                    }
+                }
+            }
+
+            $uidsToPreload = array_unique(array_filter($uidsToPreload));
+
+            if (!empty($uidsToPreload)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                foreach (array_chunk($uidsToPreload, 1000) as $chunk) {
+                    $preloadSelect = $db->select()
+                        ->from(T_USERS)
+                        ->where('UID IN (?)', $chunk);
+                    foreach ($db->fetchAll($preloadSelect) as $row) {
+                        Episciences_User::setStaticCache((int)$row['UID'], $row);
+                    }
+                }
+            }
 
             /** @var Episciences_Paper $paper */
             foreach ($papers as &$paper) {
@@ -448,7 +540,7 @@ class AdministratepaperController extends PaperDefaultController
         $params = $request->getPost();
         $docId = $params['docid'];
 
-        $paper = Episciences_PapersManager::get($docId);
+        $paper = Episciences_PapersManager::get($docId, false);
 
         $review = Episciences_ReviewsManager::find(RVID);
         $volumes = $review->getVolumes();
@@ -473,7 +565,7 @@ class AdministratepaperController extends PaperDefaultController
         $params = $request->getPost();
         $docId = $params['docid'];
 
-        $paper = Episciences_PapersManager::get($docId);
+        $paper = Episciences_PapersManager::get($docId, false);
         $paper->loadOtherVolumes();
 
         // fetch paper secondary volumes
@@ -579,16 +671,18 @@ class AdministratepaperController extends PaperDefaultController
         $contributorSocialMedia = $contributor->getSocialMedias();
         $this->view->contributorSocialMedia = $contributorSocialMedia;
         $this->view->coAuthorsList = $paper->getCoAuthors();
+        // redirect if not allowed (previous versions included)
+        $this->checkPermissions($review, $paper);
+
         // check if paper is obsolete; if so, display a warning
         if ($paper->isObsolete()) {
             $latestDocId = $paper->getLatestVersionId();
             $this->view->latestDocId = $latestDocId;
             $this->view->linkToLatestDocId = $this->buildAdminPaperUrl($latestDocId);
-        } else { // redirect if not allowed
-            $this->checkPermissions($review, $paper);
         }
 
-        $paper->setXslt($paper->getXml(), 'admin_paper');
+        // Only secretaries can save a licence (see savespdxlicenseAction)
+        $paper->setXslt($paper->getXml(), 'admin_paper', ['canEditLicense' => Episciences_Auth::isSecretary() ? '1' : '0']);
 
         // load all volumes
         $volumes = $review->getVolumes();
@@ -647,8 +741,8 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->editor_comment_form = $editor_comment_form;
 
             // Only process editor comment form if it's not a reply form (reply forms have reply_to_pcid)
-            if (($request->getPost('postComment') !== null) && 
-                empty($request->getPost('reply_to_pcid')) && 
+            if (($request->getPost('postComment') !== null) &&
+                empty($request->getPost('reply_to_pcid')) &&
                 $editor_comment_form->isValid($request->getPost())) {
                 if ($this->save_editor_comment($paper)) {
                     $message = $this->view->translate("Votre commentaire a bien été envoyé.");
@@ -807,7 +901,7 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->other_editors = $all_editors;
             $this->view->acceptanceForm = Episciences_PapersManager::getAcceptanceForm($templates['accept']);
             $this->view->publicationForm = Episciences_PapersManager::getPublicationForm($templates['publish']);
-            $this->view->refusalForm = Episciences_PapersManager::getRefusalForm($templates['refuse'], $docId);
+            $this->view->refusalForm = Episciences_PapersManager::getRefusalForm($templates['refuse']);
             $this->view->minorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['minorRevision'], 'minor', $review, true, $docId);
             $this->view->majorRevisionForm = Episciences_PapersManager::getRevisionForm($templates['majorRevision'], 'major', $review, true, $docId);
             // waiting for author resources form request
@@ -859,12 +953,14 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->logs = $paper->getHistory();
 
         // js tags
-        $this->view->js_review = Zend_Json::encode(['rvid' => RVID, 'code' => RVCODE, 'name' => $review->getName()]);
+        $this->view->js_review = Zend_Json::encode(['rvid' => RVID, 'code' => $review->getMailDisplayCode(), 'name' => $review->getName()]);
         $this->view->js_paper = Zend_Json::encode(['id' => $paper->getDocid(),
             'title' => $paper->getAllTitles(),
             'repository' => (int)$paper->getRepoid()]);
         $this->view->js_contributor = Zend_Json::encode($contributor->toArray());
         $this->view->js_sender = Zend_Json::encode(['fullname' => Episciences_Auth::getFullName(), 'screen_name' => Episciences_Auth::getScreenName(), 'email' => Episciences_Auth::getEmail()]);
+        // Recipients autocomplete in paper status modals
+        $this->view->js_users = Zend_Json::encode(array_values($this->compileMailUsers($review)));
         $this->view->available_languages = Zend_Json::encode(Episciences_Tools::getLanguages());
 
         $this->view->paper = $paper;
@@ -916,9 +1012,7 @@ class AdministratepaperController extends PaperDefaultController
          * Bibliographical References
          */
         $enabledBib = false;
-        if (EPISCIENCES_BIBLIOREF['ENABLE'] &&
-            ($paper->getStatus() === Episciences_Paper::STATUS_CE_READY_TO_PUBLISH ||
-                $paper->getStatus() === Episciences_Paper::STATUS_PUBLISHED)) {
+        if (EPISCIENCES_BIBLIOREF['ENABLE']) {
             $this->view->urlcallapibib = APPLICATION_URL . '/' . $docId . '/pdf';
             $this->view->apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
             $enabledBib = true;
@@ -967,198 +1061,30 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
-     * @param Episciences_Paper $paper
-     * @param Episciences_Review $review
-     * @return void
+     * Build the "users" array used by recipients autocomplete (Cc/Bcc).
+     * Shape is aligned with AdministratemailController::compileUsers().
      */
-    private function redirectWithFlashMessageIfConflictDetected(Episciences_Paper $paper, Episciences_Review $review): void
+    private function compileMailUsers(Episciences_Review $review): array
     {
-        $docId = $paper->getDocid();
-        $loggedUid = Episciences_Auth::getUid();
+        $compiledUsers = [];
+        $users = $review::getUsers();
 
-        $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
+        if ($users) {
+            foreach ($users as $user) {
+                $cUser = [];
+                $cUser['uid'] = $user->getUid();
+                $cUser['fullname'] = $user->getFullName();
+                $cUser['username'] = $user->getUsername();
+                $cUser['mail'] = $user->getEmail();
+                $cUser['label'] = $user->getFullName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>';
+                $cUser['htmlLabel'] = '<span class="ep-ac-name">' . htmlspecialchars((string) $user->getFullName(), ENT_QUOTES, 'UTF-8') . ' <span class="darkgrey">(' . htmlspecialchars(mb_strtolower((string) $user->getUsername()), ENT_QUOTES, 'UTF-8') . ')</span></span>'
+                    . '<span class="ep-ac-email">' . htmlspecialchars((string) $user->getEmail(), ENT_QUOTES, 'UTF-8') . '</span>';
 
-        $isOwnSubmission = $paper->isOwner();
-        $isConflictDetected = self::isConflictDetected($paper, $review);
-
-        // check if user has required permissions
-        if ($isOwnSubmission || $isConflictDetected) {
-
-            $suUser = Episciences_Auth::getOriginalIdentity();
-
-            $message = '';
-
-            if ($isOwnSubmission) {
-
-                if ($suUser && ($suUser->getUid() !== $loggedUid)) {
-
-                    $message .= $suUser->getScreenName();
-                    $message .= ', ';
-                    $message .= '<br>';
-                    $message .= $this->view->translate("Vous êtes connecté en tant que : ");
-                    $message .= Episciences_Auth::getScreenName();
-                    $message .= '<br>';
-                }
-
-
-                $message .= $this->view->translate('Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé');
-                $url = '/paper/view?id=' . $docId;
-
-            } else {
-
-                $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-
-                if (
-                    isset($session->checkConflictResponseForSu) &&
-                    in_array($session->checkConflictResponseForSu, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)
-                ) {
-
-                    $message .= $suUser->getScreenName();
-                    $message .= ', ';
-                    $message .= '<br>';
-
-                    if ($session->checkConflictResponseForSu === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
-
-                        Episciences_Auth::updateIdentity($suUser);
-
-                        $message .= $this->view->translate("Vous êtes maintenant connecté à votre compte :");
-                        $message .= '<br>';
-                        $message .= $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
-
-                    } else {
-                        $message .= $this->view->translate("Vous avez vous-même signalé un conflit d'intérêts avec cette soumission.");
-                        $message .= '<br>';
-                        $message .= $this->view->translate("Vous êtes connecté en tant que : ");
-                        $message .= Episciences_Auth::getScreenName();
-                        $message .= '<br>';
-
-
-                        if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
-                            $message .= $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
-                        }
-
-                    }
-
-                } elseif ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
-                    $message = $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
-
-                } else {
-                    $message = $this->view->translate("Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission.");
-                }
-
-                $url = '/coi/report?id=' . $docId;
-
+                $compiledUsers[$user->getUid()] = $cUser;
             }
-
-
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector->gotoUrl($url);
-
         }
 
-    }
-
-    /**
-     * check user permissions according to controller action
-     * if access is denied, redirect to another page with an error message
-     * @param Episciences_Review $review
-     * @param Episciences_Paper $paper
-     * @return bool
-     * @throws Zend_Db_Statement_Exception
-     */
-    protected function checkPermissions(Episciences_Review $review, Episciences_Paper $paper): bool
-    {
-        // chief editors, administrator and secretary (git #235) can do whatever they want
-        if (Episciences_Auth::isSecretary()) {
-            return true;
-        } // check if editors have sufficient permission for accessing paper or changing its status
-
-        $redirection = $this->buildRedirectionMessage($review, $paper);
-        $params = array_key_exists('params', $redirection) ? $redirection['params'] : [];
-
-        if (!empty($redirection) && array_key_exists('message', $redirection)) {
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($redirection['message']);
-            $this->_helper->redirector->gotoUrl($this->_helper->url(self::ACTION_ASSIGNED, self::ADMINISTRATE_PAPER_CONTROLLER, null, $params));
-        }
-
-        return empty($redirection);
-    }
-
-    /**
-     * @param Episciences_Review $review
-     * @param Episciences_Paper $paper
-     * @return array
-     * @throws Zend_Db_Statement_Exception
-     */
-    private function buildRedirectionMessage(Episciences_Review $review, Episciences_Paper $paper): array
-    {
-        $redirection = [];
-
-        $isNextTest = true;
-
-        $message = "Vous n'avez pas les droits suffisants pour accéder à cet article";
-
-
-        if ($paper->getEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid())) { // assigned
-            $isNextTest = false;
-        }
-
-        // if editors encapsulation is on, editors who are not assigned to this paper do not have any permission for it: redirect them
-        if ($isNextTest && Episciences_Auth::isEditor() && $review->getSetting('encapsulateEditors')) {
-            $redirection['message'] = $message;
-            $isNextTest = false;
-        }
-
-        // if copy editors encapsulation is on, copy editors who are not assigned to this paper do not have any permission for it: redirect them
-        if ($isNextTest && Episciences_Auth::isCopyEditor() && $review->getSetting('encapsulateCopyEditors')) {
-            $redirection['message'] = $message;
-            $redirection['params'] = ['ce' => 1];
-            $isNextTest = false;
-        }
-
-
-        if ($isNextTest && Episciences_Auth::isGuestEditor() && !(Episciences_Auth::isEditor() || Episciences_Auth::isCopyEditor())) {
-            $redirection['message'] = $message;
-            return $redirection;
-        }
-
-        // check if journal settings allow editors to take decisions about this paper
-        switch ($this->getRequest()->getActionName()) {
-
-            case 'accept':
-                if (!$review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_ACCEPT_PAPERS)) {
-                    $redirection['message'] = "Vous n'avez pas les droits suffisants pour accepter cet article";
-                }
-                break;
-
-            case 'publish':
-
-                if (
-                    !$review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_PUBLISH_PAPERS) &&
-                    !($paper->isApprovedByAuthor() && $paper->getCopyEditor(Episciences_Auth::getUid()))
-                ) {
-                    $redirection['message'] = "Vous n'avez pas les droits suffisants pour publier cet article";
-                }
-                break;
-
-            case 'refuse':
-                if (!$review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_REJECT_PAPERS)) {
-                    $redirection['message'] = "Vous n'avez pas les droits suffisants pour refuser cet article";
-                }
-                break;
-
-            case 'revision':
-                if (!$review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS)) {
-                    $redirection['message'] = "Vous n'avez pas les droits suffisants pour demander des modifications sur cet article";
-                }
-                break;
-            default: // not action
-                break;
-        }
-
-
-        return $redirection;
-
+        return $compiledUsers;
     }
 
     /**
@@ -1435,7 +1361,7 @@ class AdministratepaperController extends PaperDefaultController
 
             // review js array init
             $review['id'] = $oReview->getRvid();
-            $review['code'] = $oReview->getCode();
+            $review['code'] = $oReview->getMailDisplayCode();
             $review['name'] = $oReview->getName();
             $review['invitation_deadline'] = $oReview->getSetting('invitation_deadline');
             $review['rating_deadline'] = Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline'));
@@ -1523,7 +1449,7 @@ class AdministratepaperController extends PaperDefaultController
 
         //get review object
         $oReview = Episciences_ReviewsManager::find(RVID);
-        $review = ['rvid' => RVID, 'code' => RVCODE, 'name' => $oReview->getName()];
+        $review = ['rvid' => RVID, 'code' => $oReview->getMailDisplayCode(), 'name' => $oReview->getName()];
 
         //init template
         $template = new Episciences_Mail_Template;
@@ -1542,7 +1468,7 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $oPaper->formatAuthorsMetadata(),
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
             Episciences_Mail_Tags::TAG_UPDATED_DEADLINE => $this->view->Date($oAssignment->getDeadline()),
-            Episciences_Mail_Tags::TAG_REVIEW_CODE => RVCODE,
+            Episciences_Mail_Tags::TAG_REVIEW_CODE => $oReview->getMailDisplayCode(),
         ];
         $subject = str_replace(array_keys($tags), array_values($tags), $template->getSubject());
         $body = str_replace(array_keys($tags), array_values($tags), $template->getBody());
@@ -1550,10 +1476,19 @@ class AdministratepaperController extends PaperDefaultController
             $body = Episciences_Tools::cleanBody($body);
         }
 
+        $deadline = date('Y-m-d', strtotime($oAssignment->getDeadline()));
+
         //init invitation form
-        $params = [
-            'rating_deadline_min' => Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline_min')),
-            'rating_deadline_max' => Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline_max'))];
+        try {
+            $params = [
+                    'rating_deadline_min' => Episciences_Tools::subDateInterval($deadline, $oReview->getSetting('rating_deadline_min')),
+                    'rating_deadline_max' => Episciences_Tools::addDateInterval($deadline, $oReview->getSetting('rating_deadline_max'))
+            ];
+        } catch (Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            return false;
+        }
+
         $form = Episciences_PapersManager::getDeadlineForm($aid, $params);
         $defaults = [
             'recipient' => $oReviewer->getFullName() . ' <' . $oReviewer->getEmail() . '>',
@@ -1639,9 +1574,17 @@ class AdministratepaperController extends PaperDefaultController
         $journal = Episciences_ReviewsManager::find(RVCODE);
 
         // Retrieving time stamps from today's date
-        $today = date('Y-m-d');
-        $minDeadline = Episciences_Tools::addDateInterval($today, $journal->getSetting('rating_deadline_min'));
-        $maxDeadline = Episciences_Tools::addDateInterval($today, $journal->getSetting('rating_deadline_max'));
+        $deadline = date('Y-m-d', strtotime($assignment->getDeadline()));
+
+        try {
+            $minDeadline = Episciences_Tools::subDateInterval($deadline, $journal->getSetting('rating_deadline_min'));
+        } catch (Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            $result['message'] = $e->getMessage();
+            echo Zend_Json::encode($result);
+            return;
+        }
+        $maxDeadline = Episciences_Tools::addDateInterval($deadline, $journal->getSetting('rating_deadline_max'));
 
         $minTimestamp = strtotime($minDeadline);
         $maxTimestamp = strtotime($maxDeadline);
@@ -1807,7 +1750,11 @@ class AdministratepaperController extends PaperDefaultController
         if (array_key_exists('locale', $reviewer)) {
             $url_params['lang'] = $reviewer['locale'];
         }
-        if ($reviewer['invitation_type'] == 3) {
+        $linkToken = (new InvitationToken())->forInvitation($invitation);
+        if ($linkToken !== null) {
+            $url_params[InvitationToken::URL_PARAM] = $linkToken;
+        } elseif ($reviewer['invitation_type'] == 3) {
+            // legacy invitation (no link token)
             $url_params['tmp'] = md5($reviewer['email']);
         }
 
@@ -1831,7 +1778,7 @@ class AdministratepaperController extends PaperDefaultController
 
         // reviewer invitation e-mail
         $mail = new Episciences_Mail('UTF-8');
-        $mail->setDocid($docId);
+        $mail->setDocid($docId, $paper->getPaperid());
         $mail->setSubject($post['subject']);
         $mail->setRawBody(Ccsd_Tools::clear_nl($post['body']));
         $mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_URL, $invitation_url);
@@ -1850,9 +1797,9 @@ class AdministratepaperController extends PaperDefaultController
 
         if (isset($post[Episciences_Mail_Send::ATTACHMENTS])) {
             $path = Episciences_Tools::getAttachmentsPath($paper->getDocid());
-            foreach ($post[Episciences_Mail_Send::ATTACHMENTS] as $attachment) {
-                $filepath = $path . $attachment;
-                if (file_exists($filepath)) {
+            foreach ((array)$post[Episciences_Mail_Send::ATTACHMENTS] as $attachment) {
+                $filepath = Episciences_Tools::resolveAttachmentPath($path, $attachment);
+                if ($filepath !== null) {
                     $mail->addAttachedFile($filepath);
                 }
             }
@@ -2354,7 +2301,7 @@ class AdministratepaperController extends PaperDefaultController
         $request = $this->getRequest();
         $docId = $request->getPost('docId');
         $from = $request->getPost('from');
-        $volume = Episciences_VolumesManager::find($request->getPost('vid'));
+        $volume = Episciences_VolumesManager::find($request->getPost('vid'), RVID);
         $paper = Episciences_PapersManager::get($docId);
 
         $htmlPosition = '';
@@ -2369,7 +2316,7 @@ class AdministratepaperController extends PaperDefaultController
             ]);
         }
 
-        echo ($volume) ? ($volume->getName() . $htmlPosition) : Zend_Registry::get('Zend_Translate')->translate('aucun');
+        echo ($volume) ? ($this->view->escape($volume->getName()) . $htmlPosition) : Zend_Registry::get('Zend_Translate')->translate('aucun');
     }
 
     /**
@@ -2463,7 +2410,7 @@ class AdministratepaperController extends PaperDefaultController
         $editors = $this->getEditors($paper);
 
         if ($vid) {
-            $volume = Episciences_VolumesManager::find($vid);
+            $volume = Episciences_VolumesManager::find($vid, RVID);
 
             if ($volume) {
                 $editors = array_replace($editors, $volume->getEditors());
@@ -2532,7 +2479,7 @@ class AdministratepaperController extends PaperDefaultController
         $copyEditors = $this->getCopyEditors($paper);
 
         if ($vId) {
-            $volume = Episciences_VolumesManager::find($vId);
+            $volume = Episciences_VolumesManager::find($vId, RVID);
             if ($volume) {
                 $copyEditors = array_replace($copyEditors, $volume->getCopyEditors());
             }
@@ -2765,6 +2712,12 @@ class AdministratepaperController extends PaperDefaultController
             $oldVid = $paper->getVid();
             $vid = (int)$request->getPost('vid');
 
+            // the target volume must belong to the current journal (0 = no volume)
+            if ($vid > 0 && !Episciences_VolumesManager::find($vid, RVID)) {
+                echo false;
+                return;
+            }
+
             if ($vid !== $oldVid) {
 
                 if (
@@ -2786,6 +2739,22 @@ class AdministratepaperController extends PaperDefaultController
 
                 // deleting the volume from T_VOLUME_PAPER
                 Episciences_Volume_PapersManager::deletePaperVolume($docId, $vid);
+
+                if ($paper->isPublished()) {
+                    try {
+                        SolrIndexing::enqueueIndex($paper->getDocid());
+                    } catch (Exception $e) {
+                        trigger_error($e->getMessage());
+                    }
+                }
+
+                if (defined('RVCODE') && RVCODE !== '') {
+                    $tagsToInvalidate = ["volume-{$vid}", 'volumes-' . RVCODE];
+                    if ($oldVid > 0) {
+                        $tagsToInvalidate[] = "volume-{$oldVid}";
+                    }
+                    \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
+                }
 
             }
 
@@ -2812,15 +2781,20 @@ class AdministratepaperController extends PaperDefaultController
             $docid = $request->getPost('docid');
             $paper = Episciences_PapersManager::get($docid);
 
-            // process form and retrieve volume ids
+            // process form and retrieve volume ids (submitted as vids[]=1&vids[]=3 by Tom Select)
+            $rawVids = $request->getPost('vids', []);
+            if (!is_array($rawVids)) {
+                $rawVids = [];
+            }
             $paper_volumes = [];
-            foreach ($request->getPost() as $name => $value) {
-                if (!preg_match('#^volume_#', $name)) {
+            foreach ($rawVids as $rawVid) {
+                $vid = (int) filter_var($rawVid, FILTER_SANITIZE_NUMBER_INT);
+                // skip invalid and primary volume (can't be its own secondary volume)
+                if ($vid <= 0 || $vid === (int) $paper->getVid()) {
                     continue;
                 }
-                $vid = filter_var($name, FILTER_SANITIZE_NUMBER_INT);
-                // master volume can't be a secondary volume
-                if ($vid == $paper->getVid()) {
+                // ignore volumes of other journals
+                if (!Episciences_VolumesManager::find($vid, RVID)) {
                     continue;
                 }
                 $paper_volumes[] = new Episciences_Volume_Paper(['vid' => $vid, 'docid' => $docid]);
@@ -2828,6 +2802,11 @@ class AdministratepaperController extends PaperDefaultController
 
             $paper->setOtherVolumes($paper_volumes);
             $paper->saveOtherVolumes();
+            // VOLUME_PAPER is a satellite table: refresh PAPERS.DOCUMENT so API consumers,
+            // which read the stored JSON, do not keep serving stale secondary volumes.
+            if (!Episciences_PapersManager::updateJsonDocumentData((int)$docid)) {
+                $errors[] = 'PAPERS.DOCUMENT refresh failed';
+            }
             $oOVolumes = $paper->getOtherVolumes(true);
             $oVolumes = [];
 
@@ -2840,16 +2819,11 @@ class AdministratepaperController extends PaperDefaultController
             $paper->log(Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION, Episciences_Auth::getUid(), ['vids' => $oVolumes]);
 
             if ($paper->isPublished()) {
-                $resOfIndexing = $paper->indexUpdatePaper();
-
-                if (!$resOfIndexing) {
-                    try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
-                    } catch (Exception $e) {
-                        trigger_error($e->getMessage());
-                    }
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
                 }
-
             }
 
             echo empty($errors);
@@ -2881,7 +2855,15 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($request->isPost()) {
 
+            $oldSid = $paper->getSid();
             $sid = (int)$request->getPost('sid');
+
+            // the target section must belong to the current journal (0 = no section)
+            if ($sid > 0 && !Episciences_SectionsManager::find($sid, RVID)) {
+                echo false;
+                return;
+            }
+
             $paper->setSid($sid);
             $paper->save();
             $paper->log(
@@ -2889,12 +2871,33 @@ class AdministratepaperController extends PaperDefaultController
                 Episciences_Auth::getUid(),
                 ['sid' => $sid]);
 
+            if ($paper->isPublished()) {
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
+
+            if (defined('RVCODE')) {
+                $tagsToInvalidate = [];
+                if ($sid > 0) {
+                    $tagsToInvalidate[] = "section-articles-{$sid}-" . RVCODE;
+                }
+                if ($oldSid > 0 && $oldSid !== $sid) {
+                    $tagsToInvalidate[] = "section-articles-{$oldSid}-" . RVCODE;
+                }
+                if (!empty($tagsToInvalidate)) {
+                    \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
+                }
+            }
+
             // if checkbox is checked,
             if ($request->getPost('assignEditors')) {
 
                 // assign section editors to this article
-                $section = Episciences_SectionsManager::find($sid);
-                $sectionEditors = $section->getEditors();
+                $section = Episciences_SectionsManager::find($sid, RVID);
+                $sectionEditors = $section ? $section->getEditors() : [];
                 $paperEditors = $paper->getEditors(true, true);
 
                 // filter editors already assigned to this article (avoid reassignment)
@@ -3322,7 +3325,7 @@ class AdministratepaperController extends PaperDefaultController
 
             //review object
             $oReview = Episciences_ReviewsManager::find(RVID);
-            $review = ['rvid' => RVID, 'code' => RVCODE, 'name' => $oReview->getName()];
+            $review = ['rvid' => RVID, 'code' => $oReview->getMailDisplayCode(), 'name' => $oReview->getName()];
 
             //user object
             if ($oAssignment->isTmp_user()) {
@@ -3359,7 +3362,7 @@ class AdministratepaperController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $oPaper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $oPaper->getTitle($locale, true),
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $oPaper->formatAuthorsMetadata(),
-                Episciences_Mail_Tags::TAG_REVIEW_CODE => RVCODE,
+                Episciences_Mail_Tags::TAG_REVIEW_CODE => $oReview->getMailDisplayCode(),
                 Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => (!$oAssignment->isTmp_user()) ? $oReviewer->getUsername() : '',
             ];
 
@@ -3607,6 +3610,205 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * Displays the confirmation modal for accepting a review invitation on behalf
+     * of the reviewer (pending or expired invitation).
+     *
+     * @return void
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function acceptreviewerinvitationAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        $aid = $request->getParam('aid');
+        if (!$aid || !is_numeric($aid)) {
+            $this->view->errorMessage = 'Id invalide';
+            return;
+        }
+        $aid = (int)$aid;
+
+        $context = $this->loadAcceptInvitationContext($aid);
+        if ($context === null) {
+            $this->view->errorMessage = "Impossible de retrouver l'invitation";
+            return;
+        }
+
+        /** @var Episciences_Paper $paper */
+        $paper = $context['paper'];
+        /** @var Episciences_User_Invitation $invitation */
+        $invitation = $context['invitation'];
+
+        if (!$this->isAllowedToManagePaperReviewing($paper)) {
+            $this->view->errorMessage = "Vous n'avez pas les droits suffisants pour effectuer cette action";
+            return;
+        }
+
+        if ($invitation->isAnswered() || $invitation->isCancelled()) {
+            $this->view->errorMessage = 'Cette invitation a déjà reçu une réponse ou a été annulée';
+            return;
+        }
+
+        if (!$paper->canBeReviewed()) {
+            $this->view->errorMessage = 'Cet article ne peut plus être relu';
+            return;
+        }
+
+        $preview = Episciences_Reviewer_AccountResolver::buildAcceptancePreview($context['assignment']);
+        if ($preview === null) {
+            $this->view->errorMessage = 'Impossible de retrouver ou créer le compte du relecteur';
+            return;
+        }
+
+        $this->view->aid = $aid;
+        $this->view->docId = $paper->getDocid();
+        $this->view->reviewerFullName = $preview['fullName'];
+        $this->view->reviewerEmail = $preview['email'];
+        $this->view->accountMode = $preview['mode']; // 'attach' | 'create'
+        $this->view->accountLogin = $preview['login'];
+        $this->view->csrfInput = Episciences_Csrf_Helper::getHiddenInput('accept_invitation_' . $aid);
+    }
+
+    /**
+     * Performs the acceptance of a review invitation on behalf of the reviewer.
+     *
+     * All guards are re-checked server-side; the resolved/created account is never
+     * derived from request parameters. Replicates exactly the side effects of a
+     * reviewer self-acceptance (mails, logs, assignment, alias, rating report).
+     *
+     * @return void
+     */
+    public function saveacceptreviewerinvitationAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        $translator = Zend_Registry::get('Zend_Translate');
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        $result = ['status' => 0];
+
+        $aid = $request->getParam('aid');
+        if (!$aid || !is_numeric($aid)) {
+            $result['message'] = $translator->translate('Id invalide');
+            echo json_encode($result, JSON_THROW_ON_ERROR);
+            return;
+        }
+        $aid = (int)$aid;
+
+        // CSRF protection
+        $csrfName = 'accept_invitation_' . $aid;
+        if (!Episciences_Csrf_Helper::validateToken($csrfName, (string)$request->getPost($csrfName, ''))) {
+            $result['message'] = $translator->translate('Jeton de sécurité invalide, veuillez recharger la page.');
+            echo json_encode($result, JSON_THROW_ON_ERROR);
+            return;
+        }
+
+        $context = $this->loadAcceptInvitationContext($aid);
+        if ($context === null) {
+            $result['message'] = $translator->translate("Impossible de retrouver l'invitation");
+            echo json_encode($result, JSON_THROW_ON_ERROR);
+            return;
+        }
+
+        /** @var Episciences_User_Assignment $assignment */
+        $assignment = $context['assignment'];
+        /** @var Episciences_User_Invitation $invitation */
+        $invitation = $context['invitation'];
+        /** @var Episciences_Paper $paper */
+        $paper = $context['paper'];
+
+        if (!$this->isAllowedToManagePaperReviewing($paper)) {
+            $result['message'] = $translator->translate("Vous n'avez pas les droits suffisants pour effectuer cette action");
+            echo json_encode($result, JSON_THROW_ON_ERROR);
+            return;
+        }
+
+        if ($invitation->isAnswered() || $invitation->isCancelled()) {
+            $result['message'] = $translator->translate('Cette invitation a déjà reçu une réponse ou a été annulée');
+            echo json_encode($result, JSON_THROW_ON_ERROR);
+            return;
+        }
+
+        if (!$paper->canBeReviewed()) {
+            $result['message'] = $translator->translate('Cet article ne peut plus être relu');
+            echo json_encode($result, JSON_THROW_ON_ERROR);
+            return;
+        }
+
+        try {
+            $preferredLogin = (string)$request->getPost('preferred_login', '');
+            $resolved = Episciences_Reviewer_AccountResolver::resolveForAcceptance($assignment, $preferredLogin);
+
+            if ($resolved === null) {
+                $result['message'] = $translator->translate('Impossible de retrouver ou créer le compte du relecteur');
+                echo json_encode($result, JSON_THROW_ON_ERROR);
+                return;
+            }
+
+            /** @var Episciences_Reviewer $user */
+            $user = $resolved['user'];
+
+            $this->performReviewerInvitationAcceptance($invitation, $assignment, $paper, $user, Episciences_Auth::getUid());
+
+            if ($resolved['created']) {
+                Episciences_Reviewer_AccountResolver::sendNewAccountPasswordEmail($user);
+            }
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            $result['message'] = $translator->translate("Une erreur s'est produite lors de l'acceptation de l'invitation");
+            echo json_encode($result, JSON_THROW_ON_ERROR);
+            return;
+        }
+
+        echo json_encode(['status' => 1, 'id' => $aid], JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * Loads the assignment, invitation and paper objects for a given assignment id.
+     *
+     * @param int $aid
+     * @return array{assignment: Episciences_User_Assignment, invitation: Episciences_User_Invitation, paper: Episciences_Paper}|null
+     */
+    private function loadAcceptInvitationContext(int $aid): ?array
+    {
+        $assignment = Episciences_User_AssignmentsManager::findById($aid);
+        if (!$assignment) {
+            return null;
+        }
+
+        $invitation = Episciences_User_InvitationsManager::findById($assignment->getInvitation_id());
+        if (!$invitation) {
+            return null;
+        }
+
+        $paper = Episciences_PapersManager::get($assignment->getItemid(), false);
+        if (!$paper) {
+            return null;
+        }
+
+        return ['assignment' => $assignment, 'invitation' => $invitation, 'paper' => $paper];
+    }
+
+    /**
+     * The acting user must be a secretary (or admin) or an editor assigned to this
+     * paper, and must not be the paper's own contributor.
+     *
+     * @param Episciences_Paper $paper
+     * @return bool
+     */
+    private function isAllowedToManagePaperReviewing(Episciences_Paper $paper): bool
+    {
+        $uid = Episciences_Auth::getUid();
+
+        return (Episciences_Auth::isSecretary() || (bool)$paper->getEditor($uid))
+            && ($uid !== $paper->getUid());
+    }
+
+    /**
      * *Formulaire de réassignation du rédacteur d'un article (pour Ajax)
      * //public function declinepaperassignmentAction()
      * @return bool
@@ -3642,7 +3844,7 @@ class AdministratepaperController extends PaperDefaultController
         // Préparation de js_review
         $review = [
             'id' => $oReview->getRvid(),
-            'code' => $oReview->getCode(),
+            'code' => $oReview->getMailDisplayCode(),
             'name' => $oReview->getName()
         ];
 
@@ -3663,6 +3865,7 @@ class AdministratepaperController extends PaperDefaultController
         $volume_editors = $oVolume->getEditors();
         $paper_editors = $oPaper->getEditors();
         $editors = [];
+        $js_editors = [];
         foreach ($volume_editors as $editor) {
             // on ne peut pas se réassigner l'article
             if ($editor->getUid() == Episciences_Auth::getUid()) {
@@ -3802,6 +4005,25 @@ class AdministratepaperController extends PaperDefaultController
         $oUser->findWithCAS($oLog->getUid());
         $user = $oUser->toArray();
 
+        // Resolve the editor who accepted an invitation on behalf of the reviewer.
+        // Newer logs store an array (uid + fullname); older logs stored a bare UID,
+        // so the name must be fetched from the UID for display.
+        if (isset($log['detail']['accepted_by'])) {
+            $acceptedBy = $log['detail']['accepted_by'];
+
+            if (!is_array($acceptedBy)) {
+                $acceptedBy = ['uid' => (int)$acceptedBy];
+            }
+
+            if (empty($acceptedBy['fullname']) && !empty($acceptedBy['uid'])) {
+                $acceptedByUser = new Episciences_User();
+                $acceptedByUser->findWithCAS((int)$acceptedBy['uid']);
+                $acceptedBy['fullname'] = $acceptedByUser->getFullName();
+            }
+
+            $log['detail']['accepted_by'] = $acceptedBy;
+        }
+
         $this->view->log = $log;
         $this->view->user = $user;
     }
@@ -3832,6 +4054,9 @@ class AdministratepaperController extends PaperDefaultController
                 $trace['error'] = $this->view->translate('Une erreur est survenue.');
             } else {
 
+                // Default so a malformed 'post' payload leaves an empty list instead of
+                // an undefined variable in the foreach below.
+                $post = [];
                 try {
 
                     $post = json_decode($request->getPost('post'), true, 512, JSON_THROW_ON_ERROR);
@@ -3845,6 +4070,7 @@ class AdministratepaperController extends PaperDefaultController
                 // liste des utilisateurs à ignorer
                 $ignoreList = $request->getPost('ignore_list');
 
+                $ignoreReviewers = [];
                 try {
                     $ignoreReviewers = ($ignoreList) ? json_decode($ignoreList, false, 512, JSON_THROW_ON_ERROR) : [];
 
@@ -4077,7 +4303,10 @@ class AdministratepaperController extends PaperDefaultController
 
         if (!empty($post[Episciences_Mail_Send::ATTACHMENTS])) {
             // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
-            $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
+            $attachments = Episciences_Tools::filterAttachmentNames(
+                Episciences_Tools::getAttachmentsPath(),
+                (array)$post[Episciences_Mail_Send::ATTACHMENTS]
+            );
 
             if ($comment) {
                 try {
@@ -4215,6 +4444,9 @@ class AdministratepaperController extends PaperDefaultController
      */
     public function saverefusedmonitoringAction(): void
     {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $docId = $request->getQuery('id'); // params en GET
@@ -4235,7 +4467,7 @@ class AdministratepaperController extends PaperDefaultController
                 try {
                     if ($this->applyEditorRefusedMonitoring($paper, $post['refused_monitoring_comment'])) {
                         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
-                        $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/' . self::ACTION_ASSIGNED);
+
                     }
 
                 } catch (Exception $e) {
@@ -4244,6 +4476,8 @@ class AdministratepaperController extends PaperDefaultController
 
             }
         }
+
+        $this->_helper->redirector->gotoUrl(sprintf('/%s/%s',  self::ADMINISTRATE_PAPER_CONTROLLER,self::ACTION_ASSIGNED));
     }
 
     /**
@@ -4375,6 +4609,11 @@ class AdministratepaperController extends PaperDefaultController
                     ]);
                     $result[$docId] = $currentVolume->getName() . $htmlPosition;
                 }
+                // Fallback: the paper may have been assigned to the volume without a position
+                // entry in T_VOLUME_PAPER_POSITION yet — ensure the cell is always refreshed.
+                if (!array_key_exists($currentDocId, $result)) {
+                    $result[$currentDocId] = $currentVolume->getName();
+                }
             } else {
                 $result[$currentDocId] = $none;
             }
@@ -4411,6 +4650,171 @@ class AdministratepaperController extends PaperDefaultController
         $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-publication-date-form.phtml');
         return true;
 
+    }
+
+    /**
+     * @return void
+     * @throws Zend_Controller_Response_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+
+    public function getlicenselistformAction(): void
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $docId = $request->getPost('docid');
+
+        if (!$docId) {
+            return;
+        }
+
+        $paper = Episciences_PapersManager::get($docId, false);
+
+        // a paper of another journal is handled as not found
+        if (!$paper instanceof Episciences_Paper || $paper->getRvid() !== RVID) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
+        $this->_helper->layout->disableLayout();
+        $review = $paper->findReview();
+
+        $this->view->docId = $paper->getDocid();
+        $this->view->licenseCode = $paper->getSpdxLicenseCode() ?? $review?->getDefaultLicense();
+        // null: no restriction, all the recommended licenses are offered
+        $this->view->allowedLicenses = $review?->getAllowedLicenses() ?: null;
+        $this->renderScript(self::ADMINISTRATE_PAPER_CONTROLLER . '/edit-license-form.phtml');
+    }
+
+
+    public function savespdxlicenseAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        // Check the request, the role and the CSRF token before loading anything
+        if (
+                !$request->isPost() ||
+                !$request->isXmlHttpRequest() ||
+                !Episciences_Auth::isSecretary() ||
+                !Episciences_Csrf_Helper::validateRequestToken($request)
+        ) {
+            $this->getResponse()->setHttpResponseCode(403);
+            $this->sendJsonError("Échec de l'enregistrement de la licence : action non autorisée.");
+            return;
+        }
+
+        $docId = ($request->getPost('docid')) ?: $request->getParam('docid');
+
+        $paper = Episciences_PapersManager::get($docId);
+
+        // a paper of another journal is handled as not found
+        if (!$paper instanceof Episciences_Paper || $paper->getRvid() !== RVID) {
+            $this->getResponse()->setHttpResponseCode(404);
+            $this->sendJsonError("Échec de l'enregistrement de la licence : article introuvable.");
+            return;
+        }
+
+        // spdx license code
+        $currentSpdxCode = $request->getPost('license');
+
+        // Reject missing and non-scalar values (e.g. license[]=MIT) before using the code as a string
+        if (!is_string($currentSpdxCode) || trim($currentSpdxCode) === '') {
+            $this->sendJsonError("Échec de l'enregistrement de la licence : aucun code de licence fourni.");
+            return;
+        }
+
+        $oldLicense = LicenseCodeManager::getCode($paper->getDocid());
+
+        // If the license to save is the same as the current one, warn the user
+        // (checked first: the current license may predate the journal's allowed licenses)
+        if (is_string($oldLicense) && LicenseManager::containsCode($currentSpdxCode, [$oldLicense])) {
+            echo json_encode(['warning' => 'La licence actuelle est déjà définie.'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return;
+        }
+
+        $allowedLicenses = $paper->findReview()?->getAllowedLicenses() ?? [];
+
+        // The paper current license is always accepted, even when it is only resolved from the license URL:
+        // the form pre-selects it, even if it is not allowed by the journal
+        if (
+            $allowedLicenses !== [] &&
+            !LicenseManager::containsCode($currentSpdxCode, $allowedLicenses) &&
+            !LicenseManager::containsCode($currentSpdxCode, array_filter([$paper->getSpdxLicenseCode()]))
+        ) {
+            $this->sendJsonError("Échec de l'enregistrement de la licence : cette licence n'est pas autorisée par la revue.");
+            return;
+        }
+
+        $isCurrentSpdxCodeValid = (new LicenseSpdxResolver())->isValid($currentSpdxCode);
+
+        if (!$isCurrentSpdxCodeValid) {
+            $this->sendJsonError("Échec de l'enregistrement de la licence : code SPDX invalide.");
+            return;
+        }
+
+        // Old license retrieved from the repository or via an enrichment script
+        $paperLicenceObject = Episciences_Paper_LicenceManager::getLicenceObjectByDocId($paper->getDocid());
+
+        if ($paperLicenceObject) {
+
+            if (!$oldLicense) {
+                $oldLicense = $paperLicenceObject->getLicence();
+            }
+
+            $paperLicenceObject->setDocid($paper->getDocid());
+            $paperLicenceObject->setUid(Episciences_Auth::getUid());
+            $paperLicenceObject->save();
+        }
+
+        $spdxLicense = new LicenseCode([
+                'code' => $currentSpdxCode,
+                'docid' => $docId
+        ]);
+
+        $spdxLicense->save();
+
+        try {
+            $paper->save();
+        } catch (InvalidArgumentExceptionAlias|Zend_Db_Adapter_Exception  $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+        }
+
+        $newLicense = $paper->getLicence();
+
+        $license = [
+                'href' => $paper->getLicence(),
+                'name' => $spdxLicense->getName(),
+                'html' => $this->view->partial('paper/info-license-box.phtml', ['paper' => $paper]),
+                'linkHtml' => $this->view->partial('paper/license-link.phtml', ['paper' => $paper])
+        ];
+
+        $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'previousLicense' => $oldLicense, 'newLicense' => $newLicense];
+
+        try {
+            echo json_encode($license, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $paper->log(Episciences_Paper_Logger::CODE_LICENSE_UPDATED, Episciences_Auth::getUid(), $details);
+        } catch (JsonException|Zend_Db_Adapter_Exception $e) {
+            trigger_error($e->getMessage());
+            $this->sendJsonError("Échec de l'enregistrement de la licence.");
+        }
+    }
+
+    /**
+     * Send a JSON error response to the client.
+     * @param string $message
+     * @return void
+     * @throws JsonException
+     */
+    private function sendJsonError(string $message): void
+    {
+        echo json_encode(
+            ['error' => $message],
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
     }
 
     /**
@@ -4499,13 +4903,14 @@ class AdministratepaperController extends PaperDefaultController
 
     /**
      * revision request (can be minor or major)
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function revisionAction(): void
     {
@@ -4514,7 +4919,7 @@ class AdministratepaperController extends PaperDefaultController
         $docId = $request->getParam('id');
         $type = $request->getParam('type');
 
-        $allowedTypes = ['minor', 'major', 'acceptedAskAuthorsFinalVersion'];
+        $allowedTypes = ['minor', 'major', Episciences_PapersManager::ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE];
 
         if (!in_array($type, $allowedTypes, true)) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : type incorrect !");
@@ -4524,7 +4929,7 @@ class AdministratepaperController extends PaperDefaultController
 
         $isMinorRevision = ($type === 'minor');
         $isMajorRevision = ($type === 'major');
-        $isAcceptedAskAuthorsFinalVersion = ($type === 'acceptedAskAuthorsFinalVersion');
+        $isAcceptedAskAuthorsFinalVersion = ($type === Episciences_PapersManager::ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE);
 
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -4540,8 +4945,8 @@ class AdministratepaperController extends PaperDefaultController
         $this->checkPermissions($review, $paper);
 
         if ($request->isPost()) {
-
-            $csrfName = 'csrf_revision_' . $type . '_' . (int)$docId;
+            $csrfPrefix = $isAcceptedAskAuthorsFinalVersion ? '' : 'revision_';
+            $csrfName = sprintf('csrf_%s%s_%s', $csrfPrefix, $type, (int)$docId);
             $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
             $post = $request->getPost();
             if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
@@ -4731,8 +5136,6 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         $vString = "version la plus récente dans l’archive ouverte";
-        $hasHook = $paper->hasHook; // zenodo repository
-        $this->view->hasHook = $hasHook;
         $this->view->label = $paper->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID ? ("L'identifiant de la " . $vString) : ('La ' . $vString);
         $this->view->type = 'select';
         $this->view->options = $availableVersions;
@@ -4749,139 +5152,8 @@ class AdministratepaperController extends PaperDefaultController
 
     private function availableRepositoryVersions(Episciences_Paper $paper): array
     {
-        $versions = [];
-        $repoId = $paper->getRepoid();
-
-        $api = Episciences_Repositories::getApiUrl($paper->getRepoid());
-
-        if ('' !== $api) {
-
-            if (Episciences_Repositories::isFromHalRepository($repoId)) {
-
-                $url = $api . '/search/?indent=true&q=' . $paper->getIdentifier() . '&fl=label_xml';
-
-                $result = Episciences_Tools::callApi($url);
-
-                if ($result && is_array($result)) {
-                    $xml = $result['response']['docs'][array_key_first($result['response']['docs'])]['label_xml'] ?? '';
-
-                    if ('' !== $xml) {
-
-                        $xmlObject = simplexml_load_string($xml);
-
-                        if ($xmlObject) {
-
-                            $editions = $xmlObject->text->body->listBibl->biblFull->editionStmt->edition;
-
-                            foreach ($editions as $edition) {
-
-                                $versions[] = substr($edition['n'][0], 1);
-
-                            }
-                        }
-
-                    }
-                }
-
-            } elseif ((int)Episciences_Repositories::ZENODO_REPO_ID === $repoId) {
-
-                $dataCiteUrl = 'https://api.datacite.org/dois/';
-                $dataCiteUrl .= Episciences_Repositories::getRepoDoiPrefix($repoId);
-                $dataCiteUrl .= '/';
-                $dataCiteUrl .= mb_strtolower(Episciences_Repositories::getLabel($repoId));
-                $dataCiteUrl .= '.';
-
-                $conceptIdentifierUrl = $dataCiteUrl . $paper->getConcept_identifier();
-                $responseWithConceptId = Episciences_Tools::callApi($conceptIdentifierUrl);
-
-                $doisVersions = $responseWithConceptId['data']['relationships']['versions']['data'];
-
-                foreach ($doisVersions as $index => $value) {
-
-                    $cleanedIdentifier = Episciences_Repositories_Zenodo_Hooks::hookCleanIdentifiers(['id' => $value['id'], 'repoId' => $repoId])['identifier'];
-
-                    if ($cleanedIdentifier > $paper->getIdentifier()) {
-                        $versions[$index + 1] = $cleanedIdentifier;
-                    }
-                }
-
-            } elseif (
-                $repoId === (int)Episciences_Repositories::BIO_RXIV_ID ||
-                $repoId === (int)Episciences_Repositories::MED_RXIV_ID
-            ) {
-                $url = $api . $paper->getIdentifier() . DIRECTORY_SEPARATOR . 'na' . DIRECTORY_SEPARATOR . 'json';
-
-                $response = Episciences_Tools::callApi($url);
-                $messages = $response['messages'][array_key_first($response['messages'])];
-                $collection = $response['collection'];
-
-                if (
-                    isset($messages['status']) &&
-                    $messages['status'] === Episciences_Repositories_BioMedRxiv::SUCCESS_CODE
-                ) {
-                    foreach ($collection as $index => $values) {
-                        $versions[$index + 1] = $values['version'];
-
-                    }
-                }
-            } elseif (Episciences_Repositories::isDataverse($repoId)) {
-                $url = $api;
-                $url .= 'datasets/:persistentId/?persistentId=';
-                $url .= $paper->getIdentifier();
-                $response = Episciences_Tools::callApi($url);
-
-                if (
-                    isset($response['status']) &&
-                    mb_strtolower($response['status']) === Episciences_Repositories_Dataverse_Hooks::SUCCESS_CODE
-                ) {
-
-                    $latestVersion = $response['data']['latestVersion']['versionNumber'] ?? 1;
-                    $versionMinorNumber = $response['data']['latestVersion']['versionMinorNumber'] ?? 0;
-
-                    $version = (float)($latestVersion . '.' . $versionMinorNumber);
-
-                    while ($version > 0) {
-                        $versions[] = $version . '.' . $versionMinorNumber;
-                        $version -= 1.0;
-                    }
-                }
-            }
-
-        } else {
-
-            $identifier = Episciences_Repositories::getIdentifier($paper->getRepoid(), $paper->getIdentifier());
-            $baseUrl = Episciences_Repositories::getBaseUrl($paper->getRepoid());
-            $oai = new Episciences_Oai_Client($baseUrl, 'xml');
-
-            if ((int)Episciences_Repositories::ARXIV_REPO_ID === $repoId) {
-                try {
-                    $versions = Episciences_Submit::extractVersionsFromArXivRaw($oai->getArXivRawRecord($identifier));
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage());
-                }
-            } else {
-
-                $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', [
-                    'identifier' => $paper->getConcept_identifier(),
-                    'repoId' => $paper->getRepoid()
-                ]);
-
-                if ((int)Episciences_Repositories::CRYPTOLOGY_EPRINT === $repoId) {
-                    $latestVersionDateTime = $hookApiRecord[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
-                    $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($paper->getIdentifier());
-                    $latestIdentifier = sprintf('%s/%s', $paper->getConcept_identifier(), $latestVersionDateTime);
-                    // This behavior is intentional because a submission without a specific version is the most recent version.
-                    // If the paper does not yet have a datetime in its identifier, getDateTimePattern() returns ''.
-                    if ($latestVersionDateTime > $previousPaperVersionDateTime) {
-                        $versions[] = $latestIdentifier;
-                    }
-                }
-            }
-
-        }
-
-        arsort($versions);
-        return $versions;
+        $service = new RepositoryVersionsService();
+        return $service->getAvailableVersions($paper);
     }
 
     /**
@@ -4899,26 +5171,30 @@ class AdministratepaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $post = $request->getPost();
-        $hasDateTime = false;
 
-        if (isset($post['latest-repository-version'])) {
-            $latestPostedVersion = $post['latest-repository-version'];
-            $hasDateTime = Episciences_Repositories_Common::getDateTimePattern($latestPostedVersion) !== '';
-
-            if (!$hasDateTime) {
-                $latestPostedVersion = (float)$latestPostedVersion;
-            }
-
-        } else {
-            $latestPostedVersion = 0;
-        } // version or identifier
-
-        if (!$latestPostedVersion) {
+        // This action persists a repository version/identifier, so it must only run on
+        // an authenticated POST carrying a valid per-session request token (CSRF).
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
             return false;
         }
 
-        $isReadyToPublish = isset($post['ready-to-publish']) && $post['ready-to-publish'] === 'on';
+        $post = $request->getPost();
+
+        $latestPostedVersion = $post['latest-repository-version'] ?? 0; // version or identifier
+
+        // The posted value must be a scalar: an array (e.g. latest-repository-version[]=x)
+        // would otherwise reach getDateTimePattern() and raise an uncaught TypeError before
+        // the paper rights check, making the endpoint exploitable by any authenticated user.
+        if (is_array($latestPostedVersion)) {
+            return false;
+        }
+
+        $latestPostedVersion = (string)$latestPostedVersion;
+
+        if ($latestPostedVersion === '') {
+            return false;
+        }
 
         $docId = (int)$request->getPost('docid');
 
@@ -4932,6 +5208,10 @@ class AdministratepaperController extends PaperDefaultController
             return false;
         }
 
+        $isReadyToPublish = isset($post['ready-to-publish']) && $post['ready-to-publish'] === 'on';
+        $hasDateTime = Episciences_Repositories_Common::getDateTimePattern($latestPostedVersion) !== '';
+        $isFromZenodo = Episciences_Repositories::ZENODO_REPO_ID === (string)$paper->getRepoid();
+
         if (
             !$paper->isEditableVersion() ||
             (
@@ -4943,22 +5223,29 @@ class AdministratepaperController extends PaperDefaultController
             return false;
         }
 
-        $hookedVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $latestPostedVersion, 'repoId' => $paper->getRepoid()]);
+        $hookedVersion = Episciences_Repositories::callHook('hookVersion', [
+            'identifier' => ($isFromZenodo || $hasDateTime) ? $latestPostedVersion : $paper->getIdentifier(),
+            'repoId' => $paper->getRepoid(),
+            'context' => ['previousVersion' => $paper->getVersion()],
+        ]);
 
         if (isset($hookedVersion['version']) || $hasDateTime) {
-            $paper->setIdentifier($latestPostedVersion); // posted identifier
+
+            if ($isFromZenodo || $hasDateTime){
+                $paper->setIdentifier($latestPostedVersion); // posted identifier
+            }
 
             if ($hasDateTime) {
                 $latestPostedVersion = $paper->getVersion() + 1;
 
             } else {
-                $latestPostedVersion = (float)$hookedVersion['version'];
+                $latestPostedVersion = $hookedVersion['version'];
             }
         }
 
-        $currentVersion = $paper->getVersion();
-
         $result = ['version' => 0, 'isDataRecordUpdated' => false];
+        $latestPostedVersion = Episciences_Repositories_Common::normalizeVersion($latestPostedVersion);
+        $currentVersion = $paper->getVersion();
 
         if ($latestPostedVersion > $currentVersion) {
 
@@ -5061,21 +5348,29 @@ class AdministratepaperController extends PaperDefaultController
 
     public function addcoauthorAction()
     {
-        if (!Episciences_Auth::isAdministrator() && !Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor()) {
+        if (!Episciences_Auth::isAdministrator() && !Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor() && !Episciences_Auth::isGuestEditor()) {
             return;
         }
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $selectedUserId = (int)$request->getPost('selectedUserId');
 
+        if (!$request->isPost()) {
+            return;
+        }
+
+        $selectedUserId = (int)$request->getPost('selectedUserId');
+        $docId = (int)$request->getPost('docId');
+
+        if (!$this->findPaperForCoAuthorForm($request, $docId)) {
+            return;
+        }
 
         // create an episciences account from a CAS account
         if ($selectedUserId) {
 
             $user = new Episciences_User();
 
-            $docId = (int)$request->getPost('docId');
             if ($user->hasLocalData($selectedUserId) && $user->hasRoles($selectedUserId)) {
                 $addcoAuthor = $this->addRoleCoAuthor($docId, $selectedUserId);
                 if ($addcoAuthor) {
@@ -5092,7 +5387,8 @@ class AdministratepaperController extends PaperDefaultController
                 $user->setIs_valid();
                 $user->setRegistrationDate();
                 $user->setModificationDate();
-                $screenName = $user->getScreenName();
+                // Inserted into HTML flash messages
+                $screenName = $this->view->escape($user->getScreenName());
 
                 if ($user->save()) {
                     $success = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur <strong>%%RECIPIENT_SCREEN_NAME%%</strong> a bien été ajouté en tant que co-auteur du document");
@@ -5113,10 +5409,60 @@ class AdministratepaperController extends PaperDefaultController
         }
     }
 
-    private function addRoleCoAuthor(int $docId, int $uid)
+    /**
+     * Same checks as the paper management page the co-author form comes from
+     * (viewAction): paper of the current journal, request token, removed or deleted paper,
+     * own submission or conflict of interest, paper permissions.
+     * Redirects with a flash message when a check fails.
+     * @return Episciences_Paper|null null when the request has been rejected
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function findPaperForCoAuthorForm(Zend_Controller_Request_Http $request, int $docId): ?Episciences_Paper
     {
-        $exist = Episciences_User_AssignmentsManager::find(['RVID' => RVID, "ITEMID" => $docId, "UID" => $uid]);
-        if (!$exist) {
+        $paper = $docId ? $this->findPaper($docId) : null;
+
+        if (!$paper || $paper->getRvid() !== RVID) {
+            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($this->view->translate("Le document demandé n’existe pas."));
+            $this->_helper->redirector->gotoUrl($this->_helper->url('list', self::ADMINISTRATE_PAPER_CONTROLLER));
+            return null;
+        }
+
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->_helper->FlashMessenger->setNamespace('error')->addMessage($this->view->translate('Erreur: modification non autorisée'));
+            $this->_helper->redirector->gotoUrl(self::ADMINPAPER_URL_STR . $docId);
+            return null;
+        }
+
+        $review = $this->findReview();
+
+        // these two redirect and exit when a check fails
+        $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
+        $this->redirectWithFlashMessageIfConflictDetected($paper, $review);
+
+        return $this->checkPermissions($review, $paper) ? $paper : null;
+    }
+
+    protected function findPaper(int $docId): ?Episciences_Paper
+    {
+        return Episciences_PapersManager::get($docId, false) ?: null;
+    }
+
+    protected function findReview(): Episciences_Review
+    {
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+        return $review;
+    }
+
+    protected function addRoleCoAuthor(int $docId, int $uid): bool
+    {
+        $existingCoAuthor = Episciences_User_AssignmentsManager::findAll([
+            'RVID' => RVID,
+            'ITEMID' => $docId,
+            'UID' => $uid,
+            'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR
+        ]);
+        if (empty($existingCoAuthor)) {
             $assignment = new Episciences_User_Assignment();
             $assignment->setRvid(RVID);
             $assignment->setItemid($docId);
@@ -5124,9 +5470,10 @@ class AdministratepaperController extends PaperDefaultController
             $assignment->setUid($uid);
             $assignment->setRoleid(Episciences_Acl::ROLE_CO_AUTHOR);
             $assignment->setStatus(Episciences_User_Assignment::STATUS_ACTIVE);
-            return $assignment->save();
+            return $assignment->save() !== false;
         }
-        return false;
+        // Already a co-author
+        return true;
     }
 
     /**
@@ -5144,8 +5491,8 @@ class AdministratepaperController extends PaperDefaultController
             && isset($post['rvid'])
             && isset($post['uid'])
             && (int)$post['rvid'] === RVID
-            && Episciences_Auth::isAdministrator()) {
-            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            && Episciences_Auth::isAdministrator()
+            && Episciences_Csrf_Helper::validateRequestToken($request)) {
             $getUserAssignment = Episciences_User_AssignmentsManager::find(['RVID' => RVID, "ITEMID" => (int)$post['docId'], "UID" => (int)$post['uid']]);
             if ($getUserAssignment->getId() !== 0 && ($getUserAssignment->getRoleid() === Episciences_Acl::ROLE_CO_AUTHOR)) {
                 $row = Episciences_User_AssignmentsManager::removeAssignment($getUserAssignment->getId());
@@ -5153,7 +5500,7 @@ class AdministratepaperController extends PaperDefaultController
                     $message = Zend_Registry::get('Zend_Translate')->translate("Co-auteur retiré");
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                     echo json_encode($row, JSON_THROW_ON_ERROR);
-                    exit;
+                    return;
                 }
             }
         } else {
@@ -5161,7 +5508,212 @@ class AdministratepaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
         }
         echo json_encode(0, JSON_THROW_ON_ERROR);
-        exit;
+    }
+
+    /**
+     * Change the contributor (owner) of a paper.
+     * Only accessible to administrators and chief editors.
+     *
+     * POST params:
+     *   - docId: int - Document ID
+     *   - newUid: int - UID of the new contributor
+     *   - add_as_coauthor: bool - Whether to add old contributor as co-author (default: true)
+     *
+     * @return void
+     */
+    public function changecontributorAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        // 1. Check permissions
+        if (!Episciences_Auth::isAdministrator() && !Episciences_Auth::isChiefEditor()) {
+            $this->_helper->FlashMessenger->setNamespace('error')
+                ->addMessage("You don't have permission to change the contributor.");
+            echo json_encode(['success' => false, 'error' => $this->view->translate('Permission denied')]);
+            return;
+        }
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        if (!$request->isPost() || !$request->isXmlHttpRequest()
+            || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo json_encode(['success' => false, 'error' => $this->view->translate('Invalid request')]);
+            return;
+        }
+
+        // 2. Get POST parameters
+        $docId = (int)$request->getPost('docId');
+        $newUid = (int)$request->getPost('new_contributor_uid');
+        $addAsCoAuthor = filter_var(
+            $request->getPost('add_as_coauthor', true),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        // 3. Load paper and validate journal
+        $paper = Episciences_PapersManager::get($docId);
+        if (!$paper || $paper->getRvid() !== RVID) {
+            echo json_encode(['success' => false, 'error' => $this->view->translate('Paper not found')]);
+            return;
+        }
+
+        // 4. Get old contributor
+        $oldUid = $paper->getUid();
+        if ($oldUid === $newUid) {
+            echo json_encode(['success' => false, 'error' => $this->view->translate('New contributor is the same as current')]);
+            return;
+        }
+
+        // 5. Load old contributor details
+        $oldContributor = new Episciences_User();
+        $oldContributor->findWithCAS($oldUid);
+
+        // 6. Load and validate new contributor
+        $newContributor = new Episciences_User();
+        if (!$newContributor->findWithCAS($newUid)) {
+            echo json_encode(['success' => false, 'error' => $this->view->translate('New contributor not found')]);
+            return;
+        }
+
+        // 6b. Prevent conflict of interest: new contributor must not be assigned to this paper
+        $reviewerStatuses = [
+            Episciences_User_Assignment::STATUS_ACTIVE,
+            Episciences_User_Assignment::STATUS_PENDING
+        ];
+        if ($paper->isEditor($newUid)
+            || array_key_exists($newUid, $paper->getReviewers($reviewerStatuses))
+            || array_key_exists($newUid, $paper->getCopyEditors())) {
+            echo json_encode([
+                'success' => false,
+                'error' =>  $this->view->translate('The new contributor is assigned to this paper (editor/reviewer/copy editor)')
+            ]);
+            return;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $db->beginTransaction();
+        try {
+            // Step 7: Update contributor first - if this fails, nothing else changes
+            if (!Episciences_PapersManager::updateContributor($paper->getPaperid(), $newUid)) {
+                throw new RuntimeException('Failed to update contributor');
+            }
+
+            // Step 7b: Grant author role in this journal (as done at submission time)
+            $newContributor->addRole(Episciences_Acl::ROLE_AUTHOR);
+
+            // Step 8: Add old contributor as co-author (if requested)
+            if ($addAsCoAuthor) {
+                if (!$this->addRoleCoAuthor($docId, $oldUid)) {
+                    throw new RuntimeException('Failed to add former contributor as co-author');
+                }
+            }
+
+            // Step 9: Remove all existing co-author assignments of new contributor (avoid duplicate role)
+            $newCoAuthorRows = Episciences_User_AssignmentsManager::findAll([
+                'RVID' => RVID,
+                'ITEMID' => $docId,
+                'UID' => $newUid,
+                'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR
+            ]);
+            foreach ($newCoAuthorRows as $row) {
+                Episciences_User_AssignmentsManager::removeAssignment($row->getId());
+            }
+
+            $db->commit();
+        } catch (Exception $e) {
+            $db->rollBack();
+            echo json_encode(['success' => false, 'error' => $this->view->translate('Failed to update contributor')]);
+            return;
+        }
+
+
+        // 10. Log the action
+        $paper->log(
+            Episciences_Paper_Logger::CODE_CONTRIBUTOR_CHANGED,
+            Episciences_Auth::getUid(),
+            [
+                'oldContributor' => [
+                    'uid' => $oldUid,
+                    'fullname' => $oldContributor->getFullName()
+                ],
+                'newContributor' => [
+                    'uid' => $newUid,
+                    'fullname' => $newContributor->getFullName()
+                ],
+                'addedAsCoAuthor' => $addAsCoAuthor,
+            ]
+        );
+
+        // 11. Send email
+
+        $commonTags = [
+            Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle(),
+            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata(),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildPublicPaperUrl($paper->getDocid()),
+        ];
+        // 11a. Email to former contributor (TAG_CONTRIBUTOR_FULL_NAME = new contributor)
+        $formerContributorTags = $commonTags;
+        $formerContributorTags[Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME] = $newContributor->getFullName();
+
+        // Get recipient's preferred language
+        $oldContributorLang = $oldContributor->getLangueid() ?: Episciences_Review::DEFAULT_LANG;
+        $translator = Zend_Registry::get('Zend_Translate');
+
+        // Co-author status message (conditional) - in recipient's language
+        $coauthorStatusMessage = $addAsCoAuthor
+            ? $translator->translate("Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article.", $oldContributorLang)
+            : $translator->translate("Vous ne recevrez plus les notifications relatives à cet article.", $oldContributorLang);
+        $formerContributorTags[Episciences_Mail_Tags::TAG_COAUTHOR_STATUS_MESSAGE] = $coauthorStatusMessage;
+
+        // Paper URL line (only if added as co-author)
+        $paperUrlLine = $addAsCoAuthor
+            ? Zend_Registry::get('Zend_Translate')->translate("Vous pouvez consulter l'article ici :", $oldContributorLang) . ' ' . $this->buildPublicPaperUrl($paper->getDocid())
+            : '';
+        $formerContributorTags[Episciences_Mail_Tags::TAG_PAPER_URL_LINE] = $paperUrlLine;
+
+        try {
+            Episciences_Mail_Send::sendMailFromReview(
+                $oldContributor,
+                Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMER_CONTRIBUTOR_NOTIFICATION,
+                $formerContributorTags,
+                $paper,
+                Episciences_Auth::getUid()
+            );
+        } catch (Exception $e) {
+            error_log('Failed to send former contributor notification email: ' . $e->getMessage());
+        }
+
+        // 11b. Email to new contributor (TAG_CONTRIBUTOR_FULL_NAME = old contributor)
+        $newContributorTags = $commonTags;
+        $newContributorTags[Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME] = $oldContributor->getFullName();
+
+        try {
+            Episciences_Mail_Send::sendMailFromReview(
+                $newContributor,
+                Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_CONTRIBUTOR_NOTIFICATION,
+                $newContributorTags,
+                $paper,
+                Episciences_Auth::getUid()
+            );
+        } catch (Exception $e) {
+            error_log('Failed to send contributor change email: ' . $e->getMessage());
+        }
+
+
+        // 12. Success response
+        $this->_helper->FlashMessenger->setNamespace('success')
+            ->addMessage(Zend_Registry::get('Zend_Translate')->translate('Contributor changed successfully'));
+
+        echo json_encode([
+            'success' => true,
+            'newContributor' => [
+                'uid' => $newUid,
+                'fullname' => $newContributor->getFullName()
+            ]
+        ]);
     }
 
     /**
@@ -5311,5 +5863,18 @@ class AdministratepaperController extends PaperDefaultController
 
             }
         }
+    }
+
+    /**
+     * @param string $deadline
+     * @param string $minRatingDeadlineParameter
+     * @return string
+     * @throws Exception
+     */
+
+    private function getMinEffectiveDeadlineExtension(string $deadline, string $minRatingDeadlineParameter ): string
+    {
+        return Episciences_Tools::subDateInterval($deadline,$minRatingDeadlineParameter);
+
     }
 }

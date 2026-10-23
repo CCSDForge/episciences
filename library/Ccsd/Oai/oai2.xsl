@@ -462,6 +462,23 @@ footer {
         <tr><td class="key">setSpec</td>
         <td class="value"><code><xsl:value-of select="oai:setSpec"/></code></td></tr>
       </table>
+      <xsl:apply-templates select="oai:setDescription"/>
+  </div>
+</xsl:template>
+
+<!-- oai setDescription object -->
+
+<xsl:template match="oai:setDescription">
+  <div class="metadata">
+    <h4>Description</h4>
+    <xsl:apply-templates select="*" />
+  </div>
+</xsl:template>
+
+<xsl:template match="oai:setDescription/*" priority="-100">
+  <h4>Unsupported Description Type</h4>
+  <div class="xmlSource">
+    <xsl:apply-templates select="." mode='xmlMarkup' />
   </div>
 </xsl:template>
 

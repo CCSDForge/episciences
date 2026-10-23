@@ -67,7 +67,7 @@ class Episciences_ZbjatsTools
                     $refsInfo[] = self::cslToJats($doiInfo);
                 }
             } elseif (array_key_exists('csl', $refBib) && !isset($refBib['doi'])) {
-                $csl = json_decode($refBib['csl'], true, 512, JSON_THROW_ON_ERROR)['csl'];
+                $csl = $refBib['csl']['csl'] ?? $refBib['csl'];
                 $csl['published'] = $csl['issued'];
                 unset($csl['issued']);
                 $removeLayer = json_encode($csl, JSON_THROW_ON_ERROR);
@@ -171,6 +171,11 @@ class Episciences_ZbjatsTools
     {
         $refToJatsFormat = [];
         $halIdMatches = Episciences_Tools::getHalIdAndVer($halId);
+        // getHalIdAndVer() returns [] when the (external) HAL id does not match:
+        // bail out rather than dereferencing an undefined $halIdMatches[1].
+        if (!isset($halIdMatches[1])) {
+            return $refToJatsFormat;
+        }
         if (isset($halIdMatches[2])) {
             $tei = Episciences_Paper_AuthorsManager::getHalTei(str_replace($halIdMatches[2], '', $halIdMatches[1]),
                 (int)str_replace('v', '', $halIdMatches[2]));
@@ -182,7 +187,10 @@ class Episciences_ZbjatsTools
             $cacheTeiHal = Episciences_Paper_AuthorsManager::getHalTeiCache($halIdMatches[1]);
         }
         if ($cacheTeiHal !== '') {
+            // Suppress PHP warnings on malformed external TEI; handle the failure below.
+            $previousXmlErrors = libxml_use_internal_errors(true);
             $xmlString = simplexml_load_string($cacheTeiHal);
+            libxml_use_internal_errors($previousXmlErrors);
             if (is_object($xmlString) && $xmlString->count() > 0) {
                 $authorTei = Episciences_Paper_AuthorsManager::getAuthorsFromHalTei($xmlString);
                 foreach ($authorTei as $key => $author) {

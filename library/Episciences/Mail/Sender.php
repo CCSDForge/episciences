@@ -156,7 +156,8 @@ class Episciences_Mail_Sender
             $mailer->CharSet = PHPMailer::CHARSET_UTF8;
             $mailer->XMailer = DOMAIN;
             $mailer->isSMTP();
-            $mailer->Host = 'localhost';
+            $mailer->Host = getenv('SMTP_HOST') ?: 'localhost';
+            $mailer->Port = (int)(getenv('SMTP_PORT') ?: 25);
             $mailer->SMTPAuth = false;
 
             // Initialisation *******************************************************
@@ -260,11 +261,7 @@ class Episciences_Mail_Sender
                 return $mailPath . ' : ERROR: Message without Content';
             }
 
-            if (APPLICATION_ENV == ENV_DEV) {
-                Zend_Debug::dump($mailer);
-            } else {
-                $mailer->send();
-            }
+            $mailer->send();
 
             // Fermeture du fichier et déverrouillage
             if ($fileStream) {
@@ -276,9 +273,7 @@ class Episciences_Mail_Sender
             if (!is_dir($this->getPath() . SENTMAILDIR . '/')) {
                 mkdir($this->getPath() . SENTMAILDIR . '/', 0755);
             }
-            if (APPLICATION_ENV != ENV_DEV) {
-                $this->moveDirectory($mailPath, $this->getPath() . SENTMAILDIR . '/' . $mail_directory);
-            }
+            $this->moveDirectory($mailPath, $this->getPath() . SENTMAILDIR . '/' . $mail_directory);
             $message = $mailPath . " : envoi réussi.";
         } catch (Exception $e) {
             // Fermeture du fichier et déverrouillage

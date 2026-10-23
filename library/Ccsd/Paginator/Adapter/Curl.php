@@ -35,6 +35,13 @@ class Ccsd_Paginator_Adapter_Curl implements Zend_Paginator_Adapter_Interface
 
     public function __construct ($query, $core)
     {
+        trigger_error(
+            '[DEAD CODE AUDIT 2026-05-08] ' . __CLASS__ . ' is scheduled for removal.'
+            . ' Do NOT use this class in new code. If this message appears in production logs,'
+            . ' report it to the development team immediately.',
+            E_USER_DEPRECATED
+        );
+
         $this->_urlPartielle = $query . "&wt=phps";
         $this->_core = $core;
     }

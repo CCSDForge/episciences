@@ -2,7 +2,7 @@
 
 ## Framework & Structure
 - zf1-future (PHP 8.1+ compatible Zend Framework 1.x)
-- MySQL 8.0 dual database (main + auth)
+- MySQL 8.4 dual database (main + auth)
 - Apache Solr integration
 - Webpack Encore + Sass
 
@@ -26,9 +26,9 @@
 - `yarn format` - Format JS with Prettier
 
 ## Code
-- Write comments in English
+- Write comments, documentation in English
 - Do not use Jquery for JavaScript
-- 
+
 ## Key Files
 - `application/configs/application.ini` - Main config
 - `config/pwd.json` - Credentials (not in repo)
@@ -36,12 +36,13 @@
 
 # General information
 - writing outside the project directory is forbidden, even in /tmp
-- write your plans in the ./tmp/ directory of the project
-- when creating files, chmod 644
+- when asked to write a plan, write it in the ./tmp/ directory of the project
+- when creating new code files, chmod 644
+- never use `git add -A` or `git add .`: list the files to commit explicitly (`git add path/to/file ...`)
 
 # Directories to ignore
 - `data/`
 - `cache/`
 - `tmp/`
 - `log/`
-- `logs/` 
+- `logs/`

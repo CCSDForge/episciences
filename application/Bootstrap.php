@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Maintenance\ReadOnlyMode;
 use Episciences\MonoLog\MonologFactory;
 
 
@@ -98,7 +99,8 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         $sessionOptions = [
             'name' => SESSION_NAMESPACE,
             'cookie_httponly' => $options['resources']['session']['cookie_httponly'],
-            'cookie_secure' => $options['resources']['session']['cookie_secure']
+            'cookie_secure' => $options['resources']['session']['cookie_secure'],
+            'cookie_samesite' => $options['resources']['session']['cookie_samesite'] ?? 'Lax'
         ];
         Zend_Session::setOptions($sessionOptions);
         Zend_Session::start();
@@ -186,8 +188,11 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
         $config = new Zend_Config_Json($localNavigationFile, null, ['ignoreconstants' => true]);
 
+        // Read-only maintenance mode: everyone gets the public navigation (see ReadOnlyGate plugin)
+        $isReadOnly = ReadOnlyMode::isEnabled();
+
         //Chargement de la navigation
-        if (Episciences_Auth::isLogged()) {
+        if (Episciences_Auth::isLogged() && !$isReadOnly) {
             $connectedConfig = new Zend_Config_Json($globalNavigationFile, null, ['ignoreconstants' => true]);
         } else {
             $connectedConfig = new Zend_Config_Json(APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.guest.navigation.json', null, ['ignoreconstants' => true]);
@@ -208,7 +213,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         //Initialisation du menu
         $viewRenderer->view->nav($navigation)
             ->setAcl($acl)
-            ->setRoles(Episciences_Auth::getRoles());
+            ->setRoles($isReadOnly ? [Episciences_Acl::ROLE_GUEST] : Episciences_Auth::getRoles());
 
         return $acl;
     }
@@ -263,4 +268,19 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
             }
         }
     }
+
+    /**
+     * Register SQL Profiler plugin to add query stats to HTTP headers
+     * This makes profiler data visible in browser DevTools for AJAX requests
+     */
+    protected function _initSqlProfilerPlugin(): void
+    {
+        // Only register plugin if profiler is enabled
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if ($db && $db->getProfiler()->getEnabled()) {
+            $frontController = Zend_Controller_Front::getInstance();
+            $frontController->registerPlugin(new Episciences_Controller_Plugin_SqlProfiler());
+        }
+    }
 }
+

@@ -3,10 +3,12 @@
 /**
  * jQuery Helper. Functions as a stack for code and loads all jQuery dependencies.
  * CCSD : modified to add version number in url to avoid browser cache effects
- * @property Episciences_View_Helper_JQuery_Container _container
  */
 class Episciences_View_Helper_JQuery extends ZendX_JQuery_View_Helper_JQuery
 {
+    /** @var Episciences_View_Helper_JQuery_Container */
+    protected $_container;
+
     /**
      * Initialize helper
      *

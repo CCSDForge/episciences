@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Reviewer\InvitationToken;
+
 class Episciences_Mail_Reminder
 {
     // event types triggering a reminder
@@ -41,15 +43,30 @@ class Episciences_Mail_Reminder
     ];
 
     public const MAPPING_REMINDER_RECIPIENTS = [
-        self::TYPE_UNANSWERED_INVITATION => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
-        self::TYPE_BEFORE_REVIEWING_DEADLINE => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
-        self::TYPE_AFTER_REVIEWING_DEADLINE => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
+        self::TYPE_UNANSWERED_INVITATION => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR,Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR,Episciences_Acl::ROLE_SECRETARY => Episciences_Acl::ROLE_SECRETARY],
+        self::TYPE_BEFORE_REVIEWING_DEADLINE => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR,Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR,Episciences_Acl::ROLE_SECRETARY => Episciences_Acl::ROLE_SECRETARY],
+        self::TYPE_AFTER_REVIEWING_DEADLINE => [Episciences_Acl::ROLE_REVIEWER => Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR,Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR,Episciences_Acl::ROLE_SECRETARY => Episciences_Acl::ROLE_SECRETARY],
         self::TYPE_BEFORE_REVISION_DEADLINE => [Episciences_Acl::ROLE_AUTHOR => Episciences_Acl::ROLE_AUTHOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
         self::TYPE_AFTER_REVISION_DEADLINE => [Episciences_Acl::ROLE_AUTHOR => Episciences_Acl::ROLE_AUTHOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
         self::TYPE_NOT_ENOUGH_REVIEWERS => [Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
         self::TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE => [Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
         self::TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE => [Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR],
         self::TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE => [Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_EDITOR => Episciences_Acl::ROLE_EDITOR]
+    ];
+
+
+    // reminder copies that can reach the same person through several roles, highest priority first
+    public const RECIPIENT_PRIORITY = [
+        Episciences_Acl::ROLE_EDITOR => 1,
+        Episciences_Acl::ROLE_CHIEF_EDITOR => 2,
+        Episciences_Acl::ROLE_SECRETARY => 3,
+    ];
+
+    // reminder types deduplicated across recipient roles
+    public const DEDUPLICATED_TYPES = [
+        self::TYPE_UNANSWERED_INVITATION,
+        self::TYPE_BEFORE_REVIEWING_DEADLINE,
+        self::TYPE_AFTER_REVIEWING_DEADLINE,
     ];
 
     private $_id;
@@ -69,6 +86,26 @@ class Episciences_Mail_Reminder
     private $_recipients;
 
     protected $_defaultLanguage = 'en';
+
+    /**
+     * Supervisors (chief editors / secretaries) of the recipient role,
+     * loaded once per instance instead of once per invitation row (reset by setRecipient())
+     * @var Episciences_User[]|null
+     */
+    private ?array $_supervisorsCache = null;
+
+    /**
+     * Per-paper filtering context (author, co-authors, supervisors without conflict)
+     * keyed by docid, shared by all reviewers of the same paper (reset by setRecipient())
+     * @var array<int, array{authorUid: int, coAuthorUids: array, supervisors: Episciences_User[]}>
+     */
+    private array $_supervisorFilterContextCache = [];
+
+    /**
+     * Settings of the reminder's journal, loaded once per instance (reset by setRvid())
+     * @var array|null
+     */
+    private ?array $_journalSettingsCache = null;
 
     /**
      * Episciences_Mail_Reminder constructor.
@@ -145,7 +182,7 @@ class Episciences_Mail_Reminder
             return false;
         }
 
-        $constant_name = 'Episciences_Mail_TemplatesManager::TYPE_' . strtoupper(self::$_typeKey[$this->getType()] . '_' . $this->getRecipient() . '_version');
+        $constant_name = self::getTemplateConstantName($this->getType(), (string)$this->getRecipient());
         $cleanedConstName = str_replace('Episciences_Mail_TemplatesManager::', '', $constant_name);
 
         if (defined($constant_name)) {
@@ -198,9 +235,10 @@ class Episciences_Mail_Reminder
     }
 
     /**
+     * @return bool true on success; false when the reminder has an id but does not belong to its journal (RVID)
      * @throws Zend_Db_Adapter_Exception
      */
-    public function save(): void
+    public function save(): bool
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -216,7 +254,18 @@ class Episciences_Mail_Reminder
         // Enregistrement en base
         if ($this->getId()) {
             $edit = true;
-            $db->update(T_MAIL_REMINDERS, $values, array('ID = ?' => $this->getId()));
+
+            // An UPDATE reports 0 affected rows when nothing changed, so ownership is checked explicitly:
+            // nothing (database, templates, translations) is written for a reminder of another journal.
+            $owned = $db->fetchOne(
+                'SELECT 1 FROM ' . T_MAIL_REMINDERS . ' WHERE ID = ? AND RVID = ?',
+                [$this->getId(), $this->getRvid()]
+            );
+            if (!$owned) {
+                return false;
+            }
+
+            $db->update(T_MAIL_REMINDERS, $values, ['ID = ?' => $this->getId(), 'RVID = ?' => $this->getRvid()]);
         } else {
             $edit = false;
             $db->insert(T_MAIL_REMINDERS, $values);
@@ -249,7 +298,7 @@ class Episciences_Mail_Reminder
         // update translation file
         Episciences_Tools::writeTranslations($translations, REVIEW_LANG_PATH, Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME);
 
-        echo true;
+        return true;
     }
 
     /**
@@ -353,6 +402,22 @@ class Episciences_Mail_Reminder
     }
 
     /**
+     * Lost login link tags added to every reminder of a journal, whatever its recipient.
+     *
+     * @param string $journalUrl Journal URL, e.g. Episciences_Review::getUrl()
+     * @return array<string, string>
+     */
+    public static function getLostLoginTags(string $journalUrl): array
+    {
+        $lostLoginLink = rtrim($journalUrl, '/') . '/user/lostlogin';
+
+        return [
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink,
+            Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink, // present in custom templates
+        ];
+    }
+
+    /**
      * returns recipients list
      * @return mixed
      */
@@ -380,6 +445,7 @@ class Episciences_Mail_Reminder
     public function setRvid($rvid): self
     {
         $this->_rvid = $rvid;
+        $this->_journalSettingsCache = null;
         return $this;
     }
 
@@ -435,6 +501,9 @@ class Episciences_Mail_Reminder
     public function setRecipient($recipient): self
     {
         $this->_recipient = $recipient;
+        // the supervisor caches depend on the recipient role
+        $this->_supervisorsCache = null;
+        $this->_supervisorFilterContextCache = [];
         return $this;
     }
 
@@ -543,21 +612,25 @@ class Episciences_Mail_Reminder
 
     /**
      * Returns the delay before the reminder is sent
-     * @return mixed
+     * Cast to int when set: this admin-configured, untyped value is interpolated raw
+     * into several Zend_Db_Expr SQL clauses — a non-numeric value would break the query
+     * or allow injection. null is preserved (unset on a freshly constructed reminder).
+     * @return int|null
      */
-    public function getDelay()
+    public function getDelay(): ?int
     {
-        return $this->_delay;
+        return $this->_delay === null ? null : (int)$this->_delay;
     }
 
     /**
      * Returns the frequency between each reminder sending
-     * /* null: never, 1 day, 1 week, 2 week, 1 month
-     * @return mixed
+     * null: never; otherwise 1 day, 1 week, 2 week, 1 month
+     * Cast to int when set for the same SQL-interpolation safety as getDelay().
+     * @return int|null
      */
-    public function getRepetition()
+    public function getRepetition(): ?int
     {
-        return $this->_repetition;
+        return $this->_repetition === null ? null : (int)$this->_repetition;
     }
 
     /**
@@ -991,6 +1064,48 @@ class Episciences_Mail_Reminder
     }
 
     /**
+     * Invitation page URL sent in an unanswered invitation reminder.
+     * An invitation with a row value (USER_INVITATION.TOKEN) gets its link token;
+     * a legacy one keeps its former URL (md5 of the e-mail for a reviewer without an account).
+     */
+    public static function buildInvitationUrl(
+        string           $reviewUrl,
+        int              $invitationId,
+        string           $lang,
+        ?string          $rowSecret,
+        ?string          $tmpUserEmail,
+        ?InvitationToken $invitationToken = null
+    ): string
+    {
+        $url = $reviewUrl . '/reviewer/invitation/id/' . $invitationId . '/lang/' . $lang;
+
+        if ($rowSecret !== null && $rowSecret !== '') {
+            $invitationToken ??= new InvitationToken();
+            return $url . '/' . InvitationToken::URL_PARAM . '/' . $invitationToken->compute($invitationId, $rowSecret);
+        }
+
+        if ($tmpUserEmail !== null) {
+            $url .= '/tmp/' . md5($tmpUserEmail);
+        }
+
+        return $url;
+    }
+
+    /**
+     * Whether buildInvitationUrl() can produce a working link: an invitation with a row value
+     * needs the global secret (a legacy URL would be refused by the invitation page).
+     */
+    public static function canBuildInvitationUrl(?string $rowSecret, ?InvitationToken $invitationToken = null): bool
+    {
+        if ($rowSecret === null || $rowSecret === '') {
+            return true;
+        }
+
+        $invitationToken ??= new InvitationToken();
+        return $invitationToken->isConfigured();
+    }
+
+    /**
      * fetch recipients for unanswered invitations reminder
      * @param $debug
      * @param $date
@@ -1004,6 +1119,7 @@ class Episciences_Mail_Reminder
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $recipients = [];
         $review = Episciences_ReviewsManager::find($this->getRvid());
+        $translator = Zend_Registry::get('Zend_Translate');
 
         /* récupère toutes les invitations (T_USER_INVITATIONS)
         * restées en attente (pending), et non expirées
@@ -1021,7 +1137,7 @@ class Episciences_Mail_Reminder
                 array('ui1' => T_USER_INVITATIONS),
                 array(
                     'INVITATION_ID' => 'ui1.ID',
-                    //'ui1.TOKEN',
+                    'TOKEN' => 'ui1.TOKEN',
                     'ASSIGNMENT_ID' => 'ui1.AID',
                     'ua.UID',
                     'ua.TMP_USER',
@@ -1080,19 +1196,37 @@ class Episciences_Mail_Reminder
                 continue;
             }
 
+            // skip this invitation only: an exception here would stop the reminders of every journal
+            if (!self::canBuildInvitationUrl($data['TOKEN'] ?? null)) {
+                trigger_error(
+                    sprintf('Unanswered invitation reminder skipped for invitation %s: %s is not configured', $data['INVITATION_ID'], InvitationToken::SECRET_CONSTANT_NAME),
+                    E_USER_WARNING
+                );
+                continue;
+            }
+
             $lang = $this->_defaultLanguage;
             $fullname = 'is probably undefined';
-            $invitation_url = $review->getUrl() . "/reviewer/invitation/id/" . $data['INVITATION_ID'] . '/lang/';
-
+            $tmpUserEmail = null;
+            $isReviewerFound = true;
 
             if ((int)$data['TMP_USER'] === 1) {
-                $user = new Episciences_User_Tmp;
+                // not Episciences_User_Tmp::find(): it returns [false] (not empty) for a missing row
+                $user = Episciences_TmpUsersManager::findById($data['UID']);
 
-                if (!empty($user->find($data['UID']))) {
+                if (!$user) {
+                    $user = new Episciences_User_Tmp;
+                    // the temporary reviewer no longer exists (no name, no email, no personal link):
+                    // the assigned editors are still told that the invitation is pending, so that they can invite someone else
+                    if ($this->getRecipient() !== 'editor') {
+                        continue;
+                    }
+                    $isReviewerFound = false;
+                } else {
                     $user->generateScreen_name();
                     $fullname = $user->getFullName();
                     $lang = $user->getLangueid(true);
-                    $invitation_url .= $lang . '/tmp/' . md5($user->getEmail());
+                    $tmpUserEmail = (string)$user->getEmail();
                 }
 
             } else {
@@ -1100,24 +1234,33 @@ class Episciences_Mail_Reminder
                 $user->findWithCAS($data['UID']);
                 $fullname = $user->getScreenName();
                 $lang = $user->getLangueid(true);
-                $invitation_url .= $lang;
             }
 
-            $tags = [
+            // dates and link depend on the language of the recipient
+            $localizedTags = static fn(string $tagLang): array => [
+                Episciences_Mail_Tags::TAG_INVITATION_LINK => self::buildInvitationUrl(
+                    $review->getUrl(),
+                    (int)$data['INVITATION_ID'],
+                    $tagLang,
+                    $data['TOKEN'] ?? null,
+                    $tmpUserEmail
+                ),
+                Episciences_Mail_Tags::TAG_INVITATION_DATE => Episciences_View_Helper_Date::Date($data['INVITATION_DATE'], $tagLang),
+                Episciences_Mail_Tags::TAG_EXPIRATION_DATE => Episciences_View_Helper_Date::Date($data['EXPIRATION_DATE'], $tagLang)
+            ];
+
+            $tags = array_merge([
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                Episciences_Mail_Tags::TAG_INVITATION_LINK => $invitation_url,
-                Episciences_Mail_Tags::TAG_INVITATION_DATE => Episciences_View_Helper_Date::Date($data['INVITATION_DATE'], $lang),
-                Episciences_Mail_Tags::TAG_EXPIRATION_DATE => Episciences_View_Helper_Date::Date($data['EXPIRATION_DATE'], $lang)
-            ];
+            ], $localizedTags($lang));
 
             if ($this->getRecipient() === 'editor') {
                 foreach ($paper->getEditors(true, true) as $editor) {
-
-                    $tags = array_merge($tags, [
+                    $editorLang = $editor->getLangueid(true);
+                    $editorTags = array_merge($tags, $localizedTags($editorLang), [
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
-                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $fullname,
-                        Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $user->getEmail(),
+                        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $isReviewerFound ? $fullname : $translator->translate('Relecteur inconnu', $editorLang),
+                        Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $isReviewerFound ? $user->getEmail() : $translator->translate('adresse inconnue', $editorLang),
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername()
@@ -1127,11 +1270,20 @@ class Episciences_Mail_Reminder
                         'uid' => $editor->getUid(),
                         'fullname' => $editor->getFullName(),
                         'email' => $editor->getEmail(),
-                        'lang' => $editor->getLangueid(true),
-                        'tags' => $tags,
+                        'lang' => $editorLang,
+                        'tags' => $editorTags,
                         'deadline' => $data['INVITATION_DATE']
                     ];
                 }
+            } elseif ($this->isSupervisorRecipient()) {
+                // a temporary reviewer has no account UID
+                $reviewerUid = (int)$data['TMP_USER'] === 1 ? null : (int)$data['UID'];
+                $supervisorTags = self::withPaperManagementLink(
+                    $localizedTags, $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
+                );
+                array_push($recipients, ...$this->getSupervisorRecipients(
+                    $paper, $reviewerUid, $user->getEmail(), $fullname, $tags, $data['INVITATION_DATE'], $supervisorTags
+                ));
             } else {
 
                 $tags = array_merge($tags, [
@@ -1267,6 +1419,8 @@ class Episciences_Mail_Reminder
                     ];
                 }
             }
+        } elseif ($this->isSupervisorRecipient()) {
+            $recipients = $this->getReviewingDeadlineSupervisorRecipients($tmp, $filters, $review);
         } else {
             foreach ($tmp as $data) {
 
@@ -1412,6 +1566,8 @@ class Episciences_Mail_Reminder
                     ];
                 }
             }
+        } elseif ($this->isSupervisorRecipient()) {
+            $recipients = $this->getReviewingDeadlineSupervisorRecipients($tmp, $filters, $review);
         } else {
             foreach ($tmp as $data) {
 
@@ -1528,6 +1684,9 @@ class Episciences_Mail_Reminder
         foreach ($resultQuery as $item) {
             $paper = new Episciences_Paper($item);
 
+            // Default to no editors so a recipient role other than chief_editor/editor
+            // does not leave $editors undefined (or stale) for the foreach below.
+            $editors = [];
             if (Episciences_Acl::ROLE_CHIEF_EDITOR === $rRecipient) {
                 $editors = Episciences_Review::getChiefEditors();
             } elseif (Episciences_Acl::ROLE_EDITOR === $rRecipient) {
@@ -1621,4 +1780,365 @@ class Episciences_Mail_Reminder
         return $repetition > 0 && ($intervalDays % $repetition) === 0;
     }
 
+    /**
+     * Filter supervisors (chief_editor, secretary) - pure logic, no database access.
+     *
+     * Excludes:
+     * - Author of the paper
+     * - Co-authors of the paper
+     * - The reviewer targeted by the reminder (by UID if not temp, and by email)
+     *
+     * Conflicts of interest are handled upstream by Episciences_PapersManager::keepOnlyUsersWithoutConflict().
+     *
+     * @param Episciences_User[] $supervisors keyed by UID
+     * @param int $authorUid Author UID
+     * @param array $coAuthorUids Array of co-author UIDs
+     * @param int|null $reviewerUid Reviewer UID (null if TMP_USER)
+     * @param string|null $reviewerEmail Reviewer email for fallback check
+     * @return Episciences_User[] kept supervisors, keyed by UID
+     */
+    public static function filterSupervisors(
+        array $supervisors,
+        int $authorUid,
+        array $coAuthorUids,
+        ?int $reviewerUid,
+        ?string $reviewerEmail
+    ): array {
+        if (empty($supervisors)) {
+            return [];
+        }
+
+        $filtered = [];
+        $reviewerEmailLower = !empty($reviewerEmail) ? strtolower($reviewerEmail) : null;
+
+        foreach ($supervisors as $uid => $supervisor) {
+            $email = $supervisor->getEmail();
+
+            // Skip supervisors without email: nothing to send, and strtolower(null) is deprecated
+            if (empty($email)) {
+                continue;
+            }
+
+            // Exclude author
+            if ($uid === $authorUid) {
+                continue;
+            }
+
+            // Exclude co-authors
+            if (in_array($uid, $coAuthorUids, true)) {
+                continue;
+            }
+
+            // Exclude reviewer by UID (only for non-temp users)
+            if ($reviewerUid !== null && $uid === $reviewerUid) {
+                continue;
+            }
+
+            // Exclude reviewer by email (case-insensitive)
+            if ($reviewerEmailLower !== null && strtolower($email) === $reviewerEmailLower) {
+                continue;
+            }
+
+            $filtered[$uid] = $supervisor;
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * Sort reminder rows by journal, type, then recipient priority (@see self::RECIPIENT_PRIORITY),
+     * so that a person holding several roles receives the copy of the highest priority role.
+     * Other roles (reviewer, author) come first and keep their order (usort() is stable).
+     *
+     * @param array $remindersData rows of T_MAIL_REMINDERS
+     * @return array
+     */
+    public static function sortByRecipientPriority(array $remindersData): array
+    {
+        usort($remindersData, static fn(array $a, array $b): int =>
+            [(int)$a['RVID'], (int)$a['TYPE'], self::RECIPIENT_PRIORITY[$a['RECIPIENT']] ?? 0]
+            <=>
+            [(int)$b['RVID'], (int)$b['TYPE'], self::RECIPIENT_PRIORITY[$b['RECIPIENT']] ?? 0]
+        );
+
+        return $remindersData;
+    }
+
+    /**
+     * Key identifying the same reminder sent to the same person in a run:
+     * reminder type | docid | recipient UID | reviewer email (lowercase).
+     *
+     * @param int $type reminder type
+     * @param string $role recipient role of the reminder
+     * @param array $recipient recipient built by loadRecipients()
+     * @return string|null null when the recipient is not deduplicated
+     */
+    public static function getDeduplicationKey(int $type, string $role, array $recipient): ?string
+    {
+        $tags = $recipient['tags'] ?? [];
+
+        if (
+            !in_array($type, self::DEDUPLICATED_TYPES, true) ||
+            !isset(self::RECIPIENT_PRIORITY[$role]) ||
+            empty($recipient['uid']) ||
+            !isset($tags[Episciences_Mail_Tags::TAG_ARTICLE_ID])
+        ) {
+            return null;
+        }
+
+        return implode('|', [
+            $type,
+            (int)$tags[Episciences_Mail_Tags::TAG_ARTICLE_ID],
+            (int)$recipient['uid'],
+            strtolower((string)($tags[Episciences_Mail_Tags::TAG_REVIEWER_MAIL] ?? '')),
+        ]);
+    }
+
+    /**
+     * Whether the recipient already received this reminder through another recipient role in this run.
+     * Several reminders of the same role are all sent.
+     *
+     * @param array $sentKeys deduplication keys already sent => recipient role that sent them
+     * @param string|null $key deduplication key of the recipient, @see getDeduplicationKey()
+     * @param string $role recipient role of the current reminder
+     * @return bool
+     */
+    public static function isAlreadySentThroughAnotherRole(array $sentKeys, ?string $key, string $role): bool
+    {
+        return $key !== null && isset($sentKeys[$key]) && $sentKeys[$key] !== $role;
+    }
+    
+    /**
+     * Build the supervisor (chief_editor, secretary) recipients of the reminders before and after the reviewing deadline.
+     *
+     * @param array $rows Reviewing rows (DOCID, UID, DEADLINE)
+     * @param array $filters Paper statuses that don't need reminders
+     * @param Episciences_Review $review
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function getReviewingDeadlineSupervisorRecipients(array $rows, array $filters, Episciences_Review $review): array
+    {
+        $recipients = [];
+        // papers loaded once: a paper has one row per reviewer
+        $papers = [];
+
+        foreach ($rows as $data) {
+            $paper = $papers[$data['DOCID']] ??= Episciences_PapersManager::get($data['DOCID']);
+            if (!$paper || $this->isPaperNotNeedToReminders($paper, $filters)) {
+                continue;
+            }
+
+            $reviewer = new Episciences_User;
+            $reviewer->findWithCAS($data['UID']);
+
+            $tags = [
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()
+            ];
+
+            array_push($recipients, ...$this->getSupervisorRecipients(
+                $paper, (int)$data['UID'], $reviewer->getEmail(), $reviewer->getScreenName(), $tags, $data['DEADLINE']
+            ));
+        }
+
+        return $recipients;
+    }
+
+    /**
+     * Build the reminder recipients for supervisors (chief_editor, secretary) about a reviewer of a paper.
+     *
+     * @param Episciences_Paper $paper
+     * @param int|null $reviewerUid Reviewer UID (null if TMP_USER: temp IDs are unrelated to account UIDs)
+     * @param string|null $reviewerEmail
+     * @param string $reviewerFullName
+     * @param array $tags Tags shared by all supervisors
+     * @param string|null $deadline
+     * @param callable|null $localizedTags Builds the language-dependent tags (dates, links) for a given language
+     * @return array
+     */
+    private function getSupervisorRecipients(
+        Episciences_Paper $paper,
+        ?int $reviewerUid,
+        ?string $reviewerEmail,
+        string $reviewerFullName,
+        array $tags,
+        ?string $deadline,
+        ?callable $localizedTags = null
+    ): array {
+        // reviewer not found (deleted account, CAS lookup failure): the reminder would be sent with an empty %%REVIEWER_MAIL%%
+        if (empty($reviewerEmail)) {
+            return [];
+        }
+
+        $context = $this->getSupervisorFilterContext($paper);
+
+        $supervisors = self::filterSupervisors(
+            $context['supervisors'],
+            $context['authorUid'],
+            $context['coAuthorUids'],
+            $reviewerUid,
+            $reviewerEmail
+        );
+
+        $recipients = [];
+
+        foreach ($supervisors as $supervisor) {
+            $supervisorLang = $supervisor->getLangueid(true);
+
+            $recipients[] = [
+                'uid' => $supervisor->getUid(),
+                'fullname' => $supervisor->getFullName(),
+                'email' => $supervisor->getEmail(),
+                'lang' => $supervisorLang,
+                'tags' => array_merge($tags, $localizedTags ? $localizedTags($supervisorLang) : [], [
+                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($supervisor->getLangueid(), true),
+                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $supervisor->getUsername(),
+                    Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $supervisor->getScreenName(),
+                    Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $supervisor->getFullName(),
+                    Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewerFullName,
+                    Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewerEmail,
+                ]),
+                'deadline' => $deadline
+            ];
+        }
+
+        return $recipients;
+    }
+
+    /**
+     * Name of the TemplatesManager constant holding the default template of a reminder type for a recipient role.
+     * Chief editors and secretaries share the editor template when the reminder type has no version of its own.
+     *
+     * @param int $type
+     * @param string $recipient
+     * @return string
+     */
+    public static function getTemplateConstantName(int $type, string $recipient): string
+    {
+        $buildName = static fn(string $role): string => 'Episciences_Mail_TemplatesManager::TYPE_' . strtoupper(self::$_typeKey[$type] . '_' . $role . '_version');
+        $constantName = $buildName($recipient);
+
+        if (
+            !defined($constantName) &&
+            in_array($recipient, [Episciences_Acl::ROLE_CHIEF_EDITOR, Episciences_Acl::ROLE_SECRETARY], true)
+        ) {
+            return $buildName(Episciences_Acl::ROLE_EDITOR);
+        }
+
+        return $constantName;
+    }
+
+    /**
+     * The invitation link is intended for the reviewer and the assigned editors only:
+     * supervisors receive the paper management page instead.
+     *
+     * @param callable $localizedTags fn(string $lang): array tags depending on the recipient's language
+     * @param string $paperManagementUrl
+     * @return callable fn(string $lang): array
+     */
+    public static function withPaperManagementLink(callable $localizedTags, string $paperManagementUrl): callable
+    {
+        return static fn(string $tagLang): array => array_merge($localizedTags($tagLang), [
+            Episciences_Mail_Tags::TAG_INVITATION_LINK => $paperManagementUrl,
+        ]);
+    }
+
+    /**
+     * Author, co-authors and supervisors without conflict of interest for a paper,
+     * loaded once per paper (shared by all reviewers of the paper).
+     *
+     * @param Episciences_Paper $paper
+     * @return array{authorUid: int, coAuthorUids: array, supervisors: Episciences_User[]}
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function getSupervisorFilterContext(Episciences_Paper $paper): array
+    {
+        $docId = (int)$paper->getDocid();
+
+        if (isset($this->_supervisorFilterContextCache[$docId])) {
+            return $this->_supervisorFilterContextCache[$docId];
+        }
+
+        $supervisors = $this->getSupervisors();
+
+        if (!empty($supervisors)) {
+
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict((int)$paper->getPaperid(),
+                $supervisors, (int)$this->getRvid(), $this->getJournalSettings());
+        }
+
+        // co-authors are only needed to filter the remaining supervisors
+        $coAuthorUids = [];
+        if (!empty($supervisors)) {
+            try {
+                $coAuthorUids = array_keys($paper->getCoAuthors());
+            } catch (Zend_Db_Statement_Exception $e) {
+                trigger_error($e->getMessage());
+                // co-authors unknown: no supervisor can be safely kept for this paper
+                $supervisors = [];
+            }
+        }
+
+        return $this->_supervisorFilterContextCache[$docId] = [
+            'authorUid' => (int)$paper->getUid(),
+            'coAuthorUids' => $coAuthorUids,
+            'supervisors' => $supervisors,
+        ];
+    }
+
+    /**
+     * Settings of the reminder's journal, loaded once per instance.
+     *
+     * @return array
+     */
+    private function getJournalSettings(): array
+    {
+        if ($this->_journalSettingsCache === null) {
+            $review = Episciences_ReviewsManager::find($this->getRvid());
+
+            if ($review) {
+                $review->loadSettings();
+                $this->_journalSettingsCache = $review->getSettings();
+            } else {
+                $this->_journalSettingsCache = [];
+            }
+        }
+
+        return $this->_journalSettingsCache;
+    }
+
+    /**
+     * Get supervisors (chief_editors or secretaries) based on recipient role, loaded once per instance.
+     *
+     * @return array Array of Episciences_User objects keyed by UID
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function getSupervisors(): array
+    {
+        if ($this->_supervisorsCache === null) {
+            $recipient = $this->getRecipient();
+
+            if ($recipient === Episciences_Acl::ROLE_CHIEF_EDITOR) {
+                $this->_supervisorsCache = Episciences_Review::getChiefEditors();
+            } elseif ($recipient === Episciences_Acl::ROLE_SECRETARY) {
+                $this->_supervisorsCache = Episciences_Review::getSecretaries();
+            } else {
+                $this->_supervisorsCache = [];
+            }
+        }
+
+        return $this->_supervisorsCache;
+    }
+
+    /**
+     * Check if the current recipient role is a supervisor (chief_editor or secretary).
+     */
+    private function isSupervisorRecipient(): bool
+    {
+        $recipient = $this->getRecipient();
+        return $recipient === Episciences_Acl::ROLE_CHIEF_EDITOR
+            || $recipient === Episciences_Acl::ROLE_SECRETARY;
+    }
 }

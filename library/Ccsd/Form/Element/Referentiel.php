@@ -3,8 +3,6 @@
 class Ccsd_Form_Element_Referentiel extends Ccsd_Form_Element_AutoComplete implements Ccsd_Form_Interface_Javascript {
 	
 	use Ccsd_Form_Trait_ImplementFunctionJS;
-	public $pathDir = __DIR__ ;
-    public $relPublicDirPath =  "../../../public"; 
 		
     protected $_type;
     

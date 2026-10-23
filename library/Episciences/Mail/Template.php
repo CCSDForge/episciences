@@ -170,6 +170,60 @@ class Episciences_Mail_Template
 
 
     /**
+     * Fetch a template usable by a given journal from its id, and populate it from database:
+     * a default template (shared by all journals) or a custom template of this journal.
+     * Custom templates of other journals are never found.
+     *
+     * @param int $id
+     * @param int $rvid
+     * @return bool
+     */
+    public function findForJournal(int $id, int $rvid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $select = $db->select()
+            ->from(T_MAIL_TEMPLATES)
+            ->where('ID = ?', $id)
+            ->where('(RVID IS NULL OR RVID = ?)', $rvid);
+
+        $template = $db->fetchRow($select);
+
+        if ($template) {
+            return $this->populate($template);
+        }
+
+        return false;
+    }
+
+    /**
+     * Fetch a custom template of a given journal from its id, and populate it from database.
+     * Default templates (shared by all journals) and templates of other journals are never found.
+     *
+     * @param int $id
+     * @param int $rvid
+     * @return bool
+     */
+    public function findCustom(int $id, int $rvid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $select = $db->select()
+            ->from(T_MAIL_TEMPLATES)
+            ->where('ID = ?', $id)
+            ->where('RVID = ?', $rvid)
+            ->where('PARENTID > 0'); // same rule as isCustom()
+
+        $template = $db->fetchRow($select);
+
+        if ($template) {
+            return $this->populate($template);
+        }
+
+        return false;
+    }
+
+    /**
      * fetch a template from a given key, and populate it from database
      * @param string $key
      * @return bool
@@ -201,6 +255,17 @@ class Episciences_Mail_Template
         }
 
         return false;
+    }
+
+    /**
+     * Create a Template instance from a raw DB row.
+     * @param array $row associative row from T_MAIL_TEMPLATES
+     */
+    public static function fromRow(array $row): self
+    {
+        $template = new self();
+        $template->populate($row);
+        return $template;
     }
 
     /**
@@ -328,18 +393,18 @@ class Episciences_Mail_Template
         foreach ($body as $lang => $translation) {
             $path = $this->getTranslationsFolder() . $lang . '/emails/';
 
-            if (!is_dir($path) && !mkdir($path)) {
-                trigger_error('Directory "%s" was not created', $path);
+            if (!is_dir($path) && !mkdir($path) && !is_dir($path)) {
+                trigger_error(sprintf('Directory "%s" was not created', $path));
+                $result = false;
 
             } else {
 
                 $filePutContent = file_put_contents($path . $key . '.phtml', $translation);
 
-                if (!$filePutContent) {
+                if ($filePutContent === false) {
                     trigger_error('TEMPLATE::SAVE_WRITE_DATA_TO_FILE_IS_EMPTY');
+                    $result = false;
                 }
-
-                $result = $filePutContent;
             }
 
         }
@@ -356,7 +421,7 @@ class Episciences_Mail_Template
         $key = $this->getKey();
 
         // Supprimer en base
-        if ($db->delete(T_MAIL_TEMPLATES, 'ID = ' . $id) < 1){
+        if ($db->delete(T_MAIL_TEMPLATES, ['ID = ?' => $id]) < 1){
             return false;
         }
 

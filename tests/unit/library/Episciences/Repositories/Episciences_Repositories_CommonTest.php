@@ -214,6 +214,31 @@ final class Episciences_Repositories_CommonTest extends TestCase
     }
 
     // =========================================================================
+    // normalizeVersion()
+    // =========================================================================
+
+    public function testNormalizeVersionWithLeadingPrefix(): void
+    {
+        self::assertSame(1.2, Episciences_Repositories_Common::normalizeVersion('v1.2.3'));
+    }
+
+    public function testNormalizeVersionWithDottedVersion(): void
+    {
+        self::assertSame(1.2, Episciences_Repositories_Common::normalizeVersion('1.2.3'));
+    }
+
+    public function testNormalizeVersionNumeric(): void
+    {
+        self::assertSame(2.0, Episciences_Repositories_Common::normalizeVersion(2));
+        self::assertSame(1.5, Episciences_Repositories_Common::normalizeVersion(1.5));
+    }
+
+    public function testNormalizeVersionNoDigit(): void
+    {
+        self::assertSame(1.0, Episciences_Repositories_Common::normalizeVersion('not-a-version'));
+    }
+
+    // =========================================================================
     // getConceptIdentifierFromString()
     // =========================================================================
 
@@ -275,6 +300,39 @@ XML;
         self::assertNotEmpty($result);
         self::assertArrayHasKey('value', $result[0]);
         self::assertArrayHasKey('language', $result[0]);
+    }
+
+    // =========================================================================
+    // extractDescriptions()
+    // =========================================================================
+
+    /**
+     * extractDescriptions() must not collapse a description whose xml:lang has no
+     * alpha-2 equivalent (e.g. "cpg", the ISO 639-3 code for Cappadocian Greek) onto
+     * the document's default language. Doing so would tag it the same as another,
+     * unrelated description, and a later consumer (Episciences_Tools::xpath()) would
+     * then silently overwrite one description's text with the other's.
+     */
+    public function testExtractDescriptionsKeepsUnmappableLanguageCodeDistinct(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:descriptions>
+        <datacite:description descriptionType="Abstract">English abstract</datacite:description>
+        <datacite:description descriptionType="Abstract" xml:lang="cpg">Greek abstract mistagged as Cappadocian Greek</datacite:description>
+    </datacite:descriptions>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = Episciences_Repositories_Common::extractDescriptions($metadata, 'en', false, true);
+
+        self::assertCount(2, $result);
+        self::assertSame('en', $result[0]['language']);
+        self::assertSame('English abstract', $result[0]['value']);
+        self::assertNotSame('en', $result[1]['language']);
+        self::assertSame('Greek abstract mistagged as Cappadocian Greek', $result[1]['value']);
     }
 
     // =========================================================================
@@ -390,5 +448,619 @@ XML;
     public function testSafeDateFormatInvalid(): void
     {
         self::assertSame('', Episciences_Repositories_Common::safeDateFormat('not-a-date'));
+    }
+
+    // =========================================================================
+    // convertTo2LetterCode() — 3-letter ISO 639-2 conversion
+    // =========================================================================
+
+    public function testConvertTo2LetterCode3LetterFra(): void
+    {
+        self::assertSame('fr', Episciences_Repositories_Common::convertTo2LetterCode('fra'));
+    }
+
+    public function testConvertTo2LetterCode3LetterEng(): void
+    {
+        self::assertSame('en', Episciences_Repositories_Common::convertTo2LetterCode('eng'));
+    }
+
+    public function testConvertTo2LetterCodeAlreadyTwoLetters(): void
+    {
+        self::assertSame('de', Episciences_Repositories_Common::convertTo2LetterCode('de'));
+    }
+
+    // =========================================================================
+    // formatReferences() — with link, doi+link, volume+issue
+    // =========================================================================
+
+    public function testFormatReferencesWithLinkOnly(): void
+    {
+        $result = Episciences_Repositories_Common::formatReferences([
+            'title' => 'My Paper',
+            'link'  => 'https://example.com/paper',
+        ]);
+
+        self::assertArrayHasKey('raw_reference', $result);
+        self::assertArrayNotHasKey('doi', $result);
+        self::assertStringContainsString('https://example.com/paper', $result['raw_reference']);
+    }
+
+    public function testFormatReferencesWithDoiAndLink(): void
+    {
+        $result = Episciences_Repositories_Common::formatReferences([
+            'doi'  => '10.1/x',
+            'link' => 'https://example.com/paper',
+        ]);
+
+        self::assertArrayHasKey('doi', $result);
+        self::assertStringContainsString('10.1/x', $result['raw_reference']);
+        self::assertStringContainsString('https://example.com/paper', $result['raw_reference']);
+    }
+
+    public function testFormatReferencesWithVolumeAndIssue(): void
+    {
+        $result = Episciences_Repositories_Common::formatReferences([
+            'title'  => 'Title',
+            'volume' => '10',
+            'issue'  => '3',
+        ]);
+
+        self::assertArrayHasKey('raw_reference', $result);
+        self::assertStringContainsString('10(3)', $result['raw_reference']);
+    }
+
+    // =========================================================================
+    // extractMultilingualContent() — duplicates and fallback language
+    // =========================================================================
+
+    public function testExtractMultilingualContentFiltersDuplicates(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:titles>
+        <datacite:title xml:lang="en">Same Title</datacite:title>
+        <datacite:title xml:lang="en">Same Title</datacite:title>
+    </datacite:titles>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = Episciences_Repositories_Common::extractMultilingualContent(
+            $metadata,
+            'datacite:titles/datacite:title',
+            'en'
+        );
+
+        self::assertCount(1, $result);
+    }
+
+    public function testExtractMultilingualContentFallbackLanguage(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:titles>
+        <datacite:title>No Language Attr</datacite:title>
+    </datacite:titles>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = Episciences_Repositories_Common::extractMultilingualContent(
+            $metadata,
+            'datacite:titles/datacite:title',
+            'fr'
+        );
+
+        self::assertNotEmpty($result);
+        self::assertSame('fr', $result[0]['language']);
+    }
+
+    public function testExtractMultilingualContentSkipsEmpty(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:titles>
+        <datacite:title></datacite:title>
+        <datacite:title xml:lang="en">Real Title</datacite:title>
+    </datacite:titles>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = Episciences_Repositories_Common::extractMultilingualContent(
+            $metadata,
+            'datacite:titles/datacite:title',
+            'en'
+        );
+
+        self::assertCount(1, $result);
+        self::assertSame('Real Title', $result[0]['value']);
+    }
+
+    // =========================================================================
+    // extractRelatedIdentifiersFromMetadata() — Handle type and empty identifier
+    // =========================================================================
+
+    public function testExtractRelatedIdentifiersHandleTypeBecomesUrl(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:relatedIdentifiers>
+        <datacite:relatedIdentifier relationType="IsPartOf" relatedIdentifierType="Handle">11234/1-5678</datacite:relatedIdentifier>
+    </datacite:relatedIdentifiers>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = Episciences_Repositories_Common::extractRelatedIdentifiersFromMetadata($metadata);
+
+        self::assertNotEmpty($result);
+        self::assertSame('url', $result[0]['scheme']);
+    }
+
+    public function testExtractRelatedIdentifiersDoiTypeBecomesLowercase(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:relatedIdentifiers>
+        <datacite:relatedIdentifier relationType="Cites" relatedIdentifierType="DOI">10.1/abc</datacite:relatedIdentifier>
+    </datacite:relatedIdentifiers>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = Episciences_Repositories_Common::extractRelatedIdentifiersFromMetadata($metadata);
+
+        self::assertNotEmpty($result);
+        self::assertSame('doi', $result[0]['scheme']);
+    }
+
+    public function testExtractRelatedIdentifiersEmptyIdentifierIsFiltered(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:relatedIdentifiers>
+        <datacite:relatedIdentifier relationType="IsPartOf" relatedIdentifierType="DOI"></datacite:relatedIdentifier>
+    </datacite:relatedIdentifiers>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = Episciences_Repositories_Common::extractRelatedIdentifiersFromMetadata($metadata);
+
+        self::assertSame([], $result);
+    }
+
+    public function testExtractRelatedIdentifiersResourceTypeFallsBackToDataset(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:relatedIdentifiers>
+        <datacite:relatedIdentifier relationType="IsSupplementTo" relatedIdentifierType="DOI">10.1/xyz</datacite:relatedIdentifier>
+    </datacite:relatedIdentifiers>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = Episciences_Repositories_Common::extractRelatedIdentifiersFromMetadata($metadata);
+
+        self::assertNotEmpty($result);
+        self::assertSame('dataset', $result[0]['resource_type']);
+    }
+
+    public function testExtractRelatedIdentifiersReadsResourceTypeGeneral(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:relatedIdentifiers>
+        <datacite:relatedIdentifier relationType="IsSupplementedBy" relatedIdentifierType="URL" resourceTypeGeneral="Software">https://hal.science/hal-01234567</datacite:relatedIdentifier>
+    </datacite:relatedIdentifiers>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = Episciences_Repositories_Common::extractRelatedIdentifiersFromMetadata($metadata);
+
+        self::assertSame('software', $result[0]['resource_type']);
+    }
+
+    // =========================================================================
+    // assembleData() — FILES and RELATED_IDENTIFIERS
+    // =========================================================================
+
+    public function testAssembleDataWithFilesEmpty(): void
+    {
+        $assembled = [];
+        Episciences_Repositories_Common::assembleData(
+            [],
+            [Episciences_Repositories_Common::FILES => []],
+            $assembled
+        );
+
+        self::assertArrayHasKey(
+            Episciences_Repositories_Common::FILES,
+            $assembled[Episciences_Repositories_Common::ENRICHMENT]
+        );
+    }
+
+    public function testAssembleDataWithRelatedIdentifiers(): void
+    {
+        $assembled = [];
+        $enrichment = [
+            Episciences_Repositories_Common::RELATED_IDENTIFIERS => [
+                ['identifier' => '10.1/abc', 'relation' => 'Cites', 'resource_type' => 'dataset', 'scheme' => 'doi'],
+            ],
+        ];
+
+        Episciences_Repositories_Common::assembleData([], $enrichment, $assembled);
+
+        self::assertArrayHasKey(
+            Episciences_Repositories_Common::RELATED_IDENTIFIERS,
+            $assembled[Episciences_Repositories_Common::ENRICHMENT]
+        );
+    }
+
+    public function testAssembleDataWithResourceType(): void
+    {
+        $assembled = [];
+        $enrichment = [
+            Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT => 'article',
+        ];
+
+        Episciences_Repositories_Common::assembleData([], $enrichment, $assembled);
+
+        self::assertArrayHasKey(
+            Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT,
+            $assembled[Episciences_Repositories_Common::ENRICHMENT]
+        );
+    }
+
+    // =========================================================================
+    // toDublinCore() — basic output structure
+    // =========================================================================
+
+    public function testToDublinCoreProducesXmlRecord(): void
+    {
+        $elements = [
+            'headers' => ['identifier' => 'https://example.com/paper'],
+            'body' => ['title' => 'Test Paper', 'creator' => 'Doe, John'],
+        ];
+
+        $result = Episciences_Repositories_Common::toDublinCore($elements);
+
+        self::assertIsString($result);
+        self::assertStringContainsString('<record>', $result);
+        self::assertStringContainsString('<oai_dc:dc', $result);
+        self::assertStringContainsString('dc:title', $result);
+    }
+
+    public function testToDublinCoreWithEmptyElements(): void
+    {
+        $result = Episciences_Repositories_Common::toDublinCore([]);
+
+        self::assertIsString($result);
+    }
+
+    // =========================================================================
+    // getVersionFromIdentifier() — multi-part version
+    // =========================================================================
+
+    public function testGetVersionFromIdentifierMultiPart(): void
+    {
+        self::assertSame('1.2', Episciences_Repositories_Common::getVersionFromIdentifier('1822/79894.1.2'));
+    }
+
+    public function testGetVersionFromIdentifierSimpleDot(): void
+    {
+        self::assertSame('4', Episciences_Repositories_Common::getVersionFromIdentifier('1822/79894.4'));
+    }
+
+    // =========================================================================
+    // extractPersons() — public method, DB-free
+    // =========================================================================
+
+    public function testExtractPersonsSimpleName(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:creators>
+        <datacite:creator>
+            <datacite:creatorName>John Doe</datacite:creatorName>
+        </datacite:creator>
+    </datacite:creators>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $creatorsDc = [];
+        $authors = Episciences_Repositories_Common::extractPersons($metadata, $creatorsDc, 'datacite:creatorName');
+
+        self::assertNotEmpty($authors);
+        self::assertSame('John Doe', $authors[0]['fullname']);
+        self::assertSame('Doe', $authors[0]['family']);
+        self::assertSame('John', $authors[0]['given']);
+        self::assertContains('John Doe', $creatorsDc);
+    }
+
+    public function testExtractPersonsFiltersDuplicates(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:creators>
+        <datacite:creator>
+            <datacite:creatorName>John Doe</datacite:creatorName>
+        </datacite:creator>
+        <datacite:creator>
+            <datacite:creatorName>John Doe</datacite:creatorName>
+        </datacite:creator>
+    </datacite:creators>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $creatorsDc = [];
+        $authors = Episciences_Repositories_Common::extractPersons($metadata, $creatorsDc, 'datacite:creatorName');
+
+        self::assertCount(1, $authors);
+    }
+
+    public function testExtractPersonsSingleWordName(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:creators>
+        <datacite:creator>
+            <datacite:creatorName>Mononym</datacite:creatorName>
+        </datacite:creator>
+    </datacite:creators>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $creatorsDc = [];
+        $authors = Episciences_Repositories_Common::extractPersons($metadata, $creatorsDc, 'datacite:creatorName');
+
+        self::assertNotEmpty($authors);
+        self::assertSame('Mononym', $authors[0]['family']);
+        self::assertSame('', $authors[0]['given']);
+    }
+
+    /**
+     * ORCID extraction uses $person->nameIdentifier (no namespace prefix).
+     * The XML must use non-prefixed nameIdentifier elements inside the creator node.
+     */
+    public function testExtractPersonsWithOrcid(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:creators>
+        <datacite:creator>
+            <datacite:creatorName>Alice Martin</datacite:creatorName>
+            <nameIdentifier nameIdentifierScheme="ORCID">https://orcid.org/0000-0001-2345-6789</nameIdentifier>
+        </datacite:creator>
+    </datacite:creators>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $creatorsDc = [];
+        $authors = Episciences_Repositories_Common::extractPersons($metadata, $creatorsDc, 'datacite:creatorName');
+
+        self::assertNotEmpty($authors);
+        self::assertArrayHasKey('orcid', $authors[0]);
+        self::assertSame('0000-0001-2345-6789', $authors[0]['orcid']);
+    }
+
+    /**
+     * Affiliation extraction uses $person->affiliation (no namespace prefix).
+     * The XML must use a non-prefixed affiliation element inside the creator node.
+     */
+    public function testExtractPersonsWithAffiliation(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:creators>
+        <datacite:creator>
+            <datacite:creatorName>Bob Smith</datacite:creatorName>
+            <affiliation>CNRS</affiliation>
+        </datacite:creator>
+    </datacite:creators>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $creatorsDc = [];
+        $authors = Episciences_Repositories_Common::extractPersons($metadata, $creatorsDc, 'datacite:creatorName');
+
+        self::assertNotEmpty($authors);
+        self::assertArrayHasKey('affiliation', $authors[0]);
+        self::assertSame('CNRS', $authors[0]['affiliation'][0]['name']);
+    }
+
+    public function testExtractPersonsEmptyNodeReturnsEmpty(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:creators>
+        <datacite:creator>
+        </datacite:creator>
+    </datacite:creators>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $creatorsDc = [];
+        $authors = Episciences_Repositories_Common::extractPersons($metadata, $creatorsDc, 'datacite:creatorName');
+
+        self::assertSame([], $authors);
+    }
+
+    // =========================================================================
+    // removeDcDescriptionByText()
+    // =========================================================================
+
+    private function dcRecord(string ...$descriptions): string
+    {
+        $nodes = '';
+        foreach ($descriptions as $description) {
+            $nodes .= sprintf("\n    <dc:description>%s</dc:description>", $description);
+        }
+
+        return sprintf(
+            '<oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/">%s' . "\n" . '</oai_dc:dc>',
+            $nodes
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function dcDescriptionsOf(string $record): array
+    {
+        $dom = new \DOMDocument();
+        self::assertTrue($dom->loadXML($record));
+
+        $texts = [];
+        foreach ($dom->getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', 'description') as $node) {
+            $texts[] = $node->textContent;
+        }
+
+        return $texts;
+    }
+
+    public function testRemoveDcDescriptionByTextRemovesTheMatchingNode(): void
+    {
+        $record = $this->dcRecord('Boilerplate', 'A real abstract.');
+
+        $cleaned = Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate']);
+
+        self::assertSame(['A real abstract.'], $this->dcDescriptionsOf($cleaned));
+    }
+
+    public function testRemoveDcDescriptionByTextMatchesSeveralTexts(): void
+    {
+        $record = $this->dcRecord('First marker', 'A real abstract.', 'Second marker');
+
+        $cleaned = Episciences_Repositories_Common::removeDcDescriptionByText(
+            $record,
+            ['First marker', 'Second marker']
+        );
+
+        self::assertSame(['A real abstract.'], $this->dcDescriptionsOf($cleaned));
+    }
+
+    public function testRemoveDcDescriptionByTextIgnoresCaseAndCollapsesWhitespace(): void
+    {
+        $record = $this->dcRecord("  BOILER\n  plate ", 'A real abstract.');
+
+        $cleaned = Episciences_Repositories_Common::removeDcDescriptionByText($record, ['boiler plate']);
+
+        self::assertSame(['A real abstract.'], $this->dcDescriptionsOf($cleaned));
+    }
+
+    public function testRemoveDcDescriptionByTextRequiresAFullMatch(): void
+    {
+        $record = $this->dcRecord('Boilerplate and then some real content.');
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate'])
+        );
+    }
+
+    public function testRemoveDcDescriptionByTextReturnsRecordUnchangedWhenNothingMatches(): void
+    {
+        $record = $this->dcRecord('A real abstract.');
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate'])
+        );
+    }
+
+    public function testRemoveDcDescriptionByTextReturnsRecordUnchangedOnEmptyNeedleList(): void
+    {
+        $record = $this->dcRecord('Boilerplate');
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, [])
+        );
+    }
+
+    /**
+     * A needle made only of whitespace would otherwise normalize to '' and match every
+     * empty <dc:description>, silently deleting nodes the caller never named.
+     */
+    public function testRemoveDcDescriptionByTextIgnoresBlankNeedles(): void
+    {
+        $record = $this->dcRecord('', 'A real abstract.');
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, ['   '])
+        );
+    }
+
+    public function testRemoveDcDescriptionByTextHandlesEmptyRecord(): void
+    {
+        self::assertSame('', Episciences_Repositories_Common::removeDcDescriptionByText('', ['Boilerplate']));
+    }
+
+    public function testRemoveDcDescriptionByTextHandlesMalformedXml(): void
+    {
+        $record = '<oai_dc:dc><dc:description>Boilerplate</dc:description>';
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate'])
+        );
+    }
+
+    /**
+     * Episciences_PapersManager::cleanRecord() strips the default xmlns before the hooks
+     * run, so a record can reach this helper with no namespace at all.
+     */
+    public function testRemoveDcDescriptionByTextMatchesNodesWithoutNamespace(): void
+    {
+        $record = "<dc>\n    <description>Boilerplate</description>\n    <description>A real abstract.</description>\n</dc>";
+
+        $cleaned = Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate']);
+
+        self::assertStringNotContainsString('Boilerplate', $cleaned);
+        self::assertStringContainsString('A real abstract.', $cleaned);
+    }
+
+    public function testRemoveDcDescriptionByTextLeavesOtherNamespacesAlone(): void
+    {
+        $record = '<root xmlns:datacite="http://datacite.org/schema/kernel-4">'
+            . '<datacite:description>Boilerplate</datacite:description></root>';
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate'])
+        );
+    }
+
+    public function testRemoveDcDescriptionByTextDoesNotLeaveABlankLineBehind(): void
+    {
+        $record  = $this->dcRecord('Boilerplate', 'A real abstract.');
+        $cleaned = Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate']);
+
+        self::assertStringNotContainsString("\n\n", $cleaned);
     }
 }

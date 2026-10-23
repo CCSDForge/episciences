@@ -4,6 +4,8 @@ namespace unit\library\Episciences;
 
 use Episciences_OpenAireResearchGraphTools;
 use Episciences_Paper_AuthorsManager;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 
@@ -167,48 +169,38 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
         self::assertEquals('ROR', $mergingArray[0]['affiliation'][0]['id'][0]['id-type']);
     }
 
-    /**
-     * @dataProvider sampleOaDbAndApi
-     * @param array $sampleOACreatorDB
-     * @param array $sampleOACreatorAPI
-     * @return void
-     */
+    #[DataProvider('sampleOaDbAndApi')]
+    #[IgnoreDeprecations]
     public function testGetAuthorOrcidFromOA(array $sampleOACreatorDB, array $sampleOACreatorAPI): void
     {
-        // Suppress deprecation warning for testing deprecated method
-        $previousErrorReporting = error_reporting(E_ALL & ~E_USER_DEPRECATED);
-        try {
-            [$arrayForDB, $isNewOrcid] = Episciences_OpenAireResearchGraphTools::getOrcidApiForDb($sampleOACreatorDB[0]['fullname'], $sampleOACreatorAPI, $sampleOACreatorDB, 0, 0);
-            self::assertIsArray($arrayForDB);
-            self::assertIsInt($isNewOrcid);
-            self::assertEquals(1, $isNewOrcid);
-            self::assertEquals('0000-0002-5332-5437', $arrayForDB[0]['orcid']);
-        } finally {
-            error_reporting($previousErrorReporting);
-        }
+        [$arrayForDB, $isNewOrcid] = Episciences_OpenAireResearchGraphTools::getOrcidApiForDb($sampleOACreatorDB[0]['fullname'], $sampleOACreatorAPI, $sampleOACreatorDB, 0, 0);
+        self::assertIsArray($arrayForDB);
+        self::assertIsInt($isNewOrcid);
+        self::assertEquals(1, $isNewOrcid);
+        self::assertEquals('0000-0002-5332-5437', $arrayForDB[0]['orcid']);
     }
 
 
     /**
      * @return iterable
      */
-    public function halTeiProvider(): iterable
+    public static function halTeiProvider(): iterable
     {
         yield [simplexml_load_file(__DIR__ . self::TESTS_UNIT_LIBRARY_EPISCIENCES_PAPER_DATA . 'halTeiProvider.xml')];
     }
 
-    public function halTeiEmptyProvider(): iterable
+    public static function halTeiEmptyProvider(): iterable
     {
 
         yield [simplexml_load_file(__DIR__ . self::TESTS_UNIT_LIBRARY_EPISCIENCES_PAPER_DATA . 'halTeiEmptyProvider.xml')];
     }
 
-    public function halTeiEmptyAuthorsProvider(): iterable
+    public static function halTeiEmptyAuthorsProvider(): iterable
     {
         yield [simplexml_load_file(__DIR__ . self::TESTS_UNIT_LIBRARY_EPISCIENCES_PAPER_DATA . 'halTeiEmptyAuthorsProvider.xml')];
     }
 
-    public function halTeiWithSeveralsAuthorsProvider(): iterable
+    public static function halTeiWithSeveralsAuthorsProvider(): iterable
     {
         yield [simplexml_load_file(__DIR__ . self::TESTS_UNIT_LIBRARY_EPISCIENCES_PAPER_DATA . 'halTeiWithSeveralsAuthorsProvider.xml')];
     }
@@ -217,7 +209,8 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
      * info author name
      * @return iterable
      */
-    public function sampleTeiAuthor(): iterable
+
+    public static function sampleTeiAuthor(): iterable
     {
         yield [simplexml_load_string('<persName>
 								<forename type="first">Don</forename>
@@ -225,7 +218,7 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
 							</persName>')];
     }
 
-    public function sampleTeiAuthorWithOrcidAndAffi(): iterable
+    public static function sampleTeiAuthorWithOrcidAndAffi(): iterable
     {
         yield [simplexml_load_string('<author role="aut">
 							<persName>
@@ -246,16 +239,16 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
     /**
      * @return array
      */
-    public function sampleArrayAuthorAndStructTei(): array
+    public static function sampleArrayAuthorAndStructTei(): array
     {
-        return [[$this->sampleArrayAuthorTei(), $this->sampleArrayStructTei()]];
+        return [[self::sampleArrayAuthorTei(), self::sampleArrayStructTei()]];
     }
 
     /**
      * Sample from dataProvider halTeiWithSeveralsAuthorsProvider
      * @return array
      */
-    public function sampleArrayAuthorTei(): array
+    public static function sampleArrayAuthorTei(): array
     {
         return [
             [
@@ -326,7 +319,7 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
      * Sample from dataProvider halTeiWithSeveralsAuthorsProvider
      * @return array
      */
-    public function sampleArrayStructTei(): array
+    public static function sampleArrayStructTei(): array
     {
         return [
             [
@@ -429,16 +422,16 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
      * regroup sample before merging TEI and DB
      * @return array
      */
-    public function sampleArrayTeiAndDB(): array
+    public static function sampleArrayTeiAndDB(): array
     {
-        return [[$this->sampleArrayAuthorInDB(), $this->sampleArrayMergedAllInfoTei()]];
+        return [[self::sampleArrayAuthorInDB(), self::sampleArrayMergedAllInfoTei()]];
     }
 
     /**
      * sample array from DB before add new or already info from TEI
      * @return array
      */
-    public function sampleArrayAuthorInDB(): array
+    public static function sampleArrayAuthorInDB(): array
     {
         return [
             [
@@ -499,7 +492,7 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
      * sample array after mergeAuthorInfoAndAffiTei method
      * @return array
      */
-    public function sampleArrayMergedAllInfoTei(): array
+    public static function sampleArrayMergedAllInfoTei(): array
     {
         return [
             [
@@ -568,12 +561,12 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
      * sample merge db and api information for one author
      * @return array
      */
-    public function sampleOaDbAndApi(): array
+    public static function sampleOaDbAndApi(): array
     {
-        return [[$this->sampleDbForOACreator(), $this->sampleOACreator()]];
+        return [[self::sampleDbForOACreator(), self::sampleOACreator()]];
     }
 
-    public function sampleDbForOACreator(): array
+    public static function sampleDbForOACreator(): array
     {
         return [[
             'fullname' => 'Svjetlan Feretić',
@@ -585,7 +578,7 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
     /**
      * @return array
      */
-    public function sampleOACreator(): array
+    public static function sampleOACreator(): array
     {
         return [
 

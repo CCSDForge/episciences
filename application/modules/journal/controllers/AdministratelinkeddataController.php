@@ -8,15 +8,15 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
-            echo json_encode([false], JSON_THROW_ON_ERROR);
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
+        $docId = (int)$request->getPost('docId');
+        $paper = $this->getManageablePaper($docId);
+        if ($paper === null) {
+            $this->denyLinkedDataChange();
             return;
         }
-        $inputTypeLd = filter_var(trim($this->getRequest()->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
+        $inputTypeLd = filter_var(trim($this->getRequest()->getPost('typeld') ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $rawValueLd = str_replace(' ','',trim($this->getRequest()->getPost('valueld')));
-        $docId = (int)$this->getRequest()->getPost('docId');
-        $paperId = filter_var(trim($this->getRequest()->getPost('paperId')), FILTER_SANITIZE_SPECIAL_CHARS);
+        $paperId = (string)$paper->getPaperid();
         $relationship = htmlspecialchars(trim($this->getRequest()->getPost('relationship')), ENT_QUOTES, 'UTF-8');
         
         // Validate the format first with raw input, then sanitize for storage
@@ -34,16 +34,11 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         $versionHal = 0;
         // isolate hal id if url is given here
         if ($typeLd === 'url') {
-            $getHalIdentifierInUrl = Episciences_Tools::getHalIdInString($rawValueLd);
-            if (!empty($getHalIdentifierInUrl)) {
+            $halIdentifier = Episciences_Tools::splitHalIdentifier($rawValueLd);
+            if ($halIdentifier !== null) {
                 $typeLd = 'hal';
-                $rawValueLd = $getHalIdentifierInUrl[0];
+                [, $rawValueLd, $versionHal] = $halIdentifier;
                 $valueLd = htmlspecialchars($rawValueLd, ENT_QUOTES, 'UTF-8');
-                if (isset($getHalIdentifierInUrl[1])) {
-                    $rawValueLd = str_replace($getHalIdentifierInUrl[1],'',$rawValueLd);
-                    $valueLd = htmlspecialchars($rawValueLd, ENT_QUOTES, 'UTF-8');
-                    $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
-                }
             }
             //isolate swh in url
             $getSwhDirIdentifierInUrl = Episciences_Tools::getSoftwareHeritageDirId($rawValueLd);
@@ -54,13 +49,13 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             }
         }
         if ($inputTypeLd === 'software' && $typeLd === 'hal') {
-            $getHalIdentifierInUrl = Episciences_Tools::getHalIdInString($rawValueLd);
             $valueWithVers = $rawValueLd;
-            if (!empty($getHalIdentifierInUrl)) {
-                $rawValueLd = $getHalIdentifierInUrl[0];
-                if (isset($getHalIdentifierInUrl[1])) {
-                    $rawValueLd = str_replace($getHalIdentifierInUrl[1],'',$rawValueLd);
-                    $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
+            $halIdentifier = Episciences_Tools::splitHalIdentifier($rawValueLd);
+            if ($halIdentifier !== null) {
+                [, $rawValueLd, $version] = $halIdentifier;
+                // Keep the version already taken from a URL when this value no longer carries it
+                if ($version > 0) {
+                    $versionHal = $version;
                 }
             }
             $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($rawValueLd,$versionHal));
@@ -85,17 +80,21 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $epiDM->setMetatext(json_encode($arraySoftware, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_FORCE_OBJECT));
             $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
         } elseif (($inputTypeLd === 'dataset' || $inputTypeLd === 'publication') && $typeLd === 'hal') {
-            $getHalIdentifierInUrl = Episciences_Tools::getHalIdInString($rawValueLd);
-            if (!empty($getHalIdentifierInUrl)) {
-                $typeLd = 'hal';
-                $rawValueLd = $getHalIdentifierInUrl[0];
-                if (isset($getHalIdentifierInUrl[1])) {
-                    $rawValueLd = str_replace($getHalIdentifierInUrl[1],'',$rawValueLd);
-                    $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
+            // Default to the raw value so it is defined even for a HAL id without a version.
+            $rawValueLdWithoutVersion = $rawValueLd;
+            $halIdentifier = Episciences_Tools::splitHalIdentifier($rawValueLd);
+            if ($halIdentifier !== null) {
+                [$rawValueLd, $rawValueLdWithoutVersion, $version] = $halIdentifier;
+                // Keep the version already taken from a URL when this value no longer carries it
+                if ($version > 0) {
+                    $versionHal = $version;
                 }
             }
-            $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($rawValueLd,$versionHal));
-            $arraySoftware['citationFull'] = $citationFull->response->docs[0]->citationFull_s;
+            $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($rawValueLdWithoutVersion,$versionHal));
+            // Guard against an empty/malformed HAL response before dereferencing it.
+            if (!empty($citationFull->response->docs[0]->citationFull_s)) {
+                $arraySoftware['citationFull'] = $citationFull->response->docs[0]->citationFull_s;
+            }
             $epiDM = new Episciences_Paper_DatasetMetadata();
             $epiDM->setMetatext(json_encode($arraySoftware));
             $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
@@ -149,23 +148,33 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         }
     }
     public function removeldAction(){
+        ob_start();
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
-            echo json_encode([false], JSON_THROW_ON_ERROR);
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
+        if (!$this->isAuthenticatedAjaxPost()) {
+            $this->denyLinkedDataChange();
             return;
         }
 
-        $docId = (int)$request->getPost('docId');
-        $paperId = filter_var(trim($request->getPost('paperId')), FILTER_SANITIZE_SPECIAL_CHARS);
         $idLd = filter_var($request->getPost('id'), FILTER_SANITIZE_NUMBER_INT);
-        /** @var Episciences_Paper_Dataset $datasetInDb */
-        $datasetInDb = Episciences_Paper_DatasetsManager::findById($idLd);
-        $typeLd = htmlspecialchars($datasetInDb->getName(), ENT_QUOTES, 'UTF-8');
+        $datasetInDb = Episciences_Paper_DatasetsManager::findById((int)$idLd);
+        if (!$datasetInDb instanceof Episciences_Paper_Dataset) {
+            $this->denyLinkedDataChange();
+            return;
+        }
+
+        // The paper is derived from the stored dataset, never from the request
+        $docId = $datasetInDb->getDocId();
+        $paper = $this->getManageablePaper($docId);
+        if ($paper === null) {
+            $this->denyLinkedDataChange();
+            return;
+        }
+        $paperId = (string)$paper->getPaperid();
+        $typeLd = htmlspecialchars($datasetInDb->getName() ?? '', ENT_QUOTES, 'UTF-8');
         $valueLd = htmlspecialchars($datasetInDb->getValue(), ENT_QUOTES, 'UTF-8');
         if (($ds = $datasetInDb->getIdPaperDatasetsMeta()) !== null){
             $isDeleted = Episciences_Paper_DatasetsMetadataManager::deleteMetaDataAndDatasetsByIdMd((int)$ds);
@@ -175,19 +184,59 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         if ($isDeleted) {
             Episciences_PapersManager::updateJsonDocumentData($docId);
             Episciences_Paper_Logger::log($paperId,$docId,Episciences_Paper_Logger::CODE_LD_REMOVED,Episciences_Auth::getUid(), json_encode(['typeLd' => $typeLd,'valueLd' => $valueLd,'docId'=>$docId,'paperId' => $paperId,'username' => Episciences_Auth::getFullName()]));
-
+            ob_clean();
             echo json_encode([true], JSON_THROW_ON_ERROR);
         } else {
+            ob_clean();
             echo json_encode([false], JSON_THROW_ON_ERROR);
         }
     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Suppression de la donnée liée bien prise en compte');
+    }
+
+    private function denyLinkedDataChange(): void
+    {
+        if (ob_get_level() > 0) {
+            ob_clean();
+        }
+        echo json_encode([false], JSON_THROW_ON_ERROR);
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
+    }
+
+    private function isAuthenticatedAjaxPost(): bool
+    {
+        $request = $this->getRequest();
+
+        return $request->isXmlHttpRequest() && $request->isPost() && Episciences_Auth::isLogged();
+    }
+
+    /**
+     * Returns the paper of the current journal when the request is an AJAX POST
+     * and the user is a secretary, an editor assigned to the paper, or, as long as the paper
+     * is not published, its owner or a co-author.
+     */
+    private function getManageablePaper(int $docId): ?Episciences_Paper
+    {
+        if (!$this->isAuthenticatedAjaxPost()) {
+            return null;
+        }
+
+        $paper = Episciences_PapersManager::get($docId, false, RVID);
+        if (!$paper instanceof Episciences_Paper) {
+            return null;
+        }
+
+        $isAllowed = Episciences_Auth::isSecretary()
+            || $paper->isEditor((int)Episciences_Auth::getUid())
+            || (!$paper->isPublished() && $paper->isOwnerOrCoAuthor());
+
+        return $isAllowed ? $paper : null;
     }
 
     public function ajaxgetldformAction()
     {
         $request = $this->getRequest();
         $this->_helper->layout()->disableLayout();
-        if (($request->isXmlHttpRequest() || $request->isPost())
+        if ($request->isXmlHttpRequest() && $request->isPost()
             && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
             $valueLd = '';
             $idLd = '';
@@ -206,7 +255,10 @@ class AdministratelinkeddataController extends Zend_Controller_Action
                     $idLd = $ldOptions['idLd'];
                 }
             }
-            $this->view->supportedRelationShips = Episciences_Paper_Dataset::getSupportedRelationShips();
+            $this->view->supportedRelationShips = array_merge(
+                \Episciences\Paper\Relationship::getSupportedRelationShips(),
+                \Episciences\Paper\Relationship::getDisplayedRelationShipsIntraWorkRelation()
+            );
             $this->view->disabledValue = $disabledValue;
             $this->view->valueLd = $valueLd;
             $this->view->formId = $idForm;
@@ -221,35 +273,41 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         $request = $this->getRequest();
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
-        if (($request->isXmlHttpRequest() || $request->isPost())
-            && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
-            
-            // Sanitize all input parameters
-            $ldId = filter_var($request->getPost('ldId'), FILTER_SANITIZE_NUMBER_INT);
-            $relationship = htmlspecialchars(trim($request->getPost('relationship')), ENT_QUOTES, 'UTF-8');
-            $typeLd = filter_var(trim($request->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
-            $valueLd = htmlspecialchars(trim($request->getPost('valueLd')), ENT_QUOTES, 'UTF-8');
-            $docId = filter_var($request->getPost('docId'), FILTER_SANITIZE_NUMBER_INT);
-            $paperId = filter_var(trim($request->getPost('paperId')), FILTER_SANITIZE_SPECIAL_CHARS);
-            
-            $ld = new Episciences_Paper_Dataset();
-            $ld->setId($ldId);
-            $ld->setRelationship($relationship);
-            $ld->setCode($typeLd);
-            $ld->setSourceId(Episciences_Repositories::EPI_USER_ID);
-            if (Episciences_Paper_DatasetsManager::updateRelationAndTypeById($ld) > 0){
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Modification de la donnée liée bien prise en compte");
-                Episciences_Paper_Logger::log($paperId, $docId, Episciences_Paper_Logger::CODE_LD_CHANGED, Episciences_Auth::getUid(),
-                    json_encode(['typeLd' => $typeLd,
-                        'valueLd' => $valueLd,
-                        'relationship' => $relationship,
-                        'docId' => $docId,
-                        'paperId' => $paperId,
-                        'username' => Episciences_Auth::getFullName()]));
-                return json_encode([true], JSON_THROW_ON_ERROR);
-            }
+        $ldId = (int)filter_var($request->getPost('ldId'), FILTER_SANITIZE_NUMBER_INT);
+        $datasetInDb = $this->isAuthenticatedAjaxPost() ? Episciences_Paper_DatasetsManager::findById($ldId) : null;
+        // The paper is derived from the stored dataset, never from the request
+        $paper = $datasetInDb instanceof Episciences_Paper_Dataset ? $this->getManageablePaper($datasetInDb->getDocId()) : null;
+
+        if ($paper === null) {
+            $this->denyLinkedDataChange();
+            return;
         }
-        return json_encode([false], JSON_THROW_ON_ERROR);
+
+        // Sanitize all input parameters
+        $relationship = htmlspecialchars(trim($request->getPost('relationship') ?? ''), ENT_QUOTES, 'UTF-8');
+        $typeLd = filter_var(trim($request->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
+        $valueLd = htmlspecialchars(trim($request->getPost('valueLd')), ENT_QUOTES, 'UTF-8');
+        $docId = $paper->getDocid();
+        $paperId = (string)$paper->getPaperid();
+
+        $ld = new Episciences_Paper_Dataset();
+        $ld->setId($ldId);
+        $ld->setRelationship($relationship);
+        $ld->setCode($typeLd);
+        $ld->setSourceId(Episciences_Repositories::EPI_USER_ID);
+        if (Episciences_Paper_DatasetsManager::updateRelationAndTypeById($ld) > 0){
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Modification de la donnée liée bien prise en compte");
+            Episciences_Paper_Logger::log($paperId, $docId, Episciences_Paper_Logger::CODE_LD_CHANGED, Episciences_Auth::getUid(),
+                json_encode(['typeLd' => $typeLd,
+                    'valueLd' => $valueLd,
+                    'relationship' => $relationship,
+                    'docId' => $docId,
+                    'paperId' => $paperId,
+                    'username' => Episciences_Auth::getFullName()]));
+            echo json_encode([true], JSON_THROW_ON_ERROR);
+            return;
+        }
+        echo json_encode([false], JSON_THROW_ON_ERROR);
     }
 
 }

@@ -105,11 +105,9 @@ function submit() {
     $.ajax({
         url: $('#deadline-form').attr('action'),
         type: 'POST',
-        datatype: 'json',
+        dataType: 'json',
         data: $('#modal-box form').serialize(),
         success: function (response) {
-            response = JSON.parse(response);
-
             if (response.status === 1) {
                 refreshPaperHistory(response.docId);
                 $('#modal-box').modal('hide');

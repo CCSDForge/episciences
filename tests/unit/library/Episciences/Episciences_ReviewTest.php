@@ -190,6 +190,223 @@ class Episciences_ReviewTest extends TestCase
     }
 
     // =========================================================================
+    // getCoverLetterRequirement (git #922)
+    // =========================================================================
+
+    public function testCoverLetterRequirementConstants(): void
+    {
+        self::assertSame(0, Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED);
+        self::assertSame(1, Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL);
+        self::assertSame(2, Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED);
+    }
+
+    // =========================================================================
+    // Journal licenses
+    // =========================================================================
+
+    public function testLicensesAreUnsetByDefault(): void
+    {
+        $this->review->applySettingsFromRows([]);
+        self::assertNull($this->review->getDefaultLicense());
+        self::assertSame([], $this->review->getAllowedLicenses());
+    }
+
+    public function testLicensesAreLoadedFromRows(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'CC-BY-4.0'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["CC-BY-4.0","MIT"]'],
+        ]);
+        self::assertSame('CC-BY-4.0', $this->review->getDefaultLicense());
+        self::assertSame(['CC-BY-4.0', 'MIT'], $this->review->getAllowedLicenses());
+    }
+
+    public function testAllowedLicensesIgnoreInvalidStoredValues(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => '  '],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => 'not json'],
+        ]);
+        self::assertNull($this->review->getDefaultLicense());
+        self::assertSame([], $this->review->getAllowedLicenses());
+    }
+
+    public function testLicensesCanBeSetThroughOptions(): void
+    {
+        $this->review->applySettingsFromRows([]);
+        $this->review->setOptions([
+            Episciences_Review::SETTING_LICENSE_DEFAULT => 'MIT',
+            Episciences_Review::SETTING_LICENSES_ALLOWED => ['MIT', '', 'MIT', ' Apache-2.0 '],
+        ]);
+        self::assertSame('MIT', $this->review->getDefaultLicense());
+        self::assertSame(['MIT', 'Apache-2.0'], $this->review->getAllowedLicenses());
+    }
+
+    private function buildLicensesSettingsForm(): Ccsd_Form
+    {
+        return $this->review->licensesSettingsForm();
+    }
+
+    private static function methodSource(string $name): string
+    {
+        $method = new ReflectionMethod(Episciences_Review::class, $name);
+        $lines = file($method->getFileName());
+
+        return implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+    }
+
+    public function testLicensesSettingsFormHasBothElementsAndSubmit(): void
+    {
+        $form = $this->buildLicensesSettingsForm();
+
+        self::assertNotNull($form->getElement(Episciences_Review::SETTING_LICENSE_DEFAULT));
+        self::assertNotNull($form->getElement(Episciences_Review::SETTING_LICENSES_ALLOWED));
+        self::assertNotNull($form->getDisplayGroup('licenses'));
+    }
+
+    /**
+     * Saved codes that are not (or no longer) recommended are displayed as selected:
+     * they must be valid options, otherwise the form cannot be submitted unchanged.
+     */
+    public function testLicensesSettingsFormAcceptsSavedNonRecommendedCodes(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'LicenseRef-Default-Test'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["LicenseRef-Allowed-Test"]'],
+        ]);
+
+        $form = $this->buildLicensesSettingsForm();
+
+        self::assertTrue($form->isValid([
+            Episciences_Review::SETTING_LICENSE_DEFAULT => 'LicenseRef-Default-Test',
+            Episciences_Review::SETTING_LICENSES_ALLOWED => ['LicenseRef-Default-Test', 'LicenseRef-Allowed-Test'],
+        ]));
+    }
+
+    /**
+     * The option labels are built by the licenseFormSelect helper: the form must not look up the license names itself
+     */
+    public function testLicensesSettingsFormDoesNotLookUpLicenseNames(): void
+    {
+        self::assertStringNotContainsString('getNameByIdentifier', self::methodSource('licensesSettingsForm'));
+    }
+
+    /**
+     * Licenses have their own page (review/licenses): the main settings page must neither
+     * display them (the required default license would block saving the other settings)
+     * nor save them.
+     */
+    public function testLicensesAreNotPartOfTheMainSettings(): void
+    {
+        self::assertStringNotContainsString('SETTING_LICENSE', self::methodSource('settingsForm'));
+        self::assertStringNotContainsString('SETTING_LICENSE', self::methodSource('save'));
+    }
+
+    public function testSaveLicenseSettingsOnlyWritesLicenseKeys(): void
+    {
+        $source = self::methodSource('saveLicenseSettings');
+
+        self::assertStringContainsString('self::SETTING_LICENSE_DEFAULT =>', $source);
+        self::assertStringContainsString('self::SETTING_LICENSES_ALLOWED =>', $source);
+        self::assertSame(2, substr_count($source, '=>'));
+    }
+
+    public function testDefaultLicenseIsRequired(): void
+    {
+        $form = $this->buildLicensesSettingsForm();
+        $default = $form->getElement(Episciences_Review::SETTING_LICENSE_DEFAULT);
+
+        self::assertTrue($default->isRequired());
+        self::assertFalse($default->isValid('', []));
+        self::assertArrayHasKey(Zend_Validate_NotEmpty::IS_EMPTY, $default->getMessages());
+    }
+
+    public function testAllowedLicensesAreOptional(): void
+    {
+        $form = $this->buildLicensesSettingsForm();
+
+        self::assertFalse($form->getElement(Episciences_Review::SETTING_LICENSES_ALLOWED)->isRequired());
+    }
+
+    public function testDefaultLicenseIsAddedToAllowedLicenses(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'Apache-2.0'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["MIT","CC-BY-4.0"]'],
+        ]);
+        self::assertSame(['MIT', 'CC-BY-4.0', 'Apache-2.0'], $this->review->getAllowedLicenses());
+    }
+
+    public function testDefaultLicenseIsNotDuplicatedInAllowedLicenses(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'MIT'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["MIT","CC-BY-4.0"]'],
+        ]);
+        self::assertSame(['MIT', 'CC-BY-4.0'], $this->review->getAllowedLicenses());
+    }
+
+    public function testDefaultLicenseIsNotDuplicatedInAllowedLicensesWhateverTheCase(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'cc-by-4.0'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["MIT","CC-BY-4.0"]'],
+        ]);
+        self::assertSame(['MIT', 'CC-BY-4.0'], $this->review->getAllowedLicenses());
+    }
+
+    public function testEmptyAllowedLicensesStayUnrestrictedWithDefault(): void
+    {
+        // Empty list = all the recommended licenses: adding the default would restrict to it alone
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'MIT'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '[]'],
+        ]);
+        self::assertSame([], $this->review->getAllowedLicenses());
+    }
+
+    public function testGetCoverLetterRequirementDefaultsToOptionalWhenUnset(): void
+    {
+        // Reviews created before this setting existed have no stored value in DB.
+        // Regression: must default to optional, not disabled, otherwise the cover
+        // letter file field silently disappears for every pre-existing journal.
+        $this->review->applySettingsFromRows([]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsDisabledWhenExplicitlySetToZero(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '0'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsOptionalWhenExplicitlySet(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '1'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsRequired(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '2'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementCastsStoredValueToInt(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '2'],
+        ]);
+        self::assertIsInt($this->review->getCoverLetterRequirement());
+    }
+
+    // =========================================================================
     // getRepositories (reads from $_settings)
     // =========================================================================
 
@@ -263,5 +480,388 @@ class Episciences_ReviewTest extends TestCase
         self::assertSame(10, $review->getRvid());
         self::assertSame('test-journal', $review->getCode());
         self::assertSame('Test Journal', $review->getName());
+    }
+
+    // =========================================================================
+    // loadSettings() cache
+    // =========================================================================
+
+    public function testLoadSettingsUsesInMemoryCache(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = new Episciences_Review_LoadSettingsCacheTestAdapter([
+            [
+                'SETTING' => Episciences_Review::SETTING_ISSN,
+                'VALUE' => '1234-5678',
+            ],
+            [
+                'SETTING' => Episciences_Review::SETTING_REPOSITORIES,
+                'VALUE' => '[1,2]',
+            ],
+        ]);
+
+        try {
+            Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+            $review = new Episciences_Review(['rvid' => 8]);
+
+            $review->loadSettings();
+            $review->loadSettings();
+
+            self::assertSame(1, $adapter->fetchAllCount);
+            self::assertSame('1234-5678', $review->getSetting(Episciences_Review::SETTING_ISSN));
+            self::assertSame([1, 2], $review->getSetting(Episciences_Review::SETTING_REPOSITORIES));
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
+
+    public function testLoadSettingsCanForceReload(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = new Episciences_Review_LoadSettingsCacheTestAdapter([
+            [
+                'SETTING' => Episciences_Review::SETTING_ISSN,
+                'VALUE' => '1234-5678',
+            ],
+            [
+                'SETTING' => Episciences_Review::SETTING_CONTACT_JOURNAL,
+                'VALUE' => '1',
+            ],
+        ]);
+
+        try {
+            Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+            $review = new Episciences_Review(['rvid' => 8]);
+
+            $review->loadSettings();
+            $adapter->setRows([
+                [
+                    'SETTING' => Episciences_Review::SETTING_ISSN,
+                    'VALUE' => '8765-4321',
+                ],
+            ]);
+
+            $review->loadSettings(true);
+
+            self::assertSame(2, $adapter->fetchAllCount);
+            self::assertSame('8765-4321', $review->getSetting(Episciences_Review::SETTING_ISSN));
+            self::assertArrayNotHasKey(Episciences_Review::SETTING_CONTACT_JOURNAL, $review->getSettings());
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
+
+    public function testGetSettingLoadsDbSettingsEvenIfManuallyPreinitialized(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = new Episciences_Review_LoadSettingsCacheTestAdapter([
+            [
+                'SETTING' => Episciences_Review::SETTING_ISSN,
+                'VALUE' => '1234-5678',
+            ],
+        ]);
+
+        try {
+            Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+            $review = new Episciences_Review(['rvid' => 8]);
+
+            // Set a setting manually before any load/get
+            $review->setSetting('some_manual_setting', 'manual_val');
+
+            // Trigger getSetting for a database setting
+            $issn = $review->getSetting(Episciences_Review::SETTING_ISSN);
+
+            self::assertSame(1, $adapter->fetchAllCount);
+            self::assertSame('1234-5678', $issn);
+            self::assertSame('manual_val', $review->getSetting('some_manual_setting'));
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
+
+    // =========================================================================
+    // New OAI metadata setting constants
+    // =========================================================================
+
+    public function testNewOaiMetadataSettingConstants(): void
+    {
+        self::assertSame('journalDescription', Episciences_Review::SETTING_JOURNAL_DESCRIPTION);
+        self::assertSame('journalKeywords', Episciences_Review::SETTING_JOURNAL_KEYWORDS);
+        self::assertSame('journalCreationYear', Episciences_Review::SETTING_JOURNAL_CREATION_YEAR);
+    }
+
+    // =========================================================================
+    // SETTING_MAIL_DISPLAY_CODE (custom rvcode label in automatic emails)
+    // =========================================================================
+
+    public function testMailDisplayCodeSettingConstant(): void
+    {
+        self::assertSame('mailDisplayCode', Episciences_Review::SETTING_MAIL_DISPLAY_CODE);
+    }
+
+    public function testSetAndGetMailDisplayCodeSetting(): void
+    {
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'custom-code');
+        self::assertSame('custom-code', $this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    public function testMailDisplayCodeSettingDefaultsToFalseWhenUnset(): void
+    {
+        self::assertFalse($this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    public function testGetMailDisplayCodeFallsBackToCodeWhenSettingUnset(): void
+    {
+        $this->review->setCode('epijinfo');
+        self::assertSame('epijinfo', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeFallsBackToCodeWhenSettingBlank(): void
+    {
+        $this->review->setCode('epijinfo');
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, '   ');
+        self::assertSame('epijinfo', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeUsesCustomSettingWhenSet(): void
+    {
+        $this->review->setCode('epijinfo');
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'Épijournal Info');
+        self::assertSame('Épijournal Info', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeTrimsCustomSetting(): void
+    {
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, '  custom  ');
+        self::assertSame('custom', $this->review->getMailDisplayCode());
+    }
+
+    public function testApplySettingsFromRowsSetsMailDisplayCode(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'VALUE' => 'epij-custom'],
+        ]);
+
+        self::assertSame('epij-custom', $this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    /**
+     * settingsForm() pulls in Zend_Registry-dependent sub-forms (translator, repositories),
+     * so it cannot be instantiated in isolation here; verified via source inspection instead,
+     * consistent with other DB/registry-dependent methods in this codebase's test suite.
+     */
+    public function testSettingsFormSourceAddsMailDisplayCodeElement(): void
+    {
+        $method = new ReflectionMethod(Episciences_Review::class, 'settingsForm');
+        $lines = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertStringContainsString("addElement('text', self::SETTING_MAIL_DISPLAY_CODE", $source);
+        self::assertStringContainsString('self::SETTING_MAIL_DISPLAY_CODE], \'global\'', $source);
+    }
+
+    // =========================================================================
+    // applySettingsFromRows()
+    // =========================================================================
+
+    public function testApplySettingsFromRowsWithEmptyRowsReturnsFalseForUnsetSetting(): void
+    {
+        $this->review->applySettingsFromRows([]);
+        self::assertFalse($this->review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION));
+    }
+
+    public function testApplySettingsFromRowsSetsPlainSetting(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_DESCRIPTION, 'VALUE' => 'A great journal'],
+        ]);
+        self::assertSame('A great journal', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION));
+    }
+
+    public function testApplySettingsFromRowsSetsMultipleSettings(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_DESCRIPTION, 'VALUE' => 'Some description'],
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_KEYWORDS, 'VALUE' => 'math; physics'],
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_CREATION_YEAR, 'VALUE' => '2010'],
+        ]);
+        self::assertSame('Some description', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION));
+        self::assertSame('math; physics', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_KEYWORDS));
+        self::assertSame('2010', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_CREATION_YEAR));
+    }
+
+    public function testApplySettingsFromRowsMarksSettingsAsLoaded(): void
+    {
+        // After applySettingsFromRows(), getSetting() must NOT trigger a DB load
+        // (_settingsLoaded = true), so calling it without a DB adapter must not throw.
+        $this->review->applySettingsFromRows([]);
+        self::assertFalse($this->review->getSetting('nonexistent_setting'));
+    }
+
+    public function testApplySettingsFromRowsSecondCallOverwritesFirst(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_CREATION_YEAR, 'VALUE' => '2000'],
+        ]);
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_CREATION_YEAR, 'VALUE' => '2020'],
+        ]);
+        self::assertSame('2020', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_CREATION_YEAR));
+    }
+
+    // =========================================================================
+    // Statistics start date form element
+    // =========================================================================
+
+    private function buildStartStatsAfterDateElement(): Zend_Form_Element
+    {
+        $method = new ReflectionMethod(Episciences_Review::class, 'addStatisticsForm');
+        $method->setAccessible(true);
+        /** @var Ccsd_Form $form */
+        $form = $method->invoke($this->review, new Ccsd_Form());
+
+        $element = $form->getElement(Episciences_Review::SETTING_START_STATS_AFTER_DATE);
+        self::assertInstanceOf(Zend_Form_Element::class, $element);
+
+        return $element;
+    }
+
+    /**
+     * @dataProvider validStartStatsAfterDateProvider
+     */
+    public function testStartStatsAfterDateAcceptsStrictDate(string $input, string $expected): void
+    {
+        $element = $this->buildStartStatsAfterDateElement();
+
+        self::assertTrue($element->isValid($input));
+        self::assertSame($expected, $element->getValue());
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function validStartStatsAfterDateProvider(): array
+    {
+        return [
+            'strict date' => ['2026-01-05', '2026-01-05'],
+            'leap day' => ['2024-02-29', '2024-02-29'],
+            'surrounding whitespace is trimmed' => [' 2026-01-05 ', '2026-01-05'],
+            'empty value (optional setting)' => ['', ''],
+        ];
+    }
+
+    /**
+     * @dataProvider invalidStartStatsAfterDateProvider
+     */
+    public function testStartStatsAfterDateRejectsMalformedDate(mixed $input): void
+    {
+        $element = $this->buildStartStatsAfterDateElement();
+
+        self::assertFalse($element->isValid($input));
+        self::assertArrayHasKey(Zend_Validate_Callback::INVALID_VALUE, $element->getMessages());
+    }
+
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function invalidStartStatsAfterDateProvider(): array
+    {
+        return [
+            'single-digit month and day' => ['2026-1-5'],
+            'impossible day' => ['2026-02-30'],
+            'impossible month' => ['2026-13-01'],
+            'other format' => ['05/01/2026'],
+            'datetime' => ['2026-01-05 10:00:00'],
+            'array value' => [['2026-01-05']],
+        ];
+    }
+}
+
+final class Episciences_Review_LoadSettingsCacheTestAdapter extends Zend_Db_Adapter_Abstract
+{
+    public int $fetchAllCount = 0;
+
+    private array $rows;
+
+    public function __construct(array $rows)
+    {
+        parent::__construct(['dbname' => 'test', 'password' => '', 'username' => 'test']);
+        $this->rows = $rows;
+    }
+
+    public function setRows(array $rows): void
+    {
+        $this->rows = $rows;
+    }
+
+    public function fetchAll($sql, $bind = [], $fetchMode = null)
+    {
+        ++$this->fetchAllCount;
+        return $this->rows;
+    }
+
+    public function listTables()
+    {
+        return [];
+    }
+
+    public function describeTable($tableName, $schemaName = null)
+    {
+        return [];
+    }
+
+    protected function _connect()
+    {
+    }
+
+    public function isConnected()
+    {
+        return true;
+    }
+
+    public function closeConnection()
+    {
+    }
+
+    public function prepare($sql)
+    {
+        return null;
+    }
+
+    public function lastInsertId($tableName = null, $primaryKey = null)
+    {
+        return null;
+    }
+
+    protected function _beginTransaction()
+    {
+    }
+
+    protected function _commit()
+    {
+    }
+
+    protected function _rollBack()
+    {
+    }
+
+    public function setFetchMode($mode)
+    {
+        $this->_fetchMode = $mode;
+    }
+
+    public function limit($sql, $count, $offset = 0)
+    {
+        return $sql;
+    }
+
+    public function supportsParameters($type)
+    {
+        return false;
+    }
+
+    public function getServerVersion()
+    {
+        return 'test';
     }
 }

@@ -3,6 +3,9 @@ $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerN
 $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
+if (!$paper->isRevisionRequested()){
+    return;
+}
 ?>
 <div>
     <?php
@@ -23,11 +26,11 @@ $paper = $this->paper;
                     $newVersionHref = '/paper/newversion?id=' . $this->current_demand['PCID'];
 
                     if ($this->zIdentifier) {  // from z-submission: new version submission
-                        $newVersionHref .= '&z-identifier=' . $this->zIdentifier;
+                        $newVersionHref .= '&z-identifier=' . urlencode((string)$this->zIdentifier);
                     }
 
                     ?>
-                    <a id="new-version" href="<?= $newVersionHref ?>"
+                    <a id="new-version" href="<?= $this->escape($newVersionHref) ?>"
                        title="<?= $this->translate('Proposer une nouvelle version') ?>"
                        class="modal-opener"
                        data-target="#"><?= $this->translate('Proposer une nouvelle version') ?>
@@ -40,7 +43,7 @@ $paper = $this->paper;
                             <a href="/paper/contactrequest?id=<?= $this->current_demand['PCID'] ?>"
                                title="<?= $this->translate('Contacter sans dépôt de version') ?>"
                                class="modal-opener"
-                               data-target="#"><?= $this->translate('Contacter les éditeurs (avec une pièce jointe)') ?>
+                               data-target="#"><?= $this->translate('Contacter les éditeurs (avec une pièce jointe facultative)') ?>
                             </a>
                         </li>
                     <?php endif; ?>
@@ -57,7 +60,8 @@ $paper = $this->paper;
                     </li>
 
 
-                    <?php if ($this->review->getSetting(Episciences_Review::SETTING_CAN_ANSWER_WITH_TMP_VERSION)) : ?>
+                    <?php // Offered to the users allowed to record it (see PaperController::isAllowedToWriteTemporaryVersion()) ?>
+                    <?php if ($this->isAllowedToWriteTemporaryVersion && $this->review->getSetting(Episciences_Review::SETTING_CAN_ANSWER_WITH_TMP_VERSION)) : ?>
                         <li>
                             <a href="/paper/tmpversion?id=<?php echo $this->current_demand['PCID']; ?>"
                                title="<?php echo $this->translate('Envoyer une version temporaire'); ?>"

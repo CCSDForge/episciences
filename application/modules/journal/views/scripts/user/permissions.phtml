@@ -33,7 +33,7 @@ $noTAllowedClass = 'fas fa-toggle-off text-danger';
         <tr>
             <th  scope="col"><?= $this->translate('Action') ?></th>
             <?php foreach ($this->roles as $role): ?>
-                <th scope="col" class="role-<?= $role ?> text-center"><?= $this->translate($role) ?></th>
+                <th scope="col" class="role-<?= $role ?> text-center"><?= Episciences_Acl::getRoleLabelHtml($role) ?></th>
             <?php endforeach; ?>
         </tr>
         </thead>

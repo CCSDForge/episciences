@@ -169,4 +169,122 @@ XML;
 
         $this->assertIsArray($result);
     }
+
+    // =========================================================================
+    // extractDescriptions() — language fallback and empty filtering
+    // =========================================================================
+
+    /**
+     * When a description node has no xml:lang attribute, the document language is used.
+     */
+    public function testExtractDescriptionsFallbackToDocumentLanguage(): void
+    {
+        $xmlStr = <<<'XML'
+<?xml version="1.0"?>
+<root xmlns:datacite="http://datacite.org/schema/kernel-3">
+  <datacite:descriptions>
+    <datacite:description descriptionType="Abstract">Abstract without lang</datacite:description>
+  </datacite:descriptions>
+</root>
+XML;
+        $metadata = simplexml_load_string($xmlStr);
+        $this->assertInstanceOf(\SimpleXMLElement::class, $metadata);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-3');
+
+        $method = new \ReflectionMethod(\Episciences_Repositories_ARCHE_Hooks::class, 'extractDescriptions');
+        $method->setAccessible(true);
+        $result = $method->invoke(null, $metadata, 'de');
+
+        $this->assertNotEmpty($result);
+        $this->assertSame('de', $result[0]['language']);
+    }
+
+    /**
+     * Empty description nodes (after trim) must be filtered out.
+     */
+    public function testExtractDescriptionsFiltersEmpty(): void
+    {
+        $xmlStr = <<<'XML'
+<?xml version="1.0"?>
+<root xmlns:datacite="http://datacite.org/schema/kernel-3">
+  <datacite:descriptions>
+    <datacite:description descriptionType="Abstract"></datacite:description>
+    <datacite:description descriptionType="Abstract" xml:lang="en">Real abstract</datacite:description>
+  </datacite:descriptions>
+</root>
+XML;
+        $metadata = simplexml_load_string($xmlStr);
+        $this->assertInstanceOf(\SimpleXMLElement::class, $metadata);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-3');
+
+        $method = new \ReflectionMethod(\Episciences_Repositories_ARCHE_Hooks::class, 'extractDescriptions');
+        $method->setAccessible(true);
+        $result = $method->invoke(null, $metadata, 'en');
+
+        $this->assertCount(1, $result);
+        $this->assertSame('Real abstract', $result[0]['value']);
+    }
+
+    /**
+     * Multiple descriptions with explicit xml:lang attribute are all returned
+     * with their respective language codes.
+     */
+    public function testExtractDescriptionsMultipleLanguages(): void
+    {
+        $xmlStr = <<<'XML'
+<?xml version="1.0"?>
+<root xmlns:datacite="http://datacite.org/schema/kernel-3">
+  <datacite:descriptions>
+    <datacite:description descriptionType="Abstract" xml:lang="en">English abstract</datacite:description>
+    <datacite:description descriptionType="Abstract" xml:lang="fr">Résumé français</datacite:description>
+  </datacite:descriptions>
+</root>
+XML;
+        $metadata = simplexml_load_string($xmlStr);
+        $this->assertInstanceOf(\SimpleXMLElement::class, $metadata);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-3');
+
+        $method = new \ReflectionMethod(\Episciences_Repositories_ARCHE_Hooks::class, 'extractDescriptions');
+        $method->setAccessible(true);
+        $result = $method->invoke(null, $metadata, 'en');
+
+        $this->assertCount(2, $result);
+        $languages = array_column($result, 'language');
+        $this->assertContains('en', $languages);
+        $this->assertContains('fr', $languages);
+    }
+
+    /**
+     * enrichmentProcess() returns an array with 'title' set from datacite:titles.
+     */
+    public function testEnrichmentProcessPopulatesTitle(): void
+    {
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/" xmlns:datacite="http://datacite.org/schema/kernel-3">
+  <GetRecord>
+    <record>
+      <header>
+        <identifier>oai:test:3</identifier>
+        <datestamp>2024-03-01</datestamp>
+      </header>
+      <metadata>
+        <oai_datacite>
+          <datacite:titles>
+            <datacite:title>My ARCHE Paper</datacite:title>
+          </datacite:titles>
+          <datacite:language>en</datacite:language>
+        </oai_datacite>
+      </metadata>
+    </record>
+  </GetRecord>
+</OAI-PMH>
+XML;
+        $method = new \ReflectionMethod(\Episciences_Repositories_ARCHE_Hooks::class, 'enrichmentProcess');
+        $method->setAccessible(true);
+        $result = $method->invoke(null, $xml);
+
+        $this->assertIsArray($result);
+        $this->assertSame('My ARCHE Paper', $result['title'] ?? '');
+    }
 }

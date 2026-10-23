@@ -1,7 +1,9 @@
 <?php
 
+use Episciences\Maintenance\ReadOnlyMode;
+
 /**
- * Vérifications des droits d'accès à une ressource
+ * Access rights verification for a resource
  *
  */
 class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
@@ -11,19 +13,19 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
     public function preDispatch(Zend_Controller_Request_Abstract $request)
     {
 
-        // Récupération des règles d'accès
+        // Retrieve access rules
         $this->_acl = $this->getAcl();
-        // Récupération de l'id de la ressource (à modifier)
-        $resource = $request->getControllerName() . '-' . $request->getActionName();
+        // Retrieve resource ID (to be modified)
         if (APPLICATION_MODULE == OAI) {
             return true;
         }
+        $resource = $this->resolveResource($request->getControllerName(), $request->getActionName());
         if ($this->_acl->has($resource)) {
-            //La ressource demandée existe
+            // The requested resource exists
             if (!$this->isAllowed($resource)) {
-                //L'utilisateur ne peut pas accéder à la page
+                // The user cannot access the page
                 if (!Episciences_Auth::isLogged()) {
-                    //L'utilisateur n'est pas connecté
+                    // The user is not logged in
                     $request->setParam('forward-action', $request->getActionName());
                     $request->setParam('forward-controller', $request->getControllerName());
                     $request->setControllerName('user');
@@ -34,23 +36,106 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
                     $request->setParam('error_message', "Accès refusé");
                     $request->setParam('error_description', "Vous ne disposez pas des droits nécessaires pour accéder à cette page.");
                 }
-            } else if (Episciences_Auth::isLogged() && $resource !== 'user-edit' && $resource !== 'user-logout' && $resource !== 'user-photo') {
-                //L'utilisateur a le droit d'accéder à la ressource, on vérifie si son compte est complété sur Episciences
+            } else if (Episciences_Auth::isLogged() && !ReadOnlyMode::isEnabled() && $resource !== 'user-edit' && $resource !== 'user-logout' && $resource !== 'user-photo') {
+                // The user is allowed to access the resource, we check if their account is completed on Episciences
                 $epiUser = new Episciences_User();
                 if (!$epiUser->hasLocalData(Episciences_Auth::getUid())) {
-                    //Le compte doit être complété
+                    // The account must be completed
                     $redirector = Zend_Controller_Action_HelperBroker::getStaticHelper('redirector');
                     $redirector->gotoUrl('user/edit');
                 }
             }
-        } else if (!$request->isXmlHttpRequest()) {
-            //La ressource demandée n'existe pas (pas définie dans les ACL)
-            $request->setControllerName('index');
-            $request->setActionName('notfound');
+        } else {
+            $this->denyUnknownResource($request);
         }
     }
 
-    public function getAcl()
+    /**
+     * The requested resource is not defined in the ACL (or is ambiguous): never let it reach the
+     * dispatcher unchecked, whatever the request type.
+     */
+    public function denyUnknownResource(Zend_Controller_Request_Abstract $request): void
+    {
+        if ($request instanceof Zend_Controller_Request_Http && $request->isXmlHttpRequest()) {
+            $request->setControllerName(self::FAIL_AUTH_CONTROLLER);
+            $request->setActionName(self::FAIL_AUTH_ACTION);
+            $request->setParam('error_message', "Accès refusé");
+            $request->setParam('error_description', "Vous ne disposez pas des droits nécessaires pour accéder à cette page.");
+            return;
+        }
+
+        $request->setControllerName('index');
+        $request->setActionName('notfound');
+    }
+
+    /**
+     * Normalize a controller or action name the way the dispatcher does before resolving the method
+     * (lowercase, non-alphanumeric characters removed), so that every spelling reaching the same
+     * action maps to the same string.
+     */
+    public static function normalizeName(string $name): string
+    {
+        return preg_replace('/[^a-z0-9]/', '', strtolower($name)) ?? '';
+    }
+
+    /**
+     * Return the ACL resource matching the requested controller/action.
+     *
+     * An exact match wins. Otherwise the names are compared in their dispatcher-normalized form, so that
+     * a case or delimiter variant of a protected action is checked against the rules of that action.
+     * When nothing matches, or when several resources match (ambiguous), the raw "controller-action" key
+     * is returned (unknown resource), so that the request fails closed.
+     */
+    public function resolveResource(string $controller, string $action): string
+    {
+        return self::resolveAclResource($this->_acl, $controller, $action);
+    }
+
+    /**
+     * @see resolveResource() Same resolution against a given ACL, shared with the read-only maintenance gate.
+     */
+    public static function resolveAclResource(Zend_Acl $acl, string $controller, string $action): string
+    {
+        $raw = $controller . '-' . $action;
+        if ($acl->has($raw)) {
+            return $raw;
+        }
+
+        $matches = [];
+        foreach ($acl->getResources() as $candidate) {
+            if (self::matchesRequest((string)$candidate, $controller, $action)) {
+                $matches[] = (string)$candidate;
+            }
+        }
+
+        return count($matches) === 1 ? $matches[0] : $raw;
+    }
+
+    /**
+     * Check whether an ACL resource key ("controller-action") matches the request once both sides are
+     * dispatcher-normalized. Every hyphen is tried as the controller/action boundary, because both parts
+     * may themselves contain hyphens.
+     */
+    private static function matchesRequest(string $resource, string $controller, string $action): bool
+    {
+        $wantedController = self::normalizeName($controller);
+        $wantedAction = self::normalizeName($action);
+
+        $offset = 0;
+        while (($pos = strpos($resource, '-', $offset)) !== false) {
+            if (
+                self::normalizeName(substr($resource, 0, $pos)) === $wantedController
+                && self::normalizeName(substr($resource, $pos + 1)) === $wantedAction
+            ) {
+                return true;
+            }
+            $offset = $pos + 1;
+        }
+
+        return false;
+    }
+
+    public function getAcl(): ?Episciences_Acl
     {
         return Zend_Controller_Front::getInstance()->getParam('bootstrap')->getResource('acl');
     }

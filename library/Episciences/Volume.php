@@ -44,7 +44,10 @@ class Episciences_Volume
     private array $_metadatas = [];
     private $_indexedPapers = null;
     private $_paperPositions = [];
+    /** @var array<int, Episciences_Reviewer>|null */
+    private $_reviewers;
     private $_editors;
+    private ?bool $_editorsActiveState = null;
     // Copy Editors
     private $_copyEditors = [];
     private $_bib_reference = null;
@@ -226,14 +229,11 @@ class Episciences_Volume
     }
 
     /**
-     * Renvoie les rédacteurs assignés au volume
-     * @param bool $active
-     * @return mixed
-     * @throws Zend_Db_Statement_Exception
+     * Returns editors assigned to the volume
      */
-    public function getEditors($active = true)
+    public function getEditors(bool $active = true): array
     {
-        if (!isset($this->_editors)) {
+        if (!isset($this->_editors) || $this->_editorsActiveState !== $active) {
             $this->loadEditors($active);
         }
         return $this->_editors;
@@ -244,16 +244,17 @@ class Episciences_Volume
      * @param $editors
      * @return $this
      */
-    public function setEditors($editors)
+    public function setEditors($editors): static
     {
         $this->_editors = $editors;
         return $this;
     }
 
-    /**
-     * @param bool $active
-     * @throws Zend_Db_Statement_Exception
-     */
+    public function markEditorsLoaded(bool $active = true): void
+    {
+        $this->_editorsActiveState = $active;
+    }
+
     public function loadEditors(bool $active = true): void
     {
         $select = $this->loadVolumeAssignmentsForRoleQuery(Episciences_User_Assignment::ROLE_EDITOR);
@@ -271,7 +272,12 @@ class Episciences_Volume
 
             foreach ($result as $uid => $user) {
                 $editor = new Episciences_Editor();
-                $editor->findWithCAS($uid);
+                try {
+                    $editor->findWithCAS($uid);
+                } catch (Zend_Db_Statement_Exception $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                    continue;
+                }
                 $editor->setWhen($user['WHEN']);
                 $editor->setStatus($user['STATUS']);
                 $editors[$uid] = $editor;
@@ -279,6 +285,7 @@ class Episciences_Volume
         }
 
         $this->setEditors($editors);
+        $this->_editorsActiveState = $active;
 
     }
 
@@ -307,7 +314,7 @@ class Episciences_Volume
             ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
             ->join(['ur' => T_USER_ROLES], 'ur.UID = a.UID')
             ->where('ur.ROLEID IN (?)', $roles)
-            ->where('ur.RVID = ?', RVID);
+            ->where('ur.RVID = ?', $this->getRvid() ?: (defined('RVID') ? RVID : 0));
     }
 
     /**
@@ -603,6 +610,16 @@ class Episciences_Volume
         return $this->_metadatas;
     }
 
+    public function getCover(): ?Episciences_Volume_Metadata
+    {
+        foreach ($this->_metadatas as $metadata) {
+            if ($metadata->isCover()) {
+                return $metadata;
+            }
+        }
+        return null;
+    }
+
     /**
      * @param $metadatas
      */
@@ -786,6 +803,11 @@ class Episciences_Volume
                 $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding, $vid);
             }
 
+            // Enqueue Next.js cache revalidation for new volume
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "volumes-{$rvcode}");
+            }
 
         } else {
             // Modification d'un volume
@@ -799,6 +821,14 @@ class Episciences_Volume
                 $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding, $vid, true);
             }
 
+            // Enqueue Next.js cache revalidation for updated volume
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                    "volume-{$vid}",
+                    "volumes-{$rvcode}",
+                ]);
+            }
 
         }
 
@@ -843,20 +873,39 @@ class Episciences_Volume
     }
 
     /**
+     * Get processed volume data for saving.
+     *
+     * @return array
+     */
+    private function getVolumeDataForSave(): array
+    {
+        $data = [
+            'BIB_REFERENCE' => $this->getBib_reference(),
+            'titles' => $this->preProcess($this->getTitles()),
+            'descriptions' => $this->preProcess($this->getDescriptions()),
+            'vol_type' => $this->getVol_type(),
+            'vol_year' => $this->getVol_year(),
+            'vol_num' => $this->getVol_num(),
+        ];
+
+        Episciences_VolumesAndSectionsManager::dataProcess($data);
+
+        return $data;
+    }
+
+    /**
      * Add a new volume, return a New volume VID
      * @return int the New volume id OR 0 if we fail
      */
     private function addNewVolume(): int
     {
-        $values['RVID'] = RVID;
+        if (!$this->getRvid()) { // If RVID has not been defined, it is specified here
+            $this->setRvid(RVID);
+        }
+
+        $values = $this->getVolumeDataForSave();
+        $values['RVID'] = $this->getRvid();
         $values['POSITION'] = 0;
-        $values['BIB_REFERENCE'] = $this->getBib_reference();
-        $values['titles'] = $this->preProcess($this->getTitles());
-        $values['descriptions'] = $this->preProcess($this->getDescriptions());
-        $values['vol_type'] = $this->getVol_type();
-        $values['vol_year'] = $this->getVol_year();
-        $values['vol_num'] = $this->getVol_num();
-        Episciences_VolumesAndSectionsManager::dataProcess($values);
 
         try {
             $affectedRows = $this->_db->insert(T_VOLUMES, $values);
@@ -900,8 +949,8 @@ class Episciences_Volume
             if (!$update) {
                 $this->_db->insert(T_VOLUME_SETTINGS, ['SETTING' => $setting, 'VALUE' => $value, 'VID' => $vid]);
             } else {
-                $sql = $this->_db->quoteInto('INSERT INTO ' . T_VOLUME_SETTINGS . ' (SETTING, VALUE, VID) VALUES (?) 
-                ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)', ['SETTING' => $setting, 'VALUE' => $value, 'VID' => $vid]);
+                $sql = $this->_db->quoteInto('INSERT INTO ' . T_VOLUME_SETTINGS . ' (SETTING, VALUE, VID) VALUES (?)
+                AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE', ['SETTING' => $setting, 'VALUE' => $value, 'VID' => $vid]);
                 $this->_db->query($sql);
             }
         } catch (Zend_Db_Adapter_Exception $exception) {
@@ -942,6 +991,8 @@ class Episciences_Volume
             // Sanitize user input to prevent XSS
             $sanitizedValues = $this->sanitizeMetadataValues($decodedValues);
 
+            $sanitizedValues = $this->discardForeignMetadataId($sanitizedValues);
+
             // Add required fields
             $sanitizedValues['vid'] = $this->getVid();
             $sanitizedValues['position'] = $position;
@@ -955,6 +1006,55 @@ class Episciences_Volume
 
             $this->setMetadata($metadata);
             $newMetadataIds[] = $metadata->getId();
+        }
+
+        // Handle volume cover separately
+        $existingCover = $this->getCover();
+
+        if (!empty($post['cover_data'])) {
+            try {
+                $coverData = json_decode($post['cover_data'], true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                $errors[] = 'Failed to decode cover_data: ' . $e->getMessage();
+                $coverData = [];
+            }
+            $coverAction = $coverData['action'] ?? '';
+
+            if ($coverAction === 'delete') {
+                // Intentionally excluded from $newMetadataIds → deleteOldMetadata() removes it
+            } elseif ($coverAction === 'save' && !empty($coverData['tmpfile'])) {
+                try {
+                    $tmpfile = json_decode($coverData['tmpfile'], true, 512, JSON_THROW_ON_ERROR);
+                } catch (JsonException $e) {
+                    $errors[] = 'Failed to decode cover tmpfile: ' . $e->getMessage();
+                    $tmpfile = null;
+                }
+
+                if ($tmpfile !== null) {
+                    $langs = array_keys(Episciences_Tools::getLanguages());
+                    $coverTitles = array_fill_keys($langs, Episciences_Volume_Metadata::COVER_TITLE_KEY);
+
+                    $coverMetadata = new Episciences_Volume_Metadata([
+                        'id'       => $existingCover?->getId(),
+                        'vid'      => $this->getVid(),
+                        'title'    => $coverTitles,
+                        'content'  => [],
+                        'file'     => $existingCover?->getFile(),
+                        'tmpfile'  => $tmpfile,
+                        'position' => 0,
+                    ]);
+
+                    if ($coverMetadata->save()) {
+                        $this->setMetadata($coverMetadata);
+                        $newMetadataIds[] = $coverMetadata->getId();
+                    } else {
+                        $errors[] = 'Failed to save cover metadata';
+                    }
+                }
+            }
+        } elseif ($existingCover) {
+            // No cover action posted → preserve existing cover
+            $newMetadataIds[] = $existingCover->getId();
         }
 
         // Clean up old metadata
@@ -1009,7 +1109,7 @@ class Episciences_Volume
             $sanitized['title'] = [];
             foreach ($values['title'] as $lang => $title) {
                 if (is_string($title)) {
-                    $sanitized['title'][$lang] = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+                    $sanitized['title'][$lang] = htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
                 }
             }
         }
@@ -1019,7 +1119,7 @@ class Episciences_Volume
             $sanitized['content'] = [];
             foreach ($values['content'] as $lang => $content) {
                 if (is_string($content)) {
-                    $sanitized['content'][$lang] = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
+                    $sanitized['content'][$lang] = htmlspecialchars($content, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
                 }
             }
         }
@@ -1036,6 +1136,28 @@ class Episciences_Volume
     }
 
     /**
+     * A client-supplied metadata id is only honoured for a row that already belongs to this volume;
+     * otherwise it is dropped so that a new row is created instead of overwriting another one.
+     * The id is normalised to an integer: a float such as 7.5 would match key 7 here but no row in the UPDATE,
+     * and the cleanup of old metadata would then delete row 7.
+     *
+     * @param array<string, mixed> $values
+     * @return array<string, mixed>
+     */
+    private function discardForeignMetadataId(array $values): array
+    {
+        $id = isset($values['id']) ? filter_var($values['id'], FILTER_VALIDATE_INT) : false;
+
+        if ($id === false || !array_key_exists($id, $this->getMetadatas())) {
+            unset($values['id']);
+        } else {
+            $values['id'] = $id;
+        }
+
+        return $values;
+    }
+
+    /**
      * @param array $newMetadataIds
      * @return void
      */
@@ -1044,9 +1166,12 @@ class Episciences_Volume
 
         foreach ($this->getMetadatas() as $oldMetadataIds => $metadata) {
             if (!in_array($oldMetadataIds, $newMetadataIds, false)) {
-                $this->_db->delete(T_VOLUME_METADATAS, 'ID = ' . $oldMetadataIds);
-                if ($metadata->hasFile() && file_exists(REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile())) {
-                    unlink(REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile());
+                $this->_db->delete(T_VOLUME_METADATAS, 'ID = ' . (int)$oldMetadataIds);
+                // Metadata files live under REVIEW_PUBLIC_PATH (see Metadata::save()); using
+                // REVIEW_FILES_PATH here never matched and left orphaned files on disk.
+                $metadataFilePath = REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile();
+                if ($metadata->hasFile() && file_exists($metadataFilePath)) {
+                    unlink($metadataFilePath);
                 }
             }
         }
@@ -1306,7 +1431,7 @@ class Episciences_Volume
     public function getPaperListFromVolume(array $excludedStatus = [], bool $includeSecondaryVolume = true): array
     {
 
-        $options['is']['rvid'] = RVID;
+        $options['is']['rvid'] = $this->getRvid();
         $options['is']['vid'] = [$this->getVid()];
         $status = empty($excludedStatus) ? Episciences_Paper::DO_NOT_SORT_THIS_KIND_OF_PAPERS : array_merge($excludedStatus, Episciences_Paper::DO_NOT_SORT_THIS_KIND_OF_PAPERS);
         $options['isNot'] = ['status' => $status];
@@ -1367,7 +1492,7 @@ class Episciences_Volume
 
     public function setVol_num($volNum): \Episciences_Volume
     {
-        $this->_vol_num = $volNum ? (int)trim(strip_tags($volNum)) : null;
+        $this->_vol_num = $volNum ? trim(strip_tags($volNum)) : null;
         return $this;
     }
 
@@ -1378,14 +1503,7 @@ class Episciences_Volume
     private function updateVolume(): ?int
     {
         $where = 'VID = ' . $this->getVid();
-
-        $data['BIB_REFERENCE'] = $this->getBib_reference();
-        $data['titles'] = $this->preProcess($this->getTitles());
-        $data['descriptions'] = $this->preProcess($this->getDescriptions());
-        $data['vol_type'] = $this->getVol_type();
-        $data['vol_year'] = $this->getVol_year();
-        $data['vol_num'] = $this->getVol_num();
-        Episciences_VolumesAndSectionsManager::dataProcess($data);
+        $data = $this->getVolumeDataForSave();
 
         try {
             return $this->_db->update(T_VOLUMES, $data, $where);
@@ -1437,9 +1555,16 @@ class Episciences_Volume
     /**
      * @return array
      */
+    /**
+     * Conference metadata of a proceedings volume.
+     *
+     * Settings are expected to be loaded already: every caller reaches this method
+     * through isProceeding(), which reads one of them. Load them explicitly —
+     * Episciences_VolumesManager::loadSettingsForVolumes() does it for a whole list
+     * in one query — rather than relying on a side effect here.
+     */
     public function getProceedingInfo(): array
     {
-        $this->loadSettings();
         return [
             self::VOLUME_IS_PROCEEDING => $this->getSetting(self::VOLUME_IS_PROCEEDING),
             self::VOLUME_CONFERENCE_NAME => $this->getSetting(self::VOLUME_CONFERENCE_NAME),
@@ -1555,6 +1680,10 @@ class Episciences_Volume
         }
 
 
+        if (empty($sortedPapers)) {
+            return 0;
+        }
+
         /**
          * @var int $position
          * @var  Episciences_Paper $paper
@@ -1567,7 +1696,9 @@ class Episciences_Volume
             }
         }
 
-        return $position;
+        // Not found: assign the next position after the current maximum (per the docblock),
+        // instead of returning the last, already-occupied position.
+        return max(array_keys($sortedPapers)) + 1;
     }
 
 

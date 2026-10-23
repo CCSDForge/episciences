@@ -17,7 +17,7 @@
 		$delay = (!empty(trim($this->element->getValue()))) ? $this->element->getValue() : constant('Episciences_Review::DEFAULT_' . mb_strtoupper($name));
 		$value = explode(' ', trim($delay));
 		$delay_value = $value[0];
-		$delay_unit = $value[1];
+		$delay_unit = $value[1] ?? '';
 		
 		// Valeurs possibles du select
 		$delay_units = array('day'=>'jour(s)', 'week'=>'semaine(s)', 'month'=>'mois');
@@ -28,11 +28,11 @@
 				type="text" 
 				class="form-control input-sm" 
 				style="display: inline-block; width: 40px"
-				value="<?php echo $delay_value; ?>" />
+				value="<?php echo $this->escape((string)$delay_value); ?>" />
 	
 		<select name="<?php echo $name; ?>_unit" class="form-control input-sm" style="display: inline-block; width: 200px">
 		<?php foreach ($delay_units as $value=>$label) : ?>
-			<option value="<?php echo $value?>"<?php if ($value == $delay_unit) { echo 'selected="selected"'; } ?>><?php echo $this->translate($label)?></option>
+			<option value="<?php echo $value?>"<?php if ($value === $delay_unit) { echo ' selected="selected"'; } ?>><?php echo $this->translate($label)?></option>
 		<?php endforeach; ?>
 		</select>
 	

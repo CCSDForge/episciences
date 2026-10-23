@@ -1,8 +1,19 @@
 $(function () {
     let flagError = 0;
 
+    if (window.location.hash === '#manage-linked-data') {
+        const $linkedDataPanel = $('#manage-linked-data');
+        if (!$linkedDataPanel.find('.panel-body:first').is(':visible')) {
+            $linkedDataPanel.find('.panel-heading:first').trigger('click');
+        }
+    }
+
     function callAddForm(typeld, option = []) {
         removeFormLd();
+        const $linkedDataPanel = $('#manage-linked-data');
+        if (!$linkedDataPanel.find('.panel-body:first').is(':visible')) {
+            $linkedDataPanel.find('.panel-heading:first').trigger('click');
+        }
 
         $.ajax({
             type: 'POST',
@@ -73,23 +84,6 @@ $(function () {
     $('button#add-linkdata').on('click', function () {
         removeFormLd();
         callAddForm('dataset');
-        changePlaceholder('dataset');
-    });
-
-    $('#anchor-dataset-add').on('click', function () {
-        removeFormLd();
-        callAddForm('dataset');
-        changePlaceholder('dataset');
-    });
-    $('#anchor-software-add').on('click', function () {
-        removeFormLd();
-        callAddForm('software');
-        changePlaceholder('software');
-    });
-    $('#anchor-publication-add').on('click', function () {
-        removeFormLd();
-        callAddForm('publication');
-        changePlaceholder('publication');
     });
 
     function ajaxModifyLd() {
@@ -128,15 +122,8 @@ $(function () {
                     ldId: ldId,
                     relationship: newRelationship,
                 },
-                beforeSend: function () {
-                    window.scroll({
-                        top: 0,
-                        left: 0,
-                        behavior: 'smooth',
-                    });
-                },
             }).success(function () {
-                window.location.hash = '';
+                window.location.hash = 'manage-linked-data';
                 window.location.reload();
             });
         });
@@ -217,15 +204,8 @@ $(function () {
                     paperId: paperId,
                     relationship: relationship,
                 },
-                beforeSend: function () {
-                    window.scroll({
-                        top: 0,
-                        left: 0,
-                        behavior: 'smooth',
-                    });
-                },
-            }).success(function (response) {
-                window.location.hash = '';
+            }).success(function () {
+                window.location.hash = 'manage-linked-data';
                 window.location.reload();
             });
         });
@@ -237,7 +217,7 @@ $(function () {
         }
     }
 
-    $('a#edit-ld').on('click', function () {
+    $('a.edit-ld').on('click', function () {
         const option = {};
         option.relationship = $(this).data('relationship');
         option.valueLd = $(this).data('ldval');

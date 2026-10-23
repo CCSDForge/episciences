@@ -21,6 +21,7 @@ class Episciences_Paper_AuthorEditorCommunicationService
     public const MSG_SUCCESS_EDITOR_SENT = "Votre message a bien été envoyé à l'auteur.";
     public const MSG_SUCCESS_EDITOR_REPLY = "Votre réponse a bien été envoyée à l'auteur.";
     public const MSG_ERROR_SEND_FAILED = "Votre message n'a pas pu être envoyé.";
+    public const MSG_WARNING_NOTIFICATION_FAILED = "Votre message a bien été enregistré, mais la notification par e-mail n'a pas pu être envoyée à tous les destinataires.";
     public const MSG_ERROR_SAVE_FAILED = "Erreur lors de la sauvegarde de votre réponse.";
     public const MSG_ERROR_GENERAL = "Une erreur s'est produite lors de l'envoi du message.";
     public const MSG_ERROR_UNAUTHORIZED_AUTHOR = "Vous n'êtes pas autorisé à répondre.";
@@ -667,6 +668,12 @@ class Episciences_Paper_AuthorEditorCommunicationService
                 return;
             }
 
+            $allowedExtensions = defined('ALLOWED_EXTENSIONS') ? (array) ALLOWED_EXTENSIONS : ['pdf'];
+            if (!self::hasAllowedExtension((string) $originalName, $allowedExtensions)) {
+                trigger_error('Rejected file upload with unsupported extension: ' . basename((string) $originalName));
+                return;
+            }
+
             if (!is_dir($commentPath)) {
                 mkdir($commentPath, 0755, true);
             }
@@ -677,6 +684,24 @@ class Episciences_Paper_AuthorEditorCommunicationService
                 $comment->setFile($safeName);
             }
         }
+    }
+
+    /**
+     * Whether the file name ends with an extension present in the allowed list.
+     * The comparison is case-insensitive; a missing extension is not allowed.
+     *
+     * @param string $filename original (already basename-checked) file name
+     * @param array $allowedExtensions list of accepted extensions
+     */
+    private static function hasAllowedExtension(string $filename, array $allowedExtensions): bool
+    {
+        $extension = strtolower((string) pathinfo($filename, PATHINFO_EXTENSION));
+        if ($extension === '') {
+            return false;
+        }
+
+        $allowed = array_map(static fn($ext): string => strtolower((string) $ext), $allowedExtensions);
+        return in_array($extension, $allowed, true);
     }
 
     /**

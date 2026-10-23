@@ -319,4 +319,104 @@ final class Episciences_Repositories_Dataverse_HooksTest extends TestCase
         self::assertCount(1, $result);
         self::assertSame('readme.txt', $result[0]['file_name']);
     }
+
+    /**
+     * processFiles() must extract file_type via pathinfo() — the last extension only.
+     * Regression: previously used explode('.') which returned the last segment of a
+     * dot-split array; pathinfo(PATHINFO_EXTENSION) is the canonical replacement.
+     */
+    public function testProcessFilesExtractsFileTypeForSimpleExtension(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Dataverse_Hooks::class, 'processFiles');
+        $method->setAccessible(true);
+
+        $files = [[
+            'dataFile' => [
+                'filename' => 'data.csv',
+                'filesize' => 100,
+                'checksum' => ['value' => 'a', 'type' => 'MD5'],
+                'pidURL'   => 'https://example.com/f',
+            ],
+        ]];
+
+        $result = $method->invoke(null, $files, ['repoId' => null]);
+
+        self::assertSame('csv', $result[0]['file_type']);
+    }
+
+    /**
+     * For a file like 'archive.tar.gz', pathinfo() returns only 'gz' (the last extension).
+     * The old explode('.') approach also returned 'gz', so behaviour is preserved here.
+     */
+    public function testProcessFilesExtractsLastExtensionForMultiDotFilename(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Dataverse_Hooks::class, 'processFiles');
+        $method->setAccessible(true);
+
+        $files = [[
+            'dataFile' => [
+                'filename' => 'archive.tar.gz',
+                'filesize' => 2048,
+                'checksum' => ['value' => 'b', 'type' => 'MD5'],
+                'pidURL'   => 'https://example.com/f',
+            ],
+        ]];
+
+        $result = $method->invoke(null, $files, ['repoId' => null]);
+
+        self::assertSame('gz', $result[0]['file_type']);
+    }
+
+    /**
+     * For a file with no extension, pathinfo() returns '' instead of the full filename.
+     * The old explode('.') approach returned the full filename as the "extension", which
+     * was wrong. pathinfo() fixes this — regression guard.
+     */
+    public function testProcessFilesReturnsEmptyStringForNoExtension(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Dataverse_Hooks::class, 'processFiles');
+        $method->setAccessible(true);
+
+        $files = [[
+            'dataFile' => [
+                'filename' => 'README',
+                'filesize' => 512,
+                'checksum' => ['value' => 'c', 'type' => 'MD5'],
+                'pidURL'   => 'https://example.com/f',
+            ],
+        ]];
+
+        $result = $method->invoke(null, $files, ['repoId' => null]);
+
+        self::assertSame('', $result[0]['file_type']);
+    }
+
+    // =========================================================================
+    // hookFilesProcessing() — missing 'files' key regression
+    // =========================================================================
+
+    /**
+     * Bug fix: hookFilesProcessing() used to crash with
+     * "array_map(): Argument #2 must be of type array, null given"
+     * when the 'files' key was absent from $hookParams.
+     *
+     * After the fix ($hookParams['files'] ?? []), it must silently skip
+     * the loop and return the params with affectedRows = 0.
+     *
+     * Note: this calls into Episciences_Paper_FilesManager::insert() which
+     * needs a DB. We only verify the ?? [] guard via a structural/source check
+     * rather than invoking the public method end-to-end without DB.
+     */
+    public function testHookFilesProcessingMissingFilesKeyUsesNullCoalesceGuard(): void
+    {
+        $source = file_get_contents(
+            (new \ReflectionClass(Episciences_Repositories_Dataverse_Hooks::class))->getFileName()
+        );
+
+        self::assertStringContainsString(
+            "\$hookParams['files'] ?? []",
+            $source,
+            "hookFilesProcessing() must guard against missing 'files' key with ?? []."
+        );
+    }
 }

@@ -265,11 +265,11 @@ class ProcessStatTempCommandTest extends TestCase
     // -------------------------------------------------------------------------
 
     /**
-     * @return array{domain: string, continent: string, country: string, city: string, lat: float, lon: float}
+     * @return array{domain: string, continent: string, country: string}
      */
     private function makeGeo(): array
     {
-        return ['domain' => 'example.com', 'continent' => 'EU', 'country' => 'FR', 'city' => '', 'lat' => 48.85, 'lon' => 2.35];
+        return ['domain' => 'example.com', 'continent' => 'EU', 'country' => 'FR'];
     }
 
     public function testBuildInsertBind_ContainsAllRequiredKeys(): void
@@ -277,7 +277,7 @@ class ProcessStatTempCommandTest extends TestCase
         $row  = ['DOCID' => '42', 'CONSULT' => 'notice', 'HTTP_USER_AGENT' => 'Mozilla/5.0', 'DHIT' => '2024-03-15'];
         $bind = $this->command->buildInsertBind($row, $this->makeGeo(), '91.120.0.0', '2024-03-01');
 
-        foreach ([':DOCID', ':CONSULT', ':IP', ':ROBOT', ':AGENT', ':DOMAIN', ':CONTINENT', ':COUNTRY', ':CITY', ':LAT', ':LON', ':HIT', ':COUNTER'] as $key) {
+        foreach ([':DOCID', ':CONSULT', ':IP', ':ROBOT', ':DOMAIN', ':CONTINENT', ':COUNTRY', ':HIT', ':COUNTER'] as $key) {
             $this->assertArrayHasKey($key, $bind, "Missing key $key");
         }
     }
@@ -298,14 +298,12 @@ class ProcessStatTempCommandTest extends TestCase
 
     public function testBuildInsertBind_GeoValuesPassedThrough(): void
     {
-        $geo  = ['domain' => 'cnrs.fr', 'continent' => 'EU', 'country' => 'FR', 'city' => '', 'lat' => 48.85, 'lon' => 2.35];
+        $geo  = ['domain' => 'cnrs.fr', 'continent' => 'EU', 'country' => 'FR'];
         $row  = ['DOCID' => 1, 'CONSULT' => 'notice', 'HTTP_USER_AGENT' => 'Mozilla/5.0'];
         $bind = $this->command->buildInsertBind($row, $geo, '91.120.0.0', '2024-03-01');
         $this->assertSame('cnrs.fr', $bind[':DOMAIN']);
         $this->assertSame('EU', $bind[':CONTINENT']);
         $this->assertSame('FR', $bind[':COUNTRY']);
-        $this->assertSame(48.85, $bind[':LAT']);
-        $this->assertSame(2.35, $bind[':LON']);
     }
 
     public function testBuildInsertBind_AnonymizedIpAndHitPreserved(): void

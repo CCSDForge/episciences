@@ -274,6 +274,13 @@ class Ccsd_Visiteurs
 
     public function __construct($ip = null, $ua = null)
     {
+        trigger_error(
+            '[DEAD CODE AUDIT 2026-05-08] ' . __CLASS__ . ' is scheduled for removal.'
+            . ' Do NOT use this class in new code. If this message appears in production logs,'
+            . ' report it to the development team immediately.',
+            E_USER_DEPRECATED
+        );
+
         if ($ip != null && (is_int($ip) || filter_var($ip, FILTER_VALIDATE_IP))) {
             $this->_ip = $ip;
         }
@@ -435,8 +442,8 @@ class Ccsd_Visiteurs
                     $record = null;
                 }
 
-                $data['continent'] = utf8_encode($record['continent']['code'] ?? '');
-                $data['country'] = utf8_encode($record['country']['iso_code'] ?? '');
+                $data['continent'] = $record['continent']['code'] ?? '';
+                $data['country'] = $record['country']['iso_code'] ?? '';
                 $data['city'] = ''; // unavailable with GeoLite2-City database
                 $data['lat'] = (float)($record['location']['latitude'] ?? 0);
                 $data['lon'] = (float)($record['location']['longitude'] ?? 0);

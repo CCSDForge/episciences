@@ -7,16 +7,14 @@
  */
 ?>
 <?php if (isset($this->conflictAnswer)) : ?>
-    <?= $this->translate(' :') ?>
     <span class="log-coi-answer" aria-label="<?= $this->translate('Conflict of interest answer') ?>">
         <?= $this->escape(strtoupper($this->translate($this->conflictAnswer))) . ' > ' ?>
     </span>
     <span class="log-user-name">
-        <?= $this->fullName ?>
+        <?= $this->escape($this->fullName) ?>
     </span>
 <?php else : ?>
-    <?= $this->translate(' :') ?>
     <span class="log-user-name">
-        <?= $this->fullName ?>
+        <?= $this->escape($this->fullName) ?>
     </span>
 <?php endif; ?>

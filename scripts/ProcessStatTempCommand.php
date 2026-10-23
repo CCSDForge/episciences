@@ -6,7 +6,9 @@ use GeoIp2\Database\Reader;
 use GeoIp2\Exception\AddressNotFoundException;
 use MaxMind\Db\Reader\InvalidDatabaseException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -32,10 +34,9 @@ use geertw\IpAnonymizer\IpAnonymizer;
  *   6. Insert into PAPER_STAT (or skip if bot)
  *   7. Delete processed rows from STAT_TEMP
  */
+#[AsCommand(name: 'stats:process', description: 'Process visits from STAT_TEMP into PAPER_STAT')]
 class ProcessStatTempCommand extends Command
 {
-    protected static $defaultName = 'stats:process';
-
     private const STEP_OF_LINES = 500;
 
     /** @var array<string, int> Non-resolved IPs cache to avoid repeated reverse-DNS timeouts. */
@@ -50,7 +51,6 @@ class ProcessStatTempCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Process visits from STAT_TEMP into PAPER_STAT')
             ->addOption('date-s', null, InputOption::VALUE_REQUIRED, 'Process up to this date (yyyy-mm-dd; default: yesterday)')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Process ALL records regardless of date')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'No DB writes; display each row')
@@ -73,7 +73,7 @@ class ProcessStatTempCommand extends Command
 
         $this->noDns = $noDns;
 
-        if ($all && !$dryRun && !$io->confirm('Process ALL records? This may take a long time.', false)) {
+        if ($all && !$dryRun && !$io->confirm('Process ALL records? This may take a long time.', !$input->isInteractive())) {
             $io->writeln('Operation cancelled.');
             return Command::SUCCESS;
         }
@@ -196,7 +196,7 @@ class ProcessStatTempCommand extends Command
      * Build the bind array for an INSERT INTO PAPER_STAT.
      *
      * @param array<string, mixed> $row
-     * @param array{domain: string, continent: string, country: string, city: string, lat: float, lon: float} $geo
+     * @param array{domain: string, continent: string, country: string} $geo
      * @return array<string, mixed>
      */
     public function buildInsertBind(array $row, array $geo, string $anonymizedIp, string $hit): array
@@ -206,13 +206,9 @@ class ProcessStatTempCommand extends Command
             ':CONSULT'   => (string) ($row['CONSULT'] ?? ''),
             ':IP'        => $anonymizedIp,
             ':ROBOT'     => 0,
-            ':AGENT'     => (string) ($row['HTTP_USER_AGENT'] ?? ''),
             ':DOMAIN'    => $geo['domain'],
             ':CONTINENT' => $geo['continent'],
             ':COUNTRY'   => $geo['country'],
-            ':CITY'      => $geo['city'],
-            ':LAT'       => $geo['lat'],
-            ':LON'       => $geo['lon'],
             ':HIT'       => $hit,
             ':COUNTER'   => 1,
         ];
@@ -297,8 +293,8 @@ class ProcessStatTempCommand extends Command
     public function buildInsertSql(): string
     {
         return 'INSERT INTO `PAPER_STAT` '
-            . '(`DOCID`, `CONSULT`, `IP`, `ROBOT`, `AGENT`, `DOMAIN`, `CONTINENT`, `COUNTRY`, `CITY`, `LAT`, `LON`, `HIT`, `COUNTER`) '
-            . 'VALUES (:DOCID, :CONSULT, INET_ATON(:IP), :ROBOT, :AGENT, :DOMAIN, :CONTINENT, :COUNTRY, :CITY, :LAT, :LON, :HIT, :COUNTER) '
+            . '(`DOCID`, `CONSULT`, `IP`, `ROBOT`, `DOMAIN`, `CONTINENT`, `COUNTRY`, `HIT`, `COUNTER`) '
+            . 'VALUES (:DOCID, :CONSULT, INET_ATON(:IP), :ROBOT, :DOMAIN, :CONTINENT, :COUNTRY, :HIT, :COUNTER) '
             . 'ON DUPLICATE KEY UPDATE COUNTER=COUNTER+1';
     }
 
@@ -313,11 +309,11 @@ class ProcessStatTempCommand extends Command
         $logDir  = dirname($logFile);
 
         if (is_dir($logDir) && is_writable($logDir)) {
-            $logger->pushHandler(new StreamHandler($logFile, Logger::INFO));
+            $logger->pushHandler(new StreamHandler($logFile, Level::Info));
         }
 
-        if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        if (!$io->isQuiet() && !$io->isSilent()) {
+            $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
         return $logger;
     }
@@ -597,11 +593,11 @@ class ProcessStatTempCommand extends Command
     /**
      * Perform GeoIP lookup + reverse DNS on a real IP.
      *
-     * @return array{domain: string, continent: string, country: string, city: string, lat: float, lon: float}
+     * @return array{domain: string, continent: string, country: string}
      */
     private function geoLookup(Reader $giReader, string $ip, Logger $logger): array
     {
-        $data = ['domain' => '', 'continent' => '', 'country' => '', 'city' => '', 'lat' => 0.0, 'lon' => 0.0];
+        $data = ['domain' => '', 'continent' => '', 'country' => ''];
 
         if (!$this->noDns) {
             $data['domain'] = $this->extractDomain($ip);
@@ -611,9 +607,6 @@ class ProcessStatTempCommand extends Command
             $record            = $giReader->city($ip)->jsonSerialize();
             $data['continent'] = (string) ($record['continent']['code'] ?? '');
             $data['country']   = (string) ($record['country']['iso_code'] ?? '');
-            $data['city']      = '';
-            $data['lat']       = (float) ($record['location']['latitude'] ?? 0.0);
-            $data['lon']       = (float) ($record['location']['longitude'] ?? 0.0);
         } catch (AddressNotFoundException|InvalidDatabaseException $e) {
             $logger->warning('GeoIP lookup failed for ' . $ip . ': ' . $e->getMessage());
         }

@@ -38,6 +38,8 @@ $onBeHalfOfMsg = $this->translate("Répondre au nom de l'auteur");
 
 $description = '';
 $ancre = '';
+$hasAcceptationDte = $paper->getAcceptanceDate() !== null;
+$canPublish = $hasAcceptationDte && !$paper->isTmp() && $paper->isEditable();
 if (array_key_exists(Episciences_Auth::getUid(), $assignedCopyEditors)) {
     if ($paper->isAlreadyAcceptedWaitingForAuthorFinalVersion()) {
         $ancre = '#answer';
@@ -65,13 +67,21 @@ if (Episciences_Auth::isSecretary()) : ?>
             <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
         </button>
         <ul class="status-menu dropdown-menu" role="menu">
-            <?php if ($paper->isReadyToPublish()) : ?>
+
+
+            <?php if ($canPublish) : ?>
+
                 <!-- publication request -->
+
                 <li>
                     <a href="#" data-toggle="modal"
                        data-target=".publication-modal"><?= $this->translate($publishMsg) ?>
                     </a>
                 </li>
+
+            <?php endif ?>
+
+            <?php if ($paper->isReadyToPublish()) : ?>
 
                 <!-- revision request -->
                 <li>
@@ -106,14 +116,6 @@ if (Episciences_Auth::isSecretary()) : ?>
                     </a>
                 </li>
 
-                <!-- publish paper -->
-                <?php if ($copyEditingNotStarted && !$paper->isTmp()) : ?>
-                    <li>
-                        <a href="#" data-toggle="modal"
-                           data-target=".publication-modal"><?= $this->translate($publishMsg) ?>
-                        </a>
-                    </li>
-                <?php endif; ?>
 
             <?php elseif ($status === Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING) : ?>
 
@@ -123,6 +125,13 @@ if (Episciences_Auth::isSecretary()) : ?>
                         <a href="#" data-toggle="modal"
                            data-target=".review-formatting-accepted-ask-author-validation-modal"
                            onclick="editAttachmentDescription($(this));"><?= $this->translate($acceptedWaitingForAuthorValidation) ?></a>
+                    </li>
+
+                    <?php // Préparation de copie: en attente des sources auteurs?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".waiting-for-author-sources-modal"><?= $this->translate($waitingAuthorSources) ?>
+                        </a>
                     </li>
 
 
@@ -243,6 +252,30 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
         </button>
         <ul class="status-menu dropdown-menu" role="menu">
 
+
+            <?php if ($canPublish && $this->review->getSetting('editorsCanPublishPapers')) :    // editors have permission to publish papers ?>
+                <?php if (
+                        $this->isRequiredReviewersOk ||
+                        !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
+                ) : ?>
+
+                    <?php // PUBLISH PAPER?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".publication-modal"><?= $this->translate($publishMsg) ?></a>
+                    </li>
+
+                <?php else : // if there is not enough rating reports, display a notice ?>
+                    <li data-toggle="tooltip"
+                        data-placement="right"
+                        title="<?= $this->translate("Vous ne pouvez pas publier cet article, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->review->getSetting('requiredReviewers')) ?>">
+                        <a class="disabled"><?= $this->translate($publishMsg) ?></a>
+                    </li>
+                <?php endif; ?>
+            <?php else: ?>
+                <?php // recommandation de publier l'article?>
+            <?php endif; ?>
+
             <?php if ($paper->isAccepted()) : ?>
 
                 <?php // Préparation de copie: en attente des sources auteurs?>
@@ -259,28 +292,6 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                     </a>
                 </li>
 
-                <?php if ($copyEditingNotStarted && $this->review->getSetting('editorsCanPublishPapers')) :    // editors have permission to publish papers ?>
-                    <?php if (
-                        $this->isRequiredReviewersOk ||
-                        !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
-                    ) : ?>
-
-                        <?php // PUBLISH PAPER?>
-                        <li>
-                            <a href="#" data-toggle="modal"
-                               data-target=".publication-modal"><?= $this->translate($publishMsg) ?></a>
-                        </li>
-
-                    <?php else : // if there is not enough rating reports, display a notice ?>
-                        <li data-toggle="tooltip"
-                            data-placement="right"
-                            title="<?= $this->translate("Vous ne pouvez pas publier cet article, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->review->getSetting('requiredReviewers')) ?>">
-                            <a class="disabled"><?= $this->translate($publishMsg) ?></a>
-                        </li>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <?php // recommandation de publier l'article?>
-                <?php endif; ?>
 
             <?php elseif ($status === Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED) : ?>
                 <?php // Copy ed. : mise en forme revue terminée?>
@@ -314,17 +325,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                     </a>
                 </li>
 
-            <?php elseif ($paper->isReadyToPublish()) : ?>
-                <?php if ($this->review->getSetting('editorsCanPublishPapers')) : ?>
-                    <li>
-                        <a href="#" data-toggle="modal"
-                           data-target=".publication-modal"><?= $this->translate($publishMsg) ?></a>
-                    </li>
-                <?php else: ?>
-                    <?php // recommandation de publier?>
-                <?php endif; ?>
 
-                <?php // ACCEPT PAPER ************    ?>
             <?php else: ?>
                 <?php if (!$isInRevision && $copyEditingNotStarted && $this->review->getSetting('editorsCanAcceptPapers')) :    // editors have permission to accept papers ?>
                     <?php if (
@@ -511,6 +512,13 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                            onclick="editAttachmentDescription($(this));"><?= $this->translate($acceptedWaitingForAuthorValidation) ?></a>
                     </li>
 
+                    <?php // Préparation de copie: en attente des sources auteurs?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".waiting-for-author-sources-modal"><?= $this->translate($waitingAuthorSources) ?>
+                        </a>
+                    </li>
+
 
                     <li>
                         <a href="#" data-toggle="modal"
@@ -561,7 +569,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 <?php // ******* MODALS (FORMS) ***************** ?>
 <?php if (Episciences_Auth::isAllowedToManagePaper()) : ?>
     <?php // *** publication form ************ ?>
-    <?php if ($paper->isAccepted() || $paper->isReadyToPublish()) : ?>
+    <?php if ($canPublish) : ?>
         <?=
         $this->partial('partials/paper-status-modal.phtml', [
             'target' => 'publication-modal',

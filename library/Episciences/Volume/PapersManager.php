@@ -16,11 +16,18 @@ class Episciences_Volume_PapersManager
     }
 
     // return an array of volume/paper relations
-    public static function findPaperVolumes($docid)
+    public static function findPaperVolumes($docid): array
     {
+
+        if (!$docid) {
+            return [];
+        }
+
+        $volume_papers = array();
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()->from(T_VOLUME_PAPER)->where('docid = ?', $docid);
-        $volume_papers = array();
+
         foreach ($db->fetchAll($sql) as $data) {
             $volume_papers[$data['ID']] = new Episciences_Volume_Paper($data);
         }
@@ -30,6 +37,12 @@ class Episciences_Volume_PapersManager
     public static function updatePaperVolumes($docid, array $paper_volumes): void
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        // Collect old VIDs before update for cache revalidation
+        $oldVids = [];
+        foreach (self::findPaperVolumes($docid) as $relation) {
+            $oldVids[] = $relation->getVid();
+        }
 
         $vids = array();
         foreach ($paper_volumes as $paper_volume) {
@@ -52,11 +65,30 @@ class Episciences_Volume_PapersManager
             $db->delete(T_VOLUME_PAPER, 'DOCID = ' . $docid);
         }
 
+        // Enqueue Next.js cache revalidation for all affected volumes
+        $rvcode = defined('RVCODE') ? RVCODE : null;
+        if ($rvcode !== null) {
+            $affectedVids = array_unique(array_merge($oldVids, $vids));
+            $tags = ["volumes-{$rvcode}"];
+            foreach ($affectedVids as $affectedVid) {
+                $tags[] = "volume-{$affectedVid}";
+            }
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, $tags);
+        }
     }
 
-    public static function deletePaperVolume($docid, $vid)
+    public static function deletePaperVolume($docid, $vid): void
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $db->delete(T_VOLUME_PAPER, 'DOCID = ' . $docid . ' AND VID = ' . $vid);
+
+        // Enqueue Next.js cache revalidation for affected volume
+        $rvcode = defined('RVCODE') ? RVCODE : null;
+        if ($rvcode !== null) {
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "volume-{$vid}",
+                "volumes-{$rvcode}",
+            ]);
+        }
     }
 }

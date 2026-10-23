@@ -1,6 +1,5 @@
 <?php
 $this->layout()->pageTitle = $this->translate("Gérer les articles");
-$this->layout()->description = ($this->pageDescription) ?: $this->translate("Gestion des articles de la revue.");
 
 $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
 $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
@@ -26,6 +25,9 @@ $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+$this->jQuery()->addStylesheet(VENDOR_TOM_SELECT_CSS);
+$this->jQuery()->addJavascriptFile(VENDOR_TOM_SELECT);
+$this->jQuery()->addJavascriptFile('/js/common/tomselect-filters.js');
 ?>
 
 <table class="table table-bordered dataTable table-responsive-lg" id="papers" style="width: 100%;">
@@ -79,17 +81,19 @@ try {
 ?>
 
 
-<script type="text/javascript">
+<?php // TomSelect filter styling lives in sass/components/_tomselect.scss ?>
 
+<script type="text/javascript">
 
     let selfController = <?= "'$controller'" ?>;
     let selfAction = <?= "'$action'" ?>;
 
     const editableWithoutEditorsData = <?= $editableWithoutEditorsData ?>;
 
+    bootTomSelectFilters(['status', 'vid', 'sid', 'editors', 'reviewers', 'doi', 'repositories','suggestion']);
+
     $.getScript("/js/paper/submitted.js?_=v<?= APPLICATION_VERSION ?>;");
-    $.getScript("/js/administratepaper/section-assignment.js?_=v<?= APPLICATION_VERSION ?>");
-    $.getScript("/js/administratepaper/volume-assignment.js?_=v<?= APPLICATION_VERSION ?>");
+    $.getScript("/js/administratepaper/paper-assignment-modal.js?_=v<?= APPLICATION_VERSION ?>");
 
 </script>
 

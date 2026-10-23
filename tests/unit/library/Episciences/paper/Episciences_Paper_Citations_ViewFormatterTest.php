@@ -245,4 +245,43 @@ final class Episciences_Paper_Citations_ViewFormatterTest extends TestCase
             self::assertArrayHasKey($key, $result);
         }
     }
+
+    // ────────────────────────────────────────────
+    // oa_link field: link emitted only for http(s)/mailto schemes
+    // ────────────────────────────────────────────
+
+    private static function renderOaLink(string $url): string
+    {
+        $method = new \ReflectionMethod(
+            Episciences_Paper_Citations_ViewFormatter::class,
+            'renderMetadataField'
+        );
+        $method->setAccessible(true);
+
+        // A different doi must be present so the oa_link branch renders.
+        return (string) $method->invoke(null, 'oa_link', $url, ['doi' => '10.1234/different']);
+    }
+
+    public function testOaLinkHttpIsRenderedAsLink(): void
+    {
+        $html = self::renderOaLink('https://oa.example.org/article');
+
+        self::assertStringContainsString('<a rel="noopener" target="_blank" href="https://oa.example.org/article"', $html);
+    }
+
+    public function testOaLinkJavascriptIsNotRenderedAsLink(): void
+    {
+        $html = self::renderOaLink('javascript:alert(1)');
+
+        self::assertStringNotContainsString('href="javascript', $html);
+        self::assertStringNotContainsString('<a ', $html);
+    }
+
+    public function testOaLinkDataSchemeIsNotRenderedAsLink(): void
+    {
+        $html = self::renderOaLink('data:text/html,<script>alert(1)</script>');
+
+        self::assertStringNotContainsString('href="data:', $html);
+        self::assertStringNotContainsString('<script>', $html);
+    }
 }

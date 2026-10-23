@@ -22,12 +22,25 @@ var $modal_form;
 
 var openedPopover;
 
-$(document).ready(function () {
+$(document).ready(function ($) {
     $modal_box = $('#modal-box');
     $modal_body = $modal_box.find('.modal-body');
     $modal_footer = $modal_box.find('.modal-footer');
     $modal_button = $('#submit-modal');
     $modal_form = $modal_box.find('form');
+
+    // ARIA: avoid "aria-hidden" warning by blurring focused elements on hide
+    if ($modal_box && $modal_box.length) {
+        $modal_box.on('hide.bs.modal', function () {
+            if (
+                document.activeElement &&
+                this.contains(document.activeElement) &&
+                typeof document.activeElement.blur === 'function'
+            ) {
+                document.activeElement.blur();
+            }
+        });
+    }
 
     // fix for making TinyMCE dialog boxes work with bootstrap modals
     $(document).on('focusin', function (e) {
@@ -55,6 +68,21 @@ $(document).ready(function () {
                 { scrollTop: $targetPanel.offset().top },
                 300
             );
+        }
+
+        // Same idea for a single reviewer's rating panel (Bootstrap collapse, see
+        // partials/paper_reports.phtml) — e.g. linked from the activity timeline
+        // when a review has been completed
+        var ratingPanel = document.querySelector(window.location.hash + '.rating');
+        if (ratingPanel && !ratingPanel.classList.contains('in')) {
+            var ratingToggle = document.querySelector('[data-target="' + window.location.hash + '"]');
+            if (ratingToggle) {
+                ratingToggle.click();
+            }
+            var ratingPanelContainer = ratingPanel.closest('.panel');
+            if (ratingPanelContainer) {
+                ratingPanelContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
     }
 
@@ -553,21 +581,18 @@ function permalink(str) {
     return str;
 }
 
+/**
+ * Display a feedback message as a toast; falls back to a native alert
+ * when the toast bundle is not loaded, so the message is never lost.
+ * @param text plain text (escaped before rendering)
+ * @param type Bootstrap alert class, e.g. 'alert-danger'
+ */
 function message(text, type) {
-    $('#flash-messages').html(getMessageHtml(text, type));
-    setTimeout(function () {
-        $('#flash-messages').find('.alert').alert('close');
-    }, 10000);
-}
-
-function getMessageHtml(text, type) {
-    return (
-        '<div class="alert ' +
-        type +
-        '"><button type="button" class="close" data-dismiss="alert">&times;</button>' +
-        htmlEntities(text) +
-        '</div>'
-    );
+    if (window.toast && typeof window.toast.show === 'function') {
+        window.toast.show(htmlEntities(text), type);
+        return;
+    }
+    window.alert(text);
 }
 
 /**
@@ -578,9 +603,9 @@ function activateTooltips(params = {}) {
     //params = params || {};
     params.container = params.container || 'body';
     params.placement = params.placement || 'bottom';
-    params.html = params.html || true;
-    params.show = params.show || 200;
-    params.hide = params.hide || 100;
+    params.html = params.html ?? true;
+    params.show = params.show ?? 200;
+    params.hide = params.hide ?? 100;
 
     $("[data-toggle~='tooltip']").tooltip({
         container: params.container,
@@ -684,7 +709,13 @@ function applyCollapse(object) {
     }
 
     $('.collapseButton', object).tooltip();
-    $('.panel-heading:first', object).click(function () {
+    $('.panel-heading:first', object).click(function (e) {
+        // A panel header may embed its own controls (e.g. the dashboard paper search box):
+        // interacting with them must not collapse the panel.
+        if ($(e.target).closest('[data-component="dashboard-paper-search"]').length) {
+            return;
+        }
+
         $(this).closest('.panel').find('.panel-body').toggle();
         if (
             $(this)
@@ -732,6 +763,17 @@ function createModalStructure(params) {
             $modal_body = $modal_box.find('.modal-body');
             $modal_footer = $modal_box.find('.modal-footer');
             $modal_button = $('#submit-modal');
+
+            // ARIA: Bootstrap sets aria-hidden on hide; ensure focused descendants
+            $modal_box.on('hide.bs.modal', function () {
+                if (
+                    document.activeElement &&
+                    this.contains(document.activeElement) &&
+                    typeof document.activeElement.blur === 'function'
+                ) {
+                    document.activeElement.blur();
+                }
+            });
         },
     });
 }
@@ -755,7 +797,9 @@ function openModal(url, title, params, source) {
 
     // run callback method (if there is one)
     if (params['callback']) {
-        $modal_button.off('click.callback');
+        // Remove all existing click handlers (including the generic one from modal.phtml)
+        // so only the AJAX callback fires and the form is not submitted natively.
+        $modal_button.off('click').off('click.callback');
         $modal_button.on(
             'click.callback',
             { callback: params['callback'] },
@@ -767,7 +811,7 @@ function openModal(url, title, params, source) {
             }
         );
     } else {
-        $modal_button.on('click', function (e) {
+        $modal_button.off('click').on('click', function (e) {
             // submit form if necessary
             if ($modal_form.length && $modal_form.data('submission') != false) {
                 $modal_form.submit();
@@ -808,7 +852,17 @@ function openModal(url, title, params, source) {
     } else if (params['content']) {
         $modal_body.html(params['content']);
     } else if (params['source']) {
-        $(params['source']).appendTo('#modal-box .modal-body');
+        if (
+            typeof params['source'] === 'string' &&
+            isValidCSSSelector(params['source'])
+        ) {
+            $(params['source']).appendTo('#modal-box .modal-body');
+        } else {
+            console.warn(
+                'Ignoring invalid modal source selector:',
+                params['source']
+            );
+        }
     }
 
     // run init method (if there is one)
@@ -912,7 +966,7 @@ function updateDeadlineTag(body, tagName, date, locale = 'en') {
  */
 function getObjectNameFromTinyMce(name) {
     let body = {};
-    if (tinymce) {
+    if (typeof tinymce !== 'undefined' && tinymce) {
         body = tinymce.get(name);
     }
     return body;
@@ -933,8 +987,13 @@ function ajaxRequest(url, jData, type = 'POST', dataType = null) {
         data: jData,
     };
 
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) {
+        params.headers = { 'X-CSRF-Token': csrfMeta.content };
+    }
+
     if (dataType) {
-        params.datatype = dataType;
+        params.dataType = dataType;
     }
     return $.ajax(params);
 }

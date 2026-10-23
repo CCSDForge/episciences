@@ -146,6 +146,12 @@ class Episciences_Merge_MergingManager
         $affected_rows['USER'] = 0;
         $affected_rows[T_PAPER_CONFLICTS] = 0;
 
+        // All merge operations run on the main database (same adapter), so a single
+        // transaction makes the whole account merge atomic: if any step fails, nothing
+        // is committed — the source account is never deleted after a partial merge.
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $db->beginTransaction();
+
         try { //USER_ROLES table
             $rowNb = Episciences_UsersManager::updateRolesUid($mergerUid, $keeperUid);
             $affected_rows['USER_ROLES'] += $rowNb;
@@ -227,9 +233,13 @@ class Episciences_Merge_MergingManager
         }
 
         // COI tables
-        $rowNb = Episciences_Paper_ConflictsManager::updateRegistrant($mergerUid, $keeperUid);
-        $affected_rows[T_PAPER_CONFLICTS] += $rowNb;
-        $rowTotal += $rowNb;
+        try {
+            $rowNb = Episciences_Paper_ConflictsManager::updateRegistrant($mergerUid, $keeperUid);
+            $affected_rows[T_PAPER_CONFLICTS] += $rowNb;
+            $rowTotal += $rowNb;
+        } catch (Exception $e) {
+            $exception[] = self::showException($e);
+        }
 
         try { //USER table
             // if keeper not found: the account will be translated
@@ -252,6 +262,23 @@ class Episciences_Merge_MergingManager
             $exception[] = self::showException($e);
         }
 
+
+        // Any error above means a partial merge: roll everything back rather than
+        // deleting the source account on top of half-migrated data.
+        if (!empty($exception)) {
+            $db->rollBack();
+            $affected_rows['Affected rows in database'] = 0;
+            return ['result' => self::FAILED, 'affected_rows' => $affected_rows, 'exception' => $exception];
+        }
+
+        try {
+            $db->commit();
+        } catch (Exception $e) {
+            $db->rollBack();
+            $exception[] = self::showException($e);
+            $affected_rows['Affected rows in database'] = 0;
+            return ['result' => self::FAILED, 'affected_rows' => $affected_rows, 'exception' => $exception];
+        }
 
         $affected_rows['Affected rows in database'] = $rowTotal;
         if ($rowTotal) {

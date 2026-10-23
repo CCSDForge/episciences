@@ -19,7 +19,8 @@
     "BIBLIOREF": {
       "URL":"https://epiextract-env.domain.org",
       "ENABLE" : false,
-      "SSL_VERIFY": true
+      "SSL_VERIFY": true,
+      "TOKEN": "exampleToken"
     },
     "AUTH_ADAPTER_NAME": "LemonLDAP",
     "RENDER_ALERT_BANNER": {
@@ -29,9 +30,13 @@
         "DEFAULT_LANG": "MAINTENANCE ALERT: Service interruption on {date} from {1} to {h2}, EPIsciences platform will be inaccessible (more information)"
       }
     },
+    "READ_ONLY_MODE": false,
+    "READ_ONLY_MODE_START": "",
+    "READ_ONLY_MODE_END": "",
     "SUPPORT": "email-support@platform.org",
     "CONTACT": "email-support@platform.org",
-    "IGNORED_EMAILS_WHEN_INVITING_REVIEWER": []
+    "IGNORED_EMAILS_WHEN_INVITING_REVIEWER": [],
+    "ENABLE_NEXT_FRONT": false
   },
   "CAS": {
     "HOST": "a_db_host",
@@ -77,15 +82,13 @@
     "TOKEN_AUTH": "exampleToken"
   },
   "CAPTCHA": {
-    "BRAND": "HCAPTCHA"
+    "BRAND": "ALTCHA"
   },
-  "RECAPTCHA": {
-    "PUBKEY": "see https://www.google.com/recaptcha/admin",
-    "PRIVKEY": "see https://www.google.com/recaptcha/admin"
+  "ALTCHA": {
+    "HMAC_SECRET": "generate-a-long-random-secret-eg-openssl-rand-hex-32"
   },
-  "HCAPTCHA": {
-    "SITEKEY": "see https://www.hcaptcha.com/",
-    "SECRETKEY": "see https://www.hcaptcha.com/"
+  "REVIEWER_INVITATION": {
+    "HMAC_SECRET": ""
   },
   "ENDPOINTS": {
     "INDEXING_HOST": "solr-hostname-for-indexing.example.com",
@@ -145,15 +148,32 @@
   },
   "OPENCITATIONS": {
     "TOKEN" : "YOUR-OPENCITATIONS-ACCESS-TOKEN",
-    "APIURL": "https://opencitations.net/index/api/v1/citations/"
+    "APIURL": "https://api.opencitations.net/index/v2/citations/"
   },
   "OPENALEX": {
     "MAILTO": "YOUR-MAIL-TO",
-    "APIURL": "https://api.openalex.org/works/"
+    "APIURL": "https://api.openalex.org/works/",
+    "APIKEY": "four random common words"
   },
   "CROSSREF": {
     "MAILTO": "YOUR-MAIL-TO",
     "APIURL": "https://api.crossref.org/works/",
     "PLUS_API_TOKEN": "Ash-nazg-durbatulûk"
+  },
+  "OPENAIRE": {
+    "AUTH_URL": "https://aai.openaire.eu/oidc/token",
+    "API_URL": "https://api.openaire.eu/graph/v3/research-products",
+    "CLIENT_ID": "YOUR-OPENAIRE-CLIENT-ID",
+    "CLIENT_SECRET": "YOUR-OPENAIRE-CLIENT-SECRET"
+  },
+  "SCHOLEXPLORER": {
+    "AUTH_URL": "https://aai.openaire.eu/oidc/token",
+    "API_URL": "https://api.scholexplorer.openaire.eu/v3/Links",
+    "CLIENT_ID": "YOUR-SCHOLEXPLORER-CLIENT-ID",
+    "CLIENT_SECRET": "YOUR-SCHOLEXPLORER-CLIENT-SECRET"
+  },
+  "NEXT": {
+    "BASE_URL": "https://next.example.org",
+    "REVALIDATION_SECRET": "generate-a-long-random-secret-eg-openssl-rand-hex-32"
   }
 }

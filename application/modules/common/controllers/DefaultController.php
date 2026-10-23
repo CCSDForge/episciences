@@ -94,29 +94,40 @@ class DefaultController extends Zend_Controller_Action
      */
     protected function isRestrictedAccess(Episciences_Paper $paper): bool
     {
-        $journalSettings = Zend_Registry::get('reviewSettings');
-
         $loggedUid = Episciences_Auth::getUid();
 
-        $isAllowToEditors =
-            (
-                isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]) &&
-                $journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS] === '0'
-            ) && Episciences_Auth::isEditor();
-
-        $isAllowToCopyEditors =
-            (
-                isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS]) &&
-                $journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS] === '0'
-            ) && Episciences_Auth::isCopyEditor();
-
-        return !$isAllowToEditors && !$isAllowToCopyEditors && !$paper->isPublished() &&
-            !Episciences_Auth::isSecretary() && // nor editorial secretary or user is not chief editor or // nor admin
-            !$paper->getEditor($loggedUid) &&
-            !$paper->getCopyEditor($loggedUid) &&
+        return !$paper->isPublished() &&
+            !self::isEditorialStaff($paper, Zend_Registry::get('reviewSettings')) &&
             !array_key_exists($loggedUid, $paper->getReviewers()) && // nor reviewer
             !$paper->isOwner() &&
             !$paper->isCoauthor();
+    }
+
+    /**
+     * The logged user handles the paper for the journal: secretaries and administrators, the editors and copy
+     * editors assigned to the paper, the editors and copy editors of a journal that does not restrict them to
+     * their assigned papers. An encapsulation setting the journal never saved counts as restrictive.
+     *
+     * @param array<string, mixed> $journalSettings
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected static function isEditorialStaff(Episciences_Paper $paper, array $journalSettings): bool
+    {
+        return static::isEditorialStaffOfEveryPaper($journalSettings) ||
+            $paper->isAssignedEditorOrCopyEditor((int)Episciences_Auth::getUid());
+    }
+
+    /**
+     * The part of isEditorialStaff() that does not depend on the paper: the roles of the logged user handle
+     * every paper of the journal.
+     *
+     * @param array<string, mixed> $journalSettings
+     */
+    protected static function isEditorialStaffOfEveryPaper(array $journalSettings): bool
+    {
+        return Episciences_Auth::isSecretary() ||
+            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS] ?? null) === '0' && Episciences_Auth::isEditor()) ||
+            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS] ?? null) === '0' && Episciences_Auth::isCopyEditor());
     }
 
     protected function redirectWithFlashMessageIfPaperIsRemovedOrDeleted(Episciences_Paper $paper, bool $forceRedirection = true): void
@@ -368,7 +379,7 @@ class DefaultController extends Zend_Controller_Action
             foreach ($val as $v) {
                 $v = is_array($v) ? implode(' ', array_values($v)) : $v;
                 $validationErrors .= '<li>';
-                $validationErrors .= '<code>' . $this->view->translate($v) . '</code>';
+                $validationErrors .= '<code>' . $this->view->escape($this->view->translate($v)) . '</code>';
                 $validationErrors .= '</li>';
             }
         }
@@ -396,4 +407,49 @@ class DefaultController extends Zend_Controller_Action
         $message .= $this->view->translate('Merci de les corriger.');
         return $message;
     }
+
+    /**
+     * Safely resolves a user-influenced relative path under a trusted base directory.
+     *
+     * Prevents path traversal (e.g. "../../etc/passwd") by canonicalizing both the
+     * base directory and the candidate path with realpath(), then verifying that the
+     * resolved path is the base itself or strictly contained within it.
+     *
+     * Returns the canonical absolute path when it exists and is confined to $baseDir,
+     * or null otherwise (non-existent file, traversal attempt, or path outside base).
+     *
+     * @param string $baseDir Trusted base directory (must be a real, existing directory)
+     * @param string $relativePath User-influenced path, relative to $baseDir
+     * @return string|null Canonical path inside $baseDir, or null if invalid/outside
+     */
+    protected function resolveSafePath(string $baseDir, string $relativePath): ?string
+    {
+        // Reject empty input and any NUL byte / control character
+        if ($relativePath === '' || preg_match('/[\x00-\x1f]/', $relativePath)) {
+            return null;
+        }
+
+        $realBase = realpath($baseDir);
+        if ($realBase === false) {
+            return null;
+        }
+
+        $real = realpath($realBase . DIRECTORY_SEPARATOR . $relativePath);
+        if ($real === false) {
+            return null;
+        }
+
+        // The resolved path must be the base directory itself or strictly inside it
+        if ($real !== $realBase && !str_starts_with($real, $realBase . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return $real;
+    }
+
+    protected function getSession(): Zend_Session_Namespace
+    {
+        return new Zend_Session_Namespace(SESSION_NAMESPACE);
+    }
+
 }

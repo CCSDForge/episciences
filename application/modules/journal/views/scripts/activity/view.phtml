@@ -1,0 +1,95 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$status = $paper->getStatus();
+$events = $this->timelineEvents;
+
+$this->layout()->pageTitle = htmlspecialchars(Episciences_Tools::decodeLatex($paper->getTitle())) . ' <span class="title-part">(' . $this->translate('Activité') . ')</span>';
+$this->headTitle($this->translate('Activité de l\'article'));
+$this->headTitle('#' . $paper->getDocid() . ' - ' . $paper->getTitle());
+
+$this->jQuery()->addStylesheet('/css/log-history.css');
+
+// "Soumission & versions" isn't its own filter: those events are folded into the "Éditorial"
+// recap block (see ActivityController::RECAP_CATEGORY_ALIASES)
+$filterableCategories = [
+    Episciences_Paper_Logger::CATEGORY_EDITORIAL,
+    Episciences_Paper_Logger::CATEGORY_REVIEW,
+    Episciences_Paper_Logger::CATEGORY_COMMUNICATION,
+];
+?>
+
+<style>
+    .title-part {
+        font-size: 75%;
+        color: #999;
+    }
+</style>
+
+<div class="activity-page">
+
+    <a href="/administratepaper/view?id=<?= $paper->getDocid() ?>" class="activity-back-link">
+        <span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span>
+        <?= $this->translate("Retour à la gestion de l'article") ?>
+    </a>
+
+    <?php // the article title (already the page's <h1>, see $this->layout()->pageTitle above)
+    // and its authors are both shown on "Back to article management" — this card is just
+    // the one piece of context that isn't: the paper's current status ?>
+    <div class="activity-header-card">
+        <div class="activity-header-status">
+            <span class="activity-status-caption"><?= $this->translate('Statut') ?></span>
+            <span class="label label-status-<?= $status ?> activity-status-label">
+                <?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?>
+            </span>
+        </div>
+    </div>
+
+    <?php if (empty($events)) : ?>
+        <p class="text-muted"><?= $this->translate('Historique indisponible') ?></p>
+    <?php else : ?>
+
+        <div class="activity-filters" role="group" aria-label="<?= $this->translate("Filtrer les événements de la timeline") ?>">
+            <span class="activity-filters-label"><?= $this->translate('Afficher') ?> :</span>
+            <?php foreach ($filterableCategories as $categoryKey) : ?>
+                <?php
+                // "Messages & notifications" is the noisiest category (one entry per mail/comment),
+                // so it starts hidden — every other category starts visible
+                $isOnByDefault = $categoryKey !== Episciences_Paper_Logger::CATEGORY_COMMUNICATION;
+                $toggleId = 'activity-filter-toggle-' . $categoryKey;
+                ?>
+                <span class="activity-filter-toggle">
+                    <input type="checkbox"
+                           role="switch"
+                           class="activity-filter-switch"
+                           id="<?= $toggleId ?>"
+                           data-category="<?= $categoryKey ?>"
+                        <?= $isOnByDefault ? 'checked' : '' ?>>
+                    <label for="<?= $toggleId ?>">
+                        <?= $this->translate(Episciences_Paper_Logger::getCategoryLabel($categoryKey)) ?>
+                    </label>
+                </span>
+            <?php endforeach; ?>
+        </div>
+
+        <p class="sr-only activity-filter-live-region" aria-live="polite"></p>
+
+        <p class="activity-timeline-caption"><?= $this->translate("Timeline de publication") ?></p>
+
+        <div class="activity-timeline">
+            <?php foreach ($events as $event) : ?>
+                <?php if (!empty($event['IS_REVIEW_TABLE'])) : ?>
+                    <?= $this->partial('partials/activity_timeline_review_table.phtml', ['block' => $event]) ?>
+                <?php elseif (!empty($event['IS_RECAP'])) : ?>
+                    <?= $this->partial('partials/activity_timeline_recap_block.phtml', ['block' => $event]) ?>
+                <?php else : ?>
+                    <?= $this->partial('partials/activity_timeline_item.phtml', ['log' => $event]) ?>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
+
+    <?php endif; ?>
+
+</div>
+
+<?php $this->jQuery()->addJavascriptFile('/js/administratepaper/activity.js'); ?>

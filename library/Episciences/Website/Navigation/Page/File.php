@@ -1,5 +1,8 @@
 <?php
 
+use Episciences\Upload\PublicFileStore;
+use Episciences\Upload\UploadChecker;
+
 /**
  * Lien exterieur
  * @author yannick
@@ -24,6 +27,12 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
      * @var string
      */
     protected $_target = '';
+
+    /**
+     * Reason why the file sent with the form was refused, displayed on the 'src' element
+     * @var string|null
+     */
+    protected ?string $_uploadError = null;
 
 
     /**
@@ -115,14 +124,49 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
     }
 
     /**
+     * Checks the file sent through the form of a page ($_FILES['pages_<id>']).
+     *
+     * @param array<string, array<string, mixed>>|null $uploads entry of $_FILES for the page
+     * @return string|null message for the user, null if the file is acceptable or if no file was sent
+     */
+    public static function validateUpload(?array $uploads): ?string
+    {
+        $uploadError = (int)($uploads['error']['src'] ?? UPLOAD_ERR_NO_FILE);
+
+        if ($uploadError === UPLOAD_ERR_NO_FILE) {
+            // Nothing sent: the current file is kept
+            return null;
+        }
+
+        return UploadChecker::firstPublicFileError(
+            (string)($uploads['tmp_name']['src'] ?? ''),
+            (string)($uploads['name']['src'] ?? ''),
+            $uploadError
+        );
+    }
+
+    public function setUploadError(?string $uploadError): self
+    {
+        $this->_uploadError = $uploadError;
+        return $this;
+    }
+
+    /**
      * Enregistrement des fichiers
      */
     public function saveFile()
     {
         //C'est pas super propre mais bon...
         if ($this->getSrc() != '') {
+            $uploads = $_FILES['pages_' . $this->getPageId()] ?? null;
+
+            // Whatever the caller checked, a file whose content was not validated is never stored
+            if (self::validateUpload($uploads) !== null) {
+                return;
+            }
+
             if (isset($_FILES['pages_' . $this->getPageId()]['tmp_name']['src']) && is_file($_FILES['pages_' . $this->getPageId()]['tmp_name']['src'])) {
-                $this->setSrc(Ccsd_Tools::getNewFileName($this->getSrc(), REVIEW_PATH . 'public/'));
+                $this->setSrc(Ccsd_Tools::getNewFileName(PublicFileStore::storedName($this->getSrc()), REVIEW_PATH . 'public/'));
                 rename($_FILES['pages_' . $this->getPageId()]['tmp_name']['src'], REVIEW_PATH . 'public/' . $this->getSrc());
             }
         }
@@ -136,11 +180,15 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
     public function getForm($pageidx)
     {
         parent::getForm($pageidx);
+        // The form is rebuilt each time it is requested, so the error of a refused file is added here
         $this->_form->addElement('file', 'src',
             ['required' => true,
                 'label' => 'Lien',
                 'value' => $this->getSrc(),
                 'belongsTo' => 'pages_' . $pageidx]);
+        if ($this->_uploadError !== null) {
+            $this->_form->getElement('src')->addError($this->_uploadError);
+        }
         $this->_form->addElement('select', 'target',
             ['required' => true,
                 'label' => 'Cible', 'value' => $this->getTarget(),

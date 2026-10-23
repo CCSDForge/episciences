@@ -10,7 +10,7 @@ $userRole = $this->userRole;
                             <?php
                             $msg = "";
                             foreach ($users as $user) {
-                                echo $user->getScreenName() . PHP_EOL;
+                                echo $this->escape($user->getScreenName()) . PHP_EOL;
                                 $msg .= $user->getScreenName() . '<br>';
                             }
                             ?>
@@ -46,7 +46,7 @@ $userRole = $this->userRole;
                     <?php if ($msg) : ?></a><?php endif; ?>
                 <?php // user(editor or copy editor) name ************************************************** ?>
                 <span style="margin-left: 5px;">
-                    <?= $user->getScreenName() ?>
+                    <?= $this->escape($user->getScreenName()) ?>
                 </span>
             </div>
         <?php endforeach; ?>

@@ -200,31 +200,18 @@ ul.errors li:first-child:nth-last-child(2) {
 }
 
 .glyphicon-refresh.active {
-  -webkit-animation: spin 4s linear infinite !important;
-  -moz-animation: spin 4s linear infinite !important;
   animation: spin 4s linear infinite !important;
-}
-
-@-moz-keyframes spin {
-  100% {
-    -moz-transform: rotate(360deg);
-  }
-}
-
-@-webkit-keyframes spin {
-  100% {
-    -webkit-transform: rotate(360deg);
-  }
 }
 
 @keyframes spin {
   100% {
-    -webkit-transform: rotate(360deg);
     transform: rotate(360deg);
   }
 }
 
-#to_tags, #cc_tags, #bcc_tags {
+#to_tags, #cc_tags, #bcc_tags,
+span[id$="-cc-tags"],
+span[id$="-bcc-tags"] {
   float: left;
 }
 

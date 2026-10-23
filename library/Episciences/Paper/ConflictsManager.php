@@ -49,14 +49,6 @@ class Episciences_Paper_ConflictsManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $sql = $db->select()
-            ->from(self::TABLE)
-            ->where("`by` = ?", $uid);
-
-        if ($answer) {
-            $sql->where('answer = ?', $answer);
-        }
-
         $rows = $db->fetchAll(self::findByUidAndAnswerQuery($uid, $answer, $paperId));
 
         if ($mode !== self::DEFAULT_MODE) {
@@ -119,18 +111,19 @@ class Episciences_Paper_ConflictsManager
     }
 
     /**
-     * @param int $id
+     * Deletes a conflict only if it belongs to the given paper
+     * @param int $id conflict id
+     * @param int $paperId PAPERID owning the conflict
      * @return bool
      */
-    public static function deleteById(int $id): bool
+    public static function deleteByIdAndPaperId(int $id, int $paperId): bool
     {
-        if ($id < 1) {
+        if ($id < 1 || $paperId < 1) {
             return false;
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return ($db->delete(self::TABLE, ['cid = ?' => $id]) > 0);
-
+        return ($db->delete(self::TABLE, ['cid = ?' => $id, 'paper_id = ?' => $paperId]) > 0);
     }
 
     /**
@@ -305,11 +298,10 @@ class Episciences_Paper_ConflictsManager
             $sql .= $db->quoteIdentifier('date');
             $sql .= ') VALUES ';
             $sql .= implode(',', $values);
-            $sql .= ' ON DUPLICATE KEY UPDATE ';
+            $sql .= ' AS new_row ON DUPLICATE KEY UPDATE ';
             $sql .= $db->quoteIdentifier('by');
-            $sql .= ' = VALUES(';
+            $sql .= ' = new_row.';
             $sql .= $db->quoteIdentifier('by');
-            $sql .= ')';
 
 
             $statement = $db->prepare($sql);

@@ -1,5 +1,3 @@
-var openedPopover = null;
-
 function getTags() {
     let paper_title = '';
 
@@ -14,10 +12,10 @@ function getTags() {
     }
 
     let tags = [
-        { text: translate('Code de la revue'), value: review['code'] },
-        { text: translate('Nom de la revue'), value: review['name'] },
-        { text: translate("Id de l'article"), value: paper.id.toString() },
-        { text: translate("Titre de l'article"), value: paper_title },
+        {text: translate('Code de la revue'), value: review['code']},
+        {text: translate('Nom de la revue'), value: review['name']},
+        {text: translate("Id de l'article"), value: paper.id.toString()},
+        {text: translate("Titre de l'article"), value: paper_title},
     ];
 
     if (paper_ratings) {
@@ -102,6 +100,14 @@ $(document).ready(function () {
 
     __initMCE('.full_mce', undefined, options);
 
+    // Avoid ARIA warning: don't hide a modal while a descendant still has focus.
+    // Bootstrap toggles aria-hidden on hide; blurring prevents "Blocked aria-hidden..." messages.
+    $(document).on('hide.bs.modal', '.modal', function () {
+        if (document.activeElement && this.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+    });
+
     $('#confirmNewVersion').on('click', function (e) {
         if (!$('#commentNewVersion').tinymce().getContent()) {
             alert(
@@ -114,7 +120,14 @@ $(document).ready(function () {
     });
 
     $('.submit-modal').click(function () {
-        $(this).closest('.modal-content').find('form').submit();
+        const $modalContent = $(this).closest('.modal-content');
+        // Submit only the visible form, ignoring hidden auxiliary forms (e.g. contacts picker)
+        const $visibleForm = $modalContent.find('.modal-body form:visible').first();
+        if ($visibleForm.length) {
+            $visibleForm.submit();
+            return;
+        }
+        $modalContent.find('form').first().submit();
     });
 
     // Initialisation du menu des rédacteurs
@@ -144,6 +157,16 @@ $(document).ready(function () {
             });
         });
 
+    // Reviewer context menu — event delegation survives AJAX replacement of #reviewers
+    $(document).on('click', '#reviewers .reviewer .popover-link', function () {
+        getReviewerMenu(this);
+    });
+
+    $(document).on('click', '#reviewers .go_to_rating', function () {
+        var uid = $(this).data('uid');
+        $('#rating-' + uid).collapse('show');
+    });
+
     // logs ******************************
 
     // search in logs (input)
@@ -164,6 +187,8 @@ $(document).ready(function () {
         .popover({
             html: true,
             placement: 'bottom',
+            template:
+                '<div class="popover history-date-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
             content: function () {
                 return history_popover_content.html();
             },
@@ -175,7 +200,9 @@ $(document).ready(function () {
             history_filter_start.datepicker();
             history_filter_end.datepicker();
             $('.history-filters .datepicker-button').click(function () {
-                $(this).next().datepicker('show');
+                // .next() would hit the sr-only <label> sitting between the
+                // icon and the input; target the input itself instead.
+                $(this).siblings('input').datepicker('show');
             });
 
             // default values
@@ -216,7 +243,7 @@ $(document).ready(function () {
         });
 
     // update deadline
-    $("[id$='-revision-deadline']").on('change keyup past', function () {
+    $("[id$='-revision-deadline']").on('change keyup paste', function () {
         let $minorSubmit = $('button[id^="submit-modal-minor-revision"]');
         let $majorSubmit = $('button[id^="submit-modal-major-revision"]');
 
@@ -272,11 +299,50 @@ $(document).ready(function () {
     });
     $('input#copycoauthor').click(function () {
         let coAuthorsMailStr = $('input#coauthormail').val();
+        if (!coAuthorsMailStr) {
+            return;
+        }
+        let $modal = $('.modal.in, .modal.show').first();
+        let $ccInput = $modal.find('input[id$="-cc"]');
+        if (!$ccInput.length) {
+            return;
+        }
+        // Split by semicolon to handle multiple co-authors: "<a@b>;<c@d>"
+        let emails = coAuthorsMailStr.split(';').map(e => e.trim()).filter(e => e);
         if ($(this).prop('checked')) {
-            $("input[name='cc']").val(coAuthorsMailStr);
+            // Add each co-author as a separate CC tag
+            emails.forEach(email => {
+                $ccInput.val(email).trigger('blur');
+            });
         } else {
-            let inputcc = $("input[name='cc']");
-            inputcc.val(inputcc.val().replace(coAuthorsMailStr, ''));
+            // Remove each co-author tag
+            emails.forEach(email => {
+                let resolved = epResolveManualRecipientToKnown(email);
+                if (resolved.type === 'known' && resolved.recipient.uid) {
+                    let $tag = $modal.find('.recipient-tag[data-uid="' + resolved.recipient.uid + '"]');
+                    removeRecipient($tag);
+                }
+            });
+        }
+    });
+
+    // Auto-add co-authors to CC when modal opens if checkbox is checked by default
+    $(document).on('shown.bs.modal', '.modal', function () {
+        let $modal = $(this);
+        let $checkbox = $modal.find('input#copycoauthor');
+        if ($checkbox.length && $checkbox.prop('checked')) {
+            let coAuthorsMailStr = $modal.find('input#coauthormail').val();
+            if (!coAuthorsMailStr) {
+                return;
+            }
+            let $ccInput = $modal.find('input[id$="-cc"]');
+            if (!$ccInput.length) {
+                return;
+            }
+            let emails = coAuthorsMailStr.split(';').map(e => e.trim()).filter(e => e);
+            emails.forEach(email => {
+                $ccInput.val(email).trigger('blur');
+            });
         }
     });
 });
@@ -309,7 +375,9 @@ function searchLogs() {
         $('.history-search').css('border', '1px solid #ccc');
     }
 
-    let re = new RegExp(input, 'i'); // "i" means it's case-insensitive
+    // Escape regex special characters: the input is a plain-text search term
+    let escapedInput = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let re = new RegExp(escapedInput, 'i'); // "i" means it's case-insensitive
     $('.history-logs div.log-entry')
         .show()
         .filter(function () {
@@ -400,6 +468,24 @@ function getReviewerMenu(button) {
         content +=
             '<span class="glyphicon glyphicon-calendar" style="margin-right: 5px"></span> ' +
             translate('Modifier la date limite de rendu de la relecture') +
+            '</a></li>';
+    }
+
+    if (canBeReviewed && (status === 'pending' || status === 'expired')) {
+        content += '<li>';
+        content +=
+            '<a class="modal-opener" href="/administratepaper/acceptreviewerinvitation/aid/' +
+            aid +
+            '" ';
+        content += 'data-width="50%" ';
+        content += 'data-callback="submit" ';
+        content +=
+            'title="' +
+            translate("Accepter l'invitation à la place du relecteur") +
+            '">';
+        content +=
+            '<span class="glyphicon glyphicon-ok" style="margin-right: 5px"></span> ' +
+            translate("Accepter l'invitation à la place du relecteur") +
             '</a></li>';
     }
 
@@ -580,63 +666,9 @@ function cancel() {
  *
  * @param button
  * @param docId
- * @param url
- * @param popoverParams
- * @returns {boolean|*}
- */
-function getCommunForm(
-    button,
-    docId,
-    url = '/administratepaper/doiform',
-    popoverParams = {}
-) {
-    const defaultParams = {
-        placement: 'bottom',
-        container: 'body',
-        html: true,
-        content: getLoader(),
-    };
-
-    if (typeof popoverParams.placement === 'undefined') {
-        popoverParams.placement = defaultParams.placement;
-    }
-
-    if (typeof popoverParams.container === 'undefined') {
-        popoverParams.container = defaultParams.container;
-    }
-
-    if (typeof popoverParams.html === 'undefined') {
-        popoverParams.html = defaultParams.html;
-    }
-
-    if (typeof popoverParams.content === 'undefined') {
-        popoverParams.content = defaultParams.content;
-    }
-
-    // Destruction des anciens popups
-    $(button).popover('destroy');
-
-    // Toggle : est-ce qu'on ouvre ou est-ce qu'on ferme le popup ?
-    if (openedPopover && openedPopover == docId) {
-        openedPopover = null;
-        return false;
-    } else {
-        openedPopover = docId;
-    }
-
-    $(button).popover(popoverParams).popover('show');
-
-    // Récupération du formulaire
-    return ajaxRequest(url, { docid: docId });
-}
-
-/**
- *
- * @param button
- * @param docId
  */
 function getPublicationDateForm(button, docId) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         '/administratepaper/publicationdateform'
@@ -662,11 +694,11 @@ function getPublicationDateForm(button, docId) {
             function () {
                 let $publicationDate = $('#publication-date');
                 // Traitement AJAX du formulaire
+                // The action returns a localized date as plain text, not JSON
                 let sRequest = ajaxRequest(
                     '/administratepaper/savepublicationdate',
                     $(this).serialize() + '&docid=' + docId,
-                    'POST',
-                    'json'
+                    'POST'
                 );
                 sRequest.done(function (response) {
                     // Destruction du popup
@@ -698,7 +730,7 @@ const DOI_PATTERN = /^10\.\d{4,9}\/[-._;()/:A-Z0-9]+$/i;
  */
 function validateDoiInput(value) {
     if (!value) {
-        return { valid: false, error: 'DOI cannot be empty.' };
+        return {valid: false, error: 'DOI cannot be empty.'};
     }
     if (!DOI_PATTERN.test(value)) {
         return {
@@ -706,7 +738,7 @@ function validateDoiInput(value) {
             error: 'Invalid DOI format. Expected: 10.XXXX/suffix',
         };
     }
-    return { valid: true, error: '' };
+    return {valid: true, error: ''};
 }
 
 /**
@@ -746,7 +778,7 @@ function updateDoiDisplay(doi) {
  * @param {string} [url]
  */
 function getDoiForm(button, docId, url = '/administratepaper/doiform') {
-    const jqxhr = getCommunForm(button, docId, url);
+    const jqxhr = getCommonForm(button, docId, url);
     if (jqxhr === false) {
         return;
     }
@@ -934,8 +966,8 @@ function reinviteReviewer(docid, uid) {
     let $formId = $('#invitereviewer_form_' + docid);
     $formId.append(
         '<input id = "reinvite_uid" type="hidden" name="reinvite_uid" value="' +
-            uid +
-            '">'
+        uid +
+        '">'
     );
     $formId.submit();
 }
@@ -1015,7 +1047,7 @@ function editAttachmentDescription(target) {
  */
 
 function getVersionEditingForm(button, docId) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         '/administratepaper/latestversioneditingform'
@@ -1040,23 +1072,26 @@ function getVersionEditingForm(button, docId) {
 
         $('form[action^="' + actionStr + '"]').on('submit', function () {
             let $inProgress = $('#in-progress');
+            // CSRF token expected by savenewpostedversionAction
+            let csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            let csrfToken = csrfMeta ? csrfMeta.content : '';
             // Traitement AJAX du formulaire
             let sRequest = ajaxRequest(
                 actionStr,
-                $(this).serialize() + '&docid=' + docId,
+                $(this).serialize() +
+                    '&docid=' + docId +
+                    '&csrf_token=' + encodeURIComponent(csrfToken),
                 'POST',
                 'json'
             );
 
-            popoverParams.content = getLoader;
+            popoverParams.content = getLoader();
 
             $inProgress.html(getLoader());
 
-            sRequest.done(function (response) {
+            sRequest.done(function (result) {
                 $inProgress.html('');
                 $(button).popover('destroy');
-
-                let result = JSON.parse(response);
 
                 if (result.version > 0) {
                     if (result.isDataRecordUpdated) {
@@ -1066,15 +1101,16 @@ function getVersionEditingForm(button, docId) {
                         refreshPaperHistory(docId);
                     }
                 }
+            });
 
-                sRequest.fail(function () {
-                    alert(
-                        '<span class="fas fa-exclamation-triangle fa-lg" style="margin-right: 5px"></span>' +
-                            translate(
-                                "Une erreur interne s'est produite, veuillez recommencer."
-                            )
-                    );
-                });
+            sRequest.fail(function () {
+                $inProgress.html('');
+                $(button).popover('destroy');
+                alert(
+                    translate(
+                        "Une erreur interne s'est produite, veuillez recommencer."
+                    )
+                );
             });
 
             return false;
@@ -1234,21 +1270,30 @@ function removeDoi(button, paperId, docId, doi) {
 }
 
 function removeCoAuthor(docId, uid, rvid) {
-    let removeCoAuthor = ajaxRequest(
-        '/administratepaper/ajaxrequestremovecoauthor',
-        {
-            docId: docId,
-            uid: uid,
-            rvid: rvid,
-        }
-    );
-    removeCoAuthor.done(function (response) {
-        location.reload();
-    });
+    // CSRF token expected by ajaxrequestremovecoauthorAction
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+    return fetch('/administratepaper/ajaxrequestremovecoauthor', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': csrfMeta ? csrfMeta.content : '',
+        },
+        body: new URLSearchParams({ docId: docId, uid: uid, rvid: rvid }),
+    })
+        .then(function () {
+            // the outcome is reported by a flash message
+            location.reload();
+        })
+        .catch(function (err) {
+            console.error('[removeCoAuthor] Fetch error:', err);
+        });
 }
 
 function getRevisionDeadlineForm(button, docId, commentId = null) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         '/administratepaper/revisiondeadlineform'
@@ -1274,6 +1319,7 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
             function () {
                 let $revisionDeadline = $('#revision-deadline');
                 // Traitement AJAX du formulaire
+                // The action returns a localized date as plain text, not JSON
                 let sRequest = ajaxRequest(
                     '/administratepaper/updaterevisiondeadline',
                     $(this).serialize() +
@@ -1281,8 +1327,7 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
                         docId +
                         '&pcid=' +
                         commentId,
-                    'POST',
-                    'json'
+                    'POST'
                 );
                 sRequest.done(function (response) {
                     // Destruction du popup
@@ -1312,7 +1357,157 @@ function valide($target) {
     }
 }
 
+function getLicensesForm(button, docId) {
+
+    getEditingPopover(
+        button,
+        docId,
+        '/administratepaper/getlicenselistform',
+        '/administratepaper/savespdxlicense',
+        'paper-license-link'
+    );
+
+}
+
+/**
+ *
+ * @param button
+ * @param docId
+ * @param preAction
+ * @param postAction
+ * @param targetToRefreshId
+ * @param forceHistoryRefresh
+ */
+function getEditingPopover(button, docId, preAction, postAction, targetToRefreshId, forceHistoryRefresh = true) {
+    let request = getCommonForm(
+        button,
+        docId,
+        preAction
+    );
+
+    let popoverParams = {
+        placement: 'bottom',
+        container: 'body',
+        html: true,
+        content: getLoader(),
+    };
+
+    request.done(function (result) {
+        // Destruction du popup de chargement
+        $(button).popover('destroy');
+        openedPopover = null;
+        // Affichage du formulaire dans le popover
+        popoverParams.content = result;
+        $(button).popover(popoverParams).popover('show');
+
+        $('form[action^="' + postAction + '"]').on(
+            'submit',
+            function () {
+                let $target = $('#' + targetToRefreshId);
+                // CSRF token expected by the post action
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = csrfMeta ? csrfMeta.content : '';
+                // Traitement AJAX du formulaire
+                let sRequest = ajaxRequest(
+                    postAction,
+                    new URLSearchParams(new FormData(this)).toString() +
+                        '&docid=' + docId +
+                        '&csrf_token=' + encodeURIComponent(csrfToken),
+                    'POST',
+                    'json'
+                );
+                sRequest.done(function (response) {
+                    // Destruction du popup
+                    $(button).popover('destroy');
+
+                    if (response) {
+
+                        // The action returns a JSON object. With dataType 'json', jQuery
+                        // parses it automatically; otherwise, it's a string that needs to be decoded
+                        let parsed = response;
+                        if (typeof response === 'string') {
+                            parsed = JSON.parse(response);
+                        }
+
+                        if (targetToRefreshId === 'paper-license-link' && parsed && typeof parsed === 'object') {
+
+                            if (!parsed.error) {
+                                if (parsed.warning) {
+                                    bootbox.setDefaults({ locale: locale });
+                                    bootbox.alert(translate(parsed.warning));
+                                } else {
+                                    if ($target.length) {
+                                        $target
+                                            .text(parsed.name)
+                                            .attr("href", parsed.href);
+                                    }
+
+                                    // Update (or remove) the info-license-box with the freshly rendered block
+                                    if (typeof parsed.html === 'string') {
+                                        const $box = $('.info-license-box');
+                                        if (parsed.html.trim() === '') {
+                                            $box.remove();
+                                        } else {
+                                            $box.replaceWith(parsed.html);
+                                        }
+                                    }
+
+                                    // Replace the whole licence block, so that no stale rights entry remains
+                                    if (typeof parsed.linkHtml === 'string') {
+                                        const licenseBlock = document.getElementById('paper-license-block');
+                                        if (licenseBlock) {
+                                            licenseBlock.innerHTML = parsed.linkHtml;
+                                        } else {
+                                            location.reload();
+                                        }
+                                    }
+                                }
+                            } else {
+                                bootbox.setDefaults({ locale: locale });
+                                bootbox.alert(translate(parsed.error));
+                            }
+
+                        } else if (typeof response === 'string') {
+                            $target.html(response);
+                        }
+
+                        if (forceHistoryRefresh) {
+                            refreshPaperHistory(docId);
+                        }
+
+                    } else {
+
+                        if (targetToRefreshId === 'publication-date') {
+                            alert(translate('Veuillez indiquer une date valide'));
+                        }
+
+                    }
+                });
+                // Rejected requests (e.g. 403: role or CSRF token) return a JSON error
+                sRequest.fail(function (xhr) {
+                    $(button).popover('destroy');
+                    const error =
+                        (xhr.responseJSON && xhr.responseJSON.error) ||
+                        'Une erreur est survenue, veuillez réessayer.';
+                    bootbox.setDefaults({ locale: locale });
+                    bootbox.alert(translate(error));
+                });
+                return false;
+            }
+        );
+    });
+
+}
+
+
 // Expose pure helpers for unit testing only.
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { validateDoiInput, updateDoiDisplay, DOI_PATTERN };
+    module.exports = {
+        validateDoiInput,
+        updateDoiDisplay,
+        DOI_PATTERN,
+        removeCoAuthor,
+    };
 }
+
+

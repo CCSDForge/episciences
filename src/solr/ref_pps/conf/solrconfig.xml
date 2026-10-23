@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<config>
+    <luceneMatchVersion>9.10</luceneMatchVersion>
+    <dataDir>${solr.data.dir:}</dataDir>
+    <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+    <codecFactory class="solr.SchemaCodecFactory"/>
+    <schemaFactory class="ClassicIndexSchemaFactory"/>
+
+    <indexConfig>
+        <lockType>${solr.lock.type:native}</lockType>
+    </indexConfig>
+
+    <updateHandler class="solr.DirectUpdateHandler2">
+        <updateLog>
+            <str name="dir">${solr.ulog.dir:}</str>
+        </updateLog>
+        <autoCommit>
+            <maxTime>${solr.autoCommit.maxTime:60000}</maxTime>
+            <maxDocs>1000</maxDocs>
+            <openSearcher>false</openSearcher>
+        </autoCommit>
+        <autoSoftCommit>
+            <maxTime>30000</maxTime>
+        </autoSoftCommit>
+    </updateHandler>
+
+    <query>
+        <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
+        <filterCache class="solr.CaffeineCache" size="512" initialSize="512" autowarmCount="0"/>
+        <queryResultCache class="solr.CaffeineCache" size="512" initialSize="512" autowarmCount="0"/>
+        <documentCache class="solr.CaffeineCache" size="512" initialSize="512" autowarmCount="0"/>
+        <enableLazyFieldLoading>true</enableLazyFieldLoading>
+        <queryResultWindowSize>20</queryResultWindowSize>
+        <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
+        <useColdSearcher>false</useColdSearcher>
+    </query>
+
+    <requestDispatcher>
+        <httpCaching never304="true"/>
+    </requestDispatcher>
+
+    <requestHandler name="/select" class="solr.SearchHandler">
+      <lst name="defaults">
+        <str name="echoParams">explicit</str>
+        <int name="rows">10</int>
+        <str name="df">text</str>
+        <str name="wt">json</str>
+      </lst>
+    </requestHandler>
+
+    <requestHandler name="/update" class="solr.UpdateRequestHandler" />
+
+</config>

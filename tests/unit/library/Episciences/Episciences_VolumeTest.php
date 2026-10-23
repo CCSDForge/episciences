@@ -218,8 +218,14 @@ class Episciences_VolumeTest extends TestCase
     {
         $v = new Episciences_Volume();
         $v->setVol_num('3');
-        // setVol_num() casts to int internally
-        $this->assertSame(3, $v->getVol_num());
+        $this->assertSame('3', $v->getVol_num());
+    }
+
+    public function testSetVolNumAcceptsNonNumericString(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num(' S1 ');
+        $this->assertSame('S1', $v->getVol_num());
     }
 
     // =========================================================================
@@ -337,5 +343,97 @@ class Episciences_VolumeTest extends TestCase
         // We can't assert the DB write, but we confirm no exception is thrown.
         // (Actual DB call is skipped because $paper_positions ends up empty)
         $v->savePaperPositionsInVolume(1, 'paper-abc,paper-xyz');
+    }
+
+    // =========================================================================
+    // getVolumeDataForSave() — private, tested via reflection
+    // =========================================================================
+
+    public function testGetVolumeDataForSaveAggregatesAndEncodesData(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setBib_reference('BibRef123');
+        $v->setTitles(['en' => 'English title', 'fr' => 'Titre français']);
+        $v->setDescriptions(['en' => 'English description']);
+        $v->setVol_type('proceedings');
+        $v->setVol_year('2026');
+        $v->setVol_num('3');
+
+        $method = new ReflectionMethod(Episciences_Volume::class, 'getVolumeDataForSave');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($v);
+
+        $this->assertIsArray($result);
+        $this->assertSame('BibRef123', $result['BIB_REFERENCE']);
+        $this->assertSame(json_encode(['en' => 'English title', 'fr' => 'Titre français']), $result['titles']);
+        $this->assertSame(json_encode(['en' => 'English description']), $result['descriptions']);
+        $this->assertSame('proceedings', $result['vol_type']);
+        $this->assertSame('2026', $result['vol_year']);
+        $this->assertSame('3', $result['vol_num']);
+    }
+
+    public function testDiscardForeignMetadataIdKeepsOwnedId(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => 7, 'title' => ['en' => 'T']]);
+
+        $this->assertSame(7, $result['id']);
+        $this->assertSame(['en' => 'T'], $result['title']);
+    }
+
+    public function testDiscardForeignMetadataIdDropsIdOfAnotherVolume(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => 8, 'title' => ['en' => 'T']]);
+
+        $this->assertArrayNotHasKey('id', $result);
+        $this->assertSame(['en' => 'T'], $result['title']);
+    }
+
+    public function testDiscardForeignMetadataIdDropsIdWhenVolumeHasNoMetadata(): void
+    {
+        $result = $this->invokeDiscardForeignMetadataId(new Episciences_Volume(), ['id' => 1]);
+
+        $this->assertArrayNotHasKey('id', $result);
+    }
+
+    public function testDiscardForeignMetadataIdDropsNonScalarId(): void
+    {
+        $result = $this->invokeDiscardForeignMetadataId(new Episciences_Volume(), ['id' => ['x']]);
+
+        $this->assertArrayNotHasKey('id', $result);
+    }
+
+    public function testDiscardForeignMetadataIdDropsFractionalId(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => 7.5]);
+
+        $this->assertArrayNotHasKey('id', $result);
+    }
+
+    public function testDiscardForeignMetadataIdNormalisesNumericStringToInt(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => '7']);
+
+        $this->assertSame(7, $result['id']);
+    }
+
+    private function invokeDiscardForeignMetadataId(Episciences_Volume $volume, array $values): array
+    {
+        $method = new ReflectionMethod(Episciences_Volume::class, 'discardForeignMetadataId');
+        $method->setAccessible(true);
+
+        return $method->invoke($volume, $values);
     }
 }

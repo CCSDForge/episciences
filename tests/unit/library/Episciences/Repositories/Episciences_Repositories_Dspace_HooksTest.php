@@ -322,6 +322,7 @@ final class Episciences_Repositories_Dspace_HooksTest extends TestCase
     /**
      * extractMetadata() returns a non-empty array containing TO_COMPILE_OAI_DC
      * when fed a minimal but valid OAI-PMH record with DataCite metadata.
+     * @noinspection SqlNoDataSourceInspection
      */
     public function testExtractMetadataValidXml(): void
     {
@@ -360,5 +361,151 @@ XML;
         self::assertIsArray($result);
         self::assertNotEmpty($result);
         self::assertArrayHasKey(Episciences_Repositories_Common::TO_COMPILE_OAI_DC, $result);
+    }
+
+    // =========================================================================
+    // extractMetadata() — datestamp fallback and enrichment sections
+    // =========================================================================
+
+    /**
+     * When the header datestamp is empty, extractMetadata() falls back to
+     * the datacite:date[@dateType="Issued"] element.
+     */
+    public function testExtractMetadataDatestampFallback(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Dspace_Hooks::class, 'extractMetadata');
+        $method->setAccessible(true);
+
+        $xmlString = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<record xmlns="http://www.openarchives.org/OAI/2.0/"
+        xmlns:oaire="http://namespace.openaire.eu/schema/oaire/"
+        xmlns:datacite="http://datacite.org/schema/kernel-4"
+        xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <header>
+    <identifier>oai:repo:1822/99999</identifier>
+    <datestamp></datestamp>
+  </header>
+  <metadata>
+    <datacite:dates>
+      <datacite:date dateType="Issued">2023-05-20</datacite:date>
+    </datacite:dates>
+    <dc:language>en</dc:language>
+  </metadata>
+</record>
+XML;
+
+        $result = $method->invoke(null, $xmlString);
+
+        self::assertIsArray($result);
+        $body = $result[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'] ?? [];
+        self::assertSame('2023-05-20', $body['date'] ?? '');
+    }
+
+    /**
+     * extractMetadata() exposes oaire:file nodes under ENRICHMENT > FILES.
+     */
+    public function testExtractMetadataWithFiles(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Dspace_Hooks::class, 'extractMetadata');
+        $method->setAccessible(true);
+
+        $xmlString = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<record xmlns="http://www.openarchives.org/OAI/2.0/"
+        xmlns:oaire="http://namespace.openaire.eu/schema/oaire/"
+        xmlns:datacite="http://datacite.org/schema/kernel-4"
+        xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <header>
+    <identifier>oai:repo:1822/11111</identifier>
+    <datestamp>2024-01-01</datestamp>
+  </header>
+  <metadata>
+    <dc:language>en</dc:language>
+    <oaire:file mimeType="application/pdf" objectType="fulltext" accessRightsURI="http://purl.org/coar/access_right/c_abf2">https://example.com/paper.pdf</oaire:file>
+  </metadata>
+</record>
+XML;
+
+        $result = $method->invoke(null, $xmlString);
+
+        self::assertIsArray($result);
+        $enrichment = $result[Episciences_Repositories_Common::ENRICHMENT] ?? [];
+        self::assertArrayHasKey(Episciences_Repositories_Common::FILES, $enrichment);
+        self::assertNotEmpty($enrichment[Episciences_Repositories_Common::FILES]);
+        self::assertSame('application/pdf', $enrichment[Episciences_Repositories_Common::FILES][0]['mimeType']);
+    }
+
+    /**
+     * extractMetadata() exposes related identifiers under ENRICHMENT > RELATED_IDENTIFIERS.
+     */
+    public function testExtractMetadataWithRelatedIdentifiers(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Dspace_Hooks::class, 'extractMetadata');
+        $method->setAccessible(true);
+
+        $xmlString = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<record xmlns="http://www.openarchives.org/OAI/2.0/"
+        xmlns:oaire="http://namespace.openaire.eu/schema/oaire/"
+        xmlns:datacite="http://datacite.org/schema/kernel-4"
+        xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <header>
+    <identifier>oai:repo:1822/22222</identifier>
+    <datestamp>2024-02-01</datestamp>
+  </header>
+  <metadata>
+    <dc:language>en</dc:language>
+    <datacite:relatedIdentifiers>
+      <datacite:relatedIdentifier relationType="IsVersionOf" relatedIdentifierType="DOI">10.5281/zenodo.99999</datacite:relatedIdentifier>
+    </datacite:relatedIdentifiers>
+  </metadata>
+</record>
+XML;
+
+        $result = $method->invoke(null, $xmlString);
+
+        self::assertIsArray($result);
+        $enrichment = $result[Episciences_Repositories_Common::ENRICHMENT] ?? [];
+        self::assertArrayHasKey(Episciences_Repositories_Common::RELATED_IDENTIFIERS, $enrichment);
+        self::assertNotEmpty($enrichment[Episciences_Repositories_Common::RELATED_IDENTIFIERS]);
+        self::assertSame('10.5281/zenodo.99999', $enrichment[Episciences_Repositories_Common::RELATED_IDENTIFIERS][0]['identifier']);
+    }
+
+    /**
+     * extractMetadata() populates the 'creator' field in the OAI-DC body
+     * when datacite:creators are present.
+     */
+    public function testExtractMetadataPopulatesCreator(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Dspace_Hooks::class, 'extractMetadata');
+        $method->setAccessible(true);
+
+        $xmlString = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<record xmlns="http://www.openarchives.org/OAI/2.0/"
+        xmlns:oaire="http://namespace.openaire.eu/schema/oaire/"
+        xmlns:datacite="http://datacite.org/schema/kernel-4"
+        xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <header>
+    <identifier>oai:repo:1822/33333</identifier>
+    <datestamp>2024-03-01</datestamp>
+  </header>
+  <metadata>
+    <datacite:creators>
+      <datacite:creator>
+        <datacite:creatorName>Dupont, Marie</datacite:creatorName>
+      </datacite:creator>
+    </datacite:creators>
+    <dc:language>fr</dc:language>
+  </metadata>
+</record>
+XML;
+
+        $result = $method->invoke(null, $xmlString);
+
+        self::assertIsArray($result);
+        $body = $result[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'] ?? [];
+        self::assertContains('Dupont, Marie', $body['creator'] ?? []);
     }
 }

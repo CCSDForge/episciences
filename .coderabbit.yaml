@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-GB"
+early_access: false
+tone_instructions: "Be strictly professional, concise, and objective. Do not include jokes, puns, or playful comments."
+
+reviews:
+  # Review profile: balanced and constructive
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  in_progress_fortune: false
+  review_status: true
+  collapse_walkthrough: false
+
+  # Trigger automatic reviews based on selected branches and ignore drafts/bots
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "main-epi-manager"
+      - "staging"
+      - "preprod-epi-manager"
+    ignore_title_keywords:
+      - "renovate"
+      - "dependabot"
+
+  # Path exclusions for vendor, build artifacts, cache, and lock files
+  path_filters:
+    - "!vendor/**"
+    - "!node_modules/**"
+    - "!public/build/**"
+    - "!cache/**"
+    - "!log/**"
+    - "!logs/**"
+    - "!tmp/**"
+    - "!coverage/**"
+    - "!phpmetrics/**"
+    - "!composer.lock"
+    - "!yarn.lock"
+    - "!*.min.js"
+    - "!*.min.css"
+
+  # Contextual instructions tailored to Episciences codebase
+  path_instructions:
+    - path: "application/**"
+      instructions: "Ensure Zend Framework 1 legacy architecture patterns, backward compatibility, and security (prevent SQL injections, XSS, CSRF) are properly respected."
+    - path: "src/**"
+      instructions: "Ensure modern PHP 8+ standards, strict typing, PSR guidelines, and clean object-oriented architecture."
+    - path: "tests/**"
+      instructions: "Review test correctness, assertions accuracy, mock sanity, and ensure edge cases are adequately covered."
+
+  # Linters and static analysis integrations
+  tools:
+    phpstan:
+      enabled: true
+    markdownlint:
+      enabled: true
+
+chat:
+  auto_reply: true

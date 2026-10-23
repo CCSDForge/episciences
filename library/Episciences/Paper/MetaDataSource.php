@@ -8,11 +8,11 @@ class Episciences_Paper_MetaDataSource
     protected string $_name;
 
     protected string $_type;
-    protected ?string $_identifier;
-    protected ?string $_doiPrefix;
-    protected ?string $_apiUrl;
-    protected ?string $_docUrl;
-    protected ?string $_paperUrl;
+    protected ?string $_identifier = null;
+    protected ?string $_doiPrefix = null;
+    protected ?string $_apiUrl = null;
+    protected ?string $_docUrl = null;
+    protected ?string $_paperUrl = null;
 
     protected bool $_status;
 
@@ -53,8 +53,12 @@ class Episciences_Paper_MetaDataSource
         return [
             'id' => $this->getId(),
             'name' => $this->getName(),
-            'code' => $this->getCode(),
             'type' => $this->getType(),
+            'identifier' => $this->getIdentifier(),
+            'doiPrefix' => $this->getDoiPrefix(),
+            'apiUrl' => $this->getApiUrl(),
+            'docUrl' => $this->getDocUrl(),
+            'paperUrl' => $this->getPaperUrl(),
         ];
     }
 
@@ -123,9 +127,9 @@ class Episciences_Paper_MetaDataSource
         $this->_status = $status;
         return $this;
     }
-    public function getIdentifier(): string
+    public function getIdentifier(): ?string
     {
-        return $this->_oaiIdentifier;
+        return $this->_identifier;
     }
 
     public function setIdentifier(string $identifier = null): self
@@ -134,18 +138,18 @@ class Episciences_Paper_MetaDataSource
         return $this;
     }
 
-    public function getDoiPrefix(): string
+    public function getDoiPrefix(): ?string
     {
-        return $this->_oaiPrefix;
+        return $this->_doiPrefix;
     }
 
     public function setDoiPrefix(string $doiPrefix = null): self
     {
-        $this->_doirefix = $doiPrefix;
+        $this->_doiPrefix = $doiPrefix;
         return  $this;
     }
 
-    public function getApiUrl(): string
+    public function getApiUrl(): ?string
     {
         return $this->_apiUrl;
     }
@@ -156,7 +160,7 @@ class Episciences_Paper_MetaDataSource
         return $this;
     }
 
-    public function getDocUrl(): string
+    public function getDocUrl(): ?string
     {
         return $this->_docUrl;
     }
@@ -167,7 +171,7 @@ class Episciences_Paper_MetaDataSource
         return $this;
     }
 
-    public function getPaperUrl(): string
+    public function getPaperUrl(): ?string
     {
         return $this->_paperUrl;
     }

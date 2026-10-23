@@ -3,6 +3,7 @@
 namespace unit\library\Ccsd\Form\Validate;
 
 use Ccsd_Form_Validate_Date;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -12,6 +13,7 @@ use PHPUnit\Framework\TestCase;
  * D1 - getEnd/setEnd/getEndFormat made protected (allows end-bound tests)
  * D2 - strict === comparison in isValid() (was ==)
  */
+#[IgnoreDeprecations]
 class Ccsd_Form_Validate_DateTest extends TestCase
 {
     // ------------------------------------------------------------------

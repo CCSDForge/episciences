@@ -41,6 +41,9 @@ echo $this->doctype('HTML5');
     <link rel="shortcut icon" href="/favicon.ico?v=20211124">
     <meta name="msapplication-TileColor" content="#2b5797">
     <meta name="theme-color" content="#ffffff">
+<?php if (Episciences_Auth::isLogged()) : ?>
+    <meta name="csrf-token" content="<?php echo $this->escape(Episciences_Csrf_Helper::getSessionToken()); ?>">
+<?php endif; ?>
     <link href="<?= INBOX_URL ?>" rel="http://www.w3.org/ns/ldp#inbox">
     <?php
 
@@ -51,6 +54,7 @@ echo $this->doctype('HTML5');
     // Episciences Main CSS
     $this->jQuery()->addStylesheet("/css/main.css");
 
+    $this->getHelper('webpackAssets')->queueStylesheet('toast');
     $this->jQuery()->addStylesheet(VENDOR_BOOTSTRAP);
     $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME);
     $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_SOLID);
@@ -61,6 +65,7 @@ echo $this->doctype('HTML5');
     // JS
     $this->jQuery()->addJavascriptFile("/js/translation.php?lang=" . Zend_Registry::get('lang'));
     $this->jQuery()->addJavascriptFile(VENDOR_BOOTBOX);
+    $this->getHelper('webpackAssets')->queueScript('toast');
     $this->jQuery()->addJavascriptFile("/js/functions.js");
     $this->jQuery()->addJavascriptFile("/js/form.js");
     $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_URL_PARSER);
@@ -76,9 +81,8 @@ echo $this->doctype('HTML5');
 <body>
 
 
-<?php $this->navbar(true, ['languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')], true, ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml']); ?>
+<?php $this->navbar(true, ['languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')], true, ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml', 'accountActions' => !\Episciences\Maintenance\ReadOnlyMode::isEnabled()]); ?>
 <div id="container" class="container<?php echo $this->containerClass; ?>">
-
 
     <div class="logo">
         <?php
@@ -88,11 +92,7 @@ echo $this->doctype('HTML5');
         } ?>
     </div>
 
-    <?php if (EPISCIENCES_RENDER_ALERT_BANNER['STATUS']): ?>
-
-        <?= $this->render('commons/alert-banner.phtml') ?>
-
-    <?php endif; ?>
+    <?= $this->render('commons/maintenance-banner.phtml') ?>
 
     <?php ?>
 
@@ -131,23 +131,9 @@ echo $this->doctype('HTML5');
                         <hr/>
                     <?php } ?>
 
-                    <?php
-                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_ERROR, false);
-                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_WARNING, false);
-                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_SUCCESS, false);
-                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_INFO, true);
-                    ?>
-
-                    <?php
-                    //Développement : affichage des mails
-                    if (APPLICATION_ENV == ENV_DEV) {
-                        $session = new Zend_Session_Namespace();
-                        if (isset($session->mail) && $session->mail instanceof Episciences_Mail) {
-                            $this->mail = $session->mail;
-                            echo $this->render('commons/mail.phtml');
-                            unset($session->mail);
-                        }
-                    } ?>
+                    <?php // Toasts are displayed as an overlay but stay here in the DOM (keyboard and reading order) ?>
+                    <div id="toast-container"></div>
+                    <?php echo $this->DisplayFlashMessages(); ?>
 
                     <?php echo $this->layout()->content; ?>
                 </div>
@@ -169,9 +155,9 @@ echo $this->doctype('HTML5');
         echo $this->render('commons/matomo.phtml');
     }
     ?>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.js"
-            data-cfasync="false"></script>
+            integrity="sha512-yXXqOFjdjHNH1GND+1EO0jbvvebABpzGKD66djnUfiKlYME5HGMUJHoCaeE4D5PTG2YsSJf6dwqyUUvQvS0vaA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         window.cookieconsent.initialise({
             "palette": {
@@ -197,5 +183,6 @@ echo $this->doctype('HTML5');
     echo $this->render('commons/debug.phtml');
     }
     ?>
+    <!-- CLOCKSS system has permission to ingest, preserve, and serve this open access Archival Unit -->
 </body>
 </html>

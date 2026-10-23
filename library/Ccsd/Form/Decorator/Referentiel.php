@@ -3,7 +3,11 @@
 class Ccsd_Form_Decorator_Referentiel extends Ccsd_Form_Decorator_UiWidgetReferentiel
 {
     use Ccsd_Form_Trait_GenerateFunctionJS;
-    
+
+    public $add;
+    public $delete;
+    public $edit;
+
     public function setElement($element)
     {
         parent::setElement($element);

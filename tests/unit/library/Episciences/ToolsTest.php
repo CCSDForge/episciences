@@ -492,6 +492,80 @@ class ToolsTest extends TestCase
     }
 
     /**
+     * Descriptions printed without output escaping lose scripts, handlers and attributes
+     */
+    public function testDecodeLatexToSafeHtmlRemovesActiveContent(): void
+    {
+        $result = Episciences_Tools::decodeLatexToSafeHtml('Intro <img src=x onerror=alert(1)> <script>alert(2)</script><a href="javascript:alert(3)">link</a> <b onclick="x()">bold</b>');
+
+        $this->assertStringNotContainsString('<img', $result);
+        $this->assertStringNotContainsString('<script', $result);
+        $this->assertStringNotContainsString('javascript:', $result);
+        $this->assertStringNotContainsString('href', $result);
+        $this->assertStringContainsString('link', $result);
+        $this->assertStringNotContainsString('onerror', $result);
+        $this->assertStringNotContainsString('onclick', $result);
+        $this->assertStringContainsString('<b>bold</b>', $result);
+    }
+
+    /**
+     * Light formatting and line breaks of descriptions are kept
+     */
+    public function testDecodeLatexToSafeHtmlKeepsFormattingAndLineBreaks(): void
+    {
+        $result = Episciences_Tools::decodeLatexToSafeHtml("First paragraph.\n\nSecond with <i>emphasis</i> and H<sub>2</sub>O.");
+
+        $this->assertStringContainsString('<br />', $result);
+        $this->assertStringContainsString('<i>emphasis</i>', $result);
+        $this->assertStringContainsString('H<sub>2</sub>O', $result);
+    }
+
+    /**
+     * A bare comparison sign in a plain text abstract is displayed as text
+     */
+    public function testDecodeLatexToSafeHtmlEscapesPlainTextSigns(): void
+    {
+        $this->assertSame('if 1 &lt; 2 &amp; 3 &gt; 2', Episciences_Tools::decodeLatexToSafeHtml('if 1 < 2 & 3 > 2'));
+    }
+
+    /**
+     * A "<" followed by a letter in a plain text abstract is not a tag and must not swallow the text
+     */
+    public function testDecodeLatexToSafeHtmlKeepsLessThanBeforeLetter(): void
+    {
+        $this->assertSame(
+            'for all n&lt;m and m&gt;k',
+            Episciences_Tools::decodeLatexToSafeHtml('for all n<m and m>k')
+        );
+        $this->assertSame('$x&lt;y$ holds', Episciences_Tools::decodeLatexToSafeHtml('$x<y$ holds'));
+    }
+
+    /**
+     * Links, headings and tables of descriptions are kept, restricted to safe attributes
+     */
+    public function testDecodeLatexToSafeHtmlKeepsLinksAndTables(): void
+    {
+        $result = Episciences_Tools::decodeLatexToSafeHtml(
+            '<h2>Title</h2><a href="https://example.org/x" onclick="x()" style="color:red">link</a>'
+            . '<table><tr><td>cell</td></tr></table>'
+        );
+
+        $this->assertStringContainsString('<h2>Title</h2>', $result);
+        $this->assertStringContainsString('<a href="https://example.org/x">link</a>', $result);
+        $this->assertStringContainsString('<td>cell</td>', $result);
+        $this->assertStringNotContainsString('onclick', $result);
+        $this->assertStringNotContainsString('style', $result);
+    }
+
+    /**
+     * Entities escaped twice are displayed as typed, not decoded one level too far
+     */
+    public function testDecodeLatexToSafeHtmlDoesNotDecodeEntitiesTwice(): void
+    {
+        $this->assertSame('&amp;lt;b&amp;gt;', Episciences_Tools::decodeLatexToSafeHtml('&amp;lt;b&amp;gt;'));
+    }
+
+    /**
      * Test decodeLatex function without line break preservation (default behavior)
      */
     public function testDecodeLatexWithoutLineBreaks(): void
@@ -1364,6 +1438,8 @@ class ToolsTest extends TestCase
                 "String '$ip' should not be a valid IPv6 address"
             );
         }
+
+        $this->assertFalse(Episciences_Tools::isIPv6(null));
     }
 
     // ============================================================================
@@ -1521,6 +1597,28 @@ class ToolsTest extends TestCase
 
         $result = Episciences_Tools::getHalIdInString('');
         $this->assertEmpty($result);
+    }
+
+    // ============================================================================
+    // Tests for splitHalIdentifier()
+    // ============================================================================
+
+    /**
+     * @dataProvider halIdentifierProvider
+     */
+    public function testSplitHalIdentifier(string $value, ?array $expected): void
+    {
+        self::assertSame($expected, Episciences_Tools::splitHalIdentifier($value));
+    }
+
+    public static function halIdentifierProvider(): array
+    {
+        return [
+            'HAL URL without version' => ['https://hal.science/hal-05478157', ['hal-05478157', 'hal-05478157', 0]],
+            'HAL URL with version' => ['https://hal.science/hal-05478157v2', ['hal-05478157v2', 'hal-05478157', 2]],
+            'bare HAL id' => ['tel-01234567', ['tel-01234567', 'tel-01234567', 0]],
+            'no HAL id' => ['https://example.org/record/1', null],
+        ];
     }
 
     // ============================================================================
@@ -2007,6 +2105,66 @@ class ToolsTest extends TestCase
 
         // Non-leap year
         $this->assertSame('2023-03-01', Episciences_Tools::addDateInterval('2023-02-28', '1 day'));
+    }
+
+    // ============================================================================
+    // Tests for subDateInterval()
+    // ============================================================================
+
+    public function testSubDateIntervalDateTime_ReturnsDateTimeObject(): void
+    {
+        $method = new \ReflectionMethod(Episciences_Tools::class, 'subDateIntervalDateTime');
+        $method->setAccessible(true);
+        $result = $method->invoke(null, '2024-01-10', '5 days');
+        $this->assertInstanceOf(\DateTime::class, $result);
+        $this->assertSame('2024-01-05', $result->format('Y-m-d'));
+    }
+
+    public function testSubDateInterval_WithDays_ReturnsCorrectDate(): void
+    {
+        $this->assertSame('2024-01-05', Episciences_Tools::subDateInterval('2024-01-10', '5 days'));
+        $this->assertSame('2024-01-25', Episciences_Tools::subDateInterval('2024-02-01', '7 days'));
+    }
+
+    public function testSubDateInterval_WithMonths_ReturnsCorrectDate(): void
+    {
+        $this->assertSame('2024-01-10', Episciences_Tools::subDateInterval('2024-02-10', '1 month'));
+        $this->assertSame('2023-11-10', Episciences_Tools::subDateInterval('2024-01-10', '2 months'));
+    }
+
+    public function testSubDateInterval_WithYears_ReturnsCorrectDate(): void
+    {
+        $this->assertSame('2023-01-10', Episciences_Tools::subDateInterval('2024-01-10', '1 year'));
+        $this->assertSame('2019-01-10', Episciences_Tools::subDateInterval('2024-01-10', '5 years'));
+    }
+
+    public function testSubDateInterval_WithCustomFormat_ReturnsCorrectFormat(): void
+    {
+        $this->assertSame('05/01/2024', Episciences_Tools::subDateInterval('2024-01-10', '5 days', 'd/m/Y'));
+    }
+
+    public function testSubDateInterval_LeapYear_HandlesCorrectly(): void
+    {
+        // Leap year
+        $this->assertSame('2024-02-28', Episciences_Tools::subDateInterval('2024-02-29', '1 day'));
+        $this->assertSame('2024-02-29', Episciences_Tools::subDateInterval('2024-03-01', '1 day'));
+
+        // Non-leap year
+        $this->assertSame('2023-02-28', Episciences_Tools::subDateInterval('2023-03-01', '1 day'));
+    }
+
+    public function testSubDateInterval_WithInvalidInterval_ThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid interval format');
+        Episciences_Tools::subDateInterval('2024-01-10', 'invalid interval string');
+    }
+
+    public function testSubDateInterval_WithInvalidDate_ThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid date format');
+        Episciences_Tools::subDateInterval('not-a-date', '5 days');
     }
 
     // ============================================================================
@@ -2888,4 +3046,56 @@ class ToolsTest extends TestCase
         $this->assertSame($expected, Episciences_Tools::formatText($input));
     }
 
+
+    /**
+     * @dataProvider languageNameProvider
+     */
+    public function testGetLanguageName(?string $code, string $locale, string $expected): void
+    {
+        self::assertSame($expected, Episciences_Tools::getLanguageName($code, $locale));
+    }
+
+    public static function languageNameProvider(): array
+    {
+        return [
+            'alpha-2 in French' => ['fr', 'fr', 'Français'],
+            'alpha-2 in English' => ['fr', 'en', 'French'],
+            'English in French' => ['en', 'fr', 'Anglais'],
+            'alpha-3 code' => ['eng', 'fr', 'Anglais'],
+            'upper case code' => ['FR', 'en', 'French'],
+            'bibliographic alpha-3 code' => ['fre', 'en', 'French'],
+            'regional tag with hyphen' => ['fr-CA', 'fr', 'Français canadien'],
+            'regional tag in lower case' => ['pt_br', 'en', 'Brazilian Portuguese'],
+            'script subtag' => ['zh-hant', 'en', 'Traditional Chinese'],
+            'unknown region falls back to the language' => ['fr-XX', 'en', 'French'],
+            'unknown language with region kept as is' => ['xx-CA', 'fr', 'xx-CA'],
+            'unknown code kept as is' => ['xx-unknown', 'fr', 'xx-unknown'],
+            'empty code' => ['', 'fr', ''],
+            'null code' => [null, 'fr', ''],
+        ];
+    }
+
+    /**
+     * @dataProvider httpUrlProvider
+     */
+    public function testIsHttpUrl(string $url, bool $expected): void
+    {
+        self::assertSame($expected, Episciences_Tools::isHttpUrl($url));
+    }
+
+    public static function httpUrlProvider(): array
+    {
+        return [
+            'https' => ['https://creativecommons.org/licenses/by/4.0/', true],
+            'http' => ['http://example.org/licence', true],
+            'upper case scheme' => ['HTTPS://example.org/licence', true],
+            'javascript scheme' => ['javascript:alert(1)', false],
+            'data scheme' => ['data:text/html,<b>x</b>', false],
+            'relative path' => ['/licence', false],
+            'free text' => ['CC BY 4.0', false],
+            'quote breaking out of the attribute' => ['https://example.org/"onmouseover="x', false],
+            'whitespace' => ['https://example.org/a b', false],
+            'empty' => ['', false],
+        ];
+    }
 }

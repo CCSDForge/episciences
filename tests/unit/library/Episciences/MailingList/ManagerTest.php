@@ -61,4 +61,32 @@ class ManagerTest extends TestCase
     {
         self::assertSame(5, Manager::MAX_MAILING_LISTS);
     }
+
+    /**
+     * castRow() casts id, rvid, status to int but must leave string columns
+     * (created_at, updated_at) untouched so their datetime format is preserved.
+     *
+     * @covers \Episciences\MailingList\Manager::castRow
+     */
+    public function testCastRowDoesNotAlterStringDates(): void
+    {
+        $castRow = new \ReflectionMethod(Manager::class, 'castRow');
+        $castRow->setAccessible(true);
+
+        $row = [
+            'id'         => '7',
+            'rvid'       => '3',
+            'status'     => '1',
+            'created_at' => '2026-01-15 09:00:00',
+            'updated_at' => '2026-05-20 14:30:00',
+        ];
+
+        $result = $castRow->invoke(null, $row);
+
+        self::assertSame(7, $result['id']);
+        self::assertSame(3, $result['rvid']);
+        self::assertSame(1, $result['status']);
+        self::assertSame('2026-01-15 09:00:00', $result['created_at']);
+        self::assertSame('2026-05-20 14:30:00', $result['updated_at']);
+    }
 }

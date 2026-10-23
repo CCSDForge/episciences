@@ -17,6 +17,17 @@ class Ccsd_Form_Validate_BeginsWith_Multi
 	 * @param array $value
 	 * @see Ccsd_Form_Validate_BeginsWith_AdapterAbstract::setValue()
 	 */
+    public function __construct()
+    {
+        trigger_error(
+            '[DEAD CODE AUDIT 2026-05-08] ' . __CLASS__ . ' is scheduled for removal.'
+            . ' Do NOT use this class in new code. If this message appears in production logs,'
+            . ' report it to the development team immediately.',
+            E_USER_DEPRECATED
+        );
+
+    }
+
 	public function setValue ($value)
 	{
 		if (!is_array($value)) {

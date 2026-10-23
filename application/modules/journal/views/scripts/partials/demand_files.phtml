@@ -33,17 +33,16 @@ $isCopyEditingComment = isset($type) && in_array(
     ),
     true
 );
+$isTmpVersionComment = !$isCopyEditingComment
+    && (int)$type === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION;
 
 if ($isCopyEditingComment) {
     // Copy-editing files: /docfiles/ce/{DOCID}/{FILE}/{PCID}
     $href = '/docfiles/ce/' . $docId;
     $urlSuffix = isset($comment['PCID']) ? '/' . $comment['PCID'] : '';
 } else {
-    // Regular comment files or tmp files
-    $tmpUrl = '/tmp_files/' . $paperId;
-    $commentUrl = sprintf('/docfiles/comments/%s', $docId);
-    $href = (int)$type === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION
-        ? $tmpUrl : $commentUrl;
+    // Regular comment files (tmp files: see Episciences_Tools::buildTmpFileUrl())
+    $href = sprintf('/docfiles/comments/%s', $docId);
     $urlSuffix = '';
 }
 
@@ -53,9 +52,15 @@ $filesList = is_array($files) ? $files :
         $filesAsJson;
 ?>
 <?php foreach ($filesList as $index => $file): ?>
+    <?php
+    // The names come from the comment, not from the disk: encoded as a path segment, then escaped
+    $fileUrl = $isTmpVersionComment
+        ? Episciences_Tools::buildTmpFileUrl((int)$paperId, (string)$file)
+        : $href . '/' . rawurlencode((string)$file) . $urlSuffix;
+    ?>
     <div class="file-attachment">
         <div class="file-link">
-            <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i>&nbsp;<a href="<?= $href ?>/<?= $file ?><?= $urlSuffix ?>" target="_blank" rel="noopener noreferrer">
+            <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i>&nbsp;<a href="<?= $this->escape($fileUrl) ?>" target="_blank" rel="noopener noreferrer">
                 <?php
                 $label = (count($filesList) === 1)
                     ? $this->translate('Fichier')

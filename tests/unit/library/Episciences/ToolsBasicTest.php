@@ -3,6 +3,7 @@
 namespace unit\library\Episciences;
 
 use Episciences_Tools;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 class ToolsBasicTest extends TestCase
@@ -461,27 +462,22 @@ class ToolsBasicTest extends TestCase
     /**
      * Test that deprecated space_clean() produces same results as spaceCleaner()
      */
+    #[IgnoreDeprecations]
     public function testSpaceCleanBackwardCompatibility(): void
     {
-        // Suppress deprecation warning for testing deprecated method
-        $previousErrorReporting = error_reporting(E_ALL & ~E_USER_DEPRECATED);
-        try {
-            $testCases = [
-                ['  hello   world  ', true, false],
-                ['hello<br>world', true, false],
-                ['hello<br>world', false, false],
-                [['  test  ', '  value  '], true, false],
-            ];
+        $testCases = [
+            ['  hello   world  ', true, false],
+            ['hello<br>world', true, false],
+            ['hello<br>world', false, false],
+            [['  test  ', '  value  '], true, false],
+        ];
 
-            foreach ($testCases as [$input, $stripBr, $allUtf8]) {
-                $oldResult = \Ccsd_Tools::space_clean($input, $stripBr, $allUtf8);
-                $newResult = Episciences_Tools::spaceCleaner($input, $stripBr, $allUtf8);
+        foreach ($testCases as [$input, $stripBr, $allUtf8]) {
+            $oldResult = \Ccsd_Tools::space_clean($input, $stripBr, $allUtf8);
+            $newResult = Episciences_Tools::spaceCleaner($input, $stripBr, $allUtf8);
 
-                $this->assertSame($newResult, $oldResult,
-                    "Results should match for input: " . print_r($input, true));
-            }
-        } finally {
-            error_reporting($previousErrorReporting);
+            $this->assertSame($newResult, $oldResult,
+                "Results should match for input: " . print_r($input, true));
         }
     }
 }

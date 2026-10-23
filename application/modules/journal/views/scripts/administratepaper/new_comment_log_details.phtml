@@ -195,20 +195,28 @@ $files = Episciences_Tools::isJson($attachments) ? (array)json_decode($attachmen
             $attachmentUrl = '';
             $type = $log['detail']['comment']['type'];
             $docId = $log['detail']['comment']['docid'];
+            // A path segment of the link: "#", "?" or "%" in a file name would break it
+            $urlFile = rawurlencode((string)$file);
 
-            if (in_array($type, [Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION])) { // tmp version comments
-                $attachmentUrl = 'tmp_files/' . $docId . '/' . $file;
+            if (in_array($type, [Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION])) { // tmp version comments: files stored by paper
+                // Never the docid: it only matches the paper id for the first version
+                $paperId = (int)($log['paperid'] ?? 0);
+                $attachmentUrl = $paperId > 0 ? Episciences_Tools::buildTmpFileUrl($paperId, (string)$file) : '';
             } elseif (!in_array($type, array_merge(Episciences_CommentsManager::$_copyEditingRequestTypes, Episciences_CommentsManager::$_copyEditingAnswerTypes))) { //other comments
-                $attachmentUrl = 'docfiles/comments/' . $docId . '/' . $file;
+                $attachmentUrl = '/docfiles/comments/' . $docId . '/' . $urlFile;
 
             } else { //copy editing comments
-                $attachmentUrl = 'docfiles/ce/' . $docId . '/' . $file . '/' . $log['detail']['comment']['pcid'];
+                $attachmentUrl = '/docfiles/ce/' . $docId . '/' . $urlFile . '/' . $log['detail']['comment']['pcid'];
             }
             ?>
             <?= '<div class="small">'; ?>
-            <?= '<a target="_blank" href="/' . $this->escape($attachmentUrl) . '">'; ?>
-            <?= $this->escape($file); ?>
-            <?= '</a>'; ?>
+            <?php if ($attachmentUrl !== ''): ?>
+                <?= '<a target="_blank" href="' . $this->escape($attachmentUrl) . '">'; ?>
+                <?= $this->escape($file); ?>
+                <?= '</a>'; ?>
+            <?php else: ?>
+                <?= $this->escape($file); ?>
+            <?php endif; ?>
             <?= '</div>'; ?>
         <?php endforeach; ?>
     <?php endif; ?>

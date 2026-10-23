@@ -42,9 +42,11 @@
 	cursor: pointer;
 }
 
-#added_contacts {
+#added_contacts,
+#added_contacts_tags {
 	min-height: 24px;
 	max-height: 72px;
+	margin-top: 8px;
 	overflow: auto;
 }
 

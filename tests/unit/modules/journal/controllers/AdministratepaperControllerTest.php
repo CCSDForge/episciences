@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace unit\modules\journal\controllers;
 
 use PHPUnit\Framework\TestCase;
@@ -12,8 +14,6 @@ use PHPUnit\Framework\TestCase;
  *
  * Each test documents one concrete bug found during a security audit.
  * Currently failing tests mark existing bugs (red). They will turn green once fixed.
- *
- * @covers AdministratepaperController
  */
 class AdministratepaperControllerTest extends TestCase
 {
@@ -48,7 +48,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * layout()->disableLayout() and setNoRender() must be called before ANY
      * early-return guard (auth check, method check) so that every code path
@@ -82,7 +81,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * The auth failure block must contain a `return` to stop further execution.
      */
@@ -101,7 +99,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * $docId must be read from POST only (getPost), not from the combined
      * GET+POST+routing parameter bag (getParam). Using getParam allows an
@@ -119,7 +116,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * $docId must be cast to (int) before use so that a malformed string
      * value cannot reach PapersManager::get() or trigger unexpected behaviour.
@@ -145,7 +141,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * PapersManager::get() returns false when no paper matches the given ID.
      * The method must perform an instanceof check before calling any method on
@@ -164,7 +159,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * Every JSON response — including auth failure and validation errors —
      * must contain all four keys expected by the JavaScript handler:
@@ -190,7 +184,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * The method guard must require BOTH isPost() AND isXmlHttpRequest().
      * Using '&&' (bail only if both are false) allowed plain POST requests
@@ -225,7 +218,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * disableLayout() and setNoRender() must appear before every guard so that
      * even error responses are returned as clean JSON without an HTML wrapper.
@@ -255,7 +247,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * The method guard must require BOTH isPost() AND isXmlHttpRequest().
      * Using '&&' allows plain POST requests from non-XHR clients through;
@@ -284,7 +275,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * docid and paperid must be read from POST only; using getParam() also
      * reads GET and routing parameters, opening an injection surface.
@@ -307,7 +297,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * $docId and $paperId must be cast to (int) before use to prevent
      * a malformed string from reaching the database layer.
@@ -331,7 +320,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * An empty DOI must be rejected with a JSON error response.
      * The original code silently passed an empty DOI through the regex check
@@ -350,7 +338,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * The DOI regex must use an escaped dot `10\.` so that only a literal dot
      * is accepted as the separator.  Without the escape, `10X1234/suffix`
@@ -374,7 +361,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * Every response path must return JSON ({ success, doi, error }) so that
      * the JavaScript handler can reliably parse the response.
@@ -417,7 +403,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::ajaxrequestremovedoiAction
      *
      * The original action had no authentication check at all.
      * Any user — even unauthenticated — could cancel a DOI request.
@@ -434,7 +419,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestremovedoiAction
      *
      * The method guard must require BOTH isPost() AND isXmlHttpRequest().
      * The original action only checked isXmlHttpRequest(), allowing GET requests.
@@ -455,7 +439,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestremovedoiAction
      *
      * paperId and docId must be cast to (int) to prevent malformed strings
      * from reaching the database layer.
@@ -479,7 +462,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestremovedoiAction
      *
      * Every response path must emit a JSON object so that the JavaScript
      * handler can reliably parse the outcome.
@@ -511,7 +493,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestremovedoiAction
      *
      * The original action used a raw Zend_Db SELECT query to check whether the
      * paper exists. PapersManager::paperExists() must be used instead to keep
@@ -540,8 +521,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
-     *
      * Bug: line 165 echoes an error JSON but has NO `return` statement.
      * Execution falls through to line 173+ where it reads $docId and
      * calls Episciences_PapersManager::get($docId) on behalf of an
@@ -569,7 +548,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savepublicationdateAction
      *
      * Bug: line 4242 assigns $docId from POST without (int) cast.
      * Line 4275 interpolates it directly into a SQL string.
@@ -602,7 +580,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savepublicationdateAction
      *
      * Bug: line 4275 builds the SQL via string interpolation then calls prepare().
      * This is "false security": prepare() on an already-interpolated string
@@ -629,7 +606,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::addcoauthorAction
      *
      * Bug: line 4815 — when $user->hasLocalData() && $user->hasRoles() is TRUE
      * (the happy path: a known user is added as co-author), the flash message
@@ -646,7 +622,10 @@ class AdministratepaperControllerTest extends TestCase
         // so everything before that comment belongs to the success path.
         $casElsePos = strpos($method, '// Récupération des données CAS');
         $this->assertNotFalse($casElsePos, '"Récupération des données CAS" comment not found — cannot isolate success branch in addcoauthorAction');
-        $successBranch = substr($method, 0, $casElsePos);
+        // The success branch starts at the "hasLocalData && hasRoles" test (the checks before it report errors)
+        $successStart = strpos($method, '$user->hasLocalData(');
+        $this->assertNotFalse($successStart);
+        $successBranch = substr($method, $successStart, $casElsePos - $successStart);
 
         $this->assertStringNotContainsString(
             "setNamespace('error')",
@@ -660,7 +639,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::addcoauthorAction
      *
      * Bug: the method has no explicit role check before executing addRoleCoAuthor().
      * Any logged-in user who can reach this route (e.g., a reviewer) could add
@@ -691,7 +669,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::suggeststatusAction
      *
      * Bug line 2135: `if (!$this->getRequest()->isPost() && !$form->isValid(...))`
      *
@@ -717,7 +694,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::revisionAction
      *
      * Bug: $type comes from the request and is used to build field names like
      * `$type . 'revisionsubject'` (line ~4376). The sequential equality checks
@@ -749,7 +725,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savereviewerinvitationAction
      *
      * Bug line 1615: `json_decode($reviewer, true)` result is used immediately
      * in array operations. If the JSON is malformed or the value is not a string,
@@ -785,7 +760,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController (multiple actions)
      *
      * Bug: multiple actions concatenate $_SERVER['SERVER_NAME'] directly into
      * notification/callback URLs. An attacker controlling the HTTP Host header
@@ -816,10 +790,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::acceptAction
-     * @covers AdministratepaperController::refuseAction
-     * @covers AdministratepaperController::publishAction
-     * @covers AdministratepaperController::revisionAction
      *
      * Bug: these four actions perform irreversible state changes on papers
      * (accept, refuse, publish, request revision) but do not validate a CSRF token.
@@ -858,7 +828,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::updatedeadlineAction
      *
      * The assignment id ($aid) must be validated as numeric before use to
      * prevent non-integer values from reaching the DB layer.
@@ -890,7 +859,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savecopyeditorsAction
      *
      * The action must check isPost() before processing any state change.
      */
@@ -921,7 +889,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savemastervolumeAction
      *
      * The vid (volume id) must be cast to (int) before use.
      */
@@ -947,12 +914,74 @@ class AdministratepaperControllerTest extends TestCase
         );
     }
 
+    /**
+     * Changing the master volume of an already published paper must enqueue
+     * a Solr reindex, mirroring the pattern already in saveothervolumesAction().
+     */
+    public function testSavemastervolumeActionEnqueuesSolrIndexWhenPublished(): void
+    {
+        $method = $this->extractMethod('savemastervolumeAction');
+
+        $this->assertStringContainsString(
+            'isPublished()',
+            $method,
+            'savemastervolumeAction must guard the Solr reindex with isPublished()'
+        );
+        $this->assertStringContainsString(
+            'SolrIndexing::enqueueIndex',
+            $method,
+            'savemastervolumeAction must enqueue a Solr reindex for a published paper on volume change'
+        );
+        // The two assertions above only check that both tokens appear
+        // somewhere in the method — an unconditional enqueue call, or an
+        // unrelated isPublished() check elsewhere, would still pass them.
+        // This asserts the actual nesting: no closing brace between the
+        // isPublished() check's opening brace and the enqueue call, i.e. the
+        // enqueue really is inside that branch.
+        $this->assertMatchesRegularExpression(
+            '/isPublished\(\)\s*\)\s*\{[^}]*SolrIndexing::enqueueIndex/',
+            $method,
+            'savemastervolumeAction must enqueue the Solr reindex from inside the isPublished() branch, not merely alongside it'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // savesectionAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * Changing the section of an already published paper must enqueue
+     * a Solr reindex, mirroring the pattern already in saveothervolumesAction().
+     */
+    public function testSavesectionActionEnqueuesSolrIndexWhenPublished(): void
+    {
+        $method = $this->extractMethod('savesectionAction');
+
+        $this->assertStringContainsString(
+            'isPublished()',
+            $method,
+            'savesectionAction must guard the Solr reindex with isPublished()'
+        );
+        $this->assertStringContainsString(
+            'SolrIndexing::enqueueIndex',
+            $method,
+            'savesectionAction must enqueue a Solr reindex for a published paper on section change'
+        );
+        // See the equivalent assertion in
+        // testSavemastervolumeActionEnqueuesSolrIndexWhenPublished() for why
+        // the two checks above are not enough on their own.
+        $this->assertMatchesRegularExpression(
+            '/isPublished\(\)\s*\)\s*\{[^}]*SolrIndexing::enqueueIndex/',
+            $method,
+            'savesectionAction must enqueue the Solr reindex from inside the isPublished() branch, not merely alongside it'
+        );
+    }
+
     // -----------------------------------------------------------------------
     // saveeditorsAction
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::saveeditorsAction
      *
      * Editor UIDs from POST must be cast to int via array_map('intval', ...).
      */
@@ -983,7 +1012,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::refreshratingAction
      *
      * Both docId and reviewerUid must be cast to (int) to avoid string-based
      * DB lookups from unsanitized parameters.
@@ -1024,7 +1052,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savereviewerremovalAction
      *
      * The assignment id must be numeric — non-numeric values must be rejected
      * with a JSON error response.
@@ -1056,7 +1083,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::publicationdateformAction
      *
      * The docid is read from POST (form field) and must be checked for
      * presence before use. If missing, the action returns false immediately.
@@ -1088,7 +1114,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::saverefusedmonitoringAction
      *
      * The action reads the paper id from GET (getQuery) and processes the
      * form data from POST. It must check isPost() before applying changes.
@@ -1120,7 +1145,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::revisiondeadlineformAction
      *
      * The docid is read from POST. The action must verify the paper status
      * before rendering the form: only papers with a pending revision request
@@ -1146,5 +1170,396 @@ class AdministratepaperControllerTest extends TestCase
             $method,
             'revisiondeadlineformAction must verify the paper has a revision-requested status before rendering the form'
         );
+    }
+
+    // ---------------------------------------------------------------
+    // compileMailUsers() — source-code analysis
+    // ---------------------------------------------------------------
+
+    /**
+     * All three user-supplied values injected into htmlLabel must be escaped
+     * via htmlspecialchars() to prevent XSS.
+     *
+     * htmlLabel is passed as a raw HTML string to jQuery's .append(), so any
+     * unescaped < > " & in a user's name, username or email is executable.
+     */
+    public function testCompileMailUsersEscapesFullNameInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        // fullName is cast to string then escaped before inclusion in htmlLabel
+        $this->assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*\(string\)\s*\$user->getFullName\(\)/',
+            $method,
+            'getFullName() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
+        );
+    }
+
+    public function testCompileMailUsersEscapesUsernameInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $this->assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*mb_strtolower\s*\(\s*\(string\)\s*\$user->getUsername\(\)\s*\)/',
+            $method,
+            'getUsername() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
+        );
+    }
+
+    public function testCompileMailUsersEscapesEmailInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $this->assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*\(string\)\s*\$user->getEmail\(\)/',
+            $method,
+            'getEmail() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
+        );
+    }
+
+    /**
+     * htmlLabel must use <span> elements, not <div>.
+     *
+     * <div> (block) inside <a> (inline) is invalid HTML: browsers emit orphaned
+     * empty <a> boxes between autocomplete items. <span class="ep-ac-name/email">
+     * with display:block via CSS is the correct approach.
+     */
+    public function testCompileMailUsersUsesSpanNotDivInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $this->assertStringNotContainsString(
+            "'<div>",
+            $method,
+            'htmlLabel must not use <div> — block elements inside <a> produce invalid HTML'
+        );
+        $this->assertStringContainsString(
+            'ep-ac-name',
+            $method,
+            'htmlLabel must use <span class="ep-ac-name"> for the name line'
+        );
+        $this->assertStringContainsString(
+            'ep-ac-email',
+            $method,
+            'htmlLabel must use <span class="ep-ac-email"> for the email line'
+        );
+    }
+
+    /**
+     * BUG: getFullName(), getUsername(), and getEmail() may return null when a user
+     * record is incomplete. Passing null to htmlspecialchars() raises a TypeError
+     * in PHP 8.2+ (and a deprecation notice in PHP 8.1).
+     *
+     * Fix: cast each value to (string) before passing to htmlspecialchars(),
+     * e.g. htmlspecialchars((string) $user->getFullName(), ENT_QUOTES, 'UTF-8').
+     */
+    /**
+     * Fixed (BUG-5): all three getter return values are now cast to (string)
+     * before being passed to htmlspecialchars(), preventing TypeError when
+     * getFullName()/getUsername()/getEmail() returns null (PHP 8.2+).
+     */
+    public function testCompileMailUsersCastsGettersToStringBeforeHtmlspecialchars(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $hasCast = (bool) preg_match(
+            '/htmlspecialchars\s*\(\s*\(string\)/',
+            $method
+        );
+
+        $this->assertTrue(
+            $hasCast,
+            'getter return values must be cast to (string) before htmlspecialchars() ' .
+            'to avoid TypeError when getFullName()/getUsername()/getEmail() returns null (PHP 8.2+)'
+        );
+    }
+
+    /**
+     * The "label" field (used for autocomplete text matching) is intentionally
+     * not HTML-escaped — it is JSON-encoded by Zend_Json::encode() before being
+     * output to the page, which makes it safe as a data value.
+     * This test documents that the absence of htmlspecialchars on $cUser['label'] is correct.
+     */
+    public function testCompileMailUsersLabelFieldIsNotHtmlEscaped(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        // Find the label assignment line and confirm it has no htmlspecialchars
+        $labelLinePos  = strpos($method, "\$cUser['label']");
+        $htmlspecPos   = strpos($method, 'htmlspecialchars', (int) $labelLinePos);
+        $nextAssignPos = strpos($method, "\$cUser[", (int) $labelLinePos + 1);
+
+        // htmlspecialchars must not appear between the label assignment and the next field
+        if ($htmlspecPos !== false && $nextAssignPos !== false) {
+            $this->assertGreaterThan(
+                $nextAssignPos,
+                $htmlspecPos,
+                'label field should not be HTML-escaped — it goes through JSON encoding, not direct HTML injection'
+            );
+        } else {
+            // htmlspecialchars is not present at all after the label line — correct
+            $this->addToAssertionCount(1);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // DATATABLE_COLUMNS — sortable column keys (issue #937)
+    // -----------------------------------------------------------------------
+
+    /**
+     *
+     * Columns 6–9 must carry a non-empty sort key so that DataTables can request
+     * server-side ordering and PapersManager::getListQuery() can resolve the
+     * appropriate JOIN. An empty string silently disables the sort.
+     */
+    public function testDatatableColumnsDefinesSortKeyForReviewers(): void
+    {
+        $this->assertStringContainsString(
+            "'6' => 'reviewer_sort'",
+            $this->source,
+            'Column 6 (Reviewers) must be mapped to reviewer_sort in DATATABLE_COLUMNS; empty string disables server-side ordering'
+        );
+    }
+
+    public function testDatatableColumnsDefinesSortKeyForEditors(): void
+    {
+        $this->assertStringContainsString(
+            "'7' => 'editor_sort'",
+            $this->source,
+            'Column 7 (Editors) must be mapped to editor_sort in DATATABLE_COLUMNS; empty string disables server-side ordering'
+        );
+    }
+
+    public function testDatatableColumnsDefinesSortKeyForCopyEditors(): void
+    {
+        $this->assertStringContainsString(
+            "'8' => 'copyeditor_sort'",
+            $this->source,
+            'Column 8 (Copy editors) must be mapped to copyeditor_sort in DATATABLE_COLUMNS; empty string disables server-side ordering'
+        );
+    }
+
+    public function testDatatableColumnsDefinesSortKeyForContributor(): void
+    {
+        $this->assertStringContainsString(
+            "'9' => 'contributor_sort'",
+            $this->source,
+            'Column 9 (Contributor) must be mapped to contributor_sort in DATATABLE_COLUMNS; empty string silently ignores the sort request'
+        );
+    }
+
+    /**
+     * submitted.js must not mark columns 6, 7, or 8 as orderable:false.
+     * Only the title column (3) remains non-sortable after issue #937.
+     */
+    public function testJsDoesNotBlockSortingOnColumns678(): void
+    {
+        $js = file_get_contents(dirname(APPLICATION_PATH) . '/public/js/paper/submitted.js');
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/targets\s*:\s*\[\s*3\s*,\s*6/',
+            $js,
+            'submitted.js must not declare columns 6, 7, or 8 as orderable:false — they are now sortable'
+        );
+        $this->assertMatchesRegularExpression(
+            '/targets\s*:\s*\[\s*3\s*\]\s*,\s*orderable\s*:\s*false/',
+            $js,
+            'submitted.js must use targets:[3] with orderable:false — only the title column is non-sortable for administratepaper/list'
+        );
+    }
+
+    /**
+     *
+     * Regression #1010: The allowed range for modifying the rating deadline
+     * must be calculated relative to the original assignment deadline,
+     * not relative to today's date.
+     */
+    public function testDeadlineModificationActionsUseOriginalDeadlineInsteadOfToday(): void
+    {
+        $updatedeadline = $this->extractMethod('updatedeadlineAction');
+        $savenewdeadline = $this->extractMethod('savenewdeadlineAction');
+
+        // updatedeadlineAction check
+        $this->assertStringContainsString(
+            "\$deadline = date('Y-m-d', strtotime(\$oAssignment->getDeadline()))",
+            $updatedeadline,
+            'BUG #1010: updatedeadlineAction must use the original assignment deadline for range calculation'
+        );
+        $this->assertStringNotContainsString(
+            "Episciences_Tools::addDateInterval(date('Y-m-d')",
+            $updatedeadline,
+            'BUG #1010: updatedeadlineAction should no longer use today\'s date for range calculation'
+        );
+
+        // savenewdeadlineAction check
+        $this->assertStringContainsString(
+            "\$deadline = date('Y-m-d', strtotime(\$assignment->getDeadline()))",
+            $savenewdeadline,
+            'BUG #1010: savenewdeadlineAction must use the original assignment deadline for range calculation'
+        );
+        $this->assertStringNotContainsString(
+            "\$today = date('Y-m-d')",
+            $savenewdeadline,
+            'BUG #1010: savenewdeadlineAction should no longer use today\'s date for range calculation'
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // BUG — Zenodo: posted identifier overwrites VERSION, IDENTIFIER not saved
+    // ---------------------------------------------------------------
+
+    /**
+     *
+     * Bug: for repositories where the posted value is an identifier rather than
+     * a version number (e.g. Zenodo), the 'hookVersion' hook must be given
+     * 'context' => ['previousVersion' => ...] so it can fall back to
+     * previousVersion + 1 when the repository does not expose an explicit
+     * version number. Without it, Episciences_Repositories_Zenodo_Hooks::hookVersion()
+     * returns [], the whole conversion block is skipped, and the raw posted
+     * identifier is written into VERSION while IDENTIFIER is never updated.
+     */
+    public function testSavenewpostedversionActionPassesPreviousVersionContextToHookVersion(): void
+    {
+        $method = $this->extractMethod('savenewpostedversionAction');
+
+        $this->assertMatchesRegularExpression(
+            '/callHook\(\s*\'hookVersion\'\s*,\s*\[.*?\'context\'\s*=>\s*\[\s*\'previousVersion\'\s*=>\s*\$paper->getVersion\(\)/s',
+            $method,
+            "BUG: savenewpostedversionAction must pass 'context' => ['previousVersion' => \$paper->getVersion()] "
+            . "to the 'hookVersion' hook, otherwise Zenodo's hookVersion() cannot increment the version and "
+            . 'the posted identifier ends up written into VERSION while IDENTIFIER is left untouched'
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // BUG — reviewer invitation e-mail never sets %%PERMANENT_ARTICLE_ID%%
+    // ---------------------------------------------------------------
+
+    /**
+     * Bug (present, unchanged, since this controller's very first commit):
+     * unlike every other paper-related e-mail in this controller — which all
+     * pass the paper's permanent id to Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID
+     * explicitly, a pattern generalised across the codebase in a later
+     * "make the tag available everywhere" pass — the reviewer invitation
+     * e-mail only ever called setDocid($docId), with no permanent id supplied
+     * and no TAG_PERMANENT_ARTICLE_ID added afterwards. That later pass missed
+     * this call site, so %%PERMANENT_ARTICLE_ID%% has always been empty in
+     * this specific template.
+     *
+     * setDocid() now resolves the permanent id itself when none is given
+     * (via a DB lookup), so the tag would no longer be empty either way —
+     * but $paper is already loaded here, so passing its id explicitly avoids
+     * that lookup entirely, consistent with every other call site fixed in
+     * this change.
+     */
+    public function testSaveReviewerInvitationActionPassesPaperIdToSetDocid(): void
+    {
+        $method = $this->extractMethod('savereviewerinvitationAction');
+
+        $this->assertMatchesRegularExpression(
+            '/setDocid\(\s*\$docId\s*,\s*\$paper->getPaperid\(\)\s*\)/',
+            $method,
+            'BUG: setDocid() must be given $paper->getPaperid() so %%PERMANENT_ARTICLE_ID%% is set '
+            . 'in the reviewer invitation e-mail'
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // savespdxlicenseAction — journal allowed licenses
+    // ---------------------------------------------------------------
+
+    /**
+     * Bug: the allowed-licenses check ran before the "already set" check, so
+     * re-saving a paper's current license unchanged — a license that may predate
+     * the journal's allowed licenses, and that the form always offers — failed with
+     * "not allowed" instead of the "already set" warning.
+     */
+    public function testSavespdxlicenseActionChecksCurrentLicenseBeforeAllowedLicenses(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $alreadySetPos = strpos($method, 'La licence actuelle est déjà définie.');
+        $allowedPos    = strpos($method, 'getAllowedLicenses()');
+
+        $this->assertNotFalse($alreadySetPos, '"already set" warning not found in savespdxlicenseAction');
+        $this->assertNotFalse($allowedPos, 'getAllowedLicenses() call not found in savespdxlicenseAction');
+
+        $this->assertLessThan(
+            $allowedPos,
+            $alreadySetPos,
+            'BUG: the "already set" check must come before the allowed-licenses check, '
+            . 'otherwise re-saving a pre-existing license is rejected as not allowed'
+        );
+    }
+
+    /**
+     * A new license outside the journal's allowed licenses must still be rejected,
+     * before anything is saved.
+     */
+    public function testSavespdxlicenseActionRejectsNotAllowedLicenseBeforeSaving(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $rejectPos = strpos($method, "cette licence n'est pas autorisée par la revue");
+        $savePos   = strpos($method, '->save()');
+
+        $this->assertNotFalse($rejectPos, 'not-allowed license error not found in savespdxlicenseAction');
+        $this->assertNotFalse($savePos, 'save() call not found in savespdxlicenseAction');
+
+        $this->assertLessThan(
+            $savePos,
+            $rejectPos,
+            'A license not allowed by the journal must be rejected before any save'
+        );
+    }
+
+    /**
+     * Bug: the form pre-selects the paper current license even when the journal does not allow it,
+     * but a license only resolved from the license URL (no saved SPDX code) was then rejected as not allowed.
+     * The allowed-licenses check must also be case-insensitive, like Episciences_Paper::getLicenseCheckStatus().
+     */
+    public function testSavespdxlicenseActionAcceptsPaperCurrentLicenseCaseInsensitively(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $this->assertStringContainsString('LicenseManager::containsCode($currentSpdxCode, $allowedLicenses)', $method);
+        $this->assertStringContainsString('$paper->getSpdxLicenseCode()', $method);
+        $this->assertStringNotContainsString('in_array($currentSpdxCode', $method);
+    }
+
+    /**
+     * Security: the license actions must not read or change the license of a paper of another journal
+     * (the paper's own journal settings were used, whatever the current journal).
+     */
+    public function testLicenseActionsRejectPapersOfAnotherJournal(): void
+    {
+        foreach (['getlicenselistformAction', 'savespdxlicenseAction'] as $action) {
+            $method = $this->extractMethod($action);
+
+            $this->assertStringContainsString('$paper->getRvid() !== RVID', $method, "$action must check the paper journal");
+            $this->assertMatchesRegularExpression(
+                '/getRvid\(\) !== RVID\)\s*\{\s*\$this->getResponse\(\)->setHttpResponseCode\(404\)/',
+                $method,
+                "$action must answer 404 for a paper of another journal"
+            );
+        }
+
+        $save = $this->extractMethod('savespdxlicenseAction');
+        $this->assertLessThan(
+            strpos($save, '->save()'),
+            strpos($save, 'getRvid() !== RVID'),
+            'The journal check must come before any save'
+        );
+    }
+
+    /**
+     * Bug: "cc-by-4.0" was not detected as the already saved "CC-BY-4.0", so the same license was saved again.
+     */
+    public function testSavespdxlicenseActionDetectsAlreadySetLicenseCaseInsensitively(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $this->assertStringNotContainsString('$oldLicense === $currentSpdxCode', $method);
+        $this->assertStringContainsString('LicenseManager::containsCode($currentSpdxCode, [$oldLicense])', $method);
     }
 }
