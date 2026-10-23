@@ -227,6 +227,13 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function menuAction(): void
     {
+        // Secretaries include administrators, chief editors and root
+        if (!Episciences_Auth::isSecretary() && !Episciences_Auth::isWebmaster()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 

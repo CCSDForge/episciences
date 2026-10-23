@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace unit\modules\common\controllers;
 
 use Ccsd_View_Helper_DisplayFlashMessages;
+use Episciences_Acl;
+use Episciences_Auth;
 use Episciences_Csrf_Helper;
+use Episciences_User;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use WebsiteDefaultController;
+use Zend_Auth_Storage_Interface;
+use Zend_Auth_Storage_NonPersistent;
 use Zend_Controller_Action_Helper_Abstract;
 use Zend_Controller_Action_Helper_FlashMessenger;
 use Zend_Controller_Action_Helper_Redirector;
@@ -44,6 +49,8 @@ final class WebsiteDefaultControllerFormTokenTest extends TestCase
 
     private bool $previousUnitTestEnabled;
 
+    private Zend_Auth_Storage_Interface $previousAuthStorage;
+
     /** @var Zend_Controller_Action_Helper_Abstract[] */
     private array $previousHelpers = [];
 
@@ -56,6 +63,8 @@ final class WebsiteDefaultControllerFormTokenTest extends TestCase
     {
         $this->previousUnitTestEnabled = Zend_Session::$_unitTestEnabled;
         Zend_Session::$_unitTestEnabled = true;
+        $this->previousAuthStorage = Episciences_Auth::getInstance()->getStorage();
+        Episciences_Auth::getInstance()->setStorage(new Zend_Auth_Storage_NonPersistent());
 
         $this->previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
         $this->adapter = $this->getMockBuilder($this->previousAdapter::class)
@@ -102,6 +111,8 @@ final class WebsiteDefaultControllerFormTokenTest extends TestCase
         foreach ($this->previousHelpers as $helper) {
             Zend_Controller_Action_HelperBroker::addHelper($helper);
         }
+        Episciences_Auth::getInstance()->clearIdentity();
+        Episciences_Auth::getInstance()->setStorage($this->previousAuthStorage);
         Zend_Session::$_unitTestEnabled = $this->previousUnitTestEnabled;
     }
 
@@ -180,6 +191,11 @@ final class WebsiteDefaultControllerFormTokenTest extends TestCase
      */
     private function postMenu(array $post): array
     {
+        // The pages of the site are managed by the secretaries and the webmasters
+        $user = $this->createMock(Episciences_User::class);
+        $user->method('getAllRoles')->willReturn([RVID => [Episciences_Acl::ROLE_SECRETARY]]);
+        Episciences_Auth::getInstance()->getStorage()->write($user);
+
         $website = new class {
             /** @var list<string> */
             public array $calls = [];
