@@ -1,5 +1,9 @@
 var openedPopover = null;
 var openedRolesButton = null;
+// Incremented each time getRoles() is called, so that the pending AJAX callbacks
+// can tell whether the popover they were started for is still the opened one
+// (the same button may have been closed and reopened in the meantime)
+var rolesPopoverGeneration = 0;
 
 $(function () {
     // Initialize user autocomplete using the utility function
@@ -156,6 +160,8 @@ window.addEventListener('scroll', scheduleRolesPopoverRefresh, {
 });
 
 function getRoles(button, uid) {
+    var generation = ++rolesPopoverGeneration;
+
     // Destruction des anciens popups
     $('button').popover('destroy');
     openedRolesButton = null;
@@ -192,8 +198,11 @@ function getRoles(button, uid) {
     request.done(function (result) {
         var loaderPopover = $(button).data('bs.popover');
 
-        // The popover has been closed or replaced while the form was loading
-        if (openedRolesButton !== button) {
+        // The popover has been closed, replaced or reopened while the form was loading
+        if (
+            generation !== rolesPopoverGeneration ||
+            openedRolesButton !== button
+        ) {
             return;
         }
         // Closed by the page-wide click handler, which does not reset openedRolesButton
@@ -239,9 +248,12 @@ function getRoles(button, uid) {
                 data: $(this).serialize() + '&uid=' + uid,
                 success: function (result) {
                     if (result == 1) {
-                        // Destruction du popup des roles, unless another user's
-                        // popover has been opened while saving
-                        if (openedRolesButton === button) {
+                        // Destruction du popup des roles, unless it has been closed,
+                        // replaced or reopened (with new unsaved selections) while saving
+                        if (
+                            generation === rolesPopoverGeneration &&
+                            openedRolesButton === button
+                        ) {
                             closeRolesPopover();
                         }
                         var td = $('#localUsers_' + uid + ' td:nth-child(5)');
