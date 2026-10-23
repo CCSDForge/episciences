@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated the messages of the lost password and lost username pages.
 
 ### Fixed
+- Paper titles containing special characters are displayed as they are in the reviewer ratings list, the author paper list and the reviewer invitation page.
 - The site settings (languages, style, header, pages, public resources and news) check the role of the user on each page and dialog; refused accesses are recorded in the security log.
 - A section that still has papers can no longer be deleted: the delete button lists the papers to move first.
   Deleted and removed papers, which can no longer be moved, leave the section with it.

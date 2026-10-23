@@ -23,8 +23,8 @@ foreach ($this->papers as $i => $paper) {
     // paper title
     $title = '<a 	href="/' . $controller . '/view?id=' . $paper->getDocid() . '"
 					data-toggle="tooltip"
-					title="' . $paper->getTitle() . '">
-					<strong>' . Ccsd_Tools::truncate($paper->getTitle(), 75) . '</strong>';
+					title="' . $this->escape((string)$paper->getTitle()) . '">
+					<strong>' . $this->escape(Ccsd_Tools::truncate((string)$paper->getTitle(), 75)) . '</strong>';
     if ($paper->getMetadata('version') && $paper->getMetadata('version') != 1) {
         $title .= '(v' . $paper->getMetadata('version') . ')';
     }
@@ -46,7 +46,7 @@ foreach ($this->papers as $i => $paper) {
     $row[] = $this->partial('partials/paper_editors.phtml', array('article' => $paper, 'isPartial' => true));
 
     // contributor
-    $row[] = ($paper->getSubmitter()->getFullname()) ? $paper->getSubmitter()->getFullname() : $paper->getSubmitter()->getScreenName();
+    $row[] = $this->escape((string)(($paper->getSubmitter()->getFullname()) ?: $paper->getSubmitter()->getScreenName()));
 
     // submission date
     $row[] = $this->Date($paper->getWhen());

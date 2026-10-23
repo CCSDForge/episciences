@@ -69,7 +69,7 @@ foreach ($this->papers as $paper) : ?>
                 ('/reviewer/invitation/id/' . $invitation->getId()) :
                 ('/' . $controller . '/rating?id=' . $paper->getDocid());
             ?>
-            <a href="<?php echo $url ?>"><strong><?php echo Ccsd_Tools::truncate($paper->getTitle(), 75); ?></strong></a>
+            <a href="<?php echo $url ?>"><strong><?php echo $this->escape(Ccsd_Tools::truncate((string)$paper->getTitle(), 75)); ?></strong></a>
         </td>
 
         <?php // article volume ******************************************* ?>
