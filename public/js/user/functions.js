@@ -6,7 +6,22 @@ $(function () {
     createUserAutocomplete({
         appendTo: $('#autocomplete').closest('.modal-body'),
     });
+
+    // DataTables detaches the rows that are filtered out or on another page:
+    // close the roles popover on redraw so it does not outlive its button
+    $('#localUsers').on('draw.dt', closeRolesPopover);
 });
+
+/**
+ * Closes the opened roles popover, if any, and resets its state.
+ */
+function closeRolesPopover() {
+    if (openedRolesButton) {
+        $(openedRolesButton).popover('destroy');
+    }
+    openedRolesButton = null;
+    openedPopover = null;
+}
 
 function subForm() {
     $('#selectedUserId').val('0');
@@ -46,6 +61,13 @@ function placeRolesPopover(tip, element) {
  * Relies on Bootstrap 3 tooltip internals (getPosition, getCalculatedOffset, applyPlacement).
  */
 function refreshRolesPopover() {
+    if (openedRolesButton && !document.body.contains(openedRolesButton)) {
+        // The button has been removed from the DOM (e.g. DataTable redraw): its position
+        // can no longer be computed and would move the popover to the top-left corner
+        closeRolesPopover();
+        return;
+    }
+
     var popover = openedRolesButton && $(openedRolesButton).data('bs.popover');
     if (!popover || !popover.$tip || !popover.$tip.is(':visible')) {
         return;
@@ -130,6 +152,9 @@ function getRoles(button, uid) {
 
         $('form[action="/user/saveroles"]').on('submit', function () {
             $(this).parent().html(getLoader());
+            // The loader is much smaller than the form: with a top placement, the tip
+            // would keep its top coordinate and leave a gap above the button
+            refreshRolesPopover();
 
             // Traitement AJAX du formulaire
             $.ajax({
