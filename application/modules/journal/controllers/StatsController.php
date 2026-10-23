@@ -815,7 +815,9 @@ class StatsController extends Zend_Controller_Action
     }
 
     /**
-     * Imported papers of the journal by year of submission (import) and repository
+     * Imported papers of the journal by year of the first submission (import) of the paper and repository of its first
+     * version: the versions of a paper can have different submission dates, the paper is counted once, like in the
+     * statistics of the API
      * The API gives the imported papers by year, not by repository.
      * @param string|null $startAfterDate the "startStatsAfterDate" setting of the journal
      * @param Monolog\Logger|null $logger
@@ -825,15 +827,23 @@ class StatsController extends Zend_Controller_Action
     {
         try {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-            $select = $db->select()
-                ->from(T_PAPERS, ['REPOID', 'YEAR' => new Zend_Db_Expr('YEAR(SUBMISSION_DATE)'), 'NB' => new Zend_Db_Expr('COUNT(DISTINCT PAPERID)')])
+            $papers = $db->select()
+                ->from(T_PAPERS, [
+                    'PAPERID',
+                    'FIRST_SUBMISSION_DATE' => new Zend_Db_Expr('MIN(SUBMISSION_DATE)'),
+                    'REPOID' => new Zend_Db_Expr("SUBSTRING_INDEX(GROUP_CONCAT(REPOID ORDER BY SUBMISSION_DATE, DOCID), ',', 1)"),
+                ])
                 ->where('RVID = ?', RVID)
                 ->where('FLAG = ?', 'imported')
-                ->group(['REPOID', 'YEAR']);
+                ->group('PAPERID');
 
             if ($startAfterDate) {
-                $select->where('SUBMISSION_DATE > ?', $startAfterDate);
+                $papers->having('MIN(SUBMISSION_DATE) > ?', $startAfterDate);
             }
+
+            $select = $db->select()
+                ->from(['papers' => $papers], ['REPOID', 'YEAR' => new Zend_Db_Expr('YEAR(FIRST_SUBMISSION_DATE)'), 'NB' => new Zend_Db_Expr('COUNT(*)')])
+                ->group(['REPOID', 'YEAR']);
 
             $imported = [];
 
@@ -850,7 +860,9 @@ class StatsController extends Zend_Controller_Action
     }
 
     /**
-     * Number of papers of the journal with a temporary version (local repository), by year of submission of the paper
+     * Number of papers of the journal with a temporary version (local repository), by year of the first submission of
+     * the paper: the versions of a paper can have different submission dates, the paper is counted once, like in the
+     * statistics of the API
      * @param int|null $year
      * @param string|null $startAfterDate the "startStatsAfterDate" setting of the journal
      * @param Monolog\Logger|null $logger
@@ -860,19 +872,22 @@ class StatsController extends Zend_Controller_Action
     {
         try {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-            $select = $db->select()
-                ->from(T_PAPERS, [new Zend_Db_Expr('COUNT(DISTINCT PAPERID)')])
+            $papers = $db->select()
+                ->from(T_PAPERS, ['PAPERID'])
                 ->where('RVID = ?', RVID)
-                ->where('REPOID = ?', (int)Episciences_Repositories::EPISCIENCES_REPO_ID)
-                ->where('STATUS NOT IN (?)', [Episciences_Paper::STATUS_DELETED, Episciences_Paper::STATUS_REMOVED]);
+                ->where('STATUS NOT IN (?)', [Episciences_Paper::STATUS_DELETED, Episciences_Paper::STATUS_REMOVED])
+                ->group('PAPERID')
+                ->having('SUM(REPOID = ?) > 0', (int)Episciences_Repositories::EPISCIENCES_REPO_ID);
 
             if ($year) {
-                $select->where('YEAR(SUBMISSION_DATE) = ?', $year);
+                $papers->having('YEAR(MIN(SUBMISSION_DATE)) = ?', $year);
             }
 
             if ($startAfterDate) {
-                $select->where('SUBMISSION_DATE > ?', $startAfterDate);
+                $papers->having('MIN(SUBMISSION_DATE) > ?', $startAfterDate);
             }
+
+            $select = $db->select()->from(['papers' => $papers], [new Zend_Db_Expr('COUNT(*)')]);
 
             return (int)$db->fetchOne($select);
         } catch (Throwable $e) {
