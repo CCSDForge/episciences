@@ -18,7 +18,7 @@ jobs:
     
     strategy:
       matrix:
-        php-version: ['8.1', '8.2']
+        php-version: ['8.3']
     
     services:
       mysql:
@@ -91,7 +91,7 @@ jobs:
         
     - name: Upload PHP coverage
       uses: codecov/codecov-action@v7
-      if: matrix.php-version == '8.2'
+      if: matrix.php-version == '8.3'
       with:
         file: ./coverage-php.xml
         flags: php

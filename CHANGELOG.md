@@ -25,12 +25,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- [#1339](https://github.com/CCSDForge/episciences/pull/1339): the application now requires PHP 8.3: the Composer constraint and the continuous integration use PHP 8.3,
+  the properties that were created dynamically (deprecated since PHP 8.2) are now declared, the deprecated `utf8_encode()`
+  is no longer used, and the PHP 8.2 and 8.3 polyfills are no longer direct dependencies.
+
 ### Fixed
 - [#1310](https://github.com/CCSDForge/episciences/pull/1310): co-author form and co-author removal are now consistent with the paper management page.
 - [#1344](https://github.com/CCSDForge/episciences/pull/1344): graphical abstract and linked data forms are now consistent with the paper context.
 - [#1349](https://github.com/CCSDForge/episciences/pull/1349): profile edition form opened from the user list is submitted for the selected account.
 - [#1345](https://github.com/CCSDForge/episciences/issues/1345): authors can edit the relationship of an existing related work. Authors can add, edit or remove linked data until the paper is published; editorial roles still can afterwards.
 - [#1332](https://github.com/CCSDForge/episciences/pull/1332): journal settings: the statistics start date is now strictly validated (YYYY-MM-DD); a malformed stored value is ignored by the statistics page instead of making it fail.
+- [#1339](https://github.com/CCSDForge/episciences/pull/1339): multi-value and date form fields no longer raise "Creation of dynamic property" deprecations (PHP 8.2+) when rendered: their decorators now declare the JavaScript function names and indices they receive.
+- [#1339](https://github.com/CCSDForge/episciences/pull/1339): sorting papers by status and decoding the subject of a mail without subject no longer raise PHP deprecations.
+- [#1339](https://github.com/CCSDForge/episciences/pull/1339): the `Import` and `setNumVol` scripts no longer create dynamic properties (deprecated since PHP 8.2).
 
 ## v1.0.57.1 - 2026-10-22
 
