@@ -7,9 +7,10 @@ $(function () {
         appendTo: $('#autocomplete').closest('.modal-body'),
     });
 
-    // DataTables detaches the rows that are filtered out or on another page:
-    // close the roles popover on redraw so it does not outlive its button
-    $('#localUsers').on('draw.dt', closeRolesPopover);
+    // DataTables detaches the rows that are filtered out or on another page and
+    // moves the others: on redraw, close the roles popover if its button is gone,
+    // otherwise keep it (and its unsaved selections) and follow the button
+    $('#localUsers').on('draw.dt', refreshRolesPopover);
 });
 
 /**
@@ -29,25 +30,53 @@ function subForm() {
 }
 
 /**
+ * Top of the visible area of the viewport: bottom of the fixed top navbar, if any.
+ */
+function getVisibleViewportTop() {
+    var navbar = document.querySelector('.navbar-fixed-top');
+    if (!navbar) {
+        return 0;
+    }
+    return Math.max(navbar.getBoundingClientRect().bottom, 0);
+}
+
+/**
  * Bootstrap popover placement callback for the roles form: opens the popover
  * on the side of the button with the most room, and caps the height of the
  * roles list so the whole popover (including the submit button) fits in the viewport.
+ * When currentPlacement is given (popover already displayed), it is kept as long as
+ * the popover still fits on that side, so that it does not flip while scrolling.
  */
-function placeRolesPopover(tip, element) {
+function placeRolesPopover(tip, element, currentPlacement) {
     var margin = 20; // popover arrow + breathing room
     var rect = element.getBoundingClientRect();
     var spaceBelow = window.innerHeight - rect.bottom - margin;
-    var spaceAbove = rect.top - margin;
+    // Do not count the space hidden by the fixed top navbar
+    var spaceAbove = rect.top - getVisibleViewportTop() - margin;
     var placement = spaceBelow >= spaceAbove ? 'bottom' : 'top';
 
     var list = tip.querySelector('.roles-form-list');
+    // Height of everything but the roles list (buttons, paddings). When Bootstrap 3.2
+    // first calls this, the tip is not attached to the DOM yet and cannot be measured:
+    // fall back to an estimate, corrected by refreshRolesPopover() once it is displayed.
+    var reservedHeight = 80;
+    var neededHeight = tip.offsetHeight;
+    if (list && tip.offsetHeight > 0) {
+        reservedHeight = tip.offsetHeight - list.offsetHeight;
+        // Full height of the popover with an uncapped roles list
+        neededHeight = reservedHeight + list.scrollHeight;
+    }
+
+    if (currentPlacement) {
+        var currentSpace = currentPlacement === 'top' ? spaceAbove : spaceBelow;
+        if (currentSpace >= neededHeight) {
+            placement = currentPlacement;
+        }
+    }
+
     if (list) {
-        // Height of everything but the roles list (buttons, paddings). When Bootstrap 3.2
-        // first calls this, the tip is not attached to the DOM yet and cannot be measured:
-        // fall back to an estimate, corrected by refreshRolesPopover() once it is displayed.
-        var reservedHeight =
-            tip.offsetHeight > 0 ? tip.offsetHeight - list.offsetHeight : 80;
-        var available = Math.max(spaceBelow, spaceAbove) - reservedHeight;
+        var available =
+            (placement === 'top' ? spaceAbove : spaceBelow) - reservedHeight;
         // Never exceed the available space; keep a small floor so the list stays usable
         list.style.maxHeight = Math.max(available, 40) + 'px';
     }
@@ -74,7 +103,21 @@ function refreshRolesPopover() {
     }
 
     var tip = popover.$tip[0];
-    var placement = placeRolesPopover(tip, openedRolesButton);
+
+    // Hide the popover (without destroying it, to keep the checked roles) while its
+    // button is scrolled out of view or hidden by the fixed navbar: it would otherwise
+    // follow the button and cover the navbar, cut off and detached from any visible row
+    var buttonRect = openedRolesButton.getBoundingClientRect();
+    var buttonVisible =
+        buttonRect.bottom > getVisibleViewportTop() &&
+        buttonRect.top < window.innerHeight;
+    tip.style.visibility = buttonVisible ? '' : 'hidden';
+    if (!buttonVisible) {
+        return;
+    }
+
+    var currentPlacement = popover.$tip.hasClass('top') ? 'top' : 'bottom';
+    var placement = placeRolesPopover(tip, openedRolesButton, currentPlacement);
     popover.$tip.removeClass('top bottom').addClass(placement);
 
     var offset = popover.getCalculatedOffset(
@@ -107,6 +150,7 @@ window.addEventListener('scroll', scheduleRolesPopoverRefresh, {
 function getRoles(button, uid) {
     // Destruction des anciens popups
     $('button').popover('destroy');
+    openedRolesButton = null;
 
     // Toggle : est-ce qu'on ouvre ou est-ce qu'on ferme le popup ?
     if (openedPopover && openedPopover == uid) {
@@ -127,13 +171,27 @@ function getRoles(button, uid) {
         .popover({
             delay: 0,
             container: 'body',
-            placement: 'bottom',
+            // Same side as the form will use, so that the popover does not jump
+            placement: placeRolesPopover,
             html: true,
             content: getLoader(),
         })
         .popover('show');
+    // Track the button from now on, so that the loader popover is closed too
+    // if the table is redrawn while the form is loading
+    openedRolesButton = button;
 
     request.done(function (result) {
+        // The popover has been closed or replaced while the form was loading
+        if (openedRolesButton !== button) {
+            return;
+        }
+
+        // Open the form on the side of the loader, unless it does not fit there
+        // (checked by refreshRolesPopover() once the form can be measured)
+        var loaderTip = $(button).data('bs.popover').$tip;
+        var loaderPlacement = loaderTip.hasClass('top') ? 'top' : 'bottom';
+
         // Destruction du popup de chargement
         $(button).popover('destroy');
 
@@ -141,12 +199,13 @@ function getRoles(button, uid) {
         $(button)
             .popover({
                 container: 'body',
-                placement: placeRolesPopover,
+                placement: function (tip, element) {
+                    return placeRolesPopover(tip, element, loaderPlacement);
+                },
                 html: true,
                 content: result,
             })
             .popover('show');
-        openedRolesButton = button;
         // Fix the initial estimate now that the real heights can be measured
         refreshRolesPopover();
 
@@ -165,8 +224,7 @@ function getRoles(button, uid) {
                 success: function (result) {
                     if (result == 1) {
                         // Destruction du popup des roles
-                        $(button).popover('destroy');
-                        openedPopover = null;
+                        closeRolesPopover();
                         var td = $('#localUsers_' + uid + ' td:nth-child(5)');
                         var container = $(td).find('.tags');
                         $(container).html(getLoader());
@@ -193,4 +251,6 @@ function getRoles(button, uid) {
 
 function closeResult() {
     $('button').popover('destroy');
+    openedRolesButton = null;
+    openedPopover = null;
 }
