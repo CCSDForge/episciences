@@ -40,7 +40,8 @@ final class LegacyTokenImporterTest extends TestCase
         $clock = fn(): DateTimeImmutable => $this->now;
 
         $this->casDb = new Zend_Db_Adapter_Pdo_Sqlite(['dbname' => ':memory:']);
-        $this->casDb->query('CREATE TABLE T_UTILISATEURS_TOKENS (UID INTEGER, EMAIL TEXT, TOKEN TEXT, TIME_MODIFIED TEXT, "USAGE" TEXT)');
+        // Case-insensitive USAGE, like the default collation of the MySQL table
+        $this->casDb->query('CREATE TABLE T_UTILISATEURS_TOKENS (UID INTEGER, EMAIL TEXT, TOKEN TEXT, TIME_MODIFIED TEXT, "USAGE" TEXT COLLATE NOCASE)');
 
         $this->appDb = UserTokenTestDatabase::create();
         $this->appDb->query('CREATE TABLE USER (UID INTEGER PRIMARY KEY)');
@@ -112,6 +113,22 @@ final class LegacyTokenImporterTest extends TestCase
         $this->addLegacyToken(sha1('new email'), 'NEW_EMAIL', '-1 hour');
 
         self::assertSame(0, $this->importer->import()['candidates']);
+    }
+
+    public function testUsageIsMatchedWhateverItsCase(): void
+    {
+        $this->addLegacyToken(sha1('activation'), 'valid', '-1 hour');
+
+        self::assertSame(['candidates' => 1, 'imported' => 1, 'skipped' => 0], $this->importer->import());
+        self::assertNotNull($this->repository->find(sha1('activation'), TokenPurpose::ACCOUNT_ACTIVATION));
+    }
+
+    public function testDryRunAfterAnImportCountsNothingToImport(): void
+    {
+        $this->addLegacyToken(sha1('activation'), 'VALID', '-1 hour');
+        $this->importer->import();
+
+        self::assertSame(0, $this->importer->import(true)['imported']);
     }
 
     public function testDryRunWritesNothing(): void

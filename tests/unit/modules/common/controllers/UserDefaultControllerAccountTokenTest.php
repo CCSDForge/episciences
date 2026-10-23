@@ -65,6 +65,21 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         return $this->tokens->issue($uid, self::EMAIL, $purpose);
     }
 
+    /**
+     * @template T
+     * @param callable(): T $call
+     * @return T
+     */
+    private function withoutWarnings(callable $call): mixed
+    {
+        set_error_handler(static fn(): bool => true, E_USER_WARNING);
+        try {
+            return $call();
+        } finally {
+            restore_error_handler();
+        }
+    }
+
     // ---------------------------------------------------------------- activation
 
     public function testActivationTokenActivatesTheAccountOnce(): void
@@ -99,17 +114,13 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         self::assertFalse($this->controller->activate($token));
     }
 
-    public function testFailedActivationIsReported(): void
+    public function testFailedActivationIsReportedAndKeepsTheLink(): void
     {
         $token = $this->issue(TokenPurpose::ACCOUNT_ACTIVATION);
-        $this->userMapper->method('activateAccountByUid')->willThrowException(new Zend_Db_Adapter_Exception('already active'));
+        $this->userMapper->method('activateAccountByUid')->willThrowException(new Zend_Db_Adapter_Exception('database unavailable'));
 
-        set_error_handler(static fn(): bool => true, E_USER_WARNING);
-        try {
-            self::assertFalse($this->controller->activate($token));
-        } finally {
-            restore_error_handler();
-        }
+        self::assertFalse($this->withoutWarnings(fn(): bool => $this->controller->activate($token)));
+        self::assertNotNull($this->tokens->find($token, TokenPurpose::ACCOUNT_ACTIVATION), 'the link must work again once the database is back');
     }
 
     public function testInvalidActivationLinkShowsTheErrorPageWithoutLeakingTheToken(): void
@@ -145,7 +156,7 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         $this->userMapper->expects(self::once())->method('savePassword')->with(self::callback(
             static fn(Ccsd_User_Models_User $user): bool => $user->getUid() === self::UID
                 && $user->getPassword() !== self::PASSWORD
-        ));
+        ))->willReturn(1);
 
         self::assertTrue($this->controller->resetPassword($token, self::PASSWORD));
         self::assertFalse($this->controller->resetPassword($token, self::PASSWORD), 'a password link works only once');
@@ -175,10 +186,67 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         $setup = $this->issue(TokenPurpose::ACCOUNT_SETUP);
         $reset = $this->issue(TokenPurpose::PASSWORD_RESET);
         $otherAccount = $this->issue(TokenPurpose::PASSWORD_RESET, self::UID + 1);
+        $this->userMapper->method('savePassword')->willReturn(1);
 
         self::assertTrue($this->controller->resetPassword($reset, self::PASSWORD));
 
         self::assertNull($this->tokens->find($setup, TokenPurpose::ACCOUNT_SETUP));
+        self::assertNotNull($this->tokens->find($otherAccount, TokenPurpose::PASSWORD_RESET));
+    }
+
+    public function testPasswordLinkOfAnAccountThatNoLongerExistsReportsAFailure(): void
+    {
+        $token = $this->issue(TokenPurpose::PASSWORD_RESET);
+        $this->userMapper->method('savePassword')->willReturn(0);
+
+        self::assertFalse($this->controller->resetPassword($token, self::PASSWORD));
+    }
+
+    public function testPasswordLinkStillWorksWhenThePasswordCouldNotBeWritten(): void
+    {
+        $token = $this->issue(TokenPurpose::PASSWORD_RESET);
+        $this->userMapper->method('savePassword')->willReturnOnConsecutiveCalls(
+            self::throwException(new Zend_Db_Adapter_Exception('database unavailable')),
+            1
+        );
+
+        self::assertFalse($this->withoutWarnings(fn(): bool => $this->controller->resetPassword($token, self::PASSWORD)));
+        self::assertTrue($this->controller->resetPassword($token, self::PASSWORD), 'the link must work again once the database is back');
+    }
+
+    public function testPasswordChangedFromTheProfileRevokesThePasswordLinksOfTheAccount(): void
+    {
+        $setup = $this->issue(TokenPurpose::ACCOUNT_SETUP);
+        $reset = $this->issue(TokenPurpose::PASSWORD_RESET);
+        $otherAccount = $this->issue(TokenPurpose::PASSWORD_RESET, self::UID + 1);
+        $this->userMapper->expects(self::once())->method('savePassword')->willReturn(1);
+
+        self::assertTrue($this->controller->changePassword(self::UID, self::PASSWORD));
+
+        self::assertNull($this->tokens->find($setup, TokenPurpose::ACCOUNT_SETUP));
+        self::assertNull($this->tokens->find($reset, TokenPurpose::PASSWORD_RESET));
+        self::assertNotNull($this->tokens->find($otherAccount, TokenPurpose::PASSWORD_RESET));
+    }
+
+    public function testFailedPasswordChangeKeepsThePasswordLinks(): void
+    {
+        $reset = $this->issue(TokenPurpose::PASSWORD_RESET);
+        $this->userMapper->method('savePassword')->willReturn(0);
+
+        self::assertFalse($this->controller->changePassword(self::UID, self::PASSWORD));
+        self::assertNotNull($this->tokens->find($reset, TokenPurpose::PASSWORD_RESET));
+    }
+
+    public function testEmailChangeRevokesAllTheLinksOfTheAccount(): void
+    {
+        $links = array_map(fn(TokenPurpose $purpose): array => [$purpose, $this->issue($purpose)], TokenPurpose::cases());
+        $otherAccount = $this->issue(TokenPurpose::PASSWORD_RESET, self::UID + 1);
+
+        $this->controller->revokeLinks(self::UID);
+
+        foreach ($links as [$purpose, $token]) {
+            self::assertNull($this->tokens->find($token, $purpose), $purpose->value);
+        }
         self::assertNotNull($this->tokens->find($otherAccount, TokenPurpose::PASSWORD_RESET));
     }
 
@@ -205,12 +273,48 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         self::assertSame(self::UID, (int)$this->controller->sentMails[0][1]->getUid());
     }
 
-    public function testLostPasswordOfAnAccountNotActivatedSendsANewActivationLink(): void
+    public function testLostPasswordOfAnEpisciencesAccountNotActivatedSendsANewActivationLink(): void
     {
+        $this->controller->episciencesUids = [self::UID];
+
         $message = $this->lostPasswordFor(['UID' => self::UID, 'USERNAME' => 'jdoe', 'EMAIL' => self::EMAIL, 'VALID' => '0']);
 
         self::assertSame(Ccsd_User_Models_User::ACCOUNT_VALID_USERNAME, $message);
         self::assertSame(['activation'], array_column($this->controller->sentMails, 0));
+    }
+
+    public function testLostPasswordOfAnInactiveAccountOfAnotherApplicationSendsNothingButAnswersTheSame(): void
+    {
+        $this->controller->episciencesUids = [];
+
+        $message = $this->lostPasswordFor(['UID' => self::UID, 'USERNAME' => 'jdoe', 'EMAIL' => self::EMAIL, 'VALID' => '0']);
+
+        self::assertSame(Ccsd_User_Models_User::ACCOUNT_VALID_USERNAME, $message);
+        self::assertSame([], $this->controller->sentMails);
+    }
+
+    /**
+     * @dataProvider accountStates
+     */
+    public function testLostPasswordAnswersTheSameWhenTheEmailFails(int $valid): void
+    {
+        $this->controller->episciencesUids = [self::UID];
+        $this->controller->mailFailure = new \Zend_Mail_Exception('SMTP unavailable');
+
+        $message = $this->withoutWarnings(
+            fn(): mixed => $this->lostPasswordFor(['UID' => self::UID, 'USERNAME' => 'jdoe', 'EMAIL' => self::EMAIL, 'VALID' => $valid])
+        );
+
+        self::assertSame(Ccsd_User_Models_User::ACCOUNT_VALID_USERNAME, $message);
+    }
+
+    /**
+     * @return iterable<string, array{int}>
+     */
+    public static function accountStates(): iterable
+    {
+        yield 'active account' => [1];
+        yield 'account not activated' => [0];
     }
 
     public function testLostPasswordOfAnUnknownUsernameSendsNothingButAnswersTheSame(): void
@@ -255,6 +359,10 @@ final class AccountTokenTestController extends \UserDefaultController
     public array $sentMails = [];
     /** @var list<string> */
     public array $renderedScripts = [];
+    /** @var list<int> UIDs of the accounts having their data in the application database */
+    public array $episciencesUids = [];
+    /** Thrown by the e-mail stubs when set */
+    public ?\Exception $mailFailure = null;
 
     protected function getAccountTokenRepository(): AccountTokenRepository
     {
@@ -271,14 +379,28 @@ final class AccountTokenTestController extends \UserDefaultController
         return new Episciences_User($account);
     }
 
+    protected function isEpisciencesAccount(int $uid): bool
+    {
+        return in_array($uid, $this->episciencesUids, true);
+    }
+
     protected function sendActivationEmail(Episciences_User $user): void
     {
-        $this->sentMails[] = ['activation', $user];
+        $this->recordMail('activation', $user);
     }
 
     protected function sendPasswordResetEmail(Episciences_User $user): void
     {
-        $this->sentMails[] = ['password reset', $user];
+        $this->recordMail('password reset', $user);
+    }
+
+    private function recordMail(string $type, Episciences_User $user): void
+    {
+        if ($this->mailFailure !== null) {
+            throw $this->mailFailure;
+        }
+
+        $this->sentMails[] = [$type, $user];
     }
 
     protected function sendLostLoginEmail(Episciences_User $user, array $userLogins): void
@@ -299,6 +421,16 @@ final class AccountTokenTestController extends \UserDefaultController
     public function resetPassword(mixed $token, string $password): bool
     {
         return $this->resetPasswordWithToken($token, $password);
+    }
+
+    public function changePassword(int $uid, string $password): bool
+    {
+        return $this->saveNewPassword($uid, $password);
+    }
+
+    public function revokeLinks(int $uid): void
+    {
+        $this->revokeAccountLinks($uid);
     }
 
     public function lostPassword(string $username): void

@@ -54,16 +54,23 @@ class AccountTokenRepository
     {
         $token = bin2hex(random_bytes(self::TOKEN_BYTES));
         $now = $this->now();
+        $db = $this->getDb();
 
-        $this->revokeAll($uid, $purpose);
-
-        $this->getDb()->insert(self::TABLE_NAME, [
+        $db->insert(self::TABLE_NAME, [
             'uid' => $uid,
             'email' => $email,
             'purpose' => $purpose->value,
             'token_hash' => self::hash($token),
             'created_at' => $now->format(self::DATE_FORMAT),
             'expires_at' => $now->modify(sprintf('+%d seconds', $purpose->ttlSeconds()))->format(self::DATE_FORMAT),
+        ]);
+
+        // Inserting first, then revoking the older tokens, keeps a single token even when two requests issue one
+        // at the same time: each of them revokes the tokens issued before its own, so only the latest one is left
+        $db->delete(self::TABLE_NAME, [
+            'uid = ?' => $uid,
+            'purpose = ?' => $purpose->value,
+            'id < ?' => (int)$db->lastInsertId(self::TABLE_NAME, 'id'),
         ]);
 
         return $token;
@@ -126,6 +133,28 @@ class AccountTokenRepository
     }
 
     /**
+     * Puts back a consumed token whose action could not be completed, so that its link can be used again
+     * until it expires
+     */
+    public function restore(string $presented, AccountToken $token): void
+    {
+        $hash = self::hashPresented($presented);
+
+        if ($hash === null || $this->exists($hash)) {
+            return;
+        }
+
+        $this->getDb()->insert(self::TABLE_NAME, [
+            'uid' => $token->uid,
+            'email' => $token->email,
+            'purpose' => $token->purpose->value,
+            'token_hash' => $hash,
+            'created_at' => $this->now()->format(self::DATE_FORMAT),
+            'expires_at' => $token->expiresAt->format(self::DATE_FORMAT),
+        ]);
+    }
+
+    /**
      * Revokes all the tokens of an account for the given purposes
      */
     public function revokeAll(int $uid, TokenPurpose ...$purposes): void
@@ -174,29 +203,38 @@ class AccountTokenRepository
      */
     public function importLegacy(int $uid, string $email, TokenPurpose $purpose, string $legacyToken, DateTimeImmutable $createdAt, DateTimeImmutable $expiresAt): bool
     {
-        $hash = self::hashPresented($legacyToken);
-
-        if ($hash === null) {
+        if (!$this->canImportLegacy($legacyToken)) {
             return false;
         }
 
-        $db = $this->getDb();
-        $exists = $db->fetchOne($db->select()->from(self::TABLE_NAME, ['id'])->where('token_hash = ?', $hash));
-
-        if ($exists !== false && $exists !== null) {
-            return false;
-        }
-
-        $db->insert(self::TABLE_NAME, [
+        $this->getDb()->insert(self::TABLE_NAME, [
             'uid' => $uid,
             'email' => $email,
             'purpose' => $purpose->value,
-            'token_hash' => $hash,
+            'token_hash' => self::hash($legacyToken),
             'created_at' => $createdAt->format(self::DATE_FORMAT),
             'expires_at' => $expiresAt->format(self::DATE_FORMAT),
         ]);
 
         return true;
+    }
+
+    /**
+     * Whether importLegacy() would store a former token: well-formed and not imported yet
+     */
+    public function canImportLegacy(string $legacyToken): bool
+    {
+        $hash = self::hashPresented($legacyToken);
+
+        return $hash !== null && !$this->exists($hash);
+    }
+
+    private function exists(string $hash): bool
+    {
+        $db = $this->getDb();
+        $id = $db->fetchOne($db->select()->from(self::TABLE_NAME, ['id'])->where('token_hash = ?', $hash));
+
+        return $id !== false && $id !== null;
     }
 
     private static function hash(string $token): string

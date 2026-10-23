@@ -34,7 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Account activation and password links are now stored in the application database, can be used only once and expire; lifetimes are configurable in `pwd.json` (`USER_TOKEN` section, see `docs/console-commands.md`).
-- Lost password on an account not activated yet sends a new activation link.
+- Lost password on an Episciences account not activated yet sends a new activation link.
+- Changing the password or the e-mail address of an account revokes its pending account links.
 - Updated the messages of the lost password and lost username pages.
 
 ### Fixed

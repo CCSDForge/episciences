@@ -1304,6 +1304,7 @@ return array(
     "Erreur lors de l'activation du compte" => "Activation error",
     "Le jeton n'est pas valide" => "Invalid token",
     "Ce lien d'activation n'existe pas, a déjà été utilisé ou a expiré. Pour en recevoir un nouveau, utilisez la procédure « Mot de passe oublié »" => 'This activation link does not exist, has already been used or has expired. To receive a new one, use the "Forgotten password" procedure',
+    "Votre compte est activé. Si vous ne connaissez pas votre mot de passe, utilisez la procédure « Mot de passe oublié »" => 'Your account is activated. If you do not know your password, use the "Forgotten password" procedure',
     "Erreur d'authentification" => "Authentication error",
     "L'authentification a échoué" => "Authentication failed",
     "Vous n'êtes pas connecté" => "You are not logged in",

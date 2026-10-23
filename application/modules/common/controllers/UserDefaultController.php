@@ -24,6 +24,7 @@ class UserDefaultController extends Zend_Controller_Action
     private const IMAGE_SVG_XML = 'image/svg+xml';
     /** Tokens accepted by the password reset page */
     private const PASSWORD_TOKEN_PURPOSES = [TokenPurpose::PASSWORD_RESET, TokenPurpose::ACCOUNT_SETUP];
+    private const ACCOUNT_ACTIVATED_MESSAGE = "Votre compte est activé. Si vous ne connaissez pas votre mot de passe, utilisez la procédure « Mot de passe oublié »";
 
     private ?AccountTokenRepository $accountTokenRepository = null;
 
@@ -1265,6 +1266,8 @@ class UserDefaultController extends Zend_Controller_Action
             return;
         }
 
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
+            ->addMessage($this->view->translate(self::ACCOUNT_ACTIVATED_MESSAGE));
         $this->_helper->redirector->gotoUrl('/');
     }
 
@@ -1475,15 +1478,17 @@ class UserDefaultController extends Zend_Controller_Action
      */
     protected function activateAccountWithToken(mixed $token): bool
     {
-        $accountToken = $this->getAccountTokenRepository()->consume($token, TokenPurpose::ACCOUNT_ACTIVATION);
+        $accountToken = $this->getAccountTokenRepository()->find($token, TokenPurpose::ACCOUNT_ACTIVATION);
 
         if ($accountToken === null) {
             return false;
         }
 
+        // The token is revoked only once the account is activated, so that the link still works after a database
+        // failure. Activating twice is not possible: the second attempt fails since the account is already active.
         try {
             $this->getUserMapper()->activateAccountByUid($accountToken->uid);
-        } catch (Zend_Db_Adapter_Exception $e) { // e.g. the account is already active
+        } catch (Zend_Db_Exception $e) { // e.g. the account is already active
             trigger_error($e->getMessage(), E_USER_WARNING);
             return false;
         }
@@ -1502,41 +1507,91 @@ class UserDefaultController extends Zend_Controller_Action
         $tokenRepository = $this->getAccountTokenRepository();
         $accountToken = $tokenRepository->consume($token, ...self::PASSWORD_TOKEN_PURPOSES);
 
-        if ($accountToken === null) {
+        if ($accountToken === null || !is_string($token)) {
             return false;
         }
 
+        try {
+            return $this->saveNewPassword($accountToken->uid, $password);
+        } catch (Zend_Db_Exception $e) {
+            // The password could not be written (e.g. CAS database unavailable): the link must keep working
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            $tokenRepository->restore($token, $accountToken);
+            return false;
+        }
+    }
+
+    /**
+     * Sets the password of an account and revokes its password links, which are now useless
+     * @return bool false when no account was updated
+     * @throws Zend_Db_Exception
+     */
+    protected function saveNewPassword(int $uid, string $password): bool
+    {
         $user = new Ccsd_User_Models_User();
-        $user->setUid($accountToken->uid);
+        $user->setUid($uid);
         $user->setPassword($password);
         $user->setTime_modified();
 
-        $this->getUserMapper()->savePassword($user);
-        // Any other password link of the account is now useless
-        $tokenRepository->revokeAll($accountToken->uid, ...self::PASSWORD_TOKEN_PURPOSES);
+        if ((int)$this->getUserMapper()->savePassword($user) !== 1) {
+            return false;
+        }
+
+        $this->getAccountTokenRepository()->revokeAll($uid, ...self::PASSWORD_TOKEN_PURPOSES);
 
         return true;
     }
 
     /**
-     * Sends a password reset link, or a new activation link to an account not activated yet.
-     * The result message is the same whether or not an account matches the username.
+     * Revokes all the account links of an account, e.g. when its e-mail address changes: links sent to the former
+     * address must not work anymore
+     */
+    protected function revokeAccountLinks(int $uid): void
+    {
+        $this->getAccountTokenRepository()->revokeAll($uid, ...TokenPurpose::cases());
+    }
+
+    /**
+     * Sends a password reset link, or a new activation link to an Episciences account not activated yet.
+     * The result message is the same whether or not an account matches the username, even when the e-mail fails.
      */
     protected function processLostPasswordRequest(string $username): void
     {
+        $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_VALID_USERNAME;
+
         $account = $this->getUserMapper()->findByUsernameIncludingInactive($username);
 
-        if ($account !== null) {
+        if ($account === null) {
+            return;
+        }
+
+        $isActive = (int)$account['VALID'] === 1;
+
+        // The CAS table is shared with other applications: only the inactive accounts created in Episciences get
+        // a new activation link
+        if (!$isActive && !$this->isEpisciencesAccount((int)$account['UID'])) {
+            return;
+        }
+
+        try {
             $user = $this->loadUser($account);
 
-            if ((int)$account['VALID'] === 1) {
+            if ($isActive) {
                 $this->sendPasswordResetEmail($user);
             } else {
                 $this->sendActivationEmail($user);
             }
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
         }
+    }
 
-        $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_VALID_USERNAME;
+    /**
+     * Whether an account has its data in the application database
+     */
+    protected function isEpisciencesAccount(int $uid): bool
+    {
+        return (new Episciences_User())->hasLocalData($uid);
     }
 
     /**
@@ -1561,7 +1616,7 @@ class UserDefaultController extends Zend_Controller_Action
     protected function loadUser(array $account): Episciences_User
     {
         $user = new Episciences_User($account);
-        $user->find($user->getUid()); // Récupère les données propres à Episciences
+        $user->find($user->getUid()); // Loads the Episciences data of the account
 
         return $user;
     }
@@ -1603,7 +1658,7 @@ class UserDefaultController extends Zend_Controller_Action
         try {
             Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION, $tags);
         } catch (Zend_Exception $e) {
-            trigger_error($e->getMessage(), E_USER_ERROR);
+            trigger_error($e->getMessage(), E_USER_WARNING);
         }
     }
 
@@ -1712,7 +1767,6 @@ class UserDefaultController extends Zend_Controller_Action
         if ($this->getRequest()->isPost() && $form->isValid($this->getRequest()
                 ->getPost())) {
 
-            $user = new Ccsd_User_Models_User();
             $userMapper = new Ccsd_User_Models_UserMapper();
 
             $testPreviousPassword = $userMapper->findByUsernamePassword(Episciences_Auth::getInstance()->getIdentity()
@@ -1728,12 +1782,7 @@ class UserDefaultController extends Zend_Controller_Action
 
             try {
 
-                $user->setUid(Episciences_Auth::getUid());
-                $user->setPassword($form->getValue('PASSWORD'));
-                $user->setTime_modified();
-                $affectedRows = $userMapper->savePassword($user);
-
-                if ($affectedRows === 1) {
+                if ($this->saveNewPassword((int)Episciences_Auth::getUid(), (string)$form->getValue('PASSWORD'))) {
                     $this->redirect('/user/logout/reason/passwordupdated/lang/' . Episciences_Auth::getLangueid());
                 } else {
                     $this->view->resultMessage = $this->view->message("Échec de la modification. Votre mot de passe n'a pas été changé.", 'danger');
@@ -2310,6 +2359,8 @@ class UserDefaultController extends Zend_Controller_Action
             $this->flashChangeEmailMessage(self::ERROR, Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
             return;
         }
+
+        $this->revokeAccountLinks((int)$targetUid);
 
         if ($targetUid === $self) {
             // Modifying your own account: refresh the session from a fresh read, not the stale request-level cache.

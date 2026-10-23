@@ -155,6 +155,54 @@ final class AccountTokenRepositoryTest extends TestCase
         self::assertNotNull($this->repository->find($otherAccount, TokenPurpose::PASSWORD_RESET));
     }
 
+    public function testIssuingKeepsOnlyTheLatestTokenWhenOlderOnesAreLeft(): void
+    {
+        // State left by a concurrent request that inserted its token before this one
+        $concurrent = bin2hex(random_bytes(32));
+        $this->db->insert(AccountTokenRepository::TABLE_NAME, [
+            'uid' => self::UID,
+            'email' => self::EMAIL,
+            'purpose' => TokenPurpose::PASSWORD_RESET->value,
+            'token_hash' => hash('sha256', $concurrent),
+            'created_at' => $this->now->format('Y-m-d H:i:s'),
+            'expires_at' => $this->now->modify('+1 hour')->format('Y-m-d H:i:s'),
+        ]);
+
+        $latest = $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);
+
+        self::assertNull($this->repository->find($concurrent, TokenPurpose::PASSWORD_RESET));
+        self::assertNotNull($this->repository->find($latest, TokenPurpose::PASSWORD_RESET));
+        self::assertSame(1, $this->countTokens());
+    }
+
+    public function testRestoredTokenCanBeUsedAgainUntilItsExpiry(): void
+    {
+        $token = $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);
+        $consumed = $this->repository->consume($token, TokenPurpose::PASSWORD_RESET);
+        self::assertNotNull($consumed);
+
+        $this->repository->restore($token, $consumed);
+
+        $restored = $this->repository->find($token, TokenPurpose::PASSWORD_RESET);
+        self::assertNotNull($restored);
+        self::assertSame(self::UID, $restored->uid);
+        self::assertEquals($consumed->expiresAt, $restored->expiresAt);
+
+        $this->elapse(TokenPurpose::PASSWORD_RESET->ttlSeconds());
+        self::assertNull($this->repository->find($token, TokenPurpose::PASSWORD_RESET));
+    }
+
+    public function testRestoringATokenStillStoredDoesNotDuplicateIt(): void
+    {
+        $token = $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);
+        $found = $this->repository->find($token, TokenPurpose::PASSWORD_RESET);
+        self::assertNotNull($found);
+
+        $this->repository->restore($token, $found);
+
+        self::assertSame(1, $this->countTokens());
+    }
+
     public function testRevokeAllOnlyRevokesTheGivenAccountAndPurposes(): void
     {
         $reset = $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);
@@ -248,6 +296,18 @@ final class AccountTokenRepositoryTest extends TestCase
         self::assertTrue($this->repository->importLegacy(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET, $legacy, $this->now, $expiresAt));
         self::assertFalse($this->repository->importLegacy(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET, $legacy, $this->now, $expiresAt));
         self::assertSame(1, $this->countTokens());
+    }
+
+    public function testCanImportLegacyTellsWhetherTheTokenWouldBeStored(): void
+    {
+        $legacy = sha1('legacy');
+
+        self::assertTrue($this->repository->canImportLegacy($legacy));
+        self::assertFalse($this->repository->canImportLegacy('not-a-token'));
+
+        $this->repository->importLegacy(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET, $legacy, $this->now, $this->now->modify('+1 hour'));
+
+        self::assertFalse($this->repository->canImportLegacy($legacy));
     }
 
     public function testMalformedLegacyTokenIsNotImported(): void

@@ -59,10 +59,11 @@ final class LegacyTokenImporter
         $imported = 0;
 
         foreach ($rows as $row) {
-            $purpose = self::PURPOSES[(string)$row['USAGE']];
+            // USAGE is compared case-insensitively in SQL (column collation): same here
+            $purpose = self::PURPOSES[strtoupper((string)$row['USAGE'])] ?? null;
             $createdAt = DateTimeImmutable::createFromFormat(self::DATE_FORMAT, (string)$row['TIME_MODIFIED']);
 
-            if ($createdAt === false || !isset($episciencesUids[(int)$row['UID']])) {
+            if ($purpose === null || $createdAt === false || !isset($episciencesUids[(int)$row['UID']])) {
                 continue;
             }
 
@@ -73,7 +74,7 @@ final class LegacyTokenImporter
             }
 
             if ($dryRun) {
-                $imported++;
+                $imported += $this->repository->canImportLegacy((string)$row['TOKEN']) ? 1 : 0;
                 continue;
             }
 
