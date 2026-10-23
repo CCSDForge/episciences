@@ -25,15 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Security
-- Co-author form and co-author removal of the paper management page: hardened checks.
-- Graphical abstract and linked data of a paper: hardened checks.
-
 ### Fixed
+- [#1310](https://github.com/CCSDForge/episciences/pull/1310): align access and request token checks on the co-author form and co-author removal with the paper management page.
+- [#1344](https://github.com/CCSDForge/episciences/pull/1344): align permission, request token, and file upload validation for graphical abstract and linked data with the paper context.
 - [#1349](https://github.com/CCSDForge/episciences/pull/1349): profile edition form opened from the user list is submitted for the selected account.
 - [#1345](https://github.com/CCSDForge/episciences/issues/1345): authors can edit the relationship of an existing related work (the access rule did not match the action name). Authors can only add, edit or remove linked data while the paper is not published; editorial roles still can afterwards.
-
-- Journal settings: the statistics start date is now strictly validated (YYYY-MM-DD); a malformed stored value is ignored by the statistics page instead of making it fail
+- [#1332](https://github.com/CCSDForge/episciences/pull/1332): journal settings: the statistics start date is now strictly validated (YYYY-MM-DD); a malformed stored value is ignored by the statistics page instead of making it fail.
 
 ## v1.0.57.1 - 2026-10-22
 
