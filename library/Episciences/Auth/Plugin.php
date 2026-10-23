@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Maintenance\ReadOnlyMode;
+use Episciences\Security\AccessLog;
 
 /**
  * Access rights verification for a resource
@@ -26,11 +27,13 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
                 // The user cannot access the page
                 if (!Episciences_Auth::isLogged()) {
                     // The user is not logged in
+                    AccessLog::denied(AccessLog::AUTH_REQUIRED, '', ['resource' => $resource]);
                     $request->setParam('forward-action', $request->getActionName());
                     $request->setParam('forward-controller', $request->getControllerName());
                     $request->setControllerName('user');
                     $request->setActionName('login');
                 } else {
+                    AccessLog::denied(AccessLog::ACL_DENIED, '', ['resource' => $resource]);
                     $request->setControllerName(self::FAIL_AUTH_CONTROLLER);
                     $request->setActionName(self::FAIL_AUTH_ACTION);
                     $request->setParam('error_message', "Accès refusé");
@@ -53,10 +56,22 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
     /**
      * The requested resource is not defined in the ACL (or is ambiguous): never let it reach the
      * dispatcher unchecked, whatever the request type.
+     *
+     * An existing action missing from the ACL is a page closed by mistake: it is logged as a configuration
+     * error. Unknown XHR resources are logged too; regular requests to unknown pages (crawlers) are not.
      */
     public function denyUnknownResource(Zend_Controller_Request_Abstract $request): void
     {
-        if ($request instanceof Zend_Controller_Request_Http && $request->isXmlHttpRequest()) {
+        $isXhr = $request instanceof Zend_Controller_Request_Http && $request->isXmlHttpRequest();
+        $resource = $request->getControllerName() . '-' . $request->getActionName();
+
+        if ($this->actionExists($request)) {
+            AccessLog::denied(AccessLog::ACL_MISSING, '', ['resource' => $resource]);
+        } elseif ($isXhr) {
+            AccessLog::denied(AccessLog::UNKNOWN_RESOURCE, '', ['resource' => $resource]);
+        }
+
+        if ($isXhr) {
             $request->setControllerName(self::FAIL_AUTH_CONTROLLER);
             $request->setActionName(self::FAIL_AUTH_ACTION);
             $request->setParam('error_message', "Accès refusé");
@@ -66,6 +81,28 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
 
         $request->setControllerName('index');
         $request->setActionName('notfound');
+    }
+
+    /**
+     * Whether the request matches a controller action that would actually be dispatched.
+     */
+    protected function actionExists(Zend_Controller_Request_Abstract $request): bool
+    {
+        try {
+            $dispatcher = Zend_Controller_Front::getInstance()->getDispatcher();
+            if (!$dispatcher instanceof Zend_Controller_Dispatcher_Standard || !$dispatcher->isDispatchable($request)) {
+                return false;
+            }
+
+            $controllerClass = $dispatcher->getControllerClass($request);
+            if (!is_string($controllerClass)) {
+                return false;
+            }
+
+            return method_exists($dispatcher->loadClass($controllerClass), $dispatcher->getActionMethod($request));
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     /**

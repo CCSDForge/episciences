@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Security\AccessLog;
+
 /**
  * Class ApiController pour la fusion de comptes
  */
@@ -39,6 +41,7 @@ class ApiController extends Zend_Controller_Action
         }
 
         if (!self::isValidMergeAuthToken(defined('FUSION_TOKEN_AUTH') ? (string)FUSION_TOKEN_AUTH : '', $authToken)) { // sécuriser le fait que seule notre application peut faire de la fusion de comptes
+            AccessLog::denied(AccessLog::TOKEN_INVALID, 'merge_auth_token');
             $httpCode = Episciences_Merge_MergingManager::HTTP_UNAUTHORIZED;
             $message = 'Authentication is required to access the resource';
             $response = ['httpStatusCode' => $httpCode, 'message' => $message];

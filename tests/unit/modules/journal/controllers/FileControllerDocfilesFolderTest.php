@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences\Security\AccessLog;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
 
@@ -16,9 +21,30 @@ use Zend_Controller_Response_HttpTestCase;
  */
 final class FileControllerDocfilesFolderTest extends TestCase
 {
+    private TestHandler $logHandler;
+
     protected function setUp(): void
     {
         require_once APPLICATION_PATH . '/modules/journal/controllers/FileController.php';
+        $this->logHandler = new TestHandler();
+        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
+    }
+
+    protected function tearDown(): void
+    {
+        AccessLog::setLogger(new NullLogger());
+        AccessLog::reset();
+    }
+
+    /**
+     * @return list<array{string, string}> event and reason of each security log record
+     */
+    private function loggedEvents(): array
+    {
+        return array_map(
+            static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? ''],
+            $this->logHandler->getRecords()
+        );
     }
 
     /** @var list<array{int, string, string}> access checks asked: docId, folder, file */
@@ -84,6 +110,11 @@ final class FileControllerDocfilesFolderTest extends TestCase
 
         self::assertSame(404, $code);
         self::assertSame([], $delivered, 'no file must be delivered');
+        self::assertSame(
+            $folder === '' ? [] : [[AccessLog::UNSAFE_PATH, 'unexpected_folder']],
+            $this->loggedEvents(),
+            'a missing folder is not an attempt'
+        );
     }
 
     /**
@@ -109,6 +140,7 @@ final class FileControllerDocfilesFolderTest extends TestCase
         self::assertSame(200, $code);
         self::assertCount(1, $delivered);
         self::assertSame($relativePath, $delivered[0][1]);
+        self::assertSame([], $this->loggedEvents());
     }
 
     public function testCopyEditingFileOfACommentIsServed(): void
@@ -177,5 +209,6 @@ final class FileControllerDocfilesFolderTest extends TestCase
 
         self::assertSame(404, $code);
         self::assertSame([], $delivered, 'no file must be delivered');
+        self::assertSame([[AccessLog::UNSAFE_PATH, 'unsafe_file_name']], $this->loggedEvents());
     }
 }

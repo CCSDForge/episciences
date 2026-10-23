@@ -3,6 +3,7 @@
 use Ccsd\Auth\AdapterFactory;
 use Episciences\Altcha\ChallengeHelper;
 use Episciences\Maintenance\ReadOnlyMode;
+use Episciences\Security\AccessLog;
 use Episciences\Trait\LocaleByCookieTrait;
 use Episciences\User\AccountMutationPolicy;
 use Episciences\User\EmailPolicy;
@@ -407,6 +408,12 @@ class UserDefaultController extends Zend_Controller_Action
             case Zend_Auth_Result::FAILURE:
             case Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID:
             case Zend_Auth_Result::FAILURE_IDENTITY_NOT_FOUND:
+                $username = $this->getRequest()->getPost('username');
+                AccessLog::denied(AccessLog::LOGIN_FAILED, '', [
+                    'result_code' => $result->getCode(),
+                    'adapter' => get_class($adapter),
+                    'username' => is_string($username) ? mb_substr($username, 0, 64) : null,
+                ]);
                 // For MySQL adapter, redisplay login form with error message
                 if ($adapter instanceof \Ccsd\Auth\Adapter\Mysql) {
                     $form = new \Ccsd_User_Form_Login();
@@ -694,6 +701,7 @@ class UserDefaultController extends Zend_Controller_Action
     public function listAction()
     {
         if (!Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor()) {
+            AccessLog::denied(AccessLog::ACL_DENIED, 'role_check');
             $this->_helper->redirector->gotoUrl('/error/deny');
             return;
         }

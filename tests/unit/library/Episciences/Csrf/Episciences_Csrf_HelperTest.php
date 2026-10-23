@@ -2,8 +2,14 @@
 
 namespace unit\library\Episciences\Csrf;
 
+use Episciences\Security\AccessLog;
 use Episciences_Csrf_Helper;
+use Monolog\Handler\TestHandler;
+use Monolog\Level;
+use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use ReflectionClass;
 
 /**
@@ -333,11 +339,34 @@ class Episciences_Csrf_HelperTest extends TestCase
         }
     }
 
+    private TestHandler $logHandler;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->logHandler = new TestHandler();
+        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
+        AccessLog::reset();
+    }
+
     protected function tearDown(): void
     {
         // Zend_Controller_Request_Http::setPost() writes into the superglobal.
         unset($_SERVER['HTTP_X_CSRF_TOKEN'], $_POST['csrf_token']);
+        AccessLog::setLogger(new NullLogger());
+        AccessLog::reset();
         parent::tearDown();
+    }
+
+    /**
+     * @return list<array{string, string, string}> event, reason and level of each security log record
+     */
+    private function loggedFailures(): array
+    {
+        return array_map(
+            static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? '', $record->level->getName()],
+            $this->logHandler->getRecords()
+        );
     }
 
     /**
@@ -483,5 +512,65 @@ class Episciences_Csrf_HelperTest extends TestCase
         $this->storeFormHash('csrf_comment_7', 'csrf_comment_7', 'stored-hash');
 
         self::assertTrue(Episciences_Csrf_Helper::validateFormToken('csrf_comment_7', ['csrf_comment_7' => 'stored-hash']));
+    }
+
+    public function testRequestTokenFailuresAreLoggedWithTheirReason(): void
+    {
+        $this->sessionNamespaceOrSkip();
+        Episciences_Csrf_Helper::getSessionToken();
+
+        $request = new \Zend_Controller_Request_Http();
+        Episciences_Csrf_Helper::validateRequestToken($request);
+        $request->setPost('csrf_token', 'not-the-session-token');
+        Episciences_Csrf_Helper::validateRequestToken($request);
+
+        self::assertSame([
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISSING, Level::Warning->getName()],
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISMATCH, Level::Warning->getName()],
+        ], $this->loggedFailures());
+    }
+
+    /**
+     * No token in the session usually means an expired session: logged at a lower level.
+     */
+    public function testRequestTokenMissingFromTheSessionIsLoggedAsANotice(): void
+    {
+        $session = $this->sessionNamespaceOrSkip();
+        unset($session->csrfToken);
+
+        $request = new \Zend_Controller_Request_Http();
+        $request->setPost('csrf_token', 'anything');
+        Episciences_Csrf_Helper::validateRequestToken($request);
+
+        self::assertSame(
+            [[AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_NO_SESSION_TOKEN, Level::Notice->getName()]],
+            $this->loggedFailures()
+        );
+    }
+
+    public function testValidRequestTokenIsNotLogged(): void
+    {
+        $this->sessionNamespaceOrSkip();
+        $request = new \Zend_Controller_Request_Http();
+        $request->setPost('csrf_token', Episciences_Csrf_Helper::getSessionToken());
+
+        self::assertTrue(Episciences_Csrf_Helper::validateRequestToken($request));
+        self::assertSame([], $this->loggedFailures());
+    }
+
+    public function testFormTokenFailuresAreLoggedWithTheirReason(): void
+    {
+        Episciences_Csrf_Helper::validateFormToken('csrf_logged_1', []);
+        $this->storeFormHash('unique', 'csrf_logged_1', 'stored-hash');
+        Episciences_Csrf_Helper::validateFormToken('csrf_logged_1', ['csrf_logged_1' => 'forged'], 'unique');
+        // the stored token was cleared by the previous attempt
+        Episciences_Csrf_Helper::validateFormToken('csrf_logged_1', ['csrf_logged_1' => 'stored-hash'], 'unique');
+
+        self::assertSame([
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISSING, Level::Warning->getName()],
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISMATCH, Level::Warning->getName()],
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_NO_SESSION_TOKEN, Level::Notice->getName()],
+        ], $this->loggedFailures());
+        self::assertSame('csrf_logged_1', $this->logHandler->getRecords()[0]->context['token_name']);
     }
 }

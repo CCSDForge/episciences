@@ -93,3 +93,7 @@ if (!Zend_Registry::isRegistered('Zend_Translate')) {
 // an explicit language, which panics the same way if unset. 'en' matches what code reading
 // this key already assumes when it's absent (e.g. GetAvatar::asPaperStatusSvg's own catch).
 Zend_Registry::isRegistered('lang') || Zend_Registry::set('lang', 'en');
+
+// Denied accesses exercised by the tests must not end up in the security log of the
+// development environment. Tests asserting on it inject their own logger.
+\Episciences\Security\AccessLog::setLogger(new \Psr\Log\NullLogger());

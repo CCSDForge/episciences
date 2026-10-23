@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Security\ParamRedactor;
+
 class ErrorDefaultController extends Zend_Controller_Action
 {
 	
@@ -72,51 +74,13 @@ class ErrorDefaultController extends Zend_Controller_Action
     /**
      * Replace the value of credential-like parameters before they reach the logs.
      *
-     * A parameter is masked when its lowercased name contains one of the sensitive
-     * fragments (e.g. PASSWORD_VERIFY, API_PASSWORD_VERIFY, paperPassword, csrf_token),
-     * or exactly matches a name too generic to be used as a fragment (e.g. the volume
-     * access code). Role names containing a fragment (secretary) are not masked.
-     *
+     * @see ParamRedactor::redact()
      * @param array $params
      * @return array
      */
     public function redactSensitiveParams(array $params): array
     {
-        $sensitive = ['password', 'passwd', 'pwd', 'token', 'secret', 'csrf', 'api_key', 'apikey'];
-        $sensitiveExact = ['code', 'access_code'];
-        $notSensitive = [Episciences_Acl::ROLE_SECRETARY, Episciences_Acl::ROLE_SECRETARY_PLURAL];
-
-        foreach ($params as $key => $value) {
-            $name = strtolower((string)$key);
-            $isSensitive = in_array($name, $sensitiveExact, true)
-                || (!in_array($name, $notSensitive, true) && self::isSensitiveKey($name, $sensitive));
-
-            if ($isSensitive) {
-                $params[$key] = '***';
-            } elseif (is_array($value)) {
-                $params[$key] = $this->redactSensitiveParams($value);
-            }
-        }
-
-        return $params;
-    }
-
-    /**
-     * @param string $key
-     * @param string[] $fragments
-     * @return bool
-     */
-    private static function isSensitiveKey(string $key, array $fragments): bool
-    {
-        $key = strtolower($key);
-
-        foreach ($fragments as $fragment) {
-            if (str_contains($key, $fragment)) {
-                return true;
-            }
-        }
-
-        return false;
+        return ParamRedactor::redact($params);
     }
 
     public function getLog()

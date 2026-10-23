@@ -1,4 +1,5 @@
 <?php
+use Episciences\Security\AccessLog;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Logger;
@@ -58,9 +59,11 @@ class DefaultController extends Zend_Controller_Action
             }
 
             if (!Episciences_Auth::isLogged()) {
+                AccessLog::denied(AccessLog::AUTH_REQUIRED, 'unpublished_paper', self::paperLogContext($paper));
                 $this->redirect('/user/login/forward-controller/paper/forward-action/pdf/id/' . $paper->getDocid());
             }
 
+            AccessLog::denied(AccessLog::ACCESS_REDIRECTED, 'unpublished_paper', self::paperLogContext($paper));
             $message = $this->view->translate("Vous n'avez pas accès à cet article.");
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
             $this->redirect('/');
@@ -79,10 +82,23 @@ class DefaultController extends Zend_Controller_Action
     {
 
         if ($this->isRestrictedAccess($paper)) {
+            AccessLog::denied(
+                Episciences_Auth::isLogged() ? AccessLog::ACCESS_REDIRECTED : AccessLog::AUTH_REQUIRED,
+                'unpublished_paper',
+                self::paperLogContext($paper)
+            );
             $message = $this->view->translate("Vous n'avez pas accès à cet article.");
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
             $this->redirect('/');
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function paperLogContext(Episciences_Paper $paper): array
+    {
+        return ['docid' => $paper->getDocid(), 'paperid' => $paper->getPaperid()];
     }
 
     /**
@@ -425,7 +441,12 @@ class DefaultController extends Zend_Controller_Action
     protected function resolveSafePath(string $baseDir, string $relativePath): ?string
     {
         // Reject empty input and any NUL byte / control character
-        if ($relativePath === '' || preg_match('/[\x00-\x1f]/', $relativePath)) {
+        if ($relativePath === '') {
+            return null;
+        }
+
+        if (preg_match('/[\x00-\x1f]/', $relativePath)) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'control_character', ['path' => $relativePath]);
             return null;
         }
 
@@ -436,15 +457,41 @@ class DefaultController extends Zend_Controller_Action
 
         $real = realpath($realBase . DIRECTORY_SEPARATOR . $relativePath);
         if ($real === false) {
+            // A missing file is not an attempt, unless the path climbs above the base directory
+            if (self::climbsAboveBase($relativePath)) {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'outside_base_directory', ['path' => $relativePath]);
+            }
             return null;
         }
 
         // The resolved path must be the base directory itself or strictly inside it
         if ($real !== $realBase && !str_starts_with($real, $realBase . DIRECTORY_SEPARATOR)) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'outside_base_directory', ['path' => $relativePath]);
             return null;
         }
 
         return $real;
+    }
+
+    /**
+     * Whether the ".." segments of a relative path lead above its starting directory, as written
+     * (symbolic links are not followed: realpath() covers them for existing files).
+     */
+    protected static function climbsAboveBase(string $relativePath): bool
+    {
+        $depth = 0;
+
+        foreach (preg_split('#[/\\\\]#', $relativePath) ?: [] as $segment) {
+            if ($segment === '..') {
+                if (--$depth < 0) {
+                    return true;
+                }
+            } elseif ($segment !== '' && $segment !== '.') {
+                $depth++;
+            }
+        }
+
+        return false;
     }
 
     protected function getSession(): Zend_Session_Namespace

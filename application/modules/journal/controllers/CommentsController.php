@@ -1,6 +1,8 @@
 <?php
 
 use Episciences\AppRegistry;
+use Episciences\Security\AccessLog;
+use Episciences\Upload\SafeFileName;
 
 include_once APPLICATION_PATH . '/modules/journal/controllers/PaperController.php';
 
@@ -476,6 +478,7 @@ class CommentsController extends PaperController
     {
         // Comments are edited by the author, administrator, editor-in-chief or secretary.
         if (!$paper->isOwner() && !Episciences_Auth::isSecretary()) {
+            AccessLog::denied(AccessLog::ACCESS_REDIRECTED, 'not_comment_author', self::paperLogContext($paper));
             $message = "Vous avez été redirigé, car vous n'êtes pas l'auteur de ce commentaire.";
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
             $this->_helper->redirector->gotoUrl('/paper/submitted');
@@ -496,6 +499,9 @@ class CommentsController extends PaperController
     {
         // SECURITY FIX: Verify file belongs to this comment
         if (!in_array($file, $jFiles, true)) {
+            if (!SafeFileName::isBare($file)) {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $file]);
+            }
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
                 ->addMessage($this->view->translate("File not found in comment."));
             $this->_helper->redirector->gotoUrl($redirectUrl);
@@ -508,6 +514,9 @@ class CommentsController extends PaperController
 
         if ($realPath === false || $allowedBasePath === false ||
             !str_starts_with($realPath, $allowedBasePath . DIRECTORY_SEPARATOR)) {
+            if ($realPath !== false && $allowedBasePath !== false) {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'outside_base_directory', ['file' => $file]);
+            }
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
                 ->addMessage($this->view->translate("Access denied."));
             $this->_helper->redirector->gotoUrl($redirectUrl);

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Episciences\Security\AccessLog;
 use Episciences\User\SuLogger;
 
 /**
@@ -38,6 +39,7 @@ trait Episciences_Paper_AccessControlControllerTrait
         $params = array_key_exists('params', $redirection) ? $redirection['params'] : [];
 
         if (!empty($redirection) && array_key_exists('message', $redirection)) {
+            $this->logPaperRedirection('paper_permissions', $paper);
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($redirection['message']);
             // redirect target is always the editor's assigned papers list, regardless of the caller
             $this->_helper->redirector->gotoUrl($this->_helper->url('assigned', self::ADMINISTRATE_PAPER_CONTROLLER, null, $params));
@@ -154,9 +156,12 @@ trait Episciences_Paper_AccessControlControllerTrait
         $docId = $paper->getDocid();
 
         if ($paper->isOwner()) {
+            $this->logPaperRedirection('own_submission', $paper);
             $message = $this->buildOwnSubmissionRedirectMessage();
             $url = '/paper/view?id=' . $docId;
         } elseif (self::isConflictDetected($paper, $review)) {
+            // logged before a possible switch back to the original identity
+            $this->logPaperRedirection('conflict_of_interest', $paper);
             $message = $this->buildConflictRedirectMessage($paper->checkConflictResponse(Episciences_Auth::getUid()));
             $this->switchBackIfConflictConfirmationExpected();
             $url = '/coi/report?id=' . $docId;
@@ -166,6 +171,14 @@ trait Episciences_Paper_AccessControlControllerTrait
 
         $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
         $this->_helper->redirector->gotoUrl($url);
+    }
+
+    private function logPaperRedirection(string $reason, Episciences_Paper $paper): void
+    {
+        AccessLog::denied(AccessLog::ACCESS_REDIRECTED, $reason, [
+            'docid' => $paper->getDocid(),
+            'paperid' => $paper->getPaperid(),
+        ]);
     }
 
     /**

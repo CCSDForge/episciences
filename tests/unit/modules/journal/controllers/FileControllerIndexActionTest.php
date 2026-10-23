@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences\Security\AccessLog;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
 
@@ -15,9 +20,19 @@ use Zend_Controller_Response_HttpTestCase;
  */
 final class FileControllerIndexActionTest extends TestCase
 {
+    private TestHandler $logHandler;
+
     protected function setUp(): void
     {
         require_once APPLICATION_PATH . '/modules/journal/controllers/FileController.php';
+        $this->logHandler = new TestHandler();
+        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
+    }
+
+    protected function tearDown(): void
+    {
+        AccessLog::setLogger(new NullLogger());
+        AccessLog::reset();
     }
 
     /**
@@ -46,37 +61,46 @@ final class FileControllerIndexActionTest extends TestCase
     }
 
     /**
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string, string}> file name, extension, reason logged ('' for none)
      */
     public static function refusedNamesProvider(): array
     {
         return [
-            'parent directory' => ['../config/pwd', 'json'],
-            'encoded parent directory' => ['..%2Fconfig', 'json'],
-            'sub directory' => ['sub/file', 'pdf'],
-            'backslash' => ['sub\\file', 'pdf'],
-            'absolute path' => ['/etc/passwd', 'txt'],
-            'arXiv crypto key' => ['paper-crypto', 'pdf'],
-            'hyphen' => ['crypto-paper', 'pdf'],
-            'null byte' => ["file\0", 'pdf'],
-            'trailing newline' => ["file\n", 'pdf'],
-            'empty name' => ['', 'pdf'],
-            'empty extension' => ['file', ''],
-            'dotted extension' => ['file', 'tar.gz'],
-            'extension with slash' => ['file', 'p/df'],
-            'extension with trailing newline' => ['file', "pdf\n"],
+            'parent directory' => ['../config/pwd', 'json', 'unsafe_file_name'],
+            'encoded parent directory' => ['..%2Fconfig', 'json', ''],
+            'sub directory' => ['sub/file', 'pdf', 'unsafe_file_name'],
+            'backslash' => ['sub\\file', 'pdf', 'unsafe_file_name'],
+            'absolute path' => ['/etc/passwd', 'txt', 'unsafe_file_name'],
+            'arXiv crypto key' => ['paper-crypto', 'pdf', 'reserved_file_name'],
+            'hyphen' => ['crypto-paper', 'pdf', ''],
+            'null byte' => ["file\0", 'pdf', 'unsafe_file_name'],
+            'trailing newline' => ["file\n", 'pdf', 'unsafe_file_name'],
+            'empty name' => ['', 'pdf', ''],
+            'empty extension' => ['file', '', ''],
+            'dotted extension' => ['file', 'tar.gz', ''],
+            'extension with slash' => ['file', 'p/df', 'unsafe_file_name'],
+            'extension with trailing newline' => ['file', "pdf\n", 'unsafe_file_name'],
         ];
     }
 
     /**
+     * Only the names trying to reach another file are logged: the others are mere mistakes.
+     *
      * @dataProvider refusedNamesProvider
      */
-    public function testUnsafeOrReservedNamesAreRefused(string $filename, string $extension): void
+    public function testUnsafeOrReservedNamesAreRefused(string $filename, string $extension, string $loggedReason): void
     {
         [$code, $delivered] = $this->runIndexAction(['filename' => $filename, 'extension' => $extension]);
 
         self::assertSame(404, $code);
         self::assertSame([], $delivered, 'no file must be delivered');
+        self::assertSame(
+            $loggedReason === '' ? [] : [[AccessLog::UNSAFE_PATH, $loggedReason]],
+            array_map(
+                static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? ''],
+                $this->logHandler->getRecords()
+            )
+        );
     }
 
     public function testMissingParametersAreRefused(): void

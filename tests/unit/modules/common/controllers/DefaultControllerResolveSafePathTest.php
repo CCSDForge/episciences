@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace unit\modules\common\controllers;
 
+use Episciences\Security\AccessLog;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use ReflectionClass;
 use ReflectionMethod;
 
@@ -27,9 +32,13 @@ final class DefaultControllerResolveSafePathTest extends TestCase
     private string $root;
     /** Trusted base directory passed to resolveSafePath(). */
     private string $base;
+    private TestHandler $logHandler;
 
     protected function setUp(): void
     {
+        $this->logHandler = new TestHandler();
+        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
+
         require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
         $class = new ReflectionClass(\DefaultController::class);
@@ -64,7 +73,22 @@ final class DefaultControllerResolveSafePathTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->rrmdir($this->root);
+        AccessLog::setLogger(new NullLogger());
+        AccessLog::reset();
+        if (isset($this->root)) {
+            $this->rrmdir($this->root);
+        }
+    }
+
+    /**
+     * @return list<array{string, string}> event and reason of each security log record
+     */
+    private function loggedEvents(): array
+    {
+        return array_map(
+            static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? ''],
+            $this->logHandler->getRecords()
+        );
     }
 
     private function resolve(string $relativePath): ?string
@@ -208,5 +232,62 @@ final class DefaultControllerResolveSafePathTest extends TestCase
         self::assertNull($result,
             'A sibling directory sharing the base-name prefix must not be treated as inside the base '
             . '(the DIRECTORY_SEPARATOR boundary check prevents prefix confusion)');
+    }
+
+    // -----------------------------------------------------------------------
+    // Security log: attempts are recorded, missing files are not
+    // -----------------------------------------------------------------------
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function climbingPathProvider(): array
+    {
+        return [
+            'existing target outside the base' => ['../outside.txt'],
+            'missing target outside the base' => ['../../no-such-file'],
+            'climbing from a subdirectory' => ['sub/../../outside.txt'],
+            'backslash separators' => ['..\\..\\no-such-file'],
+        ];
+    }
+
+    /**
+     * @dataProvider climbingPathProvider
+     */
+    public function testPathLeavingTheBaseIsLogged(string $relativePath): void
+    {
+        self::assertNull($this->resolve($relativePath));
+        self::assertSame([[AccessLog::UNSAFE_PATH, 'outside_base_directory']], $this->loggedEvents());
+        self::assertSame($relativePath, $this->logHandler->getRecords()[0]->context['path']);
+    }
+
+    public function testControlCharacterIsLogged(): void
+    {
+        $this->resolve("doc\0.pdf");
+
+        self::assertSame([[AccessLog::UNSAFE_PATH, 'control_character']], $this->loggedEvents());
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function harmlessPathProvider(): array
+    {
+        return [
+            'existing file' => ['doc.pdf'],
+            'missing file' => ['does-not-exist.pdf'],
+            'missing file below a parent segment staying inside' => ['sub/../nope.pdf'],
+            'dot segments staying inside' => ['./sub/../doc.pdf'],
+        ];
+    }
+
+    /**
+     * @dataProvider harmlessPathProvider
+     */
+    public function testPathStayingInsideTheBaseIsNotLogged(string $relativePath): void
+    {
+        $this->resolve($relativePath);
+
+        self::assertSame([], $this->loggedEvents());
     }
 }

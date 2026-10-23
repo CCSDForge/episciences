@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 - Console commands `user:purge-expired-tokens` (daily cron) and `user:import-legacy-tokens` (one-off, right after creating the `user_token` table, see `src/mysql/2026-10-23-create-user-token-table.sql`).
+- Security log of denied accesses: a daily JSON file (`logs/security-YYYY-MM-DD.log`, kept 180 days) records access refusals, CSRF failures, invalid tokens, unsafe file paths and failed logins, as well as existing pages missing from the access rules.
 - BAOBAB submissions now store the licence, the ROR of affiliations (including an organisational author's own ROR) and the translated abstracts filed as other descriptions.
 - Links to HAL found in a repository's related identifiers are now stored as linked publications, or as linked software for a HAL software deposit.
 - BAOBAB submissions accept an ARK resolver URL (e.g. `https://pidslink.ren.africa/ark:/50962/...`) as well as a bare ARK or a record URL.

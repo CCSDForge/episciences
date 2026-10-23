@@ -3,7 +3,12 @@
 declare(strict_types=1);
 
 use Episciences\Maintenance\ReadOnlyMode;
+use Episciences\Security\AccessLog;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 /**
  * @covers Episciences_Auth_Plugin
@@ -11,9 +16,14 @@ use PHPUnit\Framework\TestCase;
 class Episciences_Auth_PluginTest extends TestCase
 {
     private Episciences_Auth_Plugin $plugin;
+    private TestHandler $logHandler;
 
     protected function setUp(): void
     {
+        $this->logHandler = new TestHandler();
+        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
+        AccessLog::reset();
+
         $acl = new Zend_Acl();
         foreach (['user-findusers', 'api-openaire-metrics', 'file-index', 'my-ctrl-index', 'dup-openaire-metrics', 'dup-openairemetrics'] as $resource) {
             $acl->addResource(new Zend_Acl_Resource($resource));
@@ -23,6 +33,23 @@ class Episciences_Auth_PluginTest extends TestCase
         $property = new ReflectionProperty(Ccsd_Auth_Plugin::class, '_acl');
         $property->setAccessible(true);
         $property->setValue($this->plugin, $acl);
+    }
+
+    protected function tearDown(): void
+    {
+        AccessLog::setLogger(new NullLogger());
+        AccessLog::reset();
+    }
+
+    /**
+     * @return list<array{string, mixed}> event and resource of each security log record
+     */
+    private function loggedEvents(): array
+    {
+        return array_map(
+            static fn(LogRecord $record): array => [$record->message, $record->context['resource'] ?? null],
+            $this->logHandler->getRecords()
+        );
     }
 
     public function testExactMatchIsReturnedAsIs(): void
@@ -293,6 +320,126 @@ class Episciences_Auth_PluginTest extends TestCase
             ReadOnlyMode::setOverride(null);
             Episciences_User::forgetStaticCache($uid);
             Zend_Controller_Action_HelperBroker::removeHelper('redirector');
+        }
+    }
+
+    public function testGuestDeniedByTheAclIsLoggedAsAuthRequired(): void
+    {
+        $this->dispatchWithApplicationAcl('user', 'findCasUsers', []);
+
+        self::assertSame([[AccessLog::AUTH_REQUIRED, 'user-findcasusers']], $this->loggedEvents());
+    }
+
+    public function testMemberDeniedByTheAclIsLoggedAsAclDenied(): void
+    {
+        $this->dispatchWithApplicationAcl('user', 'findcasusers', [Episciences_Acl::ROLE_MEMBER]);
+
+        self::assertSame([[AccessLog::ACL_DENIED, 'user-findcasusers']], $this->loggedEvents());
+    }
+
+    public function testAllowedPageIsNotLogged(): void
+    {
+        $this->dispatchWithApplicationAcl('error', 'deny', []);
+
+        self::assertSame([], $this->loggedEvents());
+    }
+
+    /**
+     * @param bool $actionExists answer of the dispatcher lookup
+     */
+    private function pluginWithAclStubAndAction(bool $actionExists): Episciences_Auth_Plugin
+    {
+        $acl = $this->createMock(Episciences_Acl::class);
+        $acl->method('has')->willReturn(false);
+        $acl->method('getResources')->willReturn([]);
+
+        return new class($acl, $actionExists) extends Episciences_Auth_Plugin {
+            public function __construct(private readonly Episciences_Acl $stub, private readonly bool $exists)
+            {
+            }
+
+            public function getAcl(): ?Episciences_Acl
+            {
+                return $this->stub;
+            }
+
+            protected function actionExists(Zend_Controller_Request_Abstract $request): bool
+            {
+                return $this->exists;
+            }
+        };
+    }
+
+    public function testExistingActionMissingFromTheAclIsLoggedAsAConfigurationError(): void
+    {
+        $request = new Zend_Controller_Request_Http();
+        $request->setControllerName('website')->setActionName('notdeclared');
+
+        $this->pluginWithAclStubAndAction(true)->preDispatch($request);
+
+        self::assertSame([[AccessLog::ACL_MISSING, 'website-notdeclared']], $this->loggedEvents());
+        self::assertSame(\Monolog\Level::Error, $this->logHandler->getRecords()[0]->level);
+        self::assertSame(['index', 'notfound'], [$request->getControllerName(), $request->getActionName()]);
+    }
+
+    public function testUnknownPageOfARegularRequestIsNotLogged(): void
+    {
+        $request = new Zend_Controller_Request_Http();
+        $request->setControllerName('wp-admin')->setActionName('setup');
+
+        $this->pluginWithAclStubAndAction(false)->preDispatch($request);
+
+        self::assertSame([], $this->loggedEvents());
+    }
+
+    public function testUnknownResourceOfAnXhrRequestIsLogged(): void
+    {
+        $request = new class extends Zend_Controller_Request_Http {
+            public function isXmlHttpRequest(): bool
+            {
+                return true;
+            }
+        };
+        $request->setControllerName('foo')->setActionName('bar');
+
+        $this->pluginWithAclStubAndAction(false)->preDispatch($request);
+
+        self::assertSame([[AccessLog::UNKNOWN_RESOURCE, 'foo-bar']], $this->loggedEvents());
+    }
+
+    /**
+     * @return array<string, array{string, string, bool}>
+     */
+    public static function dispatchableProvider(): array
+    {
+        return [
+            'existing action' => ['aclprobe', 'existing', true],
+            'missing action' => ['aclprobe', 'missing', false],
+            'missing controller' => ['nosuchcontroller', 'index', false],
+        ];
+    }
+
+    /**
+     * actionExists() asks the real dispatcher, here pointed at a fixture controller directory.
+     *
+     * @dataProvider dispatchableProvider
+     */
+    public function testActionExistsMatchesWhatTheDispatcherWouldRun(string $controller, string $action, bool $expected): void
+    {
+        $front = Zend_Controller_Front::getInstance();
+        $previousDispatcher = $front->getDispatcher();
+        $dispatcher = new Zend_Controller_Dispatcher_Standard();
+        $dispatcher->setControllerDirectory(__DIR__ . '/fixtures/controllers');
+        $front->setDispatcher($dispatcher);
+
+        try {
+            $request = new Zend_Controller_Request_Http();
+            $request->setControllerName($controller)->setActionName($action);
+            $method = new ReflectionMethod(Episciences_Auth_Plugin::class, 'actionExists');
+
+            self::assertSame($expected, $method->invoke($this->plugin, $request));
+        } finally {
+            $front->setDispatcher($previousDispatcher);
         }
     }
 }
