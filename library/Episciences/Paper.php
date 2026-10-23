@@ -372,11 +372,6 @@ class Episciences_Paper
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'openaire', 'crossref', 'doaj', 'zbjats', 'json'];
     public $hasHook;
     /**
-     * Deadline of the pending revision request, set by setRevisionDeadline() or by the controllers
-     * @var string|null
-     */
-    public $_revisionDeadline = null;
-    /**
      * Files of a temporary version, set by processTmpVersion()
      */
     public ?array $tmpFiles = null;
@@ -473,6 +468,8 @@ class Episciences_Paper
     private ?string $_password = null;
     private ?string $_graphical_abstract = null;
     private ?array $_data_descriptors = null;
+    /** Deadline of the pending revision request, read and set by controllers and views */
+    public ?string $_revisionDeadline = null;
 
     /**
      * Episciences_Paper constructor.
