@@ -40,6 +40,8 @@ class StatsController extends Zend_Controller_Action
     // the papers of the figures are kept in session for the papers action (no DOCID in the page)
     public const PAPERS_SESSION_NAMESPACE = 'statsPapers';
     public const PAPERS_SESSION_TTL = 1800;
+    // the administrators of the journal can show all the data, without the "startStatsAfterDate" setting of the journal
+    public const FULL_HISTORY_PARAM = 'fullHistory';
     // date columns of the papers table: only the dates relevant to each figure
     // (the submission date is the import date for an imported paper)
     public const COLUMN_SUBMISSION = 'submissionDate';
@@ -126,6 +128,17 @@ class StatsController extends Zend_Controller_Action
         // The API rejects a malformed date: ignore it, as before, rather than failing to display the statistics
         if ($startStatsAfterDate && !Episciences_Tools::isValidSQLDate($startStatsAfterDate)) {
             $logger?->warning(sprintf('Invalid startStatsAfterDate setting "%s" ignored (RVCODE: %s)', $startStatsAfterDate, RVCODE));
+            $startStatsAfterDate = null;
+        }
+
+        // The administrators of the journal can show all the data, without the "startStatsAfterDate" setting of the journal
+        $canShowFullHistory = $startStatsAfterDate !== null && self::canSeePapers();
+        $fullHistory = $canShowFullHistory && self::isFullHistoryRequested($request->getParam(self::FULL_HISTORY_PARAM));
+
+        $this->view->startStatsAfterDateSetting = $canShowFullHistory ? $startStatsAfterDate : null;
+        $this->view->fullHistory = $fullHistory;
+
+        if ($fullHistory) {
             $startStatsAfterDate = null;
         }
 
@@ -310,7 +323,7 @@ class StatsController extends Zend_Controller_Action
 
         // Papers of the figures (journal administrators only): kept in session, the page only gets their number
         $paperLists = self::getPaperLists($dashboard['value'] ?? []);
-        $this->storePaperLists($paperLists, $yearQuery);
+        $this->storePaperLists($paperLists, $yearQuery, $fullHistory);
         $this->view->paperLists = self::countPaperLists($paperLists, self::getFigureValues($dashboard['value'] ?? []), $logger);
         $this->view->paperListTitles = $paperLists ? $this->getPaperListTitles() : [];
         // without the "startAfterDate" filter, the totals are not explained by the papers
@@ -483,8 +496,9 @@ class StatsController extends Zend_Controller_Action
         $request = $this->getRequest();
         $figure = (string)$request->getParam('figure', '');
         $year = (int)$request->getParam('year', 0) ?: null;
+        $fullHistory = self::isFullHistoryRequested($request->getParam(self::FULL_HISTORY_PARAM));
 
-        $stored = (new Zend_Session_Namespace(self::PAPERS_SESSION_NAMESPACE))->{self::getPapersSessionKey($year)} ?? null;
+        $stored = (new Zend_Session_Namespace(self::PAPERS_SESSION_NAMESPACE))->{self::getPapersSessionKey($year, $fullHistory)} ?? null;
 
         if (
             !is_array($stored) ||
@@ -709,9 +723,20 @@ class StatsController extends Zend_Controller_Action
         };
     }
 
-    public static function getPapersSessionKey(?int $year): string
+    /**
+     * Key of the lists of papers in session: by journal, year and "startStatsAfterDate" filter
+     */
+    public static function getPapersSessionKey(?int $year, bool $fullHistory = false): string
     {
-        return sprintf('%d_%s', defined('RVID') ? RVID : 0, $year ?: 'all');
+        return sprintf('%d_%s%s', defined('RVID') ? RVID : 0, $year ?: 'all', $fullHistory ? '_full' : '');
+    }
+
+    /**
+     * Whether all the data is requested, without the "startStatsAfterDate" setting of the journal
+     */
+    public static function isFullHistoryRequested(mixed $value): bool
+    {
+        return is_scalar($value) && filter_var($value, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
@@ -793,14 +818,14 @@ class StatsController extends Zend_Controller_Action
      * Keeps the papers of the figures in session for the papers action
      * @param array<string, array{docIds: int[], hidden: int}> $paperLists
      */
-    private function storePaperLists(array $paperLists, ?int $year): void
+    private function storePaperLists(array $paperLists, ?int $year, bool $fullHistory = false): void
     {
         if (!$paperLists || !self::canSeePapers()) {
             return;
         }
 
         $session = new Zend_Session_Namespace(self::PAPERS_SESSION_NAMESPACE);
-        $session->{self::getPapersSessionKey($year)} = ['uid' => (int)Episciences_Auth::getUid(), 'lists' => $paperLists];
+        $session->{self::getPapersSessionKey($year, $fullHistory)} = ['uid' => (int)Episciences_Auth::getUid(), 'lists' => $paperLists];
         $session->setExpirationSeconds(self::PAPERS_SESSION_TTL);
     }
 

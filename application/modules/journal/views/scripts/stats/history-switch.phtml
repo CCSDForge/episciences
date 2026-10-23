@@ -1,0 +1,33 @@
+<?php
+// On / off switch of the administrators: the "startStatsAfterDate" setting of the journal applied or not.
+// A GET form: it works without JavaScript; public/js/stats/index.js applies it as soon as it is switched.
+if (!$this->startStatsAfterDateSetting) {
+    return;
+}
+
+$startDate = Episciences_View_Helper_Date::Date($this->startStatsAfterDateSetting);
+$startYear = (int)date('Y', strtotime($this->startStatsAfterDateSetting));
+// switched off, a year before the start date has no statistics: it is not kept
+$keepYear = $this->yearQuery && (!$this->fullHistory || $this->yearQuery >= $startYear);
+$help = sprintf(
+    $this->translate('Réglage de la revue : les statistiques ne portent que sur les données postérieures au %s. Réservé aux administrateurs de la revue.'),
+    $startDate
+);
+?>
+<form class="stats-history-switch" method="get" action="/stats/index">
+    <?php if ($keepYear): ?>
+        <input type="hidden" name="year" value="<?= (int)$this->yearQuery ?>">
+    <?php endif; ?>
+    <label class="stats-switch">
+        <input type="checkbox" class="stats-switch-input" role="switch"
+               name="<?= StatsController::FULL_HISTORY_PARAM ?>" value="1"
+               <?= $this->fullHistory ? 'checked' : '' ?>>
+        <span class="stats-switch-track" aria-hidden="true"><span class="stats-switch-thumb"></span></span>
+        <span class="stats-switch-label">
+            <?= sprintf($this->escape($this->translate('Inclure les données antérieures au %s')), '<strong>' . $this->escape($startDate) . '</strong>') ?>
+        </span>
+    </label>
+    <span class="fas fa-info-circle fa-sm stat-help" data-toggle="tooltip"
+          title="<?= $this->escape($help) ?>" aria-label="<?= $this->escape($help) ?>"></span>
+    <noscript><button type="submit" class="btn btn-default btn-xs"><?= $this->translate('Appliquer') ?></button></noscript>
+</form>

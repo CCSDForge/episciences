@@ -3,16 +3,25 @@
 $request = Zend_Controller_Front::getInstance()->getRequest();
 $controller = $request->getControllerName();
 $action = $request->getActionName();
+// the "all the data" state of the administrators is kept from one year to another
+$url = function (?int $year) use ($controller, $action): string {
+    $query = array_filter([
+        'year' => $year,
+        StatsController::FULL_HISTORY_PARAM => $this->fullHistory ? 1 : null,
+    ]);
+
+    return '/' . $controller . '/' . $action . ($query ? '?' . http_build_query($query) : '');
+};
 ?>
 <?php if ($this->yearCategories) : ?>
     <nav class="stats-years" aria-label="<?= $this->escape($this->translate('Année')) ?>">
         <a class="stats-year<?= !$this->yearQuery ? ' active' : '' ?>"
            <?= !$this->yearQuery ? 'aria-current="page"' : '' ?>
-           href="<?= '/' . $controller . '/' . $action ?>"><?= $this->translate('Tout') ?></a>
+           href="<?= $this->escape($url(null)) ?>"><?= $this->translate('Tout') ?></a>
         <?php foreach ($this->yearCategories as $year): ?>
             <a class="stats-year<?= ($this->yearQuery === $year) ? ' active' : '' ?>"
                <?= ($this->yearQuery === $year) ? 'aria-current="page"' : '' ?>
-               href="<?= '/' . $controller . '/' . $action . '?year=' . (int)$year ?>"><?= (int)$year ?></a>
+               href="<?= $this->escape($url((int)$year)) ?>"><?= (int)$year ?></a>
         <?php endforeach; ?>
     </nav>
 <?php endif; ?>

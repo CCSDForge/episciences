@@ -403,3 +403,101 @@
     }
   }
 }
+
+// Toolbar: the years, and the on / off switch of the start date of the statistics (administrators)
+.stats-page {
+  .stats-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    margin: 0 0 16px;
+
+    .stats-years {
+      flex: 1 1 auto;
+      justify-content: flex-start;
+      width: auto;
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  .stats-history-switch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 4px 10px 4px 6px;
+    border: 1px solid #e8e7e3;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 1.3rem;
+    color: #52514e;
+
+    &.is-loading {
+      opacity: 0.6;
+      cursor: progress;
+    }
+  }
+
+  .stats-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-weight: 400;
+    cursor: pointer;
+  }
+
+  // the checkbox stays in the page (keyboard, screen readers), the track is drawn instead
+  .stats-switch-input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+  }
+
+  .stats-switch-track {
+    position: relative;
+    flex: none;
+    width: 36px;
+    height: 20px;
+    border-radius: 999px;
+    background: #c3c2b7;
+    transition: background-color 0.15s ease;
+  }
+
+  .stats-switch-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s ease;
+  }
+
+  .stats-switch-input:checked + .stats-switch-track {
+    background: #2a78d6;
+
+    .stats-switch-thumb {
+      transform: translateX(16px);
+    }
+  }
+
+  .stats-switch-input:focus-visible + .stats-switch-track {
+    outline: 2px solid #2a78d6;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stats-switch-track,
+    .stats-switch-thumb {
+      transition: none;
+    }
+  }
+}

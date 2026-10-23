@@ -172,6 +172,49 @@ class StatsControllerPaperListsTest extends TestCase
         $this->assertNotSame(StatsController::getPapersSessionKey(2024), StatsController::getPapersSessionKey(2025));
     }
 
+    public function testGetPapersSessionKey_ByFilterState(): void
+    {
+        // the lists without the "startStatsAfterDate" setting are kept apart
+        $this->assertSame(RVID . '_all_full', StatsController::getPapersSessionKey(null, true));
+        $this->assertSame(RVID . '_2025_full', StatsController::getPapersSessionKey(2025, true));
+        $this->assertNotSame(StatsController::getPapersSessionKey(2025), StatsController::getPapersSessionKey(2025, true));
+    }
+
+    /**
+     * @dataProvider fullHistoryProvider
+     */
+    public function testIsFullHistoryRequested(mixed $value, bool $expected): void
+    {
+        $this->assertSame($expected, StatsController::isFullHistoryRequested($value));
+    }
+
+    public static function fullHistoryProvider(): array
+    {
+        return [
+            '1' => ['1', true],
+            'true' => ['true', true],
+            'absent' => [null, false],
+            '0' => ['0', false],
+            'empty' => ['', false],
+            'other' => ['abc', false],
+            'array' => [['1'], false],
+        ];
+    }
+
+    public function testFullHistory_OnlyForTheAdministratorsOfTheJournal(): void
+    {
+        $source = $this->extractMethod('indexAction');
+
+        $this->assertStringContainsString('$canShowFullHistory = $startStatsAfterDate !== null && self::canSeePapers();', $source);
+        $this->assertStringContainsString('$fullHistory = $canShowFullHistory && self::isFullHistoryRequested(', $source);
+        // after an anonymous function: in the whole controller
+        $this->assertStringContainsString(
+            '$this->storePaperLists($paperLists, $yearQuery, $fullHistory);',
+            (string)file_get_contents(APPLICATION_PATH . '/modules/journal/controllers/StatsController.php')
+        );
+        $this->assertStringContainsString('self::getPapersSessionKey($year, $fullHistory)', $this->extractMethod('papersAction'));
+    }
+
     // -------------------------------------------------------------------------
     // papersAction(): rights, session, journal
     // -------------------------------------------------------------------------

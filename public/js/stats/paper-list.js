@@ -305,6 +305,11 @@ function initStatPapers() {
             params.set('year', dialog.dataset.year);
         }
 
+        // all the data, without the "startStatsAfterDate" setting of the journal (administrators)
+        if (dialog.dataset.fullHistory === '1') {
+            params.set('fullHistory', '1');
+        }
+
         const response = await fetch(
             dialog.dataset.url + '?' + params.toString(),
             {

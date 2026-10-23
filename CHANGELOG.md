@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Statistics page: the figures (articles, published, accepted, refused, other statuses, evaluations) are shown as tiles, each with its value, its context and the link to its papers.
 - Statistics page: clearer layout (introduction, year navigation, panels, section titles, delays in days, users total); the charts of a single year are no wider than their bars need.
 - Statistics page: the chart by repository stacks the repositories of each year, and no longer counts the temporary versions as a repository; a tile gives the number of articles with a temporary version.
+- Statistics page: when the journal starts its statistics at a given date, its administrators can include the earlier data with an on / off switch; the public still sees the statistics from that date.
 
 ### Fixed
 - Statistics page: the evaluations block is also shown when only the median number of reviews is known.

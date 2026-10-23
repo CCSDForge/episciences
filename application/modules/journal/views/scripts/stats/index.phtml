@@ -17,7 +17,11 @@ $this->layout()->pageTitle = $this->translate('Statistiques');
     <?php endif; ?>
 
 
-    <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories]) ?>
+    <?php // toolbar: the years, and the switch of the start date of the statistics (administrators) ?>
+    <div class="stats-toolbar">
+        <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories, 'fullHistory' => $this->fullHistory]) ?>
+        <?= $this->render('stats/history-switch.phtml') ?>
+    </div>
 
     <div class="col-md-12">
         <div id='loading-stats' style="display:none"></div>
@@ -70,7 +74,7 @@ $this->layout()->pageTitle = $this->translate('Statistiques');
         <?= $this->render('stats/papers-dialog.phtml') ?>
     <?php endif; ?>
 
-    <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories]) ?>
+    <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories, 'fullHistory' => $this->fullHistory]) ?>
 
     <div class="col-md-12">
         <?php if ($this->isAvailableUsersStats && $this->allUsers) : ?>

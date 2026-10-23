@@ -404,6 +404,20 @@ describe('Statistics papers window', function () {
         expect(dates.slice(0, 4).every(value => value !== '')).toBe(true);
     });
 
+    it('asks for the lists of all the data when the filter of the journal is off', async function () {
+        mockFetch({
+            nbAccepted: { body: { total: 1, hidden: 0, rows: makeRows(1) } },
+        });
+        document.getElementById('stat-papers-dialog').dataset.fullHistory = '1';
+
+        document.querySelector('[data-figure="nbAccepted"]').click();
+        await flush();
+
+        expect(fetch.mock.calls[0][0]).toBe(
+            '/stats/papers?figure=nbAccepted&year=2025&fullHistory=1'
+        );
+    });
+
     it('renders the titles as text', async function () {
         const rows = makeRows(1);
         rows[0].title = '<img src=x onerror=alert(1)>';
