@@ -263,12 +263,15 @@ describe('updateDoiDisplay', () => {
 
 describe('removeCoAuthor', () => {
     beforeEach(() => {
+        // journal prefix of the path-based routing (manager.episciences.org/<rvcode>/)
+        global.JS_PREFIX_URL = '/epijinfo/';
         global.fetch = jest.fn().mockResolvedValue({ ok: true });
         document.head.innerHTML =
             '<meta name="csrf-token" content="session-token">';
     });
 
     afterEach(() => {
+        delete global.JS_PREFIX_URL;
         document.head.innerHTML = '';
     });
 
@@ -277,7 +280,7 @@ describe('removeCoAuthor', () => {
 
         expect(global.fetch).toHaveBeenCalledTimes(1);
         const [url, options] = global.fetch.mock.calls[0];
-        expect(url).toBe('/administratepaper/ajaxrequestremovecoauthor');
+        expect(url).toBe('/epijinfo/administratepaper/ajaxrequestremovecoauthor');
         expect(options.method).toBe('POST');
         expect(options.headers['X-Requested-With']).toBe('XMLHttpRequest');
         expect(Object.fromEntries(options.body)).toEqual({

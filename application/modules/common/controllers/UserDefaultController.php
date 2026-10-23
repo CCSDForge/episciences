@@ -740,7 +740,7 @@ class UserDefaultController extends Episciences_Controller_Action
         $userDefaults = $casUserDefaults->toArray();
         $userDefaults = array_merge($userDefaults, $localUserDefaults);
         $form = new Episciences_User_Form_Edit(['UID' => $userId]);
-        $form->setAction($this->view->url($editUrlParams));
+        $form->setAction($this->url(['controller' => 'user', 'action' => 'edit'] + $editUrlParams));
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Enregistrer les modifications',
             'class' => 'btn btn-primary'
