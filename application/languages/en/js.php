@@ -333,6 +333,10 @@ return [
     // License save warnings
     "La licence actuelle est déjà définie." => 'The current license is already set.',
 
+    // Statistics: charts
+    'Voir les données' => 'View the data',
+    'jours' => 'days',
+
     // Statistics: papers of the figures
     'article(s)' => 'article(s)',
     "article(s) non listé(s) : conflit d'intérêts déclaré" => 'article(s) not listed: declared conflict of interest',

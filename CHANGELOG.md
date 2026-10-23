@@ -32,7 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `enrichment:creators -v` lists the author corrections made from HAL TEI; with `--dry-run` it lists them without writing anything.
 - Statistics page: journal administrators can see the papers behind each figure in a window listing their title, status and the dates relevant to the figure (submission or import, refusal, acceptance, publication), with search, sort and pagination, and links to the paper management pages; papers for which they declared a conflict of interest are only counted. Requires the matching Episciences API version; otherwise the page is displayed as before.
 
+### Changed
+- Statistics page: the charts are redesigned. The imported articles are no longer drawn in the charts by year (a note gives their number), the series by year no longer overlap (submissions, accepted, refused, published), the rates are shown as gauges instead of a doughnut, and each chart can be read as a table ("View the data").
+
 ### Fixed
+- Statistics page: in the chart by year and status, the values of a series were shown one year too early after a year without any value.
 - Statistics page: the page no longer waits indefinitely when the Episciences API is unreachable (5 s to connect, 30 s in total).
 - [#1310](https://github.com/CCSDForge/episciences/pull/1310): co-author form and co-author removal are now consistent with the paper management page.
 - [#1344](https://github.com/CCSDForge/episciences/pull/1344): graphical abstract and linked data forms are now consistent with the paper context.

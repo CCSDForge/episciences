@@ -1,0 +1,19 @@
+<?php
+// Panel of a chart of the statistics page; the chart and its table view are added by public/js/stats/common.js
+$title = $this->title ?? '';
+?>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading"><h2 class="panel-title"><?= $title ?></h2></div>
+    <div class="panel-body in">
+        <?php if (!empty($this->description)): ?>
+            <p class="help-block small"><?= $this->escape($this->translate($this->description)) ?></p>
+        <?php endif; ?>
+        <div class="stat-chart <?= $this->escape($this->chartClass ?? '') ?>">
+            <canvas id="<?= $this->escape($this->canvasId) ?>" role="img" aria-label="<?= $this->escape(strip_tags($title)) ?>"></canvas>
+        </div>
+        <?php if (!empty($this->note)): ?>
+            <p class="help-block small"><?= $this->escape($this->note) ?></p>
+        <?php endif; ?>
+        <div class="stat-chart-data" data-chart="<?= $this->escape($this->canvasId) ?>"></div>
+    </div>
+</div>

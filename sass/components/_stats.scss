@@ -117,3 +117,73 @@
     gap: 12px;
   }
 }
+
+// Charts: the height is the one of the container (the charts do not keep an aspect ratio)
+.stat-chart {
+  position: relative;
+  height: 300px;
+}
+
+.stat-chart-users {
+  height: 280px;
+}
+
+// Table view of a chart (the values readable without the colours)
+.stat-chart-table {
+  summary {
+    cursor: pointer;
+    margin-top: 8px;
+    font-size: 1.2rem;
+    color: #337ab7;
+  }
+
+  table {
+    width: auto;
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  td {
+    text-align: right;
+  }
+}
+
+// Rates: meters instead of a two-slice doughnut
+.stat-meters {
+  max-width: 560px;
+  margin: 8px 0 0;
+}
+
+.stat-meter {
+  display: grid;
+  grid-template-columns: 160px 1fr 70px;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0;
+  font-size: 1.3rem;
+}
+
+.stat-meter-label {
+  font-weight: 500;
+  color: #333;
+}
+
+.stat-meter-track {
+  height: 10px;
+  overflow: hidden;
+  background: #cde2fb;
+  border-radius: 5px;
+}
+
+.stat-meter-fill {
+  display: block;
+  height: 100%;
+  background: #2a78d6;
+  border-radius: 5px;
+}
+
+.stat-meter-value {
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

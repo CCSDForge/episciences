@@ -8,13 +8,15 @@ use Psr\Log\NullLogger;
 
 class StatsController extends Zend_Controller_Action
 {
-    public const COLORS_CODE = ["#8e5ea2", "#3e95cd", "#dd2222", "#c45850", "#3cba9f", "#e8c3b9", "#33ff99", "#29c73b"];
-    public const CHART_TYPE = [
-        'BAR' => 'bar',
-        'PIE' => 'pie',
-        'BAR_H' => 'barH',
-        'DOUGHNUT' => 'doughnut',
-        'LINE' => 'line'
+    // series of the charts (translated), in their order: the colour of a series is given by its position
+    public const CHART_LABELS = [
+        'submitted' => 'Soumissions (hors imports)',
+        'accepted' => 'Acceptés',
+        'refused' => 'Refusés',
+        'published' => 'Publiés',
+        'acceptanceDelay' => 'Dépôt → acceptation',
+        'publicationDelay' => 'Dépôt → publication',
+        'users' => "Nombre d'utilisateurs",
     ];
 
     public const ACCEPTED_SUBMISSIONS = Episciences_Paper::ACCEPTED_SUBMISSIONS;
@@ -185,7 +187,6 @@ class StatsController extends Zend_Controller_Action
             }
         }
 
-        $repositories = Episciences_Repositories::getRepositoriesByLabel();
         $details = $dashboard['details'] ?? [];
 
         if (isset($details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR])) {
@@ -207,90 +208,11 @@ class StatsController extends Zend_Controller_Action
             return;
         }
 
-        // initialisation
-        $series = [];
-        $series[self::SUBMISSION_ACCEPTANCE_DELAY] = [];
-        $series[self::SUBMISSION_PUBLICATION_DELAY] = [];
-        $series['submissionsByRepo'] = [];
-        $series[self::SUBMISSIONS_BY_YEAR] = [];
-
-
         if ($yearQuery) { // for stats by year
             $yearCategories = [$yearQuery];
         }
 
-        foreach ($yearCategories as $year) {
-
-            $submissions = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['submissions'] ?? 0;
-            $published = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['published'] ?? 0;
-            $accepted = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['accepted'] ?? 0;
-            $refused = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['refused'] ?? 0;
-            $others = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['others'] ?? 0;
-            $acceptedSubmittedSameYear = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptedSubmittedSameYear'] ?? 0;
-            $acceptedNotYetPublished = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year][self::ACCEPTED_NOT_YET_PUBLISHED] ?? 0;
-
-            if ($submissions) {
-                $series[self::SUBMISSIONS_BY_YEAR]['submissions'][] = $submissions;
-            }
-
-            if ($published) {
-                $series[self::SUBMISSIONS_BY_YEAR]['published'][] = $published;
-            }
-
-            if ($accepted) {
-                $series[self::SUBMISSIONS_BY_YEAR]['accepted'][] = $accepted;
-            }
-
-            if ($refused) {
-                $series[self::SUBMISSIONS_BY_YEAR]['refused'][] = $refused;
-            }
-
-            if ($others) {
-                $series[self::SUBMISSIONS_BY_YEAR]['others'][] = $others;
-            }
-
-            if ($acceptedSubmittedSameYear) {
-                $series[self::SUBMISSIONS_BY_YEAR]['acceptedSubmittedSameYear'][] = $acceptedSubmittedSameYear;
-            }
-
-            if ($acceptedNotYetPublished) {
-                $series[self::SUBMISSIONS_BY_YEAR][self::ACCEPTED_NOT_YET_PUBLISHED][] = $acceptedNotYetPublished;
-            }
-
-
-            $subByYear = $details[self::NB_SUBMISSIONS]['submissionsByRepo'][$year] ?? [];
-
-            // submission by repo
-            foreach ($subByYear as $repoLabel => $val) {
-                $series['submissionsByRepo'][$repoLabel][self::NB_SUBMISSIONS][] = $val['submissions'];
-            }
-
-            if (!empty($details[self::SUBMISSION_ACCEPTANCE_DELAY])) {
-                $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = $details[self::SUBMISSION_ACCEPTANCE_DELAY][$year]['delay']['value'] ?? null;
-            }
-
-            if (!empty($details[self::SUBMISSION_PUBLICATION_DELAY])) {
-                $series[self::SUBMISSION_PUBLICATION_DELAY][] = $details[self::SUBMISSION_PUBLICATION_DELAY][$year]['delay']['value'] ?? null;
-            }
-
-        }
-
-
         // Figure 1 > At a glance
-
-        $label1 = ucfirst($this->view->translate('soumissions'));
-        $label2 = ucfirst($this->view->translate('articles publiés'));
-        $label3 = ucfirst($this->view->translate('articles refusés'));
-        $label4 = ucfirst($this->view->translate('articles acceptés'));
-        $label5 = ucfirst($this->view->translate('autres statuts'));
-        $label6 = ucfirst($this->view->translate('articles acceptés (soumis la même année)'));
-        $label7 = ucfirst($this->view->translate('articles acceptés (non encore publiés)'));
-
-        $rateLabel1 = ucfirst($this->view->translate('taux de publication'));
-        $rateLabel3 = ucfirst($this->view->translate('taux de refus'));
-        $rateLabel2 = ucfirst($this->view->translate("taux d'acceptation"));
-        $rateLabel4 = ucfirst($this->view->translate('autre'));
-
 
         // all(Sub.., Pub.., Acce..., Aru..., Oth... ) : Imported articles are not included
         $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS] ?? null;
@@ -345,19 +267,6 @@ class StatsController extends Zend_Controller_Action
         $this->view->declineRate = $refusalRate;
 
 
-        $piChartData = [$acceptanceRate, $refusalRate];
-        $piChartColors = [self::COLORS_CODE[5], self::COLORS_CODE[2]];
-        $piChartLabels = [$rateLabel2, $rateLabel3];
-
-        $seriesJs['allSubmissionsPercentage']['datasets'][] = [
-            'data' => $piChartData,
-            'backgroundColor' => $piChartColors
-        ];
-
-        $seriesJs['allSubmissionsPercentage']['labels'] = $piChartLabels;
-        $seriesJs['allSubmissionsPercentage']['chartType'] = self::CHART_TYPE['DOUGHNUT'];
-
-
         $this->view->submissionAcceptanceTime = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['value'] ?? null;
         $this->view->submissionAcceptanceTimeUnit = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['unit'] ?? null;
         $this->view->submissionPublicationTime = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['value'] ?? null;
@@ -368,109 +277,32 @@ class StatsController extends Zend_Controller_Action
         $this->view->submissionAcceptanceTimeMedianUnit = $dashboard['value']['submissionAcceptanceTimeMedian']['unit'] ?? null;
 
 
-        //figure 2 > Breakdown of submissions by year and status
+        // Charts: the imported papers are left out of the charts by year (an import makes a single year dwarf the others)
         $this->view->chart2Title = !$yearQuery ?
-            $this->view->translate("La répartition des soumissions par année et par statut") :
-            $this->view->translate("La répartition des soumissions par statut");
-
-
-        if (isset($series[self::SUBMISSIONS_BY_YEAR]['submissions'])) {
-            $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label1, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['submissions'], 'backgroundColor' => self::COLORS_CODE[1]];
-        }
-
-        if (isset($series[self::SUBMISSIONS_BY_YEAR]['published'])) {
-            $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label2, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['published'], 'backgroundColor' => self::COLORS_CODE[4]];
-        }
-
-        if (isset($series[self::SUBMISSIONS_BY_YEAR]['accepted'])) {
-            $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label4, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['accepted'], 'backgroundColor' => self::COLORS_CODE[5]];
-        }
-
-        if (isset($series[self::SUBMISSIONS_BY_YEAR][self::ACCEPTED_NOT_YET_PUBLISHED])) {
-            $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label7, 'data' => $series[self::SUBMISSIONS_BY_YEAR][self::ACCEPTED_NOT_YET_PUBLISHED], 'backgroundColor' => self::COLORS_CODE[7]];
-        }
-
-        if (isset($series[self::SUBMISSIONS_BY_YEAR]['acceptedSubmittedSameYear'])) {
-            $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label6, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['acceptedSubmittedSameYear'], 'backgroundColor' => self::COLORS_CODE[6]];
-        }
-
-        if (isset($series[self::SUBMISSIONS_BY_YEAR]['refused'])) {
-            $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label3, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['refused'], 'backgroundColor' => self::COLORS_CODE[2]];
-
-
-        }
-
-        if (isset($series[self::SUBMISSIONS_BY_YEAR]['others'])) {
-            $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label5, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['others'], 'backgroundColor' => self::COLORS_CODE[0]];
-        }
-
-
-        $seriesJs[self::SUBMISSIONS_BY_YEAR]['chartType'] = self::CHART_TYPE['BAR'];
-
-        // Figure3 > Breakdown of submissions by year and repository
-
-
-        foreach ($series['submissionsByRepo'] as $repoLabel => $values) {
-            $repoId = $repositories[$repoLabel]['id'];
-            $colorsCodeSize = count(self::COLORS_CODE);
-            $backgroundColor = self::COLORS_CODE[$repoId % $colorsCodeSize];
-            $seriesJs['submissionsByRepo']['repositories']['datasets'][] = ['label' => $repoLabel, 'data' => $values[self::NB_SUBMISSIONS], 'backgroundColor' => $backgroundColor];
-
-        }
-
+            $this->view->translate('Soumissions, décisions et publications par année') :
+            $this->view->translate('Soumissions, décisions et publications');
         $this->view->chart3Title = !$yearQuery ?
-            $this->view->translate("Répartition des soumissions par année et par archive") :
-            $this->view->translate("Répartition des soumissions par archive");
-
-        $seriesJs['submissionsByRepo']['repositories']['chartType'] = self::CHART_TYPE['BAR'];
-        $seriesJs['submissionsByRepo']['rate']['chartType'] = self::CHART_TYPE['PIE'];
-
-
-        // figure4 > Average time in days between submission and acceptance (submission and publication)
-
-
+            $this->view->translate('Répartition des soumissions par année et par archive') :
+            $this->view->translate('Répartition des soumissions par archive');
         $this->view->chart4Title = $this->view->translate('Délai moyen en jours entre dépôt et acceptation | dépôt et publication');
 
-        $seriesJs['submissionDelay']['datasets'][] = ['label' => $this->view->translate('Dépôt-Acceptation'), 'data' => $series[self::SUBMISSION_ACCEPTANCE_DELAY], 'backgroundColor' => self::COLORS_CODE[5]];
-        $seriesJs['submissionDelay']['datasets'][] = ['label' => $this->view->translate('Dépôt-Publication'), 'data' => $series[self::SUBMISSION_PUBLICATION_DELAY], 'backgroundColor' => self::COLORS_CODE[4]];
-        $seriesJs['submissionDelay']['chartType'] = self::CHART_TYPE['BAR_H'];
+        $charts = self::buildChartsData(
+            $details,
+            $yearCategories,
+            $this->getImportedByYearAndRepo($startStatsAfterDate, $logger),
+            array_map(fn(string $label) => $this->view->translate($label), self::CHART_LABELS)
+        );
 
         $isAvailableUsersStats = !$yearQuery && isset($dashboard['value'][self::NB_USERS]);
 
-        // Figure 5 > Users stats > Number of users by roles : these statistics are not available by year because the database structure does not allow this information to be obtained.
-        $rolesJs = [];
-        $nbUsersByRole = [];
-        $data = [];
-
+        // Users: not available by year, the database does not allow to get this information
         if ($isAvailableUsersStats) {
-            $allUsers = $dashboard['value'][self::NB_USERS];
-            $usersDetails = $details[self::NB_USERS];
-            $roles = array_keys($usersDetails);
-            $rootKey = array_search(Episciences_Acl::ROLE_ROOT, $roles, true);
-
-            if ($rootKey !== false) {
-                unset($roles[$rootKey]);
-            }
-
-            foreach ($roles as $role) {
-                $rolesJs[] = $this->view->translate($role);
-                $data[] = $usersDetails[$role][self::NB_USERS];
-            }
-
+            $charts['users'] = self::buildUsersChartData($details[self::NB_USERS] ?? [], fn(string $role) => $this->view->translate($role));
             $this->view->chart5Title = $this->view->translate("Le nombre d'utilisateurs par rôles");
-            $nbUsersByRole['chartType'] = self::CHART_TYPE['BAR'];
-            $this->view->allUsers = $allUsers;
-
+            $this->view->allUsers = $dashboard['value'][self::NB_USERS];
         }
 
-        $nbUsersByRole['datasets'][] = ['label' => $this->view->translate("Nombre d'utilisateurs"), 'data' => $data, 'backgroundColor' => self::COLORS_CODE[4]];
-
-        $this->view->roles = $rolesJs;
-        $this->view->nbUsersByRole = $nbUsersByRole;
-
-
-        $this->view->yearCategoriesJs = $yearCategories;
-        $this->view->seriesJs = $seriesJs;
+        $this->view->charts = $charts;
         $this->view->yearQuery = $yearQuery;
         $this->view->errorMessage = null;
         $this->view->isAvailableUsersStats = $isAvailableUsersStats;
@@ -483,6 +315,113 @@ class StatsController extends Zend_Controller_Action
         // without the "startAfterDate" filter, the totals are not explained by the papers
         $this->view->totalsExplained = !isset($dashboard['value']['totalWithoutStartAfterDate']);
 
+    }
+
+    /**
+     * Data of the charts of the page, from the details of the dashboard
+     * The imported papers are left out: they are counted in the year of their import, which dwarfs the other years.
+     * Each value is given for each year (0 or null when there is none), so that the values stay in line with the years.
+     * @param array $details details of the dashboard
+     * @param array $years years of the charts
+     * @param array<int|string, array<string, int>> $importedByYearAndRepo year => repository label => imported papers
+     * @param array<string, string> $labels translated CHART_LABELS
+     * @return array{years: string[], byYear: array, byRepo: array, delays: array}
+     */
+    public static function buildChartsData(array $details, array $years, array $importedByYearAndRepo, array $labels): array
+    {
+        $byYear = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR] ?? [];
+        $byRepo = $details[self::NB_SUBMISSIONS]['submissionsByRepo'] ?? [];
+        $years = array_values(array_map('strval', $years));
+        $count = static fn($year, string $key): int => (int)($byYear[$year][$key] ?? 0);
+
+        $imported = [];
+
+        foreach ($years as $year) {
+            if ($count($year, 'imported') > 0) {
+                $imported[$year] = $count($year, 'imported');
+            }
+        }
+
+        $yearsDatasets = [];
+
+        foreach (['submitted' => null, 'accepted' => 'accepted', 'refused' => 'refused', 'published' => 'published'] as $series => $key) {
+            $yearsDatasets[] = [
+                'label' => $labels[$series] ?? $series,
+                'data' => array_map(
+                    static fn($year) => $key === null ? max(0, $count($year, 'submissions') - $count($year, 'imported')) : $count($year, $key),
+                    $years
+                ),
+            ];
+        }
+
+        // repositories in a stable order (their identifier), so that each one keeps its colour
+        $repositories = [];
+
+        foreach ($years as $year) {
+            foreach (array_keys($byRepo[$year] ?? []) as $repository) {
+                $repositories[$repository] = true;
+            }
+        }
+
+        $repositories = array_keys($repositories);
+        $ids = array_map(static fn($label) => (int)(Episciences_Repositories::getRepositoriesByLabel()[$label]['id'] ?? PHP_INT_MAX), $repositories);
+        array_multisort($ids, SORT_NUMERIC, $repositories);
+
+        $repoDatasets = [];
+
+        foreach ($repositories as $repository) {
+            $repoDatasets[] = [
+                'label' => (string)$repository,
+                'data' => array_map(
+                    static fn($year) => max(0, (int)($byRepo[$year][$repository]['submissions'] ?? 0) - (int)($importedByYearAndRepo[$year][$repository] ?? 0)),
+                    $years
+                ),
+            ];
+        }
+
+        // delays: the years without any delay are left out
+        $delay = static fn(string $key, $year) => isset($details[$key][$year]['delay']['value']) ? (float)$details[$key][$year]['delay']['value'] : null;
+        $delayYears = array_values(array_filter(
+            $years,
+            static fn($year) => $delay(self::SUBMISSION_ACCEPTANCE_DELAY, $year) !== null || $delay(self::SUBMISSION_PUBLICATION_DELAY, $year) !== null
+        ));
+
+        return [
+            'years' => $years,
+            'byYear' => ['datasets' => $yearsDatasets, 'imported' => $imported],
+            'byRepo' => ['datasets' => $repoDatasets, 'imported' => $imported],
+            'delays' => [
+                'years' => $delayYears,
+                'datasets' => [
+                    ['label' => $labels['acceptanceDelay'] ?? 'acceptanceDelay', 'data' => array_map(static fn($year) => $delay(self::SUBMISSION_ACCEPTANCE_DELAY, $year), $delayYears)],
+                    ['label' => $labels['publicationDelay'] ?? 'publicationDelay', 'data' => array_map(static fn($year) => $delay(self::SUBMISSION_PUBLICATION_DELAY, $year), $delayYears)],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Users by role, sorted from the largest number (the root role is left out)
+     * @param array $usersDetails role => ['nbUsers' => n]
+     * @param callable $translate translation of a role
+     * @return array{labels: string[], datasets: array}
+     */
+    public static function buildUsersChartData(array $usersDetails, callable $translate): array
+    {
+        unset($usersDetails[Episciences_Acl::ROLE_ROOT]);
+
+        $users = [];
+
+        foreach ($usersDetails as $role => $values) {
+            $users[] = [(string)$translate($role), (int)($values[self::NB_USERS] ?? 0)];
+        }
+
+        usort($users, static fn(array $a, array $b) => $b[1] <=> $a[1] ?: strcmp($a[0], $b[0]));
+
+        return [
+            'labels' => array_column($users, 0),
+            'datasets' => [['label' => (string)$translate(self::CHART_LABELS['users']), 'data' => array_column($users, 1)]],
+        ];
     }
 
     /**
@@ -767,6 +706,41 @@ class StatsController extends Zend_Controller_Action
     public static function getPapersSessionKey(?int $year): string
     {
         return sprintf('%d_%s', defined('RVID') ? RVID : 0, $year ?: 'all');
+    }
+
+    /**
+     * Imported papers of the journal by year of submission (import) and repository
+     * The API gives the imported papers by year, not by repository.
+     * @param string|null $startAfterDate the "startStatsAfterDate" setting of the journal
+     * @param Monolog\Logger|null $logger
+     * @return array<int, array<string, int>> year => repository label => number of papers
+     */
+    private function getImportedByYearAndRepo(?string $startAfterDate, ?Monolog\Logger $logger): array
+    {
+        try {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $select = $db->select()
+                ->from(T_PAPERS, ['REPOID', 'YEAR' => new Zend_Db_Expr('YEAR(SUBMISSION_DATE)'), 'NB' => new Zend_Db_Expr('COUNT(DISTINCT PAPERID)')])
+                ->where('RVID = ?', RVID)
+                ->where('FLAG = ?', 'imported')
+                ->group(['REPOID', 'YEAR']);
+
+            if ($startAfterDate) {
+                $select->where('SUBMISSION_DATE > ?', $startAfterDate);
+            }
+
+            $imported = [];
+
+            foreach ($db->fetchAll($select) as $row) {
+                $label = (string)Episciences_Repositories::getLabel((int)$row['REPOID']);
+                $imported[(int)$row['YEAR']][$label] = ($imported[(int)$row['YEAR']][$label] ?? 0) + (int)$row['NB'];
+            }
+
+            return $imported;
+        } catch (Throwable $e) {
+            $logger?->warning($e->getMessage());
+            return [];
+        }
     }
 
     /**

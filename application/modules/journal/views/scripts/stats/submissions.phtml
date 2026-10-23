@@ -163,33 +163,25 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                             <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Taux') ?></h1>
                             <div class="rate-formula"><?= $this->translate($rateFormulaInfo) ?></div>
 
-                            <div class="row">
-
-                                <div class="col-sm-6">
-
-                                    <?= $this->partial('stats/stat-item.phtml', [
-                                            'itemLabel' => "taux d'acceptation",
-                                            'itemValue' => $this->acceptanceRate,
-                                            'isRate' => true
-                                    ]) ?>
-
-                                    <?= $this->partial('stats/stat-item.phtml', [
-                                            'itemLabel' => 'taux de publication',
-                                            'itemValue' => $this->publicationRate,
-                                            'isRate' => true
-                                    ]) ?>
-
-                                    <?= $this->partial('stats/stat-item.phtml', [
-                                            'itemLabel' => 'taux de refus',
-                                            'itemValue' => $this->declineRate,
-                                            'isRate' => true
-                                    ]) ?>
-
-                                </div>
-                                <div class="col-sm-6">
-                                    <canvas id="all-submissions-percentage" style="height: auto; width: auto;"></canvas>
-                                </div>
-                            </div>
+                            <?php // rates: meters, read at a glance and comparable (instead of a two-slice doughnut) ?>
+                            <ul class="list-unstyled stat-meters">
+                                <?php foreach ([
+                                        "taux d'acceptation" => $this->acceptanceRate,
+                                        'taux de publication' => $this->publicationRate,
+                                        'taux de refus' => $this->declineRate,
+                                ] as $rateLabel => $rateValue): ?>
+                                    <?php if ($rateValue === null) { continue; } ?>
+                                    <?php $rateLabel = ucfirst($this->translate($rateLabel)); ?>
+                                    <li class="stat-meter">
+                                        <span class="stat-meter-label"><?= $this->escape($rateLabel) ?></span>
+                                        <span class="stat-meter-track" role="meter" aria-label="<?= $this->escape($rateLabel) ?>"
+                                              aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= (float)$rateValue ?>">
+                                            <span class="stat-meter-fill" style="width: <?= max(0, min(100, (float)$rateValue)) ?>%"></span>
+                                        </span>
+                                        <span class="stat-meter-value"><?= $this->escape($rateValue) ?>&nbsp;%</span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
                         </div>
 
                         <?= $this->render('stats/submission-delay.phtml') ?>
@@ -222,35 +214,37 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
     </div>
 </div>
 
-<div class="panel panel-default collapsable">
-    <div class="panel-heading"><h2 class="panel-title"><?= $this->chart2Title ?></h2></div>
-    <div class="panel-body in">
-        <canvas id="submissions-by-year-chart" style="height: auto; width: auto;"></canvas>
-    </div>
-</div>
+<?php
+$charts = $this->charts ?? [];
+$importedNote = '';
 
-<div class="panel panel-default collapsable">
-    <div class="panel-heading"><h2 class="panel-title"><?= $this->chart3Title ?></h2></div>
-    <div class="panel-body in">
-        <canvas id="submissions-by-repo-chart" style="height: auto; width: auto;"></canvas>
-    </div>
-</div>
+if (!empty($charts['byYear']['imported'])) {
+    $importedYears = [];
 
-<?php if (
-        !empty($this->seriesFromView['submissionDelay']['datasets'][0]['data']) ||
-        !empty($this->seriesFromView['submissionDelay']['datasets'][1]['data'][1])
-): ?>
+    foreach ($charts['byYear']['imported'] as $importedYear => $importedCount) {
+        $importedYears[] = sprintf($this->translate('%s en %s'), $importedCount, $importedYear);
+    }
 
-    <div class="panel panel-default collapsable">
-        <div class="panel-heading in"><h2 class="panel-title"><?= $this->chart4Title ?></h2></div>
-        <div class="panel-body in">
-            <canvas id="submissions-delay-chart" style="height: auto; width: auto;"></canvas>
-        </div>
-    </div>
+    $importedNote = sprintf($this->translate('Articles importés non représentés : %s.'), implode(', ', $importedYears));
+}
+?>
+
+<?= $this->partial('stats/chart-panel.phtml', [
+        'title' => $this->chart2Title,
+        'canvasId' => 'submissions-by-year-chart',
+        'description' => "Chaque article est compté l'année de l'événement : dépôt, décision ou publication.",
+        'note' => $importedNote,
+]) ?>
+
+<?= $this->partial('stats/chart-panel.phtml', [
+        'title' => $this->chart3Title,
+        'canvasId' => 'submissions-by-repo-chart',
+        'note' => $importedNote,
+]) ?>
+
+<?php if (!empty($charts['delays']['years'])): ?>
+    <?= $this->partial('stats/chart-panel.phtml', [
+            'title' => $this->chart4Title,
+            'canvasId' => 'submissions-delay-chart',
+    ]) ?>
 <?php endif; ?>
-
-
-
-
-
-

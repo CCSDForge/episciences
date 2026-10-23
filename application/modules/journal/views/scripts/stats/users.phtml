@@ -9,7 +9,10 @@ $tooltipInfo = "Un utilisateur peut avoir plusieurs rôles."
                 <span class="stat-value"><?= $this->allUsers ?></span>
             </p>
         </div>
-        <canvas id="users-by-roles-chart" style="height: auto; width: auto;"></canvas>
+        <div class="stat-chart stat-chart-users">
+            <canvas id="users-by-roles-chart" role="img" aria-label="<?= $this->escape(strip_tags($this->chart5Title)) ?>"></canvas>
+        </div>
+        <div class="stat-chart-data" data-chart="users-by-roles-chart"></div>
     </div>
 </div>
 <?php
