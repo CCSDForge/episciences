@@ -21,6 +21,8 @@ php scripts/console.php <command> --help
 | [`app:generate-users`](#appgenerate-users) | Generate random test users |
 | [`app:init-dev-users`](#appinit-dev-users) | Seed the dev journal with 30 predefined users |
 | [`app:create-bot-user`](#appcreate-bot-user) | Create the `episciences-bot` service account |
+| [`user:purge-expired-tokens`](#userpurge-expired-tokens) | Delete the expired account link tokens (designed for cron) |
+| [`user:import-legacy-tokens`](#userimport-legacy-tokens) | One-off import of the still valid account links from the CAS token table |
 | [`journal:create`](#journalcreate) | Create a new journal by cloning settings, menu, pages and appearance from a template journal |
 | [`journal:seed-demo`](#journalseed-demo) | Seed a journal with a small set of real demo submissions (volumes, sections, papers) for sandbox testing |
 | [`enrichment:extract-biblio-refs`](#enrichmentextract-biblio-refs) | Pre-extract bibliographic references via the Biblioref API (designed for cron) |
@@ -93,6 +95,46 @@ Creates the `episciences-bot` service account with a predefined UID and credenti
 ```bash
 php scripts/console.php app:create-bot-user
 ```
+
+---
+
+## Users
+
+Account activation, password reset and account setup links are stored in the `user_token` table (SHA-256 of the
+link token only). Their lifetimes are set in `config/pwd.json`, `USER_TOKEN` section, in seconds:
+
+| Key | Default | Link |
+|-----|---------|------|
+| `PASSWORD_RESET_TTL` | `3600` (1 hour) | Lost password |
+| `ACCOUNT_ACTIVATION_TTL` | `604800` (7 days) | Activation of a self-registered account |
+| `ACCOUNT_SETUP_TTL` | `1209600` (14 days) | First password of a reviewer account created by an editor |
+
+### `user:purge-expired-tokens`
+
+Deletes the expired account link tokens. Expired tokens are already refused: the purge only keeps the table small.
+Intended to run daily from cron.
+
+```bash
+php scripts/console.php user:purge-expired-tokens
+```
+
+---
+
+### `user:import-legacy-tokens`
+
+One-off, to run once right after creating the `user_token` table
+(`src/mysql/2026-10-23-create-user-token-table.sql`): imports the links sent before, from the CAS table
+`T_UTILISATEURS_TOKENS`, so that they keep working until they expire under the lifetimes above. Only the tokens of
+Episciences accounts are imported; the CAS table is only read (it is shared with other applications).
+A former password link cannot be told apart from an account setup link, so it gets the account setup lifetime.
+
+```bash
+php scripts/console.php user:import-legacy-tokens [--dry-run]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--dry-run` | Count the tokens to import without writing anything |
 
 ---
 
