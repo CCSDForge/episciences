@@ -1,8 +1,9 @@
 <?php
 $this->layout()->pageTitle = $this->translate('Statistiques');
-$description = $this->translate('Indicateurs de statistiques pour la revue') . ' <span class="stat-code">' . RVNAME . '</span>';
-$this->layout()->description = $description;
+// the introduction of the page is part of the page (not the description of the layout, shown as a quotation)
 ?>
+<div class="stats-page">
+<p class="stats-intro"><?= $this->translate('Indicateurs de statistiques pour la revue') ?> <strong><?= $this->escape(RVNAME) ?></strong></p>
 <?php if ($this->errorMessage): ?>
     <div class="alert alert-danger"><?= $this->translate($this->errorMessage) ?></div>
 <?php else: ?>
@@ -73,7 +74,6 @@ $this->layout()->description = $description;
     <div class="col-md-12">
         <?php if ($this->isAvailableUsersStats && $this->allUsers) : ?>
             <?php $this->jQuery()->addJavascriptFile('/js/stats/users.js'); ?>
-            <h2><?= $this->translate('Utilisateurs') ?> <?= $this->yearQuery ? ' - <span class="stat-code">' . $this->yearQuery . '</span>' : '' ?> </h2>
             <?= $this->partial('stats/users.phtml', [
                     'chart5Title' => $this->chart5Title,
                     'allUsers' => $this->allUsers
@@ -86,8 +86,4 @@ $this->layout()->description = $description;
     </script>
 
 <?php endif; ?>
-
-
-
-
-
+</div>

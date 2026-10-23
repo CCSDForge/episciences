@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Statistics page: the charts are redesigned. The imported articles are no longer drawn in the charts by year (a note gives their number), the series by year no longer overlap (submissions, accepted, refused, published), the rates are shown as gauges instead of a doughnut, and each chart can be read as a table ("View the data").
 - Statistics page: the figures (articles, published, accepted, refused, other statuses, evaluations) are shown as tiles, each with its value, its context and the link to its papers.
+- Statistics page: clearer layout (introduction, year navigation, panels, section titles, delays in days, users total); the charts of a single year are no wider than their bars need.
 
 ### Fixed
 - Statistics page: the evaluations block is also shown when only the median number of reviews is known.

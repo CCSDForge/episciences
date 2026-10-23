@@ -33,6 +33,16 @@ function statGroupWidth(seriesCount) {
 }
 
 /**
+ * Maximum width of a vertical bar chart: about 48px by bar, and some room between the groups and for the axis
+ */
+function statChartMaxWidth(categoryCount, seriesCount) {
+    return Math.max(
+        320,
+        Math.max(1, categoryCount) * (Math.max(1, seriesCount) * 48 + 80) + 60
+    );
+}
+
+/**
  * A bar series, coloured by its position
  */
 function statBarDataset(dataset, index) {
@@ -199,6 +209,12 @@ function createBarChart(canvasId, labels, datasets, options = {}) {
         );
     }
 
+    // few categories (the page of a year): the chart is not wider than its bars need
+    if (!options.horizontal && labels.length <= 2 && canvas.parentElement) {
+        canvas.parentElement.style.maxWidth =
+            statChartMaxWidth(labels.length, datasets.length) + 'px';
+    }
+
     if (typeof Chart === 'undefined') {
         return null;
     }
@@ -210,6 +226,7 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         STAT_SERIES_COLORS,
         statGroupWidth,
+        statChartMaxWidth,
         buildBarChartConfig,
         buildChartTable,
         createBarChart,

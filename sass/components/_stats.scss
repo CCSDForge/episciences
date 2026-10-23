@@ -254,3 +254,152 @@
     }
   }
 }
+
+// Page: introduction, year navigation, panels, sections, notes (scoped to the statistics page)
+.stats-page {
+  .stats-intro {
+    margin: -4px 0 18px;
+    font-size: 1.5rem;
+    color: #52514e;
+
+    strong {
+      color: #0b0b0b;
+    }
+  }
+
+  // year navigation: pills, the current year marked with aria-current
+  .stats-years {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    clear: both; // after the floated Bootstrap columns
+    width: 100%;
+    margin: 0 0 16px;
+    padding-top: 4px;
+  }
+
+  .stats-year {
+    padding: 4px 12px;
+    border: 1px solid #d9d8d3;
+    border-radius: 999px;
+    font-size: 1.3rem;
+    color: #52514e;
+    background: #fff;
+    font-variant-numeric: tabular-nums;
+
+    &:hover,
+    &:focus {
+      text-decoration: none;
+      border-color: #2a78d6;
+      color: #2a78d6;
+    }
+
+    &.active {
+      border-color: #2a78d6;
+      background: #2a78d6;
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+
+  // panels: hairline border, light heading, assertive title
+  .panel {
+    border-color: #e8e7e3;
+    border-radius: 6px;
+    box-shadow: none;
+    margin-bottom: 20px;
+  }
+
+  .panel-heading {
+    padding: 12px 16px;
+    background: #fafaf9;
+    border-bottom-color: #e8e7e3;
+    border-radius: 6px 6px 0 0;
+  }
+
+  .panel-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #0b0b0b;
+
+    .stat-code {
+      margin-left: 4px;
+      padding: 1px 8px;
+      border-radius: 999px;
+      background: #cde2fb;
+      color: #1c5cab;
+      font-size: 1.3rem;
+    }
+  }
+
+  .panel-body {
+    padding: 16px;
+  }
+
+  // section titles inside a panel
+  .stat-section-title {
+    margin: 22px 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e8e7e3;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #52514e;
+  }
+
+  // the formula of the rates and the notes: discreet help text
+  .stat-formula {
+    margin: 0 0 6px;
+    font-size: 1.2rem;
+  }
+
+  .stat-note {
+    list-style: none;
+    margin: 4px 0 8px;
+    font-size: 1.25rem;
+    color: #737373;
+
+    .fas {
+      margin-right: 4px;
+      color: #8a8984;
+    }
+  }
+
+  // delays: a light table, numbers aligned
+  .stat-delays {
+    max-width: 720px;
+    margin-bottom: 8px;
+
+    > thead > tr > th {
+      border-bottom: 1px solid #e8e7e3;
+      font-weight: 600;
+      color: #52514e;
+      text-align: right;
+
+      &:first-child {
+        text-align: left;
+      }
+    }
+
+    > tbody > tr > th,
+    > tbody > tr > td {
+      border-top: 1px solid #f0efec;
+      vertical-align: middle;
+    }
+
+    > tbody > tr > th {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .stat-value {
+      padding: 0;
+      background: none;
+      font-size: 1.5rem;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}

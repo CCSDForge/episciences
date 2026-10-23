@@ -14,7 +14,7 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
     </div>
     <div class="panel-body in">
         <div class="col-sm-10">
-            <div style="padding-top: 10px; ">
+            <div>
 
                 <div>
                     <ul class="list-unstyled">
@@ -24,9 +24,10 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                         <?php endif; ?>
 
                         <?php if ($this->startStatsAfterDate): ?>
-                            <aside>
-                                <p class="help-block"><?= $this->translate("À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au ") ?><?= Episciences_View_Helper_Date::Date($this->startStatsAfterDate); ?></p>
-                            </aside>
+                            <li class="stat-note">
+                                <span class="fas fa-info-circle fa-sm" aria-hidden="true"></span>
+                                <?= $this->translate("À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au ") ?><?= Episciences_View_Helper_Date::Date($this->startStatsAfterDate); ?>
+                            </li>
 
                             <?php if ($isYear): ?>
                                 <?= $this->render('stats/total-submissions.phtml') ?>
@@ -59,9 +60,10 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                         <?php endif ?>
 
                         <?php if ($this->imported > 1) : ?>
-                            <aside>
-                                <p class="help-block"><?= $this->translate("Les articles importés ne sont pas inclus") ?> </p>
-                            </aside
+                            <li class="stat-note">
+                                <span class="fas fa-info-circle fa-sm" aria-hidden="true"></span>
+                                <?= $this->translate("Les articles importés ne sont pas inclus") ?>
+                            </li>
 
                         <?php endif; ?>
 
@@ -135,7 +137,7 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
 
                         <?php if ($isYear) : ?>
 
-                            <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Soumis la même année') ?></h1>
+                            <h3 class="stat-section-title"><?= $this->translate('Soumis la même année') ?></h3>
                             <ul class="list-unstyled stat-tiles submisions-same-year">
                                 <?= $this->partial('stats/stat-item.phtml', [
                                         'itemLabel' => 'articles acceptés',
@@ -159,8 +161,8 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
 
                         <div class="rate">
 
-                            <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Taux') ?></h1>
-                            <div class="rate-formula"><?= $this->translate($rateFormulaInfo) ?></div>
+                            <h3 class="stat-section-title"><?= $this->translate('Taux') ?></h3>
+                            <p class="help-block stat-formula"><?= $this->translate($rateFormulaInfo) ?></p>
 
                             <?php // rates: meters, read at a glance and comparable (instead of a two-slice doughnut) ?>
                             <ul class="list-unstyled stat-meters">
@@ -187,8 +189,7 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
 
                         <?php if ($this->acceptedNotYetPublished) : ?>
 
-                            <h1 class="help-block"
-                                style="margin-top: 10px;"><?= $this->translate('En cours de publication') ?></h1>
+                            <h3 class="stat-section-title"><?= $this->translate('En cours de publication') ?></h3>
 
                             <ul class="list-unstyled stat-tiles">
                             <?= $this->partial('stats/stat-item.phtml', [

@@ -7,6 +7,7 @@ const path = require('path');
 const {
     STAT_SERIES_COLORS,
     statGroupWidth,
+    statChartMaxWidth,
     buildBarChartConfig,
     buildChartTable,
     createBarChart,
@@ -105,6 +106,16 @@ describe('buildBarChartConfig', function () {
     });
 });
 
+describe('statChartMaxWidth', function () {
+    it('does not widen the chart of a single year', function () {
+        // one year, four series: about 48px by bar
+        expect(statChartMaxWidth(1, 4)).toBe(332);
+        expect(statChartMaxWidth(1, 1)).toBe(320);
+        // five years: wider than the panel, the chart takes the whole width
+        expect(statChartMaxWidth(5, 4)).toBeGreaterThan(1200);
+    });
+});
+
 describe('buildChartTable', function () {
     it('lists the values of each series by category', function () {
         const details = buildChartTable(
@@ -194,6 +205,21 @@ describe('createBarChart', function () {
         expect(
             document.querySelectorAll('.stat-chart-data tbody tr')
         ).toHaveLength(3);
+        // several years: the whole width
+        expect(chart.canvas.parentElement.style.maxWidth).toBe('');
+    });
+
+    it('narrows the chart of a single year', function () {
+        global.Chart = jest.fn();
+        document.body.innerHTML = `
+            <div class="stat-chart"><canvas id="one-year"></canvas></div>
+        `;
+
+        createBarChart('one-year', ['2026'], datasets());
+
+        expect(document.querySelector('.stat-chart').style.maxWidth).toBe(
+            statChartMaxWidth(1, 2) + 'px'
+        );
     });
 
     it('does nothing without canvas or data', function () {
