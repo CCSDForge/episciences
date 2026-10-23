@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated the messages of the lost password and lost username pages.
 
 ### Fixed
+- A section that still has papers can no longer be deleted: the delete button lists the papers to move first.
 - The access denied page answers with a 403 status instead of a "page not found" error.
 - [#1310](https://github.com/CCSDForge/episciences/pull/1310): co-author form and co-author removal are now consistent with the paper management page.
 - [#1344](https://github.com/CCSDForge/episciences/pull/1344): graphical abstract and linked data forms are now consistent with the paper context.

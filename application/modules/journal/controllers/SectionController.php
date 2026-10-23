@@ -165,9 +165,18 @@ class SectionController extends Zend_Controller_Action
             $respond = $this->view->translate('Votre session a expiré, veuillez réessayer.');
         } elseif ($isAjax){
             $params = $request->getPost('params');
-            $id = ($params['id']) ?: $request->getQuery('id');
+            $id = (int)(($params['id'] ?? null) ?: $request->getQuery('id'));
             // Only sections of the current journal can be deleted
-            $respond = Episciences_SectionsManager::find((int) $id, RVID) ? Episciences_SectionsManager::delete((int) $id) : false;
+            if (Episciences_SectionsManager::find($id, RVID)) {
+                $attachedPaperIds = Episciences_SectionsManager::getAttachedPaperIds($id, RVID);
+                $respond = $attachedPaperIds === []
+                    ? Episciences_SectionsManager::delete($id)
+                    // Shown by the delete button as the reason of the failure
+                    : sprintf(
+                        $this->view->translate('Des articles (%s) sont rattachés à cette rubrique.'),
+                        '#' . implode(', #', $attachedPaperIds)
+                    );
+            }
         }
 
         $this->_helper->viewRenderer->setNoRender();

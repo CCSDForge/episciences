@@ -117,16 +117,6 @@ class Episciences_SectionsManager
         }
 
 
-        // Si des articles sont rattachés à cette rubrique, on empêche sa suppression
-        /*
-        $sql = $db->select()->from(T_PAPERS, 'COUNT(DOCID)')->where('SID = ?', $id);
-        if ($db->fetchOne($sql)) {
-            echo 'Des articles ont déjà été publiés dans cette rubrique.';
-            return false;
-        }
-        */
-
-
         // Récupération de l'id de position pour MAJ des autres rubriques
         $select = $db->select()->from(self::TABLE)->where('SID = ?', $id);
         $data = $select->query()->fetch();
@@ -137,6 +127,11 @@ class Episciences_SectionsManager
 
         $position = $data['POSITION'];
         $rvId = $data['RVID'];
+
+        // A section that still has papers is kept, so that no paper points to a missing section
+        if (self::getAttachedPaperIds($id, (int)$rvId) !== []) {
+            return false;
+        }
 
         $db->beginTransaction();
 
@@ -181,6 +176,24 @@ class Episciences_SectionsManager
         }
 
         return true;
+    }
+
+    /**
+     * Ids of the papers, whatever their status, attached to a section of a journal
+     * @param int $sid
+     * @param int $rvid
+     * @return list<int>
+     */
+    public static function getAttachedPaperIds(int $sid, int $rvid): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPERS, 'DOCID')
+            ->where('SID = ?', $sid)
+            ->where('RVID = ?', $rvid)
+            ->order('DOCID ASC');
+
+        return array_map('intval', $db->fetchCol($select));
     }
 
     /**
