@@ -1,14 +1,14 @@
 <?php
 
-class RobotsController extends Zend_Controller_Action
+require_once APPLICATION_PATH . '/modules/common/controllers/RobotsDefaultController.php';
+
+class RobotsController extends RobotsDefaultController
 {
-    public function indexAction(): void
+    /**
+     * The portal is never indexed, even in production.
+     */
+    protected function isIndexingAllowed(): bool
     {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender(true);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo 'User-agent: *' . PHP_EOL;
-        echo 'Disallow: /' . PHP_EOL;
+        return false;
     }
 }
-

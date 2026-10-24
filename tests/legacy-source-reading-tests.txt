@@ -31,7 +31,6 @@ tests/unit/library/Episciences/UploadFormsMimeValidationTest.php
 tests/unit/library/Episciences/user/Episciences_UserTest.php
 tests/unit/modules/common/controllers/PaperDefaultControllerTest.php
 tests/unit/modules/common/controllers/RequestTokenRenderingTest.php
-tests/unit/modules/common/controllers/RobotsDefaultControllerTest.php
 tests/unit/modules/common/controllers/UserDefaultControllerAffiliationsTest.php
 tests/unit/modules/common/controllers/UserDefaultControllerRequestGuardTest.php
 tests/unit/modules/common/controllers/UserViewTokenRenderingTest.php
