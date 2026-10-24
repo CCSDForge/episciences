@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences;
 
+use DOMDocument;
+use DOMXPath;
 use Episciences_Rss;
+use Episciences_Website_Navigation_Page_Rss;
 use Laminas\Feed\Writer\Feed;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use ReflectionMethod;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Select;
 use Zend_Db_Table_Abstract;
@@ -33,6 +37,14 @@ final class Episciences_RssTest extends TestCase
     /** @var list<string> SQL of the news queries sent to the adapter */
     private array $newsQueries = [];
 
+    /** @var list<array<string, mixed>> news rows returned by the adapter */
+    private array $newsRows = [[
+        'NEWSID' => 1,
+        'TITLE' => 'title_1',
+        'CONTENT' => 'content_1',
+        'DATE_POST' => '2026-10-01 10:00:00',
+    ]];
+
     private bool $languagesRegistered = false;
 
     protected function setUp(): void
@@ -54,11 +66,7 @@ final class Episciences_RssTest extends TestCase
         $this->adapter->method('fetchAll')->willReturnCallback(function ($select) {
             $this->newsQueries[] = $select instanceof Zend_Db_Select ? $select->assemble() : (string)$select;
 
-            return [[
-                'TITLE' => 'title_1',
-                'CONTENT' => 'content_1',
-                'DATE_POST' => '2026-10-01 10:00:00',
-            ]];
+            return $this->newsRows;
         });
     }
 
@@ -81,7 +89,12 @@ final class Episciences_RssTest extends TestCase
         /** @var Episciences_Rss $rss */
         $rss = $reflection->newInstanceWithoutConstructor();
 
-        $translator = new Zend_Translate('array', ['title_1' => 'Online news', 'content_1' => 'News content'], 'en');
+        $translator = new Zend_Translate('array', [
+            'title_1' => 'Online news',
+            'content_1' => 'News content',
+            'title_2' => 'Second news',
+            'content_2' => "Line <b>one</b> & \"quoted\"\nLine two",
+        ], 'en');
         $reflection->getProperty('_translator')->setValue($rss, $translator);
 
         $feed = new Feed();
@@ -125,6 +138,109 @@ final class Episciences_RssTest extends TestCase
         $this->renderNews(['max' => '100000']);
 
         self::assertMatchesRegularExpression('/LIMIT ' . Episciences_Rss::MAX_ENTRIES . '\b/', $this->newsQueries[0]);
+    }
+
+    private static function xpath(string $output): DOMXPath
+    {
+        $dom = new DOMDocument();
+        self::assertTrue($dom->loadXML($output));
+        $xpath = new DOMXPath($dom);
+        $xpath->registerNamespace('content', 'http://purl.org/rss/1.0/modules/content/');
+
+        return $xpath;
+    }
+
+    public function testEachNewsHasItsOwnLinkAndGuid(): void
+    {
+        $this->newsRows[] = [
+            'NEWSID' => 2,
+            'TITLE' => 'title_2',
+            'CONTENT' => 'content_2',
+            'DATE_POST' => '2026-10-02 10:00:00',
+        ];
+
+        $xpath = self::xpath($this->renderNews([]));
+
+        $guids = [];
+        foreach ($xpath->query('/rss/channel/item') ?: [] as $item) {
+            $guids[] = $xpath->evaluate('string(guid)', $item);
+            self::assertSame($xpath->evaluate('string(link)', $item), $xpath->evaluate('string(guid)', $item));
+        }
+
+        self::assertSame([APPLICATION_URL . '/news/#news-1', APPLICATION_URL . '/news/#news-2'], $guids);
+    }
+
+    public function testNewsContentIsRenderedAsPlainTextLikeOnTheNewsPage(): void
+    {
+        $this->newsRows = [[
+            'NEWSID' => 2,
+            'TITLE' => 'title_2',
+            'CONTENT' => 'content_2',
+            'DATE_POST' => '2026-10-02 10:00:00',
+        ]];
+
+        $xpath = self::xpath($this->renderNews([]));
+
+        $expected = "Line &lt;b&gt;one&lt;/b&gt; &amp; &quot;quoted&quot;<br />\nLine two";
+        self::assertSame($expected, $xpath->evaluate('string(/rss/channel/item/description)'));
+        self::assertSame($expected, $xpath->evaluate('string(/rss/channel/item/content:encoded)'));
+    }
+
+    /**
+     * @return array<string, array{string, string, string}>
+     */
+    public static function channelProvider(): array
+    {
+        return [
+            'papers' => ['papers', '/rss/papers', 'Derniers articles'],
+            'news' => ['news', '/rss/news', 'Dernières actualités'],
+        ];
+    }
+
+    /**
+     * @dataProvider channelProvider
+     */
+    public function testChannelDescribesTheFeedOfTheAction(string $action, string $feedLink, string $description): void
+    {
+        $rss = $this->newsFeed();
+        $feed = (new ReflectionMethod(Episciences_Rss::class, 'createFeed'))->invoke($rss, 'Journal', $action);
+
+        self::assertSame(['rss' => APPLICATION_URL . $feedLink], $feed->getFeedLinks());
+        self::assertSame($description, $feed->getDescription());
+    }
+
+    /**
+     * @return array<string, array{mixed, ?int}>
+     */
+    public static function parseMaxEntriesProvider(): array
+    {
+        return [
+            'null' => [null, null],
+            'numeric string' => ['15', 15],
+            'above the bound' => ['5000', Episciences_Rss::MAX_ENTRIES],
+            // is_numeric() but invalid: the journal setting applies
+            'zero' => ['0', null],
+            'negative' => ['-3', null],
+            'decimal' => ['1.5', null],
+            'exponent' => ['1e9', null],
+            'array' => [['10'], null],
+        ];
+    }
+
+    /**
+     * @dataProvider parseMaxEntriesProvider
+     */
+    public function testParseMaxEntries(mixed $max, ?int $expected): void
+    {
+        self::assertSame($expected, Episciences_Rss::parseMaxEntries($max));
+    }
+
+    public function testInvalidJournalSettingFallsBackToTheFeedDefault(): void
+    {
+        $page = new Episciences_Website_Navigation_Page_Rss();
+        $page->setNbResults('none');
+
+        self::assertSame(Episciences_Rss::DEFAULT_MAX_ENTRIES, $page->getNbResults());
     }
 
     /**
