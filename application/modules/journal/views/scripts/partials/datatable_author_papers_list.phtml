@@ -32,7 +32,7 @@ foreach ($this->papers as $paper) : ?>
         <?php // article title ******************************************* ?>
         <td>
             <a href="/<?php echo $controller ?>/view?id=<?php echo $paper->getDocid(); ?>">
-                <strong><?php echo Ccsd_Tools::truncate(Episciences_Tools::decodeLatex($paper->getTitle()), 75); ?></strong>
+                <strong><?php echo $this->paperTitle($paper); ?></strong>
                 <?php if ($paper->getVersion() != 1) : ?>
                     (v<?php echo $paper->getVersion(); ?>)
                 <?php endif; ?>
@@ -42,7 +42,7 @@ foreach ($this->papers as $paper) : ?>
         <?php // article volume ******************************************* ?>
         <td class="text-center"><?php
             if (array_key_exists($paper->getVid(), $this->volumes)) {
-                echo $this->volumes[$paper->getVid()]->getNameKey();
+                echo $this->escape($this->volumes[$paper->getVid()]->getNameKey());
             } else {
                 echo '-';
             }
@@ -51,7 +51,7 @@ foreach ($this->papers as $paper) : ?>
         <?php // article section ******************************************* ?>
         <td class="text-center"><?php
             if (array_key_exists($paper->getSid(), $this->sections)) {
-                echo $this->translate($this->sections[$paper->getSid()]->getNameKey());
+                echo $this->escape($this->translate($this->sections[$paper->getSid()]->getNameKey()));
             } else {
                 echo '-';
             }
