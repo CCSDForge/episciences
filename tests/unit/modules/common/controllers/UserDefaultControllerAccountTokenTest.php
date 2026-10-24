@@ -43,6 +43,10 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
     /** @var MockObject&Ccsd_User_Models_UserMapper */
     private Ccsd_User_Models_UserMapper $userMapper;
     private AccountTokenTestController $controller;
+    /** Current address of the account in CAS, null when the account does not exist */
+    private ?string $currentEmail = self::EMAIL;
+    /** Thrown when the current address is read, when set */
+    private ?\Exception $emailLookupFailure = null;
 
     protected function setUp(): void
     {
@@ -54,6 +58,13 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         $this->db = UserTokenTestDatabase::create();
         $this->tokens = new AccountTokenRepository($this->db, fn(): DateTimeImmutable => $this->now);
         $this->userMapper = $this->createMock(Ccsd_User_Models_UserMapper::class);
+        $this->userMapper->method('findEmail')->willReturnCallback(function (): ?string {
+            if ($this->emailLookupFailure !== null) {
+                throw $this->emailLookupFailure;
+            }
+
+            return $this->currentEmail;
+        });
 
         $this->controller = new AccountTokenTestController(
             new Zend_Controller_Request_HttpTestCase(),
@@ -187,6 +198,16 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         self::assertCount(1, $warnings);
     }
 
+    public function testActivationLinkSentToAFormerAddressIsRefused(): void
+    {
+        $token = $this->issue(TokenPurpose::ACCOUNT_ACTIVATION);
+        $this->currentEmail = 'new-address@example.org';
+
+        $this->userMapper->expects(self::never())->method('activateAccountByUid');
+
+        self::assertFalse($this->controller->activate($token));
+    }
+
     public function testInvalidActivationLinkShowsTheErrorPageWithoutLeakingTheToken(): void
     {
         $this->controller->getRequest()->setParam('token', str_repeat('a', 64));
@@ -276,6 +297,47 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
 
         self::assertFalse($this->withoutWarnings(fn(): bool => $this->controller->resetPassword($token, self::PASSWORD)));
         self::assertTrue($this->controller->resetPassword($token, self::PASSWORD), 'the link must work again once the database is back');
+    }
+
+    public function testPasswordLinkSentToAFormerAddressIsRefused(): void
+    {
+        $token = $this->issue(TokenPurpose::PASSWORD_RESET);
+        $this->currentEmail = 'new-address@example.org';
+
+        $this->userMapper->expects(self::never())->method('savePassword');
+
+        self::assertFalse($this->controller->resetPassword($token, self::PASSWORD));
+        self::assertNull($this->tokens->find($token, TokenPurpose::PASSWORD_RESET), 'the link is not put back');
+    }
+
+    public function testPasswordLinkOfADeletedAccountIsRefused(): void
+    {
+        $token = $this->issue(TokenPurpose::PASSWORD_RESET);
+        $this->currentEmail = null;
+
+        $this->userMapper->expects(self::never())->method('savePassword');
+
+        self::assertFalse($this->controller->resetPassword($token, self::PASSWORD));
+    }
+
+    public function testAddressIsComparedIgnoringCaseAndSurroundingSpaces(): void
+    {
+        $token = $this->issue(TokenPurpose::PASSWORD_RESET);
+        $this->currentEmail = ' SomeOne@Example.org ';
+        $this->userMapper->method('savePassword')->willReturn(1);
+
+        self::assertTrue($this->controller->resetPassword($token, self::PASSWORD));
+    }
+
+    public function testPasswordLinkStillWorksWhenTheAddressCouldNotBeChecked(): void
+    {
+        $token = $this->issue(TokenPurpose::PASSWORD_RESET);
+        $this->emailLookupFailure = new Zend_Db_Adapter_Exception('database unavailable');
+
+        $this->userMapper->expects(self::never())->method('savePassword');
+
+        self::assertFalse($this->withoutWarnings(fn(): bool => $this->controller->resetPassword($token, self::PASSWORD)));
+        self::assertNotNull($this->tokens->find($token, TokenPurpose::PASSWORD_RESET), 'the link must work again once the database is back');
     }
 
     public function testPasswordResetIsReportedAsDoneWhenTheLinksCannotBeRevoked(): void

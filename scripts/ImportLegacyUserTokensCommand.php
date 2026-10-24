@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Episciences\User\Token\AccountTokenRepository;
 use Episciences\User\Token\LegacyTokenImporter;
+use scripts\Command\Bootstrapper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -60,29 +61,12 @@ class ImportLegacyUserTokensCommand extends Command
         );
     }
 
+    /**
+     * @throws Zend_Application_Exception
+     * @throws Zend_Db_Exception
+     */
     protected function bootstrap(): void
     {
-        if (!defined('APPLICATION_PATH')) {
-            define('APPLICATION_PATH', realpath(__DIR__ . '/../application'));
-        }
-
-        require_once __DIR__ . '/../public/const.php';
-        require_once __DIR__ . '/../public/bdd_const.php';
-
-        defineProtocol();
-        defineSimpleConstants();
-        defineSQLTableConstants();
-        defineApplicationConstants();
-        defineJournalConstants();
-
-        $libraries = [realpath(APPLICATION_PATH . '/../library')];
-        set_include_path(implode(PATH_SEPARATOR, array_merge($libraries, [get_include_path()])));
-        require_once 'Zend/Application.php';
-
-        $application = new Zend_Application('production', APPLICATION_PATH . '/configs/application.ini');
-        $application->bootstrap('db');
-
-        $autoloader = Zend_Loader_Autoloader::getInstance();
-        $autoloader->setFallbackAutoloader(true);
+        new Bootstrapper();
     }
 }

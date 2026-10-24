@@ -134,13 +134,14 @@ class AccountTokenRepository
 
     /**
      * Puts back a consumed token whose action could not be completed, so that its link can be used again
-     * until it expires
+     * until it expires. Nothing is put back when the account has a token for the same purpose: since issuing
+     * revokes the older tokens, that one was issued after the consumed one, which must stay revoked.
      */
     public function restore(string $presented, AccountToken $token): void
     {
         $hash = self::hashPresented($presented);
 
-        if ($hash === null || $this->exists($hash)) {
+        if ($hash === null || $this->hasToken($token->uid, $token->purpose)) {
             return;
         }
 
@@ -227,6 +228,20 @@ class AccountTokenRepository
         $hash = self::hashPresented($legacyToken);
 
         return $hash !== null && !$this->exists($hash);
+    }
+
+    private function hasToken(int $uid, TokenPurpose $purpose): bool
+    {
+        $db = $this->getDb();
+        $id = $db->fetchOne(
+            $db->select()
+                ->from(self::TABLE_NAME, ['id'])
+                ->where('uid = ?', $uid)
+                ->where('purpose = ?', $purpose->value)
+                ->limit(1)
+        );
+
+        return $id !== false && $id !== null;
     }
 
     private function exists(string $hash): bool

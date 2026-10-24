@@ -228,6 +228,33 @@ final class AccountTokenRepositoryTest extends TestCase
         self::assertSame(1, $this->countTokens());
     }
 
+    public function testTokenIsNotRestoredOnceANewerOneWasIssued(): void
+    {
+        $token = $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);
+        $consumed = $this->repository->consume($token, TokenPurpose::PASSWORD_RESET);
+        self::assertNotNull($consumed);
+        $newer = $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);
+
+        $this->repository->restore($token, $consumed);
+
+        self::assertNull($this->repository->find($token, TokenPurpose::PASSWORD_RESET));
+        self::assertNotNull($this->repository->find($newer, TokenPurpose::PASSWORD_RESET));
+        self::assertSame(1, $this->countTokens());
+    }
+
+    public function testTokenIsRestoredWhenOnlyTokensOfOtherPurposesOrAccountsExist(): void
+    {
+        $token = $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);
+        $consumed = $this->repository->consume($token, TokenPurpose::PASSWORD_RESET);
+        self::assertNotNull($consumed);
+        $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::ACCOUNT_SETUP);
+        $this->repository->issue(self::OTHER_UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);
+
+        $this->repository->restore($token, $consumed);
+
+        self::assertNotNull($this->repository->find($token, TokenPurpose::PASSWORD_RESET));
+    }
+
     public function testRevokeAllOnlyRevokesTheGivenAccountAndPurposes(): void
     {
         $reset = $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);

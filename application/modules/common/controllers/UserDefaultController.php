@@ -8,6 +8,7 @@ use Episciences\User\AccountMutationPolicy;
 use Episciences\User\EmailPolicy;
 use Episciences\User\ImpersonationPolicy;
 use Episciences\User\SuLogger;
+use Episciences\User\Token\AccountToken;
 use Episciences\User\Token\AccountTokenRepository;
 use Episciences\User\Token\TokenPurpose;
 
@@ -1446,7 +1447,9 @@ class UserDefaultController extends Zend_Controller_Action
         // On submission the token comes back in the form
         $token = $request->isPost() ? $request->getPost('token') : $request->getParam('token');
 
-        if ($this->getAccountTokenRepository()->find($token, ...self::PASSWORD_TOKEN_PURPOSES) === null) {
+        $accountToken = $this->getAccountTokenRepository()->find($token, ...self::PASSWORD_TOKEN_PURPOSES);
+
+        if ($accountToken === null || !$this->isSentToCurrentAddress($accountToken)) {
             $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_FAILURE;
             $this->render('resetpassword');
             return;
@@ -1487,6 +1490,10 @@ class UserDefaultController extends Zend_Controller_Action
         // The token is revoked only once the account is active, so that the link still works after a database
         // failure. Activating twice is not possible: the second attempt fails since the account is already active.
         try {
+            if (!$this->isSentToCurrentAddress($accountToken)) {
+                return false;
+            }
+
             $this->getUserMapper()->activateAccountByUid($accountToken->uid);
         } catch (Zend_Db_Exception $e) { // e.g. the account is already active
             trigger_error($e->getMessage(), E_USER_WARNING);
@@ -1528,6 +1535,10 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         try {
+            if (!$this->isSentToCurrentAddress($accountToken)) {
+                return false;
+            }
+
             $saved = $this->writePassword($accountToken->uid, $password);
         } catch (Zend_Db_Exception $e) {
             // The password could not be written (e.g. CAS database unavailable): the link must keep working
@@ -1574,6 +1585,19 @@ class UserDefaultController extends Zend_Controller_Action
         $user->setTime_modified();
 
         return (int)$this->getUserMapper()->savePassword($user) === 1;
+    }
+
+    /**
+     * Whether a link was sent to the current e-mail address of its account. The address can be changed outside of
+     * this application (the CAS table is shared), so revoking the links when it changes here is not enough: a link
+     * sent to a former address must not work anymore.
+     * @throws Zend_Db_Exception
+     */
+    protected function isSentToCurrentAddress(AccountToken $accountToken): bool
+    {
+        $currentEmail = $this->getUserMapper()->findEmail($accountToken->uid);
+
+        return $currentEmail !== null && strcasecmp(trim($currentEmail), trim($accountToken->email)) === 0;
     }
 
     /**

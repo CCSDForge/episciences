@@ -394,6 +394,20 @@ class Ccsd_User_Models_UserMapper {
     }
 
     /**
+     * Current e-mail address of an account, read from the database without any cache
+     * @return ?string null when the account does not exist
+     */
+    public function findEmail(int $uid): ?string
+    {
+        $table = $this->getDbTable();
+        $select = $table->select()->from($table, ['EMAIL'])->where('UID = ?', $uid);
+
+        $row = $table->fetchRow($select);
+
+        return $row === null ? null : (string)$row->EMAIL;
+    }
+
+    /**
      * Trouve un utilisateur avec un compte actif ou pas, par son login ou UID, sinon renvoi
      * null
      *
