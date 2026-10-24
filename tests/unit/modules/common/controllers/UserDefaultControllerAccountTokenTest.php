@@ -15,7 +15,9 @@ use PHPUnit\Framework\TestCase;
 use unit\library\Episciences\User\Token\UserTokenTestDatabase;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
+use Zend_Db_Adapter_Abstract;
 use Zend_Db_Adapter_Exception;
+use Zend_Db_Statement_Exception;
 use Zend_Db_Table_Rowset;
 use Zend_View;
 
@@ -36,6 +38,7 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
     private const PASSWORD = 'A-long-enough-passw0rd!';
 
     private DateTimeImmutable $now;
+    private Zend_Db_Adapter_Abstract $db;
     private AccountTokenRepository $tokens;
     /** @var MockObject&Ccsd_User_Models_UserMapper */
     private Ccsd_User_Models_UserMapper $userMapper;
@@ -48,7 +51,8 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         }
 
         $this->now = new DateTimeImmutable('2026-10-24 10:00:00');
-        $this->tokens = new AccountTokenRepository(UserTokenTestDatabase::create(), fn(): DateTimeImmutable => $this->now);
+        $this->db = UserTokenTestDatabase::create();
+        $this->tokens = new AccountTokenRepository($this->db, fn(): DateTimeImmutable => $this->now);
         $this->userMapper = $this->createMock(Ccsd_User_Models_UserMapper::class);
 
         $this->controller = new AccountTokenTestController(
@@ -78,6 +82,41 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         } finally {
             restore_error_handler();
         }
+    }
+
+    /**
+     * Collects the warnings raised by a call
+     * @return list<string>
+     */
+    private function warningsOf(callable $call): array
+    {
+        $warnings = [];
+        set_error_handler(static function (int $level, string $message) use (&$warnings): bool {
+            $warnings[] = $message;
+            return true;
+        }, E_USER_WARNING);
+        try {
+            $call();
+        } finally {
+            restore_error_handler();
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Token repository on the same table, whose revocation fails (application database unavailable)
+     */
+    private function tokensFailingToRevoke(): AccountTokenRepository
+    {
+        $tokens = $this->getMockBuilder(AccountTokenRepository::class)
+            ->setConstructorArgs([$this->db, fn(): DateTimeImmutable => $this->now])
+            ->onlyMethods(['revokeAll', 'restore'])
+            ->getMock();
+        $tokens->method('revokeAll')->willThrowException(new Zend_Db_Statement_Exception('application database unavailable'));
+        $tokens->expects(self::never())->method('restore');
+
+        return $tokens;
     }
 
     // ---------------------------------------------------------------- activation
@@ -131,6 +170,21 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
 
         self::assertFalse($this->withoutWarnings(fn(): bool => $this->controller->activate($token)));
         self::assertNull($this->tokens->find($token, TokenPurpose::ACCOUNT_ACTIVATION));
+    }
+
+    public function testActivationIsReportedAsDoneWhenItsLinksCannotBeRevoked(): void
+    {
+        $token = $this->issue(TokenPurpose::ACCOUNT_ACTIVATION);
+        $this->userMapper->expects(self::once())->method('activateAccountByUid')->with(self::UID);
+        $this->controller->tokens = $this->tokensFailingToRevoke();
+
+        $activated = null;
+        $warnings = $this->warningsOf(function () use ($token, &$activated): void {
+            $activated = $this->controller->activate($token);
+        });
+
+        self::assertTrue($activated);
+        self::assertCount(1, $warnings);
     }
 
     public function testInvalidActivationLinkShowsTheErrorPageWithoutLeakingTheToken(): void
@@ -224,21 +278,20 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         self::assertTrue($this->controller->resetPassword($token, self::PASSWORD), 'the link must work again once the database is back');
     }
 
-    public function testPasswordLinkIsNotPutBackOnceThePasswordIsWritten(): void
+    public function testPasswordResetIsReportedAsDoneWhenTheLinksCannotBeRevoked(): void
     {
         $token = $this->issue(TokenPurpose::PASSWORD_RESET);
-        $this->userMapper->method('savePassword')->willReturn(1);
-        $failingTokens = $this->getMockBuilder(AccountTokenRepository::class)
-            ->setConstructorArgs([UserTokenTestDatabase::create(), fn(): DateTimeImmutable => $this->now])
-            ->onlyMethods(['consume', 'revokeAll', 'restore'])
-            ->getMock();
-        $failingTokens->method('consume')->willReturn($this->tokens->find($token, TokenPurpose::PASSWORD_RESET));
-        $failingTokens->method('revokeAll')->willThrowException(new \Zend_Db_Statement_Exception('application database unavailable'));
-        $failingTokens->expects(self::never())->method('restore');
-        $this->controller->tokens = $failingTokens;
+        $this->userMapper->expects(self::once())->method('savePassword')->willReturn(1);
+        $this->controller->tokens = $this->tokensFailingToRevoke();
 
-        $this->expectException(\Zend_Db_Statement_Exception::class);
-        $this->controller->resetPassword($token, self::PASSWORD);
+        $reset = null;
+        $warnings = $this->warningsOf(function () use ($token, &$reset): void {
+            $reset = $this->controller->resetPassword($token, self::PASSWORD);
+        });
+
+        self::assertTrue($reset);
+        self::assertCount(1, $warnings);
+        self::assertNull($this->tokens->find($token, TokenPurpose::PASSWORD_RESET), 'the consumed link is not put back');
     }
 
     public function testPasswordChangedFromTheProfileRevokesThePasswordLinksOfTheAccount(): void
@@ -253,6 +306,20 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         self::assertNull($this->tokens->find($setup, TokenPurpose::ACCOUNT_SETUP));
         self::assertNull($this->tokens->find($reset, TokenPurpose::PASSWORD_RESET));
         self::assertNotNull($this->tokens->find($otherAccount, TokenPurpose::PASSWORD_RESET));
+    }
+
+    public function testPasswordChangedFromTheProfileIsReportedAsDoneWhenTheLinksCannotBeRevoked(): void
+    {
+        $this->userMapper->expects(self::once())->method('savePassword')->willReturn(1);
+        $this->controller->tokens = $this->tokensFailingToRevoke();
+
+        $changed = null;
+        $warnings = $this->warningsOf(function () use (&$changed): void {
+            $changed = $this->controller->changePassword(self::UID, self::PASSWORD);
+        });
+
+        self::assertTrue($changed);
+        self::assertCount(1, $warnings);
     }
 
     public function testFailedPasswordChangeKeepsThePasswordLinks(): void
@@ -275,6 +342,15 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
             self::assertNull($this->tokens->find($token, $purpose), $purpose->value);
         }
         self::assertNotNull($this->tokens->find($otherAccount, TokenPurpose::PASSWORD_RESET));
+    }
+
+    public function testEmailChangeIsNotInterruptedWhenTheLinksCannotBeRevoked(): void
+    {
+        $this->controller->tokens = $this->tokensFailingToRevoke();
+
+        $warnings = $this->warningsOf(fn() => $this->controller->revokeLinks(self::UID));
+
+        self::assertCount(1, $warnings);
     }
 
     // ---------------------------------------------------------------- lost password / lost login
@@ -364,6 +440,18 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         self::assertSame(self::EMAIL, $this->controller->sentMails[0][1]->getEmail());
     }
 
+    public function testLostLoginAnswersTheSameWhenTheEmailFails(): void
+    {
+        $this->userMapper->method('findLoginByEmail')->with(self::EMAIL)
+            ->willReturn(new Zend_Db_Table_Rowset(['data' => [['USERNAME' => 'jdoe', 'VALID' => 1]]]));
+        $this->controller->mailFailure = new Zend_Db_Statement_Exception('mail log unavailable');
+
+        $warnings = $this->warningsOf(fn() => $this->controller->lostLogin(self::EMAIL));
+
+        self::assertSame(Ccsd_User_Models_User::ACCOUNT_LOST_LOGIN_FOUND, $this->controller->view->resultMessage);
+        self::assertCount(1, $warnings);
+    }
+
     public function testLostLoginOfAnUnknownAddressSendsNothingButAnswersTheSame(): void
     {
         $this->userMapper->method('findLoginByEmail')->willReturn(new Zend_Db_Table_Rowset(['data' => []]));
@@ -432,7 +520,7 @@ final class AccountTokenTestController extends \UserDefaultController
 
     protected function sendLostLoginEmail(Episciences_User $user, array $userLogins): void
     {
-        $this->sentMails[] = ['lost login', $user];
+        $this->recordMail('lost login', $user);
     }
 
     public function renderScript($script, $name = null): void

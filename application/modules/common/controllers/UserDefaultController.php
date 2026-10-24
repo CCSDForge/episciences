@@ -1494,7 +1494,7 @@ class UserDefaultController extends Zend_Controller_Action
             return false;
         }
 
-        $this->getAccountTokenRepository()->revokeAll($accountToken->uid, TokenPurpose::ACCOUNT_ACTIVATION);
+        $this->revokeLinksOfUpdatedAccount($accountToken->uid, TokenPurpose::ACCOUNT_ACTIVATION);
 
         return true;
     }
@@ -1540,7 +1540,7 @@ class UserDefaultController extends Zend_Controller_Action
             return false;
         }
 
-        $tokenRepository->revokeAll($accountToken->uid, ...self::PASSWORD_TOKEN_PURPOSES);
+        $this->revokeLinksOfUpdatedAccount($accountToken->uid, ...self::PASSWORD_TOKEN_PURPOSES);
 
         return true;
     }
@@ -1556,7 +1556,7 @@ class UserDefaultController extends Zend_Controller_Action
             return false;
         }
 
-        $this->getAccountTokenRepository()->revokeAll($uid, ...self::PASSWORD_TOKEN_PURPOSES);
+        $this->revokeLinksOfUpdatedAccount($uid, ...self::PASSWORD_TOKEN_PURPOSES);
 
         return true;
     }
@@ -1582,7 +1582,20 @@ class UserDefaultController extends Zend_Controller_Action
      */
     protected function revokeAccountLinks(int $uid): void
     {
-        $this->getAccountTokenRepository()->revokeAll($uid, ...TokenPurpose::cases());
+        $this->revokeLinksOfUpdatedAccount($uid, ...TokenPurpose::cases());
+    }
+
+    /**
+     * Revokes account links once the account has been updated. A failure is only logged: the update is done and
+     * must be reported as such, the links then expire on their own.
+     */
+    private function revokeLinksOfUpdatedAccount(int $uid, TokenPurpose ...$purposes): void
+    {
+        try {
+            $this->getAccountTokenRepository()->revokeAll($uid, ...$purposes);
+        } catch (Zend_Db_Exception $e) {
+            trigger_error(sprintf('Account links of account %d could not be revoked: %s', $uid, $e->getMessage()), E_USER_WARNING);
+        }
     }
 
     /**
@@ -1630,17 +1643,23 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * Sends the usernames linked to an e-mail address.
-     * The result message is the same whether or not accounts match the address.
+     * The result message is the same whether or not accounts match the address, even when the e-mail fails.
      */
     protected function processLostLoginRequest(string $email): void
     {
+        $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_LOST_LOGIN_FOUND;
+
         $userLogins = $this->getUserMapper()->findLoginByEmail($email);
 
-        if ($userLogins !== null && $userLogins->count() > 0) {
-            $this->sendLostLoginEmail(new Episciences_User(['EMAIL' => $email]), $userLogins->toArray());
+        if ($userLogins === null || $userLogins->count() === 0) {
+            return;
         }
 
-        $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_LOST_LOGIN_FOUND;
+        try {
+            $this->sendLostLoginEmail(new Episciences_User(['EMAIL' => $email]), $userLogins->toArray());
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
     }
 
     /**

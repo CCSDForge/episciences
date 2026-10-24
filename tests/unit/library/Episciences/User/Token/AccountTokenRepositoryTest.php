@@ -141,6 +141,31 @@ final class AccountTokenRepositoryTest extends TestCase
         self::assertSame(0, $this->countTokens());
     }
 
+    public function testTokenConsumedByAConcurrentRequestIsNotGivenTwice(): void
+    {
+        $token = $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);
+        $concurrentRequest = new AccountTokenRepository($this->db, fn(): DateTimeImmutable => $this->now);
+
+        // The other request consumes the token between the lookup and the deletion of this one
+        $racing = new class ($this->db, fn(): DateTimeImmutable => $this->now, $concurrentRequest) extends AccountTokenRepository {
+            public function __construct(Zend_Db_Adapter_Pdo_Sqlite $db, \Closure $clock, private readonly AccountTokenRepository $concurrentRequest)
+            {
+                parent::__construct($db, $clock);
+            }
+
+            public function find(mixed $presented, TokenPurpose ...$purposes): ?AccountToken
+            {
+                $found = parent::find($presented, ...$purposes);
+                $this->concurrentRequest->consume($presented, ...$purposes);
+
+                return $found;
+            }
+        };
+
+        self::assertNull($racing->consume($token, TokenPurpose::PASSWORD_RESET));
+        self::assertSame(0, $this->countTokens());
+    }
+
     public function testIssuingRevokesThePreviousTokenOfTheSameAccountAndPurpose(): void
     {
         $first = $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);

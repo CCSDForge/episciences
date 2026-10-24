@@ -72,8 +72,13 @@ final class LegacyTokenImporterTest extends TestCase
         $result = $this->importer->import();
 
         self::assertSame(['candidates' => 2, 'imported' => 2, 'skipped' => 0], $result);
-        self::assertNotNull($this->repository->find($activation, TokenPurpose::ACCOUNT_ACTIVATION));
-        self::assertNotNull($this->repository->find($password, TokenPurpose::PASSWORD_RESET));
+        foreach ([[$activation, TokenPurpose::ACCOUNT_ACTIVATION], [$password, TokenPurpose::PASSWORD_RESET]] as [$token, $purpose]) {
+            $found = $this->repository->find($token, $purpose);
+            self::assertNotNull($found, $purpose->value);
+            self::assertSame(self::EPISCIENCES_UID, $found->uid, $purpose->value);
+            self::assertSame('someone@example.org', $found->email, $purpose->value);
+            self::assertSame($purpose, $found->purpose);
+        }
     }
 
     public function testLegacyPasswordTokenKeepsTheAccountSetupLifetime(): void
