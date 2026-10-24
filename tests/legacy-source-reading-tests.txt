@@ -43,7 +43,6 @@ tests/unit/modules/journal/controllers/PaperControllerContributorGuardTest.php
 tests/unit/modules/journal/controllers/PaperControllerMasterFileGuardTest.php
 tests/unit/modules/journal/controllers/PaperControllerReportAttachmentTest.php
 tests/unit/modules/journal/controllers/PaperControllerTest.php
-tests/unit/modules/journal/controllers/SubmitControllerTest.php
 tests/unit/scripts/ProcessInboxNotificationsCommandTest.php
 tests/unit/scripts/RemindersTest.php
 tests/unit/scripts/RemindersTranslationsTest.php

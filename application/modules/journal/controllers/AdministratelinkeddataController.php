@@ -236,6 +236,8 @@ class AdministratelinkeddataController extends Zend_Controller_Action
     {
         $request = $this->getRequest();
         $this->_helper->layout()->disableLayout();
+        // The form is rendered below only for allowed AJAX requests: no view otherwise
+        $this->_helper->viewRenderer->setNoRender();
         if ($request->isXmlHttpRequest() && $request->isPost()
             && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
             $valueLd = '';
