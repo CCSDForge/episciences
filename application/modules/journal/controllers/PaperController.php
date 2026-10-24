@@ -3,6 +3,7 @@
 use Episciences\Files\Uploader;
 use Episciences\Paper\Files\DocumentFilePolicy;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
+use Episciences\Paper\RevisionRequests;
 use Episciences\Reviewer\InvitationToken;
 use Episciences\Submit\SubmittedRecord;
 use GuzzleHttp\Exception\GuzzleException;
@@ -352,58 +353,18 @@ class PaperController extends PaperDefaultController
         }
 
         // revision requests ******************************************************
-        // fetch revision requests
-        $settings = [
-            self::TYPES_STR => [
-                Episciences_CommentsManager::TYPE_REVISION_REQUEST,
-                Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT,
-                Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION,
-                Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION,
-                Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT
-            ]
-        ];
-
-        $revision_requests = Episciences_CommentsManager::getRevisionRequests($paper->getDocid(), $settings);
+        $revision_requests = Episciences_CommentsManager::getRevisionRequests($paper->getDocid(), RevisionRequests::commentSettings());
 
         // if revision requests were made on previous versions, fetch them too
         $previousVersions = $paper->getPreviousVersions();
         if ($previousVersions) {
-            /* @var Episciences_Paper $version */
-            $previousComments = [];
-
-            foreach ($previousVersions as $version) {
-                $vComments = $version->getComments($settings);
-                // ne pas afficher le bloc demande de modification si aucune demande de modification n'a été demandés suite au copy editing
-                if ($vComments) {
-                    $previousComments[$version->getDocid()] = $version->getComments($settings);
-                }
-            }
-
             $this->view->previousVersions = $previousVersions;
-            $this->view->previousVersionsDemands = $previousComments;
+            $this->view->previousVersionsDemands = RevisionRequests::ofPreviousVersions($previousVersions);
         }
 
-        // check if author answered the latest revision request
-        $currentDemand = null;
-        $revisionDeadline = null;
-
-        if (!empty($revision_requests)) {
-
-            $currentDemand = array_shift($revision_requests);
-
-            if (
-                !array_key_exists('replies', $currentDemand) ||
-                (
-                    isset($currentDemand['replies']) &&
-                    (int)$currentDemand['replies'][array_key_first($currentDemand['replies'])]['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT)
-            ) {
-
-                $revisionDeadline = $currentDemand['DEADLINE'];
-            }
-
-        }
-
-        $paper->_revisionDeadline = $revisionDeadline;
+        // latest revision request, and its deadline while the author has not answered it
+        $currentDemand = array_shift($revision_requests);
+        $paper->_revisionDeadline = $currentDemand === null ? null : RevisionRequests::pendingDeadline($currentDemand);
 
         $doNotDisplayContactChoice = in_array(
             $paper->getStatus(), Episciences_Paper::All_STATUS_WAITING_FOR_FINAL_VERSION, true
