@@ -260,7 +260,7 @@ final class RedirectionTestController extends \DefaultController
     /** @var list<int> paper ids whose published version was looked up */
     public array $publishedLookups = [];
 
-    protected function findPublishedPaperId(int $paperId): int
+    protected function findPublishedDocId(int $paperId): int
     {
         $this->publishedLookups[] = $paperId;
 

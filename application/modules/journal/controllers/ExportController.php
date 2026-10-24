@@ -55,14 +55,6 @@ class ExportController extends DefaultController
     }
 
     /**
-     * @throws Zend_Db_Statement_Exception
-     */
-    protected function findPublishedDocId(int $paperId): int
-    {
-        return Episciences_PapersManager::getPublishedPaperId($paperId);
-    }
-
-    /**
      * Answers 404 and stops the request
      */
     protected function notFound(): never

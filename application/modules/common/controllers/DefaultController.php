@@ -40,7 +40,7 @@ class DefaultController extends Zend_Controller_Action
         if ($this->isRestrictedAccess($paper)) {
 
             $paperId = $paper->getPaperid() ?: $paper->getDocid();
-            $publishedId = $this->findPublishedPaperId((int)$paperId);
+            $publishedId = $this->findPublishedDocId((int)$paperId);
 
             if ($publishedId !== 0) {
 
@@ -76,10 +76,10 @@ class DefaultController extends Zend_Controller_Action
     }
 
     /**
-     * The id of the published version of a paper, 0 when none is published
+     * The docid of the published version of a paper, 0 when none is published
      * @throws Zend_Db_Statement_Exception
      */
-    protected function findPublishedPaperId(int $paperId): int
+    protected function findPublishedDocId(int $paperId): int
     {
         return Episciences_PapersManager::getPublishedPaperId($paperId);
     }
