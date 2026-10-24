@@ -13,6 +13,7 @@ use Episciences_User_Invitation;
 use Episciences_User_Tmp;
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -44,6 +45,7 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     private const INVALID_LINK = 'Lien non valide; le jeton transmis dans la requête est erroné.';
 
     private mixed $previousAuthStorage;
+    private TestHandler $logHandler;
     /** @var \ReviewerController&object{redirectedTo: string|null} */
     private \ReviewerController $controller;
 
@@ -74,12 +76,33 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
             }
         };
         $this->controller->view = new Zend_View();
+
+        $this->logHandler = new TestHandler();
+        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
+        AccessLog::reset();
     }
 
     protected function tearDown(): void
     {
         Zend_Auth::getInstance()->setStorage($this->previousAuthStorage);
         $_GET = [];
+        AccessLog::setLogger(new NullLogger());
+        AccessLog::reset();
+    }
+
+    /**
+     * @return list<array{string, string, int|null}> event, reason and invitation id of each security log record
+     */
+    private function loggedEvents(): array
+    {
+        return array_map(
+            static fn(LogRecord $record): array => [
+                $record->message,
+                $record->context['reason'] ?? '',
+                $record->context['invitation_id'] ?? null,
+            ],
+            $this->logHandler->getRecords()
+        );
     }
 
     private function logIn(int $uid): void
@@ -296,6 +319,60 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     {
         self::assertFalse($this->isAuthorized($this->invitation(null), $this->assignment(true), ['tmp' => md5('other@example.org')], $this->tmpUser()));
         self::assertSame(self::INVALID_LINK, $this->controller->view->errors);
+    }
+
+    // -------------------------------------------------------------------------
+    // security log
+    // -------------------------------------------------------------------------
+
+    public function testWrongTokenIsLogged(): void
+    {
+        $this->isAuthorized($this->invitation(), $this->assignment(), ['token' => self::linkToken(8)]);
+
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'invitation_token', self::INVITATION_ID]], $this->loggedEvents());
+    }
+
+    public function testTemporaryUserThatNoLongerExistsIsLogged(): void
+    {
+        $this->isAuthorized($this->invitation(), $this->assignment(true), ['token' => self::linkToken()]);
+
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'unknown_temporary_reviewer', self::INVITATION_ID]], $this->loggedEvents());
+    }
+
+    public function testLegacyLinkWithAWrongMd5IsLogged(): void
+    {
+        $this->isAuthorized($this->invitation(null), $this->assignment(true), ['tmp' => md5('other@example.org')], $this->tmpUser());
+
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'legacy_invitation_link', self::INVITATION_ID]], $this->loggedEvents());
+    }
+
+    /**
+     * @return array<string, array{bool, ?string, array<string, string>}>
+     */
+    public static function grantedAccessProvider(): array
+    {
+        return [
+            'valid token' => [false, self::ROW_SECRET, []],
+            'legacy invitation of an account' => [false, null, []],
+            'invitee logged in' => [true, self::ROW_SECRET, []],
+        ];
+    }
+
+    /**
+     * @dataProvider grantedAccessProvider
+     * @param array<string, string> $params
+     */
+    public function testGrantedAccessIsNotLogged(bool $inviteeLoggedIn, ?string $rowSecret, array $params): void
+    {
+        if ($inviteeLoggedIn) {
+            $this->logIn(self::INVITED_UID);
+        }
+        if ($rowSecret !== null && !$inviteeLoggedIn) {
+            $params['token'] = self::linkToken();
+        }
+
+        self::assertTrue($this->isAuthorized($this->invitation($rowSecret), $this->assignment(), $params));
+        self::assertSame([], $this->loggedEvents());
     }
 
     // -------------------------------------------------------------------------

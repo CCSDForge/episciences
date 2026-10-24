@@ -379,7 +379,7 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         try {
-            return (new Ccsd_User_Models_UserMapper())->usernameExists($username) ? $username : null;
+            return $this->getUserMapper()->usernameExists($username) ? $username : null;
         } catch (Exception) {
             return null;
         }

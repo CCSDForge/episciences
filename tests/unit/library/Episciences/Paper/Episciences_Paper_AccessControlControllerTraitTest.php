@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Paper;
 
+use Episciences\Security\AccessLog;
 use Episciences\User\SuLogger;
 use Episciences_Acl;
 use Episciences_Auth;
@@ -12,7 +13,11 @@ use Episciences_Paper_AccessControlControllerTrait;
 use Episciences_Paper_Conflict;
 use Episciences_Review;
 use Episciences_User;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Table_Abstract;
 use Zend_Session;
@@ -163,6 +168,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
     private const CONFIRMATION_REQUIRED_MESSAGE = "Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission";
 
     private AccessControlHarness $harness;
+    private TestHandler $logHandler;
 
     protected function setUp(): void
     {
@@ -176,11 +182,27 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         $this->harness = new AccessControlHarness();
         AccessControlHarness::$conflictDetected = false;
         $this->resetAuthState();
+        $this->logHandler = new TestHandler();
+        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
+        AccessLog::reset();
     }
 
     protected function tearDown(): void
     {
         $this->resetAuthState();
+        AccessLog::setLogger(new NullLogger());
+        AccessLog::reset();
+    }
+
+    /**
+     * @return list<array{string, string, int|null}> event, reason and docid of each security log record
+     */
+    private function loggedRedirections(): array
+    {
+        return array_map(
+            static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? '', $record->context['docid'] ?? null],
+            $this->logHandler->getRecords()
+        );
     }
 
     private function resetAuthState(): void
@@ -304,6 +326,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         self::assertSame([self::ACCESS_DENIED_MESSAGE], $this->harness->_helper->messages);
         self::assertContains('warning', $this->harness->_helper->namespaces);
         self::assertSame([], $this->harness->_helper->urlParams);
+        self::assertSame([[AccessLog::ACCESS_REDIRECTED, 'paper_permissions', 123]], $this->loggedRedirections());
     }
 
     public function testAssignedEditorIsNotRedirectedWhenEncapsulationIsOn(): void
@@ -517,6 +540,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
 
         self::assertNull($this->harness->_helper->redirectedTo);
         self::assertSame([], $this->harness->_helper->messages);
+        self::assertSame([], $this->loggedRedirections());
     }
 
     public function testOwnerIsRedirectedToThePaperPublicView(): void
@@ -529,6 +553,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         );
 
         self::assertSame('/paper/view?id=123', $this->harness->_helper->redirectedTo);
+        self::assertSame([[AccessLog::ACCESS_REDIRECTED, 'own_submission', 123]], $this->loggedRedirections());
         self::assertCount(1, $this->harness->_helper->messages);
         self::assertStringContainsString('vous-même déposé', $this->harness->_helper->messages[0]);
         self::assertContains('warning', $this->harness->_helper->namespaces);
@@ -578,6 +603,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         );
 
         self::assertSame('/coi/report?id=123', $this->harness->_helper->redirectedTo);
+        self::assertSame([[AccessLog::ACCESS_REDIRECTED, 'conflict_of_interest', 123]], $this->loggedRedirections());
         self::assertSame(
             ["Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission."],
             $this->harness->_helper->messages
@@ -651,6 +677,11 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         self::assertStringContainsString('User 99', $message);
         self::assertStringContainsString('Vous êtes maintenant connecté à votre compte', $message);
         self::assertStringContainsString(self::CONFIRMATION_REQUIRED_MESSAGE, $message);
+        // logged before the switch back: under the identity that was refused
+        $context = $this->logHandler->getRecords()[0]->context;
+        self::assertSame('conflict_of_interest', $context['reason']);
+        self::assertSame(42, $context['uid']);
+        self::assertSame(99, $context['original_uid']);
         // the original account has been restored so it can confirm the conflict absence
         self::assertSame(99, Episciences_Auth::getUid());
         self::assertFalse(Episciences_Auth::isImpersonating(), 'the switch user state is closed');
