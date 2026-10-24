@@ -9,17 +9,11 @@ use Episciences_Acl;
 use Episciences_Paper;
 use Episciences_Paper_Conflict;
 use Episciences_Review;
-use Episciences_User;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
-use Zend_Auth;
-use Zend_Controller_Request_HttpTestCase;
+use unit\modules\ControllerTestCase;
 use Zend_Controller_Response_HttpTestCase;
-use Zend_Db_Adapter_Abstract;
-use Zend_Db_Table_Abstract;
-use Zend_Session;
 
 /**
  * Moving a paper to another section (savesection): request token, paper of the current journal,
@@ -27,48 +21,11 @@ use Zend_Session;
  *
  * The logged user is a real identity with roles; papers and journal are stubbed.
  */
-final class AdministratepaperSaveSectionTest extends TestCase
+final class AdministratepaperSaveSectionTest extends ControllerTestCase
 {
-    private const UID = 4242;
-
-    private Zend_Db_Adapter_Abstract $previousAdapter;
-
-    /** @var MockObject&Zend_Db_Adapter_Abstract */
-    private $adapter;
-
-    private bool $previousSessionTestMode;
-
     protected function setUp(): void
     {
-        require_once APPLICATION_PATH . '/modules/journal/controllers/AdministratepaperController.php';
-
-        $this->previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $this->adapter = $this->getMockBuilder($this->previousAdapter::class)
-            ->setConstructorArgs([$this->previousAdapter->getConfig()])
-            ->onlyMethods(['fetchRow', 'fetchAll', 'fetchCol', 'fetchOne', 'query', 'update', 'insert', 'beginTransaction'])
-            ->getMock();
-        Zend_Db_Table_Abstract::setDefaultAdapter($this->adapter);
-
-        // isConflictDetected() reads the session
-        $this->previousSessionTestMode = Zend_Session::$_unitTestEnabled;
-        Zend_Session::$_unitTestEnabled = true;
-    }
-
-    protected function tearDown(): void
-    {
-        Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
-        Zend_Auth::getInstance()->clearIdentity();
-        Zend_Session::$_unitTestEnabled = $this->previousSessionTestMode;
-    }
-
-    /**
-     * @param string[] $roles
-     */
-    private function logInAs(array $roles): void
-    {
-        $user = new Episciences_User(['UID' => self::UID]);
-        $user->setRoles([RVID => $roles]);
-        Zend_Auth::getInstance()->getStorage()->write($user);
+        self::loadController('journal', 'AdministratepaperController');
     }
 
     /**
@@ -100,12 +57,9 @@ final class AdministratepaperSaveSectionTest extends TestCase
         return $paper;
     }
 
-    private function controller(?Zend_Controller_Request_HttpTestCase $request = null): \AdministratepaperController
+    private function controller(): \AdministratepaperController
     {
-        return new \AdministratepaperController(
-            $request ?? new Zend_Controller_Request_HttpTestCase(),
-            new Zend_Controller_Response_HttpTestCase()
-        );
+        return new \AdministratepaperController($this->getRequest(), new Zend_Controller_Response_HttpTestCase());
     }
 
     /**
@@ -141,23 +95,17 @@ final class AdministratepaperSaveSectionTest extends TestCase
     public function testRequestWithoutTokenIsRefusedBeforeLoadingThePaper(string $method): void
     {
         $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
-        foreach (['fetchRow', 'fetchAll', 'fetchCol', 'fetchOne', 'query', 'update', 'insert', 'beginTransaction'] as $dbMethod) {
-            $this->adapter->expects(self::never())->method($dbMethod);
-        }
+        $request = $this->postRequest(['docid' => '12', 'sid' => '4']);
+        $request->setMethod($method);
 
-        $request = new Zend_Controller_Request_HttpTestCase();
-        $request->setMethod($method)->setPost(['docid' => '12', 'sid' => '4']);
-        $controller = $this->controller($request);
+        $result = $this->dispatch(\AdministratepaperController::class, 'savesection', $request);
 
-        ob_start();
-        try {
-            $controller->savesectionAction();
-        } finally {
-            $output = (string)ob_get_clean();
-        }
-
-        self::assertSame('', $output);
-        self::assertSame(403, $controller->getResponse()->getHttpResponseCode());
+        self::assertSame('', $result->output);
+        self::assertSame(403, $result->statusCode());
+        self::assertSame([], $this->db->queries());
+        self::assertSame([], $this->db->transactions());
+        self::assertSame([], $this->db->inserts());
+        self::assertSame([], $this->db->updates());
     }
 
     // ------------------------------------------------------------------
