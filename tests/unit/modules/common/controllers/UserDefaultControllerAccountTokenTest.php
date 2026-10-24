@@ -11,13 +11,9 @@ use Episciences\Security\AccessLog;
 use Episciences\User\Token\AccountTokenRepository;
 use Episciences\User\Token\TokenPurpose;
 use Episciences_User;
-use Monolog\Handler\TestHandler;
 use Monolog\Level;
-use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use unit\library\Episciences\User\Token\UserTokenTestDatabase;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
@@ -26,6 +22,9 @@ use Zend_Db_Adapter_Exception;
 use Zend_Db_Statement_Exception;
 use Zend_Db_Table_Rowset;
 use Zend_View;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 require_once __DIR__ . '/../../../library/Episciences/User/Token/UserTokenTestDatabase.php';
 require_once APPLICATION_PATH . '/modules/common/controllers/UserDefaultController.php';
@@ -39,6 +38,8 @@ require_once APPLICATION_PATH . '/modules/common/controllers/UserDefaultControll
  */
 final class UserDefaultControllerAccountTokenTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const UID = 42;
     private const EMAIL = 'someone@example.org';
     private const PASSWORD = 'A-long-enough-passw0rd!';
@@ -53,7 +54,6 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
     private ?string $currentEmail = self::EMAIL;
     /** Thrown when the current address is read, when set */
     private ?\Exception $emailLookupFailure = null;
-    private TestHandler $logHandler;
 
     protected function setUp(): void
     {
@@ -80,27 +80,6 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         $this->controller->tokens = $this->tokens;
         $this->controller->userMapper = $this->userMapper;
         $this->controller->view = new Zend_View();
-
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-        AccessLog::reset();
-    }
-
-    protected function tearDown(): void
-    {
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
-    }
-
-    /**
-     * @return list<array{string, string, string}> event, reason and level of each security log record
-     */
-    private function loggedEvents(): array
-    {
-        return array_map(
-            static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? '', $record->level->getName()],
-            $this->logHandler->getRecords()
-        );
     }
 
     private function issue(TokenPurpose $purpose, int $uid = self::UID): string
@@ -254,7 +233,7 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
     {
         $this->controller->activate($this->issue(TokenPurpose::ACCOUNT_ACTIVATION));
 
-        self::assertSame([], $this->loggedEvents());
+        self::assertSame([], $this->loggedEvents('reason', 'level'));
     }
 
     public function testRefusedActivationLinkIsLoggedAsANotice(): void
@@ -263,7 +242,7 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
 
         self::assertSame(
             [[AccessLog::TOKEN_INVALID, 'account_activation_link', Level::Notice->getName()]],
-            $this->loggedEvents()
+            $this->loggedEvents('reason', 'level')
         );
     }
 
@@ -284,7 +263,7 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
     public function testActivationLinkWithoutTokenIsNotLogged(mixed $token): void
     {
         self::assertFalse($this->controller->activate($token));
-        self::assertSame([], $this->loggedEvents());
+        self::assertSame([], $this->loggedEvents('reason', 'level'));
     }
 
     public function testActivationLinkSentToAFormerAddressIsLoggedAsAWarning(): void
@@ -296,9 +275,9 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
 
         self::assertSame(
             [[AccessLog::TOKEN_INVALID, 'not_current_address', Level::Warning->getName()]],
-            $this->loggedEvents()
+            $this->loggedEvents('reason', 'level')
         );
-        $context = $this->logHandler->getRecords()[0]->context;
+        $context = $this->securityLogRecords()[0]->context;
         self::assertSame(self::UID, $context['account_uid']);
         self::assertSame(TokenPurpose::ACCOUNT_ACTIVATION->value, $context['purpose']);
     }
@@ -306,7 +285,7 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
     public function testValidPasswordLinkIsShownWithoutBeingLogged(): void
     {
         self::assertNotNull($this->controller->findPassword($this->issue(TokenPurpose::PASSWORD_RESET)));
-        self::assertSame([], $this->loggedEvents());
+        self::assertSame([], $this->loggedEvents('reason', 'level'));
     }
 
     public function testRefusedPasswordLinkIsLoggedAsANotice(): void
@@ -316,7 +295,7 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
 
         self::assertSame(
             [[AccessLog::TOKEN_INVALID, 'password_reset_link', Level::Notice->getName()]],
-            $this->loggedEvents()
+            $this->loggedEvents('reason', 'level')
         );
     }
 
@@ -326,7 +305,7 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
     public function testPasswordLinkWithoutTokenIsNotLogged(mixed $token): void
     {
         self::assertNull($this->controller->findPassword($token));
-        self::assertSame([], $this->loggedEvents());
+        self::assertSame([], $this->loggedEvents('reason', 'level'));
     }
 
     /**
@@ -340,9 +319,9 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         self::assertNull($this->controller->findPassword($token));
         self::assertSame(
             [[AccessLog::TOKEN_INVALID, 'not_current_address', Level::Warning->getName()]],
-            $this->loggedEvents()
+            $this->loggedEvents('reason', 'level')
         );
-        self::assertSame($purpose->value, $this->logHandler->getRecords()[0]->context['purpose']);
+        self::assertSame($purpose->value, $this->securityLogRecords()[0]->context['purpose']);
     }
 
     // ---------------------------------------------------------------- password reset

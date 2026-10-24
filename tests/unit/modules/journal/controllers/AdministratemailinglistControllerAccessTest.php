@@ -7,16 +7,15 @@ namespace unit\modules\journal\controllers;
 use Episciences\Security\AccessLog;
 use Episciences_Acl;
 use Episciences_User;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use Zend_Auth;
 use Zend_Controller_Action_Helper_Redirector;
 use Zend_Controller_Action_HelperBroker;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * The mailing lists are managed by the journal staff only: any other user is sent to the access denied page
@@ -24,23 +23,18 @@ use Zend_Controller_Response_HttpTestCase;
  */
 final class AdministratemailinglistControllerAccessTest extends TestCase
 {
-    private TestHandler $logHandler;
+    use SecurityLogCaptureTrait;
 
     protected function setUp(): void
     {
         require_once APPLICATION_PATH . '/modules/journal/controllers/AdministratemailinglistController.php';
         $this->redirector()->setExit(false);
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-        AccessLog::reset();
     }
 
     protected function tearDown(): void
     {
         Zend_Auth::getInstance()->clearIdentity();
         $this->redirector()->setExit(true);
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
     }
 
     private function redirector(): Zend_Controller_Action_Helper_Redirector
@@ -67,17 +61,6 @@ final class AdministratemailinglistControllerAccessTest extends TestCase
         new \AdministratemailinglistController(new Zend_Controller_Request_HttpTestCase(), $response);
 
         return $response;
-    }
-
-    /**
-     * @return list<array{string, string}> event and reason of each security log record
-     */
-    private function loggedEvents(): array
-    {
-        return array_map(
-            static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? ''],
-            $this->logHandler->getRecords()
-        );
     }
 
     /**

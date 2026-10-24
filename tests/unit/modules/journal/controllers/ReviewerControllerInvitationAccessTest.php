@@ -11,12 +11,8 @@ use Episciences_User;
 use Episciences_User_Assignment;
 use Episciences_User_Invitation;
 use Episciences_User_Tmp;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use ReflectionMethod;
 use ReflectionProperty;
 use Zend_Auth;
@@ -26,6 +22,9 @@ use Zend_Controller_Front;
 use Zend_Controller_Response_HttpTestCase;
 use Zend_Db_Table_Abstract;
 use Zend_View;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Access to the reviewer invitation page: holding the link is the proof.
@@ -36,6 +35,8 @@ use Zend_View;
  */
 final class ReviewerControllerInvitationAccessTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const SECRET = 'access-test-secret';
     private const ROW_SECRET = '0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0';
     private const INVITATION_ID = 7;
@@ -45,7 +46,6 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     private const INVALID_LINK = 'Lien non valide; le jeton transmis dans la requête est erroné.';
 
     private mixed $previousAuthStorage;
-    private TestHandler $logHandler;
     /** @var \ReviewerController&object{redirectedTo: string|null} */
     private \ReviewerController $controller;
 
@@ -76,33 +76,12 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
             }
         };
         $this->controller->view = new Zend_View();
-
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-        AccessLog::reset();
     }
 
     protected function tearDown(): void
     {
         Zend_Auth::getInstance()->setStorage($this->previousAuthStorage);
         $_GET = [];
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
-    }
-
-    /**
-     * @return list<array{string, string, int|null}> event, reason and invitation id of each security log record
-     */
-    private function loggedEvents(): array
-    {
-        return array_map(
-            static fn(LogRecord $record): array => [
-                $record->message,
-                $record->context['reason'] ?? '',
-                $record->context['invitation_id'] ?? null,
-            ],
-            $this->logHandler->getRecords()
-        );
     }
 
     private function logIn(int $uid): void
@@ -285,20 +264,16 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
         $method = new ReflectionMethod(\ReviewerController::class, 'isInvitationRequestAuthorized');
         $method->setAccessible(true);
 
-        $logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$logHandler]));
         set_error_handler(static fn(): bool => true, E_USER_WARNING); // the configuration error is reported with a warning
         try {
             $result = $method->invoke($controller, $request, $this->invitation(), $this->assignment(), null);
         } finally {
             restore_error_handler();
-            AccessLog::setLogger(new NullLogger());
-            AccessLog::reset();
         }
 
         self::assertFalse($result);
         self::assertSame(self::INVALID_LINK, $controller->view->errors);
-        self::assertSame([], $logHandler->getRecords(), 'a configuration error is not an invalid token');
+        self::assertSame([], $this->loggedEvents(), 'a configuration error is not an invalid token');
     }
 
     // -------------------------------------------------------------------------
@@ -329,21 +304,21 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     {
         $this->isAuthorized($this->invitation(), $this->assignment(), ['token' => self::linkToken(8)]);
 
-        self::assertSame([[AccessLog::TOKEN_INVALID, 'invitation_token', self::INVITATION_ID]], $this->loggedEvents());
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'invitation_token', self::INVITATION_ID]], $this->loggedEvents('reason', 'invitation_id'));
     }
 
     public function testTemporaryUserThatNoLongerExistsIsLogged(): void
     {
         $this->isAuthorized($this->invitation(), $this->assignment(true), ['token' => self::linkToken()]);
 
-        self::assertSame([[AccessLog::TOKEN_INVALID, 'unknown_temporary_reviewer', self::INVITATION_ID]], $this->loggedEvents());
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'unknown_temporary_reviewer', self::INVITATION_ID]], $this->loggedEvents('reason', 'invitation_id'));
     }
 
     public function testLegacyLinkWithAWrongMd5IsLogged(): void
     {
         $this->isAuthorized($this->invitation(null), $this->assignment(true), ['tmp' => md5('other@example.org')], $this->tmpUser());
 
-        self::assertSame([[AccessLog::TOKEN_INVALID, 'legacy_invitation_link', self::INVITATION_ID]], $this->loggedEvents());
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'legacy_invitation_link', self::INVITATION_ID]], $this->loggedEvents('reason', 'invitation_id'));
     }
 
     /**
@@ -372,7 +347,7 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
         }
 
         self::assertTrue($this->isAuthorized($this->invitation($rowSecret), $this->assignment(), $params));
-        self::assertSame([], $this->loggedEvents());
+        self::assertSame([], $this->loggedEvents('reason', 'invitation_id'));
     }
 
     // -------------------------------------------------------------------------

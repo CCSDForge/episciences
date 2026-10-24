@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace unit\modules\common\controllers;
 
 use Episciences\Security\AccessLog;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use ReflectionClass;
 use ReflectionMethod;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Behavioural tests for DefaultController::resolveSafePath().
@@ -25,6 +24,8 @@ use ReflectionMethod;
  */
 final class DefaultControllerResolveSafePathTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private object $controller;
     private ReflectionMethod $method;
 
@@ -32,13 +33,9 @@ final class DefaultControllerResolveSafePathTest extends TestCase
     private string $root;
     /** Trusted base directory passed to resolveSafePath(). */
     private string $base;
-    private TestHandler $logHandler;
 
     protected function setUp(): void
     {
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-
         require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
         $class = new ReflectionClass(\DefaultController::class);
@@ -73,22 +70,9 @@ final class DefaultControllerResolveSafePathTest extends TestCase
 
     protected function tearDown(): void
     {
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
         if (isset($this->root)) {
             $this->rrmdir($this->root);
         }
-    }
-
-    /**
-     * @return list<array{string, string}> event and reason of each security log record
-     */
-    private function loggedEvents(): array
-    {
-        return array_map(
-            static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? ''],
-            $this->logHandler->getRecords()
-        );
     }
 
     private function resolve(string $relativePath): ?string
@@ -260,7 +244,7 @@ final class DefaultControllerResolveSafePathTest extends TestCase
     {
         self::assertNull($this->resolve($relativePath));
         self::assertSame([[AccessLog::UNSAFE_PATH, 'outside_base_directory']], $this->loggedEvents());
-        self::assertSame($relativePath, $this->logHandler->getRecords()[0]->context['path']);
+        self::assertSame($relativePath, $this->securityLogRecords()[0]->context['path']);
     }
 
     public function testControlCharacterIsLogged(): void

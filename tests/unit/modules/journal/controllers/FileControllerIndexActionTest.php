@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace unit\modules\journal\controllers;
 
 use Episciences\Security\AccessLog;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Behaviour of FileController::indexAction(): only flat file names of the journal "files"
@@ -20,19 +19,11 @@ use Zend_Controller_Response_HttpTestCase;
  */
 final class FileControllerIndexActionTest extends TestCase
 {
-    private TestHandler $logHandler;
+    use SecurityLogCaptureTrait;
 
     protected function setUp(): void
     {
         require_once APPLICATION_PATH . '/modules/journal/controllers/FileController.php';
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-    }
-
-    protected function tearDown(): void
-    {
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
     }
 
     /**
@@ -96,10 +87,7 @@ final class FileControllerIndexActionTest extends TestCase
         self::assertSame([], $delivered, 'no file must be delivered');
         self::assertSame(
             $loggedReason === '' ? [] : [[AccessLog::UNSAFE_PATH, $loggedReason]],
-            array_map(
-                static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? ''],
-                $this->logHandler->getRecords()
-            )
+            $this->loggedEvents()
         );
     }
 

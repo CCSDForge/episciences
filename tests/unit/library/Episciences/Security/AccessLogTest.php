@@ -6,13 +6,10 @@ namespace unit\library\Episciences\Security;
 
 use Episciences\Security\AccessLog;
 use Episciences_User;
-use Monolog\Handler\TestHandler;
 use Monolog\Level;
-use Monolog\Logger;
 use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
-use Psr\Log\NullLogger;
 use ReflectionProperty;
 use RuntimeException;
 use Stringable;
@@ -23,12 +20,15 @@ use Zend_Controller_Front;
 use Zend_Controller_Request_Abstract;
 use Zend_Controller_Request_Http;
 
+require_once __DIR__ . '/SecurityLogCaptureTrait.php';
+
 /**
  * @covers \Episciences\Security\AccessLog
  */
 final class AccessLogTest extends TestCase
 {
-    private TestHandler $handler;
+    use SecurityLogCaptureTrait;
+
     private ?Zend_Controller_Request_Abstract $previousRequest;
     private Zend_Auth_Storage_Interface $previousStorage;
     /** @var array<mixed> */
@@ -38,10 +38,6 @@ final class AccessLogTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->handler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->handler]));
-        AccessLog::reset();
-
         // Zend_Controller_Request_Http reads and writes the superglobals
         $this->previousGet = $_GET;
         $this->previousPost = $_POST;
@@ -55,8 +51,6 @@ final class AccessLogTest extends TestCase
 
     protected function tearDown(): void
     {
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
         // setRequest() refuses null, the request slot of the singleton is restored directly
         $property = new ReflectionProperty(Zend_Controller_Front::class, '_request');
         $property->setValue(Zend_Controller_Front::getInstance(), $this->previousRequest);
@@ -77,7 +71,7 @@ final class AccessLogTest extends TestCase
 
     private function onlyRecord(): LogRecord
     {
-        $records = $this->handler->getRecords();
+        $records = $this->securityLogRecords();
         self::assertCount(1, $records);
 
         return $records[0];
@@ -169,7 +163,7 @@ final class AccessLogTest extends TestCase
         AccessLog::denied(AccessLog::ACL_DENIED);
         AccessLog::denied(AccessLog::ACL_MISSING);
 
-        $levels = array_map(static fn(LogRecord $record): Level => $record->level, $this->handler->getRecords());
+        $levels = array_map(static fn(LogRecord $record): Level => $record->level, $this->securityLogRecords());
         self::assertSame([Level::Info, Level::Notice, Level::Warning, Level::Error], $levels);
     }
 

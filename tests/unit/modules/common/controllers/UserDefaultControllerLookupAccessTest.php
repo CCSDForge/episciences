@@ -8,14 +8,13 @@ use Episciences\Security\AccessLog;
 use Episciences_Acl;
 use Episciences_Auth;
 use Episciences_User;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use ReflectionClass;
 use Zend_Auth_Storage_Interface;
 use Zend_Auth_Storage_NonPersistent;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * The user lookup endpoints and the user list page must refuse callers who
@@ -23,6 +22,8 @@ use Zend_Auth_Storage_NonPersistent;
  */
 final class UserDefaultControllerLookupAccessTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const LOOKUP_ACTIONS = [
         'findcasusersAction',
         'ajaxfindusersbymailAction',
@@ -38,8 +39,6 @@ final class UserDefaultControllerLookupAccessTest extends TestCase
     /** @var list<array{string, array<mixed>}> helper calls recorded by the broker stub */
     private array $helperCalls = [];
 
-    private TestHandler $logHandler;
-
     public static function setUpBeforeClass(): void
     {
         require_once APPLICATION_PATH . '/modules/common/controllers/UserDefaultController.php';
@@ -52,9 +51,6 @@ final class UserDefaultControllerLookupAccessTest extends TestCase
         Episciences_Auth::getInstance()->clearIdentity();
         $this->previousGet = $_GET;
         $_GET = [];
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-        AccessLog::reset();
     }
 
     protected function tearDown(): void
@@ -62,8 +58,6 @@ final class UserDefaultControllerLookupAccessTest extends TestCase
         Episciences_Auth::getInstance()->clearIdentity();
         Episciences_Auth::getInstance()->setStorage($this->previousAuthStorage);
         $_GET = $this->previousGet;
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
     }
 
     /**
@@ -180,10 +174,7 @@ final class UserDefaultControllerLookupAccessTest extends TestCase
         self::assertContains(['gotoUrl', ['/error/deny']], $this->helperCalls);
         self::assertSame(
             [[AccessLog::ACL_DENIED, 'role_check']],
-            array_map(
-                static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? ''],
-                $this->logHandler->getRecords()
-            )
+            $this->loggedEvents()
         );
     }
 

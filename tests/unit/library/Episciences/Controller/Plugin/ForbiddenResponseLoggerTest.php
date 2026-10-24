@@ -6,32 +6,19 @@ namespace unit\library\Episciences\Controller\Plugin;
 
 use Episciences\Controller\Plugin\ForbiddenResponseLogger;
 use Episciences\Security\AccessLog;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use Zend_Controller_Request_Http;
 use Zend_Controller_Response_Http;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 4) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * @covers \Episciences\Controller\Plugin\ForbiddenResponseLogger
  */
 final class ForbiddenResponseLoggerTest extends TestCase
 {
-    private TestHandler $handler;
-
-    protected function setUp(): void
-    {
-        $this->handler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->handler]));
-        AccessLog::reset();
-    }
-
-    protected function tearDown(): void
-    {
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
-    }
+    use SecurityLogCaptureTrait;
 
     private function shutdownWith(int $code, string $controller = 'paper', string $action = 'view'): void
     {
@@ -53,7 +40,7 @@ final class ForbiddenResponseLoggerTest extends TestCase
     {
         $this->shutdownWith($code);
 
-        $records = $this->handler->getRecords();
+        $records = $this->securityLogRecords();
         self::assertCount(1, $records);
         self::assertSame(AccessLog::HTTP_FORBIDDEN, $records[0]->message);
         self::assertSame($code, $records[0]->context['status']);
@@ -73,7 +60,7 @@ final class ForbiddenResponseLoggerTest extends TestCase
 
         $this->shutdownWith(403);
 
-        self::assertCount(1, $this->handler->getRecords());
+        self::assertCount(1, $this->securityLogRecords());
     }
 
     /**
@@ -83,7 +70,7 @@ final class ForbiddenResponseLoggerTest extends TestCase
     {
         $this->shutdownWith(403, 'error', 'deny');
 
-        self::assertSame([], $this->handler->getRecords());
+        self::assertSame([], $this->securityLogRecords());
     }
 
     /**
@@ -93,7 +80,7 @@ final class ForbiddenResponseLoggerTest extends TestCase
     {
         $this->shutdownWith($code);
 
-        self::assertSame([], $this->handler->getRecords());
+        self::assertSame([], $this->securityLogRecords());
     }
 
     /**

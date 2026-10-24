@@ -8,16 +8,15 @@ use Episciences\Security\AccessLog;
 use Episciences_Acl;
 use Episciences_Paper;
 use Episciences_User;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use ReflectionMethod;
 use Zend_Auth;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
 use Zend_View;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 require_once APPLICATION_PATH . '/modules/journal/controllers/CommentsController.php';
 
@@ -27,23 +26,14 @@ require_once APPLICATION_PATH . '/modules/journal/controllers/CommentsController
  */
 final class PaperRedirectionAccessLogTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const DOCID = 12;
     private const PAPERID = 10;
-
-    private TestHandler $logHandler;
-
-    protected function setUp(): void
-    {
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-        AccessLog::reset();
-    }
 
     protected function tearDown(): void
     {
         Zend_Auth::getInstance()->clearIdentity();
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
     }
 
     /**
@@ -64,22 +54,6 @@ final class PaperRedirectionAccessLogTest extends TestCase
         $paper->method('isOwner')->willReturn($isOwner);
 
         return $paper;
-    }
-
-    /**
-     * @return list<array{string, string, mixed, mixed}> event, reason, docid and paperid of each security log record
-     */
-    private function loggedEvents(): array
-    {
-        return array_map(
-            static fn(LogRecord $record): array => [
-                $record->message,
-                $record->context['reason'] ?? '',
-                $record->context['docid'] ?? null,
-                $record->context['paperid'] ?? null,
-            ],
-            $this->logHandler->getRecords()
-        );
     }
 
     private function defaultController(bool $isRestricted): RedirectionTestController
@@ -120,7 +94,7 @@ final class PaperRedirectionAccessLogTest extends TestCase
         self::assertTrue($controller->getResponse()->isRedirect());
         self::assertSame(
             [[AccessLog::ACCESS_REDIRECTED, 'unpublished_paper', self::DOCID, self::PAPERID]],
-            $this->loggedEvents()
+            $this->loggedEvents('reason', 'docid', 'paperid')
         );
     }
 
@@ -128,7 +102,7 @@ final class PaperRedirectionAccessLogTest extends TestCase
     {
         $this->defaultController(false)->check($this->paper());
 
-        self::assertSame([], $this->loggedEvents());
+        self::assertSame([], $this->loggedEvents('reason', 'docid', 'paperid'));
     }
 
     private static function redirectionOf(\DefaultController $controller): ?string
@@ -153,7 +127,7 @@ final class PaperRedirectionAccessLogTest extends TestCase
         self::assertSame('/user/login/forward-controller/paper/forward-action/pdf/id/' . self::DOCID, self::redirectionOf($controller));
         self::assertSame(
             [[AccessLog::AUTH_REQUIRED, 'unpublished_paper', self::DOCID, self::PAPERID]],
-            $this->loggedEvents()
+            $this->loggedEvents('reason', 'docid', 'paperid')
         );
     }
 
@@ -167,7 +141,7 @@ final class PaperRedirectionAccessLogTest extends TestCase
         self::assertSame('/', self::redirectionOf($controller));
         self::assertSame(
             [[AccessLog::ACCESS_REDIRECTED, 'unpublished_paper', self::DOCID, self::PAPERID]],
-            $this->loggedEvents()
+            $this->loggedEvents('reason', 'docid', 'paperid')
         );
     }
 
@@ -201,7 +175,7 @@ final class PaperRedirectionAccessLogTest extends TestCase
 
         self::assertNull(self::redirectionOf($controller));
         self::assertSame([], $controller->publishedLookups);
-        self::assertSame([], $this->loggedEvents());
+        self::assertSame([], $this->loggedEvents('reason', 'docid', 'paperid'));
     }
 
     private function checkCommentAccess(Episciences_Paper $paper): \CommentsController
@@ -222,7 +196,7 @@ final class PaperRedirectionAccessLogTest extends TestCase
         self::assertTrue($controller->getResponse()->isRedirect());
         self::assertSame(
             [[AccessLog::ACCESS_REDIRECTED, 'not_comment_author', self::DOCID, self::PAPERID]],
-            $this->loggedEvents()
+            $this->loggedEvents('reason', 'docid', 'paperid')
         );
     }
 
@@ -246,7 +220,7 @@ final class PaperRedirectionAccessLogTest extends TestCase
         $controller = $this->checkCommentAccess($this->paper($isOwner));
 
         self::assertFalse($controller->getResponse()->isRedirect());
-        self::assertSame([], $this->loggedEvents());
+        self::assertSame([], $this->loggedEvents('reason', 'docid', 'paperid'));
     }
 }
 

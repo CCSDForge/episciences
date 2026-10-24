@@ -9,15 +9,14 @@ use Episciences_Acl;
 use Episciences_Paper;
 use Episciences_Review;
 use Episciences_User;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use RuntimeException;
 use Zend_Auth;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * FileController::tmpAction(): the files of the temporary versions, stored by paper, are only given to the
@@ -27,6 +26,8 @@ use Zend_Controller_Response_HttpTestCase;
  */
 final class FileControllerTemporaryVersionFileTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const UID = 4242;
     private const PAPERID = 12;
 
@@ -35,34 +36,16 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
     /** Number of conflict of interest lookups by the controller under test */
     public static int $conflictLookups = 0;
 
-    private TestHandler $logHandler;
-
     protected function setUp(): void
     {
         require_once APPLICATION_PATH . '/modules/journal/controllers/FileController.php';
         self::$hasConflict = false;
         self::$conflictLookups = 0;
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-        AccessLog::reset();
     }
 
     protected function tearDown(): void
     {
         Zend_Auth::getInstance()->clearIdentity();
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
-    }
-
-    /**
-     * @return list<array{string, string}> event and reason of each security log record
-     */
-    private function loggedEvents(): array
-    {
-        return array_map(
-            static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? ''],
-            $this->logHandler->getRecords()
-        );
     }
 
     /**

@@ -4,27 +4,23 @@ declare(strict_types=1);
 
 use Episciences\Maintenance\ReadOnlyMode;
 use Episciences\Security\AccessLog;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * @covers Episciences_Auth_Plugin
  */
 class Episciences_Auth_PluginTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private Episciences_Auth_Plugin $plugin;
-    private TestHandler $logHandler;
 
     protected function setUp(): void
     {
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-        AccessLog::reset();
-
         $acl = new Zend_Acl();
         foreach (['user-findusers', 'api-openaire-metrics', 'file-index', 'my-ctrl-index', 'dup-openaire-metrics', 'dup-openairemetrics'] as $resource) {
             $acl->addResource(new Zend_Acl_Resource($resource));
@@ -34,23 +30,6 @@ class Episciences_Auth_PluginTest extends TestCase
         $property = new ReflectionProperty(Ccsd_Auth_Plugin::class, '_acl');
         $property->setAccessible(true);
         $property->setValue($this->plugin, $acl);
-    }
-
-    protected function tearDown(): void
-    {
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
-    }
-
-    /**
-     * @return list<array{string, mixed}> event and resource of each security log record
-     */
-    private function loggedEvents(): array
-    {
-        return array_map(
-            static fn(LogRecord $record): array => [$record->message, $record->context['resource'] ?? null],
-            $this->logHandler->getRecords()
-        );
     }
 
     public function testExactMatchIsReturnedAsIs(): void
@@ -328,21 +307,21 @@ class Episciences_Auth_PluginTest extends TestCase
     {
         $this->dispatchWithApplicationAcl('user', 'findCasUsers', []);
 
-        self::assertSame([[AccessLog::AUTH_REQUIRED, 'user-findcasusers']], $this->loggedEvents());
+        self::assertSame([[AccessLog::AUTH_REQUIRED, 'user-findcasusers']], $this->loggedEvents('resource'));
     }
 
     public function testMemberDeniedByTheAclIsLoggedAsAclDenied(): void
     {
         $this->dispatchWithApplicationAcl('user', 'findcasusers', [Episciences_Acl::ROLE_MEMBER]);
 
-        self::assertSame([[AccessLog::ACL_DENIED, 'user-findcasusers']], $this->loggedEvents());
+        self::assertSame([[AccessLog::ACL_DENIED, 'user-findcasusers']], $this->loggedEvents('resource'));
     }
 
     public function testAllowedPageIsNotLogged(): void
     {
         $this->dispatchWithApplicationAcl('error', 'deny', []);
 
-        self::assertSame([], $this->loggedEvents());
+        self::assertSame([], $this->loggedEvents('resource'));
     }
 
     /**
@@ -378,8 +357,8 @@ class Episciences_Auth_PluginTest extends TestCase
 
         $this->pluginWithAclStubAndAction(true)->preDispatch($request);
 
-        self::assertSame([[AccessLog::ACL_MISSING, 'website-notdeclared']], $this->loggedEvents());
-        self::assertSame(\Monolog\Level::Error, $this->logHandler->getRecords()[0]->level);
+        self::assertSame([[AccessLog::ACL_MISSING, 'website-notdeclared']], $this->loggedEvents('resource'));
+        self::assertSame(\Monolog\Level::Error, $this->securityLogRecords()[0]->level);
         self::assertSame(['index', 'notfound'], [$request->getControllerName(), $request->getActionName()]);
     }
 
@@ -390,7 +369,7 @@ class Episciences_Auth_PluginTest extends TestCase
 
         $this->pluginWithAclStubAndAction(false)->preDispatch($request);
 
-        self::assertSame([], $this->loggedEvents());
+        self::assertSame([], $this->loggedEvents('resource'));
     }
 
     public function testUnknownResourceOfAnXhrRequestIsLogged(): void
@@ -405,7 +384,7 @@ class Episciences_Auth_PluginTest extends TestCase
 
         $this->pluginWithAclStubAndAction(false)->preDispatch($request);
 
-        self::assertSame([[AccessLog::UNKNOWN_RESOURCE, 'foo-bar']], $this->loggedEvents());
+        self::assertSame([[AccessLog::UNKNOWN_RESOURCE, 'foo-bar']], $this->loggedEvents('resource'));
     }
 
     /**

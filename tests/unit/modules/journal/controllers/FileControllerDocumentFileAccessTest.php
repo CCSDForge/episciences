@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace unit\modules\journal\controllers;
 
 use Episciences\Security\AccessLog;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
-use Psr\Log\NullLogger;
 use Episciences_Acl;
 use Episciences_CommentsManager;
 use Episciences_Paper;
@@ -20,6 +17,9 @@ use ArrayObject;
 use Zend_Auth;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * FileController::isAllowedToReadDocumentFile(): the roles of the logged user on the paper, gathered for
@@ -29,6 +29,8 @@ use Zend_Controller_Response_HttpTestCase;
  */
 final class FileControllerDocumentFileAccessTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const UID = 4242;
     private const DOCID = 12;
 
@@ -38,21 +40,14 @@ final class FileControllerDocumentFileAccessTest extends TestCase
     /** Conflict of interest answer of the logged user, read by the controller under test */
     public static bool $hasConflict = false;
 
-    private TestHandler $logHandler;
-
     protected function setUp(): void
     {
         require_once APPLICATION_PATH . '/modules/journal/controllers/FileController.php';
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-        AccessLog::reset();
     }
 
     protected function tearDown(): void
     {
         Zend_Auth::getInstance()->clearIdentity();
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
     }
 
     /**
@@ -269,7 +264,7 @@ final class FileControllerDocumentFileAccessTest extends TestCase
 
         $this->isAllowed($this->controller($this->paper(['reviewer' => true])), 'copy_editing_sources', 'sources.zip');
 
-        $records = $this->logHandler->getRecords();
+        $records = $this->securityLogRecords();
         self::assertCount(1, $records);
         self::assertSame(AccessLog::NOT_FOUND_MASKED, $records[0]->message);
         self::assertSame('document_file_access', $records[0]->context['reason']);
@@ -284,7 +279,7 @@ final class FileControllerDocumentFileAccessTest extends TestCase
 
         $this->isAllowed($this->controller($this->paper(['author' => true]), [], [Episciences_CommentsManager::TYPE_AUTHOR_COMMENT]), 'comments');
 
-        self::assertSame([], $this->logHandler->getRecords());
+        self::assertSame([], $this->securityLogRecords());
     }
 
     /**
@@ -297,7 +292,7 @@ final class FileControllerDocumentFileAccessTest extends TestCase
         $this->isAllowed($this->controller(false), 'comments');
         $this->isAllowed($this->controller(new RuntimeException('database down')), 'comments');
 
-        self::assertSame([], $this->logHandler->getRecords());
+        self::assertSame([], $this->securityLogRecords());
     }
 
     /**
@@ -314,10 +309,10 @@ final class FileControllerDocumentFileAccessTest extends TestCase
         $renderNotFound = new ReflectionMethod(\FileController::class, 'renderNotFound');
 
         $renderNotFound->invoke($controller);
-        self::assertSame([], $this->logHandler->getRecords());
+        self::assertSame([], $this->securityLogRecords());
 
         $renderNotFound->invoke($controller, 'rating_report_access');
-        $records = $this->logHandler->getRecords();
+        $records = $this->securityLogRecords();
         self::assertCount(1, $records);
         self::assertSame(AccessLog::NOT_FOUND_MASKED, $records[0]->message);
         self::assertSame('rating_report_access', $records[0]->context['reason']);

@@ -6,13 +6,9 @@ namespace unit\modules\journal\controllers;
 
 use Episciences\Security\AccessLog;
 use Episciences_Csrf_Helper;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use Zend_Controller_Action_Helper_Redirector;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
@@ -21,6 +17,9 @@ use Zend_Db_Select;
 use Zend_Db_Table_Abstract;
 use Zend_Session;
 use Zend_Session_Namespace;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Journal scoping and request token of the mail template actions.
@@ -33,6 +32,8 @@ use Zend_Session_Namespace;
  */
 final class AdministratemailControllerTemplateScopeTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private Zend_Db_Adapter_Abstract $previousAdapter;
 
     private bool $previousUnitTestEnabled;
@@ -45,8 +46,6 @@ final class AdministratemailControllerTemplateScopeTest extends TestCase
 
     /** @var array<string, mixed>|false template row found by the lookups */
     private array|false $templateRow = false;
-
-    private TestHandler $logHandler;
 
     protected function setUp(): void
     {
@@ -74,10 +73,6 @@ final class AdministratemailControllerTemplateScopeTest extends TestCase
         Zend_Db_Table_Abstract::setDefaultAdapter($this->adapter);
 
         require_once APPLICATION_PATH . '/modules/journal/controllers/AdministratemailController.php';
-
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-        AccessLog::reset();
     }
 
     protected function tearDown(): void
@@ -93,19 +88,6 @@ final class AdministratemailControllerTemplateScopeTest extends TestCase
         $_POST = []; // setPost() writes the global
 
         Zend_Session::$_unitTestEnabled = $this->previousUnitTestEnabled;
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
-    }
-
-    /**
-     * @return list<array{string, string}> event and reason of each security log record
-     */
-    private function loggedEvents(): array
-    {
-        return array_map(
-            static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? ''],
-            $this->logHandler->getRecords()
-        );
     }
 
     /**

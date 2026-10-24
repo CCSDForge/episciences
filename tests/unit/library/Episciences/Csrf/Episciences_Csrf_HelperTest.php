@@ -4,13 +4,12 @@ namespace unit\library\Episciences\Csrf;
 
 use Episciences\Security\AccessLog;
 use Episciences_Csrf_Helper;
-use Monolog\Handler\TestHandler;
 use Monolog\Level;
-use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use ReflectionClass;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * This helper class provides CSRF (Cross-Site Request Forgery) protection
@@ -38,6 +37,8 @@ use ReflectionClass;
  */
 class Episciences_Csrf_HelperTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     // =========================================================================
     // sanitizeName() Tests (Private Method - Tested via Reflection)
     // =========================================================================
@@ -339,34 +340,11 @@ class Episciences_Csrf_HelperTest extends TestCase
         }
     }
 
-    private TestHandler $logHandler;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-        AccessLog::reset();
-    }
-
     protected function tearDown(): void
     {
         // Zend_Controller_Request_Http::setPost() writes into the superglobal.
         unset($_SERVER['HTTP_X_CSRF_TOKEN'], $_POST['csrf_token']);
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
         parent::tearDown();
-    }
-
-    /**
-     * @return list<array{string, string, string}> event, reason and level of each security log record
-     */
-    private function loggedFailures(): array
-    {
-        return array_map(
-            static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? '', $record->level->getName()],
-            $this->logHandler->getRecords()
-        );
     }
 
     /**
@@ -527,7 +505,7 @@ class Episciences_Csrf_HelperTest extends TestCase
         self::assertSame([
             [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISSING, Level::Warning->getName()],
             [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISMATCH, Level::Warning->getName()],
-        ], $this->loggedFailures());
+        ], $this->loggedEvents('reason', 'level'));
     }
 
     /**
@@ -544,7 +522,7 @@ class Episciences_Csrf_HelperTest extends TestCase
 
         self::assertSame(
             [[AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_NO_SESSION_TOKEN, Level::Notice->getName()]],
-            $this->loggedFailures()
+            $this->loggedEvents('reason', 'level')
         );
     }
 
@@ -555,7 +533,7 @@ class Episciences_Csrf_HelperTest extends TestCase
         $request->setPost('csrf_token', Episciences_Csrf_Helper::getSessionToken());
 
         self::assertTrue(Episciences_Csrf_Helper::validateRequestToken($request));
-        self::assertSame([], $this->loggedFailures());
+        self::assertSame([], $this->loggedEvents('reason', 'level'));
     }
 
     public function testFormTokenFailuresAreLoggedWithTheirReason(): void
@@ -570,8 +548,8 @@ class Episciences_Csrf_HelperTest extends TestCase
             [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISSING, Level::Warning->getName()],
             [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISMATCH, Level::Warning->getName()],
             [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_NO_SESSION_TOKEN, Level::Notice->getName()],
-        ], $this->loggedFailures());
-        self::assertSame('csrf_logged_1', $this->logHandler->getRecords()[0]->context['token_name']);
+        ], $this->loggedEvents('reason', 'level'));
+        self::assertSame('csrf_logged_1', $this->securityLogRecords()[0]->context['token_name']);
     }
 
     /**
@@ -590,6 +568,6 @@ class Episciences_Csrf_HelperTest extends TestCase
             [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISSING, Level::Warning->getName()],
             [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISMATCH, Level::Warning->getName()],
             [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_NO_SESSION_TOKEN, Level::Notice->getName()],
-        ], $this->loggedFailures());
+        ], $this->loggedEvents('reason', 'level'));
     }
 }

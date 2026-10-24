@@ -5,32 +5,23 @@ declare(strict_types=1);
 namespace unit\modules\portal\controllers;
 
 use Episciences\Security\AccessLog;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Behavioural tests for the account merging token check of the portal API.
  */
 final class ApiControllerTest extends TestCase
 {
-    private TestHandler $logHandler;
+    use SecurityLogCaptureTrait;
 
     protected function setUp(): void
     {
         require_once APPLICATION_PATH . '/modules/portal/controllers/ApiController.php';
-        $this->logHandler = new TestHandler();
-        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
-        AccessLog::reset();
-    }
-
-    protected function tearDown(): void
-    {
-        AccessLog::setLogger(new NullLogger());
-        AccessLog::reset();
     }
 
     public function testMatchingTokenIsAccepted(): void
@@ -71,7 +62,7 @@ final class ApiControllerTest extends TestCase
         }
 
         self::assertSame(\Episciences_Merge_MergingManager::HTTP_UNAUTHORIZED, $response->getHttpResponseCode());
-        $records = $this->logHandler->getRecords();
+        $records = $this->securityLogRecords();
         self::assertCount(1, $records);
         self::assertSame(AccessLog::TOKEN_INVALID, $records[0]->message);
         self::assertSame('merge_auth_token', $records[0]->context['reason']);
