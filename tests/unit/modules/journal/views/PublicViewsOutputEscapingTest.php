@@ -23,6 +23,8 @@ final class PublicViewsOutputEscapingTest extends TestCase
 
     private bool $localeRegistered = false;
 
+    private bool $defaultRouteAdded = false;
+
     protected function setUp(): void
     {
         if (!defined('ABSTRACT_MAX_LENGTH')) {
@@ -43,11 +45,15 @@ final class PublicViewsOutputEscapingTest extends TestCase
         $router = \Zend_Controller_Front::getInstance()->getRouter();
         if (!$router->hasRoute('default')) {
             $router->addDefaultRoutes();
+            $this->defaultRouteAdded = true;
         }
     }
 
     protected function tearDown(): void
     {
+        if ($this->defaultRouteAdded) {
+            \Zend_Controller_Front::getInstance()->getRouter()->removeRoute('default');
+        }
         if ($this->localeRegistered) {
             \Zend_Registry::getInstance()->offsetUnset('Zend_Locale');
         }
