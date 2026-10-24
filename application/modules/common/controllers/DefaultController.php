@@ -40,7 +40,7 @@ class DefaultController extends Zend_Controller_Action
         if ($this->isRestrictedAccess($paper)) {
 
             $paperId = $paper->getPaperid() ?: $paper->getDocid();
-            $publishedId = Episciences_PapersManager::getPublishedPaperId($paperId);
+            $publishedId = $this->findPublishedPaperId((int)$paperId);
 
             if ($publishedId !== 0) {
 
@@ -62,6 +62,8 @@ class DefaultController extends Zend_Controller_Action
             if (!Episciences_Auth::isLogged()) {
                 AccessLog::denied(AccessLog::AUTH_REQUIRED, 'unpublished_paper', self::paperLogContext($paper));
                 $this->redirect('/user/login/forward-controller/paper/forward-action/pdf/id/' . $paper->getDocid());
+                // The redirection already ends the request, unless its exit is disabled
+                return;
             }
 
             AccessLog::denied(AccessLog::ACCESS_REDIRECTED, 'unpublished_paper', self::paperLogContext($paper));
@@ -71,6 +73,15 @@ class DefaultController extends Zend_Controller_Action
 
         }
 
+    }
+
+    /**
+     * The id of the published version of a paper, 0 when none is published
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function findPublishedPaperId(int $paperId): int
+    {
+        return Episciences_PapersManager::getPublishedPaperId($paperId);
     }
 
     /**

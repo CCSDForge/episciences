@@ -23,7 +23,7 @@ require_once APPLICATION_PATH . '/modules/journal/controllers/CommentsController
 
 /**
  * Access refusals answered by a redirection to another page (DefaultController, CommentsController):
- * logged as access_redirected, with the paper, whatever the user is.
+ * logged with the paper, as auth_required when a guest is sent to the login page, as access_redirected otherwise.
  */
 final class PaperRedirectionAccessLogTest extends TestCase
 {
@@ -56,11 +56,11 @@ final class PaperRedirectionAccessLogTest extends TestCase
         Zend_Auth::getInstance()->getStorage()->write($user);
     }
 
-    private function paper(bool $isOwner = false): Episciences_Paper
+    private function paper(bool $isOwner = false, int $paperId = self::PAPERID): Episciences_Paper
     {
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getDocid')->willReturn(self::DOCID);
-        $paper->method('getPaperid')->willReturn(self::PAPERID);
+        $paper->method('getPaperid')->willReturn($paperId);
         $paper->method('isOwner')->willReturn($isOwner);
 
         return $paper;
@@ -87,7 +87,7 @@ final class PaperRedirectionAccessLogTest extends TestCase
         $controller = new RedirectionTestController(
             new Zend_Controller_Request_HttpTestCase(),
             new Zend_Controller_Response_HttpTestCase(),
-            ['restricted' => $isRestricted]
+            ['restricted' => $isRestricted, 'publishedId' => 0]
         );
         $controller->view = new Zend_View();
         $controller->getHelper('redirector')->setExit(false);
@@ -128,6 +128,79 @@ final class PaperRedirectionAccessLogTest extends TestCase
     {
         $this->defaultController(false)->check($this->paper());
 
+        self::assertSame([], $this->loggedEvents());
+    }
+
+    private static function redirectionOf(\DefaultController $controller): ?string
+    {
+        foreach ($controller->getResponse()->getHeaders() as $header) {
+            if (strcasecmp($header['name'], 'Location') === 0) {
+                return (string)$header['value'];
+            }
+        }
+
+        return null;
+    }
+
+    // requestingAnUnpublishedFile(): the file of a version without published version
+
+    public function testGuestRequestingAnUnpublishedFileIsSentToTheLoginPage(): void
+    {
+        $controller = $this->defaultController(true);
+
+        $controller->checkFile($this->paper());
+
+        self::assertSame('/user/login/forward-controller/paper/forward-action/pdf/id/' . self::DOCID, self::redirectionOf($controller));
+        self::assertSame(
+            [[AccessLog::AUTH_REQUIRED, 'unpublished_paper', self::DOCID, self::PAPERID]],
+            $this->loggedEvents()
+        );
+    }
+
+    public function testMemberRequestingAnUnpublishedFileIsSentToTheHomePage(): void
+    {
+        $this->logInAs();
+        $controller = $this->defaultController(true);
+
+        $controller->checkFile($this->paper());
+
+        self::assertSame('/', self::redirectionOf($controller));
+        self::assertSame(
+            [[AccessLog::ACCESS_REDIRECTED, 'unpublished_paper', self::DOCID, self::PAPERID]],
+            $this->loggedEvents()
+        );
+    }
+
+    /**
+     * @return iterable<string, array{int, int}>
+     */
+    public static function paperIds(): iterable
+    {
+        yield 'paper id' => [self::PAPERID, self::PAPERID];
+        yield 'docid of a paper without paper id' => [0, self::DOCID];
+    }
+
+    /**
+     * @dataProvider paperIds
+     */
+    public function testPublishedVersionIsLookedUpForThePaper(int $paperId, int $expectedLookup): void
+    {
+        $this->logInAs();
+        $controller = $this->defaultController(true);
+
+        $controller->checkFile($this->paper(paperId: $paperId));
+
+        self::assertSame([$expectedLookup], $controller->publishedLookups);
+    }
+
+    public function testAllowedFileIsNotLookedUpNorLogged(): void
+    {
+        $controller = $this->defaultController(false);
+
+        $controller->checkFile($this->paper());
+
+        self::assertNull(self::redirectionOf($controller));
+        self::assertSame([], $controller->publishedLookups);
         self::assertSame([], $this->loggedEvents());
     }
 
@@ -184,8 +257,23 @@ final class RedirectionTestController extends \DefaultController
         return (bool)$this->getInvokeArg('restricted');
     }
 
+    /** @var list<int> paper ids whose published version was looked up */
+    public array $publishedLookups = [];
+
+    protected function findPublishedPaperId(int $paperId): int
+    {
+        $this->publishedLookups[] = $paperId;
+
+        return (int)$this->getInvokeArg('publishedId');
+    }
+
     public function check(Episciences_Paper $paper): void
     {
         $this->redirectsIfHaveNotEnoughPermissions($paper);
+    }
+
+    public function checkFile(Episciences_Paper $paper): void
+    {
+        $this->requestingAnUnpublishedFile($paper);
     }
 }
