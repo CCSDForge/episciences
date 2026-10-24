@@ -90,6 +90,11 @@
   "REVIEWER_INVITATION": {
     "HMAC_SECRET": ""
   },
+  "USER_TOKEN": {
+    "PASSWORD_RESET_TTL": 3600,
+    "ACCOUNT_ACTIVATION_TTL": 604800,
+    "ACCOUNT_SETUP_TTL": 1209600
+  },
   "ENDPOINTS": {
     "INDEXING_HOST": "solr-hostname-for-indexing.example.com",
     "INDEXING_PROTOCOL": "HTTP",
