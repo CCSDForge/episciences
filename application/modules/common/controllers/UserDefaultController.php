@@ -2224,6 +2224,7 @@ class UserDefaultController extends Zend_Controller_Action
         $photoPathName = false;
         $data = false;
         $imageMimeType = 'image/jpg';
+        $screenName = ''; // only set for the initials avatar, the only size that uses it
 
         $uid = (int)$uid;
         switch ($size) {
