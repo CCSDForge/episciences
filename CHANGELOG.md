@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated the messages of the lost password and lost username pages.
 
 ### Fixed
+- The repository checks of the submission page and the linked data form answer with an empty response instead of a server error when they are requested directly.
 - Paper titles, versions, volume and section names containing special characters are displayed as they are in the reviewer ratings list, the author paper list, the editor paper lists, the reviewer invitation page and the invitation mail.
 - The site settings (languages, style, header, pages, public resources and news) check the role of the user on each page and dialog; refused accesses are recorded in the security log.
 - A section that still has papers can no longer be deleted: the delete button lists the papers to move first.
