@@ -99,6 +99,16 @@ final class AccessControlHarness
         $this->actionName = $actionName;
     }
 
+    /**
+     * Same as DefaultController::paperLogContext()
+     *
+     * @return array<string, mixed>
+     */
+    protected static function paperLogContext(\Episciences_Paper $paper): array
+    {
+        return ['docid' => $paper->getDocid(), 'paperid' => $paper->getPaperid()];
+    }
+
     public function getRequest(): object
     {
         return new class($this->actionName) {
@@ -682,7 +692,11 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
     {
         $source = (string)file_get_contents($path);
 
-        $traitMethods = (new \ReflectionClass(Episciences_Paper_AccessControlControllerTrait::class))->getMethods();
+        // The abstract methods are the ones the controllers must provide
+        $traitMethods = array_filter(
+            (new \ReflectionClass(Episciences_Paper_AccessControlControllerTrait::class))->getMethods(),
+            static fn(\ReflectionMethod $method): bool => !$method->isAbstract()
+        );
         self::assertNotEmpty($traitMethods);
 
         foreach ($traitMethods as $method) {

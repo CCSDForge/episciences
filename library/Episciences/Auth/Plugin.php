@@ -2,6 +2,8 @@
 
 use Episciences\Maintenance\ReadOnlyMode;
 use Episciences\Security\AccessLog;
+use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 
 /**
  * Access rights verification for a resource
@@ -9,6 +11,7 @@ use Episciences\Security\AccessLog;
  */
 class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
 {
+    private const ACTIONS_CACHE_NAMESPACE = 'controllerActions';
 
 
     public function preDispatch(Zend_Controller_Request_Abstract $request)
@@ -99,10 +102,53 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
                 return false;
             }
 
-            return method_exists($dispatcher->loadClass($controllerClass), $dispatcher->getActionMethod($request));
+            $actions = $this->controllerActions($dispatcher, $controllerClass);
+
+            return in_array(strtolower($dispatcher->getActionMethod($request)), $actions, true);
         } catch (Throwable) {
             return false;
         }
+    }
+
+    /**
+     * Method names of a controller, lowercase. Cached by application version and controller file, so that
+     * the unknown pages requested by crawlers do not load the controller and its includes on every request.
+     *
+     * @return list<string>
+     */
+    private function controllerActions(Zend_Controller_Dispatcher_Standard $dispatcher, string $controllerClass): array
+    {
+        $file = $dispatcher->getDispatchDirectory() . DIRECTORY_SEPARATOR . $dispatcher->classToFilename($controllerClass);
+        $version = (defined('APPLICATION_VERSION') ? APPLICATION_VERSION : '') . '|' . (@filemtime($file) ?: '');
+        // Every visibility, as method_exists() would
+        $load = static fn(): array => array_map(
+            static fn(ReflectionMethod $method): string => strtolower($method->getName()),
+            (new ReflectionClass($dispatcher->loadClass($controllerClass)))->getMethods()
+        );
+
+        $cache = $this->actionsCache();
+        if ($cache === null) {
+            return $load();
+        }
+
+        $item = $cache->getItem(hash('sha256', $file . '|' . $version));
+        $actions = $item->isHit() ? $item->get() : null;
+        if (!is_array($actions)) {
+            $actions = $load();
+            $cache->save($item->set($actions));
+        }
+
+        return $actions;
+    }
+
+    /**
+     * Null when no cache directory is configured: the controller is then loaded on each lookup.
+     */
+    protected function actionsCache(): ?CacheItemPoolInterface
+    {
+        return defined('CACHE_PATH_METADATA')
+            ? new PhpFilesAdapter(self::ACTIONS_CACHE_NAMESPACE, 0, CACHE_PATH_METADATA)
+            : null;
     }
 
     /**

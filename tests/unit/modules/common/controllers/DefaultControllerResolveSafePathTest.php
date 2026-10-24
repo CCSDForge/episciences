@@ -248,6 +248,8 @@ final class DefaultControllerResolveSafePathTest extends TestCase
             'missing target outside the base' => ['../../no-such-file'],
             'climbing from a subdirectory' => ['sub/../../outside.txt'],
             'backslash separators' => ['..\\..\\no-such-file'],
+            'leading separator' => ['/../../no-such-file'],
+            'directory named like the home shortcut' => ['~/../../no-such-file'],
         ];
     }
 

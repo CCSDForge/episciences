@@ -230,8 +230,10 @@ class ReviewerController extends PaperDefaultController
         try {
             $isValid = $this->getInvitationToken()->isValid((int)$invitation->getId(), $rowSecret, $request->getParam(InvitationToken::URL_PARAM));
         } catch (LogicException $e) {
+            // Configuration error (missing signing secret): not a forged token, kept out of the security log
             trigger_error($e->getMessage(), E_USER_WARNING);
-            $isValid = false;
+            $this->view->errors = $invalidLink;
+            return false;
         }
 
         if (!$isValid || ($assignment->isTmp_user() && !Episciences_Auth::isLogged() && !$tmpUser)) {

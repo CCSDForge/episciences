@@ -573,4 +573,23 @@ class Episciences_Csrf_HelperTest extends TestCase
         ], $this->loggedFailures());
         self::assertSame('csrf_logged_1', $this->logHandler->getRecords()[0]->context['token_name']);
     }
+
+    /**
+     * A session without a stored hash (expired session) is not reported as a forged token,
+     * whatever value is submitted.
+     */
+    public function testTokenFailuresAreLoggedWithTheirReason(): void
+    {
+        $session = $this->storeFormHash('episciences_csrf_csrf_logged_2', 'csrf_logged_2', 'stored-hash');
+        Episciences_Csrf_Helper::validateToken('csrf_logged_2', '');
+        Episciences_Csrf_Helper::validateToken('csrf_logged_2', 'forged');
+        unset($session->hash);
+        Episciences_Csrf_Helper::validateToken('csrf_logged_2', 'stored-hash');
+
+        self::assertSame([
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISSING, Level::Warning->getName()],
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISMATCH, Level::Warning->getName()],
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_NO_SESSION_TOKEN, Level::Notice->getName()],
+        ], $this->loggedFailures());
+    }
 }

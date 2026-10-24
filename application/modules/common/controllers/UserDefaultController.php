@@ -362,6 +362,29 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * The submitted login, only when it names an existing account: an unknown value may be a password
+     * typed in the wrong field, and must not end up in the security log.
+     */
+    protected function knownUsername(mixed $username): ?string
+    {
+        if (!is_string($username)) {
+            return null;
+        }
+
+        // Same trimming as the MySQL authentication adapter
+        $username = trim(str_replace("\xC2\xA0", ' ', $username));
+        if ($username === '') {
+            return null;
+        }
+
+        try {
+            return (new Ccsd_User_Models_UserMapper())->usernameExists($username) ? $username : null;
+        } catch (Exception) {
+            return null;
+        }
+    }
+
+    /**
      *   Login utilisateur
      *   Après login redirige :
      *   - sur la page de modification de compte si pas de champs Application Episciences
@@ -408,11 +431,10 @@ class UserDefaultController extends Zend_Controller_Action
             case Zend_Auth_Result::FAILURE:
             case Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID:
             case Zend_Auth_Result::FAILURE_IDENTITY_NOT_FOUND:
-                $username = $this->getRequest()->getPost('username');
                 AccessLog::denied(AccessLog::LOGIN_FAILED, '', [
                     'result_code' => $result->getCode(),
                     'adapter' => get_class($adapter),
-                    'username' => is_string($username) ? mb_substr($username, 0, 64) : null,
+                    'username' => $this->knownUsername($this->getRequest()->getPost('username')),
                 ]);
                 // For MySQL adapter, redisplay login form with error message
                 if ($adapter instanceof \Ccsd\Auth\Adapter\Mysql) {

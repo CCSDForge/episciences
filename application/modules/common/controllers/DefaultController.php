@@ -1,5 +1,6 @@
 <?php
 use Episciences\Security\AccessLog;
+use Episciences\Upload\SafeFileName;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Logger;
@@ -82,11 +83,8 @@ class DefaultController extends Zend_Controller_Action
     {
 
         if ($this->isRestrictedAccess($paper)) {
-            AccessLog::denied(
-                Episciences_Auth::isLogged() ? AccessLog::ACCESS_REDIRECTED : AccessLog::AUTH_REQUIRED,
-                'unpublished_paper',
-                self::paperLogContext($paper)
-            );
+            // Guests too are sent to the home page, not to the login page
+            AccessLog::denied(AccessLog::ACCESS_REDIRECTED, 'unpublished_paper', self::paperLogContext($paper));
             $message = $this->view->translate("Vous n'avez pas accès à cet article.");
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
             $this->redirect('/');
@@ -476,6 +474,8 @@ class DefaultController extends Zend_Controller_Action
     /**
      * Whether the ".." segments of a relative path lead above its starting directory, as written
      * (symbolic links are not followed: realpath() covers them for existing files).
+     * Not Symfony's Path::canonicalize(): it expands a leading "~" to the home directory and only
+     * splits on backslashes under Windows.
      */
     protected static function climbsAboveBase(string $relativePath): bool
     {
@@ -492,6 +492,15 @@ class DefaultController extends Zend_Controller_Action
         }
 
         return false;
+    }
+
+    /**
+     * Whether a file name coming from the request tries to reach another directory: an empty name,
+     * or the "." left by an empty name and extension, is a broken request, not an attempt.
+     */
+    protected static function isUnsafeFileName(string $name): bool
+    {
+        return $name !== '' && $name !== '.' && !SafeFileName::isBare($name);
     }
 
     protected function getSession(): Zend_Session_Namespace

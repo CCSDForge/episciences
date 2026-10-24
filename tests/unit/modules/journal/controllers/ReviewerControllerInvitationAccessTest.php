@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace unit\modules\journal\controllers;
 
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Security\AccessLog;
 use Episciences_Paper;
 use Episciences_User;
 use Episciences_User_Assignment;
 use Episciences_User_Invitation;
 use Episciences_User_Tmp;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use ReflectionMethod;
 use ReflectionProperty;
 use Zend_Auth;
@@ -258,15 +262,20 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
         $method = new ReflectionMethod(\ReviewerController::class, 'isInvitationRequestAuthorized');
         $method->setAccessible(true);
 
+        $logHandler = new TestHandler();
+        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$logHandler]));
         set_error_handler(static fn(): bool => true, E_USER_WARNING); // the configuration error is reported with a warning
         try {
             $result = $method->invoke($controller, $request, $this->invitation(), $this->assignment(), null);
         } finally {
             restore_error_handler();
+            AccessLog::setLogger(new NullLogger());
+            AccessLog::reset();
         }
 
         self::assertFalse($result);
         self::assertSame(self::INVALID_LINK, $controller->view->errors);
+        self::assertSame([], $logHandler->getRecords(), 'a configuration error is not an invalid token');
     }
 
     // -------------------------------------------------------------------------

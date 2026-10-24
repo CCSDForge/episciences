@@ -57,7 +57,7 @@ class Episciences_Csrf_Helper
 
             $isValid = $hashElement->isValid($value);
             if (!$isValid) {
-                self::logFailure($value === '' ? AccessLog::REASON_CSRF_MISSING : AccessLog::REASON_CSRF_MISMATCH, $elementName);
+                self::logFailure(self::failureReason(isset($hashElement->getSession()->hash), $value), $elementName);
             }
 
             return $isValid;
@@ -219,6 +219,19 @@ class Episciences_Csrf_Helper
             'ignore' => true,
             'decorators' => ['ViewHelper'],
         ]);
+    }
+
+    /**
+     * As in validateRequestToken(), an expired session comes first, whatever was submitted: the
+     * Identical validator then compares against null, which is not a forged token.
+     */
+    private static function failureReason(bool $hasSessionToken, string $submitted): string
+    {
+        if (!$hasSessionToken) {
+            return AccessLog::REASON_CSRF_NO_SESSION_TOKEN;
+        }
+
+        return $submitted === '' ? AccessLog::REASON_CSRF_MISSING : AccessLog::REASON_CSRF_MISMATCH;
     }
 
     /**

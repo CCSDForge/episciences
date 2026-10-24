@@ -175,11 +175,15 @@ trait Episciences_Paper_AccessControlControllerTrait
 
     private function logPaperRedirection(string $reason, Episciences_Paper $paper): void
     {
-        AccessLog::denied(AccessLog::ACCESS_REDIRECTED, $reason, [
-            'docid' => $paper->getDocid(),
-            'paperid' => $paper->getPaperid(),
-        ]);
+        AccessLog::denied(AccessLog::ACCESS_REDIRECTED, $reason, static::paperLogContext($paper));
     }
+
+    /**
+     * Provided by DefaultController
+     *
+     * @return array<string, mixed>
+     */
+    abstract protected static function paperLogContext(Episciences_Paper $paper): array;
 
     /**
      * Message shown when a user tries to manage their own submission,

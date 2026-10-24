@@ -9,6 +9,7 @@ use Monolog\Logger;
 use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 /**
  * @covers Episciences_Auth_Plugin
@@ -438,6 +439,43 @@ class Episciences_Auth_PluginTest extends TestCase
             $method = new ReflectionMethod(Episciences_Auth_Plugin::class, 'actionExists');
 
             self::assertSame($expected, $method->invoke($this->plugin, $request));
+        } finally {
+            $front->setDispatcher($previousDispatcher);
+        }
+    }
+
+    /**
+     * The action names of a controller are cached: the next lookups, for any action, read the cache.
+     */
+    public function testActionLookupsOfAControllerShareACachedList(): void
+    {
+        $front = Zend_Controller_Front::getInstance();
+        $previousDispatcher = $front->getDispatcher();
+        $dispatcher = new Zend_Controller_Dispatcher_Standard();
+        $dispatcher->setControllerDirectory(__DIR__ . '/fixtures/controllers');
+        $front->setDispatcher($dispatcher);
+        $cache = new ArrayAdapter(0, false);
+        $plugin = new class($cache) extends Episciences_Auth_Plugin {
+            public function __construct(private readonly ArrayAdapter $cache)
+            {
+            }
+
+            protected function actionsCache(): ArrayAdapter
+            {
+                return $this->cache;
+            }
+        };
+        $method = new ReflectionMethod(Episciences_Auth_Plugin::class, 'actionExists');
+
+        try {
+            $request = new Zend_Controller_Request_Http();
+            $request->setControllerName('aclprobe')->setActionName('existing');
+            self::assertTrue($method->invoke($plugin, $request));
+            self::assertCount(1, $cache->getValues());
+
+            $request->setActionName('missing');
+            self::assertFalse($method->invoke($plugin, $request));
+            self::assertCount(1, $cache->getValues());
         } finally {
             $front->setDispatcher($previousDispatcher);
         }

@@ -87,14 +87,22 @@ class FileController extends DefaultController
         // The folder allow-list would be pointless if a segment could climb out of it (e.g. "../reports").
         // Only copy-editing files are stored by comment: elsewhere the access check, made on the file name,
         // would not be about the file served.
+        if (!SafeFileName::isBare($file)) {
+            if (self::isUnsafeFileName($file)) {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $file]);
+            }
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         if (
-            !SafeFileName::isBare($file) ||
-            (
-                null !== $parentCommentId &&
-                ($folder !== DocumentFilePolicy::FOLDER_COPY_EDITING || !preg_match('/^\d+$/D', (string)$parentCommentId))
-            )
+            null !== $parentCommentId &&
+            ($folder !== DocumentFilePolicy::FOLDER_COPY_EDITING || !preg_match('/^\d+$/D', (string)$parentCommentId))
         ) {
-            AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name');
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'unexpected_parent_comment_id', [
+                'folder' => $folder,
+                'parent_comment_id' => $parentCommentId,
+            ]);
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
@@ -229,10 +237,12 @@ class FileController extends DefaultController
 
             // No version: the paper does not exist, nothing was refused
             if ($hasVersion) {
-                AccessLog::denied(AccessLog::NOT_FOUND_MASKED, 'temporary_version_file_access', [
-                    'paperid' => $paperId,
-                    'write' => $toWrite,
-                ]);
+                // Reading is refused with a 404, upload and removal with a 403
+                AccessLog::denied(
+                    $toWrite ? AccessLog::HTTP_FORBIDDEN : AccessLog::NOT_FOUND_MASKED,
+                    $toWrite ? 'temporary_version_file_write' : 'temporary_version_file_access',
+                    ['paperid' => $paperId]
+                );
             }
 
             return false;
@@ -339,7 +349,9 @@ class FileController extends DefaultController
         $file = ($params['filename'] ?? '') . '.' . ($params['extension'] ?? '');
 
         if (!SafeFileName::isBare($file)) {
-            AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name');
+            if (self::isUnsafeFileName($file)) {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $file]);
+            }
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
@@ -662,7 +674,7 @@ class FileController extends DefaultController
 
         // Only a flat file name is expected here; strip any directory component
         // to neutralise path traversal (e.g. "../../somefile").
-        if (!SafeFileName::isBare($filename)) {
+        if (self::isUnsafeFileName($filename)) {
             AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $filename]);
         }
         $filename = basename($filename);
