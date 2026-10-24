@@ -2696,7 +2696,8 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         $docId = (int)$request->getPost('docid');
-        $paper = $docId > 0 ? Episciences_PapersManager::get($docId, false) : false;
+        // loaded with its metadata (not findPaper()): save() rebuilds the stored JSON document from them
+        $paper = $docId > 0 ? Episciences_PapersManager::get($docId) : false;
 
         if (!$paper || $this->findManagementRefusal($this->findReview(), $paper) !== null) {
             $this->getResponse()->setHttpResponseCode(403);
