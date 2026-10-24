@@ -2557,11 +2557,16 @@ class Episciences_Review
     }
 
     /**
-     * get review settings
+     * get review settings, loaded from the database when none is set yet
+     * (settings set in memory, by setSetting() or setOptions(), are not replaced by the stored ones)
      * @return array
      */
     public function getSettings(): array
     {
+        if (!$this->_settingsLoaded && $this->_settings === []) {
+            $this->loadSettings();
+        }
+
         return $this->_settings;
     }
 
