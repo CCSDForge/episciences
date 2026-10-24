@@ -10,6 +10,7 @@ use Psr\Log\LogLevel;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
+use Episciences\Paper\ManagementRefusal;
 use Episciences\Paper\RepositoryVersionsService;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
@@ -2833,123 +2834,144 @@ class AdministratepaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $docId = ($request->getPost('docid')) ?: $request->getParam('docid');
 
-        $paper = Episciences_PapersManager::get($docId);
-        if (!$paper) {
+        // Check the request and its token before loading anything
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
             echo false;
             return;
         }
 
-        if ($request->isPost()) {
+        $docId = (int)$request->getPost('docid');
+        // loaded with its metadata (not findPaper()): save() rebuilds the stored JSON document from them
+        $paper = $docId > 0 ? Episciences_PapersManager::get($docId) : false;
 
-            $oldSid = $paper->getSid();
-            $sid = (int)$request->getPost('sid');
+        if (!$paper || $this->findManagementRefusal($this->findReview(), $paper) !== null) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo false;
+            return;
+        }
 
-            // the target section must belong to the current journal (0 = no section)
-            if ($sid > 0 && !Episciences_SectionsManager::find($sid, RVID)) {
+        $oldSid = $paper->getSid();
+        $sid = (int)$request->getPost('sid');
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $db->beginTransaction();
+
+        try {
+            // the target section must belong to the current journal (0 = no section);
+            // it stays locked until commit, so that it cannot be deleted meanwhile
+            if ($sid > 0 && !Episciences_SectionsManager::lockForPapers($sid, RVID)) {
+                $db->rollBack();
                 echo false;
                 return;
             }
 
             $paper->setSid($sid);
             $paper->save();
-            $paper->log(
-                Episciences_Paper_Logger::CODE_SECTION_SELECTION,
-                Episciences_Auth::getUid(),
-                ['sid' => $sid]);
-
-            if ($paper->isPublished()) {
-                try {
-                    SolrIndexing::enqueueIndex($paper->getDocid());
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage());
-                }
-            }
-
-            if (defined('RVCODE')) {
-                $tagsToInvalidate = [];
-                if ($sid > 0) {
-                    $tagsToInvalidate[] = "section-articles-{$sid}-" . RVCODE;
-                }
-                if ($oldSid > 0 && $oldSid !== $sid) {
-                    $tagsToInvalidate[] = "section-articles-{$oldSid}-" . RVCODE;
-                }
-                if (!empty($tagsToInvalidate)) {
-                    \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
-                }
-            }
-
-            // if checkbox is checked,
-            if ($request->getPost('assignEditors')) {
-
-                // assign section editors to this article
-                $section = Episciences_SectionsManager::find($sid, RVID);
-                $sectionEditors = $section ? $section->getEditors() : [];
-                $paperEditors = $paper->getEditors(true, true);
-
-                // filter editors already assigned to this article (avoid reassignment)
-                $editors = array_diff_key($sectionEditors, $paperEditors);
-
-                if (!empty($editors)) {
-
-                    // prepare link to article management page
-                    $paper_url = $this->view->url([
-                        'controller' => self::ADMINISTRATE_PAPER_CONTROLLER,
-                        'action' => 'view',
-                        'id' => $paper->getDocid()]);
-                    $paper_url = SERVER_PROTOCOL . '://' . $this->getRequest()->getHttpHost() . $paper_url;
-
-                    foreach ($editors as $uid => $editor) {
-
-                        // save editor assignment to paper
-                        try {
-                            $aid = $paper->assign($uid, Episciences_User_Assignment::ROLE_EDITOR);
-                        } catch (Exception $e) {
-                            continue;
-                        }
-
-                        // log editor assignment to paper
-                        $paper->log(
-                            Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
-                            Episciences_Auth::getUid(),
-                            ["aid" => $aid, "user" => $editor->toArray()]);
-
-                        // send mail
-                        $locale = $editor->getLangueid();
-                        $template = new Episciences_Mail_Template();
-                        $template->findByKey(Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_ASSIGN);
-                        $template->loadTranslations();
-                        $template->setLocale($locale);
-
-                        $mail = new Episciences_Mail('UTF-8');
-                        $mail->setDocid($docId);
-                        $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_EMAIL, Episciences_Auth::getEmail());
-                        $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_FULL_NAME, Episciences_Auth::getFullName());
-                        $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME, $editor->getUsername());
-                        $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME, $editor->getFullName());
-                        $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_ID, $paper->getDocid());
-                        $mail->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $paper->getPaperid());
-                        $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_TITLE, $paper->getTitle($locale, true));
-                        $mail->addTag(Episciences_Mail_Tags::TAG_AUTHORS_NAMES, $paper->formatAuthorsMetadata());
-                        $mail->addTag(Episciences_Mail_Tags::TAG_SUBMISSION_DATE, $this->view->Date($paper->getSubmission_date(), $locale));
-                        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, $paper_url);
-                        $mail->setFromReview();
-                        $mail->setTo($editor);
-                        $mail->setSubject($template->getSubject());
-                        $mail->setTemplate($template->getPath(), $template->getKey() . '.phtml');
-                        $mail->writeMail();
-
-                        // log mail sending
-                        $paper->log(
-                            Episciences_Paper_Logger::CODE_MAIL_SENT,
-                            Episciences_Auth::getUid(),
-                            ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
-                    }
-                }
-            }
-            echo json_encode(true);
+            // the other versions follow, so that none of them keeps the paper in its old section
+            Episciences_PapersManager::updateSection((int)$paper->getPaperid(), (int)$paper->getRvid(), $sid);
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
         }
+
+        $paper->log(
+            Episciences_Paper_Logger::CODE_SECTION_SELECTION,
+            Episciences_Auth::getUid(),
+            ['sid' => $sid]);
+
+        if ($paper->isPublished()) {
+            try {
+                SolrIndexing::enqueueIndex($paper->getDocid());
+            } catch (Exception $e) {
+                trigger_error($e->getMessage());
+            }
+        }
+
+        if (defined('RVCODE')) {
+            $tagsToInvalidate = [];
+            if ($sid > 0) {
+                $tagsToInvalidate[] = "section-articles-{$sid}-" . RVCODE;
+            }
+            if ($oldSid > 0 && $oldSid !== $sid) {
+                $tagsToInvalidate[] = "section-articles-{$oldSid}-" . RVCODE;
+            }
+            if (!empty($tagsToInvalidate)) {
+                \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
+            }
+        }
+
+        // if checkbox is checked,
+        if ($request->getPost('assignEditors')) {
+
+            // assign section editors to this article
+            $section = Episciences_SectionsManager::find($sid, RVID);
+            $sectionEditors = $section ? $section->getEditors() : [];
+            $paperEditors = $paper->getEditors(true, true);
+
+            // filter editors already assigned to this article (avoid reassignment)
+            $editors = array_diff_key($sectionEditors, $paperEditors);
+
+            if (!empty($editors)) {
+
+                // prepare link to article management page
+                $paper_url = $this->view->url([
+                    'controller' => self::ADMINISTRATE_PAPER_CONTROLLER,
+                    'action' => 'view',
+                    'id' => $paper->getDocid()]);
+                $paper_url = SERVER_PROTOCOL . '://' . $this->getRequest()->getHttpHost() . $paper_url;
+
+                foreach ($editors as $uid => $editor) {
+
+                    // save editor assignment to paper
+                    try {
+                        $aid = $paper->assign($uid, Episciences_User_Assignment::ROLE_EDITOR);
+                    } catch (Exception $e) {
+                        continue;
+                    }
+
+                    // log editor assignment to paper
+                    $paper->log(
+                        Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
+                        Episciences_Auth::getUid(),
+                        ["aid" => $aid, "user" => $editor->toArray()]);
+
+                    // send mail
+                    $locale = $editor->getLangueid();
+                    $template = new Episciences_Mail_Template();
+                    $template->findByKey(Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_ASSIGN);
+                    $template->loadTranslations();
+                    $template->setLocale($locale);
+
+                    $mail = new Episciences_Mail('UTF-8');
+                    $mail->setDocid($docId);
+                    $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_EMAIL, Episciences_Auth::getEmail());
+                    $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_FULL_NAME, Episciences_Auth::getFullName());
+                    $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME, $editor->getUsername());
+                    $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME, $editor->getFullName());
+                    $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_ID, $paper->getDocid());
+                    $mail->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $paper->getPaperid());
+                    $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_TITLE, $paper->getTitle($locale, true));
+                    $mail->addTag(Episciences_Mail_Tags::TAG_AUTHORS_NAMES, $paper->formatAuthorsMetadata());
+                    $mail->addTag(Episciences_Mail_Tags::TAG_SUBMISSION_DATE, $this->view->Date($paper->getSubmission_date(), $locale));
+                    $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, $paper_url);
+                    $mail->setFromReview();
+                    $mail->setTo($editor);
+                    $mail->setSubject($template->getSubject());
+                    $mail->setTemplate($template->getPath(), $template->getKey() . '.phtml');
+                    $mail->writeMail();
+
+                    // log mail sending
+                    $paper->log(
+                        Episciences_Paper_Logger::CODE_MAIL_SENT,
+                        Episciences_Auth::getUid(),
+                        ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
+                }
+            }
+        }
+        echo json_encode(true);
     }
 
     /**
@@ -5405,8 +5427,10 @@ class AdministratepaperController extends PaperDefaultController
     private function findPaperForCoAuthorForm(Zend_Controller_Request_Http $request, int $docId): ?Episciences_Paper
     {
         $paper = $docId ? $this->findPaper($docId) : null;
+        $review = $this->findReview();
+        $refusal = $paper ? $this->findManagementRefusal($review, $paper) : ManagementRefusal::OTHER_JOURNAL;
 
-        if (!$paper || $paper->getRvid() !== RVID) {
+        if ($refusal === ManagementRefusal::OTHER_JOURNAL) {
             $this->_helper->FlashMessenger->setNamespace('error')->addMessage($this->view->translate("Le document demandé n’existe pas."));
             $this->_helper->redirector->gotoUrl($this->_helper->url('list', self::ADMINISTRATE_PAPER_CONTROLLER));
             return null;
@@ -5418,13 +5442,15 @@ class AdministratepaperController extends PaperDefaultController
             return null;
         }
 
-        $review = $this->findReview();
+        // each of these redirects with the message of the page the form comes from
+        match ($refusal) {
+            ManagementRefusal::DELETED_OR_REMOVED => $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper),
+            ManagementRefusal::OWN_SUBMISSION_OR_CONFLICT => $this->redirectWithFlashMessageIfConflictDetected($paper, $review),
+            ManagementRefusal::PERMISSIONS => $this->checkPermissions($review, $paper),
+            null => null,
+        };
 
-        // these two redirect and exit when a check fails
-        $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
-        $this->redirectWithFlashMessageIfConflictDetected($paper, $review);
-
-        return $this->checkPermissions($review, $paper) ? $paper : null;
+        return $refusal === null ? $paper : null;
     }
 
     protected function findPaper(int $docId): ?Episciences_Paper

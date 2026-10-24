@@ -40,6 +40,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated the messages of the lost password and lost username pages.
 
 ### Fixed
+- A section that still has papers can no longer be deleted: the delete button lists the papers to move first.
+  Deleted and removed papers, which can no longer be moved, leave the section with it.
+  Moving a paper to another section now moves all its versions, so older versions no longer keep it in its former section.
+  Moving a paper to another section follows the same rules as the paper management page.
+  **Deployment**: apply `src/mysql/2026-10-24-papers_section_of_all_versions.sql`, which gives every version the section of
+  the latest one.
 - The access denied page answers with a 403 status instead of a "page not found" error.
 - [#1310](https://github.com/CCSDForge/episciences/pull/1310): co-author form and co-author removal are now consistent with the paper management page.
 - [#1344](https://github.com/CCSDForge/episciences/pull/1344): graphical abstract and linked data forms are now consistent with the paper context.

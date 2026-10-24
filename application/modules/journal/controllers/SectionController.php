@@ -1,8 +1,13 @@
 <?php
 
+use Episciences\Section\SectionHasPapersException;
+
 class SectionController extends Zend_Controller_Action
 {
     public const JSON_MIMETYPE = 'application/json';
+
+    /** Papers listed at most when a section cannot be deleted */
+    public const MAX_LISTED_ATTACHED_PAPERS = 10;
 
     public function indexAction()
     {
@@ -165,14 +170,42 @@ class SectionController extends Zend_Controller_Action
             $respond = $this->view->translate('Votre session a expiré, veuillez réessayer.');
         } elseif ($isAjax){
             $params = $request->getPost('params');
-            $id = ($params['id']) ?: $request->getQuery('id');
+            $rawId = (is_array($params) ? ($params['id'] ?? null) : null) ?: $request->getQuery('id');
+            $id = is_scalar($rawId) && ctype_digit((string)$rawId) ? (int)$rawId : 0;
             // Only sections of the current journal can be deleted
-            $respond = Episciences_SectionsManager::find((int) $id, RVID) ? Episciences_SectionsManager::delete((int) $id) : false;
+            if ($id > 0 && Episciences_SectionsManager::find($id, RVID)) {
+                try {
+                    $respond = Episciences_SectionsManager::delete($id);
+                } catch (SectionHasPapersException $e) {
+                    // Shown by the delete button as the reason of the failure
+                    $respond = $this->attachedPapersMessage($e->getPaperIds());
+                }
+            }
         }
 
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
+    }
+
+    /**
+     * @param list<int> $paperIds
+     * @return string
+     */
+    private function attachedPapersMessage(array $paperIds): string
+    {
+        $listed = '#' . implode(', #', array_slice($paperIds, 0, self::MAX_LISTED_ATTACHED_PAPERS));
+        $others = count($paperIds) - self::MAX_LISTED_ATTACHED_PAPERS;
+
+        if ($others <= 0) {
+            return sprintf($this->view->translate('Des articles (%s) sont rattachés à cette rubrique.'), $listed);
+        }
+
+        return sprintf(
+            $this->view->translate('Des articles (%1$s et %2$d autres) sont rattachés à cette rubrique.'),
+            $listed,
+            $others
+        );
     }
 
     /**
