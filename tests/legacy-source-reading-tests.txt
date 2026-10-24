@@ -15,7 +15,6 @@ tests/unit/library/Episciences/Mail/Episciences_Mail_ReminderTest.php
 tests/unit/library/Episciences/Mail/Episciences_Mail_SenderTest.php
 tests/unit/library/Episciences/Mail/Episciences_Mail_SendTest.php
 tests/unit/library/Episciences/Mail/Episciences_MailTest.php
-tests/unit/library/Episciences/Paper/Episciences_Paper_AccessControlControllerTraitTest.php
 tests/unit/library/Episciences/paper/Episciences_Paper_ConflictsTest.php
 tests/unit/library/Episciences/paper/Episciences_Paper_FilesManagerGuardTest.php
 tests/unit/library/Episciences/paper/Episciences_Paper_GraphicalAbstractJsonTest.php
@@ -45,8 +44,6 @@ tests/unit/modules/journal/controllers/PaperControllerContributorGuardTest.php
 tests/unit/modules/journal/controllers/PaperControllerMasterFileGuardTest.php
 tests/unit/modules/journal/controllers/PaperControllerReportAttachmentTest.php
 tests/unit/modules/journal/controllers/PaperControllerTest.php
-tests/unit/modules/journal/controllers/PaperControllerVersionFlagTest.php
-tests/unit/modules/journal/controllers/ReviewControllerLicensesTest.php
 tests/unit/modules/journal/controllers/SubmitControllerTest.php
 tests/unit/scripts/ProcessInboxNotificationsCommandTest.php
 tests/unit/scripts/RemindersTest.php

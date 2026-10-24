@@ -1511,33 +1511,15 @@ class PaperController extends PaperDefaultController
         $paper->log(Episciences_Paper_Logger::CODE_STATUS, null, [self::STATUS => $paper->getStatus()]);
 
 
-        // tmp version init
-        $tmpPaper = clone($paper);
-        $tmpPaper->setDocid(null);
-        $tmpPaper->setPaperid($paperId);
-        // A tmp version is always submitted through the application, even if the previous one was imported
-        $tmpPaper->setFlag('submitted');
-
         $isAssignedReviewers = $reassignReviewers && $reviewers;
 
         if ($isAlreadyAccepted && !$isAssignedReviewers) {
             $status = Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION;
         } else {
-            $status = $isAssignedReviewers ? $tmpPaper::STATUS_OK_FOR_REVIEWING : $tmpPaper::STATUS_SUBMITTED;
+            $status = $isAssignedReviewers ? Episciences_Paper::STATUS_OK_FOR_REVIEWING : Episciences_Paper::STATUS_SUBMITTED;
         }
 
-        $tmpPaper->setStatus($status);
-        $tmpPaper->setIdentifier($paperId . '/' . $answerComment->getFile());
-        $tmpPaper->setVersion((float)$paper->getVersion() + 0.01);
-        $tmpPaper->setRepoid(0);
-        // update xml
-        $xml = $paper->getRecord();
-        try {
-            $tmpPaper->setRecord($xml);
-        } catch (DOMException|Zend_Db_Statement_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-        $tmpPaper->setConcept_identifier($paper->getConcept_identifier());
+        $tmpPaper = $this->initializeTmpPaper($paper, $status, (string)$answerComment->getFile());
 
         // save tmp version
         if ($tmpPaper->save()) {
@@ -2214,6 +2196,35 @@ class PaperController extends PaperDefaultController
         }
 
         return $newPaper;
+    }
+
+    /**
+     * Temporary version answering a revision request: a copy of the previous version whose files
+     * are the ones attached to the answer.
+     */
+    private function initializeTmpPaper(Episciences_Paper $paper, int $status, string $answerFiles): Episciences_Paper
+    {
+        $paperId = $paper->getPaperid() ?: $paper->getDocid();
+
+        $tmpPaper = clone $paper;
+        $tmpPaper->setDocid(null);
+        $tmpPaper->setPaperid($paperId);
+        // A tmp version is always submitted through the application, even if the previous one was imported
+        $tmpPaper->setFlag('submitted');
+        $tmpPaper->setStatus($status);
+        $tmpPaper->setIdentifier($paperId . '/' . $answerFiles);
+        $tmpPaper->setVersion((float)$paper->getVersion() + 0.01);
+        $tmpPaper->setRepoid(0);
+
+        try {
+            $tmpPaper->setRecord($paper->getRecord());
+        } catch (DOMException|Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        $tmpPaper->setConcept_identifier($paper->getConcept_identifier());
+
+        return $tmpPaper;
     }
 
     /**

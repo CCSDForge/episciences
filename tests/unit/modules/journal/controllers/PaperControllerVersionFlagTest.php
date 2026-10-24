@@ -4,102 +4,83 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
-use PHPUnit\Framework\TestCase;
+use Episciences_Paper;
+use PaperController;
+use ReflectionClass;
+use ReflectionMethod;
+use unit\modules\ControllerTestCase;
 
 /**
- * Source-level regression guards for the FLAG of new and temporary versions.
+ * FLAG of new and temporary versions.
  *
- * PaperController::initializeNewPaper() and PaperController::savetmpversionAction()
- * build the next version by cloning the previous one. An earlier version kept the
- * cloned FLAG, so every version of an imported paper was saved as 'imported'.
- * Both methods must reset the FLAG to 'submitted' on the clone.
- *
- * ZF1 controllers are not instantiable in isolation, so — like the other
- * controller source-analysis tests in this suite — these assertions check the
- * source rather than executing the actions against a real request/DB.
+ * PaperController::initializeNewPaper() and PaperController::initializeTmpPaper() build the next
+ * version by cloning the previous one. An earlier version kept the cloned FLAG, so every version
+ * of an imported paper was saved as 'imported'.
  */
-final class PaperControllerVersionFlagTest extends TestCase
+final class PaperControllerVersionFlagTest extends ControllerTestCase
 {
-    private string $source;
+    private const DOCID = 12;
+    private const PAPERID = 10;
+
+    private PaperController $controller;
+
+    public static function setUpBeforeClass(): void
+    {
+        self::loadController('journal', 'PaperController');
+    }
 
     protected function setUp(): void
     {
-        $this->source = (string) file_get_contents(
-            APPLICATION_PATH . '/modules/journal/controllers/PaperController.php'
-        );
+        $this->controller = (new ReflectionClass(PaperController::class))->newInstanceWithoutConstructor();
     }
 
-    private function extractMethod(string $methodName): string
+    public function testNewVersionOfAnImportedPaperIsSubmitted(): void
     {
-        $start = strpos($this->source, 'function ' . $methodName . '(');
-        self::assertNotFalse($start, "Method $methodName not found in PaperController");
+        $paper = self::importedPaper();
+        $post = [PaperController::SEARCH_DOC_STR => ['h_docId' => ' 2401.00001 ', 'h_repoId' => '2']];
 
-        $end = strpos($this->source, "\n    public function ", (int) $start + 1);
-        $end2 = strpos($this->source, "\n    protected function ", (int) $start + 1);
-        $end3 = strpos($this->source, "\n    private function ", (int) $start + 1);
-        $candidates = array_filter([$end, $end2, $end3], static fn($v) => $v !== false);
-        $stop = $candidates ? min($candidates) : strlen($this->source);
+        $newPaper = $this->invoke('initializeNewPaper', $paper, $post, 3.0, false, false, '<record/>');
 
-        return substr($this->source, (int) $start, $stop - (int) $start);
+        self::assertSame('submitted', $newPaper->getFlag());
+        self::assertSame('imported', $paper->getFlag(), 'the previous version is left unchanged');
+        self::assertEmpty($newPaper->getDocid(), 'the new version is not saved yet');
+        self::assertSame(self::PAPERID, (int)$newPaper->getPaperid());
+        self::assertSame(Episciences_Paper::STATUS_SUBMITTED, $newPaper->getStatus());
+        self::assertSame('2401.00001', $newPaper->getIdentifier());
     }
 
-    // =========================================================================
-    // initializeNewPaper()
-    // =========================================================================
-
-    public function testNewVersionFlagIsResetToSubmitted(): void
+    public function testTemporaryVersionOfAnImportedPaperIsSubmitted(): void
     {
-        $method = $this->extractMethod('initializeNewPaper');
+        $paper = self::importedPaper();
 
-        self::assertStringContainsString(
-            "\$newPaper->setFlag('submitted')",
-            $method,
-            'initializeNewPaper() must reset the FLAG of the new version to submitted.'
-        );
+        $tmpPaper = $this->invoke('initializeTmpPaper', $paper, Episciences_Paper::STATUS_SUBMITTED, '["answer.pdf"]');
+
+        self::assertSame('submitted', $tmpPaper->getFlag());
+        self::assertSame('imported', $paper->getFlag(), 'the previous version is left unchanged');
+        self::assertEmpty($tmpPaper->getDocid(), 'the temporary version is not saved yet');
+        self::assertSame(self::PAPERID, (int)$tmpPaper->getPaperid());
+        self::assertSame(Episciences_Paper::STATUS_SUBMITTED, $tmpPaper->getStatus());
+        self::assertSame(self::PAPERID . '/["answer.pdf"]', $tmpPaper->getIdentifier());
+        self::assertEqualsWithDelta(2.01, (float)$tmpPaper->getVersion(), 0.0001);
+        self::assertSame(0, (int)$tmpPaper->getRepoid());
+        self::assertSame('<record/>', $tmpPaper->getRecord());
     }
 
-    public function testNewVersionFlagIsResetAfterCloneAndBeforeReturn(): void
+    private static function importedPaper(): Episciences_Paper
     {
-        $method = $this->extractMethod('initializeNewPaper');
+        $paper = new Episciences_Paper();
+        $paper->setDocid(self::DOCID);
+        $paper->setPaperid(self::PAPERID);
+        $paper->setFlag('imported');
+        $paper->setVersion(2);
+        $paper->setStatus(Episciences_Paper::STATUS_OBSOLETE);
+        $paper->setRecord('<record/>');
 
-        $clonePos = strpos($method, 'clone $paper');
-        $flagPos = strpos($method, "\$newPaper->setFlag('submitted')");
-        $returnPos = strpos($method, 'return $newPaper');
-
-        self::assertNotFalse($clonePos);
-        self::assertNotFalse($flagPos);
-        self::assertNotFalse($returnPos);
-        self::assertLessThan($flagPos, $clonePos, 'The FLAG must be reset after the previous version is cloned.');
-        self::assertLessThan($returnPos, $flagPos, 'The FLAG must be reset before the new version is returned.');
+        return $paper;
     }
 
-    // =========================================================================
-    // savetmpversionAction()
-    // =========================================================================
-
-    public function testTmpVersionFlagIsResetToSubmitted(): void
+    private function invoke(string $method, mixed ...$arguments): Episciences_Paper
     {
-        $method = $this->extractMethod('savetmpversionAction');
-
-        self::assertStringContainsString(
-            "\$tmpPaper->setFlag('submitted')",
-            $method,
-            'savetmpversionAction() must reset the FLAG of the temporary version to submitted.'
-        );
-    }
-
-    public function testTmpVersionFlagIsResetAfterCloneAndBeforeSave(): void
-    {
-        $method = $this->extractMethod('savetmpversionAction');
-
-        $clonePos = strpos($method, 'clone($paper)');
-        $flagPos = strpos($method, "\$tmpPaper->setFlag('submitted')");
-        $savePos = strpos($method, '$tmpPaper->save()');
-
-        self::assertNotFalse($clonePos);
-        self::assertNotFalse($flagPos);
-        self::assertNotFalse($savePos);
-        self::assertLessThan($flagPos, $clonePos, 'The FLAG must be reset after the previous version is cloned.');
-        self::assertLessThan($savePos, $flagPos, 'The FLAG must be reset before the temporary version is saved.');
+        return (new ReflectionMethod(PaperController::class, $method))->invoke($this->controller, ...$arguments);
     }
 }
