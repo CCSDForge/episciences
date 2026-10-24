@@ -4,29 +4,19 @@ declare(strict_types=1);
 
 namespace unit\modules\common\controllers;
 
-use Ccsd_View_Helper_DisplayFlashMessages;
 use Episciences_Acl;
-use Episciences_Auth;
 use Episciences_Csrf_Helper;
-use Episciences_User;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use unit\modules\common\controllers\support\WebsiteControllerTestTrait;
 use WebsiteDefaultController;
-use Zend_Auth_Storage_Interface;
-use Zend_Auth_Storage_NonPersistent;
-use Zend_Controller_Action_Helper_Abstract;
-use Zend_Controller_Action_Helper_FlashMessenger;
-use Zend_Controller_Action_Helper_Redirector;
-use Zend_Controller_Action_Helper_ViewRenderer;
-use Zend_Controller_Action_HelperBroker;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Table_Abstract;
-use Zend_Session;
-use Zend_Session_Namespace;
-use Zend_View;
+
+require_once __DIR__ . '/support/WebsiteControllerTestTrait.php';
 
 /**
  * Form token check of the website settings (common, style and menu actions of
@@ -37,6 +27,8 @@ use Zend_View;
  */
 final class WebsiteDefaultControllerFormTokenTest extends TestCase
 {
+    use WebsiteControllerTestTrait;
+
     private const EXPIRED = 'Votre session a expiré, veuillez réessayer.';
 
     /** Calls on the menu made only when the submitted pages are processed */
@@ -47,13 +39,6 @@ final class WebsiteDefaultControllerFormTokenTest extends TestCase
     /** @var MockObject&Zend_Db_Adapter_Abstract */
     private $adapter;
 
-    private bool $previousUnitTestEnabled;
-
-    private Zend_Auth_Storage_Interface $previousAuthStorage;
-
-    /** @var Zend_Controller_Action_Helper_Abstract[] */
-    private array $previousHelpers = [];
-
     public static function setUpBeforeClass(): void
     {
         require_once APPLICATION_PATH . '/modules/common/controllers/WebsiteDefaultController.php';
@@ -61,11 +46,6 @@ final class WebsiteDefaultControllerFormTokenTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->previousUnitTestEnabled = Zend_Session::$_unitTestEnabled;
-        Zend_Session::$_unitTestEnabled = true;
-        $this->previousAuthStorage = Episciences_Auth::getInstance()->getStorage();
-        Episciences_Auth::getInstance()->setStorage(new Zend_Auth_Storage_NonPersistent());
-
         $this->previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
         $this->adapter = $this->getMockBuilder($this->previousAdapter::class)
             ->setConstructorArgs([$this->previousAdapter->getConfig()])
@@ -82,38 +62,13 @@ final class WebsiteDefaultControllerFormTokenTest extends TestCase
             \Zend_Registry::set('Zend_Locale', new \Zend_Locale('en'));
         }
 
-        // Form elements are rendered with the view of the static view renderer: keep the bootstrap ones
-        $this->previousHelpers = iterator_to_array(Zend_Controller_Action_HelperBroker::getStack(), false);
-        Zend_Controller_Action_HelperBroker::resetHelpers();
-        $viewRenderer = new Zend_Controller_Action_Helper_ViewRenderer(new Zend_View());
-        $viewRenderer->setNeverRender(true);
-        Zend_Controller_Action_HelperBroker::addHelper($viewRenderer);
-        $redirector = new Zend_Controller_Action_Helper_Redirector();
-        $redirector->setExit(false);
-        Zend_Controller_Action_HelperBroker::addHelper($redirector);
-
-        // Messages left by the other tests of the run
-        (new \Zend_Controller_Action_Helper_FlashMessenger())->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->clearCurrentMessages();
-
         // The session holds a token the requests below do not send
         Episciences_Csrf_Helper::getSessionToken();
     }
 
     protected function tearDown(): void
     {
-        (new Zend_Controller_Action_Helper_FlashMessenger())->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->clearCurrentMessages();
-        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-        unset($session->csrfToken);
-        $_POST = [];
-
         Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
-        Zend_Controller_Action_HelperBroker::resetHelpers();
-        foreach ($this->previousHelpers as $helper) {
-            Zend_Controller_Action_HelperBroker::addHelper($helper);
-        }
-        Episciences_Auth::getInstance()->clearIdentity();
-        Episciences_Auth::getInstance()->setStorage($this->previousAuthStorage);
-        Zend_Session::$_unitTestEnabled = $this->previousUnitTestEnabled;
     }
 
     /**
@@ -129,16 +84,6 @@ final class WebsiteDefaultControllerFormTokenTest extends TestCase
         $controller->$action();
 
         return $controller;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function errorMessages(): array
-    {
-        $flash = new Zend_Controller_Action_Helper_FlashMessenger();
-
-        return $flash->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->getCurrentMessages();
     }
 
     /**
@@ -191,10 +136,7 @@ final class WebsiteDefaultControllerFormTokenTest extends TestCase
      */
     private function postMenu(array $post): array
     {
-        // The pages of the site are managed by the secretaries and the webmasters
-        $user = $this->createMock(Episciences_User::class);
-        $user->method('getAllRoles')->willReturn([RVID => [Episciences_Acl::ROLE_SECRETARY]]);
-        Episciences_Auth::getInstance()->getStorage()->write($user);
+        $this->logInAs(Episciences_Acl::ROLE_SECRETARY);
 
         $website = new class {
             /** @var list<string> */
