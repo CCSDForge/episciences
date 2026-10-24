@@ -673,63 +673,93 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
 
     // =========================================================================
     // Usage guards: the controllers must keep delegating to the trait
+    // (the calls to its guards are covered by PaperManagementPagesAccessTest)
     // =========================================================================
 
     /**
-     * @return iterable<string, array{string}>
+     * @return iterable<string, array{class-string}>
      */
     public static function usingControllers(): iterable
     {
-        yield 'AdministratepaperController' => [APPLICATION_PATH . '/modules/journal/controllers/AdministratepaperController.php'];
-        yield 'ActivityController' => [APPLICATION_PATH . '/modules/journal/controllers/ActivityController.php'];
+        yield 'AdministratepaperController' => [self::loadController('journal', 'AdministratepaperController')];
+        yield 'ActivityController' => [self::loadController('journal', 'ActivityController')];
     }
 
     /**
      * @dataProvider usingControllers
+     * @param class-string $controller
      */
-    public function testControllerUsesTheTraitAndItsGuards(string $path): void
+    public function testControllerUsesTheTrait(string $controller): void
     {
-        $source = (string)file_get_contents($path);
-
-        self::assertStringContainsString('use Episciences_Paper_AccessControlControllerTrait;', $source);
-        self::assertStringContainsString('$this->checkPermissions(', $source);
-        self::assertStringContainsString('$this->redirectWithFlashMessageIfConflictDetected(', $source);
+        self::assertContains(Episciences_Paper_AccessControlControllerTrait::class, class_uses($controller));
     }
 
     /**
      * A method defined in the using class silently takes precedence over the
-     * trait method with the same name: no controller (or parent) may redefine
-     * one of the trait's methods.
+     * trait method with the same name: no controller may redefine one of the trait's methods.
      *
-     * @dataProvider classesInTheTraitHierarchy
+     * @dataProvider usingControllers
+     * @param class-string $controller
      */
-    public function testTraitMethodsAreNotOverriddenByTheControllers(string $path): void
+    public function testTraitMethodsAreNotOverriddenByTheControllers(string $controller): void
     {
-        $source = (string)file_get_contents($path);
+        $traitFile = (new \ReflectionClass(Episciences_Paper_AccessControlControllerTrait::class))->getFileName();
 
-        // The abstract methods are the ones the controllers must provide
-        $traitMethods = array_filter(
-            (new \ReflectionClass(Episciences_Paper_AccessControlControllerTrait::class))->getMethods(),
-            static fn(\ReflectionMethod $method): bool => !$method->isAbstract()
-        );
-        self::assertNotEmpty($traitMethods);
-
-        foreach ($traitMethods as $method) {
-            self::assertStringNotContainsString(
-                'function ' . $method->getName() . '(',
-                $source,
-                basename($path) . " must not redefine the trait method {$method->getName()}()"
+        foreach (self::traitMethods() as $name) {
+            self::assertSame(
+                $traitFile,
+                (new \ReflectionMethod($controller, $name))->getFileName(),
+                "$controller must not redefine the trait method $name()"
             );
         }
     }
 
     /**
-     * @return iterable<string, array{string}>
+     * The parent controllers must not define the trait's methods either: the trait would silently replace them.
+     *
+     * @dataProvider parentControllers
+     * @param class-string $controller
      */
-    public static function classesInTheTraitHierarchy(): iterable
+    public function testTraitMethodsAreNotDefinedByTheParentControllers(string $controller): void
     {
-        yield from self::usingControllers();
-        yield 'PaperDefaultController' => [APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php'];
-        yield 'DefaultController' => [APPLICATION_PATH . '/modules/common/controllers/DefaultController.php'];
+        foreach (self::traitMethods() as $name) {
+            self::assertFalse(method_exists($controller, $name), "$controller must not define the trait method $name()");
+        }
+    }
+
+    /**
+     * @return iterable<string, array{class-string}>
+     */
+    public static function parentControllers(): iterable
+    {
+        yield 'PaperDefaultController' => [self::loadController('common', 'PaperDefaultController')];
+        yield 'DefaultController' => [self::loadController('common', 'DefaultController')];
+    }
+
+    /**
+     * Methods implemented by the trait (the abstract ones are the ones the controllers must provide).
+     *
+     * @return list<string>
+     */
+    private static function traitMethods(): array
+    {
+        $methods = (new \ReflectionClass(Episciences_Paper_AccessControlControllerTrait::class))->getMethods();
+        $names = array_values(array_map(
+            static fn(\ReflectionMethod $method): string => $method->getName(),
+            array_filter($methods, static fn(\ReflectionMethod $method): bool => !$method->isAbstract())
+        ));
+        self::assertNotEmpty($names);
+
+        return $names;
+    }
+
+    /**
+     * @return class-string
+     */
+    private static function loadController(string $module, string $class): string
+    {
+        require_once APPLICATION_PATH . '/modules/' . $module . '/controllers/' . $class . '.php';
+
+        return $class;
     }
 }

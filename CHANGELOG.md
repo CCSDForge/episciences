@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - The repository checks of the submission page and the linked data form answer with an empty response instead of a server error when they are requested directly.
+- The journal robots.txt outside production and the portal robots.txt close the whole site with a valid `Disallow: /` rule, and are served with a valid `Content-Type` header.
 - Paper titles, versions, volume and section names containing special characters are displayed as they are in the reviewer ratings list, the author paper list, the editor paper lists, the reviewer invitation page and the invitation mail.
 - The site settings (languages, style, header, pages, public resources and news) check the role of the user on each page and dialog; refused accesses are recorded in the security log.
 - A section that still has papers can no longer be deleted: the delete button lists the papers to move first.
@@ -114,6 +115,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - a paper that is ready to publish or approved by its author is no longer replaced from the submission form (this added a second active version and removed the files of the stored one): the message tells that the publication process is in progress;
   - the files of the replaced paper are only removed when the paper is replaced in place, so a refused paper submitted again keeps its files;
   - submitting a refused paper again only renames ("-REFUSED" suffix) the versions of that paper in its journal, never another paper sharing its identifier.
+- Review report attachments: with the conflict of interest check enabled, a reviewer could no longer download the attachments of their own report.
+
+### Security
+- Review report attachments: checks hardened.
+
+### Security
+- Volume and section pages: checks hardened.
+
+### Security
+- Paper volume assignment: checks hardened.
 
 ### Changed
 - OpenCitations client migrated to API v2 (DOI sent with its `doi:` scheme, throttling and retry on HTTP 429).

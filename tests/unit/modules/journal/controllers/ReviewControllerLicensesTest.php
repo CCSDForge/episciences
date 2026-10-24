@@ -4,57 +4,94 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
-use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
+use Episciences\Paper\Spdx\LicenseManager;
+use Episciences_Acl;
+use Episciences_Review;
+use Episciences_Review_DoiSettings;
+use Episciences_ReviewsManager;
 use ReviewController;
+use unit\modules\ControllerTestCase;
+use Zend_Controller_Action_Helper_FlashMessenger;
 
 /**
  * ReviewController::licensesAction (journal licenses page).
- *
- * Strategy: source-code pattern analysis — no database or HTTP dispatch needed.
  */
-final class ReviewControllerLicensesTest extends TestCase
+final class ReviewControllerLicensesTest extends ControllerTestCase
 {
-    private static function licensesActionSource(): string
+    private const DOI_PREFIX = '10.12345';
+    private const LICENSE = 'CC-BY-4.0';
+    private const OTHER_LICENSE = 'CC0-1.0';
+
+    public static function setUpBeforeClass(): void
     {
-        require_once APPLICATION_PATH . '/modules/journal/controllers/ReviewController.php';
+        self::loadController('journal', 'ReviewController');
+    }
 
-        $method = new ReflectionMethod(ReviewController::class, 'licensesAction');
-        $lines = file($method->getFileName());
+    protected function setUp(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_CHIEF_EDITOR]);
+        // the form caches the recommended licenses read from the fake database
+        LicenseManager::clearCache();
+        (new Zend_Controller_Action_Helper_FlashMessenger())->setNamespace('warning')->clearCurrentMessages();
+    }
 
-        return implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+    protected function tearDown(): void
+    {
+        LicenseManager::clearCache();
+        (new Zend_Controller_Action_Helper_FlashMessenger())->setNamespace('warning')->clearCurrentMessages();
+    }
+
+    public function testUnknownJournalIsNotFound(): void
+    {
+        $result = $this->dispatch(ReviewController::class, 'licenses', $this->getRequest());
+
+        self::assertSame(404, $result->statusCode());
     }
 
     /**
-     * Bug: setOptions() always replaces the DOI settings of the review — the instance cached
-     * by Episciences_ReviewsManager — with settings built from the license keys only (empty).
+     * The journal is the instance cached by Episciences_ReviewsManager: the posted licenses are applied
+     * to it, and its other settings, such as the DOI ones, are kept.
      */
-    public function testLicensesActionDoesNotUseSetOptions(): void
+    public function testPostedLicensesAreAppliedAndTheDoiSettingsAreKept(): void
     {
-        $source = self::licensesActionSource();
+        $this->givenJournal([
+            Episciences_Review_DoiSettings::SETTING_DOI_PREFIX => self::DOI_PREFIX,
+            Episciences_Review::SETTING_LICENSE_DEFAULT => self::LICENSE,
+            Episciences_Review::SETTING_LICENSES_ALLOWED => json_encode([self::LICENSE, self::OTHER_LICENSE]),
+        ]);
+        $request = $this->postRequest([
+            'submit' => 'submit',
+            Episciences_Review::SETTING_LICENSE_DEFAULT => self::OTHER_LICENSE,
+            Episciences_Review::SETTING_LICENSES_ALLOWED => [self::OTHER_LICENSE],
+        ]);
 
-        self::assertStringNotContainsString(
-            '->setOptions(',
-            $source,
-            'BUG: setOptions() resets the DOI settings of the cached review; use setSetting()'
-        );
-        self::assertStringContainsString('setSetting(Episciences_Review::SETTING_LICENSE_DEFAULT', $source);
-        self::assertStringContainsString('Episciences_Review::SETTING_LICENSES_ALLOWED,', $source);
+        $this->dispatch(ReviewController::class, 'licenses', $request);
+
+        $flash = new Zend_Controller_Action_Helper_FlashMessenger();
+        self::assertSame([], $flash->setNamespace('warning')->getCurrentMessages(), 'the form is valid');
+        $journal = Episciences_ReviewsManager::find(RVID);
+        self::assertInstanceOf(Episciences_Review::class, $journal);
+        self::assertSame(self::DOI_PREFIX, $journal->getDoiSettings()->getDoiPrefix());
+        self::assertSame(self::OTHER_LICENSE, $journal->getDefaultLicense());
+        self::assertSame([self::OTHER_LICENSE], $journal->getAllowedLicenses());
     }
 
-    /**
-     * Episciences_ReviewsManager::find() may return false: it must be checked before loadSettings().
-     */
-    public function testLicensesActionChecksReviewBeforeLoadingSettings(): void
+    public function testAnEmptySelectionIsStoredAsNoRestriction(): void
     {
-        $source = self::licensesActionSource();
+        $this->givenJournal([
+            Episciences_Review::SETTING_LICENSE_DEFAULT => self::LICENSE,
+            Episciences_Review::SETTING_LICENSES_ALLOWED => json_encode([self::LICENSE, self::OTHER_LICENSE]),
+        ]);
+        $request = $this->postRequest([
+            'submit' => 'submit',
+            Episciences_Review::SETTING_LICENSE_DEFAULT => self::OTHER_LICENSE,
+        ]);
 
-        $guardPos = strpos($source, '!$review instanceof Episciences_Review');
-        $loadPos = strpos($source, '$review->loadSettings()');
+        $this->dispatch(ReviewController::class, 'licenses', $request);
 
-        self::assertNotFalse($guardPos, 'missing review guard in licensesAction');
-        self::assertNotFalse($loadPos, 'loadSettings() call not found in licensesAction');
-        self::assertLessThan($loadPos, $guardPos, 'the review must be checked before loadSettings()');
-        self::assertStringContainsString('setHttpResponseCode(404)', $source);
+        $journal = Episciences_ReviewsManager::find(RVID);
+        self::assertInstanceOf(Episciences_Review::class, $journal);
+        self::assertSame(self::OTHER_LICENSE, $journal->getDefaultLicense());
+        self::assertSame([], $journal->getAllowedLicenses());
     }
 }

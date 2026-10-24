@@ -340,7 +340,7 @@ class SectionController extends Zend_Controller_Action
         }
 
         if (!$errorMessage) {
-            $section = Episciences_SectionsManager::find($sid);
+            $section = Episciences_SectionsManager::find($sid, RVID);
             if (!$section) {
                 $errorMessage = "Cette rubrique n'existe pas.";
             } else {

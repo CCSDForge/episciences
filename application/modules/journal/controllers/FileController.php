@@ -414,15 +414,10 @@ class FileController extends DefaultController
         // which handles the "switch user" (su) case via getOriginalIdentity().
         $uid = Episciences_Auth::isLogged() ? Episciences_Auth::getUid() : null;
 
-        // Check if user has declared a conflict of interest for this paper.
-        // An unresolved response ('later') counts as a conflict too, and root/
-        // admin-only users are exempt, consistent with isConflictDetected().
-        $isCoiEnabled = (bool)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
-        $hasConflict = false;
-        if ($isCoiEnabled && $uid !== null && !Episciences_Auth::isRoot() && !Episciences_Auth::hasOnlyAdministratorRole()) {
-            $conflictResponses = [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']];
-            $hasConflict = in_array($paper->checkConflictResponse($uid), $conflictResponses, true);
-        }
+        // Same conflict of interest check as the other paper pages, including the
+        // answer of the original user when signed in as another one (su).
+        // A visitor is not logged in: no role grants them access anyway.
+        $hasConflict = $uid !== null && static::isConflictDetected($paper, $review);
 
         $isAllowed = Episciences_Rating_Report_Access::mayDownloadAttachment(
             paper: $paper,

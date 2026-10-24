@@ -219,4 +219,61 @@ final class JournalScopeGuardTest extends ControllerTestCase
         self::assertSame([], $this->db->queries());
         self::assertSame([], $this->db->updates());
     }
+
+    // ------------------------------------------------------------------
+    // Controllers: the page of an item of another journal is not shown
+    // ------------------------------------------------------------------
+
+    /**
+     * @return array<string, array{class-string<\Zend_Controller_Action>, string, string}>
+     */
+    public static function viewActionsProvider(): array
+    {
+        return [
+            'volume' => [\VolumeController::class, T_VOLUMES, '/browse/volumes'],
+            'section' => [\SectionController::class, T_SECTIONS, '/browse/section'],
+        ];
+    }
+
+    /**
+     * Item 7 belongs to another journal: it is only found by a lookup that is not restricted to
+     * the current one.
+     */
+    private function givenItemOfAnotherJournal(string $table): void
+    {
+        $this->db->respondTo(
+            '/FROM `' . $table . '` WHERE \((VID|SID) = \'?7\'?\)/',
+            static fn(string $sql): array => preg_match('/\bRVID = ' . RVID . '\b/', $sql)
+                ? []
+                : [['VID' => 7, 'SID' => 7, 'RVID' => RVID + 1, 'POSITION' => 1]]
+        );
+    }
+
+    /**
+     * @param class-string<\Zend_Controller_Action> $class
+     * @dataProvider viewActionsProvider
+     */
+    public function testJsonViewOfAnItemOfAnotherJournalIsEmpty(string $class, string $table, string $listUrl): void
+    {
+        $this->givenItemOfAnotherJournal($table);
+        $request = $this->getRequest([], ['id' => '7']);
+        $request->setHeader('Accept', 'application/json');
+
+        $result = $this->dispatch($class, 'view', $request);
+
+        self::assertSame('[]', $result->body());
+    }
+
+    /**
+     * @param class-string<\Zend_Controller_Action> $class
+     * @dataProvider viewActionsProvider
+     */
+    public function testPageOfAnItemOfAnotherJournalRedirectsToTheList(string $class, string $table, string $listUrl): void
+    {
+        $this->givenItemOfAnotherJournal($table);
+
+        $result = $this->dispatch($class, 'view', $this->getRequest([], ['id' => '7']));
+
+        self::assertSame($listUrl, $result->redirectUrl());
+    }
 }

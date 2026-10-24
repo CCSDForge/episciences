@@ -10,7 +10,9 @@ use Psr\Log\LogLevel;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
+use Episciences\Mail\RecipientSuggestions;
 use Episciences\Paper\ManagementRefusal;
+use Episciences\Paper\RevisionRequests;
 use Episciences\Paper\RepositoryVersionsService;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
@@ -798,56 +800,19 @@ class AdministratepaperController extends PaperDefaultController
 
 
         // get revision requests ******************************************************
-        // fetch revision requests
-        $settings = [
-            'types' => [
-                Episciences_CommentsManager::TYPE_REVISION_REQUEST,
-                Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT,
-                Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION,
-                Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION,
-                Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT
-            ]
-        ];
-
-        $demands = Episciences_CommentsManager::getRevisionRequests($paper->getDocid(), $settings);
+        $demands = Episciences_CommentsManager::getRevisionRequests($paper->getDocid(), RevisionRequests::commentSettings());
 
         // fetch previous version revision requests
         // TODO: optimize this (don't need to get the full paper object)
         $previousVersions = $paper->getPreviousVersions();
         if ($previousVersions) {
-            $previousComments = [];
-            /** @var Episciences_Paper $version */
-            foreach ($previousVersions as $version) {
-                $vComments = $version->getComments($settings);
-                // ne pas afficher le bloc demande de modification si aucune demande de modification n'a été demandés suite au copy editing
-                if ($vComments) {
-                    $previousComments[$version->getDocid()] = $version->getComments($settings);
-                }
-            }
             $this->view->previousVersions = $previousVersions;
-            $this->view->previousVersionsDemands = $previousComments;
+            $this->view->previousVersionsDemands = RevisionRequests::ofPreviousVersions($previousVersions);
         }
 
-        // check if last revision request has been answered
-        $currentDemand = null;
-        $revisionDeadline = null;
-
-        if (!empty($demands)) {
-
-            $currentDemand = array_shift($demands);
-
-            if (
-                !array_key_exists('replies', $currentDemand) ||
-                (
-                    isset($currentDemand['replies']) &&
-                    (int)$currentDemand['replies'][array_key_first($currentDemand['replies'])]['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT)
-            ) {
-                $revisionDeadline = $currentDemand['DEADLINE'];
-            }
-
-        }
-
-        $paper->_revisionDeadline = $revisionDeadline;
+        // latest revision request, and its deadline while it is not answered
+        $currentDemand = array_shift($demands);
+        $paper->_revisionDeadline = $currentDemand === null ? null : RevisionRequests::pendingDeadline($currentDemand);
 
         $this->view->demands = $demands;
         $this->view->currentDemand = $currentDemand;
@@ -961,7 +926,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->js_contributor = Zend_Json::encode($contributor->toArray());
         $this->view->js_sender = Zend_Json::encode(['fullname' => Episciences_Auth::getFullName(), 'screen_name' => Episciences_Auth::getScreenName(), 'email' => Episciences_Auth::getEmail()]);
         // Recipients autocomplete in paper status modals
-        $this->view->js_users = Zend_Json::encode(array_values($this->compileMailUsers($review)));
+        $this->view->js_users = Zend_Json::encode(array_values(RecipientSuggestions::fromUsers($review::getUsers())));
         $this->view->available_languages = Zend_Json::encode(Episciences_Tools::getLanguages());
 
         $this->view->paper = $paper;
@@ -1059,33 +1024,6 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->editorReplyForms = $editorReplyForms;
         $this->view->editorToAuthorForm = $editorToAuthorForm;
         $this->view->authorToEditorComments = $authorToEditorComments;
-    }
-
-    /**
-     * Build the "users" array used by recipients autocomplete (Cc/Bcc).
-     * Shape is aligned with AdministratemailController::compileUsers().
-     */
-    private function compileMailUsers(Episciences_Review $review): array
-    {
-        $compiledUsers = [];
-        $users = $review::getUsers();
-
-        if ($users) {
-            foreach ($users as $user) {
-                $cUser = [];
-                $cUser['uid'] = $user->getUid();
-                $cUser['fullname'] = $user->getFullName();
-                $cUser['username'] = $user->getUsername();
-                $cUser['mail'] = $user->getEmail();
-                $cUser['label'] = $user->getFullName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>';
-                $cUser['htmlLabel'] = '<span class="ep-ac-name">' . htmlspecialchars((string) $user->getFullName(), ENT_QUOTES, 'UTF-8') . ' <span class="darkgrey">(' . htmlspecialchars(mb_strtolower((string) $user->getUsername()), ENT_QUOTES, 'UTF-8') . ')</span></span>'
-                    . '<span class="ep-ac-email">' . htmlspecialchars((string) $user->getEmail(), ENT_QUOTES, 'UTF-8') . '</span>';
-
-                $compiledUsers[$user->getUid()] = $cUser;
-            }
-        }
-
-        return $compiledUsers;
     }
 
     /**
@@ -2687,68 +2625,74 @@ class AdministratepaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $docId = (int)($request->getPost('docid')) ?: $request->getParam('docid');
 
-        $paper = Episciences_PapersManager::get($docId, false);
-
-        if (!$paper) {
+        // Check the request and its token before loading anything
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
             echo false;
             return;
         }
 
-        if ($request->isPost()) {
+        $docId = (int)$request->getPost('docid');
+        // loaded with its metadata (not findPaper()): save() rebuilds the stored JSON document from them
+        $paper = $docId > 0 ? Episciences_PapersManager::get($docId) : false;
 
-            $oldVid = $paper->getVid();
-            $vid = (int)$request->getPost('vid');
-
-            // the target volume must belong to the current journal (0 = no volume)
-            if ($vid > 0 && !Episciences_VolumesManager::find($vid, RVID)) {
-                echo false;
-                return;
-            }
-
-            if ($vid !== $oldVid) {
-
-                if (
-                    $oldVid &&
-                    !$paper->deletePosition() //deletion of the old position
-                ) {
-                    $logMsg = 'Moving a paper (docId = . ' . $docId . ') from (vid = ' . $oldVid . ') ' . 'to (vid = ' . $vid . '): failed to delete position in old volume';
-                    $logMsg .= ' or the paper has not been positioned';
-                    trigger_error($logMsg);
-                }
-
-                $paper->setVid($vid); // new volume
-                $paper->save();
-                $paper->log(
-                    Episciences_Paper_Logger::CODE_VOLUME_SELECTION,
-                    Episciences_Auth::getUid(),
-                    ['vid' => $vid]
-                );
-
-                // deleting the volume from T_VOLUME_PAPER
-                Episciences_Volume_PapersManager::deletePaperVolume($docId, $vid);
-
-                if ($paper->isPublished()) {
-                    try {
-                        SolrIndexing::enqueueIndex($paper->getDocid());
-                    } catch (Exception $e) {
-                        trigger_error($e->getMessage());
-                    }
-                }
-
-                if (defined('RVCODE') && RVCODE !== '') {
-                    $tagsToInvalidate = ["volume-{$vid}", 'volumes-' . RVCODE];
-                    if ($oldVid > 0) {
-                        $tagsToInvalidate[] = "volume-{$oldVid}";
-                    }
-                    \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
-                }
-
-            }
-
-            echo true;
+        if (!$paper || $this->findManagementRefusal($this->findReview(), $paper) !== null) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo false;
+            return;
         }
+
+        $oldVid = $paper->getVid();
+        $vid = (int)$request->getPost('vid');
+
+        // the target volume must belong to the current journal (0 = no volume)
+        if ($vid > 0 && !Episciences_VolumesManager::find($vid, RVID)) {
+            echo false;
+            return;
+        }
+
+        if ($vid !== $oldVid) {
+
+            if (
+                $oldVid &&
+                !$paper->deletePosition() //deletion of the old position
+            ) {
+                $logMsg = 'Moving a paper (docId = . ' . $docId . ') from (vid = ' . $oldVid . ') ' . 'to (vid = ' . $vid . '): failed to delete position in old volume';
+                $logMsg .= ' or the paper has not been positioned';
+                trigger_error($logMsg);
+            }
+
+            $paper->setVid($vid); // new volume
+            $paper->save();
+            $paper->log(
+                Episciences_Paper_Logger::CODE_VOLUME_SELECTION,
+                Episciences_Auth::getUid(),
+                ['vid' => $vid]
+            );
+
+            // deleting the volume from T_VOLUME_PAPER
+            Episciences_Volume_PapersManager::deletePaperVolume($docId, $vid);
+
+            if ($paper->isPublished()) {
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
+
+            if (defined('RVCODE') && RVCODE !== '') {
+                $tagsToInvalidate = ["volume-{$vid}", 'volumes-' . RVCODE];
+                if ($oldVid > 0) {
+                    $tagsToInvalidate[] = "volume-{$oldVid}";
+                }
+                \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
+            }
+
+        }
+
+        echo true;
     }
 
     /**
@@ -2764,59 +2708,70 @@ class AdministratepaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        if ($request->isPost()) {
-
-            $errors = [];
-            $docid = $request->getPost('docid');
-            $paper = Episciences_PapersManager::get($docid);
-
-            // process form and retrieve volume ids (submitted as vids[]=1&vids[]=3 by Tom Select)
-            $rawVids = $request->getPost('vids', []);
-            if (!is_array($rawVids)) {
-                $rawVids = [];
-            }
-            $paper_volumes = [];
-            foreach ($rawVids as $rawVid) {
-                $vid = (int) filter_var($rawVid, FILTER_SANITIZE_NUMBER_INT);
-                // skip invalid and primary volume (can't be its own secondary volume)
-                if ($vid <= 0 || $vid === (int) $paper->getVid()) {
-                    continue;
-                }
-                // ignore volumes of other journals
-                if (!Episciences_VolumesManager::find($vid, RVID)) {
-                    continue;
-                }
-                $paper_volumes[] = new Episciences_Volume_Paper(['vid' => $vid, 'docid' => $docid]);
-            }
-
-            $paper->setOtherVolumes($paper_volumes);
-            $paper->saveOtherVolumes();
-            // VOLUME_PAPER is a satellite table: refresh PAPERS.DOCUMENT so API consumers,
-            // which read the stored JSON, do not keep serving stale secondary volumes.
-            if (!Episciences_PapersManager::updateJsonDocumentData((int)$docid)) {
-                $errors[] = 'PAPERS.DOCUMENT refresh failed';
-            }
-            $oOVolumes = $paper->getOtherVolumes(true);
-            $oVolumes = [];
-
-            /** @var Episciences_Volume_Paper $oOVolume */
-
-            foreach ($oOVolumes as $oOVolume) {
-                $oVolumes [] = $oOVolume->toArray();
-            }
-
-            $paper->log(Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION, Episciences_Auth::getUid(), ['vids' => $oVolumes]);
-
-            if ($paper->isPublished()) {
-                try {
-                    SolrIndexing::enqueueIndex($paper->getDocid());
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage());
-                }
-            }
-
-            echo empty($errors);
+        // Check the request and its token before loading anything
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo false;
+            return;
         }
+
+        $docid = (int)$request->getPost('docid');
+        $paper = $docid > 0 ? Episciences_PapersManager::get($docid) : false;
+
+        if (!$paper || $this->findManagementRefusal($this->findReview(), $paper) !== null) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo false;
+            return;
+        }
+
+        $errors = [];
+
+        // process form and retrieve volume ids (submitted as vids[]=1&vids[]=3 by Tom Select)
+        $rawVids = $request->getPost('vids', []);
+        if (!is_array($rawVids)) {
+            $rawVids = [];
+        }
+        $paper_volumes = [];
+        foreach ($rawVids as $rawVid) {
+            $vid = (int) filter_var($rawVid, FILTER_SANITIZE_NUMBER_INT);
+            // skip invalid and primary volume (can't be its own secondary volume)
+            if ($vid <= 0 || $vid === (int) $paper->getVid()) {
+                continue;
+            }
+            // ignore volumes of other journals
+            if (!Episciences_VolumesManager::find($vid, RVID)) {
+                continue;
+            }
+            $paper_volumes[] = new Episciences_Volume_Paper(['vid' => $vid, 'docid' => $docid]);
+        }
+
+        $paper->setOtherVolumes($paper_volumes);
+        $paper->saveOtherVolumes();
+        // VOLUME_PAPER is a satellite table: refresh PAPERS.DOCUMENT so API consumers,
+        // which read the stored JSON, do not keep serving stale secondary volumes.
+        if (!Episciences_PapersManager::updateJsonDocumentData($docid)) {
+            $errors[] = 'PAPERS.DOCUMENT refresh failed';
+        }
+        $oOVolumes = $paper->getOtherVolumes(true);
+        $oVolumes = [];
+
+        /** @var Episciences_Volume_Paper $oOVolume */
+
+        foreach ($oOVolumes as $oOVolume) {
+            $oVolumes [] = $oOVolume->toArray();
+        }
+
+        $paper->log(Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION, Episciences_Auth::getUid(), ['vids' => $oVolumes]);
+
+        if ($paper->isPublished()) {
+            try {
+                SolrIndexing::enqueueIndex($paper->getDocid());
+            } catch (Exception $e) {
+                trigger_error($e->getMessage());
+            }
+        }
+
+        echo empty($errors);
     }
 
     /**

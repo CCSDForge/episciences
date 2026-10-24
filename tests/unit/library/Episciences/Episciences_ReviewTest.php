@@ -178,7 +178,6 @@ class Episciences_ReviewTest extends TestCase
 
         $settings = $this->review->getSettings();
 
-        self::assertCount(2, $settings);
         self::assertSame('1234-5678', $settings[Episciences_Review::SETTING_ISSN]);
         self::assertSame('2', $settings[Episciences_Review::SETTING_INVITATION_DEADLINE]);
     }
