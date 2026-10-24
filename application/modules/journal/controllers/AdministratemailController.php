@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Mail\RecipientSuggestions;
 use Episciences\Security\AccessLog;
 
 class AdministratemailController extends Zend_Controller_Action
@@ -415,7 +416,7 @@ class AdministratemailController extends Zend_Controller_Action
 
         }
 
-        $this->view->js_users = Zend_Json::encode(array_values($this->compileUsers()));
+        $this->view->js_users = Zend_Json::encode(array_values(RecipientSuggestions::fromUsers(Episciences_Review::getUsers())));
 
         $this->view->form = $form;
         $this->view->ajax = $ajax;
@@ -950,36 +951,6 @@ class AdministratemailController extends Zend_Controller_Action
 
             'isDetectedErrors' => $strict ? empty($to) : (empty($to) && empty($cc) && empty($bcc))
         ];
-
-    }
-
-    /**
-     * @return array
-     * @throws Zend_Db_Statement_Exception
-     */
-
-    private function compileUsers(): array
-    {
-        $compiledUsers = [];
-
-        $review = Episciences_ReviewsManager::find(RVID);
-        $users = $review::getUsers();
-
-        if ($users) {
-            foreach ($users as $user) {
-                $cUser['uid'] = $user->getUid();
-                $cUser['fullname'] = $user->getFullName();
-                $cUser['username'] = $user->getUsername();
-                $cUser['mail'] = $user->getEmail();
-                $cUser['label'] = $user->getFullName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>';
-                $cUser['htmlLabel'] = '<div>' . htmlspecialchars((string)$user->getFullName(), ENT_QUOTES, 'UTF-8') . ' <span class="darkgrey">' . '(' . htmlspecialchars(mb_strtolower((string)$user->getUsername()), ENT_QUOTES, 'UTF-8') . ')' . '</span>' . '</div>'
-                    . '<div class="grey">' . htmlspecialchars((string)$user->getEmail(), ENT_QUOTES, 'UTF-8') . '</div>';
-
-                $compiledUsers[$user->getUid()] = $cUser;
-            }
-        }
-
-        return $compiledUsers;
 
     }
 
