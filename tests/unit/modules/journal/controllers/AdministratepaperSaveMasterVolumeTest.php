@@ -12,14 +12,18 @@ use Episciences\Solr\Indexing\Enqueue\SolrIndexQueuePort;
 use Episciences\Solr\Indexing\Messenger\Message\IndexPaperMessage;
 use Episciences_Acl;
 use Episciences_Paper;
+use Episciences_Paper_Conflict;
+use Episciences_Review;
 use unit\library\Episciences\Messenger\Enqueue\RestoresStaticQueuePort;
 use unit\library\Episciences\Messenger\Enqueue\SpyEnqueueFailureStore;
 use unit\library\Episciences\Messenger\Enqueue\SpyMessageBus;
 use unit\modules\ControllerTestCase;
+use unit\modules\support\DispatchResult;
 use Zend_Controller_Request_HttpTestCase;
 
 /**
- * Moving a paper to another master volume (savemastervolume).
+ * Moving a paper to another master volume (savemastervolume): request token, paper the user may
+ * manage, volume of the current journal.
  *
  * The action runs for real on programmed rows; the Solr and Next.js queues are spies.
  */
@@ -35,6 +39,8 @@ final class AdministratepaperSaveMasterVolumeTest extends ControllerTestCase
 
     private mixed $previousRevalidationPort;
 
+    private string $conflictAnswer = Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'];
+
     protected function setUp(): void
     {
         self::loadController('journal', 'AdministratepaperController');
@@ -45,7 +51,16 @@ final class AdministratepaperSaveMasterVolumeTest extends ControllerTestCase
         SolrIndexing::setPort(new SolrIndexQueuePort(new BoundedRetryDispatcher($this->solrQueue, new SpyEnqueueFailureStore())));
         RevalidationService::setPort(new NextRevalidationQueuePort(new BoundedRetryDispatcher(new SpyMessageBus(), new SpyEnqueueFailureStore())));
 
-        $this->givenJournal();
+        // the conflict of interest check is on: the logged user answered it ($conflictAnswer)
+        $this->givenJournal([Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '1']);
+        $this->db->respondTo('/FROM `paper_conflicts`/', fn(): array => [[
+            'cid' => 1,
+            'paper_id' => self::DOCID,
+            'by' => self::UID,
+            'answer' => $this->conflictAnswer,
+            'date' => '2026-01-01 00:00:00',
+            'SCREEN_NAME' => 'user',
+        ]]);
         $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
     }
 
@@ -55,7 +70,7 @@ final class AdministratepaperSaveMasterVolumeTest extends ControllerTestCase
         self::writeStaticQueuePort(RevalidationService::class, $this->previousRevalidationPort);
     }
 
-    private function givenPaper(int $status, int $vid = self::CURRENT_VID): void
+    private function givenPaper(int $status, int $vid = self::CURRENT_VID, int $uid = 99): void
     {
         $this->db->respondTo('/FROM `PAPERS`/', [[
             'DOCID' => self::DOCID,
@@ -63,7 +78,7 @@ final class AdministratepaperSaveMasterVolumeTest extends ControllerTestCase
             'RVID' => RVID,
             'VID' => $vid,
             'SID' => 0,
-            'UID' => 99,
+            'UID' => $uid,
             'STATUS' => $status,
             'VERSION' => 1,
             'IDENTIFIER' => '1234',
@@ -83,9 +98,22 @@ final class AdministratepaperSaveMasterVolumeTest extends ControllerTestCase
 
     private function move(?Zend_Controller_Request_HttpTestCase $request = null): string
     {
+        return $this->dispatchMove($request)->output;
+    }
+
+    private function dispatchMove(?Zend_Controller_Request_HttpTestCase $request = null): DispatchResult
+    {
         $request ??= $this->postRequest(['docid' => (string)self::DOCID, 'vid' => (string)self::TARGET_VID], true);
 
-        return $this->dispatch(\AdministratepaperController::class, 'savemastervolume', $request)->output;
+        return $this->dispatch(\AdministratepaperController::class, 'savemastervolume', $request);
+    }
+
+    private function assertNothingWritten(): void
+    {
+        self::assertSame([], $this->db->inserts());
+        self::assertSame([], $this->db->updates());
+        self::assertSame([], $this->db->deletes());
+        self::assertSame([], $this->reindexedPapers());
     }
 
     /**
@@ -167,5 +195,54 @@ final class AdministratepaperSaveMasterVolumeTest extends ControllerTestCase
         self::assertSame([], $this->db->updates());
         self::assertSame([], $this->db->deletes());
         self::assertSame([], $this->reindexedPapers());
+    }
+
+    public function testPostWithoutTokenIsRefusedBeforeLoadingThePaper(): void
+    {
+        $this->givenPaper(Episciences_Paper::STATUS_PUBLISHED);
+        $this->givenTargetVolumeInTheJournal();
+
+        $result = $this->dispatchMove($this->postRequest(['docid' => (string)self::DOCID, 'vid' => (string)self::TARGET_VID]));
+
+        self::assertSame('', $result->output);
+        self::assertSame(403, $result->statusCode());
+        self::assertSame([], $this->db->queries());
+        $this->assertNothingWritten();
+    }
+
+    public function testUnknownPaperIsRefused(): void
+    {
+        $this->givenTargetVolumeInTheJournal();
+
+        $result = $this->dispatchMove();
+
+        self::assertSame('', $result->output);
+        self::assertSame(403, $result->statusCode());
+        $this->assertNothingWritten();
+    }
+
+    public function testOwnSubmissionIsRefused(): void
+    {
+        $this->givenPaper(Episciences_Paper::STATUS_PUBLISHED, self::CURRENT_VID, self::UID);
+        $this->givenTargetVolumeInTheJournal();
+
+        $result = $this->dispatchMove();
+
+        self::assertSame('', $result->output);
+        self::assertSame(403, $result->statusCode());
+        $this->assertNothingWritten();
+    }
+
+    public function testPaperWithADeclaredConflictIsRefused(): void
+    {
+        $this->givenPaper(Episciences_Paper::STATUS_PUBLISHED);
+        $this->givenTargetVolumeInTheJournal();
+        $this->conflictAnswer = Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
+
+        $result = $this->dispatchMove();
+
+        self::assertSame('', $result->output);
+        self::assertSame(403, $result->statusCode());
+        $this->assertNothingWritten();
     }
 }
