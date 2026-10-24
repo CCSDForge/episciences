@@ -111,34 +111,94 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
     }
 
     /**
-     * Method names of a controller, lowercase. Cached by application version and controller file, so that
-     * the unknown pages requested by crawlers do not load the controller and its includes on every request.
+     * Action method names of a controller, lowercase (see readActions()). Cached by controller file, so that
+     * the unknown pages requested by crawlers do not load the controller and its includes on every request;
+     * the entry is rebuilt when one of the files of the class hierarchy has changed.
      *
      * @return list<string>
      */
     private function controllerActions(Zend_Controller_Dispatcher_Standard $dispatcher, string $controllerClass): array
     {
         $file = $dispatcher->getDispatchDirectory() . DIRECTORY_SEPARATOR . $dispatcher->classToFilename($controllerClass);
-        $version = (defined('APPLICATION_VERSION') ? APPLICATION_VERSION : '') . '|' . (@filemtime($file) ?: '');
-        // Every visibility, as method_exists() would
-        $load = static fn(): array => array_map(
-            static fn(ReflectionMethod $method): string => strtolower($method->getName()),
-            (new ReflectionClass($dispatcher->loadClass($controllerClass)))->getMethods()
-        );
 
         $cache = $this->actionsCache();
-        if ($cache === null) {
-            return $load();
+        $item = $cache?->getItem(hash('sha256', $file));
+        $entry = $item?->isHit() ? $item->get() : null;
+        if (is_array($entry) && is_array($entry['actions'] ?? null) && self::filesUnchanged($entry['files'] ?? null)) {
+            return $entry['actions'];
         }
 
-        $item = $cache->getItem(hash('sha256', $file . '|' . $version));
-        $actions = $item->isHit() ? $item->get() : null;
-        if (!is_array($actions)) {
-            $actions = $load();
-            $cache->save($item->set($actions));
+        $entry = self::readActions($dispatcher, $dispatcher->loadClass($controllerClass));
+        if ($cache !== null && $item !== null) {
+            $cache->save($item->set($entry));
         }
 
-        return $actions;
+        return $entry['actions'];
+    }
+
+    /**
+     * The actions the dispatcher would run on this controller: methods visible from Zend_Controller_Action
+     * (public or protected, as get_class_methods() sees them in dispatch()), declared by the controller or
+     * by its shared parents. The actions inherited from another routed controller (CommentsController
+     * extends PaperController) are left out: they are only reachable under their own controller name.
+     *
+     * @return array{files: array<string, int|false>, actions: list<string>}
+     */
+    private static function readActions(Zend_Controller_Dispatcher_Standard $dispatcher, string $controllerClass): array
+    {
+        $files = [];
+        $declaringClasses = [];
+        $routedAncestorReached = false;
+
+        for ($class = new ReflectionClass($controllerClass); $class !== false; $class = $class->getParentClass()) {
+            $classFile = $class->getFileName();
+            if ($classFile !== false) {
+                $files[$classFile] = @filemtime($classFile);
+            }
+
+            $routedAncestorReached = $routedAncestorReached
+                || ($class->getName() !== $controllerClass && self::isRoutedController($dispatcher, $class->getName()));
+            if (!$routedAncestorReached) {
+                $declaringClasses[] = $class->getName();
+            }
+        }
+
+        $actions = [];
+        foreach ((new ReflectionClass($controllerClass))->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED) as $method) {
+            $name = strtolower($method->getName());
+            if (str_ends_with($name, 'action') && in_array($method->getDeclaringClass()->getName(), $declaringClasses, true)) {
+                $actions[] = $name;
+            }
+        }
+
+        return ['files' => $files, 'actions' => $actions];
+    }
+
+    /**
+     * A controller of the dispatched module, as opposed to a shared parent (DefaultController...)
+     */
+    private static function isRoutedController(Zend_Controller_Dispatcher_Standard $dispatcher, string $class): bool
+    {
+        return str_ends_with($class, 'Controller')
+            && is_file($dispatcher->getDispatchDirectory() . DIRECTORY_SEPARATOR . $dispatcher->classToFilename($class));
+    }
+
+    /**
+     * @param mixed $files modification times by file name, as stored by readActions()
+     */
+    private static function filesUnchanged(mixed $files): bool
+    {
+        if (!is_array($files) || $files === []) {
+            return false;
+        }
+
+        foreach ($files as $file => $mtime) {
+            if (@filemtime((string)$file) !== $mtime) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

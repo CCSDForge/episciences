@@ -396,6 +396,12 @@ class Episciences_Auth_PluginTest extends TestCase
             'existing action' => ['aclprobe', 'existing', true],
             'missing action' => ['aclprobe', 'missing', false],
             'missing controller' => ['nosuchcontroller', 'index', false],
+            'action of a shared parent' => ['aclprobe', 'shared', true],
+            'protected action' => ['aclprobe', 'protected', true],
+            'private action, not dispatched' => ['aclprobe', 'hidden', false],
+            'own action of a child controller' => ['aclprobechild', 'own', true],
+            'action inherited from a routed controller' => ['aclprobechild', 'existing', false],
+            'shared action inherited through a routed controller' => ['aclprobechild', 'shared', false],
         ];
     }
 
@@ -455,6 +461,48 @@ class Episciences_Auth_PluginTest extends TestCase
             $request->setActionName('missing');
             self::assertFalse($method->invoke($plugin, $request));
             self::assertCount(1, $cache->getValues());
+        } finally {
+            $front->setDispatcher($previousDispatcher);
+        }
+    }
+
+    /**
+     * A cached list is rebuilt once a file of the class hierarchy (a shared parent too) has changed.
+     */
+    public function testCachedActionsAreRebuiltWhenAFileOfTheHierarchyChanged(): void
+    {
+        $front = Zend_Controller_Front::getInstance();
+        $previousDispatcher = $front->getDispatcher();
+        $dispatcher = new Zend_Controller_Dispatcher_Standard();
+        $dispatcher->setControllerDirectory(__DIR__ . '/fixtures/controllers');
+        $front->setDispatcher($dispatcher);
+        $cache = new ArrayAdapter(0, false);
+        $plugin = new class($cache) extends Episciences_Auth_Plugin {
+            public function __construct(private readonly ArrayAdapter $cache)
+            {
+            }
+
+            protected function actionsCache(): ArrayAdapter
+            {
+                return $this->cache;
+            }
+        };
+        $method = new ReflectionMethod(Episciences_Auth_Plugin::class, 'actionExists');
+
+        try {
+            $request = new Zend_Controller_Request_Http();
+            $request->setControllerName('aclprobe')->setActionName('shared');
+            self::assertTrue($method->invoke($plugin, $request));
+
+            // Stale entry: the shared parent was modified since, and lost its action
+            $key = array_key_first($cache->getValues());
+            $item = $cache->getItem($key);
+            $entry = $item->get();
+            $entry['files'][(string)realpath(__DIR__ . '/fixtures/AclprobeDefaultController.php')] = 0;
+            $entry['actions'] = [];
+            $cache->save($item->set($entry));
+
+            self::assertTrue($method->invoke($plugin, $request));
         } finally {
             $front->setDispatcher($previousDispatcher);
         }
