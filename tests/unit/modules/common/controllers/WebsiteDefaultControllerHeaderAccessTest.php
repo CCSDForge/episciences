@@ -18,8 +18,9 @@ require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCap
 require_once __DIR__ . '/support/WebsiteControllerTestTrait.php';
 
 /**
- * Behavioural tests for the access checks of WebsiteDefaultController::headerAction():
- * the role required to open the page, and the CSRF token required to save it.
+ * Behavioural tests for the access checks of the header of the site in WebsiteDefaultController:
+ * the role required to open the page (headerAction) and its logo form (ajaxheaderAction), and
+ * the CSRF token required to save it.
  *
  * Only the refused requests are run: they stop before the header is loaded or saved,
  * so they need neither the database nor the journal directories.
@@ -72,6 +73,24 @@ final class WebsiteDefaultControllerHeaderAccessTest extends TestCase
         self::assertSame(403, $this->response->getHttpResponseCode());
         self::assertFalse($this->response->isRedirect());
         self::assertSame([], $this->errorMessages(), 'a refused user must not reach the form token check');
+        self::assertSame([[AccessLog::ACL_DENIED, 'role_check']], $this->loggedEvents());
+    }
+
+    /**
+     * The logo form loaded by the header page
+     */
+    #[DataProvider('rolesWithoutSiteRightsProvider')]
+    public function testUserWithoutSiteRightsCannotLoadTheLogoForm(?string $role): void
+    {
+        $this->logInAs($role);
+
+        $controller = new WebsiteDefaultController(new Zend_Controller_Request_HttpTestCase(), $this->response);
+        $controller->ajaxheaderAction();
+
+        self::assertSame(403, $this->response->getHttpResponseCode());
+        self::assertSame('', $this->response->getBody(), 'nothing may be rendered');
+        self::assertFalse($this->layout->isEnabled(), 'an AJAX answer has no layout');
+        self::assertNull($controller->view->form, 'the logo form must not be built');
         self::assertSame([[AccessLog::ACL_DENIED, 'role_check']], $this->loggedEvents());
     }
 
