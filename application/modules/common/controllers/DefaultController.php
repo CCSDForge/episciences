@@ -26,7 +26,7 @@ class DefaultController extends Zend_Controller_Action
 
     /**
      * Requesting the file of an unpublished version: see redirectFromUnpublishedVersion(). The move to the published
-     * version is permanent (301); when that version cannot be read, the PDF action of the target answers 404.
+     * version is permanent (301).
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
@@ -79,12 +79,20 @@ class DefaultController extends Zend_Controller_Action
     }
 
     /**
-     * The docid of the published version of a paper, 0 when none is published
+     * The docid of the published version of a paper, 0 when none is published or when it cannot be loaded:
+     * the request is then refused as for an unpublished paper rather than redirected to a broken page
+     * (a 301 would be cached by the browser)
      * @throws Zend_Db_Statement_Exception
      */
     protected function findPublishedDocId(int $paperId): int
     {
-        return Episciences_PapersManager::getPublishedPaperId($paperId);
+        $publishedDocId = Episciences_PapersManager::getPublishedPaperId($paperId);
+
+        if ($publishedDocId === 0 || !Episciences_PapersManager::get($publishedDocId, false)) {
+            return 0;
+        }
+
+        return $publishedDocId;
     }
 
     /**
@@ -479,7 +487,7 @@ class DefaultController extends Zend_Controller_Action
             return null;
         }
 
-        if (preg_match('/[\x00-\x1f]/', $relativePath)) {
+        if (SafeFileName::hasControlCharacter($relativePath)) {
             AccessLog::denied(AccessLog::UNSAFE_PATH, 'control_character', ['path' => $relativePath]);
             return null;
         }
@@ -528,15 +536,6 @@ class DefaultController extends Zend_Controller_Action
         }
 
         return false;
-    }
-
-    /**
-     * Whether a file name coming from the request tries to reach another directory: an empty name,
-     * or the "." left by an empty name and extension, is a broken request, not an attempt.
-     */
-    protected static function isUnsafeFileName(string $name): bool
-    {
-        return $name !== '' && $name !== '.' && !SafeFileName::isBare($name);
     }
 
     protected function getSession(): Zend_Session_Namespace

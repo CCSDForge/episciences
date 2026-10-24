@@ -46,8 +46,8 @@ class FileController extends DefaultController
         if (str_ends_with($filename, '-crypto')) {
             AccessLog::denied(AccessLog::UNSAFE_PATH, 'reserved_file_name');
         } elseif (
-            ($filename !== '' && !SafeFileName::isBare($filename . '.' . $extension)) ||
-            preg_match('/[\x00-\x1f]/', $filename . $extension)
+            SafeFileName::isUnsafe($filename . '.' . $extension) ||
+            SafeFileName::hasControlCharacter($filename . $extension)
         ) {
             AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name');
         }
@@ -67,7 +67,7 @@ class FileController extends DefaultController
         // Other sub-directories of the document (reports, ratings, tmp...) have their own access rules
         if (!in_array($folder, DocumentFilePolicy::FOLDERS, true)) {
             if ($folder !== '') {
-                AccessLog::denied(AccessLog::UNSAFE_PATH, 'unexpected_folder');
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'unexpected_folder', ['folder' => $folder]);
             }
             $this->getResponse()->setHttpResponseCode(404);
             return;
@@ -75,8 +75,14 @@ class FileController extends DefaultController
 
         $parentCommentId = $params['parentCommentId'] ?? null;
         $docId = (int)$params['docId'];
-        $filename = $params['filename'];
+        $filename = $params['filename'] ?? null;
         $extension = $params['extension'] ?? null;
+
+        // Missing name, or forged as an array (filename[]=...)
+        if (!is_string($filename) || ($extension !== null && !is_string($extension))) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
 
         $file = $filename;
 
@@ -88,7 +94,7 @@ class FileController extends DefaultController
         // Only copy-editing files are stored by comment: elsewhere the access check, made on the file name,
         // would not be about the file served.
         if (!SafeFileName::isBare($file)) {
-            if (self::isUnsafeFileName($file)) {
+            if (SafeFileName::isUnsafe($file)) {
                 AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $file]);
             }
             $this->getResponse()->setHttpResponseCode(404);
@@ -346,10 +352,19 @@ class FileController extends DefaultController
         $params = $this->getRequest()->getParams();
 
         $paperId = (int)($params['docId'] ?? 0);
-        $file = ($params['filename'] ?? '') . '.' . ($params['extension'] ?? '');
+        $filename = $params['filename'] ?? '';
+        $extension = $params['extension'] ?? '';
+
+        // Forged as an array (filename[]=...)
+        if (!is_string($filename) || !is_string($extension)) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
+        $file = $filename . '.' . $extension;
 
         if (!SafeFileName::isBare($file)) {
-            if (self::isUnsafeFileName($file)) {
+            if (SafeFileName::isUnsafe($file)) {
                 AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $file]);
             }
             $this->getResponse()->setHttpResponseCode(404);
@@ -674,7 +689,7 @@ class FileController extends DefaultController
 
         // Only a flat file name is expected here; strip any directory component
         // to neutralise path traversal (e.g. "../../somefile").
-        if (self::isUnsafeFileName($filename)) {
+        if (SafeFileName::isUnsafe($filename)) {
             AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $filename]);
         }
         $filename = basename($filename);

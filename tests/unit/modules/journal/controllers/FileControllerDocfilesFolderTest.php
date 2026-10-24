@@ -91,8 +91,8 @@ final class FileControllerDocfilesFolderTest extends TestCase
         self::assertSame(404, $code);
         self::assertSame([], $delivered, 'no file must be delivered');
         self::assertSame(
-            $folder === '' ? [] : [[AccessLog::UNSAFE_PATH, 'unexpected_folder']],
-            $this->loggedEvents(),
+            $folder === '' ? [] : [[AccessLog::UNSAFE_PATH, 'unexpected_folder', $folder]],
+            $this->loggedEvents('reason', 'folder'),
             'a missing folder is not an attempt'
         );
     }
@@ -202,5 +202,32 @@ final class FileControllerDocfilesFolderTest extends TestCase
         self::assertSame(404, $code);
         self::assertSame([], $delivered, 'no file must be delivered');
         self::assertSame([], $this->loggedEvents());
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function malformedNameProvider(): array
+    {
+        return [
+            'no file name' => [['filename' => null]],
+            'file name as an array' => [['filename' => ['report']]],
+            'extension as an array' => [['extension' => ['xml']]],
+        ];
+    }
+
+    /**
+     * A missing or forged (filename[]=...) name is a broken request: not found, not a server error
+     *
+     * @param array<string, mixed> $params
+     * @dataProvider malformedNameProvider
+     */
+    public function testMalformedFileNameIsNotFound(array $params): void
+    {
+        [$code, $delivered] = $this->runDocfilesAction($params + ['folder' => 'comments']);
+
+        self::assertSame(404, $code);
+        self::assertSame([], $delivered, 'no file must be delivered');
+        self::assertSame([], $this->accessChecks);
     }
 }

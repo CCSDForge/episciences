@@ -2,6 +2,7 @@
 
 use Episciences\AppRegistry;
 use Episciences\Security\AccessLog;
+use Episciences\Upload\SafeFileName;
 
 include_once APPLICATION_PATH . '/modules/journal/controllers/PaperController.php';
 
@@ -498,7 +499,7 @@ class CommentsController extends PaperController
     {
         // SECURITY FIX: Verify file belongs to this comment
         if (!in_array($file, $jFiles, true)) {
-            if (self::isUnsafeFileName($file)) {
+            if (SafeFileName::isUnsafe($file)) {
                 AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $file]);
             }
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
