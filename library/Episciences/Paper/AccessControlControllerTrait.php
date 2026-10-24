@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Episciences\Paper\ManagementRefusal;
 use Episciences\Security\AccessLog;
 use Episciences\User\SuLogger;
 
@@ -30,12 +31,7 @@ trait Episciences_Paper_AccessControlControllerTrait
      */
     protected function checkPermissions(Episciences_Review $review, Episciences_Paper $paper): bool
     {
-        // chief editors, administrator and secretary (git #235) can do whatever they want
-        if (Episciences_Auth::isSecretary()) {
-            return true;
-        } // check if editors have sufficient permission for accessing paper or changing its status
-
-        $redirection = $this->buildRedirectionMessage($review, $paper);
+        $redirection = $this->buildPermissionRedirection($review, $paper);
         $params = array_key_exists('params', $redirection) ? $redirection['params'] : [];
 
         if (!empty($redirection) && array_key_exists('message', $redirection)) {
@@ -46,6 +42,44 @@ trait Episciences_Paper_AccessControlControllerTrait
         }
 
         return empty($redirection);
+    }
+
+    /**
+     * Why the logged user may not change a paper, null when they may: paper of the current journal,
+     * neither deleted nor removed, not their own submission, no conflict of interest, editor permissions.
+     * The paper management page (viewAction) itself still shows a deleted or removed paper.
+     * @param Episciences_Review $review
+     * @param Episciences_Paper $paper
+     * @return ManagementRefusal|null
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function findManagementRefusal(Episciences_Review $review, Episciences_Paper $paper): ?ManagementRefusal
+    {
+        return match (true) {
+            $paper->getRvid() !== RVID => ManagementRefusal::OTHER_JOURNAL,
+            $paper->isDeleted() || $paper->isRemoved() => ManagementRefusal::DELETED_OR_REMOVED,
+            $paper->isOwner() || self::isConflictDetected($paper, $review) => ManagementRefusal::OWN_SUBMISSION_OR_CONFLICT,
+            $this->buildPermissionRedirection($review, $paper) !== [] => ManagementRefusal::PERMISSIONS,
+            default => null,
+        };
+    }
+
+    /**
+     * Redirection for a user lacking the permissions for a paper, empty when access is granted
+     * @param Episciences_Review $review
+     * @param Episciences_Paper $paper
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function buildPermissionRedirection(Episciences_Review $review, Episciences_Paper $paper): array
+    {
+        // chief editors, administrator and secretary (git #235) can do whatever they want
+        if (Episciences_Auth::isSecretary()) {
+            return [];
+        }
+
+        // check if editors have sufficient permission for accessing paper or changing its status
+        return $this->buildRedirectionMessage($review, $paper);
     }
 
     /**
