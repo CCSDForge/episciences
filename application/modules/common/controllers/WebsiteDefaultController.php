@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Security\AccessLog;
 use Episciences\Upload\PublicFileStore;
 use Episciences\Upload\UploadChecker;
 
@@ -70,10 +71,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function headerAction()
     {
-        // Secretaries include administrators, chief editors and root
-        if (!Episciences_Auth::isSecretary() && !Episciences_Auth::isWebmaster()) {
-            $this->getResponse()->setHttpResponseCode(403);
-            $this->_helper->viewRenderer->setNoRender();
+        if (!$this->allowSiteManagers()) {
             return;
         }
 
@@ -206,6 +204,24 @@ class WebsiteDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * The site settings are managed by the secretaries (which include administrators, chief
+     * editors and root) and the webmasters: other users get a 403, logged in the security log,
+     * and nothing is rendered.
+     */
+    private function allowSiteManagers(): bool
+    {
+        if (Episciences_Auth::isSecretary() || Episciences_Auth::isWebmaster()) {
+            return true;
+        }
+
+        AccessLog::denied(AccessLog::ACL_DENIED, 'role_check');
+        $this->getResponse()->setHttpResponseCode(403);
+        $this->_helper->viewRenderer->setNoRender();
+
+        return false;
+    }
+
+    /**
      * Flash the message shown when a form is submitted with a missing or wrong token
      */
     private function addCsrfError(): void
@@ -227,6 +243,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function menuAction(): void
     {
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
