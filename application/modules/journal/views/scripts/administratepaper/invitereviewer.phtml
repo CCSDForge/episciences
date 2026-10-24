@@ -24,7 +24,7 @@ $this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
 $description = $this->translate("Inviter un relecteur à évaluer l'article");
 $description .=  ' : <br>';
 $description .= '#' . $this->paper->getDocId();
-$description .= ' - ' . $this->escape((string)$this->paper->getTitle());
+$description .= ' - ' . $this->escape($this->paper->getTitle());
 ?>
 <?php $this->layout()->description = $description; ?>
 

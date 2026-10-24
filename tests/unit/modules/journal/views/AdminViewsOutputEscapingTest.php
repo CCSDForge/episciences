@@ -22,6 +22,7 @@ final class AdminViewsOutputEscapingTest extends TestCase
         $view = new Zend_View();
         $view->setScriptPath(APPLICATION_PATH . self::SCRIPTS);
         $view->addHelperPath(dirname(APPLICATION_PATH) . '/library/Episciences/View/Helper', 'Episciences_View_Helper_');
+        $view->addHelperPath(dirname(APPLICATION_PATH) . '/library/Episciences/View/Helper', 'Episciences\\View\\Helper\\');
 
         return $view;
     }
@@ -201,7 +202,7 @@ final class AdminViewsOutputEscapingTest extends TestCase
     /**
      * @return \Episciences_Paper&\PHPUnit\Framework\MockObject\MockObject
      */
-    private function paperWithTitle(string $title): \Episciences_Paper
+    private function paperWithTitle(string $title, ?string $version = null): \Episciences_Paper
     {
         $submitter = $this->createMock(\Episciences_User::class);
         $submitter->method('getFullname')->willReturn(self::PAYLOAD);
@@ -218,11 +219,18 @@ final class AdminViewsOutputEscapingTest extends TestCase
         $paper->method('getWhen')->willReturn('2026-10-01 10:00:00');
         $paper->method('getPreviousVersions')->willReturn(null);
         $paper->method('getSubmitter')->willReturn($submitter);
+        $paper->method('getMetadata')->willReturnCallback(
+            static fn(string $name): ?string => $name === 'version' ? $version : null
+        );
 
         return $paper;
     }
 
-    public function testReviewerRatingListEscapesThePaperTitle(): void
+    /**
+     * The view of a paper list, with no volume and no section. For the rating list, the
+     * reviewer has a pending reviewing and no invitation.
+     */
+    private function paperListView(\Episciences_Paper $paper): Zend_View
     {
         $reviewing = $this->createMock(\Episciences_Reviewer_Reviewing::class);
         $reviewing->method('getStatus')->willReturn(\Episciences_Reviewer_Reviewing::STATUS_PENDING);
@@ -233,10 +241,50 @@ final class AdminViewsOutputEscapingTest extends TestCase
         $reviewer->method('getReviewing')->willReturn($reviewing);
 
         $view = $this->view();
-        $view->papers = [$this->paperWithTitle(self::PAYLOAD)];
+        $view->papers = [$paper];
         $view->reviewer = $reviewer;
         $view->volumes = [];
         $view->sections = [];
+
+        return $view;
+    }
+
+    /**
+     * The paper lists render partials that are not under test.
+     */
+    private function stubPartials(Zend_View $view): void
+    {
+        $view->registerHelper(new class extends \Zend_View_Helper_Abstract {
+            public function partial(): string
+            {
+                return '';
+            }
+        }, 'partial');
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function controlBoardRow(\Episciences_Paper $paper): array
+    {
+        $view = $this->paperListView($paper);
+        $view->output = ['aaData' => []];
+        $this->stubPartials($view);
+        $view->registerHelper(new class extends \Zend_View_Helper_Abstract {
+            public function date(): string
+            {
+                return '2026-10-01';
+            }
+        }, 'date');
+
+        $json = $this->renderWithRequest($view, 'administratepaper/ajaxcontrolboard.phtml', 'administratepaper');
+
+        return json_decode($json, true, 512, JSON_THROW_ON_ERROR)['aaData'][0];
+    }
+
+    public function testReviewerRatingListEscapesThePaperTitle(): void
+    {
+        $view = $this->paperListView($this->paperWithTitle(self::PAYLOAD));
 
         $html = $this->renderWithRequest($view, 'partials/datatable_ratings.phtml', 'reviewer');
 
@@ -247,15 +295,57 @@ final class AdminViewsOutputEscapingTest extends TestCase
 
     public function testAuthorPaperListEscapesThePaperTitle(): void
     {
-        $view = $this->view();
-        $view->papers = [$this->paperWithTitle(self::PAYLOAD)];
-        $view->volumes = [];
-        $view->sections = [];
+        $view = $this->paperListView($this->paperWithTitle(self::PAYLOAD));
 
         $html = $this->renderWithRequest($view, 'partials/datatable_author_papers_list.phtml', 'paper');
 
         self::assertStringNotContainsString('<img src=x', $html);
         self::assertStringContainsString('<strong>&lt;img src=x onerror=alert(1)&gt;</strong>', $html);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function paperListProvider(): array
+    {
+        return [
+            'reviewer rating list' => ['partials/datatable_ratings.phtml', 'reviewer'],
+            'author paper list' => ['partials/datatable_author_papers_list.phtml', 'paper'],
+        ];
+    }
+
+    /**
+     * @dataProvider paperListProvider
+     */
+    public function testPaperListsEscapeTheVolumeAndSectionNames(string $script, string $controller): void
+    {
+        $volume = $this->createMock(\Episciences_Volume::class);
+        $volume->method('getNameKey')->willReturn(self::PAYLOAD . ' volume');
+        $section = $this->createMock(\Episciences_Section::class);
+        $section->method('getNameKey')->willReturn(self::PAYLOAD . ' section');
+
+        $view = $this->paperListView($this->paperWithTitle('Title'));
+        $view->volumes = [0 => $volume];
+        $view->sections = [0 => $section];
+
+        $html = $this->renderWithRequest($view, $script, $controller);
+
+        self::assertStringNotContainsString('<img src=x', $html);
+        self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt; volume', $html);
+        self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt; section', $html);
+    }
+
+    /**
+     * Paper::getTitle() already decodes the LaTeX sequences and the ampersands: the list does
+     * not decode them a second time.
+     */
+    public function testAuthorPaperListDecodesTheTitleOnlyOnce(): void
+    {
+        $view = $this->paperListView($this->paperWithTitle('R&amp;D'));
+
+        $html = $this->renderWithRequest($view, 'partials/datatable_author_papers_list.phtml', 'paper');
+
+        self::assertStringContainsString('<strong>R&amp;amp;D</strong>', $html);
     }
 
     /**
@@ -265,10 +355,7 @@ final class AdminViewsOutputEscapingTest extends TestCase
     {
         $title = str_repeat('a', 74) . '&b';
 
-        $view = $this->view();
-        $view->papers = [$this->paperWithTitle($title)];
-        $view->volumes = [];
-        $view->sections = [];
+        $view = $this->paperListView($this->paperWithTitle($title));
 
         $html = $this->renderWithRequest($view, 'partials/datatable_author_papers_list.phtml', 'paper');
 
@@ -277,30 +364,19 @@ final class AdminViewsOutputEscapingTest extends TestCase
 
     public function testControlBoardRowsEscapeThePaperTitleAndTheContributor(): void
     {
-        $view = $this->view();
-        $view->papers = [$this->paperWithTitle(self::PAYLOAD)];
-        $view->output = ['aaData' => []];
-        $view->volumes = [];
-        $view->sections = [];
-        $view->registerHelper(new class extends \Zend_View_Helper_Abstract {
-            public function partial(): string
-            {
-                return '';
-            }
-        }, 'partial');
-        $view->registerHelper(new class extends \Zend_View_Helper_Abstract {
-            public function date(): string
-            {
-                return '2026-10-01';
-            }
-        }, 'date');
-
-        $json = $this->renderWithRequest($view, 'administratepaper/ajaxcontrolboard.phtml', 'administratepaper');
-        $row = json_decode($json, true, 512, JSON_THROW_ON_ERROR)['aaData'][0];
+        $row = $this->controlBoardRow($this->paperWithTitle(self::PAYLOAD));
 
         self::assertStringNotContainsString('<img', $row[2], 'paper title');
         self::assertStringContainsString('title="&lt;img src=x onerror=alert(1)&gt;"', $row[2]);
         self::assertSame('&lt;img src=x onerror=alert(1)&gt;', $row[7], 'contributor');
+    }
+
+    public function testControlBoardRowsEscapeThePaperVersion(): void
+    {
+        $row = $this->controlBoardRow($this->paperWithTitle('Title', self::PAYLOAD));
+
+        self::assertStringNotContainsString('<img', $row[2]);
+        self::assertStringContainsString('(v&lt;img src=x onerror=alert(1)&gt;)', $row[2]);
     }
 
     public function testInviteReviewerPageDescriptionEscapesThePaperTitle(): void
@@ -327,12 +403,7 @@ final class AdminViewsOutputEscapingTest extends TestCase
                 return $this;
             }
         }, 'jQuery');
-        $view->registerHelper(new class extends \Zend_View_Helper_Abstract {
-            public function partial(): string
-            {
-                return '';
-            }
-        }, 'partial');
+        $this->stubPartials($view);
 
         // Script URLs of the page, defined by public/const.php outside of the tests
         foreach (['VENDOR_TINYMCE_JQUERY', 'VENDOR_TINYMCE', 'TINYMCE_DIR', 'VENDOR_JQUERY_DATATABLES', 'VENDOR_DATATABLES_BOOTSTRAP', 'VENDOR_DATATABLES_CSS', 'VENDOR_JQUERY_UI_THEME_CSS'] as $constant) {
