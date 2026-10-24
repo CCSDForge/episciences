@@ -123,6 +123,16 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         self::assertNotNull($this->tokens->find($token, TokenPurpose::ACCOUNT_ACTIVATION), 'the link must work again once the database is back');
     }
 
+    public function testActivationLinkIsRevokedWhenTheAccountIsActiveDespiteAFailure(): void
+    {
+        $token = $this->issue(TokenPurpose::ACCOUNT_ACTIVATION);
+        $this->userMapper->method('activateAccountByUid')->willThrowException(new Zend_Db_Adapter_Exception('FTP quota failure'));
+        $this->userMapper->method('isActive')->with(self::UID)->willReturn(true);
+
+        self::assertFalse($this->withoutWarnings(fn(): bool => $this->controller->activate($token)));
+        self::assertNull($this->tokens->find($token, TokenPurpose::ACCOUNT_ACTIVATION));
+    }
+
     public function testInvalidActivationLinkShowsTheErrorPageWithoutLeakingTheToken(): void
     {
         $this->controller->getRequest()->setParam('token', str_repeat('a', 64));
@@ -212,6 +222,23 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
 
         self::assertFalse($this->withoutWarnings(fn(): bool => $this->controller->resetPassword($token, self::PASSWORD)));
         self::assertTrue($this->controller->resetPassword($token, self::PASSWORD), 'the link must work again once the database is back');
+    }
+
+    public function testPasswordLinkIsNotPutBackOnceThePasswordIsWritten(): void
+    {
+        $token = $this->issue(TokenPurpose::PASSWORD_RESET);
+        $this->userMapper->method('savePassword')->willReturn(1);
+        $failingTokens = $this->getMockBuilder(AccountTokenRepository::class)
+            ->setConstructorArgs([UserTokenTestDatabase::create(), fn(): DateTimeImmutable => $this->now])
+            ->onlyMethods(['consume', 'revokeAll', 'restore'])
+            ->getMock();
+        $failingTokens->method('consume')->willReturn($this->tokens->find($token, TokenPurpose::PASSWORD_RESET));
+        $failingTokens->method('revokeAll')->willThrowException(new \Zend_Db_Statement_Exception('application database unavailable'));
+        $failingTokens->expects(self::never())->method('restore');
+        $this->controller->tokens = $failingTokens;
+
+        $this->expectException(\Zend_Db_Statement_Exception::class);
+        $this->controller->resetPassword($token, self::PASSWORD);
     }
 
     public function testPasswordChangedFromTheProfileRevokesThePasswordLinksOfTheAccount(): void

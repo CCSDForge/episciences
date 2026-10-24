@@ -381,6 +381,19 @@ class Ccsd_User_Models_UserMapper {
     }
 
     /**
+     * Whether an account has been activated (VALID column), read from the database without any cache
+     */
+    public function isActive(int $uid): bool
+    {
+        $table = $this->getDbTable();
+        $select = $table->select()->from($table, ['VALID'])->where('UID = ?', $uid);
+
+        $row = $table->fetchRow($select);
+
+        return $row !== null && (int)$row->VALID === 1;
+    }
+
+    /**
      * Trouve un utilisateur avec un compte actif ou pas, par son login ou UID, sinon renvoi
      * null
      *

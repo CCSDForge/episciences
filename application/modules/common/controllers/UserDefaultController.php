@@ -1484,18 +1484,34 @@ class UserDefaultController extends Zend_Controller_Action
             return false;
         }
 
-        // The token is revoked only once the account is activated, so that the link still works after a database
+        // The token is revoked only once the account is active, so that the link still works after a database
         // failure. Activating twice is not possible: the second attempt fails since the account is already active.
         try {
             $this->getUserMapper()->activateAccountByUid($accountToken->uid);
         } catch (Zend_Db_Exception $e) { // e.g. the account is already active
             trigger_error($e->getMessage(), E_USER_WARNING);
+            $this->revokeActivationLinksOfActiveAccount($accountToken->uid);
             return false;
         }
 
         $this->getAccountTokenRepository()->revokeAll($accountToken->uid, TokenPurpose::ACCOUNT_ACTIVATION);
 
         return true;
+    }
+
+    /**
+     * After a failed activation, revokes the activation links if the account is active anyway (e.g. the FTP quota
+     * step failed after the VALID update): such a link must not be able to activate the account again later
+     */
+    private function revokeActivationLinksOfActiveAccount(int $uid): void
+    {
+        try {
+            if ($this->getUserMapper()->isActive($uid)) {
+                $this->getAccountTokenRepository()->revokeAll($uid, TokenPurpose::ACCOUNT_ACTIVATION);
+            }
+        } catch (Zend_Db_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
     }
 
     /**
@@ -1512,13 +1528,21 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         try {
-            return $this->saveNewPassword($accountToken->uid, $password);
+            $saved = $this->writePassword($accountToken->uid, $password);
         } catch (Zend_Db_Exception $e) {
             // The password could not be written (e.g. CAS database unavailable): the link must keep working
             trigger_error($e->getMessage(), E_USER_WARNING);
             $tokenRepository->restore($token, $accountToken);
             return false;
         }
+
+        if (!$saved) {
+            return false;
+        }
+
+        $tokenRepository->revokeAll($accountToken->uid, ...self::PASSWORD_TOKEN_PURPOSES);
+
+        return true;
     }
 
     /**
@@ -1528,18 +1552,28 @@ class UserDefaultController extends Zend_Controller_Action
      */
     protected function saveNewPassword(int $uid, string $password): bool
     {
-        $user = new Ccsd_User_Models_User();
-        $user->setUid($uid);
-        $user->setPassword($password);
-        $user->setTime_modified();
-
-        if ((int)$this->getUserMapper()->savePassword($user) !== 1) {
+        if (!$this->writePassword($uid, $password)) {
             return false;
         }
 
         $this->getAccountTokenRepository()->revokeAll($uid, ...self::PASSWORD_TOKEN_PURPOSES);
 
         return true;
+    }
+
+    /**
+     * Writes the password of an account in the CAS database
+     * @return bool false when no account was updated
+     * @throws Zend_Db_Exception
+     */
+    private function writePassword(int $uid, string $password): bool
+    {
+        $user = new Ccsd_User_Models_User();
+        $user->setUid($uid);
+        $user->setPassword($password);
+        $user->setTime_modified();
+
+        return (int)$this->getUserMapper()->savePassword($user) === 1;
     }
 
     /**
