@@ -114,6 +114,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - the files of the replaced paper are only removed when the paper is replaced in place, so a refused paper submitted again keeps its files;
   - submitting a refused paper again only renames ("-REFUSED" suffix) the versions of that paper in its journal, never another paper sharing its identifier.
 
+### Security
+- Volume and section pages: checks hardened.
+
 ### Changed
 - OpenCitations client migrated to API v2 (DOI sent with its `doi:` scheme, throttling and retry on HTTP 429).
   **Deployment**: set `OPENCITATIONS.APIURL` to `https://api.opencitations.net/index/v2/citations/` in
