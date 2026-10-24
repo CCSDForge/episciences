@@ -53,13 +53,13 @@ final class PaperControllerVersionFlagTest extends ControllerTestCase
     {
         $paper = self::importedPaper();
 
-        $tmpPaper = $this->invoke('initializeTmpPaper', $paper, Episciences_Paper::STATUS_SUBMITTED, '["answer.pdf"]');
+        $tmpPaper = $this->invoke('initializeTmpPaper', $paper, Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION, '["answer.pdf"]');
 
         self::assertSame('submitted', $tmpPaper->getFlag());
         self::assertSame('imported', $paper->getFlag(), 'the previous version is left unchanged');
         self::assertEmpty($tmpPaper->getDocid(), 'the temporary version is not saved yet');
         self::assertSame(self::PAPERID, (int)$tmpPaper->getPaperid());
-        self::assertSame(Episciences_Paper::STATUS_SUBMITTED, $tmpPaper->getStatus());
+        self::assertSame(Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION, $tmpPaper->getStatus());
         self::assertSame(self::PAPERID . '/["answer.pdf"]', $tmpPaper->getIdentifier());
         self::assertEqualsWithDelta(2.01, (float)$tmpPaper->getVersion(), 0.0001);
         self::assertSame(0, (int)$tmpPaper->getRepoid());

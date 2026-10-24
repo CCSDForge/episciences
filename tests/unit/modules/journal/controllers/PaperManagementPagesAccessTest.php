@@ -6,8 +6,12 @@ namespace unit\modules\journal\controllers;
 
 use ActivityController;
 use AdministratepaperController;
+use Episciences\Security\AccessLog;
 use Episciences_Acl;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
 use unit\modules\ControllerTestCase;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * The paper pages of the editorial staff (paper management, paper timeline) refuse access through
@@ -15,6 +19,8 @@ use unit\modules\ControllerTestCase;
  */
 final class PaperManagementPagesAccessTest extends ControllerTestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const DOCID = 12;
     private const AUTHOR_UID = 99;
 
@@ -78,5 +84,7 @@ final class PaperManagementPagesAccessTest extends ControllerTestCase
         $result = $this->dispatch($controller, 'view', $this->getRequest([], ['id' => self::DOCID]));
 
         self::assertStringContainsString('/administratepaper/assigned', (string)$result->redirectUrl());
+        // the paper was found: the redirection comes from the permissions guard, not from the "paper not found" one
+        self::assertContains([AccessLog::ACCESS_REDIRECTED, 'paper_permissions'], $this->loggedEvents());
     }
 }
