@@ -12,6 +12,7 @@ use Episciences\User\SuLogger;
 use Episciences\User\Token\AccountToken;
 use Episciences\User\Token\AccountTokenRepository;
 use Episciences\User\Token\TokenPurpose;
+use Monolog\Level;
 
 
 class UserDefaultController extends Zend_Controller_Action
@@ -1477,9 +1478,7 @@ class UserDefaultController extends Zend_Controller_Action
         // On submission the token comes back in the form
         $token = $request->isPost() ? $request->getPost('token') : $request->getParam('token');
 
-        $accountToken = $this->getAccountTokenRepository()->find($token, ...self::PASSWORD_TOKEN_PURPOSES);
-
-        if ($accountToken === null || !$this->isSentToCurrentAddress($accountToken)) {
+        if ($this->findPasswordToken($token) === null) {
             $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_FAILURE;
             $this->render('resetpassword');
             return;
@@ -1506,6 +1505,28 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * The password token of a password reset page, null (and logged) when the link is refused
+     * @param mixed $token the token taken from the request
+     * @throws Zend_Db_Exception
+     */
+    protected function findPasswordToken(mixed $token): ?AccountToken
+    {
+        $accountToken = $this->getAccountTokenRepository()->find($token, ...self::PASSWORD_TOKEN_PURPOSES);
+
+        if ($accountToken === null) {
+            self::logRefusedAccountLink($token, 'password_reset_link');
+            return null;
+        }
+
+        if (!$this->isSentToCurrentAddress($accountToken)) {
+            self::logLinkNotSentToCurrentAddress($accountToken);
+            return null;
+        }
+
+        return $accountToken;
+    }
+
+    /**
      * Activates the account of an activation token, which can be used only once
      * @param mixed $token the token taken from the request
      */
@@ -1514,6 +1535,7 @@ class UserDefaultController extends Zend_Controller_Action
         $accountToken = $this->getAccountTokenRepository()->find($token, TokenPurpose::ACCOUNT_ACTIVATION);
 
         if ($accountToken === null) {
+            self::logRefusedAccountLink($token, 'account_activation_link');
             return false;
         }
 
@@ -1521,6 +1543,7 @@ class UserDefaultController extends Zend_Controller_Action
         // failure. Activating twice is not possible: the second attempt fails since the account is already active.
         try {
             if (!$this->isSentToCurrentAddress($accountToken)) {
+                self::logLinkNotSentToCurrentAddress($accountToken);
                 return false;
             }
 
@@ -1615,6 +1638,28 @@ class UserDefaultController extends Zend_Controller_Action
         $user->setTime_modified();
 
         return (int)$this->getUserMapper()->savePassword($user) === 1;
+    }
+
+    /**
+     * Unknown, expired and already used links cannot be told apart: a link clicked twice or found in an old e-mail
+     * is common, hence a Notice. A link without any token is a broken link, not logged.
+     */
+    private static function logRefusedAccountLink(mixed $token, string $reason): void
+    {
+        if (is_string($token) && $token !== '') {
+            AccessLog::denied(AccessLog::TOKEN_INVALID, $reason, [], Level::Notice);
+        }
+    }
+
+    /**
+     * A valid link whose account has changed its address (someone may still read the former mailbox) or no longer exists
+     */
+    private static function logLinkNotSentToCurrentAddress(AccountToken $accountToken): void
+    {
+        AccessLog::denied(AccessLog::TOKEN_INVALID, 'not_current_address', [
+            'account_uid' => $accountToken->uid,
+            'purpose' => $accountToken->purpose->value,
+        ]);
     }
 
     /**

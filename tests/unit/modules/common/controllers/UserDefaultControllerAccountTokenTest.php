@@ -7,11 +7,17 @@ namespace unit\modules\common\controllers;
 use Ccsd_User_Models_User;
 use Ccsd_User_Models_UserMapper;
 use DateTimeImmutable;
+use Episciences\Security\AccessLog;
 use Episciences\User\Token\AccountTokenRepository;
 use Episciences\User\Token\TokenPurpose;
 use Episciences_User;
+use Monolog\Handler\TestHandler;
+use Monolog\Level;
+use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use unit\library\Episciences\User\Token\UserTokenTestDatabase;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
@@ -47,6 +53,7 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
     private ?string $currentEmail = self::EMAIL;
     /** Thrown when the current address is read, when set */
     private ?\Exception $emailLookupFailure = null;
+    private TestHandler $logHandler;
 
     protected function setUp(): void
     {
@@ -73,6 +80,27 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         $this->controller->tokens = $this->tokens;
         $this->controller->userMapper = $this->userMapper;
         $this->controller->view = new Zend_View();
+
+        $this->logHandler = new TestHandler();
+        AccessLog::setLogger(new Logger(AccessLog::CHANNEL, [$this->logHandler]));
+        AccessLog::reset();
+    }
+
+    protected function tearDown(): void
+    {
+        AccessLog::setLogger(new NullLogger());
+        AccessLog::reset();
+    }
+
+    /**
+     * @return list<array{string, string, string}> event, reason and level of each security log record
+     */
+    private function loggedEvents(): array
+    {
+        return array_map(
+            static fn(LogRecord $record): array => [$record->message, $record->context['reason'] ?? '', $record->level->getName()],
+            $this->logHandler->getRecords()
+        );
     }
 
     private function issue(TokenPurpose $purpose, int $uid = self::UID): string
@@ -218,6 +246,103 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         $headers = array_column($this->controller->getResponse()->getHeaders(), 'value', 'name');
         self::assertSame('no-referrer', $headers['Referrer-Policy']);
         self::assertSame('no-store', $headers['Cache-Control']);
+    }
+
+    // ---------------------------------------------------------------- security log
+
+    public function testValidActivationLinkIsNotLogged(): void
+    {
+        $this->controller->activate($this->issue(TokenPurpose::ACCOUNT_ACTIVATION));
+
+        self::assertSame([], $this->loggedEvents());
+    }
+
+    public function testRefusedActivationLinkIsLoggedAsANotice(): void
+    {
+        $this->controller->activate(str_repeat('a', 64));
+
+        self::assertSame(
+            [[AccessLog::TOKEN_INVALID, 'account_activation_link', Level::Notice->getName()]],
+            $this->loggedEvents()
+        );
+    }
+
+    /**
+     * @return iterable<string, array{mixed}>
+     */
+    public static function missingTokens(): iterable
+    {
+        yield 'no token' => [null];
+        yield 'empty token' => [''];
+        yield 'array token' => [['a']];
+    }
+
+    /**
+     * A link without token is broken, not an attempt
+     * @dataProvider missingTokens
+     */
+    public function testActivationLinkWithoutTokenIsNotLogged(mixed $token): void
+    {
+        self::assertFalse($this->controller->activate($token));
+        self::assertSame([], $this->loggedEvents());
+    }
+
+    public function testActivationLinkSentToAFormerAddressIsLoggedAsAWarning(): void
+    {
+        $token = $this->issue(TokenPurpose::ACCOUNT_ACTIVATION);
+        $this->currentEmail = 'new-address@example.org';
+
+        $this->controller->activate($token);
+
+        self::assertSame(
+            [[AccessLog::TOKEN_INVALID, 'not_current_address', Level::Warning->getName()]],
+            $this->loggedEvents()
+        );
+        $context = $this->logHandler->getRecords()[0]->context;
+        self::assertSame(self::UID, $context['account_uid']);
+        self::assertSame(TokenPurpose::ACCOUNT_ACTIVATION->value, $context['purpose']);
+    }
+
+    public function testValidPasswordLinkIsShownWithoutBeingLogged(): void
+    {
+        self::assertNotNull($this->controller->findPassword($this->issue(TokenPurpose::PASSWORD_RESET)));
+        self::assertSame([], $this->loggedEvents());
+    }
+
+    public function testRefusedPasswordLinkIsLoggedAsANotice(): void
+    {
+        // An activation link cannot open the password page
+        self::assertNull($this->controller->findPassword($this->issue(TokenPurpose::ACCOUNT_ACTIVATION)));
+
+        self::assertSame(
+            [[AccessLog::TOKEN_INVALID, 'password_reset_link', Level::Notice->getName()]],
+            $this->loggedEvents()
+        );
+    }
+
+    /**
+     * @dataProvider missingTokens
+     */
+    public function testPasswordLinkWithoutTokenIsNotLogged(mixed $token): void
+    {
+        self::assertNull($this->controller->findPassword($token));
+        self::assertSame([], $this->loggedEvents());
+    }
+
+    /**
+     * @dataProvider passwordPurposes
+     */
+    public function testPasswordLinkOfADeletedAccountIsLoggedAsAWarning(TokenPurpose $purpose): void
+    {
+        $token = $this->issue($purpose);
+        $this->currentEmail = null;
+
+        self::assertNull($this->controller->findPassword($token));
+        self::assertSame(
+            [[AccessLog::TOKEN_INVALID, 'not_current_address', Level::Warning->getName()]],
+            $this->loggedEvents()
+        );
+        self::assertSame($purpose->value, $this->logHandler->getRecords()[0]->context['purpose']);
     }
 
     // ---------------------------------------------------------------- password reset
@@ -593,6 +718,11 @@ final class AccountTokenTestController extends \UserDefaultController
     public function activate(mixed $token): bool
     {
         return $this->activateAccountWithToken($token);
+    }
+
+    public function findPassword(mixed $token): ?\Episciences\User\Token\AccountToken
+    {
+        return $this->findPasswordToken($token);
     }
 
     public function resetPassword(mixed $token, string $password): bool
