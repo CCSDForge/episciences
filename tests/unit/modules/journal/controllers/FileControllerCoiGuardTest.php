@@ -52,11 +52,19 @@ final class FileControllerCoiGuardTest extends ControllerTestCase
     /**
      * @param string|null $answer answer of the logged user to the conflict check, null when not answered
      */
-    private function givenConflictAnswer(?string $answer, int $uid = self::UID): void
+    private function givenConflictAnswer(?string $answer): void
+    {
+        $this->givenConflictAnswers($answer === null ? [] : [self::UID => $answer]);
+    }
+
+    /**
+     * @param array<int, string> $answers answers to the conflict check, keyed by user id
+     */
+    private function givenConflictAnswers(array $answers): void
     {
         $rows = [];
-        if ($answer !== null) {
-            $rows[] = ['cid' => 1, 'paper_id' => self::DOCID, 'by' => $uid, 'answer' => $answer, 'date' => '2026-01-01 00:00:00', 'SCREEN_NAME' => 'user'];
+        foreach ($answers as $uid => $answer) {
+            $rows[] = ['cid' => $uid, 'paper_id' => self::DOCID, 'by' => $uid, 'answer' => $answer, 'date' => '2026-01-01 00:00:00', 'SCREEN_NAME' => 'user'];
         }
 
         $this->db->respondTo('/FROM `paper_conflicts`/', $rows);
@@ -87,6 +95,7 @@ final class FileControllerCoiGuardTest extends ControllerTestCase
             'editor who answered later' => [[Episciences_Acl::ROLE_EDITOR], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']],
             'editor who did not answer' => [[Episciences_Acl::ROLE_EDITOR], null],
             'secretary who declared a conflict' => [[Episciences_Acl::ROLE_SECRETARY], Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']],
+            'administrator only, who declared a conflict' => [[Episciences_Acl::ROLE_ADMIN], Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']],
         ];
     }
 
@@ -154,4 +163,53 @@ final class FileControllerCoiGuardTest extends ControllerTestCase
         self::assertTrue($this->isRefused());
     }
 
+    /**
+     * Signed in as an editor without conflict (su), a secretary keeps their own declared conflict.
+     */
+    public function testConflictOfTheOriginalUserIsKeptWhenSignedInAsAnotherOne(): void
+    {
+        $editorUid = 55;
+        $this->givenJournal([Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '1']);
+        $this->givenConflictAnswers([
+            self::UID => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'],
+            $editorUid => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'],
+        ]);
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+        $this->impersonate([Episciences_Acl::ROLE_EDITOR], $editorUid);
+
+        $this->requestAttachment();
+
+        self::assertTrue($this->isRefused());
+    }
+
+    public function testEditorSignedInAsAnotherEditorWithoutConflictIsAllowed(): void
+    {
+        $editorUid = 55;
+        $this->givenJournal([Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '1']);
+        $this->givenConflictAnswers([
+            self::UID => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'],
+            $editorUid => Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'],
+        ]);
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+        $this->impersonate([Episciences_Acl::ROLE_EDITOR], $editorUid);
+
+        $this->requestAttachment();
+
+        self::assertFalse($this->isRefused());
+    }
+
+    /**
+     * Reviewers are not asked about conflicts of interest: the reviewer keeps access to the
+     * attachments of their own report.
+     */
+    public function testReviewerKeepsAccessToTheirOwnReport(): void
+    {
+        $this->givenJournal([Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '1']);
+        $this->givenConflictAnswers([]);
+        $this->logInAs([Episciences_Acl::ROLE_REVIEWER], self::REVIEWER_UID);
+
+        $this->requestAttachment();
+
+        self::assertFalse($this->isRefused());
+    }
 }
