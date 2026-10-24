@@ -199,17 +199,61 @@ final class FileControllerCoiGuardTest extends ControllerTestCase
     }
 
     /**
-     * Reviewers are not asked about conflicts of interest: the reviewer keeps access to the
-     * attachments of their own report.
+     * @return array<string, array{string|null}>
      */
-    public function testReviewerKeepsAccessToTheirOwnReport(): void
+    public static function reviewerAnswerProvider(): array
+    {
+        return [
+            'no answer' => [null],
+            'declared conflict' => [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']],
+            'answered later' => [Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']],
+        ];
+    }
+
+    /**
+     * Reviewers are not asked about conflicts of interest: the reviewer keeps access to the
+     * attachments of their own report, whatever answer is stored for them (e.g. from a former
+     * editorial role).
+     */
+    #[DataProvider('reviewerAnswerProvider')]
+    public function testReviewerKeepsAccessToTheirOwnReport(?string $answer): void
     {
         $this->givenJournal([Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '1']);
-        $this->givenConflictAnswers([]);
+        $this->givenConflictAnswers($answer === null ? [] : [self::REVIEWER_UID => $answer]);
         $this->logInAs([Episciences_Acl::ROLE_REVIEWER], self::REVIEWER_UID);
 
         $this->requestAttachment();
 
         self::assertFalse($this->isRefused());
+    }
+
+    /**
+     * A reviewer who is also an editor of the journal answers the conflict check as an editor:
+     * a declared conflict closes their own report too.
+     */
+    public function testReviewerWhoIsAlsoAnEditorWithADeclaredConflictIsRefused(): void
+    {
+        $this->givenJournal([Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '1']);
+        $this->givenConflictAnswers([self::REVIEWER_UID => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']]);
+        $this->logInAs([Episciences_Acl::ROLE_REVIEWER, Episciences_Acl::ROLE_EDITOR], self::REVIEWER_UID);
+
+        $this->requestAttachment();
+
+        self::assertTrue($this->isRefused());
+    }
+
+    /**
+     * Signed in as the reviewer (su), an editor keeps their own declared conflict.
+     */
+    public function testEditorWithAConflictSignedInAsTheReviewerIsRefused(): void
+    {
+        $this->givenJournal([Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '1']);
+        $this->givenConflictAnswers([self::UID => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']]);
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+        $this->impersonate([Episciences_Acl::ROLE_REVIEWER], self::REVIEWER_UID);
+
+        $this->requestAttachment();
+
+        self::assertTrue($this->isRefused());
     }
 }
