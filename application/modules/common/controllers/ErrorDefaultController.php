@@ -41,7 +41,7 @@ class ErrorDefaultController extends Zend_Controller_Action
 	        }
 	        
 	        // Credential-like values are masked for both the log and the error page
-	        $loggableParams = $this->redactSensitiveParams($errors->request->getParams());
+	        $loggableParams = ParamRedactor::redact($errors->request->getParams());
 
 	        // Log exception, if logger available
 	        if ($log = $this->getLog()) {
@@ -69,18 +69,6 @@ class ErrorDefaultController extends Zend_Controller_Action
 	        
 	        
         }
-    }
-
-    /**
-     * Replace the value of credential-like parameters before they reach the logs.
-     *
-     * @see ParamRedactor::redact()
-     * @param array $params
-     * @return array
-     */
-    public function redactSensitiveParams(array $params): array
-    {
-        return ParamRedactor::redact($params);
     }
 
     public function getLog()

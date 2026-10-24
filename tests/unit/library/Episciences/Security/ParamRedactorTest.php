@@ -21,19 +21,30 @@ final class ParamRedactorTest extends TestCase
             'authToken' => 'c',
             'Secret' => 'd',
             'csrf' => 'e',
+            'PwD' => 'f',
+            'previous_password' => 'g',
+            'API_PASSWORD' => 'h',
+            'token' => 'i',
+            'client_secret' => 'j',
+            'keywords' => 'kept',
         ]);
 
         self::assertSame('alice', $out['username']);
-        foreach (['PASSWORD_VERIFY', 'paperPassword', 'authToken', 'Secret', 'csrf'] as $key) {
+        self::assertSame('kept', $out['keywords']);
+        foreach (['PASSWORD_VERIFY', 'paperPassword', 'authToken', 'Secret', 'csrf', 'PwD', 'previous_password', 'API_PASSWORD', 'token', 'client_secret'] as $key) {
             self::assertSame(ParamRedactor::MASK, $out[$key], $key);
         }
     }
 
     public function testNestedParametersAreMasked(): void
     {
-        $out = ParamRedactor::redact(['form' => ['email' => 'a@b.c', 'password' => 'secret']]);
+        $out = ParamRedactor::redact([
+            'form' => ['email' => 'a@b.c', 'password' => 'secret'],
+            'search_doc' => ['paperPassword' => 'd', 'title' => 'T'],
+        ]);
 
         self::assertSame(['email' => 'a@b.c', 'password' => ParamRedactor::MASK], $out['form']);
+        self::assertSame(['paperPassword' => ParamRedactor::MASK, 'title' => 'T'], $out['search_doc']);
     }
 
     public function testSensitiveKeyHoldingAnArrayIsMaskedEntirely(): void
@@ -46,11 +57,13 @@ final class ParamRedactorTest extends TestCase
         $out = ParamRedactor::redact([
             'code' => '5f0c1a2b3d4e5',
             'ACCESS_CODE' => '5f0c1a2b3d4e5',
+            'user_access_code' => 'kept',
             'language_code' => 'fr',
         ]);
 
         self::assertSame(ParamRedactor::MASK, $out['code']);
         self::assertSame(ParamRedactor::MASK, $out['ACCESS_CODE']);
+        self::assertSame('kept', $out['user_access_code']);
         self::assertSame('fr', $out['language_code']);
     }
 
