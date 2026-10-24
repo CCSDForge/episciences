@@ -54,12 +54,33 @@ final class ReviewSettingsLoadingTest extends TestCase
         self::assertCount(1, $this->db->selects());
     }
 
+    public function testSettingsSetInMemoryAreKeptOnTopOfTheStoredOnes(): void
+    {
+        $review = new Episciences_Review(['rvid' => self::RVID]);
+        $review->setSetting(Episciences_Review::SETTING_ISSN_PRINT, '8765-4321');
+
+        self::assertSame([
+            Episciences_Review::SETTING_ISSN => '1234-5678',
+            Episciences_Review::SETTING_ISSN_PRINT => '8765-4321',
+        ], $review->getSettings());
+    }
+
     public function testSettingsSetInMemoryAreNotReplacedByTheStoredOnes(): void
     {
         $review = new Episciences_Review(['rvid' => self::RVID]);
         $review->setSetting(Episciences_Review::SETTING_ISSN, '8765-4321');
 
-        self::assertSame([Episciences_Review::SETTING_ISSN => '8765-4321'], $review->getSettings());
-        self::assertSame([], $this->db->queries());
+        self::assertSame('8765-4321', $review->getSettings()[Episciences_Review::SETTING_ISSN] ?? null);
+        self::assertSame('8765-4321', $review->getSetting(Episciences_Review::SETTING_ISSN));
+    }
+
+    public function testForcedReloadDropsTheSettingsSetInMemory(): void
+    {
+        $review = new Episciences_Review(['rvid' => self::RVID]);
+        $review->setSetting(Episciences_Review::SETTING_ISSN, '8765-4321');
+
+        $review->loadSettings(true);
+
+        self::assertSame([Episciences_Review::SETTING_ISSN => '1234-5678'], $review->getSettings());
     }
 }
