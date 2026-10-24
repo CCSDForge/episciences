@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences\Security\AccessLog;
 use PHPUnit\Framework\TestCase;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Behaviour of FileController::docfilesAction(): only the sub-directories meant to be linked from the
@@ -16,6 +20,8 @@ use Zend_Controller_Response_HttpTestCase;
  */
 final class FileControllerDocfilesFolderTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     protected function setUp(): void
     {
         require_once APPLICATION_PATH . '/modules/journal/controllers/FileController.php';
@@ -84,6 +90,11 @@ final class FileControllerDocfilesFolderTest extends TestCase
 
         self::assertSame(404, $code);
         self::assertSame([], $delivered, 'no file must be delivered');
+        self::assertSame(
+            $folder === '' ? [] : [[AccessLog::UNSAFE_PATH, 'unexpected_folder', $folder]],
+            $this->loggedEvents('reason', 'folder'),
+            'a missing folder is not an attempt'
+        );
     }
 
     /**
@@ -109,6 +120,7 @@ final class FileControllerDocfilesFolderTest extends TestCase
         self::assertSame(200, $code);
         self::assertCount(1, $delivered);
         self::assertSame($relativePath, $delivered[0][1]);
+        self::assertSame([], $this->loggedEvents());
     }
 
     public function testCopyEditingFileOfACommentIsServed(): void
@@ -154,16 +166,16 @@ final class FileControllerDocfilesFolderTest extends TestCase
     }
 
     /**
-     * @return array<string, array{array<string, string>}>
+     * @return array<string, array{array<string, string>, string}>
      */
     public static function climbingSegmentsProvider(): array
     {
         return [
-            'file name climbs out of the folder' => [['filename' => '../reports/7/report', 'extension' => 'xml']],
-            'file name is a parent directory' => [['filename' => '..', 'extension' => '']],
-            'comment id climbs out of the folder' => [['parentCommentId' => '../reports/7']],
-            'comment id is not a number' => [['parentCommentId' => 'abc']],
-            'comment id outside the copy-editing folder' => [['parentCommentId' => '34']],
+            'file name climbs out of the folder' => [['filename' => '../reports/7/report', 'extension' => 'xml'], 'unsafe_file_name'],
+            'file name is a parent directory' => [['filename' => '..', 'extension' => ''], 'unsafe_file_name'],
+            'comment id climbs out of the folder' => [['parentCommentId' => '../reports/7'], 'unexpected_parent_comment_id'],
+            'comment id is not a number' => [['parentCommentId' => 'abc'], 'unexpected_parent_comment_id'],
+            'comment id outside the copy-editing folder' => [['parentCommentId' => '34'], 'unexpected_parent_comment_id'],
         ];
     }
 
@@ -171,11 +183,51 @@ final class FileControllerDocfilesFolderTest extends TestCase
      * @param array<string, string> $params
      * @dataProvider climbingSegmentsProvider
      */
-    public function testSegmentsCannotLeaveTheFolder(array $params): void
+    public function testSegmentsCannotLeaveTheFolder(array $params, string $reason): void
     {
         [$code, $delivered] = $this->runDocfilesAction($params + ['folder' => 'comments']);
 
         self::assertSame(404, $code);
         self::assertSame([], $delivered, 'no file must be delivered');
+        self::assertSame([[AccessLog::UNSAFE_PATH, $reason]], $this->loggedEvents());
+    }
+
+    /**
+     * A request without a file name is broken, not an attempt to leave the folder
+     */
+    public function testEmptyFileNameIsRefusedWithoutBeingLogged(): void
+    {
+        [$code, $delivered] = $this->runDocfilesAction(['folder' => 'comments', 'filename' => '', 'extension' => '']);
+
+        self::assertSame(404, $code);
+        self::assertSame([], $delivered, 'no file must be delivered');
+        self::assertSame([], $this->loggedEvents());
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function malformedNameProvider(): array
+    {
+        return [
+            'no file name' => [['filename' => null]],
+            'file name as an array' => [['filename' => ['report']]],
+            'extension as an array' => [['extension' => ['xml']]],
+        ];
+    }
+
+    /**
+     * A missing or forged (filename[]=...) name is a broken request: not found, not a server error
+     *
+     * @param array<string, mixed> $params
+     * @dataProvider malformedNameProvider
+     */
+    public function testMalformedFileNameIsNotFound(array $params): void
+    {
+        [$code, $delivered] = $this->runDocfilesAction($params + ['folder' => 'comments']);
+
+        self::assertSame(404, $code);
+        self::assertSame([], $delivered, 'no file must be delivered');
+        self::assertSame([], $this->accessChecks);
     }
 }

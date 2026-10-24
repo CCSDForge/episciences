@@ -3,6 +3,7 @@
 use Ccsd\Auth\AdapterFactory;
 use Episciences\Altcha\ChallengeHelper;
 use Episciences\Maintenance\ReadOnlyMode;
+use Episciences\Security\AccessLog;
 use Episciences\Trait\LocaleByCookieTrait;
 use Episciences\User\AccountMutationPolicy;
 use Episciences\User\EmailPolicy;
@@ -11,6 +12,7 @@ use Episciences\User\SuLogger;
 use Episciences\User\Token\AccountToken;
 use Episciences\User\Token\AccountTokenRepository;
 use Episciences\User\Token\TokenPurpose;
+use Monolog\Level;
 
 
 class UserDefaultController extends Zend_Controller_Action
@@ -361,6 +363,29 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * The submitted login, only when it names an existing account: an unknown value may be a password
+     * typed in the wrong field, and must not end up in the security log.
+     */
+    protected function knownUsername(mixed $username): ?string
+    {
+        if (!is_string($username)) {
+            return null;
+        }
+
+        // Same trimming as the MySQL authentication adapter
+        $username = trim(str_replace("\xC2\xA0", ' ', $username));
+        if ($username === '') {
+            return null;
+        }
+
+        try {
+            return $this->getUserMapper()->usernameExists($username) ? $username : null;
+        } catch (Exception) {
+            return null;
+        }
+    }
+
+    /**
      *   Login utilisateur
      *   Après login redirige :
      *   - sur la page de modification de compte si pas de champs Application Episciences
@@ -407,6 +432,15 @@ class UserDefaultController extends Zend_Controller_Action
             case Zend_Auth_Result::FAILURE:
             case Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID:
             case Zend_Auth_Result::FAILURE_IDENTITY_NOT_FOUND:
+                AccessLog::denied(AccessLog::LOGIN_FAILED, '', [
+                    'result_code' => $result->getCode(),
+                    'adapter' => get_class($adapter),
+                    // Read as the MySQL adapter does (route, then query, then body); the other adapters
+                    // (CAS) check the credentials on their own server, never with this parameter
+                    'username' => $adapter instanceof \Ccsd\Auth\Adapter\Mysql
+                        ? $this->knownUsername($this->getRequest()->getParam('username'))
+                        : null,
+                ]);
                 // For MySQL adapter, redisplay login form with error message
                 if ($adapter instanceof \Ccsd\Auth\Adapter\Mysql) {
                     $form = new \Ccsd_User_Form_Login();
@@ -694,6 +728,7 @@ class UserDefaultController extends Zend_Controller_Action
     public function listAction()
     {
         if (!Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor()) {
+            AccessLog::denied(AccessLog::ACL_DENIED, 'role_check');
             $this->_helper->redirector->gotoUrl('/error/deny');
             return;
         }
@@ -1447,9 +1482,7 @@ class UserDefaultController extends Zend_Controller_Action
         // On submission the token comes back in the form
         $token = $request->isPost() ? $request->getPost('token') : $request->getParam('token');
 
-        $accountToken = $this->getAccountTokenRepository()->find($token, ...self::PASSWORD_TOKEN_PURPOSES);
-
-        if ($accountToken === null || !$this->isSentToCurrentAddress($accountToken)) {
+        if ($this->findPasswordToken($token) === null) {
             $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_FAILURE;
             $this->render('resetpassword');
             return;
@@ -1476,6 +1509,28 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * The password token of a password reset page, null (and logged) when the link is refused
+     * @param mixed $token the token taken from the request
+     * @throws Zend_Db_Exception
+     */
+    protected function findPasswordToken(mixed $token): ?AccountToken
+    {
+        $accountToken = $this->getAccountTokenRepository()->find($token, ...self::PASSWORD_TOKEN_PURPOSES);
+
+        if ($accountToken === null) {
+            self::logRefusedAccountLink($token, 'password_reset_link');
+            return null;
+        }
+
+        if (!$this->isSentToCurrentAddress($accountToken)) {
+            self::logLinkNotSentToCurrentAddress($accountToken);
+            return null;
+        }
+
+        return $accountToken;
+    }
+
+    /**
      * Activates the account of an activation token, which can be used only once
      * @param mixed $token the token taken from the request
      */
@@ -1484,6 +1539,7 @@ class UserDefaultController extends Zend_Controller_Action
         $accountToken = $this->getAccountTokenRepository()->find($token, TokenPurpose::ACCOUNT_ACTIVATION);
 
         if ($accountToken === null) {
+            self::logRefusedAccountLink($token, 'account_activation_link');
             return false;
         }
 
@@ -1491,6 +1547,7 @@ class UserDefaultController extends Zend_Controller_Action
         // failure. Activating twice is not possible: the second attempt fails since the account is already active.
         try {
             if (!$this->isSentToCurrentAddress($accountToken)) {
+                self::logLinkNotSentToCurrentAddress($accountToken);
                 return false;
             }
 
@@ -1585,6 +1642,28 @@ class UserDefaultController extends Zend_Controller_Action
         $user->setTime_modified();
 
         return (int)$this->getUserMapper()->savePassword($user) === 1;
+    }
+
+    /**
+     * Unknown, expired and already used links cannot be told apart: a link clicked twice or found in an old e-mail
+     * is common, hence a Notice. A link without any token is a broken link, not logged.
+     */
+    private static function logRefusedAccountLink(mixed $token, string $reason): void
+    {
+        if (is_string($token) && $token !== '') {
+            AccessLog::denied(AccessLog::TOKEN_INVALID, $reason, [], Level::Notice);
+        }
+    }
+
+    /**
+     * A valid link whose account has changed its address (someone may still read the former mailbox) or no longer exists
+     */
+    private static function logLinkNotSentToCurrentAddress(AccountToken $accountToken): void
+    {
+        AccessLog::denied(AccessLog::TOKEN_INVALID, 'not_current_address', [
+            'account_uid' => $accountToken->uid,
+            'purpose' => $accountToken->purpose->value,
+        ]);
     }
 
     /**

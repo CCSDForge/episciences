@@ -2,9 +2,14 @@
 
 namespace unit\library\Episciences\Csrf;
 
+use Episciences\Security\AccessLog;
 use Episciences_Csrf_Helper;
+use Monolog\Level;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * This helper class provides CSRF (Cross-Site Request Forgery) protection
@@ -32,6 +37,8 @@ use ReflectionClass;
  */
 class Episciences_Csrf_HelperTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     // =========================================================================
     // sanitizeName() Tests (Private Method - Tested via Reflection)
     // =========================================================================
@@ -483,5 +490,85 @@ class Episciences_Csrf_HelperTest extends TestCase
         $this->storeFormHash('csrf_comment_7', 'csrf_comment_7', 'stored-hash');
 
         self::assertTrue(Episciences_Csrf_Helper::validateFormToken('csrf_comment_7', ['csrf_comment_7' => 'stored-hash']));
+    }
+
+    public function testRequestTokenFailuresAreLoggedWithTheirReason(): void
+    {
+        $this->sessionNamespaceOrSkip();
+        Episciences_Csrf_Helper::getSessionToken();
+
+        $request = new \Zend_Controller_Request_Http();
+        Episciences_Csrf_Helper::validateRequestToken($request);
+        $request->setPost('csrf_token', 'not-the-session-token');
+        Episciences_Csrf_Helper::validateRequestToken($request);
+
+        self::assertSame([
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISSING, Level::Warning->getName()],
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISMATCH, Level::Warning->getName()],
+        ], $this->loggedEvents('reason', 'level'));
+    }
+
+    /**
+     * No token in the session usually means an expired session: logged at a lower level.
+     */
+    public function testRequestTokenMissingFromTheSessionIsLoggedAsANotice(): void
+    {
+        $session = $this->sessionNamespaceOrSkip();
+        unset($session->csrfToken);
+
+        $request = new \Zend_Controller_Request_Http();
+        $request->setPost('csrf_token', 'anything');
+        Episciences_Csrf_Helper::validateRequestToken($request);
+
+        self::assertSame(
+            [[AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_NO_SESSION_TOKEN, Level::Notice->getName()]],
+            $this->loggedEvents('reason', 'level')
+        );
+    }
+
+    public function testValidRequestTokenIsNotLogged(): void
+    {
+        $this->sessionNamespaceOrSkip();
+        $request = new \Zend_Controller_Request_Http();
+        $request->setPost('csrf_token', Episciences_Csrf_Helper::getSessionToken());
+
+        self::assertTrue(Episciences_Csrf_Helper::validateRequestToken($request));
+        self::assertSame([], $this->loggedEvents('reason', 'level'));
+    }
+
+    public function testFormTokenFailuresAreLoggedWithTheirReason(): void
+    {
+        Episciences_Csrf_Helper::validateFormToken('csrf_logged_1', []);
+        $this->storeFormHash('unique', 'csrf_logged_1', 'stored-hash');
+        // @: the failures also go to the PHP error log (E_USER_WARNING)
+        @Episciences_Csrf_Helper::validateFormToken('csrf_logged_1', ['csrf_logged_1' => 'forged'], 'unique');
+        // the stored token was cleared by the previous attempt
+        @Episciences_Csrf_Helper::validateFormToken('csrf_logged_1', ['csrf_logged_1' => 'stored-hash'], 'unique');
+
+        self::assertSame([
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISSING, Level::Warning->getName()],
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISMATCH, Level::Warning->getName()],
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_NO_SESSION_TOKEN, Level::Notice->getName()],
+        ], $this->loggedEvents('reason', 'level'));
+        self::assertSame('csrf_logged_1', $this->securityLogRecords()[0]->context['token_name']);
+    }
+
+    /**
+     * A session without a stored hash (expired session) is not reported as a forged token,
+     * whatever value is submitted.
+     */
+    public function testTokenFailuresAreLoggedWithTheirReason(): void
+    {
+        $session = $this->storeFormHash('episciences_csrf_csrf_logged_2', 'csrf_logged_2', 'stored-hash');
+        Episciences_Csrf_Helper::validateToken('csrf_logged_2', '');
+        Episciences_Csrf_Helper::validateToken('csrf_logged_2', 'forged');
+        unset($session->hash);
+        Episciences_Csrf_Helper::validateToken('csrf_logged_2', 'stored-hash');
+
+        self::assertSame([
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISSING, Level::Warning->getName()],
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISMATCH, Level::Warning->getName()],
+            [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_NO_SESSION_TOKEN, Level::Notice->getName()],
+        ], $this->loggedEvents('reason', 'level'));
     }
 }

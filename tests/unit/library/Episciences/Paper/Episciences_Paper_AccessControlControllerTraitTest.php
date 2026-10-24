@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Paper;
 
+use Episciences\Security\AccessLog;
 use Episciences\User\SuLogger;
 use Episciences_Acl;
 use Episciences_Auth;
@@ -18,6 +19,9 @@ use Zend_Db_Table_Abstract;
 use Zend_Session;
 use Zend_Session_Namespace;
 use Zend_View;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Captures the flash messages and redirections issued by the trait instead of
@@ -99,6 +103,16 @@ final class AccessControlHarness
         $this->actionName = $actionName;
     }
 
+    /**
+     * Same as DefaultController::paperLogContext()
+     *
+     * @return array<string, mixed>
+     */
+    protected static function paperLogContext(\Episciences_Paper $paper): array
+    {
+        return ['docid' => $paper->getDocid(), 'paperid' => $paper->getPaperid()];
+    }
+
     public function getRequest(): object
     {
         return new class($this->actionName) {
@@ -149,6 +163,8 @@ final class AccessControlHarness
  */
 final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const ACCESS_DENIED_MESSAGE = "Vous n'avez pas les droits suffisants pour accéder à cet article";
     private const CONFIRMATION_REQUIRED_MESSAGE = "Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission";
 
@@ -294,6 +310,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         self::assertSame([self::ACCESS_DENIED_MESSAGE], $this->harness->_helper->messages);
         self::assertContains('warning', $this->harness->_helper->namespaces);
         self::assertSame([], $this->harness->_helper->urlParams);
+        self::assertSame([[AccessLog::ACCESS_REDIRECTED, 'paper_permissions', 123]], $this->loggedEvents('reason', 'docid'));
     }
 
     public function testAssignedEditorIsNotRedirectedWhenEncapsulationIsOn(): void
@@ -507,6 +524,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
 
         self::assertNull($this->harness->_helper->redirectedTo);
         self::assertSame([], $this->harness->_helper->messages);
+        self::assertSame([], $this->loggedEvents('reason', 'docid'));
     }
 
     public function testOwnerIsRedirectedToThePaperPublicView(): void
@@ -519,6 +537,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         );
 
         self::assertSame('/paper/view?id=123', $this->harness->_helper->redirectedTo);
+        self::assertSame([[AccessLog::ACCESS_REDIRECTED, 'own_submission', 123]], $this->loggedEvents('reason', 'docid'));
         self::assertCount(1, $this->harness->_helper->messages);
         self::assertStringContainsString('vous-même déposé', $this->harness->_helper->messages[0]);
         self::assertContains('warning', $this->harness->_helper->namespaces);
@@ -568,6 +587,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         );
 
         self::assertSame('/coi/report?id=123', $this->harness->_helper->redirectedTo);
+        self::assertSame([[AccessLog::ACCESS_REDIRECTED, 'conflict_of_interest', 123]], $this->loggedEvents('reason', 'docid'));
         self::assertSame(
             ["Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission."],
             $this->harness->_helper->messages
@@ -641,6 +661,11 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         self::assertStringContainsString('User 99', $message);
         self::assertStringContainsString('Vous êtes maintenant connecté à votre compte', $message);
         self::assertStringContainsString(self::CONFIRMATION_REQUIRED_MESSAGE, $message);
+        // logged before the switch back: under the identity that was refused
+        $context = $this->securityLogRecords()[0]->context;
+        self::assertSame('conflict_of_interest', $context['reason']);
+        self::assertSame(42, $context['uid']);
+        self::assertSame(99, $context['original_uid']);
         // the original account has been restored so it can confirm the conflict absence
         self::assertSame(99, Episciences_Auth::getUid());
         self::assertFalse(Episciences_Auth::isImpersonating(), 'the switch user state is closed');
@@ -682,7 +707,11 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
     {
         $source = (string)file_get_contents($path);
 
-        $traitMethods = (new \ReflectionClass(Episciences_Paper_AccessControlControllerTrait::class))->getMethods();
+        // The abstract methods are the ones the controllers must provide
+        $traitMethods = array_filter(
+            (new \ReflectionClass(Episciences_Paper_AccessControlControllerTrait::class))->getMethods(),
+            static fn(\ReflectionMethod $method): bool => !$method->isAbstract()
+        );
         self::assertNotEmpty($traitMethods);
 
         foreach ($traitMethods as $method) {

@@ -160,22 +160,7 @@ class PaperController extends PaperDefaultController
         $this->view->metadata = $paper->getDatasetsFromEnrichment();
         $this->view->classifications = $paper->getClassifications();
 
-        if ($this->isRestrictedAccess($paper)) {
-
-            $paperId = $paper->getPaperid() ?: $paper->getDocid();
-            $id = Episciences_PapersManager::getPublishedPaperId($paperId);
-
-            if ($id !== 0) {
-                // redirect to published version
-                $this->redirect('/' . $id);
-            } elseif (!Episciences_Auth::isLogged()) {
-                // redirect to login if user is not logged in
-                $this->redirect('/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
-            }
-
-            $this->redirectsIfHaveNotEnoughPermissions($paper);
-
-        }
+        $this->redirectFromUnpublishedVersion($paper, '/%d', '/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
 
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
         $this->updatePaperStats($paper);

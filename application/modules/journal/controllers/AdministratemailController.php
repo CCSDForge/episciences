@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Security\AccessLog;
+
 class AdministratemailController extends Zend_Controller_Action
 {
 
@@ -71,6 +73,7 @@ class AdministratemailController extends Zend_Controller_Action
         $this->_helper->layout->disableLayout();
 
         if (!$this->isAllowedToEdit()) {
+            AccessLog::denied(AccessLog::ACL_DENIED, 'role_check');
             $this->_helper->redirector->gotoUrl('/error/deny');
             return;
         }
@@ -79,6 +82,7 @@ class AdministratemailController extends Zend_Controller_Action
         $request = $this->getRequest();
 
         if (!$request->isXmlHttpRequest()) {
+            AccessLog::denied(AccessLog::ACL_DENIED, 'not_xhr');
             $this->_helper->redirector->gotoUrl('/error/deny');
             return;
         }
@@ -89,6 +93,7 @@ class AdministratemailController extends Zend_Controller_Action
 
         // only a default template or a custom template of the current journal can be edited
         if (!$oTemplate->findForJournal($id, RVID)) {
+            AccessLog::denied(AccessLog::ACL_DENIED, 'foreign_template');
             $this->_helper->redirector->gotoUrl('/error/deny');
             return;
         }
@@ -111,6 +116,7 @@ class AdministratemailController extends Zend_Controller_Action
         $this->_helper->layout->disableLayout();
 
         if (!$this->isAllowedToEdit()) {
+            AccessLog::denied(AccessLog::ACL_DENIED, 'role_check');
             $this->_helper->redirector->gotoUrl('/error/deny');
             return;
         }
@@ -167,6 +173,7 @@ class AdministratemailController extends Zend_Controller_Action
         $this->_helper->layout->disableLayout();
 
         if (!$this->isAllowedToEdit()) {
+            AccessLog::denied(AccessLog::ACL_DENIED, 'role_check');
             $this->_helper->redirector->gotoUrl('/error/deny');
             return;
         }
