@@ -117,7 +117,9 @@ class Episciences_Csrf_Helper
             $session = new Zend_Session_Namespace($sessionName);
 
             // Use isset() - property_exists() doesn't work with Zend_Session_Namespace magic methods
+            // The PHP error log stays the place watched by the monitoring: the security log only adds the context
             if (!isset($session->hash)) {
+                trigger_error("CSRF token not found in session: $sessionName", E_USER_WARNING);
                 self::logFailure(AccessLog::REASON_CSRF_NO_SESSION_TOKEN, $elementName);
                 return false;
             }
@@ -132,6 +134,7 @@ class Episciences_Csrf_Helper
             unset($session->hash);
 
             if (!$isValid) {
+                trigger_error("CSRF token mismatch for: $elementName", E_USER_WARNING);
                 self::logFailure(AccessLog::REASON_CSRF_MISMATCH, $elementName);
             }
 

@@ -540,9 +540,10 @@ class Episciences_Csrf_HelperTest extends TestCase
     {
         Episciences_Csrf_Helper::validateFormToken('csrf_logged_1', []);
         $this->storeFormHash('unique', 'csrf_logged_1', 'stored-hash');
-        Episciences_Csrf_Helper::validateFormToken('csrf_logged_1', ['csrf_logged_1' => 'forged'], 'unique');
+        // @: the failures also go to the PHP error log (E_USER_WARNING)
+        @Episciences_Csrf_Helper::validateFormToken('csrf_logged_1', ['csrf_logged_1' => 'forged'], 'unique');
         // the stored token was cleared by the previous attempt
-        Episciences_Csrf_Helper::validateFormToken('csrf_logged_1', ['csrf_logged_1' => 'stored-hash'], 'unique');
+        @Episciences_Csrf_Helper::validateFormToken('csrf_logged_1', ['csrf_logged_1' => 'stored-hash'], 'unique');
 
         self::assertSame([
             [AccessLog::CSRF_FAILED, AccessLog::REASON_CSRF_MISSING, Level::Warning->getName()],
