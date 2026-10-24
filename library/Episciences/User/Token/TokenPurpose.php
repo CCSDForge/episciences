@@ -23,8 +23,16 @@ enum TokenPurpose: string
 
     public function ttlSeconds(): int
     {
-        $configured = defined($this->ttlConstantName()) ? constant($this->ttlConstantName()) : null;
+        $constantName = $this->ttlConstantName();
 
+        return $this->resolveTtlSeconds(defined($constantName) ? constant($constantName) : null);
+    }
+
+    /**
+     * Lifetime for a configured value: the default when the value is missing, or invalid (with a warning)
+     */
+    public function resolveTtlSeconds(mixed $configured): int
+    {
         if ($configured === null || $configured === '') {
             return $this->defaultTtlSeconds();
         }

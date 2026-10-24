@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Token lifetimes: configurable in pwd.json (USER_TOKEN section), with a default for a missing or invalid value.
- * The configured cases run in a separate process: a constant cannot be undefined.
+ * The values are passed to resolveTtlSeconds(): the constants may already be defined by the test configuration.
  *
  * @covers \Episciences\User\Token\TokenPurpose
  */
@@ -30,37 +30,43 @@ final class TokenPurposeTest extends TestCase
     }
 
     /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
+     * @dataProvider unconfiguredLifetimes
      */
-    public function testUnconfiguredLifetimeIsTheDefault(): void
+    public function testUnconfiguredLifetimeIsTheDefault(mixed $configured): void
     {
-        self::assertFalse(defined('USER_TOKEN_ACCOUNT_SETUP_TTL'));
-        self::assertSame(TokenPurpose::ACCOUNT_SETUP->defaultTtlSeconds(), TokenPurpose::ACCOUNT_SETUP->ttlSeconds());
+        self::assertSame(TokenPurpose::ACCOUNT_SETUP->defaultTtlSeconds(), TokenPurpose::ACCOUNT_SETUP->resolveTtlSeconds($configured));
     }
 
     /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
+     * @return iterable<string, array{mixed}>
      */
+    public static function unconfiguredLifetimes(): iterable
+    {
+        yield 'missing' => [null];
+        yield 'empty' => [''];
+    }
+
     public function testConfiguredLifetimeIsUsed(): void
     {
-        define('USER_TOKEN_PASSWORD_RESET_TTL', 900);
-        define('USER_TOKEN_ACCOUNT_ACTIVATION_TTL', '86400'); // JSON string value
+        self::assertSame(900, TokenPurpose::PASSWORD_RESET->resolveTtlSeconds(900));
+        self::assertSame(86400, TokenPurpose::ACCOUNT_ACTIVATION->resolveTtlSeconds('86400')); // JSON string value
+    }
 
-        self::assertSame(900, TokenPurpose::PASSWORD_RESET->ttlSeconds());
-        self::assertSame(86400, TokenPurpose::ACCOUNT_ACTIVATION->ttlSeconds());
+    public function testLifetimeIsReadFromTheConfigurationConstant(): void
+    {
+        foreach (TokenPurpose::cases() as $purpose) {
+            $constantName = $purpose->ttlConstantName();
+            $expected = $purpose->resolveTtlSeconds(defined($constantName) ? constant($constantName) : null);
+
+            self::assertSame($expected, $purpose->ttlSeconds(), $purpose->value);
+        }
     }
 
     /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
      * @dataProvider invalidLifetimes
      */
     public function testInvalidLifetimeFallsBackToTheDefaultWithAWarning(mixed $configured): void
     {
-        define('USER_TOKEN_PASSWORD_RESET_TTL', $configured);
-
         $warnings = [];
         set_error_handler(static function (int $errno, string $message) use (&$warnings): bool {
             $warnings[] = $message;
@@ -68,7 +74,7 @@ final class TokenPurposeTest extends TestCase
         }, E_USER_WARNING);
 
         try {
-            $ttl = TokenPurpose::PASSWORD_RESET->ttlSeconds();
+            $ttl = TokenPurpose::PASSWORD_RESET->resolveTtlSeconds($configured);
         } finally {
             restore_error_handler();
         }
