@@ -70,11 +70,22 @@ final class AccessLog
     /** Route parameters already logged under their own key */
     private const ROUTE_KEYS = ['module', 'controller', 'action'];
 
+    /**
+     * Events whose request is answered otherwise than by a 401/403 (redirection, 404): they do not explain
+     * a 401/403 sent later in the same request
+     */
+    private const NOT_DENYING_EVENTS = [
+        self::AUTH_REQUIRED,
+        self::ACCESS_REDIRECTED,
+        self::NOT_FOUND_MASKED,
+        self::UNSAFE_PATH,
+    ];
+
     private const MAX_VALUE_LENGTH = 200;
     private const MAX_PARAMS = 50;
 
     private static ?LoggerInterface $logger = null;
-    private static bool $logged = false;
+    private static bool $denialLogged = false;
 
     /**
      * Record a denied access.
@@ -87,7 +98,9 @@ final class AccessLog
      */
     public static function denied(string $event, string $reason = '', array $context = [], ?Level $level = null): void
     {
-        self::$logged = true;
+        if (!in_array($event, self::NOT_DENYING_EVENTS, true)) {
+            self::$denialLogged = true;
+        }
 
         try {
             $record = self::requestContext();
@@ -104,11 +117,12 @@ final class AccessLog
     }
 
     /**
-     * Whether a denied access has already been recorded for the current request
+     * Whether an event explaining a 401/403 response has already been recorded for the current request
+     * (see NOT_DENYING_EVENTS)
      */
-    public static function wasLogged(): bool
+    public static function wasDenialLogged(): bool
     {
-        return self::$logged;
+        return self::$denialLogged;
     }
 
     /**
@@ -116,7 +130,7 @@ final class AccessLog
      */
     public static function reset(): void
     {
-        self::$logged = false;
+        self::$denialLogged = false;
     }
 
     /**

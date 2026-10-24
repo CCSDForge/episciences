@@ -20,7 +20,7 @@ final class ForbiddenResponseLoggerTest extends TestCase
 {
     use SecurityLogCaptureTrait;
 
-    private function shutdownWith(int $code, string $controller = 'paper', string $action = 'view'): void
+    private function plugin(int $code, string $controller = 'paper', string $action = 'view'): ForbiddenResponseLogger
     {
         $request = new Zend_Controller_Request_Http();
         $request->setControllerName($controller)->setActionName($action);
@@ -30,7 +30,13 @@ final class ForbiddenResponseLoggerTest extends TestCase
         $plugin = new ForbiddenResponseLogger();
         $plugin->setRequest($request);
         $plugin->setResponse($response);
-        $plugin->dispatchLoopShutdown();
+
+        return $plugin;
+    }
+
+    private function shutdownWith(int $code, string $controller = 'paper', string $action = 'view'): void
+    {
+        $this->plugin($code, $controller, $action)->dispatchLoopShutdown();
     }
 
     /**
@@ -61,6 +67,63 @@ final class ForbiddenResponseLoggerTest extends TestCase
         $this->shutdownWith(403);
 
         self::assertCount(1, $this->securityLogRecords());
+    }
+
+    /**
+     * A redirection or a 404 logged earlier in the request does not explain a 403 sent afterwards
+     */
+    public function testDeniedResponseAfterAnEventAnsweredOtherwiseIsRecorded(): void
+    {
+        AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name');
+
+        $this->shutdownWith(403);
+
+        self::assertSame(
+            [[AccessLog::UNSAFE_PATH, 'unsafe_file_name'], [AccessLog::HTTP_FORBIDDEN, '']],
+            $this->loggedEvents()
+        );
+    }
+
+    /**
+     * A 403 sent with header() then exit() never reaches dispatchLoopShutdown(): checked at the end of the script
+     *
+     * @dataProvider deniedCodeProvider
+     */
+    public function testDeniedResponseOfAnExitedRequestIsRecorded(int $code): void
+    {
+        $this->plugin(200)->checkExitedResponse($code);
+
+        $records = $this->securityLogRecords();
+        self::assertCount(1, $records);
+        self::assertSame(AccessLog::HTTP_FORBIDDEN, $records[0]->message);
+        self::assertSame($code, $records[0]->context['status']);
+    }
+
+    /**
+     * The end of the script of a request that went through the dispatch loop adds nothing
+     */
+    public function testEndOfScriptAfterTheDispatchLoopIsNotRecordedTwice(): void
+    {
+        $plugin = $this->plugin(403);
+
+        $plugin->dispatchLoopShutdown();
+        $plugin->checkExitedResponse(403);
+
+        self::assertCount(1, $this->securityLogRecords());
+    }
+
+    public function testEndOfScriptWithoutStatusCodeIsNotRecorded(): void
+    {
+        $this->plugin(200)->checkExitedResponse(false);
+
+        self::assertSame([], $this->securityLogRecords());
+    }
+
+    public function testExitedDenyLandingPageIsNotRecorded(): void
+    {
+        $this->plugin(200, 'error', 'deny')->checkExitedResponse(403);
+
+        self::assertSame([], $this->securityLogRecords());
     }
 
     /**

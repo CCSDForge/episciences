@@ -174,15 +174,40 @@ final class AccessLogTest extends TestCase
         self::assertSame(Level::Notice, $this->onlyRecord()->level);
     }
 
-    public function testRequestIsFlaggedOnceLogged(): void
+    public function testRequestIsFlaggedOnceADenialIsLogged(): void
     {
-        self::assertFalse(AccessLog::wasLogged());
+        self::assertFalse(AccessLog::wasDenialLogged());
 
         AccessLog::denied(AccessLog::ACL_DENIED);
-        self::assertTrue(AccessLog::wasLogged());
+        self::assertTrue(AccessLog::wasDenialLogged());
 
         AccessLog::reset();
-        self::assertFalse(AccessLog::wasLogged());
+        self::assertFalse(AccessLog::wasDenialLogged());
+    }
+
+    /**
+     * Answered by a redirection or a 404: they do not explain a 401/403 sent later in the request
+     *
+     * @dataProvider notDenyingEventProvider
+     */
+    public function testEventsAnsweredOtherwiseDoNotFlagADenial(string $event): void
+    {
+        AccessLog::denied($event);
+
+        self::assertFalse(AccessLog::wasDenialLogged());
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function notDenyingEventProvider(): array
+    {
+        return [
+            'login page' => [AccessLog::AUTH_REQUIRED],
+            'redirection' => [AccessLog::ACCESS_REDIRECTED],
+            'masked 404' => [AccessLog::NOT_FOUND_MASKED],
+            'unsafe path' => [AccessLog::UNSAFE_PATH],
+        ];
     }
 
     public function testAFailingLoggerNeverBreaksTheRequest(): void
@@ -202,6 +227,6 @@ final class AccessLogTest extends TestCase
             ini_set('error_log', $errorLog === false ? '' : $errorLog);
         }
 
-        self::assertTrue(AccessLog::wasLogged());
+        self::assertTrue(AccessLog::wasDenialLogged());
     }
 }
