@@ -7,6 +7,9 @@ namespace unit\modules;
 use Episciences_Acl;
 use Episciences_Auth;
 use Episciences_Csrf_Helper;
+use Episciences_Review;
+use Episciences_ReviewsManager;
+use ReflectionProperty;
 use unit\modules\support\FixtureController;
 use Zend_Auth;
 use Zend_Controller_Front;
@@ -151,6 +154,27 @@ final class ControllerTestCaseTest extends ControllerTestCase
     }
 
     // ------------------------------------------------------------------
+    // Journal
+    // ------------------------------------------------------------------
+
+    public function testJournalIsLoadedFromTheProgrammedSettings(): void
+    {
+        $this->givenJournal([Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '1']);
+
+        $journal = Episciences_ReviewsManager::find(RVID);
+        self::assertInstanceOf(Episciences_Review::class, $journal);
+        $journal->loadSettings();
+
+        self::assertSame('1', $journal->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED));
+        self::assertMatchesRegularExpression('/FROM `REVIEW` WHERE \(RVID = ' . RVID . '\)/', $this->db->selects()[0]);
+    }
+
+    public function testJournalIsNotTakenFromAnEarlierTest(): void
+    {
+        self::assertFalse(Episciences_ReviewsManager::find(RVID));
+    }
+
+    // ------------------------------------------------------------------
     // Dispatch
     // ------------------------------------------------------------------
 
@@ -215,12 +239,17 @@ final class ControllerTestCaseTest extends ControllerTestCase
         $previousPost = $_POST;
         $previousSession = $_SESSION;
         $previousFrontResponse = Zend_Controller_Front::getInstance()->getResponse();
+        $journalCache = new ReflectionProperty(Episciences_ReviewsManager::class, '_cache');
+        $previousJournalCache = $journalCache->getValue();
         $this->setUpControllerEnvironment();
 
         $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
         $this->postRequest(['docid' => '12'], true);
         Zend_Registry::set('controller_test_case_entry', true);
         $this->dispatch(FixtureController::class, 'echo', $this->getRequest());
+        $this->givenJournal();
+        Episciences_ReviewsManager::find(RVID);
+        self::assertNotSame($previousJournalCache, $journalCache->getValue());
         self::assertNotSame($previousFrontResponse, Zend_Controller_Front::getInstance()->getResponse());
 
         $this->restoreControllerEnvironment();
@@ -232,6 +261,7 @@ final class ControllerTestCaseTest extends ControllerTestCase
         self::assertFalse(Zend_Auth::getInstance()->hasIdentity());
         self::assertFalse(Zend_Registry::isRegistered('controller_test_case_entry'));
         self::assertSame($previousFrontResponse, Zend_Controller_Front::getInstance()->getResponse());
+        self::assertSame($previousJournalCache, $journalCache->getValue());
 
         // The test ends in the state the after-test restoration expects
         $this->setUpControllerEnvironment();
