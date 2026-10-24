@@ -39,7 +39,6 @@ tests/unit/modules/common/controllers/WebsiteDefaultControllerTest.php
 tests/unit/modules/journal/controllers/AdministrategraphabstractControllerRequestTest.php
 tests/unit/modules/journal/controllers/AdministratemailinglistControllerTest.php
 tests/unit/modules/journal/controllers/AdministratepaperControllerTest.php
-tests/unit/modules/journal/controllers/FileControllerCoiGuardTest.php
 tests/unit/modules/journal/controllers/FileControllerPathHandlingTest.php
 tests/unit/modules/journal/controllers/JournalModuleAclCoverageTest.php
 tests/unit/modules/journal/controllers/PaperControllerContributorGuardTest.php
