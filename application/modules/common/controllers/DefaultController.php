@@ -25,54 +25,57 @@ class DefaultController extends Zend_Controller_Action
 
 
     /**
-     *
-     * Requesting the file of an unpublished version
-     * -> Redirects to the published version
-     * (eg in case of access with a previous Docid or access by a paperId)
-     * But if there's no published version and the user is not logged in
-     * -> Redirect to Auth
+     * Requesting the file of an unpublished version: see redirectFromUnpublishedVersion(). The move to the published
+     * version is permanent (301); when that version cannot be read, the PDF action of the target answers 404.
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     protected function requestingAnUnpublishedFile(Episciences_Paper $paper): void
     {
+        $this->redirectFromUnpublishedVersion(
+            $paper,
+            '/%d/pdf',
+            '/user/login/forward-controller/paper/forward-action/pdf/id/' . $paper->getDocid(),
+            true
+        );
+    }
 
-        if ($this->isRestrictedAccess($paper)) {
-
-            $paperId = $paper->getPaperid() ?: $paper->getDocid();
-            $publishedId = $this->findPublishedDocId((int)$paperId);
-
-            if ($publishedId !== 0) {
-
-                $publishedPaper = Episciences_PapersManager::get($publishedId, false);
-
-                if (!$publishedPaper) {
-                    $this->getResponse()?->setHttpResponseCode(404);
-                    $this->renderScript('index/notfound.phtml');
-                    return;
-                }
-
-                Episciences_Tools::header('HTTP/1.1 301 Moved Permanently', 301);
-                $location = sprintf('/%s/pdf', $publishedPaper->getDocid());
-                header('Location: ' . $location);
-                exit();
-
-            }
-
-            if (!Episciences_Auth::isLogged()) {
-                AccessLog::denied(AccessLog::AUTH_REQUIRED, 'unpublished_paper', self::paperLogContext($paper));
-                $this->redirect('/user/login/forward-controller/paper/forward-action/pdf/id/' . $paper->getDocid());
-                // The redirection already ends the request, unless its exit is disabled
-                return;
-            }
-
-            AccessLog::denied(AccessLog::ACCESS_REDIRECTED, 'unpublished_paper', self::paperLogContext($paper));
-            $message = $this->view->translate("Vous n'avez pas accès à cet article.");
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
-            $this->redirect('/');
-
+    /**
+     * An unpublished version is only shown to the users allowed on it (see isRestrictedAccess()). The others are
+     * redirected: to the published version when there is one, to the login page when they are not logged in,
+     * to the home page otherwise. The redirection ends the request.
+     *
+     * @param string $publishedUrlFormat URL of the published version, "%d" standing for its docid
+     * @param string $loginUrl login page, coming back to the requested page once logged in
+     * @param bool $permanent whether the move to the published version is permanent (301)
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    protected function redirectFromUnpublishedVersion(
+        Episciences_Paper $paper,
+        string $publishedUrlFormat,
+        string $loginUrl,
+        bool $permanent = false
+    ): void
+    {
+        if (!$this->isRestrictedAccess($paper)) {
+            return;
         }
 
+        $publishedDocId = $this->findPublishedDocId((int)($paper->getPaperid() ?: $paper->getDocid()));
+
+        if ($publishedDocId !== 0) {
+            $this->redirectToPublishedVersion(sprintf($publishedUrlFormat, $publishedDocId), $permanent);
+            return;
+        }
+
+        if (!Episciences_Auth::isLogged()) {
+            AccessLog::denied(AccessLog::AUTH_REQUIRED, 'unpublished_paper', self::paperLogContext($paper));
+            $this->redirect($loginUrl);
+            return;
+        }
+
+        $this->redirectHomeWithoutAccess($paper);
     }
 
     /**
@@ -95,11 +98,33 @@ class DefaultController extends Zend_Controller_Action
 
         if ($this->isRestrictedAccess($paper)) {
             // Guests too are sent to the home page, not to the login page
-            AccessLog::denied(AccessLog::ACCESS_REDIRECTED, 'unpublished_paper', self::paperLogContext($paper));
-            $message = $this->view->translate("Vous n'avez pas accès à cet article.");
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
-            $this->redirect('/');
+            $this->redirectHomeWithoutAccess($paper);
         }
+    }
+
+    /**
+     * The status code is kept by the shared redirector helper: it is put back for the next redirections
+     * (reached only when the redirection does not end the request)
+     */
+    private function redirectToPublishedVersion(string $url, bool $permanent): void
+    {
+        /** @var Zend_Controller_Action_Helper_Redirector $redirector */
+        $redirector = $this->_helper->getHelper('Redirector');
+        $code = $redirector->getCode();
+
+        try {
+            $this->redirect($url, $permanent ? ['code' => 301] : []);
+        } finally {
+            $redirector->setCode($code);
+        }
+    }
+
+    private function redirectHomeWithoutAccess(Episciences_Paper $paper): void
+    {
+        AccessLog::denied(AccessLog::ACCESS_REDIRECTED, 'unpublished_paper', self::paperLogContext($paper));
+        $message = $this->view->translate("Vous n'avez pas accès à cet article.");
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
+        $this->redirect('/');
     }
 
     /**

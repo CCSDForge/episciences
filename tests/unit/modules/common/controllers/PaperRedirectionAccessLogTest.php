@@ -18,7 +18,8 @@ use unit\library\Episciences\Security\SecurityLogCaptureTrait;
 
 require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
-require_once APPLICATION_PATH . '/modules/journal/controllers/CommentsController.php';
+// Parent of the test controller declared below
+require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
 /**
  * Access refusals answered by a redirection to another page (DefaultController, CommentsController):
@@ -30,6 +31,11 @@ final class PaperRedirectionAccessLogTest extends TestCase
 
     private const DOCID = 12;
     private const PAPERID = 10;
+
+    public static function setUpBeforeClass(): void
+    {
+        require_once APPLICATION_PATH . '/modules/journal/controllers/CommentsController.php';
+    }
 
     protected function tearDown(): void
     {
@@ -56,12 +62,12 @@ final class PaperRedirectionAccessLogTest extends TestCase
         return $paper;
     }
 
-    private function defaultController(bool $isRestricted): RedirectionTestController
+    private function defaultController(bool $isRestricted, int $publishedDocId = 0): RedirectionTestController
     {
         $controller = new RedirectionTestController(
             new Zend_Controller_Request_HttpTestCase(),
             new Zend_Controller_Response_HttpTestCase(),
-            ['restricted' => $isRestricted, 'publishedId' => 0]
+            ['restricted' => $isRestricted, 'publishedId' => $publishedDocId]
         );
         $controller->view = new Zend_View();
         $controller->getHelper('redirector')->setExit(false);
@@ -167,6 +173,43 @@ final class PaperRedirectionAccessLogTest extends TestCase
         self::assertSame([$expectedLookup], $controller->publishedLookups);
     }
 
+    /**
+     * The published version is the address of the file from now on, whoever asks: nothing is refused
+     */
+    public function testFileOfAnUnpublishedVersionMovesPermanentlyToThePublishedOne(): void
+    {
+        $controller = $this->defaultController(true, 15);
+
+        $controller->checkFile($this->paper());
+
+        self::assertSame('/15/pdf', self::redirectionOf($controller));
+        self::assertSame(301, $controller->getResponse()->getHttpResponseCode());
+        self::assertSame([], $this->loggedEvents());
+    }
+
+    /**
+     * The status code is kept by the shared redirector helper: the next redirections are temporary again
+     */
+    public function testPermanentMoveDoesNotLeakToTheNextRedirections(): void
+    {
+        $this->defaultController(true, 15)->checkFile($this->paper());
+
+        $controller = $this->defaultController(true);
+        $controller->checkFile($this->paper());
+
+        self::assertSame(302, $controller->getResponse()->getHttpResponseCode());
+    }
+
+    public function testPageOfAnUnpublishedVersionRedirectsTemporarilyToThePublishedOne(): void
+    {
+        $controller = $this->defaultController(true, 15);
+
+        $controller->checkPage($this->paper());
+
+        self::assertSame('/15', self::redirectionOf($controller));
+        self::assertSame(302, $controller->getResponse()->getHttpResponseCode());
+    }
+
     public function testAllowedFileIsNotLookedUpNorLogged(): void
     {
         $controller = $this->defaultController(false);
@@ -249,5 +292,10 @@ final class RedirectionTestController extends \DefaultController
     public function checkFile(Episciences_Paper $paper): void
     {
         $this->requestingAnUnpublishedFile($paper);
+    }
+
+    public function checkPage(Episciences_Paper $paper): void
+    {
+        $this->redirectFromUnpublishedVersion($paper, '/%d', '/user/login');
     }
 }
