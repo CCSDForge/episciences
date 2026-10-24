@@ -46,6 +46,9 @@ final class WebsiteDefaultControllerFormTokenTest extends TestCase
 
     protected function setUp(): void
     {
+        // The site settings are managed by the secretaries and the webmasters
+        $this->logInAs(Episciences_Acl::ROLE_SECRETARY);
+
         $this->previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
         $this->adapter = $this->getMockBuilder($this->previousAdapter::class)
             ->setConstructorArgs([$this->previousAdapter->getConfig()])
@@ -136,8 +139,6 @@ final class WebsiteDefaultControllerFormTokenTest extends TestCase
      */
     private function postMenu(array $post): array
     {
-        $this->logInAs(Episciences_Acl::ROLE_SECRETARY);
-
         $website = new class {
             /** @var list<string> */
             public array $calls = [];
