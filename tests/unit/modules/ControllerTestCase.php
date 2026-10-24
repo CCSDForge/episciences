@@ -6,6 +6,7 @@ namespace unit\modules;
 
 use Episciences_Auth;
 use Episciences_Csrf_Helper;
+use Episciences_ReviewsManager;
 use Episciences_User;
 use PHPUnit\Framework\Attributes\After;
 use PHPUnit\Framework\Attributes\Before;
@@ -36,11 +37,12 @@ use Zend_Session;
  *   updates and deletes, and answers the queries with the rows programmed by the test;
  * - request factories (GET, POST, AJAX POST), with or without a valid request token;
  * - a logged user with roles, possibly impersonated by another one (su);
+ * - a journal loaded from programmed settings (givenJournal());
  * - dispatch(), which runs an action and returns its response; a redirection or a sent JSON
  *   answer stops the action where production would exit.
  *
  * The global state these touch (default adapter, superglobals, session, identity, registry,
- * action helpers) is saved before each test and restored after it, whatever the test does in its
+ * journal cache, action helpers) is saved before each test and restored after it, whatever the test does in its
  * own setUp() and tearDown().
  */
 abstract class ControllerTestCase extends TestCase
@@ -65,6 +67,9 @@ abstract class ControllerTestCase extends TestCase
     /** @var array{request: mixed, response: mixed} */
     private array $previousFrontState;
 
+    /** @var array<mixed> */
+    private array $previousJournalCache;
+
     #[Before]
     protected function setUpControllerEnvironment(): void
     {
@@ -78,6 +83,10 @@ abstract class ControllerTestCase extends TestCase
         $this->previousSessionTestMode = Zend_Session::$_unitTestEnabled;
         $this->previousRegistry = Zend_Registry::getInstance()->getArrayCopy();
         $this->previousFrontState = $this->frontState();
+        $this->previousJournalCache = $this->journalCache();
+
+        // Journals are loaded from the rows programmed by the test, not from an earlier one
+        $this->journalCache([]);
 
         // Sessions are kept in $_SESSION, no session is started
         Zend_Session::$_unitTestEnabled = true;
@@ -102,6 +111,7 @@ abstract class ControllerTestCase extends TestCase
         }
         $this->previousHelpers = [];
         $this->frontState($this->previousFrontState);
+        $this->journalCache($this->previousJournalCache);
 
         Zend_Auth::getInstance()->clearIdentity();
         Zend_Registry::getInstance()->exchangeArray($this->previousRegistry);
@@ -213,6 +223,27 @@ abstract class ControllerTestCase extends TestCase
     }
 
     // ------------------------------------------------------------------
+    // Journal
+    // ------------------------------------------------------------------
+
+    /**
+     * Answer the lookups of the current journal (RVID) and of its settings.
+     *
+     * @param array<string, mixed> $settings setting values, keyed by setting name
+     */
+    protected function givenJournal(array $settings = []): void
+    {
+        $rows = [];
+        foreach ($settings as $setting => $value) {
+            $rows[] = ['RVID' => RVID, 'SETTING' => $setting, 'VALUE' => $value];
+        }
+
+        $this->db
+            ->respondTo('/FROM `REVIEW` WHERE \\(RVID = ' . RVID . '\\)/', [['RVID' => RVID, 'CODE' => 'unittests', 'NAME' => 'Unit tests', 'STATUS' => 1]])
+            ->respondTo('/FROM `REVIEW_SETTING` WHERE \\(RVID = ' . RVID . '\\)/', $rows);
+    }
+
+    // ------------------------------------------------------------------
     // Dispatch
     // ------------------------------------------------------------------
 
@@ -302,6 +333,24 @@ abstract class ControllerTestCase extends TestCase
         }
 
         return $current;
+    }
+
+    /**
+     * Journals cached by Episciences_ReviewsManager, replaced by $cache when given.
+     *
+     * @param array<mixed>|null $cache
+     * @return array<mixed>
+     */
+    private function journalCache(?array $cache = null): array
+    {
+        $property = new ReflectionProperty(Episciences_ReviewsManager::class, '_cache');
+        $current = $property->getValue();
+
+        if ($cache !== null) {
+            $property->setValue(null, $cache);
+        }
+
+        return is_array($current) ? $current : [];
     }
 
     private function replaceHelper(string $name, Zend_Controller_Action_Helper_Abstract $helper): void
