@@ -2,6 +2,9 @@
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Episciences\AppRegistry;
+use Episciences\Paper\Files\DocumentFilePolicy;
+use Episciences\Upload\SafeFileName;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
@@ -37,16 +40,46 @@ class FileController extends DefaultController
         $this->_helper->viewRenderer->setNoRender();
         $params = $this->getRequest()->getParams();
 
-        $folder = ($params['folder'] === 'ce') ? Episciences_CommentsManager::COPY_EDITING_SOURCES : $params['folder'];
+        $folder = $params['folder'] ?? '';
+        if ($folder === 'ce') {
+            $folder = Episciences_CommentsManager::COPY_EDITING_SOURCES;
+        }
+
+        // Other sub-directories of the document (reports, ratings, tmp...) have their own access rules
+        if (!in_array($folder, DocumentFilePolicy::FOLDERS, true)) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         $parentCommentId = $params['parentCommentId'] ?? null;
-        $docId = (int)$params['docId'];
-        $filename = $params['filename'];
+        $docId = (int)($params['docId'] ?? 0);
+        $filename = $params['filename'] ?? null;
         $extension = $params['extension'] ?? null;
+
+        // Missing name, or forged as an array (filename[]=...)
+        if (!is_string($filename) || ($extension !== null && !is_string($extension))) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
 
         $file = $filename;
 
         if (!empty($extension)) {
             $file .= '.' . $extension;
+        }
+
+        // The folder allow-list would be pointless if a segment could climb out of it (e.g. "../reports").
+        // Only copy-editing files are stored by comment: elsewhere the access check, made on the file name,
+        // would not be about the file served.
+        if (
+            !SafeFileName::isBare($file) ||
+            (
+                null !== $parentCommentId &&
+                ($folder !== DocumentFilePolicy::FOLDER_COPY_EDITING || !preg_match('/^\d+$/D', (string)$parentCommentId))
+            )
+        ) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
         }
 
         // Trusted base: the document directory. The folder / parentCommentId / file
@@ -59,7 +92,156 @@ class FileController extends DefaultController
 
         $relativePath .= $file;
 
+        // 404 rather than 403: do not disclose that the file exists
+        if (!$this->isAllowedToReadDocumentFile($docId, $folder, $file)) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         $this->loadFile(Episciences_PapersManager::buildDocumentPath($docId), $relativePath);
+    }
+
+    /**
+     * The files of a paper version are only given to the users who see them on the paper pages
+     * (see DocumentFilePolicy).
+     */
+    protected function isAllowedToReadDocumentFile(int $docId, string $folder, string $file): bool
+    {
+        try {
+            $paper = $this->findPaper($docId);
+
+            if (!$paper) {
+                return false;
+            }
+
+            // Public file: the user's roles do not matter
+            if (DocumentFilePolicy::isPublic($folder, $paper->isPublished())) {
+                return true;
+            }
+
+            $review = $this->findJournal();
+            $uid = (int)Episciences_Auth::getUid();
+
+            $isOwnerOrCoAuthor = $paper->isOwnerOrCoAuthor();
+            $isReviewer = array_key_exists($uid, $paper->getReviewers());
+
+            // The author and the reviewers only see some of the comments: the type of the comment carrying the file decides
+            $commentTypes = ($isOwnerOrCoAuthor || $isReviewer) && $folder === DocumentFilePolicy::FOLDER_COMMENTS
+                ? $this->findCommentTypes($docId, $file)
+                : [];
+
+            return DocumentFilePolicy::isAllowed(
+                $folder,
+                $paper->isPublished(),
+                $isOwnerOrCoAuthor,
+                static::isConflictDetected($paper, $review),
+                static::isEditorialStaff($paper, $review->getSettings()),
+                $isReviewer,
+                $commentTypes
+            );
+        } catch (Exception $e) {
+            // Refused, but not to be mistaken for a missing file
+            AppRegistry::getMonoLogger()?->warning('Document file access check failed', [
+                'docId' => $docId,
+                'folder' => $folder,
+                'file' => $file,
+                'exception' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * The files of the temporary versions are shared by all the versions of the paper: the user must be allowed
+     * on one of them (see DocumentFilePolicy::isTemporaryVersionFileAllowed()).
+     */
+    protected function isAllowedToReadTemporaryVersionFile(int $paperId): bool
+    {
+        try {
+            $review = $this->findJournal();
+            $uid = (int)Episciences_Auth::getUid();
+            $hasConflict = null;
+            // Only the assignment to the paper depends on the version
+            $isStaffOfEveryPaper = static::isEditorialStaffOfEveryPaper($review->getSettings());
+
+            // The versions are loaded one at a time, the latest first: the first one granting access ends the check
+            foreach ($this->findPaperVersions($paperId) as $paper) {
+                // Not isAssignedEditorOrCopyEditor(), which loads the latest version again: it is one of the versions
+                $isEditorialStaff = $isStaffOfEveryPaper || $paper->getEditor($uid) || $paper->getCopyEditor($uid);
+
+                // Only withdraws the access of the editorial staff: not looked up for the others. Declared for the
+                // paper, not for a version: looked up once.
+                if ($isEditorialStaff) {
+                    $hasConflict ??= static::isConflictDetected($paper, $review);
+                }
+
+                if (DocumentFilePolicy::isTemporaryVersionFileAllowed(
+                    $paper->isOwnerOrCoAuthor(),
+                    (bool)$hasConflict,
+                    $isEditorialStaff,
+                    array_key_exists($uid, $paper->getReviewers())
+                )) {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (Exception $e) {
+            // Refused, but not to be mistaken for a missing file
+            AppRegistry::getMonoLogger()?->warning('Temporary version file access check failed', [
+                'paperId' => $paperId,
+                'exception' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Versions of the paper in the current journal, the latest first, each one loaded when it is reached
+     *
+     * @return iterable<Episciences_Paper>
+     * @throws Exception
+     */
+    protected function findPaperVersions(int $paperId): iterable
+    {
+        foreach (Episciences_PapersManager::getDocIdsByPaperIdInJournal($paperId, RVID) as $docId) {
+            $paper = $this->findPaper($docId);
+
+            if ($paper) {
+                yield $paper;
+            }
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    protected function findPaper(int $docId): ?Episciences_Paper
+    {
+        return Episciences_PapersManager::get($docId, false) ?: null;
+    }
+
+    /**
+     * @throws Exception
+     */
+    protected function findJournal(): Episciences_Review
+    {
+        $review = Episciences_ReviewsManager::find(RVID);
+
+        if (!$review) {
+            throw new RuntimeException(sprintf('Journal #%d not found', RVID));
+        }
+
+        $review->loadSettings();
+        return $review;
+    }
+
+    /**
+     * @return int[]
+     */
+    protected function findCommentTypes(int $docId, string $file): array
+    {
+        return Episciences_CommentsManager::findTypesByAttachment($docId, $file);
     }
 
     // load an e-mail attached file
@@ -93,34 +275,34 @@ class FileController extends DefaultController
         $this->loadFile($baseDir, $relativePath, true);
     }
 
-    // Accès à la version temporaire d'un document
+    /**
+     * Files of the temporary versions of a paper: the route segment is the paper id, the files being stored by paper
+     */
     public function tmpAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $params = $this->getRequest()->getParams();
 
-        $docId = (int)$params['docId'];
-        $filename = $params['filename'];
-        $extension = $params['extension'];
+        $paperId = (int)($params['docId'] ?? 0);
+        $filename = $params['filename'] ?? '';
+        $extension = $params['extension'] ?? '';
+
+        // Forged as an array (filename[]=...)
+        if (!is_string($filename) || !is_string($extension)) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         $file = $filename . '.' . $extension;
 
-        $this->loadFile(Episciences_PapersManager::buildDocumentPath($docId) . '/tmp', $file);
-    }
+        // 404 rather than 403: do not disclose that the file exists
+        if (!SafeFileName::isBare($file) || $paperId <= 0 || !$this->isAllowedToReadTemporaryVersionFile($paperId)) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
 
-    // Accès aux fichiers joints d'un document
-    public function paperAction(): void
-    {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-        $params = $this->getRequest()->getParams();
-
-        $docId = (int)$params['docId'];
-        $filename = $params['filename'];
-        $extension = $params['extension'];
-        $file = $filename . '.' . $extension;
-
-        $this->loadFile(Episciences_PapersManager::buildDocumentPath($docId) . '/ratings', $file);
+        $this->loadFile(Episciences_PapersManager::buildDocumentPath($paperId) . '/tmp', $file);
     }
 
     // access to a rating report attachment
