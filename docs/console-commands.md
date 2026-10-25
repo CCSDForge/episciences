@@ -859,7 +859,7 @@ visits into `STAT_TEMP`. Supports plain and `.gz`-compressed log files. Duplicat
 via the `STAT_PROCESSING_LOG` table (use `--force` to reprocess).
 
 > **Prerequisite:** run `src/mysql/2025-08-24-stat-processing-log-table.sql` before the first use.
-> See [docs/STATISTICS_UPDATE_README.md](./STATISTICS_UPDATE_README.md) for the full pipeline overview.
+> See [docs/statistics-update-readme.md](./statistics-update-readme.md) for the full pipeline overview.
 
 ```bash
 php scripts/console.php stats:import-logs [options]
