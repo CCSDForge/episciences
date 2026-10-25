@@ -31,6 +31,7 @@ Episciences has received funding from:
 | [Console Commands](./docs/console-commands.md) | Full reference for all `scripts/console.php` CLI commands |
 | [Multi-Tenancy & Journal Storage](./docs/multi-tenancy-and-storage.md) | Virtual host resolution, database scoping, filesystem layout in `data/<rvcode>/`, and role isolation |
 | [Journal Provisioning](./docs/journal-provisioning.md) | Procedure and CLI tooling for creating and provisioning new journals |
+| [Authentication & Security](./docs/auth-and-security.md) | Dual DB auth, single-use link tokens, reviewer HMAC secrets, impersonation audit, and security logs |
 | [Read-Only Maintenance Mode](./docs/read-only-mode.md) | Public consultation with zero database writes during maintenance: configuration, architecture, operating procedure |
 | [Statistics Pipeline](./docs/STATISTICS_UPDATE_README.md) | Full stats pipeline: Apache logs → `STAT_TEMP` → `PAPER_STAT` → KPI JSON |
 | [Metadata Enrichment Pipeline](./docs/metadata-enrichment.md) | External scholarly metadata harvesting (OpenAIRE, Crossref, OpenCitations, zbMATH, Scholexplorer) |
