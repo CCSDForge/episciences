@@ -1,5 +1,8 @@
 <?php
 
+use Episciences\AppRegistry;
+use Episciences\Upload\PublicFileStore;
+
 class Episciences_Volume_Metadata
 {
     const TRANSLATION_FILE = 'volumes.php';
@@ -297,6 +300,16 @@ class Episciences_Volume_Metadata
         // Enregistrement du fichier
         if ($this->getTmpfile()) {
             $file = $this->getTmpfile();
+
+            // The description of the file comes back from the browser: only the uploads parked for this journal are stored
+            $source = PublicFileStore::resolveTemporaryFile((string)($file['tmp_name'] ?? ''), REVIEW_TMP_PATH);
+
+            if ($source === null) {
+                AppRegistry::getMonoLogger()?->warning('Volume file refused', ['vid' => $this->getVid(), 'reason' => 'The file is not an upload of this journal']);
+                return false;
+            }
+
+            $file['tmp_name'] = $source;
 
             $path = REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/';
             if (!file_exists($path)) {
