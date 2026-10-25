@@ -8,31 +8,25 @@ This document details the multi-tenant architecture: domain and virtual host res
 
 ## High-Level Architecture
 
-```
-HTTP Request (e.g. https://jdmdh.episciences.org/...)
-                      │
-                      ▼
-              Traefik / Apache
-                      │
-                      ▼
-              public/index.php
-                      │
-                      ▼
-          public/const.php: defineJournalConstants()
-          • Resolves RVCODE from HTTP Host or environment
-          • Determines APPLICATION_MODULE (journal, portal, oai)
-          • Defines REVIEW_PATH = /var/www/htdocs/data/{rvcode}/
-                      │
-                      ▼
-          application/Bootstrap.php: _initModule()
-          • Queries REVIEW table by RVCODE
-          • Defines RVID, RVNAME, PIWIKID
-          • Loads settings from REVIEW_SETTING into Zend_Registry
-                      │
-                      ▼
-          Scoped Database Queries & File Storage
-          • Tables filtered by WHERE RVID = ?
-          • Assets & files read from /data/{rvcode}/
+```mermaid
+flowchart TD
+    Req["HTTP Request (e.g. https://jdmdh.episciences.org)"]
+    Vhost["Web Server (Traefik / Apache)"]
+    Entry["Front Controller (public/index.php)"]
+
+    subgraph Resolution["Journal Context Resolution"]
+        Const["defineJournalConstants() in public/const.php: resolves RVCODE and module"]
+        Boot["Bootstrap _initModule(): queries REVIEW table, defines RVID and loads settings"]
+    end
+
+    subgraph Isolation["Multi-Tenant Isolation"]
+        DB[("Scoped Database Queries: WHERE RVID = ?")]
+        FS["Scoped Filesystem Storage: data/{rvcode}/"]
+    end
+
+    Req --> Vhost --> Entry --> Const --> Boot
+    Boot --> DB
+    Boot --> FS
 ```
 
 ---

@@ -8,21 +8,29 @@ This document describes the security architecture in Episciences: authentication
 
 Episciences operates on a dual-database model separating identity authentication from application-level user profiles:
 
-```
-                      ┌──────────────────────────────────────┐
-                      │          Episciences User            │
-                      └──────────────────┬───────────────────┘
-                                         │
-             ┌───────────────────────────┴───────────────────────────┐
-             │                                                       │
-             ▼                                                       ▼
-  Central Auth DB (cas_users)                            Application DB (episciences)
-  ┌─────────────────────────────────┐                    ┌─────────────────────────────────┐
-  │ • T_UTILISATEURS (credentials)  │                    │ • USERS (profile, affiliations) │
-  │ • Password hashes (Argon2id)    │                    │ • USERS_ROLES (per-journal)     │
-  │ • CAS Single Sign-On session    │                    │ • user_token (link tokens)      │
-  │                                 │                    │ • user_su_log (impersonation)   │
-  └─────────────────────────────────┘                    └─────────────────────────────────┘
+```mermaid
+flowchart TD
+    User["Episciences User Session"]
+
+    subgraph CasAuth["Central Authentication DB (cas_users)"]
+        CasUsers[("T_UTILISATEURS (Credentials & Argon2id Hashes)")]
+        CasSession["CAS Single Sign-On Authentication"]
+    end
+
+    subgraph AppDB["Application DB (episciences)"]
+        AppUser[("USERS (Profile & Affiliations)")]
+        AppRoles[("USERS_ROLES (Journal-scoped roles)")]
+        Tokens[("user_token (SHA-256 Link Tokens)")]
+        SuLog[("user_su_log (Impersonation Audit)")]
+    end
+
+    User -->|"Authentication"| CasSession
+    CasSession --> CasUsers
+
+    User -->|"Journal Permissions"| AppRoles
+    User -->|"Profile & ROR Data"| AppUser
+    User -->|"Password Reset / Setup"| Tokens
+    User -->|"Switch User (su/unsu)"| SuLog
 ```
 
 - **`cas_users` DB:** Manages shared credentials across CCSD platforms (Episciences, HAL, Sciencesconf).

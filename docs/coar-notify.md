@@ -31,20 +31,20 @@ All notification payloads are encoded in JSON-LD using `@context`:
 ### 1. Inbound: Request Review / Endorsement
 An author deposits a manuscript in a repository (e.g. HAL) and requests peer review from an Episciences overlay journal.
 
-```
-Repository (e.g. HAL)                   Episciences Overlay Journal
-       │                                             │
-       │  Offer(Review) / Offer(Endorsement)         │
-       ├────────────────────────────────────────────►│ Inbound notification inbox
-       │                                             │
-       │                                             │ [notify:process-inbox]
-       │                                             │ • Validates payload & cite-as URL
-       │                                             │ • Resolves/creates author account
-       │                                             │ • Ingests paper into PAPERS table
-       │                                             │ • Sends confirmation email
-       │                                             │
-       │  Acknowledge / Tentative Accept / Reject    │
-       │◄────────────────────────────────────────────┤
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Repo as "Preprint Repository (e.g. HAL)"
+    participant Inbox as "Episciences LDN Inbox"
+    participant Worker as "notify:process-inbox"
+    participant DB as "Episciences Database (PAPERS)"
+
+    Repo->>Inbox: "POST Offer(Review) / Offer(Endorsement)"
+    Note over Inbox: "Store notification (STATUS_PENDING)"
+    Worker->>Inbox: "Fetch pending notifications"
+    Worker->>Worker: "Validate payload & parse cite-as URL"
+    Worker->>DB: "Ingest submission / create paper version"
+    Worker-->>Repo: "Acknowledge / Confirmation notifications"
 ```
 
 Supported patterns:
@@ -54,17 +54,17 @@ Supported patterns:
 ### 2. Outbound: Announce Endorsement / Publication
 When an editor accepts and publishes an article in Episciences, the journal automatically sends an outbound notification back to the repository.
 
-```
-Episciences Overlay Journal                         Repository (HAL)
-       │                                                   │
-       │ [Paper accepted & published]                      │
-       │                                                   │
-       │  Announce(Endorsement)                            │
-       ├──────────────────────────────────────────────────►│ Repository target inbox
-       │                                                   │
-       │                                                   │ • Repository updates metadata
-       │                                                   │ • Links preprint to published paper
-       │                                                   │ • Displays journal peer-review badge
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Editor as "Chief Editor / Administrator"
+    participant Epi as "Episciences Platform"
+    participant Repo as "Repository Target Inbox (HAL)"
+
+    Editor->>Epi: "Accept and publish paper"
+    Note over Epi: "indexAndCOARNotify() triggered"
+    Epi->>Repo: "POST Announce(Endorsement) [JSON-LD]"
+    Note over Repo: "Update preprint metadata & link published paper"
 ```
 
 Implemented pattern:

@@ -8,48 +8,50 @@ This pipeline runs asynchronously (typically via automated nightly cron jobs or 
 
 ## Architecture Overview
 
-```
-                      ┌──────────────────────────────────────────────┐
-                      │              Published Paper                 │
-                      │             (PAPERS.DOCUMENT)                │
-                      └──────────────────────┬───────────────────────┘
-                                             │
-             ┌───────────────────────────────┴───────────────────────────────┐
-             │                                                               │
-             ▼                                                               ▼
-   External Scholarly APIs                                        Repository APIs
-   ┌─────────────────────────────┐                                ┌─────────────────────────────┐
-   │ • OpenAIRE Graph v3         │                                │ • HAL TEI XML               │
-   │ • Crossref & OpenCitations  │                                │ • arXiv API                 │
-   │ • OpenAlex                  │                                │ • Zenodo & BAOBAB           │
-   │ • zbMATH Open               │                                └──────────────┬──────────────┘
-   │ • Scholexplorer v3          │                                               │
-   └──────────────┬──────────────┘                                               │
-                  │                                                              │
-                  ▼                                                              │
-   ┌─────────────────────────────┐                                               │
-   │ PSR-6 Cache Pools (cache/)  │                                               │
-   │ • openAireResearchGraph     │                                               │
-   │ • enrichmentAuthors         │                                               │
-   │ • enrichmentFunding         │                                               │
-   │ • scholexplorerLinkData     │                                               │
-   └──────────────┬──────────────┘                                               │
-                  │                                                              │
-                  └──────────────────────────────┬───────────────────────────────┘
-                                                 │
-                                                 ▼
-                               ┌───────────────────────────────────┐
-                               │       Database Enrichment         │
-                               │  • PAPERS.DOCUMENT (JSON cache)   │
-                               │  • PAPERS.RECORD (OAI-DC / TEI)   │
-                               │  • PAPER_CITATIONS / PAPER_LINK   │
-                               └─────────────────┬─────────────────┘
-                                                 │
-                                                 ▼
-                               ┌───────────────────────────────────┐
-                               │ Solr Reindexing & Cache Eviction  │
-                               │ (solr:index / next:revalidate)    │
-                               └───────────────────────────────────┘
+```mermaid
+flowchart TD
+    Paper["Published Paper (PAPERS.DOCUMENT)"]
+
+    subgraph ExternalAPIs["External Scholarly APIs"]
+        OpenAire["OpenAIRE Research Graph v3"]
+        Crossref["Crossref & OpenCitations v2"]
+        OpenAlex["OpenAlex API"]
+        Zbmath["zbMATH Open API"]
+        Schol["Scholexplorer v3 API"]
+    end
+
+    subgraph Repos["Source Repository APIs"]
+        HAL["HAL (OAI-DC / TEI XML)"]
+        ArXiv["arXiv API"]
+        Zenodo["Zenodo / BAOBAB (DataCite)"]
+    end
+
+    subgraph Caches["PSR-6 Cache Pools (cache/)"]
+        CP_OA["openAireResearchGraph"]
+        CP_Auth["enrichmentAuthors"]
+        CP_Fund["enrichmentFunding"]
+        CP_Schol["scholexplorerLinkData"]
+    end
+
+    subgraph DB["Database Storage"]
+        DocJson["PAPERS.DOCUMENT (JSON cache)"]
+        Record["PAPERS.RECORD (OAI-DC / TEI)"]
+        Citations["PAPER_CITATIONS & PAPER_LINK"]
+    end
+
+    subgraph Downstream["Downstream Consumers"]
+        SolrQueue["Solr Indexing (solr:index)"]
+        NextISR["Next.js Cache Revalidation"]
+    end
+
+    Paper -->|"Enrichment CLI Commands"| ExternalAPIs
+    Paper -->|"Enrichment CLI Commands"| Repos
+
+    ExternalAPIs --> Caches
+    Caches --> DB
+    Repos --> DB
+
+    DB --> Downstream
 ```
 
 ---

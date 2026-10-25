@@ -8,28 +8,41 @@ This architecture replaces legacy MySQL polling tables (`QUEUE_MESSAGE`, `QUEUE_
 
 ## Architecture Overview
 
-```
-                      ┌───────────────────────────────────────┐
-                      │    ZF1 Application (Web / CLI)        │
-                      └──────────────────┬────────────────────┘
-                                         │
-             ┌───────────────────────────┴───────────────────────────┐
-             │ BoundedRetryDispatcher (producer-side retry + jitter)  │
-             └─────────────┬───────────────────────────┬─────────────┘
-                           │                           │
-          Queue: solr_index│                           │Queue: next_revalidation
-                           ▼                           ▼
-                 ┌───────────────────┐       ┌───────────────────┐
-                 │messenger_messages │       │messenger_messages │
-                 │(queue=solr_index) │       │(queue=next_reval) │
-                 └─────────┬─────────┘       └─────────┬─────────┘
-                           │                           │
-   episciences:worker      ▼   episciences:worker      ▼
-   --transport=solr_index      --transport=next_revalidation
-                 ┌───────────────────┐       ┌───────────────────┐
-                 │ Apache Solr Core  │       │ Next.js Frontend  │
-                 │ (/update/json)    │       │ (/api/revalidate) │
-                 └───────────────────┘       └───────────────────┘
+```mermaid
+flowchart TD
+    subgraph App["Episciences Application (Web / CLI)"]
+        Event["Domain Event (publish, edit, enrich)"]
+        Dispatcher["BoundedRetryDispatcher (retry + jitter)"]
+        Event --> Dispatcher
+    end
+
+    subgraph MySQL["MySQL Storage (Doctrine DBAL Transport)"]
+        QSolr[("messenger_messages (queue: solr_index)")]
+        QNext[("messenger_messages (queue: next_revalidation)")]
+        QFailed[("messenger_failed (Dead-Letter Queue)")]
+    end
+
+    subgraph Workers["Daemon Workers (systemd / Docker)"]
+        WorkerSolr["Worker: episciences:worker --transport=solr_index"]
+        WorkerNext["Worker: episciences:worker --transport=next_revalidation"]
+    end
+
+    subgraph Targets["Target Services"]
+        Solr["Apache Solr (/update/json)"]
+        Next["Next.js Frontend (/api/revalidate)"]
+    end
+
+    Dispatcher -->|"enqueue"| QSolr
+    Dispatcher -->|"enqueue"| QNext
+
+    QSolr --> WorkerSolr
+    QNext --> WorkerNext
+
+    WorkerSolr -->|"Index / Delete"| Solr
+    WorkerNext -->|"POST Cache Tag"| Next
+
+    WorkerSolr -.->|"After 3 failed retries"| QFailed
+    WorkerNext -.->|"After 3 failed retries"| QFailed
 ```
 
 ### Why Separate Transports?

@@ -4,14 +4,19 @@ This document describes the full statistics pipeline: from Apache access logs to
 
 ## Overview
 
-```
-Apache logs  ──►  stats:import-logs  ──►  STAT_TEMP
-                                              │
-                                              ▼
-                                      stats:process  ──►  PAPER_STAT
-                                                               │
-                                                               ▼
-                                                   stats:download-kpi  ──►  data/kpi_downloads.json
+```mermaid
+flowchart LR
+    Logs["Apache Access Logs"]
+    CmdImport["stats:import-logs"]
+    TableTemp[("STAT_TEMP (Raw hits)")]
+    CmdProcess["stats:process (GeoIP + bot detection)"]
+    TableStat[("PAPER_STAT (Aggregated hits)")]
+    CmdKpi["stats:download-kpi"]
+    JsonFile["data/kpi_downloads.json"]
+
+    Logs --> CmdImport --> TableTemp
+    TableTemp --> CmdProcess --> TableStat
+    TableStat --> CmdKpi --> JsonFile
 ```
 
 | Step | Command | Description |
