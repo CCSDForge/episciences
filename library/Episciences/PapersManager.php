@@ -4607,6 +4607,27 @@ class Episciences_PapersManager
         return $result;
 
     }
+
+    /**
+     * DocIds of the versions of a paper in a journal, the latest first (see Episciences_Paper::getLatestVersionId()).
+     * Unlike getDocIdsFromPaperId(), a database error is not mistaken for a paper without version: for access
+     * checks, which must not decide on an incomplete list.
+     *
+     * @return int[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getDocIdsByPaperIdInJournal(int $paperId, int $rvid): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db
+            ->select()
+            ->from(T_PAPERS, ['DOCID'])
+            ->where('PAPERID = ?', $paperId)
+            ->where('RVID = ?', $rvid)
+            ->order('WHEN DESC');
+
+        return array_map('intval', $db->fetchCol($select));
+    }
     /**
      * @param int $docId
      * @param int|null $rvId

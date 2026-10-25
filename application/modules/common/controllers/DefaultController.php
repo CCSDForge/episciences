@@ -94,28 +94,40 @@ class DefaultController extends Zend_Controller_Action
      */
     protected function isRestrictedAccess(Episciences_Paper $paper): bool
     {
-        $journalSettings = Zend_Registry::get('reviewSettings');
-
         $loggedUid = Episciences_Auth::getUid();
 
-        $isAllowToEditors =
-            (
-                isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]) &&
-                $journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS] === '0'
-            ) && Episciences_Auth::isEditor();
-
-        $isAllowToCopyEditors =
-            (
-                isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS]) &&
-                $journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS] === '0'
-            ) && Episciences_Auth::isCopyEditor();
-
-        return !$isAllowToEditors && !$isAllowToCopyEditors && !$paper->isPublished() &&
-            !Episciences_Auth::isSecretary() && // nor editorial secretary or user is not chief editor or // nor admin
-            !$paper->isAssignedEditorOrCopyEditor((int)$loggedUid) &&
+        return !$paper->isPublished() &&
+            !self::isEditorialStaff($paper, Zend_Registry::get('reviewSettings')) &&
             !array_key_exists($loggedUid, $paper->getReviewers()) && // nor reviewer
             !$paper->isOwner() &&
             !$paper->isCoauthor();
+    }
+
+    /**
+     * The logged user handles the paper for the journal: secretaries and administrators, the editors and copy
+     * editors assigned to the paper, the editors and copy editors of a journal that does not restrict them to
+     * their assigned papers. An encapsulation setting the journal never saved counts as restrictive.
+     *
+     * @param array<string, mixed> $journalSettings
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected static function isEditorialStaff(Episciences_Paper $paper, array $journalSettings): bool
+    {
+        return static::isEditorialStaffOfEveryPaper($journalSettings) ||
+            $paper->isAssignedEditorOrCopyEditor((int)Episciences_Auth::getUid());
+    }
+
+    /**
+     * The part of isEditorialStaff() that does not depend on the paper: the roles of the logged user handle
+     * every paper of the journal.
+     *
+     * @param array<string, mixed> $journalSettings
+     */
+    protected static function isEditorialStaffOfEveryPaper(array $journalSettings): bool
+    {
+        return Episciences_Auth::isSecretary() ||
+            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS] ?? null) === '0' && Episciences_Auth::isEditor()) ||
+            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS] ?? null) === '0' && Episciences_Auth::isCopyEditor());
     }
 
     protected function redirectWithFlashMessageIfPaperIsRemovedOrDeleted(Episciences_Paper $paper, bool $forceRedirection = true): void
