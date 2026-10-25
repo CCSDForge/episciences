@@ -156,8 +156,8 @@ class PaperDefaultController extends DefaultController
             $path = Episciences_Tools::getAttachmentsPath();
             $attachments = Episciences_Tools::arrayFilterEmptyValues($data[Episciences_Mail_Send::ATTACHMENTS]);
             foreach ($attachments as $attachment) {
-                $filepath = $path . $attachment;
-                if (file_exists($filepath)) {
+                $filepath = Episciences_Tools::resolveAttachmentPath($path, $attachment);
+                if ($filepath !== null) {
                     $mail->addAttachedFile($filepath);
                 }
             }
