@@ -1,0 +1,104 @@
+name: End-to-End Tests (Playwright)
+
+on:
+  pull_request:
+    branches: [ staging, main ]
+    paths:
+      - 'application/**'
+      - 'library/**'
+      - 'public/**'
+      - 'tests/e2e/**'
+      - 'playwright.config.js'
+  workflow_dispatch:
+
+jobs:
+  playwright-e2e:
+    name: Playwright E2E Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_episciences
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 1025:1025
+          - 8025:8025
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, zip
+          tools: composer:v2
+
+      - name: Install PHP dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Wait for MySQL
+        run: |
+          while ! mysqladmin ping -h"127.0.0.1" -P3306 --silent; do
+            sleep 1
+          done
+
+      - name: Setup test database & config
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences;"
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences_auth;"
+          mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/schema-episciences.sql
+          mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/seed.sql
+          mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences_auth < tests/fixtures/schema-cas.sql
+          php .github/scripts/setup-test-config.php
+
+      - name: Seed E2E test users
+        run: php scripts/console.php app:e2e-seed
+        env:
+          PWD_PATH: ${{ github.workspace }}/tests/config
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20.x
+          cache: 'yarn'
+
+      - name: Install JS dependencies & Build assets
+        run: |
+          yarn install
+          yarn build
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Web Server
+        run: |
+          php -S 127.0.0.1:8000 -t public public/index.php &
+          sleep 2
+        env:
+          PWD_PATH: ${{ github.workspace }}/tests/config
+          APPLICATION_ENV: testing
+
+      - name: Run Playwright Tests
+        run: yarn test:e2e
+        env:
+          BASE_URL: http://127.0.0.1:8000/
+          MAILPIT_URL: http://127.0.0.1:8025/
+          CI: true
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
