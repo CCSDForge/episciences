@@ -25,12 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v1.0.58 - 2026-10-25
+
 ### Changed
 - [#1339](https://github.com/CCSDForge/episciences/pull/1339): the application now requires PHP 8.3: the Composer constraint and the continuous integration use PHP 8.3,
   the properties that were created dynamically (deprecated since PHP 8.2) are now declared, the deprecated `utf8_encode()`
   is no longer used, and the PHP 8.2 and 8.3 polyfills are no longer direct dependencies.
 
 ### Fixed
+- [#1379](https://github.com/CCSDForge/episciences/pull/1379): harden file, attachment and volume metadata access checks; resolve ACL resources with dispatcher-normalized names.
+- [#1352](https://github.com/CCSDForge/episciences/pull/1352): declare the paper revision deadline property.
 - [#1310](https://github.com/CCSDForge/episciences/pull/1310): co-author form and co-author removal are now consistent with the paper management page.
 - [#1344](https://github.com/CCSDForge/episciences/pull/1344): graphical abstract and linked data forms are now consistent with the paper context.
 - [#1349](https://github.com/CCSDForge/episciences/pull/1349): profile edition form opened from the user list is submitted for the selected account.
