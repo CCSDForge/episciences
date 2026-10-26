@@ -22,6 +22,35 @@ function statTranslate(key) {
 }
 
 /**
+ * Number of articles a value is computed from, e.g. "4 articles" ('' when unknown)
+ * @param {?number} count
+ * @returns {string}
+ */
+function statArticlesText(count) {
+    if (count === null || count === undefined) {
+        return '';
+    }
+
+    return count + ' ' + statTranslate(count > 1 ? 'articles' : 'article');
+}
+
+/**
+ * A value of a series, with the number of articles it is computed from when the series gives it (counts)
+ * @param {object} dataset {label, data, counts}
+ * @param {number} index of the value
+ * @param {function} formatValue
+ * @returns {string}
+ */
+function statValueText(dataset, index, formatValue) {
+    const text = String(formatValue(dataset.data[index]));
+    const articles = Array.isArray(dataset.counts)
+        ? statArticlesText(dataset.counts[index])
+        : '';
+
+    return articles ? text + ' (' + articles + ')' : text;
+}
+
+/**
  * Width of a group of bars from its number of series: the bars of a year stay side by side
  */
 function statGroupWidth(seriesCount) {
@@ -58,9 +87,9 @@ function statBarDataset(dataset, index) {
 /**
  * Pure helper: Chart.js configuration of a bar chart of the statistics page
  * @param {string[]} labels categories (years, roles…)
- * @param {object[]} datasets [{label, data}]
+ * @param {object[]} datasets [{label, data, counts}]: counts, the number of articles of each value (optional)
  * @param {object} options horizontal: bars along the x axis; valueLabels: the values at the end of the bars
- *                         (only for a single series); legend: false to hide it
+ *                         (only for a single series); legend: false to hide it; format: of a value
  */
 function buildBarChartConfig(labels, datasets, options = {}) {
     const horizontal = options.horizontal === true;
@@ -143,6 +172,27 @@ function buildBarChartConfig(labels, datasets, options = {}) {
         };
     }
 
+    // the number of articles of each value in the tooltip
+    if (datasets.some(dataset => Array.isArray(dataset.counts))) {
+        const formatValue =
+            options.format ||
+            (value => (value === null || value === undefined ? '–' : value));
+
+        config.options.plugins.tooltip.callbacks = Object.assign(
+            config.options.plugins.tooltip.callbacks || {},
+            {
+                label: item =>
+                    datasets[item.datasetIndex].label +
+                    ' : ' +
+                    statValueText(
+                        datasets[item.datasetIndex],
+                        item.dataIndex,
+                        formatValue
+                    ),
+            }
+        );
+    }
+
     if (options.valueLabels && typeof ChartDataLabels !== 'undefined') {
         config.plugins.push(ChartDataLabels);
         config.options.plugins.datalabels = {
@@ -202,7 +252,11 @@ function buildChartTable(caption, labels, datasets, format = null) {
         th.textContent = label;
         row.appendChild(th);
         datasets.forEach(dataset => {
-            row.insertCell().textContent = formatValue(dataset.data[i]);
+            row.insertCell().textContent = statValueText(
+                dataset,
+                i,
+                formatValue
+            );
         });
     });
 
@@ -304,6 +358,8 @@ if (typeof module !== 'undefined' && module.exports) {
         STAT_SERIES_COLORS,
         statGroupWidth,
         statChartMaxWidth,
+        statArticlesText,
+        statValueText,
         buildBarChartConfig,
         buildChartTable,
         buildChartCsvRows,

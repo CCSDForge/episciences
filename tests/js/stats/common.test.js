@@ -12,6 +12,7 @@ const {
     buildChartTable,
     buildChartCsvRows,
     createBarChart,
+    statArticlesText,
 } = require(path.join(__dirname, '../../../public/js/stats/common.js'));
 
 function datasets() {
@@ -302,5 +303,53 @@ describe('createBarChart', function () {
             createBarChart('by-year', ['2022', '2023', '2024'], datasets())
         ).toBeNull();
         expect(document.querySelector('.stat-chart-table')).not.toBeNull();
+    });
+});
+
+describe('number of articles of a value', function () {
+    const delays = [
+        { label: 'Delay', data: [57, 162, null], counts: [4, 1, null] },
+    ];
+    const format = value =>
+        value === null || value === undefined ? '–' : value + ' jours';
+
+    it('is written in the singular or the plural, empty when unknown', function () {
+        expect(statArticlesText(4)).toBe('4 articles');
+        expect(statArticlesText(1)).toBe('1 article');
+        expect(statArticlesText(null)).toBe('');
+    });
+
+    it('follows the value in the tooltip', function () {
+        const label = buildBarChartConfig(['2023', '2024', '2025'], delays, {
+            format: format,
+        }).options.plugins.tooltip.callbacks.label;
+
+        expect(label({ datasetIndex: 0, dataIndex: 0 })).toBe(
+            'Delay : 57 jours (4 articles)'
+        );
+        expect(label({ datasetIndex: 0, dataIndex: 2 })).toBe('Delay : –');
+    });
+
+    it('follows the value in the table view', function () {
+        const rows = Array.from(
+            buildChartTable(
+                'Delays',
+                ['2023', '2024'],
+                delays,
+                format
+            ).querySelectorAll('tbody tr')
+        ).map(tr => tr.children[1].textContent);
+
+        expect(rows).toEqual([
+            '57 jours (4 articles)',
+            '162 jours (1 article)',
+        ]);
+    });
+
+    it('leaves the tooltip of the series without counts unchanged', function () {
+        expect(
+            buildBarChartConfig(['2022'], datasets()).options.plugins.tooltip
+                .callbacks
+        ).toBeUndefined();
     });
 });

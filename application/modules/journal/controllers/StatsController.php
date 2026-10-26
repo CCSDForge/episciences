@@ -500,9 +500,16 @@ class StatsController extends Zend_Controller_Action
                 return false;
             }
         ));
+        // counts: the number of articles of each delay (null when the API does not give it)
+        $articles = static fn(string $key, $year) => isset($details[$key][$year]['delay']['count']) ? (int)$details[$key][$year]['delay']['count'] : null;
+        $delayDataset = static fn(string $label, string $key): array => [
+            'label' => $label,
+            'data' => array_map(static fn($year) => $delay($key, $year), $delayYears),
+            'counts' => array_map(static fn($year) => $articles($key, $year), $delayYears),
+        ];
         $delayDatasets = static fn(string $acceptanceKey, string $publicationKey): array => [
-            ['label' => $labels['acceptanceDelay'] ?? 'acceptanceDelay', 'data' => array_map(static fn($year) => $delay($acceptanceKey, $year), $delayYears)],
-            ['label' => $labels['publicationDelay'] ?? 'publicationDelay', 'data' => array_map(static fn($year) => $delay($publicationKey, $year), $delayYears)],
+            $delayDataset($labels['acceptanceDelay'] ?? 'acceptanceDelay', $acceptanceKey),
+            $delayDataset($labels['publicationDelay'] ?? 'publicationDelay', $publicationKey),
         ];
         $hasMedian = isset($details[self::SUBMISSION_ACCEPTANCE_MEDIAN_DELAY]) || isset($details[self::SUBMISSION_PUBLICATION_MEDIAN_DELAY]);
 

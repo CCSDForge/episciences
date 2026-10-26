@@ -49,8 +49,8 @@ class StatsControllerChartsTest extends TestCase
                 2023 => ['delay' => ['value' => 234]],
             ],
             'submissionAcceptanceTimeMedian' => [
-                2023 => ['delay' => ['value' => 41]],
-                2024 => ['delay' => ['value' => 150]],
+                2023 => ['delay' => ['value' => 41, 'count' => 6]],
+                2024 => ['delay' => ['value' => 150, 'count' => 1]],
             ],
             'submissionPublicationTimeMedian' => [
                 2023 => ['delay' => ['value' => 210]],
@@ -143,6 +143,17 @@ class StatsControllerChartsTest extends TestCase
         $this->assertSame([41.0, 150.0], $delays['medianDatasets'][0]['data']);
         $this->assertSame([210.0, null], $delays['medianDatasets'][1]['data']);
         $this->assertSame('Submission → publication', $delays['medianDatasets'][1]['label']);
+    }
+
+    /**
+     * The number of articles of each delay, when the API gives it
+     */
+    public function testBuildChartsData_Delays_NumberOfArticles(): void
+    {
+        $delays = self::charts()['delays'];
+
+        $this->assertSame([6, 1], $delays['medianDatasets'][0]['counts']);
+        $this->assertSame([null, null], $delays['datasets'][0]['counts']);
     }
 
     /**
