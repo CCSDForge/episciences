@@ -332,7 +332,8 @@ class VolumeController extends Episciences_Controller_Action
 
         if ($errorMessage !== false) {
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
-            $this->redirect($this->url(['controller' => 'browse', 'action' => 'volume']));        }
+            $this->redirect($this->url(['controller' => 'browse', 'action' => 'volumes']));
+        }
 
 
         try {
@@ -559,7 +560,7 @@ class VolumeController extends Episciences_Controller_Action
         if (!$volume) {
             $errorMessage = "Ce volume n'existe pas.";
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
-            $this->redirect($this->url(['controller' => 'browse', 'action' => 'volume']));
+            $this->redirect($this->url(['controller' => 'browse', 'action' => 'volumes']));
             return;
         }
 
@@ -568,7 +569,7 @@ class VolumeController extends Episciences_Controller_Action
         if (!$volume->isProceeding()) {
             $errorMessage = "Type de volume non pris en charge pour l'export Crossref.";
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage('<strong>' . $this->view->translate($errorMessage) . '</strong>');
-            $this->redirect($this->url(['controller' => 'browse', 'action' => 'volume']));
+            $this->redirect($this->url(['controller' => 'browse', 'action' => 'volumes']));
             return;
         }
 
