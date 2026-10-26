@@ -4,14 +4,12 @@ use Episciences\AppRegistry;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
 use Episciences\Trait\Tools;
-use Episciences\Trait\UrlBuilder;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
 class PaperDefaultController extends DefaultController
 {
     use Tools;
-    use UrlBuilder;
     public const MSG_PAPER_DOES_NOT_EXIST = "Le document demandé n’existe pas.";
     public const MSG_REVIEWER_DOES_NOT_EXIST = "Le relecteur pour lequel vous souhaitez relire n'existe pas.";
     public const MSG_REPORT_COMPLETED = "Votre rapport a été déjà renseigné.";

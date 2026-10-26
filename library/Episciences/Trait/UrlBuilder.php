@@ -122,4 +122,16 @@ trait UrlBuilder
         return $origin;
     }
 
+    /**
+     * Prepends the journal prefix to a path built from the site root: on path-based deployments
+     * the journal pages are served under /<rvcode>/.
+     *
+     * @param string|null $prefixUrl '/<rvcode>/' for a journal, '/' for the portal (default: PREFIX_URL)
+     */
+    public static function prefixPath(string $path, ?string $prefixUrl = null): string
+    {
+        $prefix = $prefixUrl ?? (defined('PREFIX_URL') ? PREFIX_URL : '');
+
+        return rtrim($prefix, '/') . '/' . ltrim($path, '/');
+    }
 }

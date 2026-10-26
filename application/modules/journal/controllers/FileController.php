@@ -924,6 +924,6 @@ class FileController extends DefaultController
             $fileUrl = substr(Episciences_Tools::getAttachmentsPath((string)$paperId), mb_strlen(REVIEW_FILES_PATH));
             $fileUrl .= $fileName;
         }
-        return PREFIX_URL . $fileUrl;
+        return self::prefixPath($fileUrl);
     }
 }

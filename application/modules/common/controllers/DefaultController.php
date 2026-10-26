@@ -1,5 +1,6 @@
 <?php
 use Episciences\Security\AccessLog;
+use Episciences\Trait\UrlBuilder;
 use Episciences\Upload\SafeFileName;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -7,6 +8,8 @@ use GuzzleHttp\Exception\GuzzleException;
 
 class DefaultController extends Episciences_Controller_Action
 {
+    use UrlBuilder;
+
     protected function isPostMaxSizeReached(): bool
     {
         /** @var Zend_Controller_Request_Http $request */
@@ -66,7 +69,7 @@ class DefaultController extends Episciences_Controller_Action
 
         if ($publishedDocId !== 0) {
             $publishedUrl = sprintf($publishedUrlFormat, $publishedDocId);
-            $this->redirectToPublishedVersion($this->prefixUrl($publishedUrl), $permanent);
+            $this->redirectToPublishedVersion(self::prefixPath($publishedUrl, $this->journalPrefix()), $permanent);
             return;
         }
 
@@ -112,16 +115,7 @@ class DefaultController extends Episciences_Controller_Action
     }
 
     /**
-     * Prepends the journal prefix to a path built from the site root: on path-based deployments
-     * the published version is served under /<rvcode>/.
-     */
-    private function prefixUrl(string $url): string
-    {
-        return rtrim($this->journalPrefix(), '/') . '/' . ltrim($url, '/');
-    }
-
-    /**
-     * '/<rvcode>/' for a journal, '/' for the portal
+     * '/<rvcode>/' for a journal, '/' for the portal (see UrlBuilder::prefixPath())
      */
     protected function journalPrefix(): string
     {

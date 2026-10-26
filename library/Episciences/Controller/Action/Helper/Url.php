@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Trait\UrlBuilder;
+
 /**
  * Replaces the Zend "Url" action helper on the *-epi-manager branches.
  *
@@ -9,18 +11,20 @@
  */
 class Episciences_Controller_Action_Helper_Url extends Zend_Controller_Action_Helper_Url
 {
-    private string $prefix;
+    use UrlBuilder;
+
+    private ?string $prefix;
 
     /**
      * @param string|null $prefixUrl '/<rvcode>/' for a journal, '/' for the portal (default: PREFIX_URL)
      */
     public function __construct(?string $prefixUrl = null)
     {
-        $this->prefix = rtrim($prefixUrl ?? (defined('PREFIX_URL') ? PREFIX_URL : ''), '/');
+        $this->prefix = $prefixUrl;
     }
 
     public function simple($action, $controller = null, $module = null, ?array $params = null)
     {
-        return $this->prefix . parent::simple($action, $controller, $module, $params);
+        return self::prefixPath(parent::simple($action, $controller, $module, $params), $this->prefix);
     }
 }

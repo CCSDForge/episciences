@@ -41,7 +41,7 @@ final class HardcodedInternalUrlsTest extends TestCase
      */
     private const ALLOWED = [
         'application/modules/common/controllers/RobotsDefaultController.php' => 'robots.txt paths, only written for the journals not switched to the new front (served without prefix)',
-        'application/modules/common/controllers/PaperDefaultController.php:30' => 'COMMENTS_STR: directory of the comment files, not a URL',
+        'application/modules/common/controllers/PaperDefaultController.php:28' => 'COMMENTS_STR: directory of the comment files, not a URL',
     ];
 
     public function testJavaScriptHasNoUnprefixedInternalUrl(): void
