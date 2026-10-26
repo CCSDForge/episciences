@@ -1,10 +1,12 @@
 <?php
 
+use Episciences\Files\UploadedFileToken;
 use Episciences\Files\Uploader;
 use Episciences\Paper\Files\DocumentFilePolicy;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Paper\RevisionRequests;
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Security\AccessLog;
 use Episciences\Submit\SubmittedRecord;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
@@ -749,9 +751,19 @@ class PaperController extends PaperDefaultController
             return false;
         }
 
+        // path des sources
+        $parentPath = REVIEW_FILES_PATH . $cAnswer->getDocid();
+        $parentPath .= DIRECTORY_SEPARATOR;
+        $parentPath .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
+        $parentPath .= DIRECTORY_SEPARATOR;
+        $parentPath .= $cAnswer->getParentid();
+        $parentPath .= DIRECTORY_SEPARATOR;
+
+        // The directory of the request also holds the request's own files: only the files uploaded by the user for
+        // this answer are attached to it, then moved (see FileController::uploadAction())
+        $attachments = array_values($this->uploadedAttachments($parentPath, $attachments));
+
         if (!empty($attachments)) {
-            // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
-            $attachments = Episciences_Tools::arrayFilterEmptyValues($attachments);
             $cAnswer->setFile(json_encode($attachments));
         }
 
@@ -761,46 +773,12 @@ class PaperController extends PaperDefaultController
         // log comment
         $cAnswer->logComment();
 
-        // path des sources
-        $parentPath = REVIEW_FILES_PATH . $cAnswer->getDocid();
-        $parentPath .= DIRECTORY_SEPARATOR;
-        $parentPath .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
-        $parentPath .= DIRECTORY_SEPARATOR;
-        $parentPath .= $cAnswer->getParentid();
-        $parentPath .= DIRECTORY_SEPARATOR;
-
-        $path = $cAnswer->getFilePath();
-        $mailPath = Episciences_Tools::getAttachmentsPath((string)$paper->getPaperid());
-
-        // Le fichier joint à la réponse se trouve dans un autre path : l'ID de la réponse n'est pas encore connu.
-        $delete = [];
-
-        $parentPathContent = scandir($parentPath);
-
-        if ($parentPathContent === false) {
-            $parentPathContent = [];
-        }
-
-        foreach ($parentPathContent as $file) {
-            if (!in_array($file, ['.', '..'])
-                && in_array($file, $attachments, true) &&
-                Episciences_Tools::cpFiles((array)$file, $parentPath, $path)) {
-                $delete[] = $file;
-            }
-        }
-
-        // Suppression des fichiers précédemment déplacés du répertoire parent
-        foreach ($delete as $file) {
-
-            if ($sendMail) {
-                $file = Episciences_Tools::filenameRotate($mailPath, $file);
-                Episciences_Tools::cpFiles((array)$file, $parentPath, $mailPath, true);
-            }
-
-            if (is_file($parentPath . $file)) {
-                unlink($parentPath . $file);
-            }
-        }
+        $this->moveCopyEditingAnswerFiles(
+            $parentPath,
+            $cAnswer->getFilePath(),
+            $attachments,
+            $sendMail ? Episciences_Tools::getAttachmentsPath((string)$paper->getPaperid()) : null
+        );
 
         $settings = ['unanswered' => true, 'type' => $commentType];
         $noReplies = Episciences_CommentsManager::getList($paper->getDocid(), $settings, false);
@@ -1412,8 +1390,14 @@ class PaperController extends PaperDefaultController
         $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
 
         // Every file the author attached must have been uploaded: otherwise, nothing is recorded and the author can try again.
-        // An empty name is sent back by es.fileupload.js when the upload failed.
-        $rejectedAttachments = Episciences_Tools::rejectedAttachmentNames(REVIEW_FILES_PATH . $paperId . '/tmp/', $attachments);
+        // An empty name is sent back by es.fileupload.js when the upload failed. The directory is shared by the
+        // answers of the paper: a file not uploaded by the user for this answer is refused too.
+        $tmpFolder = REVIEW_FILES_PATH . $paperId . '/tmp/';
+        $uploadedAttachments = $this->uploadedAttachments($tmpFolder, $attachments);
+        $rejectedAttachments = array_merge(
+            array_values(array_diff_key($attachments, $uploadedAttachments)),
+            Episciences_Tools::rejectedAttachmentNames($tmpFolder, $uploadedAttachments)
+        );
 
         if (!empty($rejectedAttachments)) {
             $this->redirectOnTmpVersionUploadFailure($docId, $rejectedAttachments);
@@ -1587,6 +1571,78 @@ class PaperController extends PaperDefaultController
 
         // Redirection
         $this->_helper->redirector->gotoUrl($url);
+    }
+
+    /**
+     * The files attached to a copy-editing answer are uploaded in the directory of the request (the id of the answer
+     * is not known yet): moved to the directory of the answer, and copied to the mail attachments directory when the
+     * answer is notified. The other files of the request directory, the request's own files among them, are kept.
+     *
+     * @param string $parentPath directory of the request
+     * @param string $path directory of the answer
+     * @param string[] $attachments names of the files uploaded for the answer (see uploadedAttachments())
+     * @param string|null $mailPath mail attachments directory, null when the answer is not notified
+     */
+    protected function moveCopyEditingAnswerFiles(string $parentPath, string $path, array $attachments, ?string $mailPath): void
+    {
+        $delete = [];
+
+        $parentPathContent = scandir($parentPath);
+
+        if ($parentPathContent === false) {
+            $parentPathContent = [];
+        }
+
+        foreach ($parentPathContent as $file) {
+            if (!in_array($file, ['.', '..'])
+                && in_array($file, $attachments, true) &&
+                Episciences_Tools::cpFiles((array)$file, $parentPath, $path)) {
+                $delete[] = $file;
+            }
+        }
+
+        // Suppression des fichiers précédemment déplacés du répertoire parent
+        foreach ($delete as $file) {
+
+            if ($mailPath !== null) {
+                // Not the name of the file to remove below, which may be another file of the request directory
+                $mailFile = Episciences_Tools::filenameRotate($mailPath, $file);
+                Episciences_Tools::cpFiles((array)$mailFile, $parentPath, $mailPath, true);
+            }
+
+            if (is_file($parentPath . $file)) {
+                unlink($parentPath . $file);
+            }
+        }
+    }
+
+    /**
+     * The attachment names sent with the form whose upload token is valid for the directory (see UploadedFileToken):
+     * the files the user uploaded there, not the other files of the directory. Empty names (failed uploads, see
+     * es.fileupload.js) are dropped silently, the others are logged.
+     *
+     * @param array<mixed> $attachments names submitted by the client
+     * @return array<int|string, string> accepted names, with their keys in $attachments
+     */
+    protected function uploadedAttachments(string $folder, array $attachments): array
+    {
+        $tokens = $this->getRequest()->getPost(UploadedFileToken::POST_KEY);
+        $uploaded = $this->uploadedFileToken()->acceptedNames($folder, $attachments, $tokens);
+        $refused = array_filter(array_diff_key($attachments, $uploaded), static fn($name) => $name !== '');
+
+        if (!empty($refused)) {
+            AccessLog::denied(AccessLog::TOKEN_INVALID, 'uploaded_file_token', ['count' => count($refused)]);
+        }
+
+        return $uploaded;
+    }
+
+    /**
+     * Checks the tokens of the uploaded files (see UploadedFileToken)
+     */
+    protected function uploadedFileToken(): UploadedFileToken
+    {
+        return new UploadedFileToken((int)Episciences_Auth::getUid());
     }
 
     /**

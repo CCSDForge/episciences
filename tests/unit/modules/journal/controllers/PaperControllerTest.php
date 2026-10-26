@@ -55,7 +55,7 @@ final class PaperControllerTest extends TestCase
      */
     public function testScandirReturnIsFalseChecked(): void
     {
-        $method = $this->extractMethod('saveAuthorFormattingAnswer');
+        $method = $this->extractMethod('moveCopyEditingAnswerFiles');
 
         // Must contain an explicit false check on the scandir result
         self::assertMatchesRegularExpression(
@@ -71,7 +71,7 @@ final class PaperControllerTest extends TestCase
      */
     public function testScandirFalsePathAssignsEmptyArray(): void
     {
-        $method = $this->extractMethod('saveAuthorFormattingAnswer');
+        $method = $this->extractMethod('moveCopyEditingAnswerFiles');
 
         self::assertStringContainsString(
             '$parentPathContent = []',
@@ -93,7 +93,7 @@ final class PaperControllerTest extends TestCase
      */
     public function testUnlinkIsGuardedWithIsFile(): void
     {
-        $method = $this->extractMethod('saveAuthorFormattingAnswer');
+        $method = $this->extractMethod('moveCopyEditingAnswerFiles');
 
         // The guarded pattern: `if (is_file($parentPath . $file)) { unlink(...) }`
         self::assertMatchesRegularExpression(

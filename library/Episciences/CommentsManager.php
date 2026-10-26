@@ -957,6 +957,54 @@ class Episciences_CommentsManager
     }
 
     /**
+     * The comment is a copy-editing request on this paper version: the author's answer files are uploaded in its
+     * copy-editing directory before the answer is saved (see PaperController::saveAuthorFormattingAnswer())
+     *
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function isCopyEditingRequest(int $docId, int $pcId): bool
+    {
+        if ($docId <= 0 || $pcId <= 0) {
+            return false;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPER_COMMENTS, ['PCID'])
+            ->where('PCID = ?', $pcId)
+            ->where('DOCID = ?', $docId)
+            ->where('TYPE IN (?)', self::$_copyEditingRequestTypes);
+
+        return $db->fetchOne($select) !== false;
+    }
+
+    /**
+     * The file is attached to the copy-editing comment $pcId or to an answer to it, both kept in the copy-editing
+     * directory of $pcId (the answer's files are moved to its own directory once saved, see
+     * PaperController::saveAuthorFormattingAnswer())
+     *
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function isCopyEditingAttachment(int $docId, int $pcId, string $file): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPER_COMMENTS, ['FILE'])
+            ->where('DOCID = ?', $docId)
+            ->where('(PCID = ? OR PARENTID = ?)', $pcId)
+            ->where('FILE IS NOT NULL')
+            ->where("FILE != ''");
+
+        foreach ($db->fetchCol($select) as $files) {
+            if (in_array($file, self::attachedFiles((string)$files), true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Several files are stored as a JSON list (author / editor exchanges), a single one as a plain name
      *
      * @return array<int|string, mixed>

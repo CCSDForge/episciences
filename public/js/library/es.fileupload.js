@@ -64,6 +64,9 @@ $(function () {
                 '<input class="upload_filename" type="hidden" name="attachments[]" value="' +
                 file_name +
                 '" />';
+            // Sent back to remove the file or to attach it to the answer: set once the upload succeeded
+            tpl_content +=
+                '<input class="upload_token" type="hidden" name="attachment_tokens[]" value="" />';
             tpl_content += '<p>';
             tpl_content +=
                 '<a target="_blank" id="href-' +
@@ -99,15 +102,24 @@ $(function () {
                 }
                 tpl.fadeOut('fast', function () {
                     let file = tpl.find('.upload_filename').val();
-                    // if not errors in ajax file/upload response
-                    //if ('' !== file) {
-                    let data = $.extend({}, formData, { file: file });
+                    let token = tpl.find('.upload_token').val();
+
+                    // No token: the file is not stored on the server (upload failed or cancelled)
+                    if ('' === token) {
+                        tpl.remove();
+                        refreshSubmitButtons();
+                        return;
+                    }
+
+                    let data = $.extend({}, formData, {
+                        file: file,
+                        token: token,
+                    });
                     // ajax call: delete
                     ajaxDeleteFile(data).always(function () {
                         tpl.remove();
                         refreshSubmitButtons();
                     });
-                    //}
                 });
             });
 
@@ -131,6 +143,9 @@ $(function () {
                     data.context.find('.file_name').text(result.filename);
                     // update filename in hidden input
                     data.context.find('.upload_filename').val(result.filename);
+                    data.context
+                        .find('.upload_token')
+                        .val(result.fileToken || '');
                     //update href
                     data.context
                         .find('[id^=href-]')
@@ -177,6 +192,7 @@ function showUploadError(data, errors) {
 
     // An empty name tells the server that this file is missing
     container.querySelector('.upload_filename').value = '';
+    container.querySelector('.upload_token').value = '';
 
     if (!errors.length) {
         errors = [

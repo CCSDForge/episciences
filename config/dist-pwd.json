@@ -90,6 +90,9 @@
   "REVIEWER_INVITATION": {
     "HMAC_SECRET": ""
   },
+  "UPLOADED_FILE": {
+    "HMAC_SECRET": "generate-a-long-random-secret-eg-openssl-rand-hex-32"
+  },
   "USER_TOKEN": {
     "PASSWORD_RESET_TTL": 3600,
     "ACCOUNT_ACTIVATION_TTL": 604800,
