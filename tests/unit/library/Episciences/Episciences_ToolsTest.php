@@ -275,4 +275,32 @@ class Episciences_ToolsTest extends TestCase
             $this->removeSandbox($root);
         }
     }
+
+    public function testFilenameRotateKeepsAFreeName(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            self::assertSame('sources.zip', Episciences_Tools::filenameRotate($base, 'sources.zip'));
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    /**
+     * A reserved name (e.g. a file of a saved copy-editing answer, moved out of the directory) is avoided as if it
+     * were stored in the directory
+     */
+    public function testFilenameRotateAvoidsStoredAndReservedNames(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            self::assertSame('report 1_1.pdf', Episciences_Tools::filenameRotate($base, 'report 1.pdf'));
+            self::assertSame(
+                'sources_2.zip',
+                Episciences_Tools::filenameRotate($base, 'sources.zip', ['sources.zip', 'sources_1.zip'])
+            );
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
 }

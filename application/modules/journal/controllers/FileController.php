@@ -3,6 +3,7 @@
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Episciences\AppRegistry;
+use Episciences\Files\UploadedFileToken;
 use Episciences\Paper\Files\DocumentFilePolicy;
 use Episciences\Security\AccessLog;
 use Episciences\Upload\SafeFileName;
@@ -13,6 +14,12 @@ class FileController extends DefaultController
 {
     /** Content types the browser may display instead of downloading */
     private const INLINE_CONTENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+
+    /** Upload directories (see buildStorageFolder()): mail attachments, temporary versions, copy-editing answers */
+    public const PATH_ATTACHMENTS = '';
+    public const PATH_TMP_ATTACHMENTS = 'tmp_attachments';
+    public const PATH_CE_ATTACHMENTS = 'ce_attachments';
+    private const UPLOAD_PATHS = [self::PATH_ATTACHMENTS, self::PATH_TMP_ATTACHMENTS, self::PATH_CE_ATTACHMENTS];
 
     public function indexAction(): void
     {
@@ -579,8 +586,14 @@ class FileController extends DefaultController
         }
 
         $result = [];
+        $fileToken = $this->uploadedFileToken();
 
-        if ($this->isPostMaxSizeReached()) {
+        if (!$fileToken->isConfigured()) {
+            // Without a token, the file could neither be removed nor attached to an answer
+            AppRegistry::getMonoLogger()?->error(sprintf('Upload refused: %s is not configured', UploadedFileToken::SECRET_CONSTANT_NAME));
+            $result['status'] = 'error';
+            $result['messages'] = [$this->view->translate("Le fichier n'a pas pu être enregistré. Veuillez réessayer.")];
+        } elseif ($this->isPostMaxSizeReached()) {
             $result ['status'] = 'error';
             $result ['messages'][] = $this->buildReachedMessage();
         } else {
@@ -588,9 +601,16 @@ class FileController extends DefaultController
             $path = (string)$request->getPost('path');
             $pcId = (int)$request->getPost('pcId');
             $docId = (int)$request->getPost('docId');
+
+            if (!in_array($path, self::UPLOAD_PATHS, true)) {
+                $this->getResponse()->setHttpResponseCode(400);
+                echo Zend_Json::encode(['status' => 'error']);
+                return;
+            }
+
             $paperId = $this->resolvePaperId($docId, (int)$request->getPost('paperId'));
 
-            if ($paperId === null || !$this->isAllowedToHandleDocumentFiles($path, $docId, $paperId)) {
+            if ($paperId === null || !$this->isAllowedToHandleDocumentFiles($path, $docId, $paperId, $pcId)) {
                 $this->getResponse()->setHttpResponseCode(403);
                 echo Zend_Json::encode(['status' => 'error']);
                 return;
@@ -632,19 +652,29 @@ class FileController extends DefaultController
                     }
 
                     // rotate filename
-                    $filename = Episciences_Tools::filenameRotate($sFolder, $filename);
+                    $filename = $this->uploadFileName($sFolder, $filename, $path, $docId, $pcId);
+
+                    if ($filename === null) {
+                        $result['status'] = 'error';
+                        $result['messages'] = [$this->view->translate("Le fichier n'a pas pu être enregistré. Veuillez réessayer.")];
+                        break;
+                    }
 
                     // move file to tmp folder
                     if (move_uploaded_file($info['tmp_name'], $sFolder . $filename)) {
                         $result['status'] = 'success';
                         $result['filename'] = $filename;
                         $result['fileUrl'] = $this->buildFileUrl($filename, $path, $paperId, $docId, $pcId);
+                        // Only whoever uploaded the file can remove it or attach it to an answer
+                        $result['fileToken'] = $fileToken->sign($sFolder, $filename);
                     }
                 }
 
             } catch (Exception $e) {
+                // The message may hold server paths (e.g. Episciences_Tools::recursiveMkdir()): logged, not displayed
+                AppRegistry::getMonoLogger()?->error('Upload failed', ['exception' => $e->getMessage()]);
                 $result['status'] = 'error';
-                $result['messages'] = [$e->getMessage()];
+                $result['messages'] = [$this->view->translate("Le fichier n'a pas pu être enregistré. Veuillez réessayer.")];
             }
 
             // No file received or the file could not be stored: never let the client believe the upload succeeded
@@ -686,6 +716,12 @@ class FileController extends DefaultController
         $filename = (string)$request->getPost('file');
         $docId = (int)$request->getPost('docId');
         $pcId = (int)$request->getPost('pcId');
+
+        if (!in_array($path, self::UPLOAD_PATHS, true)) {
+            $this->getResponse()->setHttpResponseCode(400);
+            return;
+        }
+
         $paperId = $this->resolvePaperId($docId, (int)$request->getPost('paperId'));
 
         // Only a flat file name is expected here; strip any directory component
@@ -700,18 +736,29 @@ class FileController extends DefaultController
             return;
         }
 
-        if ($paperId === null || !$this->isAllowedToHandleDocumentFiles($path, $docId, $paperId)) {
-            $this->getResponse()->setHttpResponseCode(403);
-            return;
-        }
-
-        // Only the uploads not submitted yet can be removed: the files of a saved answer are read by the editors
-        if ($path === 'tmp_attachments' && $this->isSubmittedTemporaryVersionFile($paperId, $filename)) {
+        if ($paperId === null || !$this->isAllowedToHandleDocumentFiles($path, $docId, $paperId, $pcId)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
 
         $baseDir = $this->buildStorageFolder($path, $paperId, $docId, $pcId);
+
+        // Only the files uploaded by the user, not the other files of the same directory
+        if (!$this->uploadedFileToken()->isValid($baseDir, $filename, $request->getPost('token'))) {
+            AccessLog::denied(AccessLog::TOKEN_INVALID, 'uploaded_file_token', ['path' => $path, 'file' => $filename]);
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        // Only the uploads not submitted yet can be removed: the files of a saved answer are read by the editors
+        if (
+            ($path === self::PATH_TMP_ATTACHMENTS && $this->isSubmittedTemporaryVersionFile($paperId, $filename)) ||
+            ($path === self::PATH_CE_ATTACHMENTS && $this->isSubmittedCopyEditingFile($docId, $pcId, $filename))
+        ) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         $filepath = $this->resolveSafePath($baseDir, $filename);
 
         if ($filepath !== null && is_file($filepath)) {
@@ -784,12 +831,17 @@ class FileController extends DefaultController
      * When an upload or a removal targets a document's storage (docId or paperId
      * given), the user must be related to the paper: contributor, reviewer,
      * copy editor or editor of the paper, or allowed to manage it.
-     * The files of the temporary versions have their own rule (see isAllowedToHandleTemporaryVersionFiles()).
+     * The files of the temporary versions and of the copy-editing answers have their own rules (see
+     * isAllowedToHandleTemporaryVersionFiles() and isAllowedToHandleCopyEditingFiles()).
      */
-    protected function isAllowedToHandleDocumentFiles(string $path, int $docId, int $paperId): bool
+    protected function isAllowedToHandleDocumentFiles(string $path, int $docId, int $paperId, int $pcId = 0): bool
     {
-        if ($path === 'tmp_attachments') {
+        if ($path === self::PATH_TMP_ATTACHMENTS) {
             return $this->isAllowedToHandleTemporaryVersionFiles($paperId);
+        }
+
+        if ($path === self::PATH_CE_ATTACHMENTS) {
+            return $this->isAllowedToHandleCopyEditingFiles($docId, $pcId);
         }
 
         if (!$docId && !$paperId) {
@@ -848,6 +900,118 @@ class FileController extends DefaultController
     }
 
     /**
+     * Files of an answer to a copy-editing request, uploaded in the directory of the request before the answer is
+     * saved: the request must be one of the paper version, and the user the author, a co-author or the editorial
+     * staff of the paper out of conflict of interest (see DocumentFilePolicy::isCopyEditingFileWritable()).
+     */
+    protected function isAllowedToHandleCopyEditingFiles(int $docId, int $pcId): bool
+    {
+        try {
+            if (!$this->isCopyEditingRequest($docId, $pcId)) {
+                AccessLog::denied(AccessLog::HTTP_FORBIDDEN, 'unexpected_copy_editing_request', ['docid' => $docId, 'pcid' => $pcId]);
+                return false;
+            }
+
+            $paper = $this->findPaper($docId);
+
+            if (!$paper) {
+                return false;
+            }
+
+            $review = $this->findJournal();
+            $uid = (int)Episciences_Auth::getUid();
+            $isOwnerOrCoAuthor = $paper->isOwnerOrCoAuthor();
+            $isEditorialStaff = static::isEditorialStaffOfEveryPaper($review->getSettings())
+                || $paper->getEditor($uid)
+                || $paper->getCopyEditor($uid);
+            // Only withdraws the access of the editorial staff: not looked up for the others
+            $hasConflict = $isEditorialStaff && static::isConflictDetected($paper, $review);
+
+            if (DocumentFilePolicy::isCopyEditingFileWritable($isOwnerOrCoAuthor, $hasConflict, $isEditorialStaff)) {
+                return true;
+            }
+
+            AccessLog::denied(AccessLog::HTTP_FORBIDDEN, 'copy_editing_file_write', ['docid' => $docId, 'pcid' => $pcId]);
+            return false;
+        } catch (Exception $e) {
+            AppRegistry::getMonoLogger()?->warning('Copy-editing file access check failed', [
+                'docId' => $docId,
+                'pcId' => $pcId,
+                'exception' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function isCopyEditingRequest(int $docId, int $pcId): bool
+    {
+        return Episciences_CommentsManager::isCopyEditingRequest($docId, $pcId);
+    }
+
+    /**
+     * The file is attached to the copy-editing request or to an answer already saved (see
+     * copyEditingAttachedFiles()). Considered submitted when the lookup fails, so that it is not removed.
+     */
+    protected function isSubmittedCopyEditingFile(int $docId, int $pcId, string $file): bool
+    {
+        $attachedFiles = $this->copyEditingAttachedFiles($docId, $pcId);
+
+        return $attachedFiles === null || in_array($file, $attachedFiles, true);
+    }
+
+    /**
+     * Names of the files attached to the copy-editing request and to its saved answers (see
+     * Episciences_CommentsManager::getCopyEditingAttachments()), null when the lookup fails
+     *
+     * @return string[]|null
+     */
+    protected function copyEditingAttachedFiles(int $docId, int $pcId): ?array
+    {
+        try {
+            return Episciences_CommentsManager::getCopyEditingAttachments($docId, $pcId);
+        } catch (Exception $e) {
+            AppRegistry::getMonoLogger()?->warning('Copy-editing file lookup failed', [
+                'docId' => $docId,
+                'pcId' => $pcId,
+                'exception' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Name under which an uploaded file is stored: not the name of another file of the directory and, in the
+     * directory of a copy-editing request, not the name of a file of the request or of a saved answer either (an
+     * answer's files are moved out of the directory once saved), whose removal is refused (see
+     * isSubmittedCopyEditingFile()). Null when these names cannot be looked up.
+     */
+    protected function uploadFileName(string $folder, string $filename, string $path, int $docId, int $pcId): ?string
+    {
+        $reservedNames = [];
+
+        if ($path === self::PATH_CE_ATTACHMENTS) {
+            $reservedNames = $this->copyEditingAttachedFiles($docId, $pcId);
+
+            if ($reservedNames === null) {
+                return null;
+            }
+        }
+
+        return Episciences_Tools::filenameRotate($folder, $filename, $reservedNames);
+    }
+
+    /**
+     * Signs the uploaded files and checks the tokens sent back (see UploadedFileToken)
+     */
+    protected function uploadedFileToken(): UploadedFileToken
+    {
+        return new UploadedFileToken((int)Episciences_Auth::getUid());
+    }
+
+    /**
      * The file is attached to an answer already saved with a temporary version of the paper
      * (see Episciences_CommentsManager::isTemporaryVersionAnswerAttachment()). Considered submitted when the
      * lookup fails, so that it is not removed.
@@ -890,11 +1054,9 @@ class FileController extends DefaultController
      */
     private function buildStorageFolder(string $path = "", int $paperId = 0, int $docId = 0, int $pcId = 0): string
     {
-        if ($path === 'tmp_attachments') {
+        if ($path === self::PATH_TMP_ATTACHMENTS) {
             $folder = $paperId . '/tmp/';
-        } elseif ($path === 'comment_attachments') {
-            $folder = $docId . '/comments/';
-        } elseif ($path === 'ce_attachments') {
+        } elseif ($path === self::PATH_CE_ATTACHMENTS) {
             $folder = $docId;
             $folder .= DIRECTORY_SEPARATOR;
             $folder .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
@@ -919,11 +1081,9 @@ class FileController extends DefaultController
      */
     private function buildFileUrl(string $fileName, string $path, int $paperId, int $docId, int $pcId): string
     {
-        if ($path === 'tmp_attachments') {
+        if ($path === self::PATH_TMP_ATTACHMENTS) {
             $fileUrl = Episciences_Tools::buildTmpFileUrl($paperId, $fileName);
-        } elseif ($path === 'comment_attachments') {
-            $fileUrl = '/docfiles/comments/' . $docId . '/' . $fileName;
-        } elseif ($path === 'ce_attachments') {
+        } elseif ($path === self::PATH_CE_ATTACHMENTS) {
             $fileUrl = '/docfiles/ce/' . $docId . '/' . $fileName . '/' . $pcId;
         } else {
             $fileUrl = '/';

@@ -596,11 +596,12 @@ class Episciences_Tools
      * retourne un nouveau nom de fichier si le nom fourni existe déjà dans le répertoire donné en paramètre
      * @param $dir
      * @param $filename
+     * @param string[] $reservedNames names to avoid as well, e.g. files already moved out of the directory
      * @return string|null (NULL en cas d'erreur)
      */
-    public static function filenameRotate($dir, $filename)
+    public static function filenameRotate($dir, $filename, array $reservedNames = [])
     {
-        while (is_file($dir . $filename)) {
+        while (is_file($dir . $filename) || in_array($filename, $reservedNames, true)) {
             // Always inject/increment a counter. The previous pattern produced an empty
             // replacement for a name without a trailing "_N" and no extension (e.g. "foo"),
             // leaving the filename unchanged and spinning forever.
