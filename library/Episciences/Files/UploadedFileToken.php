@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Episciences\Files;
 
+use JsonException;
 use LogicException;
 
 /**
@@ -80,7 +81,12 @@ final class UploadedFileToken
             return false;
         }
 
-        return hash_equals($this->compute($folder, $file, $expiresAt), $matches[2]);
+        try {
+            return hash_equals($this->compute($folder, $file, $expiresAt), $matches[2]);
+        } catch (JsonException) {
+            // A name that is not valid UTF-8 cannot have been signed (see sign())
+            return false;
+        }
     }
 
     /**

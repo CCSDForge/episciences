@@ -1614,9 +1614,9 @@ class PaperController extends PaperDefaultController
         foreach ($delete as $file) {
 
             if ($mailPath !== null) {
-                // Not the name of the file to remove below, which may be another file of the request directory
-                $mailFile = Episciences_Tools::filenameRotate($mailPath, $file);
-                Episciences_Tools::cpFiles((array)$mailFile, $parentPath, $mailPath, true);
+                // Same name: the mail attaches the files of the answer by their names (see
+                // Episciences_Mail_Send::sendMailFromReview()), any older copy is replaced
+                Episciences_Tools::cpFiles((array)$file, $parentPath, $mailPath, true);
             }
 
             if (is_file($parentPath . $file)) {

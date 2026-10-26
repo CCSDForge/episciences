@@ -102,6 +102,13 @@ final class UploadedFileTokenTest extends TestCase
         self::assertFalse($this->token()->isValid(self::FOLDER, 'answer.pdf', $token));
     }
 
+    public function testNameThatIsNotValidUtf8IsRefused(): void
+    {
+        $token = $this->token()->sign(self::FOLDER, 'answer.pdf');
+
+        self::assertFalse($this->token()->isValid(self::FOLDER, "answer\xff.pdf", $token));
+    }
+
     public function testEmptyFileNameIsRefused(): void
     {
         $token = $this->token()->sign(self::FOLDER, '');

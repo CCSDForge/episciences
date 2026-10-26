@@ -671,8 +671,10 @@ class FileController extends DefaultController
                 }
 
             } catch (Exception $e) {
+                // The message may hold server paths (e.g. Episciences_Tools::recursiveMkdir()): logged, not displayed
+                AppRegistry::getMonoLogger()?->error('Upload failed', ['exception' => $e->getMessage()]);
                 $result['status'] = 'error';
-                $result['messages'] = [$e->getMessage()];
+                $result['messages'] = [$this->view->translate("Le fichier n'a pas pu être enregistré. Veuillez réessayer.")];
             }
 
             // No file received or the file could not be stored: never let the client believe the upload succeeded

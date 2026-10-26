@@ -171,18 +171,62 @@ final class PaperControllerCopyEditingAnswerFilesTest extends TestCase
         self::assertDirectoryDoesNotExist($this->answerDir);
     }
 
-    public function testCopyForTheMailUnderAnotherNameDoesNotRemoveAnotherFileOfTheRequest(): void
+    public function testMailCopyReplacesAnOlderCopyOfTheSameName(): void
     {
-        // A file of the same name is already in the mail attachments: the copy is renamed "figure_1.png", the name
-        // of a file of the request
-        $this->store($this->mailDir, 'figure.png');
+        // The mail attaches the files of the answer by their names: an older copy must not be sent instead
+        $this->store($this->mailDir, 'figure.png', 'older copy');
         $this->store($this->requestDir, 'figure.png', 'uploaded for the answer');
         $this->store($this->requestDir, 'figure_1.png', 'file of the request');
 
         $this->saveAnswerFiles(['figure.png'], [$this->sign('figure.png')], true);
 
-        self::assertFileExists($this->answerDir . 'figure.png');
+        self::assertStringEqualsFile($this->answerDir . 'figure.png', 'uploaded for the answer');
+        self::assertStringEqualsFile($this->mailDir . 'figure.png', 'uploaded for the answer');
+        self::assertFileDoesNotExist($this->mailDir . 'figure_1.png');
         self::assertFileDoesNotExist($this->requestDir . 'figure.png');
         self::assertStringEqualsFile($this->requestDir . 'figure_1.png', 'file of the request');
+    }
+
+    /**
+     * moveCopyEditingAnswerFiles() alone, once the answer is saved
+     * @param string[] $attachments
+     */
+    private function moveFiles(array $attachments): void
+    {
+        $controller = new class (
+            new Zend_Controller_Request_HttpTestCase(),
+            new Zend_Controller_Response_HttpTestCase()
+        ) extends \PaperController {
+            /**
+             * @param string[] $attachments
+             */
+            public function move(string $parentPath, string $path, array $attachments): void
+            {
+                $this->moveCopyEditingAnswerFiles($parentPath, $path, $attachments, null);
+            }
+        };
+
+        $controller->move($this->requestDir, $this->answerDir, $attachments);
+    }
+
+    public function testMissingRequestDirectoryMovesNothing(): void
+    {
+        rmdir($this->requestDir);
+
+        // scandir() warns about the missing directory: not an error of the answer
+        @$this->moveFiles(['sources.zip']);
+
+        self::assertDirectoryDoesNotExist($this->answerDir);
+    }
+
+    public function testFileRemovedBeforeTheMoveIsSkipped(): void
+    {
+        $this->store($this->requestDir, 'figure.png');
+
+        $this->moveFiles(['sources.zip', 'figure.png']);
+
+        self::assertFileDoesNotExist($this->answerDir . 'sources.zip');
+        self::assertFileExists($this->answerDir . 'figure.png');
+        self::assertFileDoesNotExist($this->requestDir . 'figure.png');
     }
 }
