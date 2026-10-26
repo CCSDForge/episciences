@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
+    initStatsDelayMode();
+
     if (typeof statsChartsFromView === 'undefined' || !statsChartsFromView) {
         return;
     }
@@ -63,3 +65,48 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+/**
+ * Selector "moyenne" / "médiane" of the delay table: only the chosen column is shown.
+ * A client-side toggle (no page reload); the delays-by-year chart is not affected
+ * (it always plots the per-year mean).
+ */
+function initStatsDelayMode() {
+    document.querySelectorAll('.stat-delay-mode').forEach(function (group) {
+        const table = group.parentElement
+            ? group.parentElement.querySelector('.stat-delays')
+            : null;
+
+        if (!table) {
+            return;
+        }
+
+        // :target cells of the table, e.g. header <th> and value <td> of the chosen column
+        const selectMode = function (mode) {
+            group
+                .querySelectorAll('.stat-delay-mode-btn')
+                .forEach(function (btn) {
+                    const active = btn.getAttribute('data-delay-mode') === mode;
+                    btn.classList.toggle('active', active);
+                    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                });
+
+            table.querySelectorAll('[data-delay]').forEach(function (cell) {
+                cell.hidden = cell.getAttribute('data-delay') !== mode;
+            });
+        };
+
+        // the page works without JavaScript: the mean column is the visible default
+        selectMode('mean');
+
+        group.querySelectorAll('.stat-delay-mode-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                selectMode(btn.getAttribute('data-delay-mode'));
+            });
+        });
+    });
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { initStatsDelayMode };
+}

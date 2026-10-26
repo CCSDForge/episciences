@@ -17,13 +17,22 @@
     <div>
         <h3 class="stat-section-title"><?= $this->translate('Délai') ?></h3>
 
+        <?php // client-side (no page reload) selector: only the chosen column (moyenne or médiane) is shown at a time ?>
+        <div class="stat-delay-mode" role="group"
+             aria-label="<?= $this->translate('Valeur du délai à afficher') ?>">
+            <button type="button" class="stat-delay-mode-btn active" data-delay-mode="mean"
+                    aria-pressed="true"><?= $this->translate('Moyenne') ?></button>
+            <button type="button" class="stat-delay-mode-btn" data-delay-mode="median"
+                    aria-pressed="false"><?= $this->translate('Médiane') ?></button>
+        </div>
+
         <table class="delay table stat-delays">
 
             <thead>
             <tr>
                 <th scope="col"></th>
-                <th scope="col" class="stat-label"><?= sprintf($this->translate('Moyenne (%s)'), $unitLabel($this->submissionAcceptanceTimeUnit)) ?></th>
-                <th scope="col" class="stat-label"><?= sprintf($this->translate('Médiane (%s)'), $unitLabel($this->submissionAcceptanceTimeMedianUnit)) ?></th>
+                <th scope="col" class="stat-label" data-delay="mean"><?= sprintf($this->translate('Moyenne (%s)'), $unitLabel($this->submissionAcceptanceTimeUnit)) ?></th>
+                <th scope="col" class="stat-label" data-delay="median"><?= sprintf($this->translate('Médiane (%s)'), $unitLabel($this->submissionAcceptanceTimeMedianUnit)) ?></th>
             </tr>
             </thead>
             <tbody>
@@ -33,8 +42,8 @@
                     <?= ucfirst($this->translate('délai soumission-publication')) ?>
                     <?= $this->partial('stats/paper-list.phtml', ['paperList' => $this->paperLists[StatsController::SUBMISSION_PUBLICATION_DELAY] ?? null]) ?>
                 </th>
-                <td class="stat-value"><?= $this->submissionPublicationTime ?></td>
-                <td class="stat-value"><?= $this->submissionPublicationTimeMedian ?></td>
+                <td class="stat-value" data-delay="mean"><?= $this->submissionPublicationTime ?></td>
+                <td class="stat-value" data-delay="median"><?= $this->submissionPublicationTimeMedian ?></td>
             </tr>
 
             <tr>
@@ -42,8 +51,8 @@
                     <?= ucfirst($this->translate('délai soumission-acceptation')) ?>
                     <?= $this->partial('stats/paper-list.phtml', ['paperList' => $this->paperLists[StatsController::SUBMISSION_ACCEPTANCE_DELAY] ?? null]) ?>
                 </th>
-                <td class="stat-value"><?= $this->submissionAcceptanceTime ?></td>
-                <td class="stat-value"><?= $this->submissionAcceptanceTimeMedian ?></td>
+                <td class="stat-value" data-delay="mean"><?= $this->submissionAcceptanceTime ?></td>
+                <td class="stat-value" data-delay="median"><?= $this->submissionAcceptanceTimeMedian ?></td>
             </tr>
             </tbody>
         </table>

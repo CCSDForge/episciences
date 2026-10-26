@@ -368,6 +368,47 @@
   }
 
   // delays: a light table, numbers aligned
+  .stat-delay-mode {
+    display: inline-flex;
+    gap: 2px;
+    margin: 0 0 10px;
+    padding: 3px;
+    border: 1px solid #e8e7e3;
+    border-radius: 999px;
+    background: #faf9f6;
+
+    .stat-delay-mode-btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 3px 12px;
+      background: transparent;
+      font-size: 1.3rem;
+      color: #737373;
+      cursor: pointer;
+
+      &:hover {
+        color: #333;
+        background: #f0efec;
+      }
+
+      &.active {
+        background: #2a78d6;
+        color: #fff;
+      }
+
+      &:focus-visible {
+        outline: 2px solid #2a78d6;
+        outline-offset: 2px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .stat-delay-mode-btn {
+        transition: none;
+      }
+    }
+  }
+
   .stat-delays {
     max-width: 720px;
     margin-bottom: 8px;
