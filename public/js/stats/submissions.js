@@ -182,7 +182,9 @@ function createDelayChart(canvasId, delays) {
                 format: value =>
                     value === null || value === undefined
                         ? '–'
-                        : value + ' ' + statTranslate('jours'),
+                        : value +
+                          ' ' +
+                          (delays.unitLabel || statTranslate('jours')),
             }
         );
     };

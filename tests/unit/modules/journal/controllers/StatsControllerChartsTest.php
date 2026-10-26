@@ -42,7 +42,7 @@ class StatsControllerChartsTest extends TestCase
                 ],
             ],
             'submissionAcceptanceTime' => [
-                2023 => ['delay' => ['value' => 57]],
+                2023 => ['delay' => ['value' => 57, 'unit' => 'DAY']],
                 2024 => ['delay' => ['value' => 162]],
             ],
             'submissionPublicationTime' => [
@@ -143,6 +143,25 @@ class StatsControllerChartsTest extends TestCase
         $this->assertSame([41.0, 150.0], $delays['medianDatasets'][0]['data']);
         $this->assertSame([210.0, null], $delays['medianDatasets'][1]['data']);
         $this->assertSame('Submission → publication', $delays['medianDatasets'][1]['label']);
+    }
+
+    public function testBuildChartsData_Delays_UnitOfTheApi(): void
+    {
+        $this->assertSame('DAY', self::charts()['delays']['unit']);
+
+        $details = self::details();
+        $details['submissionAcceptanceTime'][2023]['delay']['unit'] = 'MONTH';
+        $this->assertSame('MONTH', StatsController::buildChartsData($details, [2023], [], self::LABELS)['delays']['unit']);
+
+        // without unit: days, as the API by default
+        $this->assertSame('DAY', StatsController::buildChartsData([], [], [], self::LABELS)['delays']['unit']);
+    }
+
+    public function testUnitLabel(): void
+    {
+        $this->assertSame('jours', StatsController::unitLabel('DAY'));
+        $this->assertSame('mois', StatsController::unitLabel('month'));
+        $this->assertSame('quarter', StatsController::unitLabel('QUARTER'));
     }
 
     /**

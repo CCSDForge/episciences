@@ -6,13 +6,7 @@
 ) : ?>
     <?php
     // unit of the API (DAY, WEEK…) in words
-    $unitLabel = fn(?string $unit) => $this->translate(match (strtoupper((string)$unit)) {
-        'DAY' => 'jours',
-        'WEEK' => 'semaines',
-        'MONTH' => 'mois',
-        'YEAR' => 'années',
-        default => strtolower((string)$unit),
-    });
+    $unitLabel = fn(?string $unit) => $this->translate(StatsController::unitLabel($unit));
     ?>
     <div>
         <h3 class="stat-section-title"><?= $this->translate('Délai') ?></h3>

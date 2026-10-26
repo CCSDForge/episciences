@@ -312,9 +312,11 @@ class StatsController extends Zend_Controller_Action
 
         // titles of the delays chart, following the selector "moyenne" / "médiane" of the delay table
         $charts['delays']['titles'] = [
-            'mean' => $this->view->translate('Délai moyen en jours entre dépôt et acceptation | dépôt et publication'),
-            'median' => $this->view->translate('Délai médian en jours entre dépôt et acceptation | dépôt et publication'),
+            'mean' => sprintf($this->view->translate('Délai moyen en %s entre dépôt et acceptation | dépôt et publication'), $this->view->translate(self::unitLabel($charts['delays']['unit']))),
+            'median' => sprintf($this->view->translate('Délai médian en %s entre dépôt et acceptation | dépôt et publication'), $this->view->translate(self::unitLabel($charts['delays']['unit']))),
         ];
+        // unit of the values of the chart, in words
+        $charts['delays']['unitLabel'] = $this->view->translate(self::unitLabel($charts['delays']['unit']));
         // the median by default; the mean when the API does not give the median by year
         $this->view->chart4Title = $charts['delays']['titles'][$charts['delays']['medianDatasets'] !== null ? 'median' : 'mean'];
 
@@ -384,7 +386,8 @@ class StatsController extends Zend_Controller_Action
     {
         $view = $this->view;
         $t = fn(string $label) => ucfirst((string)$view->translate($label));
-        $days = ' (' . $view->translate('jours') . ')';
+        // unit of a delay (the delays of the API are in days by default)
+        $unit = fn(?string $unit) => ' (' . $view->translate(self::unitLabel($unit ?? 'DAY')) . ')';
 
         return self::buildFiguresExport([
             [$t('Revue'), RVCODE],
@@ -407,10 +410,10 @@ class StatsController extends Zend_Controller_Action
             [$t("taux d'acceptation") . ' (%)', $view->acceptanceRate],
             [$t('taux de publication') . ' (%)', $view->publicationRate],
             [$t('taux de refus') . ' (%)', $view->declineRate],
-            [$t('délai soumission-acceptation') . ' – ' . $view->translate('moyenne') . $days, $view->submissionAcceptanceTime],
-            [$t('délai soumission-acceptation') . ' – ' . $view->translate('médiane') . $days, $view->submissionAcceptanceTimeMedian],
-            [$t('délai soumission-publication') . ' – ' . $view->translate('moyenne') . $days, $view->submissionPublicationTime],
-            [$t('délai soumission-publication') . ' – ' . $view->translate('médiane') . $days, $view->submissionPublicationTimeMedian],
+            [$t('délai soumission-acceptation') . ' – ' . $view->translate('moyenne') . $unit($view->submissionAcceptanceTimeUnit), $view->submissionAcceptanceTime],
+            [$t('délai soumission-acceptation') . ' – ' . $view->translate('médiane') . $unit($view->submissionAcceptanceTimeMedianUnit), $view->submissionAcceptanceTimeMedian],
+            [$t('délai soumission-publication') . ' – ' . $view->translate('moyenne') . $unit($view->submissionPublicationTimeUnit), $view->submissionPublicationTime],
+            [$t('délai soumission-publication') . ' – ' . $view->translate('médiane') . $unit($view->submissionPublicationTimeMedianUnit), $view->submissionPublicationTimeMedian],
             [$t('Évaluations demandées'), $view->reviewsRequested],
             [$t('Évaluations reçues'), $view->reviewsReceived],
             [$t("Nombre médian d'évaluations d'articles de recherche"), $view->medianReviewsNumber],
@@ -511,6 +514,18 @@ class StatsController extends Zend_Controller_Action
             $delayDataset($labels['acceptanceDelay'] ?? 'acceptanceDelay', $acceptanceKey),
             $delayDataset($labels['publicationDelay'] ?? 'publicationDelay', $publicationKey),
         ];
+        // unit of the delays given by the API (DAY by default)
+        $delayUnit = 'DAY';
+
+        foreach ($delayKeys as $key) {
+            foreach ($details[$key] ?? [] as $yearDetails) {
+                if (isset($yearDetails['delay']['unit'])) {
+                    $delayUnit = (string)$yearDetails['delay']['unit'];
+                    break 2;
+                }
+            }
+        }
+
         $hasMedian = isset($details[self::SUBMISSION_ACCEPTANCE_MEDIAN_DELAY]) || isset($details[self::SUBMISSION_PUBLICATION_MEDIAN_DELAY]);
 
         return [
@@ -519,11 +534,28 @@ class StatsController extends Zend_Controller_Action
             'byRepo' => ['datasets' => $repoDatasets, 'imported' => $imported, 'stacked' => true],
             'delays' => [
                 'years' => $delayYears,
+                'unit' => $delayUnit,
                 'datasets' => $delayDatasets(self::SUBMISSION_ACCEPTANCE_DELAY, self::SUBMISSION_PUBLICATION_DELAY),
                 // null when the API does not give the median by year: the chart keeps the mean
                 'medianDatasets' => $hasMedian ? $delayDatasets(self::SUBMISSION_ACCEPTANCE_MEDIAN_DELAY, self::SUBMISSION_PUBLICATION_MEDIAN_DELAY) : null,
             ],
         ];
+    }
+
+    /**
+     * Unit of a delay given by the API (DAY, WEEK…) in words, to be translated
+     * @param string|null $unit
+     * @return string
+     */
+    public static function unitLabel(?string $unit): string
+    {
+        return match (strtoupper((string)$unit)) {
+            'DAY' => 'jours',
+            'WEEK' => 'semaines',
+            'MONTH' => 'mois',
+            'YEAR' => 'années',
+            default => strtolower((string)$unit),
+        };
     }
 
     /**
