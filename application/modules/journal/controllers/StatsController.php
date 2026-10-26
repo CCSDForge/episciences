@@ -215,7 +215,7 @@ class StatsController extends Zend_Controller_Action
         $navYears = $details[self::NB_SUBMISSIONS]['years']['relevantYears'] ?? [];
 
         if ($startStatsAfterDate) {
-            $navYears = array_filter($navYears ?? [], static function ($year) use ($startStatsAfterDateYear) {
+            $navYears = array_filter($navYears, static function ($year) use ($startStatsAfterDateYear) {
                 return $year >= $startStatsAfterDateYear;
             });
         }
@@ -248,7 +248,7 @@ class StatsController extends Zend_Controller_Action
         $totalArticles = $dashboard['value']['totalWithoutStartAfterDate']['totalSubmissions'] ?? $dashboard['value'][self::NB_SUBMISSIONS] ?? null;
         $totalImported = $dashboard['value']['totalWithoutStartAfterDate']['totalImported'] ?? $dashboard['value'][self::NB_IMPORTED] ?? null;
         $totalPublished = $dashboard['value']['totalWithoutStartAfterDate']['totalPublished'] ?? ($allPublications + $importedPublished) ?? null;
-        $totalImportedPublished = $dashboard['value']['totalWithoutStartAfterDate']['totalImportedPublished'] ?? $importedPublished ?? null;
+        $totalImportedPublished = $dashboard['value']['totalWithoutStartAfterDate']['totalImportedPublished'] ?? $importedPublished;
 
 
         $this->view->chart1Title = $this->view->translate("En un coup d'oeil");
