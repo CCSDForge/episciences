@@ -57,6 +57,9 @@ jobs:
       - name: No new test reading the application source
         run: php .github/scripts/check-source-reading-tests.php
 
+      - name: No internal URL hardcoded from the web root (journal prefix)
+        run: php .github/scripts/check-hardcoded-internal-urls.php
+
       - name: Static Analysis (PHPStan)
         run: vendor/bin/phpstan analyse --memory-limit=1G --error-format=github
         continue-on-error: true

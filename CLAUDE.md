@@ -25,6 +25,7 @@
 - `make rector [TARGET=path] [DRY_RUN=1]` - Rector refactoring
 - `yarn format` - Format JS with Prettier
 - `make check-source-reading-tests` - Refuse new tests that read the application source
+- `make check-hardcoded-urls` - Refuse internal URLs hardcoded from the web root (*-epi-manager branches)
 - Tests must run the code (call the method, dispatch the action, render the view), never read
   the source (`file_get_contents()` on code, `extractMethod()`, `getStartLine()`).
   Controller actions: extend `tests/unit/modules/ControllerTestCase.php`. Details: `tests/README.md`
