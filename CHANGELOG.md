@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Statistics page: the chart by repository stacks the repositories of each year, and no longer counts the temporary versions as a repository; a tile gives the number of articles with a temporary version.
 - Statistics page: when the journal starts its statistics at a given date, its administrators can include the earlier data with an on / off switch; the public still sees the statistics from that date.
 - Statistics page: CSV exports of the figures of the page, of the data of each chart and, for the journal administrators, of the lists of papers.
+- Statistics page: a "Mean | Median" selector chooses the delay shown by the delay table and by the delays-by-year chart, without reloading the page; the median is shown by default and the choice is kept from a page to another. The chart gives the number of articles of each delay, explains that an article is counted the year of its acceptance or publication, uses the unit of the delays given by the API, and its CSV file is named after the value shown. Without JavaScript, the selector is hidden and the table shows both values. The median by year requires the matching Episciences API version; otherwise the chart keeps showing the mean.
 
 ### Fixed
 - Statistics page: the evaluations block is also shown when only the median number of reviews is known.
