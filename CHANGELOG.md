@@ -65,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1163](https://github.com/CCSDForge/episciences/pull/1163): Display bibliographic references count in `papers:update-document` with `-vv`.
 - [#1214](https://github.com/CCSDForge/episciences/pull/1214) Add volume editors to CrossRef XML export. When a paper belongs to a volume with assigned editors, their names and ORCID identifiers are now included in the `<journal_issue><contributors>` block.
 
+## v1.0.58 - 2026-10-25
+
 ### Changed
 
 - [#1362](https://github.com/CCSDForge/episciences/pull/1362): Account activation and password links are now stored in the application database, can be used only once and expire; lifetimes are configurable in `pwd.json` (`USER_TOKEN` section, see `docs/console-commands.md`).
@@ -110,6 +112,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Deployment**: apply `src/mysql/2026-10-24-papers_section_of_all_versions.sql`, which gives every version the section of
   the latest one.
 - [#1360](https://github.com/CCSDForge/episciences/pull/1360): The access denied page answers with a 403 status instead of a "page not found" error.
+- [#1379](https://github.com/CCSDForge/episciences/pull/1379): harden file, attachment and volume metadata access checks; resolve ACL resources with dispatcher-normalized names.
+- [#1352](https://github.com/CCSDForge/episciences/pull/1352): declare the paper revision deadline property.
 - [#1310](https://github.com/CCSDForge/episciences/pull/1310): co-author form and co-author removal are now consistent with the paper management page.
 - [#1344](https://github.com/CCSDForge/episciences/pull/1344): graphical abstract and linked data forms are now consistent with the paper context.
 - [#1349](https://github.com/CCSDForge/episciences/pull/1349): profile edition form opened from the user list is submitted for the selected account.
