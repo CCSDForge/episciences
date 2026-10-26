@@ -307,7 +307,7 @@ class VolumeController extends Zend_Controller_Action
         }
 
         if (!$errorMessage) {
-            $volume = Episciences_VolumesManager::find($vid);
+            $volume = Episciences_VolumesManager::find($vid, RVID);
             if (!$volume) {
                 $errorMessage = "Ce volume n'existe pas.";
             } else {

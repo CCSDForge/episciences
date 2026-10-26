@@ -3643,6 +3643,20 @@ class Episciences_PapersManager
     }
 
     /**
+     * Move every version of a paper, in its journal, to a section
+     * @param int $paperId
+     * @param int $rvId
+     * @param int $sid 0 = no section
+     * @return int the number of updated rows
+     */
+    public static function updateSection(int $paperId, int $rvId, int $sid): int
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        return $db->update(T_PAPERS, ['SID' => $sid], ['PAPERID = ?' => $paperId, 'RVID = ?' => $rvId]);
+    }
+
+    /**
      * @param string $doi
      * @param int $paperId
      * @return int

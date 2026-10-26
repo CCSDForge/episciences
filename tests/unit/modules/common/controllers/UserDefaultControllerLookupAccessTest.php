@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\modules\common\controllers;
 
+use Episciences\Security\AccessLog;
 use Episciences_Acl;
 use Episciences_Auth;
 use Episciences_User;
@@ -11,6 +12,9 @@ use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Zend_Auth_Storage_Interface;
 use Zend_Auth_Storage_NonPersistent;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * The user lookup endpoints and the user list page must refuse callers who
@@ -18,6 +22,8 @@ use Zend_Auth_Storage_NonPersistent;
  */
 final class UserDefaultControllerLookupAccessTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const LOOKUP_ACTIONS = [
         'findcasusersAction',
         'ajaxfindusersbymailAction',
@@ -166,6 +172,10 @@ final class UserDefaultControllerLookupAccessTest extends TestCase
         $this->runAction('listAction');
 
         self::assertContains(['gotoUrl', ['/error/deny']], $this->helperCalls);
+        self::assertSame(
+            [[AccessLog::ACL_DENIED, 'role_check']],
+            $this->loggedEvents()
+        );
     }
 
     private function logInAs(string $role): void

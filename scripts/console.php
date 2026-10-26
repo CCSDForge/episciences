@@ -42,6 +42,8 @@ require_once __DIR__ . '/ImportSpdxLicenseListCommand.php';
 require_once __DIR__ . '/NormalizeUserAffiliationsCommand.php';
 require_once __DIR__ . '/RevalidateNextCacheCommand.php';
 require_once __DIR__ . '/AnonymizeSuLogsCommand.php';
+require_once __DIR__ . '/PurgeExpiredUserTokensCommand.php';
+require_once __DIR__ . '/ImportLegacyUserTokensCommand.php';
 
 // Solr indexing commands
 require_once __DIR__ . '/SolrIndexCommand.php';
@@ -67,6 +69,8 @@ $application->addCommand(new GenerateUsersCommand());
 $application->addCommand(new InitDevUsersCommand());
 $application->addCommand(new CreateBotUserCommand());
 $application->addCommand(new AnonymizeSuLogsCommand());
+$application->addCommand(new PurgeExpiredUserTokensCommand());
+$application->addCommand(new ImportLegacyUserTokensCommand());
 
 // Enrichment commands
 $application->addCommand(new ExtractBiblioRefsCommand());

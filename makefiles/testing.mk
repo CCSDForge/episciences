@@ -9,7 +9,7 @@ JEST_CONFIG := jest.config.js
 # =============================================================================
 # Test Commands
 # =============================================================================
-.PHONY: test test-all test-php test-js test-php-unit test-php-integration test-js-unit test-js-watch test-js-coverage test-e2e test-coverage lint-php
+.PHONY: test test-all test-php test-js test-php-unit test-php-integration test-js-unit test-js-watch test-js-coverage test-e2e test-coverage lint-php check-source-reading-tests
 
 test: test-all ## Run all tests (PHP + JavaScript)
 
@@ -32,6 +32,9 @@ test-php: ## Run PHP tests (PHPUnit, usage: make test-php [SUITE=unit|integratio
 	else \
 		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP tests"; \
 	fi
+
+check-source-reading-tests: ## Refuse new tests that read the application source instead of running it
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php .github/scripts/check-source-reading-tests.php
 
 test-php-unit: ## Run PHP unit tests only
 	@$(MAKE) test-php SUITE=unit

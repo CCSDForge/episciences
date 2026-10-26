@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace unit\modules\journal\controllers;
 
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Security\AccessLog;
 use Episciences_Paper;
 use Episciences_User;
 use Episciences_User_Assignment;
@@ -21,6 +22,9 @@ use Zend_Controller_Front;
 use Zend_Controller_Response_HttpTestCase;
 use Zend_Db_Table_Abstract;
 use Zend_View;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Access to the reviewer invitation page: holding the link is the proof.
@@ -31,6 +35,8 @@ use Zend_View;
  */
 final class ReviewerControllerInvitationAccessTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const SECRET = 'access-test-secret';
     private const ROW_SECRET = '0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0';
     private const INVITATION_ID = 7;
@@ -267,6 +273,7 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
 
         self::assertFalse($result);
         self::assertSame(self::INVALID_LINK, $controller->view->errors);
+        self::assertSame([], $this->loggedEvents(), 'a configuration error is not an invalid token');
     }
 
     // -------------------------------------------------------------------------
@@ -287,6 +294,60 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     {
         self::assertFalse($this->isAuthorized($this->invitation(null), $this->assignment(true), ['tmp' => md5('other@example.org')], $this->tmpUser()));
         self::assertSame(self::INVALID_LINK, $this->controller->view->errors);
+    }
+
+    // -------------------------------------------------------------------------
+    // security log
+    // -------------------------------------------------------------------------
+
+    public function testWrongTokenIsLogged(): void
+    {
+        $this->isAuthorized($this->invitation(), $this->assignment(), ['token' => self::linkToken(8)]);
+
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'invitation_token', self::INVITATION_ID]], $this->loggedEvents('reason', 'invitation_id'));
+    }
+
+    public function testTemporaryUserThatNoLongerExistsIsLogged(): void
+    {
+        $this->isAuthorized($this->invitation(), $this->assignment(true), ['token' => self::linkToken()]);
+
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'unknown_temporary_reviewer', self::INVITATION_ID]], $this->loggedEvents('reason', 'invitation_id'));
+    }
+
+    public function testLegacyLinkWithAWrongMd5IsLogged(): void
+    {
+        $this->isAuthorized($this->invitation(null), $this->assignment(true), ['tmp' => md5('other@example.org')], $this->tmpUser());
+
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'legacy_invitation_link', self::INVITATION_ID]], $this->loggedEvents('reason', 'invitation_id'));
+    }
+
+    /**
+     * @return array<string, array{bool, ?string, array<string, string>}>
+     */
+    public static function grantedAccessProvider(): array
+    {
+        return [
+            'valid token' => [false, self::ROW_SECRET, []],
+            'legacy invitation of an account' => [false, null, []],
+            'invitee logged in' => [true, self::ROW_SECRET, []],
+        ];
+    }
+
+    /**
+     * @dataProvider grantedAccessProvider
+     * @param array<string, string> $params
+     */
+    public function testGrantedAccessIsNotLogged(bool $inviteeLoggedIn, ?string $rowSecret, array $params): void
+    {
+        if ($inviteeLoggedIn) {
+            $this->logIn(self::INVITED_UID);
+        }
+        if ($rowSecret !== null && !$inviteeLoggedIn) {
+            $params['token'] = self::linkToken();
+        }
+
+        self::assertTrue($this->isAuthorized($this->invitation($rowSecret), $this->assignment(), $params));
+        self::assertSame([], $this->loggedEvents('reason', 'invitation_id'));
     }
 
     // -------------------------------------------------------------------------

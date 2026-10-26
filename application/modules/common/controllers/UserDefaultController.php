@@ -3,11 +3,16 @@
 use Ccsd\Auth\AdapterFactory;
 use Episciences\Altcha\ChallengeHelper;
 use Episciences\Maintenance\ReadOnlyMode;
+use Episciences\Security\AccessLog;
 use Episciences\Trait\LocaleByCookieTrait;
 use Episciences\User\AccountMutationPolicy;
 use Episciences\User\EmailPolicy;
 use Episciences\User\ImpersonationPolicy;
 use Episciences\User\SuLogger;
+use Episciences\User\Token\AccountToken;
+use Episciences\User\Token\AccountTokenRepository;
+use Episciences\User\Token\TokenPurpose;
+use Monolog\Level;
 
 
 class UserDefaultController extends Zend_Controller_Action
@@ -20,6 +25,11 @@ class UserDefaultController extends Zend_Controller_Action
     public const DEFAULT_IMG_PATH = '/../public/img/user.svg';
     private const ERROR_ERROR_PHTML = 'error/error.phtml';
     private const IMAGE_SVG_XML = 'image/svg+xml';
+    /** Tokens accepted by the password reset page */
+    private const PASSWORD_TOKEN_PURPOSES = [TokenPurpose::PASSWORD_RESET, TokenPurpose::ACCOUNT_SETUP];
+    private const ACCOUNT_ACTIVATED_MESSAGE = "Votre compte est activé. Si vous ne connaissez pas votre mot de passe, utilisez la procédure « Mot de passe oublié »";
+
+    private ?AccountTokenRepository $accountTokenRepository = null;
 
     public function indexAction(): void
     {
@@ -353,6 +363,29 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * The submitted login, only when it names an existing account: an unknown value may be a password
+     * typed in the wrong field, and must not end up in the security log.
+     */
+    protected function knownUsername(mixed $username): ?string
+    {
+        if (!is_string($username)) {
+            return null;
+        }
+
+        // Same trimming as the MySQL authentication adapter
+        $username = trim(str_replace("\xC2\xA0", ' ', $username));
+        if ($username === '') {
+            return null;
+        }
+
+        try {
+            return $this->getUserMapper()->usernameExists($username) ? $username : null;
+        } catch (Exception) {
+            return null;
+        }
+    }
+
+    /**
      *   Login utilisateur
      *   Après login redirige :
      *   - sur la page de modification de compte si pas de champs Application Episciences
@@ -399,6 +432,15 @@ class UserDefaultController extends Zend_Controller_Action
             case Zend_Auth_Result::FAILURE:
             case Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID:
             case Zend_Auth_Result::FAILURE_IDENTITY_NOT_FOUND:
+                AccessLog::denied(AccessLog::LOGIN_FAILED, '', [
+                    'result_code' => $result->getCode(),
+                    'adapter' => get_class($adapter),
+                    // Read as the MySQL adapter does (route, then query, then body); the other adapters
+                    // (CAS) check the credentials on their own server, never with this parameter
+                    'username' => $adapter instanceof \Ccsd\Auth\Adapter\Mysql
+                        ? $this->knownUsername($this->getRequest()->getParam('username'))
+                        : null,
+                ]);
                 // For MySQL adapter, redisplay login form with error message
                 if ($adapter instanceof \Ccsd\Auth\Adapter\Mysql) {
                     $form = new \Ccsd_User_Form_Login();
@@ -686,6 +728,7 @@ class UserDefaultController extends Zend_Controller_Action
     public function listAction()
     {
         if (!Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor()) {
+            AccessLog::denied(AccessLog::ACL_DENIED, 'role_check');
             $this->_helper->redirector->gotoUrl('/error/deny');
             return;
         }
@@ -878,44 +921,15 @@ class UserDefaultController extends Zend_Controller_Action
                 }
 
                 // activation token
-                $userTokenData = ['UID' => $user->getUid(), 'EMAIL' => $user->getEmail()];
-                $userToken = new Ccsd_User_Models_UserTokens($userTokenData);
-                $userToken->generateUserToken();
-                $userToken->setUsage('VALID');
-                $userTokenMapper = new Ccsd_User_Models_UserTokensMapper();
-
-                if (!$userTokenMapper->save($userToken)) {
+                try {
+                    $this->sendActivationEmail($user);
+                } catch (Zend_Db_Exception $e) {
                     $error = "La création du compte a échoué. Merci de réessayer.";
-                    trigger_error($error);
+                    trigger_error($error . ' ' . $e->getMessage());
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($error);
                     $this->view->form = $form;
                     $this->render('create');
                     return;
-                }
-
-                $url = $this->view->url([
-                    'controller' => 'user',
-                    'action' => 'activate',
-                    'token' => $userToken->getToken()], null, true);
-
-                $tokenUrl = APPLICATION_URL . $url;
-
-                $tags = [
-                    // TAG_REVIEW_CODE deliberately omitted: it is not in OVERRIDABLE_TAGS,
-                    // so sendMailFromReview() already sets it from the review's mail display
-                    // code (Episciences_Mail's constructor runs before this array is merged).
-                    Episciences_Mail_Tags::TAG_REVIEW_NAME => RVNAME,
-                    Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK => $tokenUrl
-
-                ];
-
-                try {   // send mail
-                    Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION, $tags);
-
-                } catch (Zend_Exception $e) {
-
-                    trigger_error($e->getMessage(), E_USER_ERROR);
-
                 }
 
             }
@@ -1276,38 +1290,29 @@ class UserDefaultController extends Zend_Controller_Action
     /**
      * user account activation
      * (when activation link has been clicked)
-     * @throws Zend_Db_Adapter_Exception
      */
     public function activateAction(): void
     {
-        $request = $this->getRequest();
-        $token = $request->getParam('token');
+        $this->sendTokenPageHeaders();
 
-        $userTokens = new Ccsd_User_Models_UserTokens(['TOKEN' => $request->getParam('token')]);
-        $userTokensMapper = new Ccsd_User_Models_UserTokensMapper();
-        $tokenData = $userTokensMapper->findByToken($token, $userTokens);
-
-        // le client essaie d'utiliser un jeton prévu pour autre chose que la validation de compte,
-        // ou il n'y a pas de jeton
-        if (empty($tokenData) || 'VALID' !== $userTokens->getUsage()) {
+        if (!$this->activateAccountWithToken($this->getRequest()->getParam('token'))) {
             $this->view->message = "Erreur lors de l'activation du compte";
-            $this->view->description = "Erreur le jeton d'activation de ce compte n'est pas valable";
+            $this->view->description = "Ce lien d'activation n'existe pas, a déjà été utilisé ou a expiré. Pour en recevoir un nouveau, utilisez la procédure « Mot de passe oublié »";
             $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }
 
-        $userMapper = new Ccsd_User_Models_UserMapper();
-        $userMapper->activateAccountByUid($userTokens->getUid());
-        $userTokensMapper->delete($token);
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
+            ->addMessage($this->view->translate(self::ACCOUNT_ACTIVATED_MESSAGE));
         $this->_helper->redirector->gotoUrl('/');
     }
 
     /**
      * lost user password
-     * send the user an e-mail for resetting his password
+     * Sends a password reset link to the e-mail address of the account, or a new activation link when the account
+     * has not been activated yet. The page shows the same message whether or not an account matches.
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
-     * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
     public function lostpasswordAction()
@@ -1336,55 +1341,7 @@ class UserDefaultController extends Zend_Controller_Action
                 return;
             }
 
-            $userMapper = new Ccsd_User_Models_UserMapper();
-            $userInfo = $userMapper->findByUsername($form->getValue('USERNAME'));
-
-            if (!$userInfo || $userInfo->count() === 0) {
-                $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_INVALID_USERNAME;
-                $this->view->form = $form;
-                $this->render('lostpassword');
-                return;
-            }
-
-            $user = new Episciences_User($userInfo->current()->toArray());
-            $user->find($user->getUid()); // Récupère les données propres à Episciences
-
-            // Création du token
-            $userTokenInfo = $userInfo->current()->toArray();
-            $userTokenInfo['USAGE'] = $form->getValue('USAGE');
-            $userToken = new Ccsd_User_Models_UserTokens($userTokenInfo);
-            $userToken->generateUserToken();
-            $userTokenMapper = new Ccsd_User_Models_UserTokensMapper();
-            $userTokenMapper->save($userToken);
-
-            $this->view->userEmail = $user->getEmail();
-            $this->view->fullUserName = $user->getFullName();
-            $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_VALID_USERNAME;
-
-            /**
-             * Envoi du mail
-             */
-            $locale = $user->getLangueid(true);
-            $template = new Episciences_Mail_Template();
-            $template->findByKey(Episciences_Mail_TemplatesManager::TYPE_USER_LOST_PASSWORD);
-            $template->loadTranslations();
-            $template->setLocale($locale);
-
-            $mail = new Episciences_Mail('UTF-8');
-            // prepare retrieve password link
-            $url = APPLICATION_URL . $this->view->url([
-                    'controller' => 'user',
-                    'action' => 'resetpassword',
-                    'lang' => $locale,
-                    'token' => $userToken->getToken()
-                ], null, true);
-            $mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $url);
-            $mail->setFromReview();
-            $mail->setTo($user);
-            $mail->setSubject($template->getSubject());
-            $mail->setTemplate($template->getPath(), $template->getKey() . '.phtml');
-            $mail->writeMail();
-
+            $this->processLostPasswordRequest((string)$form->getValue('USERNAME'));
             $this->render('lostpassword');
             return;
         }
@@ -1503,59 +1460,7 @@ class UserDefaultController extends Zend_Controller_Action
                 return;
             }
 
-            $user = new Episciences_User($form->getValues());
-
-            $userMapper = new Ccsd_User_Models_UserMapper();
-            $userLogins = $userMapper->findLoginByEmail($form->getValue('EMAIL'));
-
-            if ($userLogins !== null) {
-                $userLogins = $userLogins->toArray();
-            }
-
-            // login non trouvé
-            if (empty($userLogins)) {
-                $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_LOST_LOGIN_NOT_FOUND;
-                $this->view->form = $form;
-                $this->render('lostlogin');
-                return;
-            }
-
-            // liste des logins trouvés + mention compte validé ou non
-            $listeUserLogins = '';
-
-            try {
-                $unValidatedAccount = Zend_Registry::get('Zend_Translate')->translate(" (Vous n'avez pas encore validé ce compte par le courriel de validation)");
-            } catch (Exception $e) {
-                $unValidatedAccount = " (Vous n'avez pas encore validé ce compte par le courriel de validation)";
-            }
-            foreach ($userLogins as $login) {
-                $listeUserLogins .= '- ' . $login['USERNAME'];
-                if ($login['VALID'] == 0) {
-                    $listeUserLogins .= $unValidatedAccount;
-                }
-                $listeUserLogins .= "\n";
-            }
-
-            $this->view->userEmail = $form->getValue('EMAIL');
-            $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_LOST_LOGIN_FOUND;
-
-
-            /**
-             * Envoi du mail
-             */
-
-            $template = new Episciences_Mail_Template();
-            $template->findByKey(Episciences_Mail_TemplatesManager::TYPE_USER_LOST_LOGIN);
-            $template->loadTranslations();
-            $template->setLocale(Episciences_Tools::getLocale());
-
-            $mail = new Episciences_Mail('UTF-8');
-            $mail->addTag(Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST, $listeUserLogins);
-            $mail->setFromReview();
-            $mail->setTo($user);
-            $mail->setSubject($template->getSubject());
-            $mail->setTemplate($template->getPath(), $template->getKey() . '.phtml');
-            $mail->writeMail();
+            $this->processLostLoginRequest((string)$form->getValue('EMAIL'));
 
             $this->render('lostlogin');
             return;
@@ -1566,22 +1471,21 @@ class UserDefaultController extends Zend_Controller_Action
 
     /**
      * reset user password
+     * (link sent by "lost password", or to set the first password of an account created on someone's behalf)
      * @throws Exception
      */
     public function resetpasswordAction(): void
     {
+        $this->sendTokenPageHeaders();
+
         $request = $this->getRequest();
-        $token = $request->getParam('token');
+        // On submission the token comes back in the form
+        $token = $request->isPost() ? $request->getPost('token') : $request->getParam('token');
 
-        $userTokens = new Ccsd_User_Models_UserTokens(['TOKEN' => $request->getParam('token')]);
-        $userTokensMapper = new Ccsd_User_Models_UserTokensMapper();
-        $tokenData = $userTokensMapper->findByToken($token, $userTokens);
-
-        // le client essaie d'utiliser un jeton prévu pour autre chose que les
-        // mots de passe
-        if (empty($tokenData)) {
+        if ($this->findPasswordToken($token) === null) {
             $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_FAILURE;
             $this->render('resetpassword');
+            return;
         }
 
         $form = new Ccsd_User_Form_Accountresetpassword();
@@ -1591,39 +1495,403 @@ class UserDefaultController extends Zend_Controller_Action
         ]);
         $form->setDefault('token', $token);
 
-        if ($this->getRequest()->isPost() && $form->isValid($request->getPost())) {
+        if ($request->isPost() && $form->isValid($request->getPost())) {
 
-            $formToken = $form->getValue('token');
-            $userTokens = new Ccsd_User_Models_UserTokens(['TOKEN' => $token]);
-            $userTokensMapper = new Ccsd_User_Models_UserTokensMapper();
-
-            $tokenData = $userTokensMapper->findByToken($formToken, $userTokens);
-
-            if (!empty($tokenData)) {
-
-                $user = new Ccsd_User_Models_User();
-                $userMapper = new Ccsd_User_Models_UserMapper();
-
-                try {
-                    $user->setUid($tokenData['UID']);
-                    $user->setPassword($form->getValue('PASSWORD'));
-                    $user->setTime_modified();
-
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage(), E_USER_ERROR);
-                }
-
-                $userMapper->savePassword($user);
-                $userTokensMapper->delete($formToken);
-                $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_SUCCESS;
-
-                $this->render('resetpassword');
-
-                return;
-            }
+            // The token may have been used by a concurrent request in the meantime
+            $this->view->resultMessage = $this->resetPasswordWithToken($form->getValue('token'), (string)$form->getValue('PASSWORD'))
+                ? Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_SUCCESS
+                : Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_FAILURE;
+            $this->render('resetpassword');
+            return;
         }
 
         $this->view->form = $form;
+    }
+
+    /**
+     * The password token of a password reset page, null (and logged) when the link is refused
+     * @param mixed $token the token taken from the request
+     * @throws Zend_Db_Exception
+     */
+    protected function findPasswordToken(mixed $token): ?AccountToken
+    {
+        $accountToken = $this->getAccountTokenRepository()->find($token, ...self::PASSWORD_TOKEN_PURPOSES);
+
+        if ($accountToken === null) {
+            self::logRefusedAccountLink($token, 'password_reset_link');
+            return null;
+        }
+
+        if (!$this->isSentToCurrentAddress($accountToken)) {
+            self::logLinkNotSentToCurrentAddress($accountToken);
+            return null;
+        }
+
+        return $accountToken;
+    }
+
+    /**
+     * Activates the account of an activation token, which can be used only once
+     * @param mixed $token the token taken from the request
+     */
+    protected function activateAccountWithToken(mixed $token): bool
+    {
+        $accountToken = $this->getAccountTokenRepository()->find($token, TokenPurpose::ACCOUNT_ACTIVATION);
+
+        if ($accountToken === null) {
+            self::logRefusedAccountLink($token, 'account_activation_link');
+            return false;
+        }
+
+        // The token is revoked only once the account is active, so that the link still works after a database
+        // failure. Activating twice is not possible: the second attempt fails since the account is already active.
+        try {
+            if (!$this->isSentToCurrentAddress($accountToken)) {
+                self::logLinkNotSentToCurrentAddress($accountToken);
+                return false;
+            }
+
+            $this->getUserMapper()->activateAccountByUid($accountToken->uid);
+        } catch (Zend_Db_Exception $e) { // e.g. the account is already active
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            $this->revokeActivationLinksOfActiveAccount($accountToken->uid);
+            return false;
+        }
+
+        $this->revokeLinksOfUpdatedAccount($accountToken->uid, TokenPurpose::ACCOUNT_ACTIVATION);
+
+        return true;
+    }
+
+    /**
+     * After a failed activation, revokes the activation links if the account is active anyway (e.g. the FTP quota
+     * step failed after the VALID update): such a link must not be able to activate the account again later
+     */
+    private function revokeActivationLinksOfActiveAccount(int $uid): void
+    {
+        try {
+            if ($this->getUserMapper()->isActive($uid)) {
+                $this->getAccountTokenRepository()->revokeAll($uid, TokenPurpose::ACCOUNT_ACTIVATION);
+            }
+        } catch (Zend_Db_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+    }
+
+    /**
+     * Sets the password of the account of a password token, which can be used only once
+     * @param mixed $token the token taken from the request
+     */
+    protected function resetPasswordWithToken(mixed $token, string $password): bool
+    {
+        $tokenRepository = $this->getAccountTokenRepository();
+        $accountToken = $tokenRepository->consume($token, ...self::PASSWORD_TOKEN_PURPOSES);
+
+        if ($accountToken === null || !is_string($token)) {
+            return false;
+        }
+
+        try {
+            if (!$this->isSentToCurrentAddress($accountToken)) {
+                return false;
+            }
+
+            $saved = $this->writePassword($accountToken->uid, $password);
+        } catch (Zend_Db_Exception $e) {
+            // The password could not be written (e.g. CAS database unavailable): the link must keep working
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            $tokenRepository->restore($token, $accountToken);
+            return false;
+        }
+
+        if (!$saved) {
+            return false;
+        }
+
+        $this->revokeLinksOfUpdatedAccount($accountToken->uid, ...self::PASSWORD_TOKEN_PURPOSES);
+
+        return true;
+    }
+
+    /**
+     * Sets the password of an account and revokes its password links, which are now useless
+     * @return bool false when no account was updated
+     * @throws Zend_Db_Exception
+     */
+    protected function saveNewPassword(int $uid, string $password): bool
+    {
+        if (!$this->writePassword($uid, $password)) {
+            return false;
+        }
+
+        $this->revokeLinksOfUpdatedAccount($uid, ...self::PASSWORD_TOKEN_PURPOSES);
+
+        return true;
+    }
+
+    /**
+     * Writes the password of an account in the CAS database
+     * @return bool false when no account was updated
+     * @throws Zend_Db_Exception
+     */
+    private function writePassword(int $uid, string $password): bool
+    {
+        $user = new Ccsd_User_Models_User();
+        $user->setUid($uid);
+        $user->setPassword($password);
+        $user->setTime_modified();
+
+        return (int)$this->getUserMapper()->savePassword($user) === 1;
+    }
+
+    /**
+     * Unknown, expired and already used links cannot be told apart: a link clicked twice or found in an old e-mail
+     * is common, hence a Notice. A link without any token is a broken link, not logged.
+     */
+    private static function logRefusedAccountLink(mixed $token, string $reason): void
+    {
+        if (is_string($token) && $token !== '') {
+            AccessLog::denied(AccessLog::TOKEN_INVALID, $reason, [], Level::Notice);
+        }
+    }
+
+    /**
+     * A valid link whose account has changed its address (someone may still read the former mailbox) or no longer exists
+     */
+    private static function logLinkNotSentToCurrentAddress(AccountToken $accountToken): void
+    {
+        AccessLog::denied(AccessLog::TOKEN_INVALID, 'not_current_address', [
+            'account_uid' => $accountToken->uid,
+            'purpose' => $accountToken->purpose->value,
+        ]);
+    }
+
+    /**
+     * Whether a link was sent to the current e-mail address of its account. The address can be changed outside of
+     * this application (the CAS table is shared), so revoking the links when it changes here is not enough: a link
+     * sent to a former address must not work anymore.
+     * @throws Zend_Db_Exception
+     */
+    protected function isSentToCurrentAddress(AccountToken $accountToken): bool
+    {
+        $currentEmail = $this->getUserMapper()->findEmail($accountToken->uid);
+
+        return $currentEmail !== null && strcasecmp(trim($currentEmail), trim($accountToken->email)) === 0;
+    }
+
+    /**
+     * Revokes all the account links of an account, e.g. when its e-mail address changes: links sent to the former
+     * address must not work anymore
+     */
+    protected function revokeAccountLinks(int $uid): void
+    {
+        $this->revokeLinksOfUpdatedAccount($uid, ...TokenPurpose::cases());
+    }
+
+    /**
+     * Revokes account links once the account has been updated. A failure is only logged: the update is done and
+     * must be reported as such, the links then expire on their own.
+     */
+    private function revokeLinksOfUpdatedAccount(int $uid, TokenPurpose ...$purposes): void
+    {
+        try {
+            $this->getAccountTokenRepository()->revokeAll($uid, ...$purposes);
+        } catch (Zend_Db_Exception $e) {
+            trigger_error(sprintf('Account links of account %d could not be revoked: %s', $uid, $e->getMessage()), E_USER_WARNING);
+        }
+    }
+
+    /**
+     * Sends a password reset link, or a new activation link to an Episciences account not activated yet.
+     * The result message is the same whether or not an account matches the username, even when the e-mail fails.
+     */
+    protected function processLostPasswordRequest(string $username): void
+    {
+        $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_VALID_USERNAME;
+
+        $account = $this->getUserMapper()->findByUsernameIncludingInactive($username);
+
+        if ($account === null) {
+            return;
+        }
+
+        $isActive = (int)$account['VALID'] === 1;
+
+        // The CAS table is shared with other applications: only the inactive accounts created in Episciences get
+        // a new activation link
+        if (!$isActive && !$this->isEpisciencesAccount((int)$account['UID'])) {
+            return;
+        }
+
+        try {
+            $user = $this->loadUser($account);
+
+            if ($isActive) {
+                $this->sendPasswordResetEmail($user);
+            } else {
+                $this->sendActivationEmail($user);
+            }
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+    }
+
+    /**
+     * Whether an account has its data in the application database
+     */
+    protected function isEpisciencesAccount(int $uid): bool
+    {
+        return (new Episciences_User())->hasLocalData($uid);
+    }
+
+    /**
+     * Sends the usernames linked to an e-mail address.
+     * The result message is the same whether or not accounts match the address, even when the e-mail fails.
+     */
+    protected function processLostLoginRequest(string $email): void
+    {
+        $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_LOST_LOGIN_FOUND;
+
+        $userLogins = $this->getUserMapper()->findLoginByEmail($email);
+
+        if ($userLogins === null || $userLogins->count() === 0) {
+            return;
+        }
+
+        try {
+            $this->sendLostLoginEmail(new Episciences_User(['EMAIL' => $email]), $userLogins->toArray());
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+    }
+
+    /**
+     * Episciences user of a CAS account
+     * @param array<string, mixed> $account
+     */
+    protected function loadUser(array $account): Episciences_User
+    {
+        $user = new Episciences_User($account);
+        $user->find($user->getUid()); // Loads the Episciences data of the account
+
+        return $user;
+    }
+
+    protected function getUserMapper(): Ccsd_User_Models_UserMapper
+    {
+        return new Ccsd_User_Models_UserMapper();
+    }
+
+    /**
+     * Account link tokens (activation, password reset, account setup)
+     */
+    protected function getAccountTokenRepository(): AccountTokenRepository
+    {
+        return $this->accountTokenRepository ??= new AccountTokenRepository();
+    }
+
+    /**
+     * Sends a new account activation link
+     * @throws Zend_Db_Exception when the token cannot be saved
+     */
+    protected function sendActivationEmail(Episciences_User $user): void
+    {
+        $token = $this->getAccountTokenRepository()->issue((int)$user->getUid(), (string)$user->getEmail(), TokenPurpose::ACCOUNT_ACTIVATION);
+
+        $tokenUrl = APPLICATION_URL . $this->view->url([
+                'controller' => 'user',
+                'action' => 'activate',
+                'token' => $token], null, true);
+
+        $tags = [
+            // TAG_REVIEW_CODE deliberately omitted: it is not in OVERRIDABLE_TAGS,
+            // so sendMailFromReview() already sets it from the review's mail display
+            // code (Episciences_Mail's constructor runs before this array is merged).
+            Episciences_Mail_Tags::TAG_REVIEW_NAME => RVNAME,
+            Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK => $tokenUrl
+        ];
+
+        try {
+            Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION, $tags);
+        } catch (Zend_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+    }
+
+    /**
+     * Sends a password reset link
+     * @throws Zend_Exception
+     */
+    protected function sendPasswordResetEmail(Episciences_User $user): void
+    {
+        $token = $this->getAccountTokenRepository()->issue((int)$user->getUid(), (string)$user->getEmail(), TokenPurpose::PASSWORD_RESET);
+
+        $locale = $user->getLangueid(true);
+        $template = new Episciences_Mail_Template();
+        $template->findByKey(Episciences_Mail_TemplatesManager::TYPE_USER_LOST_PASSWORD);
+        $template->loadTranslations();
+        $template->setLocale($locale);
+
+        $url = APPLICATION_URL . $this->view->url([
+                'controller' => 'user',
+                'action' => 'resetpassword',
+                'lang' => $locale,
+                'token' => $token
+            ], null, true);
+
+        $mail = new Episciences_Mail('UTF-8');
+        $mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $url);
+        $mail->setFromReview();
+        $mail->setTo($user);
+        $mail->setSubject($template->getSubject());
+        $mail->setTemplate($template->getPath(), $template->getKey() . '.phtml');
+        $mail->writeMail();
+    }
+
+    /**
+     * Sends the usernames linked to an e-mail address, mentioning the accounts not activated yet
+     * @param array<int, array<string, mixed>> $userLogins
+     * @throws Zend_Exception
+     */
+    protected function sendLostLoginEmail(Episciences_User $user, array $userLogins): void
+    {
+        $listeUserLogins = '';
+
+        try {
+            $unValidatedAccount = Zend_Registry::get('Zend_Translate')->translate(" (Vous n'avez pas encore validé ce compte par le courriel de validation)");
+        } catch (Exception $e) {
+            $unValidatedAccount = " (Vous n'avez pas encore validé ce compte par le courriel de validation)";
+        }
+        foreach ($userLogins as $login) {
+            $listeUserLogins .= '- ' . $login['USERNAME'];
+            if ($login['VALID'] == 0) {
+                $listeUserLogins .= $unValidatedAccount;
+            }
+            $listeUserLogins .= "\n";
+        }
+
+        $template = new Episciences_Mail_Template();
+        $template->findByKey(Episciences_Mail_TemplatesManager::TYPE_USER_LOST_LOGIN);
+        $template->loadTranslations();
+        $template->setLocale(Episciences_Tools::getLocale());
+
+        $mail = new Episciences_Mail('UTF-8');
+        $mail->addTag(Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST, $listeUserLogins);
+        $mail->setFromReview();
+        $mail->setTo($user);
+        $mail->setSubject($template->getSubject());
+        $mail->setTemplate($template->getPath(), $template->getKey() . '.phtml');
+        $mail->writeMail();
+    }
+
+    /**
+     * The token is in the URL of the page: it must not leak through the Referer header nor be cached
+     */
+    private function sendTokenPageHeaders(): void
+    {
+        $this->getResponse()
+            ->setHeader('Referrer-Policy', 'no-referrer', true)
+            ->setHeader('Cache-Control', 'no-store', true);
     }
 
     /**
@@ -1655,7 +1923,6 @@ class UserDefaultController extends Zend_Controller_Action
         if ($this->getRequest()->isPost() && $form->isValid($this->getRequest()
                 ->getPost())) {
 
-            $user = new Ccsd_User_Models_User();
             $userMapper = new Ccsd_User_Models_UserMapper();
 
             $testPreviousPassword = $userMapper->findByUsernamePassword(Episciences_Auth::getInstance()->getIdentity()
@@ -1671,12 +1938,7 @@ class UserDefaultController extends Zend_Controller_Action
 
             try {
 
-                $user->setUid(Episciences_Auth::getUid());
-                $user->setPassword($form->getValue('PASSWORD'));
-                $user->setTime_modified();
-                $affectedRows = $userMapper->savePassword($user);
-
-                if ($affectedRows === 1) {
+                if ($this->saveNewPassword((int)Episciences_Auth::getUid(), (string)$form->getValue('PASSWORD'))) {
                     $this->redirect('/user/logout/reason/passwordupdated/lang/' . Episciences_Auth::getLangueid());
                 } else {
                     $this->view->resultMessage = $this->view->message("Échec de la modification. Votre mot de passe n'a pas été changé.", 'danger');
@@ -2041,6 +2303,7 @@ class UserDefaultController extends Zend_Controller_Action
         $photoPathName = false;
         $data = false;
         $imageMimeType = 'image/jpg';
+        $screenName = ''; // only set for the initials avatar, the only size that uses it
 
         $uid = (int)$uid;
         switch ($size) {
@@ -2253,6 +2516,8 @@ class UserDefaultController extends Zend_Controller_Action
             $this->flashChangeEmailMessage(self::ERROR, Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
             return;
         }
+
+        $this->revokeAccountLinks((int)$targetUid);
 
         if ($targetUid === $self) {
             // Modifying your own account: refresh the session from a fresh read, not the stale request-level cache.

@@ -3,6 +3,7 @@
 use Episciences\Files\Uploader;
 use Episciences\Paper\Files\DocumentFilePolicy;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
+use Episciences\Paper\RevisionRequests;
 use Episciences\Reviewer\InvitationToken;
 use Episciences\Submit\SubmittedRecord;
 use GuzzleHttp\Exception\GuzzleException;
@@ -160,22 +161,7 @@ class PaperController extends PaperDefaultController
         $this->view->metadata = $paper->getDatasetsFromEnrichment();
         $this->view->classifications = $paper->getClassifications();
 
-        if ($this->isRestrictedAccess($paper)) {
-
-            $paperId = $paper->getPaperid() ?: $paper->getDocid();
-            $id = Episciences_PapersManager::getPublishedPaperId($paperId);
-
-            if ($id !== 0) {
-                // redirect to published version
-                $this->redirect('/' . $id);
-            } elseif (!Episciences_Auth::isLogged()) {
-                // redirect to login if user is not logged in
-                $this->redirect('/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
-            }
-
-            $this->redirectsIfHaveNotEnoughPermissions($paper);
-
-        }
+        $this->redirectFromUnpublishedVersion($paper, '/%d', '/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
 
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
         $this->updatePaperStats($paper);
@@ -367,58 +353,18 @@ class PaperController extends PaperDefaultController
         }
 
         // revision requests ******************************************************
-        // fetch revision requests
-        $settings = [
-            self::TYPES_STR => [
-                Episciences_CommentsManager::TYPE_REVISION_REQUEST,
-                Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT,
-                Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION,
-                Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION,
-                Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT
-            ]
-        ];
-
-        $revision_requests = Episciences_CommentsManager::getRevisionRequests($paper->getDocid(), $settings);
+        $revision_requests = Episciences_CommentsManager::getRevisionRequests($paper->getDocid(), RevisionRequests::commentSettings());
 
         // if revision requests were made on previous versions, fetch them too
         $previousVersions = $paper->getPreviousVersions();
         if ($previousVersions) {
-            /* @var Episciences_Paper $version */
-            $previousComments = [];
-
-            foreach ($previousVersions as $version) {
-                $vComments = $version->getComments($settings);
-                // ne pas afficher le bloc demande de modification si aucune demande de modification n'a été demandés suite au copy editing
-                if ($vComments) {
-                    $previousComments[$version->getDocid()] = $version->getComments($settings);
-                }
-            }
-
             $this->view->previousVersions = $previousVersions;
-            $this->view->previousVersionsDemands = $previousComments;
+            $this->view->previousVersionsDemands = RevisionRequests::ofPreviousVersions($previousVersions);
         }
 
-        // check if author answered the latest revision request
-        $currentDemand = null;
-        $revisionDeadline = null;
-
-        if (!empty($revision_requests)) {
-
-            $currentDemand = array_shift($revision_requests);
-
-            if (
-                !array_key_exists('replies', $currentDemand) ||
-                (
-                    isset($currentDemand['replies']) &&
-                    (int)$currentDemand['replies'][array_key_first($currentDemand['replies'])]['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT)
-            ) {
-
-                $revisionDeadline = $currentDemand['DEADLINE'];
-            }
-
-        }
-
-        $paper->_revisionDeadline = $revisionDeadline;
+        // latest revision request, and its deadline while the author has not answered it
+        $currentDemand = array_shift($revision_requests);
+        $paper->_revisionDeadline = $currentDemand === null ? null : RevisionRequests::pendingDeadline($currentDemand);
 
         $doNotDisplayContactChoice = in_array(
             $paper->getStatus(), Episciences_Paper::All_STATUS_WAITING_FOR_FINAL_VERSION, true
@@ -1526,33 +1472,15 @@ class PaperController extends PaperDefaultController
         $paper->log(Episciences_Paper_Logger::CODE_STATUS, null, [self::STATUS => $paper->getStatus()]);
 
 
-        // tmp version init
-        $tmpPaper = clone($paper);
-        $tmpPaper->setDocid(null);
-        $tmpPaper->setPaperid($paperId);
-        // A tmp version is always submitted through the application, even if the previous one was imported
-        $tmpPaper->setFlag('submitted');
-
         $isAssignedReviewers = $reassignReviewers && $reviewers;
 
         if ($isAlreadyAccepted && !$isAssignedReviewers) {
             $status = Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION;
         } else {
-            $status = $isAssignedReviewers ? $tmpPaper::STATUS_OK_FOR_REVIEWING : $tmpPaper::STATUS_SUBMITTED;
+            $status = $isAssignedReviewers ? Episciences_Paper::STATUS_OK_FOR_REVIEWING : Episciences_Paper::STATUS_SUBMITTED;
         }
 
-        $tmpPaper->setStatus($status);
-        $tmpPaper->setIdentifier($paperId . '/' . $answerComment->getFile());
-        $tmpPaper->setVersion((float)$paper->getVersion() + 0.01);
-        $tmpPaper->setRepoid(0);
-        // update xml
-        $xml = $paper->getRecord();
-        try {
-            $tmpPaper->setRecord($xml);
-        } catch (DOMException|Zend_Db_Statement_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-        $tmpPaper->setConcept_identifier($paper->getConcept_identifier());
+        $tmpPaper = $this->initializeTmpPaper($paper, $status, (string)$answerComment->getFile());
 
         // save tmp version
         if ($tmpPaper->save()) {
@@ -2229,6 +2157,35 @@ class PaperController extends PaperDefaultController
         }
 
         return $newPaper;
+    }
+
+    /**
+     * Temporary version answering a revision request: a copy of the previous version whose files
+     * are the ones attached to the answer.
+     */
+    private function initializeTmpPaper(Episciences_Paper $paper, int $status, string $answerFiles): Episciences_Paper
+    {
+        $paperId = $paper->getPaperid() ?: $paper->getDocid();
+
+        $tmpPaper = clone $paper;
+        $tmpPaper->setDocid(null);
+        $tmpPaper->setPaperid($paperId);
+        // A tmp version is always submitted through the application, even if the previous one was imported
+        $tmpPaper->setFlag('submitted');
+        $tmpPaper->setStatus($status);
+        $tmpPaper->setIdentifier($paperId . '/' . $answerFiles);
+        $tmpPaper->setVersion((float)$paper->getVersion() + 0.01);
+        $tmpPaper->setRepoid(0);
+
+        try {
+            $tmpPaper->setRecord($paper->getRecord());
+        } catch (DOMException|Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage());
+        }
+
+        $tmpPaper->setConcept_identifier($paper->getConcept_identifier());
+
+        return $tmpPaper;
     }
 
     /**

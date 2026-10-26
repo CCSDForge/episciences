@@ -213,7 +213,6 @@ function defineSQLTableConstants(): void
             'T_USER_INVITATION_ANSWER_DETAIL' => 'USER_INVITATION_ANSWER_DETAIL',
             'T_USER_MERGE' => 'USER_MERGE',
             'T_USER_ROLES' => 'USER_ROLES',
-            'T_USER_TOKENS' => 'USER_TOKEN',
             'T_VOLUMES' => 'VOLUME',
             'T_VOLUME_METADATAS' => 'VOLUME_METADATA',
             'T_VOLUME_PAPER' => 'VOLUME_PAPER',
@@ -507,7 +506,6 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('T_USER_INVITATION_ANSWER_DETAIL', '');
         define('T_USER_MERGE', '');
         define('T_USER_ROLES', '');
-        define('T_USER_TOKENS', '');
         define('T_VOLUMES', '');
         define('T_VOLUME_METADATAS', '');
         define('T_VOLUME_PAPER', '');
