@@ -1627,7 +1627,7 @@ return array(
     "Une erreur s'est produite pendant l'enregistrement de votre article." => "An error occurred while saving your article.",
     "Votre session a expiré, veuillez réessayer." => "Your session has expired, please try again.",
     "Des articles (%s) sont rattachés à cette rubrique." => "Papers (%s) are attached to this section.",
-    "Des articles (%1$s et %2$d autres) sont rattachés à cette rubrique." => "Papers (%1$s and %2$d more) are attached to this section.",
+    'Des articles (%1$s et %2$d autres) sont rattachés à cette rubrique.' => 'Papers (%1$s and %2$d more) are attached to this section.',
     "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre article n'a pas été enregistré. Les informations saisies ont été conservées, merci de sélectionner à nouveau vos fichiers puis de valider le formulaire." => "Your session has expired or the page has been open for too long: for security reasons, your article was not saved. The information you entered has been kept; please select your files again and submit the form.",
     "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre nouvelle version n'a pas été enregistrée. Merci de recharger cette page puis de soumettre à nouveau votre nouvelle version." => "Your session has expired or the page has been open for too long: for security reasons, your new version was not saved. Please reload this page and submit your new version again.",
     //Soumission d'une notice vide
