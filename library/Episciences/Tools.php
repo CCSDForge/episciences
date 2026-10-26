@@ -1398,8 +1398,8 @@ class Episciences_Tools
             trigger_error($e->getMessage());
         }
 
+        // Answering a revision request with a tmp version may be done without any file
         if (empty($result)) {
-            trigger_error('No file(s) attached to the tmp version (docId = ' . $paper->getDocid() . "): the upload of the file(s) failed when responding to a revision request !");
             return $text;
         }
 
@@ -1924,6 +1924,19 @@ class Episciences_Tools
     public static function filterAttachmentNames(string $baseDir, array $names): array
     {
         return array_values(array_filter($names, static fn($name) => self::resolveAttachmentPath($baseDir, $name) !== null));
+    }
+
+    /**
+     * Return the attachment names that do not resolve inside the attachments directory
+     * (see resolveAttachmentPath()), e.g. an empty name or a file whose upload failed.
+     *
+     * @param string $baseDir attachments directory
+     * @param array<mixed> $names names submitted by the client
+     * @return array<mixed> rejected names
+     */
+    public static function rejectedAttachmentNames(string $baseDir, array $names): array
+    {
+        return array_values(array_filter($names, static fn($name) => self::resolveAttachmentPath($baseDir, $name) === null));
     }
 
     public static function startsWithNumber(string $string): bool

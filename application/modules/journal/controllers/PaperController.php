@@ -1393,6 +1393,10 @@ class PaperController extends PaperDefaultController
 
         $attachments = $post[Episciences_Mail_Send::ATTACHMENTS] ?? []; // see js/library/es.fileupload.js
 
+        if (!is_array($attachments)) {
+            $attachments = [];
+        }
+
         // previous version detail
         $docId = $request->getQuery(self::DOC_ID_STR);
         $paper = Episciences_PapersManager::get($docId, false);
@@ -1406,6 +1410,16 @@ class PaperController extends PaperDefaultController
 
         $paper->loadOtherVolumes();
         $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
+
+        // Every file the author attached must have been uploaded: otherwise, nothing is recorded and the author can try again.
+        // An empty name is sent back by es.fileupload.js when the upload failed.
+        $rejectedAttachments = Episciences_Tools::rejectedAttachmentNames(REVIEW_FILES_PATH . $paperId . '/tmp/', $attachments);
+
+        if (!empty($rejectedAttachments)) {
+            $this->redirectOnTmpVersionUploadFailure($docId, $rejectedAttachments);
+            return;
+        }
+
         $reviewers = $paper->getReviewers(null, true);
         $editors = $paper->getEditors(true, true);
         $coAuthors = $paper->getCoAuthors();
@@ -1430,9 +1444,7 @@ class PaperController extends PaperDefaultController
         $answerComment->setFilePath(REVIEW_FILES_PATH . $paperId . '/tmp/');
 
         if (!empty($attachments)) {
-            // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
-            $attachments = Episciences_Tools::arrayFilterEmptyValues($attachments);
-            $answerComment->setFile(json_encode($attachments));
+            $answerComment->setFile(json_encode(array_values($attachments)));
         }
 
         $isSaved = $answerComment->save(false, $answerCommentUid);
@@ -1575,6 +1587,27 @@ class PaperController extends PaperDefaultController
 
         // Redirection
         $this->_helper->redirector->gotoUrl($url);
+    }
+
+    /**
+     * Warn the author that the tmp version has not been recorded because some attached files were not uploaded
+     * @param int|string $docId
+     * @param array<mixed> $rejectedAttachments
+     */
+    private function redirectOnTmpVersionUploadFailure(int|string $docId, array $rejectedAttachments): void
+    {
+        $message = $this->view->translate("Votre version temporaire n'a pas été enregistrée : le téléversement d'au moins un fichier joint a échoué.");
+
+        $names = array_filter($rejectedAttachments, static fn($name) => is_string($name) && $name !== '');
+
+        if (!empty($names)) {
+            $message .= ' (' . htmlspecialchars(implode(', ', $names), ENT_QUOTES, 'UTF-8') . ')';
+        }
+
+        $message .= ' ' . $this->view->translate('Veuillez joindre à nouveau vos fichiers et recommencer.');
+
+        $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
     }
 
     /**

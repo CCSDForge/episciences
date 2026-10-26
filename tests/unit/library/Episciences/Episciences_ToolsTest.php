@@ -247,4 +247,32 @@ class Episciences_ToolsTest extends TestCase
             $this->removeSandbox($root);
         }
     }
+
+    /**
+     * An empty name (upload failed client side) or a name with no stored file (upload failed server side)
+     * must be reported, so that a tmp version is not recorded without the files its author attached.
+     */
+    public function testRejectedAttachmentNamesReportsMissingAndEmptyNames(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            self::assertSame(
+                ['', 'nonexistent.pdf', '../secret.txt'],
+                Episciences_Tools::rejectedAttachmentNames($base, [3 => 'report 1.pdf', 4 => '', 5 => 'nonexistent.pdf', 6 => 'é.txt', 7 => '../secret.txt'])
+            );
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    public function testRejectedAttachmentNamesIsEmptyWhenEveryFileIsStoredOrNoFileIsAttached(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            self::assertSame([], Episciences_Tools::rejectedAttachmentNames($base, ['report 1.pdf', 'é.txt']));
+            self::assertSame([], Episciences_Tools::rejectedAttachmentNames($base, []));
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
 }

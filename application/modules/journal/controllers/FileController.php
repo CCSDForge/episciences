@@ -644,7 +644,13 @@ class FileController extends DefaultController
 
             } catch (Exception $e) {
                 $result['status'] = 'error';
-                $result['messages'] = $e->getMessage();
+                $result['messages'] = [$e->getMessage()];
+            }
+
+            // No file received or the file could not be stored: never let the client believe the upload succeeded
+            if (!isset($result['status'])) {
+                $result['status'] = 'error';
+                $result['messages'] = [$this->view->translate("Le fichier n'a pas pu être enregistré. Veuillez réessayer.")];
             }
 
         }
