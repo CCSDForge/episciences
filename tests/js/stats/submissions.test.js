@@ -40,69 +40,60 @@ describe('initStatsDelayMode', function () {
         `;
     });
 
-    it('shows the mean column and hides the median by default', function () {
-        initStatsDelayMode();
-
-        const meanBtn = document.querySelector('[data-delay-mode="mean"]');
-        const medianBtn = document.querySelector('[data-delay-mode="median"]');
-
-        expect(meanBtn.classList.contains('active')).toBe(true);
-        expect(meanBtn.getAttribute('aria-pressed')).toBe('true');
-        expect(medianBtn.classList.contains('active')).toBe(false);
-        expect(medianBtn.getAttribute('aria-pressed')).toBe('false');
-
-        const meanCells = document.querySelectorAll('[data-delay="mean"]');
-        const medianCells = document.querySelectorAll('[data-delay="median"]');
-        meanCells.forEach(function (cell) {
-            expect(cell.hidden).toBe(false);
-        });
-        medianCells.forEach(function (cell) {
-            expect(cell.hidden).toBe(true);
-        });
-    });
-
-    it('shows the median column when its button is clicked', function () {
-        initStatsDelayMode();
-
-        const medianBtn = document.querySelector('[data-delay-mode="median"]');
-        medianBtn.dispatchEvent(new Event('click'));
-
-        expect(medianBtn.classList.contains('active')).toBe(true);
-        expect(medianBtn.getAttribute('aria-pressed')).toBe('true');
-        expect(
-            document
-                .querySelector('[data-delay-mode="mean"]')
-                .getAttribute('aria-pressed')
-        ).toBe('false');
-
-        const meanCells = document.querySelectorAll('[data-delay="mean"]');
-        const medianCells = document.querySelectorAll('[data-delay="median"]');
-        meanCells.forEach(function (cell) {
-            expect(cell.hidden).toBe(true);
-        });
-        medianCells.forEach(function (cell) {
-            expect(cell.hidden).toBe(false);
-        });
-    });
-
-    it('goes back to the mean column when its button is clicked again', function () {
-        initStatsDelayMode();
-
+    // the chosen button is pressed and only its column is shown
+    const expectMode = function (mode) {
         document
-            .querySelector('[data-delay-mode="median"]')
-            .dispatchEvent(new Event('click'));
+            .querySelectorAll('.stat-delay-mode-btn')
+            .forEach(function (btn) {
+                const chosen = btn.getAttribute('data-delay-mode') === mode;
+                expect(btn.classList.contains('active')).toBe(chosen);
+                expect(btn.getAttribute('aria-pressed')).toBe(
+                    chosen ? 'true' : 'false'
+                );
+            });
+
+        document.querySelectorAll('[data-delay]').forEach(function (cell) {
+            expect(cell.hidden).toBe(cell.getAttribute('data-delay') !== mode);
+        });
+    };
+
+    it('shows the median column and hides the mean by default', function () {
+        initStatsDelayMode();
+
+        expectMode('median');
+    });
+
+    it('keeps the mode of the button active in the page', function () {
+        document
+            .querySelector('[data-delay-mode="mean"]')
+            .classList.add('active');
+
+        initStatsDelayMode();
+
+        expectMode('mean');
+    });
+
+    it('shows the mean column when its button is clicked', function () {
+        initStatsDelayMode();
+
         document
             .querySelector('[data-delay-mode="mean"]')
             .dispatchEvent(new Event('click'));
 
-        const meanCells = document.querySelectorAll('[data-delay="mean"]');
-        const medianCells = document.querySelectorAll('[data-delay="median"]');
-        meanCells.forEach(function (cell) {
-            expect(cell.hidden).toBe(false);
-        });
-        medianCells.forEach(function (cell) {
-            expect(cell.hidden).toBe(true);
-        });
+        expectMode('mean');
+    });
+
+    it('goes back to the median column when its button is clicked again', function () {
+        initStatsDelayMode();
+
+        document
+            .querySelector('[data-delay-mode="mean"]')
+            .dispatchEvent(new Event('click'));
+        document
+            .querySelector('[data-delay-mode="median"]')
+            .dispatchEvent(new Event('click'));
+
+        expectMode('median');
     });
 
     it('does nothing without a selector', function () {
@@ -118,21 +109,21 @@ describe('initStatsDelayMode', function () {
 
         initStatsDelayMode();
         document
-            .querySelector('[data-delay-mode="median"]')
+            .querySelector('[data-delay-mode="mean"]')
             .dispatchEvent(new Event('click'));
 
         document.removeEventListener(STATS_DELAY_MODE_EVENT, listener);
 
-        expect(modes).toEqual(['mean', 'median']);
-        expect(currentStatsDelayMode()).toBe('median');
+        expect(modes).toEqual(['median', 'mean']);
+        expect(currentStatsDelayMode()).toBe('mean');
     });
 });
 
 describe('currentStatsDelayMode', function () {
-    it('is the mean without a selector', function () {
+    it('is the median without a selector', function () {
         document.body.innerHTML = '<p>No selector</p>';
 
-        expect(currentStatsDelayMode()).toBe('mean');
+        expect(currentStatsDelayMode()).toBe('median');
     });
 });
 

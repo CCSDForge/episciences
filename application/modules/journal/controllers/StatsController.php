@@ -303,8 +303,6 @@ class StatsController extends Zend_Controller_Action
         $this->view->chart3Title = !$yearQuery ?
             $this->view->translate('Répartition des soumissions par année et par archive') :
             $this->view->translate('Répartition des soumissions par archive');
-        $this->view->chart4Title = $this->view->translate('Délai moyen en jours entre dépôt et acceptation | dépôt et publication');
-
         $charts = self::buildChartsData(
             $details,
             $yearCategories,
@@ -314,9 +312,11 @@ class StatsController extends Zend_Controller_Action
 
         // titles of the delays chart, following the selector "moyenne" / "médiane" of the delay table
         $charts['delays']['titles'] = [
-            'mean' => $this->view->chart4Title,
+            'mean' => $this->view->translate('Délai moyen en jours entre dépôt et acceptation | dépôt et publication'),
             'median' => $this->view->translate('Délai médian en jours entre dépôt et acceptation | dépôt et publication'),
         ];
+        // the median by default; the mean when the API does not give the median by year
+        $this->view->chart4Title = $charts['delays']['titles'][$charts['delays']['medianDatasets'] !== null ? 'median' : 'mean'];
 
         $isAvailableUsersStats = !$yearQuery && isset($dashboard['value'][self::NB_USERS]);
 

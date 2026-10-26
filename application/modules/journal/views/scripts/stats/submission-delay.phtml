@@ -17,13 +17,13 @@
     <div>
         <h3 class="stat-section-title"><?= $this->translate('Délai') ?></h3>
 
-        <?php // client-side (no page reload) selector: only the chosen column (moyenne or médiane) is shown at a time ?>
+        <?php // client-side (no page reload) selector: only the chosen column (moyenne or médiane) is shown at a time; the median comes first ?>
         <div class="stat-delay-mode" role="group"
              aria-label="<?= $this->translate('Valeur du délai à afficher') ?>">
-            <button type="button" class="stat-delay-mode-btn active" data-delay-mode="mean"
-                    aria-pressed="true"><?= $this->translate('Moyenne') ?></button>
-            <button type="button" class="stat-delay-mode-btn" data-delay-mode="median"
-                    aria-pressed="false"><?= $this->translate('Médiane') ?></button>
+            <button type="button" class="stat-delay-mode-btn" data-delay-mode="mean"
+                    aria-pressed="false"><?= $this->translate('Moyenne') ?></button>
+            <button type="button" class="stat-delay-mode-btn active" data-delay-mode="median"
+                    aria-pressed="true"><?= $this->translate('Médiane') ?></button>
         </div>
 
         <table class="delay table stat-delays">

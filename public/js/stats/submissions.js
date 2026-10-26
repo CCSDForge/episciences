@@ -102,8 +102,13 @@ function initStatsDelayMode() {
             );
         };
 
-        // the page works without JavaScript: the mean column is the visible default
-        selectMode('mean');
+        // the mode of the button active in the page (the median by default)
+        const active = group.querySelector('.stat-delay-mode-btn.active');
+        selectMode(
+            active && active.getAttribute('data-delay-mode') === 'mean'
+                ? 'mean'
+                : 'median'
+        );
 
         group.querySelectorAll('.stat-delay-mode-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -114,7 +119,7 @@ function initStatsDelayMode() {
 }
 
 /**
- * Delay value chosen with the selector of the delay table ("mean" without selector)
+ * Delay value chosen with the selector of the delay table ("median" without selector)
  * @returns {string} "mean" or "median"
  */
 function currentStatsDelayMode() {
@@ -122,9 +127,9 @@ function currentStatsDelayMode() {
         '.stat-delay-mode .stat-delay-mode-btn.active'
     );
 
-    return active && active.getAttribute('data-delay-mode') === 'median'
-        ? 'median'
-        : 'mean';
+    return active && active.getAttribute('data-delay-mode') === 'mean'
+        ? 'mean'
+        : 'median';
 }
 
 /**
