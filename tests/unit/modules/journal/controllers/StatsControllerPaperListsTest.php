@@ -100,8 +100,10 @@ class StatsControllerPaperListsTest extends TestCase
 
         // with a token: dashboard with the papers
         $this->assertStringContainsString('self::WITH_PAPERS_PARAM => \'true\']), $token)', $source);
-        // otherwise, or if this call fails: the dashboard as before, without token
-        $this->assertStringContainsString('$this->askApi($uri, $params)', $source);
+        // otherwise, or if this call fails: the dashboard without the papers, with the token only if the statistics are
+        // reserved for the editorial secretaries
+        $this->assertStringContainsString('$dashboardToken = self::areStatisticsReserved() ? $token : null;', $source);
+        $this->assertStringContainsString('$this->askApi($uri, $params, $dashboardToken)', $source);
     }
 
     // -------------------------------------------------------------------------

@@ -37,6 +37,8 @@ class StatsController extends Zend_Controller_Action
     // papers of the published total: published and imported published papers
     public const TOTAL_PUBLISHED_PAPERS = 'totalPublished';
     public const WITH_PAPERS_PARAM = 'withPapers';
+    // value of the "displayStatistics" setting: statistics reserved for the editorial secretaries (the API checks it too)
+    public const DISPLAY_STATISTICS_RESERVED = '2';
     // the papers of the figures are kept in session for the papers action (no DOCID in the page)
     public const PAPERS_SESSION_NAMESPACE = 'statsPapers';
     public const PAPERS_SESSION_TTL = 1800;
@@ -168,8 +170,10 @@ class StatsController extends Zend_Controller_Action
 
         if ($askApi) {
             $token = $this->getDelegatedToken($logger);
+            // reserved statistics: the API also requires the token without the papers
+            $dashboardToken = self::areStatisticsReserved() ? $token : null;
 
-            if ($token !== null) {
+            if ($token !== null && self::canSeePapers()) {
                 try {
                     $dashboard = json_decode($this->askApi($uri, array_merge($params, [self::WITH_PAPERS_PARAM => 'true']), $token), true, 512, JSON_THROW_ON_ERROR);
                 } catch (GuzzleException|JsonException $e) {
@@ -180,7 +184,7 @@ class StatsController extends Zend_Controller_Action
 
             if (empty($dashboard)) {
                 try {
-                    $dashboard = json_decode($this->askApi($uri, $params), true, 512, JSON_THROW_ON_ERROR);
+                    $dashboard = json_decode($this->askApi($uri, $params, $dashboardToken), true, 512, JSON_THROW_ON_ERROR);
                 } catch (GuzzleException|JsonException $e) {
                     $this->view->errorMessage = $errorMessage;
                     $logger?->warning($e->getMessage());
@@ -905,6 +909,20 @@ class StatsController extends Zend_Controller_Action
     }
 
     /**
+     * "displayStatistics" setting of the journal: statistics reserved for the editorial secretaries
+     */
+    private static function areStatisticsReserved(): bool
+    {
+        try {
+            $journalSettings = Zend_Registry::get('reviewSettings');
+        } catch (Zend_Exception) {
+            return false;
+        }
+
+        return ($journalSettings[Episciences_Review::SETTING_DISPLAY_STATISTICS] ?? null) === self::DISPLAY_STATISTICS_RESERVED;
+    }
+
+    /**
      * Keeps the papers of the figures in session for the papers action
      * @param array<string, array{docIds: int[], hidden: int}> $paperLists
      */
@@ -961,13 +979,14 @@ class StatsController extends Zend_Controller_Action
     }
 
     /**
-     * A token to get the papers of the figures, for the administrators of the journal only
+     * A token to get the papers of the figures (administrators of the journal only),
+     * or the reserved statistics (editorial secretaries: the page is hidden to the others)
      * @param Monolog\Logger|null $logger
      * @return string|null
      */
     private function getDelegatedToken(?Monolog\Logger $logger): ?string
     {
-        if (!self::canSeePapers()) {
+        if (!self::canSeePapers() && !(Episciences_Auth::isLogged() && self::areStatisticsReserved())) {
             return null;
         }
 
