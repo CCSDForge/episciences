@@ -130,7 +130,11 @@ final class PaperRedirectionAccessLogTest extends TestCase
 
         $controller->checkFile($this->paper());
 
-        self::assertSame('/user/login/forward-controller/paper/forward-action/pdf/id/' . self::DOCID, self::redirectionOf($controller));
+        // On manager branches the url() helper adds the journal path prefix and passes the parameters as a query string
+        self::assertSame(
+            (defined('PREFIX_URL') ? PREFIX_URL : '/') . 'user/login?forward-controller=paper&forward-action=pdf&id=' . self::DOCID,
+            self::redirectionOf($controller)
+        );
         self::assertSame(
             [[AccessLog::AUTH_REQUIRED, 'unpublished_paper', self::DOCID, self::PAPERID]],
             $this->loggedEvents('reason', 'docid', 'paperid')

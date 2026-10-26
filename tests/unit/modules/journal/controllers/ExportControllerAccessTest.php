@@ -153,7 +153,7 @@ final class ExportControllerAccessTest extends TestCase
     {
         // On manager branches the url() helper adds the journal path prefix and passes the parameters as a query string
         $this->assertStopsWith(
-            'redirect:' . (defined('PREFIX_URL') ? PREFIX_URL : '/') . 'user/login?forward-controller=export&id=' . self::DOCID . '&forward-action=bibtex',
+            'redirect:' . (defined('PREFIX_URL') ? PREFIX_URL : '/') . 'user/login?forward-controller=export&forward-action=bibtex&id=' . self::DOCID,
             $this->controller($this->paper())
         );
         self::assertSame([[AccessLog::AUTH_REQUIRED, 'unpublished_paper']], $this->loggedEvents());
