@@ -652,7 +652,13 @@ class FileController extends DefaultController
                     }
 
                     // rotate filename
-                    $filename = Episciences_Tools::filenameRotate($sFolder, $filename);
+                    $filename = $this->uploadFileName($sFolder, $filename, $path, $docId, $pcId);
+
+                    if ($filename === null) {
+                        $result['status'] = 'error';
+                        $result['messages'] = [$this->view->translate("Le fichier n'a pas pu être enregistré. Veuillez réessayer.")];
+                        break;
+                    }
 
                     // move file to tmp folder
                     if (move_uploaded_file($info['tmp_name'], $sFolder . $filename)) {
@@ -945,22 +951,54 @@ class FileController extends DefaultController
 
     /**
      * The file is attached to the copy-editing request or to an answer already saved (see
-     * Episciences_CommentsManager::isCopyEditingAttachment()). Considered submitted when the lookup fails, so that
-     * it is not removed.
+     * copyEditingAttachedFiles()). Considered submitted when the lookup fails, so that it is not removed.
      */
     protected function isSubmittedCopyEditingFile(int $docId, int $pcId, string $file): bool
     {
+        $attachedFiles = $this->copyEditingAttachedFiles($docId, $pcId);
+
+        return $attachedFiles === null || in_array($file, $attachedFiles, true);
+    }
+
+    /**
+     * Names of the files attached to the copy-editing request and to its saved answers (see
+     * Episciences_CommentsManager::getCopyEditingAttachments()), null when the lookup fails
+     *
+     * @return string[]|null
+     */
+    protected function copyEditingAttachedFiles(int $docId, int $pcId): ?array
+    {
         try {
-            return Episciences_CommentsManager::isCopyEditingAttachment($docId, $pcId, $file);
+            return Episciences_CommentsManager::getCopyEditingAttachments($docId, $pcId);
         } catch (Exception $e) {
             AppRegistry::getMonoLogger()?->warning('Copy-editing file lookup failed', [
                 'docId' => $docId,
                 'pcId' => $pcId,
-                'file' => $file,
                 'exception' => $e->getMessage(),
             ]);
-            return true;
+            return null;
         }
+    }
+
+    /**
+     * Name under which an uploaded file is stored: not the name of another file of the directory and, in the
+     * directory of a copy-editing request, not the name of a file of the request or of a saved answer either (an
+     * answer's files are moved out of the directory once saved), whose removal is refused (see
+     * isSubmittedCopyEditingFile()). Null when these names cannot be looked up.
+     */
+    protected function uploadFileName(string $folder, string $filename, string $path, int $docId, int $pcId): ?string
+    {
+        $reservedNames = [];
+
+        if ($path === self::PATH_CE_ATTACHMENTS) {
+            $reservedNames = $this->copyEditingAttachedFiles($docId, $pcId);
+
+            if ($reservedNames === null) {
+                return null;
+            }
+        }
+
+        return Episciences_Tools::filenameRotate($folder, $filename, $reservedNames);
     }
 
     /**

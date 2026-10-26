@@ -113,7 +113,7 @@ final class FileControllerUploadedFileTest extends TestCase
 
     /**
      * @param array<string, mixed> $post
-     * @param array{paper?: Episciences_Paper, isRequest?: bool, isSubmitted?: bool, secret?: string} $stubs
+     * @param array{paper?: Episciences_Paper, isRequest?: bool, isSubmitted?: bool, attachedFiles?: string[]|null, secret?: string} $stubs
      */
     private function controller(array $post, array $stubs = []): \FileController
     {
@@ -123,7 +123,13 @@ final class FileControllerUploadedFileTest extends TestCase
         $journal = $this->createMock(Episciences_Review::class);
         $journal->method('getSettings')->willReturn([]);
 
-        $stubs += ['paper' => $this->version(), 'isRequest' => true, 'isSubmitted' => false, 'secret' => self::SECRET];
+        $stubs += [
+            'paper' => $this->version(),
+            'isRequest' => true,
+            'isSubmitted' => false,
+            'attachedFiles' => [],
+            'secret' => self::SECRET,
+        ];
 
         return new class ($request, new Zend_Controller_Response_HttpTestCase(), $stubs + ['journal' => $journal]) extends \FileController {
             protected function findPaper(int $docId): ?Episciences_Paper
@@ -144,6 +150,11 @@ final class FileControllerUploadedFileTest extends TestCase
             protected function isSubmittedCopyEditingFile(int $docId, int $pcId, string $file): bool
             {
                 return $this->getInvokeArg('isSubmitted');
+            }
+
+            protected function copyEditingAttachedFiles(int $docId, int $pcId): ?array
+            {
+                return $this->getInvokeArg('attachedFiles');
             }
 
             public static function isConflictDetected(Episciences_Paper $paper, Episciences_Review $journal = null): bool
@@ -444,5 +455,65 @@ final class FileControllerUploadedFileTest extends TestCase
         self::assertSame(200, $code);
         self::assertSame('error', $answer['status']);
         self::assertNotEmpty($answer['messages']);
+    }
+
+    // -----------------------------------------------------------------------
+    // Stored name: never the name of a submitted copy-editing file, whose removal is refused
+    // -----------------------------------------------------------------------
+
+    /**
+     * Name under which FileController::uploadAction() stores the file (see FileController::uploadFileName())
+     */
+    private function storedName(\FileController $controller, string $filename, string $path): mixed
+    {
+        return (new \ReflectionMethod($controller, 'uploadFileName'))
+            ->invoke($controller, $this->attachmentsDir, $filename, $path, self::DOCID, self::PCID);
+    }
+
+    public function testCopyEditingUploadAvoidsTheNameOfAFileOfASavedAnswer(): void
+    {
+        // The file of the saved answer has been moved out of the request directory: only its name is left
+        $controller = $this->controller([], ['attachedFiles' => ['sources.zip', 'template.docx']]);
+
+        self::assertSame('sources_1.zip', $this->storedName($controller, 'sources.zip', 'ce_attachments'));
+        self::assertSame('figure.png', $this->storedName($controller, 'figure.png', 'ce_attachments'));
+    }
+
+    public function testCopyEditingUploadIsRefusedWhenTheSubmittedFilesCannotBeLookedUp(): void
+    {
+        $controller = $this->controller([], ['attachedFiles' => null]);
+
+        self::assertNull($this->storedName($controller, 'sources.zip', 'ce_attachments'));
+    }
+
+    public function testOtherUploadOnlyAvoidsTheFilesOfItsDirectory(): void
+    {
+        $this->storeAttachment('letter.pdf');
+        $controller = $this->controller([], ['attachedFiles' => ['sources.zip']]);
+
+        self::assertSame('sources.zip', $this->storedName($controller, 'sources.zip', ''));
+        self::assertSame('letter_1.pdf', $this->storedName($controller, 'letter.pdf', ''));
+    }
+
+    public function testSubmittedCopyEditingFilesAreLookedUpOnce(): void
+    {
+        $previousAdapter = \Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = $this->getMockBuilder($previousAdapter::class)
+            ->setConstructorArgs([$previousAdapter->getConfig()])
+            ->onlyMethods(['fetchCol'])
+            ->getMock();
+        $adapter->expects(self::once())->method('fetchCol')->willReturn(['["sources.zip","sources_1.zip"]']);
+        \Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+
+        $controller = new \FileController(
+            new Zend_Controller_Request_HttpTestCase(),
+            new Zend_Controller_Response_HttpTestCase()
+        );
+
+        try {
+            self::assertSame('sources_2.zip', $this->storedName($controller, 'sources.zip', 'ce_attachments'));
+        } finally {
+            \Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
     }
 }

@@ -16,6 +16,7 @@ use Zend_Db_Table_Abstract;
  *
  * @covers Episciences_CommentsManager::isCopyEditingRequest
  * @covers Episciences_CommentsManager::isCopyEditingAttachment
+ * @covers Episciences_CommentsManager::getCopyEditingAttachments
  */
 final class CopyEditingFileLookupTest extends TestCase
 {
@@ -131,5 +132,38 @@ final class CopyEditingFileLookupTest extends TestCase
 
         self::assertTrue(Episciences_CommentsManager::isCopyEditingAttachment(self::DOCID, $otherPcId, 'template.docx'));
         self::assertFalse(Episciences_CommentsManager::isCopyEditingAttachment(self::DOCID, $pcId, 'template.docx'));
+    }
+
+    public function testFilesOfTheRequestAndOfItsAnswersAreListedOnce(): void
+    {
+        $pcId = $this->insertComment(
+            self::DOCID,
+            Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST,
+            'template.docx'
+        );
+        $this->insertComment(
+            self::DOCID,
+            Episciences_CommentsManager::TYPE_AUTHOR_SOURCES_DEPOSED_ANSWER,
+            json_encode(['sources.zip', 'figure.png']),
+            $pcId
+        );
+        $this->insertComment(
+            self::DOCID,
+            Episciences_CommentsManager::TYPE_AUTHOR_SOURCES_DEPOSED_ANSWER,
+            json_encode(['sources.zip']),
+            $pcId
+        );
+
+        $names = Episciences_CommentsManager::getCopyEditingAttachments(self::DOCID, $pcId);
+        sort($names);
+
+        self::assertSame(['figure.png', 'sources.zip', 'template.docx'], $names);
+    }
+
+    public function testRequestWithoutFileListsNothing(): void
+    {
+        $pcId = $this->insertComment(self::DOCID, Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST);
+
+        self::assertSame([], Episciences_CommentsManager::getCopyEditingAttachments(self::DOCID, $pcId));
     }
 }

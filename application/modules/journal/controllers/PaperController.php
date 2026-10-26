@@ -422,9 +422,12 @@ class PaperController extends PaperDefaultController
                             $message = $this->view->translate("Votre réponse a bien été enregistrée.");
                             $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
                         } else {
-                            // error message
-                            $message = $this->view->translate("Votre réponse n'a pas pu être enregistrée.");
-                            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                            // error message, unless the answer was refused with its own (see saveAuthorFormattingAnswer())
+                            $errorMessenger = $this->_helper->FlashMessenger->setNamespace(self::ERROR);
+
+                            if (!$errorMessenger->hasCurrentMessages()) {
+                                $errorMessenger->addMessage($this->view->translate("Votre réponse n'a pas pu être enregistrée."));
+                            }
                         }
 
                         // redirect
@@ -740,6 +743,29 @@ class PaperController extends PaperDefaultController
         $templateAuthorType = '';
         $templateEditorType = '';
 
+        // path des sources: directory of the request, where the answer's files are uploaded (see FileController::buildStorageFolder())
+        $parentPath = REVIEW_FILES_PATH . $paper->getDocid();
+        $parentPath .= DIRECTORY_SEPARATOR;
+        $parentPath .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
+        $parentPath .= DIRECTORY_SEPARATOR;
+        $parentPath .= $parentCommentId;
+        $parentPath .= DIRECTORY_SEPARATOR;
+
+        // The directory of the request also holds the request's own files: only the files uploaded by the user for
+        // this answer are attached to it, then moved (see FileController::uploadAction()). Any other attached file
+        // refuses the answer, so that it is never sent without the files the author meant to send.
+        $checkedAttachments = $this->checkedAttachments($parentPath, $attachments);
+
+        if (!empty($checkedAttachments['rejected'])) {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($this->attachmentsUploadFailureMessage(
+                $this->view->translate("Votre réponse n'a pas été enregistrée : le téléversement d'au moins un fichier joint a échoué."),
+                $checkedAttachments['rejected']
+            ));
+            return false;
+        }
+
+        $attachments = $checkedAttachments['accepted'];
+
         // Demande de sources$templateA
         $ceComment = new Episciences_Comment;
         $ceComment->find($parentCommentId);
@@ -750,18 +776,6 @@ class PaperController extends PaperDefaultController
         if (!$cAnswer) {
             return false;
         }
-
-        // path des sources
-        $parentPath = REVIEW_FILES_PATH . $cAnswer->getDocid();
-        $parentPath .= DIRECTORY_SEPARATOR;
-        $parentPath .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
-        $parentPath .= DIRECTORY_SEPARATOR;
-        $parentPath .= $cAnswer->getParentid();
-        $parentPath .= DIRECTORY_SEPARATOR;
-
-        // The directory of the request also holds the request's own files: only the files uploaded by the user for
-        // this answer are attached to it, then moved (see FileController::uploadAction())
-        $attachments = array_values($this->uploadedAttachments($parentPath, $attachments));
 
         if (!empty($attachments)) {
             $cAnswer->setFile(json_encode($attachments));
@@ -1392,15 +1406,10 @@ class PaperController extends PaperDefaultController
         // Every file the author attached must have been uploaded: otherwise, nothing is recorded and the author can try again.
         // An empty name is sent back by es.fileupload.js when the upload failed. The directory is shared by the
         // answers of the paper: a file not uploaded by the user for this answer is refused too.
-        $tmpFolder = REVIEW_FILES_PATH . $paperId . '/tmp/';
-        $uploadedAttachments = $this->uploadedAttachments($tmpFolder, $attachments);
-        $rejectedAttachments = array_merge(
-            array_values(array_diff_key($attachments, $uploadedAttachments)),
-            Episciences_Tools::rejectedAttachmentNames($tmpFolder, $uploadedAttachments)
-        );
+        $checkedAttachments = $this->checkedAttachments(REVIEW_FILES_PATH . $paperId . '/tmp/', $attachments);
 
-        if (!empty($rejectedAttachments)) {
-            $this->redirectOnTmpVersionUploadFailure($docId, $rejectedAttachments);
+        if (!empty($checkedAttachments['rejected'])) {
+            $this->redirectOnTmpVersionUploadFailure($docId, $checkedAttachments['rejected']);
             return;
         }
 
@@ -1638,6 +1647,27 @@ class PaperController extends PaperDefaultController
     }
 
     /**
+     * Every file the user attached must have been uploaded by them in the directory of the form: otherwise, nothing
+     * is recorded and the user is asked to attach the files again. Rejected: a failed upload (empty name, see
+     * es.fileupload.js), a name without a valid upload token (see uploadedAttachments()) or a file no longer stored.
+     *
+     * @param array<mixed> $attachments names submitted by the client
+     * @return array{accepted: array<string>, rejected: array<mixed>}
+     */
+    protected function checkedAttachments(string $folder, array $attachments): array
+    {
+        $uploaded = $this->uploadedAttachments($folder, $attachments);
+
+        return [
+            'accepted' => Episciences_Tools::filterAttachmentNames($folder, $uploaded),
+            'rejected' => array_merge(
+                array_values(array_diff_key($attachments, $uploaded)),
+                Episciences_Tools::rejectedAttachmentNames($folder, $uploaded)
+            ),
+        ];
+    }
+
+    /**
      * Checks the tokens of the uploaded files (see UploadedFileToken)
      */
     protected function uploadedFileToken(): UploadedFileToken
@@ -1652,7 +1682,22 @@ class PaperController extends PaperDefaultController
      */
     private function redirectOnTmpVersionUploadFailure(int|string $docId, array $rejectedAttachments): void
     {
-        $message = $this->view->translate("Votre version temporaire n'a pas été enregistrée : le téléversement d'au moins un fichier joint a échoué.");
+        $message = $this->attachmentsUploadFailureMessage(
+            $this->view->translate("Votre version temporaire n'a pas été enregistrée : le téléversement d'au moins un fichier joint a échoué."),
+            $rejectedAttachments
+        );
+
+        $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+    }
+
+    /**
+     * @param string $intro translated sentence telling what has not been recorded
+     * @param array<mixed> $rejectedAttachments see checkedAttachments()
+     */
+    private function attachmentsUploadFailureMessage(string $intro, array $rejectedAttachments): string
+    {
+        $message = $intro;
 
         $names = array_filter($rejectedAttachments, static fn($name) => is_string($name) && $name !== '');
 
@@ -1660,10 +1705,7 @@ class PaperController extends PaperDefaultController
             $message .= ' (' . htmlspecialchars(implode(', ', $names), ENT_QUOTES, 'UTF-8') . ')';
         }
 
-        $message .= ' ' . $this->view->translate('Veuillez joindre à nouveau vos fichiers et recommencer.');
-
-        $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+        return $message . ' ' . $this->view->translate('Veuillez joindre à nouveau vos fichiers et recommencer.');
     }
 
     /**

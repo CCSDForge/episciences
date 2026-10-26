@@ -987,6 +987,17 @@ class Episciences_CommentsManager
      */
     public static function isCopyEditingAttachment(int $docId, int $pcId, string $file): bool
     {
+        return in_array($file, self::getCopyEditingAttachments($docId, $pcId), true);
+    }
+
+    /**
+     * Names of the files attached to the copy-editing comment $pcId and to its answers (see isCopyEditingAttachment())
+     *
+     * @return string[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getCopyEditingAttachments(int $docId, int $pcId): array
+    {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
             ->from(T_PAPER_COMMENTS, ['FILE'])
@@ -995,13 +1006,13 @@ class Episciences_CommentsManager
             ->where('FILE IS NOT NULL')
             ->where("FILE != ''");
 
+        $names = [];
+
         foreach ($db->fetchCol($select) as $files) {
-            if (in_array($file, self::attachedFiles((string)$files), true)) {
-                return true;
-            }
+            $names[] = self::attachedFiles((string)$files);
         }
 
-        return false;
+        return array_values(array_unique(array_filter(array_merge(...$names), 'is_string')));
     }
 
     /**

@@ -68,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - [#1385](https://github.com/CCSDForge/episciences/pull/1385): Temporary version: a file whose upload failed is no longer silently dropped; nothing is recorded and the author is asked to attach the files again. Failed uploads are now always displayed in the file upload widget. Answering without any file is still possible.
-- [#1386](https://github.com/CCSDForge/episciences/pull/1386): Tighten the checks of the attachment upload and removal endpoints. **Deployment**: set `UPLOADED_FILE.HMAC_SECRET` in `config/pwd.json` (at least 64 characters, e.g. `openssl rand -hex 32`); without it, attachment uploads are refused.
+- [#1386](https://github.com/CCSDForge/episciences/pull/1386): Tighten the checks of the attachment upload and removal endpoints. Copy-editing answer: like a temporary version, it is no longer saved without a file the author attached; a new file never takes the name of a file already sent. **Deployment**: set `UPLOADED_FILE.HMAC_SECRET` in `config/pwd.json` (at least 64 characters, e.g. `openssl rand -hex 32`); without it, attachment uploads are refused.
 
 ## v1.0.58 - 2026-10-25
 

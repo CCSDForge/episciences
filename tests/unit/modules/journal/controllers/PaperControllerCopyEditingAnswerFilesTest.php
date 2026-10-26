@@ -18,6 +18,7 @@ require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCap
  * Files of an answer to a copy-editing request (PaperController::saveAuthorFormattingAnswer()): uploaded in the
  * directory of the request, which also holds the request's own files. Only the files the user uploaded for the
  * answer (see UploadedFileToken) are attached to it and moved to its directory; the other files stay in place.
+ * Any other attached name refuses the answer: it is never sent without the files the author meant to send.
  * Real directories are used; the token secret is the controller's only stub.
  */
 final class PaperControllerCopyEditingAnswerFilesTest extends TestCase
@@ -68,7 +69,7 @@ final class PaperControllerCopyEditingAnswerFilesTest extends TestCase
     /**
      * @param array<mixed> $attachments attachments[] of the form
      * @param array<mixed> $tokens attachment_tokens[] of the form
-     * @return list<string> names attached to the answer
+     * @return array{accepted: array<string>, rejected: array<mixed>} names attached to the answer, names refusing it
      */
     private function saveAnswerFiles(array $attachments, array $tokens, bool $notified = false): array
     {
@@ -80,16 +81,19 @@ final class PaperControllerCopyEditingAnswerFilesTest extends TestCase
 
         $controller = new class ($request, new Zend_Controller_Response_HttpTestCase()) extends \PaperController {
             /**
-             * The steps of saveAuthorFormattingAnswer() on the files
+             * The steps of saveAuthorFormattingAnswer() on the files: nothing is moved when the answer is refused
              * @param array<mixed> $attachments
-             * @return list<string>
+             * @return array{accepted: array<string>, rejected: array<mixed>}
              */
             public function saveFiles(string $parentPath, string $path, array $attachments, ?string $mailPath): array
             {
-                $attachments = array_values($this->uploadedAttachments($parentPath, $attachments));
-                $this->moveCopyEditingAnswerFiles($parentPath, $path, $attachments, $mailPath);
+                $checkedAttachments = $this->checkedAttachments($parentPath, $attachments);
 
-                return $attachments;
+                if (empty($checkedAttachments['rejected'])) {
+                    $this->moveCopyEditingAnswerFiles($parentPath, $path, $checkedAttachments['accepted'], $mailPath);
+                }
+
+                return $checkedAttachments;
             }
 
             protected function uploadedFileToken(): UploadedFileToken
@@ -113,47 +117,57 @@ final class PaperControllerCopyEditingAnswerFilesTest extends TestCase
     {
         $this->store($this->requestDir, 'sources.zip');
 
-        $attached = $this->saveAnswerFiles(['sources.zip'], [$this->sign('sources.zip')]);
+        $files = $this->saveAnswerFiles(['sources.zip'], [$this->sign('sources.zip')]);
 
-        self::assertSame(['sources.zip'], $attached);
+        self::assertSame(['accepted' => ['sources.zip'], 'rejected' => []], $files);
         self::assertFileExists($this->answerDir . 'sources.zip');
         self::assertFileDoesNotExist($this->requestDir . 'sources.zip');
         self::assertSame([], $this->loggedEvents());
     }
 
-    public function testFileOfTheRequestNamedInTheFormStaysWithTheRequest(): void
+    public function testAnswerWithoutFileIsAccepted(): void
+    {
+        self::assertSame(['accepted' => [], 'rejected' => []], $this->saveAnswerFiles([], []));
+    }
+
+    public function testFileOfTheRequestNamedInTheFormRefusesTheAnswer(): void
     {
         $this->store($this->requestDir, 'template.docx');
         $this->store($this->requestDir, 'sources.zip');
 
-        $attached = $this->saveAnswerFiles(
+        $files = $this->saveAnswerFiles(
             ['sources.zip', 'template.docx'],
             [$this->sign('sources.zip'), '']
         );
 
-        self::assertSame(['sources.zip'], $attached);
+        self::assertSame(['template.docx'], $files['rejected']);
+        // Nothing moved: the author attaches the files again
         self::assertFileExists($this->requestDir . 'template.docx');
-        self::assertFileDoesNotExist($this->answerDir . 'template.docx');
+        self::assertFileExists($this->requestDir . 'sources.zip');
+        self::assertDirectoryDoesNotExist($this->answerDir);
         self::assertSame([[AccessLog::TOKEN_INVALID, 'uploaded_file_token']], $this->loggedEvents());
     }
 
-    public function testFailedUploadIsDroppedSilently(): void
+    public function testFailedUploadRefusesTheAnswer(): void
     {
-        // An empty name is sent back by es.fileupload.js when the upload failed
-        $attached = $this->saveAnswerFiles([''], ['']);
+        $this->store($this->requestDir, 'sources.zip');
 
-        self::assertSame([], $attached);
+        // An empty name is sent back by es.fileupload.js when the upload failed
+        $files = $this->saveAnswerFiles(['sources.zip', ''], [$this->sign('sources.zip'), '']);
+
+        self::assertSame([''], $files['rejected']);
+        self::assertFileExists($this->requestDir . 'sources.zip');
+        self::assertDirectoryDoesNotExist($this->answerDir);
+        // Not an attempt on another file: not logged
         self::assertSame([], $this->loggedEvents());
     }
 
-    public function testMissingRequestDirectoryMovesNothing(): void
+    public function testFileNoLongerStoredRefusesTheAnswer(): void
     {
-        rmdir($this->requestDir);
+        // Uploaded for the answer, then removed (e.g. by the cleanup of an answer abandoned in another tab)
+        $files = $this->saveAnswerFiles(['sources.zip'], [$this->sign('sources.zip')]);
 
-        // scandir() warns about the missing directory: not an error of the answer
-        $attached = @$this->saveAnswerFiles(['sources.zip'], [$this->sign('sources.zip')]);
-
-        self::assertSame(['sources.zip'], $attached);
+        self::assertSame(['sources.zip'], $files['rejected']);
         self::assertDirectoryDoesNotExist($this->answerDir);
     }
 
