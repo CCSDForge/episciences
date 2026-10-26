@@ -2864,11 +2864,7 @@ class AdministratepaperController extends PaperDefaultController
             if (!empty($editors)) {
 
                 // prepare link to article management page
-                $paper_url = $this->view->url([
-                    'controller' => self::ADMINISTRATE_PAPER_CONTROLLER,
-                    'action' => 'view',
-                    'id' => $paper->getDocid()]);
-                $paper_url = SERVER_PROTOCOL . '://' . $this->getRequest()->getHttpHost() . $paper_url;
+                $paper_url = self::buildAdminPaperUrl($paper->getDocid());
 
                 foreach ($editors as $uid => $editor) {
 
