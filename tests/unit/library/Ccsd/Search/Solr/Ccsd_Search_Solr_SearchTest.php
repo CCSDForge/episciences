@@ -4,6 +4,7 @@ namespace unit\library\Ccsd\Search\Solr;
 
 use Ccsd_Search_Solr_Search;
 use PHPUnit\Framework\TestCase;
+use Solarium\QueryType\Select\Query\Query;
 
 /**
  * Unit tests for Ccsd_Search_Solr_Search
@@ -329,5 +330,109 @@ class Ccsd_Search_Solr_SearchTest extends TestCase
         $this->search->setRawSearchParams(['rows' => '999']);
         $this->search->queryAddResultPerPage([10, 20, 50], 20);
         $this->assertSame(20, $this->search->getParsedSearchParamsbyKey('rows'));
+    }
+
+    // ------------------------------------------------------------------
+    // queryAddFilters: field allow-list and numeric values
+    // ------------------------------------------------------------------
+
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, string> filter query strings, keyed by Solr field
+     */
+    private function runFilters(array $params, ?array $allowedFields = null): array
+    {
+        $query = new Query();
+        $this->search->setQuery($query);
+        $this->search->setAllowedFilterFields($allowedFields);
+        $this->search->setRawSearchParams($params);
+        $this->search->queryAddFilters();
+
+        $filters = [];
+        foreach ($query->getFilterQueries() as $key => $filterQuery) {
+            $filters[substr($key, strpos($key, '__') + 2)] = $filterQuery->getQuery();
+        }
+        return $filters;
+    }
+
+    public function testQueryAddFiltersIgnoresFieldsOutsideAllowList(): void
+    {
+        $filters = $this->runFilters(
+            ['controller' => 'search', 'q' => '*', 'rv-code' => 'foo', 'section_id_i' => '12'],
+            ['section_id_i', 'publication_date_year_fs']
+        );
+
+        self::assertSame(['section_id_i' => 'section_id_i:(12)'], $filters);
+        self::assertNull($this->search->getParsedSearchParamsbyKey('rv-code'));
+    }
+
+    public function testQueryAddFiltersWithoutAllowListKeepsAllFields(): void
+    {
+        $filters = $this->runFilters(['other_t' => 'foo']);
+
+        self::assertArrayHasKey('other_t', $filters);
+    }
+
+    public function testQueryAddFiltersKeepsValidYears(): void
+    {
+        $filters = $this->runFilters(['publication_date_year_fs' => '2021 OR 2012'], ['publication_date_year_fs']);
+
+        self::assertSame(['publication_date_year_fs' => 'publication_date_year_fs:(2021 OR 2012)'], $filters);
+    }
+
+    public function testQueryAddFiltersAcceptsPlusSeparatedYears(): void
+    {
+        $filters = $this->runFilters(['publication_date_year_fs' => '2021+OR+2012'], ['publication_date_year_fs']);
+
+        self::assertSame(['publication_date_year_fs' => 'publication_date_year_fs:(2021 OR 2012)'], $filters);
+        self::assertSame('2021 OR 2012', $this->search->getParsedSearchParamsbyKey('publication_date_year_fs'));
+    }
+
+    public function testQueryAddFiltersDropsNonNumericYear(): void
+    {
+        $filters = $this->runFilters(['publication_date_year_fs' => 'default'], ['publication_date_year_fs']);
+
+        self::assertSame([], $filters);
+        self::assertNull($this->search->getParsedSearchParamsbyKey('publication_date_year_fs'));
+    }
+
+    public function testQueryAddFiltersDropsSolrSyntaxInYear(): void
+    {
+        $filters = $this->runFilters(['publication_date_year_fs' => '2021) OR (*:*'], ['publication_date_year_fs']);
+
+        self::assertSame([], $filters);
+    }
+
+    public function testQueryAddFiltersDropsNonNumericIntegerField(): void
+    {
+        $filters = $this->runFilters(['volume_id_i' => 'abc OR 7'], ['volume_id_i']);
+
+        self::assertSame(['volume_id_i' => 'volume_id_i:(7)'], $filters);
+    }
+
+    /**
+     * @dataProvider numericFilterProvider
+     */
+    public function testSanitizeNumericFilterValue(string $input, ?string $expected): void
+    {
+        self::assertSame($expected, Ccsd_Search_Solr_Search::sanitizeNumericFilterValue($input));
+    }
+
+    /**
+     * @return array<string, array{string, ?string}>
+     */
+    public static function numericFilterProvider(): array
+    {
+        return [
+            'single year' => ['2021', '2021'],
+            'quoted year' => ['"2021"', '2021'],
+            'or list' => ['2021 OR 2012', '2021 OR 2012'],
+            'plus-encoded list' => ['2018+OR+2013', '2018 OR 2013'],
+            'duplicates' => ['2021 OR 2021', '2021'],
+            'keyword' => ['default', null],
+            'empty' => ['', null],
+            'negative' => ['-1', null],
+            'mixed' => ['2021 OR x', '2021'],
+        ];
     }
 }

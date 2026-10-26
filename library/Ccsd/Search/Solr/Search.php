@@ -7,11 +7,18 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
 
     const SOLR_DEFAULT_BOOLEAN_OPERATOR = 'AND';
     const SOLR_DEFAULT_SORT_TYPE = 'score desc';
+    private const PUBLICATION_YEAR_FIELD = 'publication_date_year_fs';
     /**
      *
      * @var Query object
      */
     private $_query;
+
+    /**
+     * Solr fields accepted as user filters; null means no restriction
+     * @var string[]|null
+     */
+    private ?array $allowedFilterFields = null;
 
     /**
      *
@@ -285,6 +292,45 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
     }
 
     /**
+     * @param string[]|null $allowedFilterFields Solr fields accepted as user filters; null disables the check
+     * @return $this
+     */
+    public function setAllowedFilterFields(?array $allowedFilterFields): self
+    {
+        $this->allowedFilterFields = $allowedFilterFields;
+        return $this;
+    }
+
+    /**
+     * @return string[]|null
+     */
+    public function getAllowedFilterFields(): ?array
+    {
+        return $this->allowedFilterFields;
+    }
+
+    /**
+     * Keep only the integer terms of a numeric filter such as "2021 OR 2012"
+     * ("+" is accepted as a separator for doubly encoded URLs)
+     *
+     * @return string|null the cleaned filter, null if no valid term remains
+     */
+    public static function sanitizeNumericFilterValue(string $filterValue): ?string
+    {
+        $terms = preg_split('/[\s+]+OR[\s+]+/', trim($filterValue, " \"+")) ?: [];
+        $terms = array_values(array_filter(array_map('trim', $terms), static function (string $term): bool {
+            return $term !== '' && ctype_digit($term);
+        }));
+
+        return $terms === [] ? null : implode(' OR ', array_unique($terms));
+    }
+
+    private static function isNumericFilterField(string $solrFieldName): bool
+    {
+        return $solrFieldName === self::PUBLICATION_YEAR_FIELD || str_ends_with($solrFieldName, '_i');
+    }
+
+    /**
      * Filtres de recherche : mise en place des filtres utilisateur
      * correspondance entre le nom du champ
      * passé dans l'URL et son nom dans l'index solr
@@ -322,7 +368,17 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
 
             $filterParams [$solrFieldName] = explode(' OR ', $searchParams [$solrFieldName]);
 
+            // Unknown fields would make Solr fail with "undefined field"
+            if ($this->allowedFilterFields !== null && !in_array($solrFieldName, $this->allowedFilterFields, true)) {
+                continue;
+            }
+
             $filterValue = $this->getRawSearchParamsbyKey($solrFieldName);
+
+            // Non-numeric values on numeric fields would make Solr fail with "Invalid Number"
+            if ($filterValue !== null && self::isNumericFilterField((string)$solrFieldName)) {
+                $filterValue = is_scalar($filterValue) ? self::sanitizeNumericFilterValue((string)$filterValue) : null;
+            }
 
             if ($filterValue != null) {
 
@@ -346,7 +402,7 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
                         return '"' . $helper->escapeTerm($v) . '"';
                     }, $filterValueArray);
                     $filterValue = implode(" OR ", $filterValueArray);
-                } elseif ($solrFieldName !== 'publication_date_year_fs') {
+                } elseif (!self::isNumericFilterField((string)$solrFieldName)) {
                     $filterValue = $helper->escapeTerm($filterValue);
                 }
 
