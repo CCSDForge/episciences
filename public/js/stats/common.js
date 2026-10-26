@@ -326,6 +326,8 @@ function createBarChart(canvasId, labels, datasets, options = {}) {
                     fileName: statCsvFileName([
                         statsExportName(),
                         canvasId.replace(/-chart$/, ''),
+                        // e.g. the value shown by the chart (moyenne, médiane)
+                        options.exportSuffix,
                     ]),
                     rows: buildChartCsvRows(
                         options.categoryLabel || '',

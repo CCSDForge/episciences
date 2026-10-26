@@ -306,6 +306,32 @@ describe('createBarChart', function () {
     });
 });
 
+describe('CSV file of a chart', function () {
+    afterEach(function () {
+        delete global.createCsvButton;
+        delete global.statCsvFileName;
+    });
+
+    it('is named after the chart and its export suffix', function () {
+        document.body.innerHTML = `
+            <canvas id="submissions-delay-chart"></canvas>
+            <div class="stat-chart-data" data-chart="submissions-delay-chart"></div>
+        `;
+        let fileParts = null;
+        global.statCsvFileName = jest.fn(parts => parts.join('-'));
+        global.createCsvButton = jest.fn((label, getData) => {
+            fileParts = getData().fileName;
+            return document.createElement('button');
+        });
+
+        createBarChart('submissions-delay-chart', ['2023'], datasets(), {
+            exportSuffix: 'mediane',
+        });
+
+        expect(fileParts).toBe('statistiques-submissions-delay-mediane');
+    });
+});
+
 describe('number of articles of a value', function () {
     const delays = [
         { label: 'Delay', data: [57, 162, null], counts: [4, 1, null] },

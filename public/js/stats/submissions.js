@@ -217,6 +217,8 @@ function createDelayChart(canvasId, delays) {
             delays.years,
             shownMode === 'median' ? delays.medianDatasets : delays.datasets,
             {
+                // the CSV files of the mean and of the median are not mixed up
+                exportSuffix: shownMode === 'median' ? 'mediane' : 'moyenne',
                 categoryLabel: statTranslate('Année'),
                 format: value =>
                     value === null || value === undefined
