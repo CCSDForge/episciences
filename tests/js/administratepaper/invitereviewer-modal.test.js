@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 // ---------------------------------------------------------------------------
 // Globals and mocks required before requiring the module
 // ---------------------------------------------------------------------------
@@ -12,6 +15,10 @@ global.dateIsBetween = jest.fn((val, min, max) => true);
 global.getLocaleDate = jest.fn((val) => val);
 global.getLoader = jest.fn().mockReturnValue('<span class="loader"></span>');
 global.nl2br = jest.fn((val) => val);
+// The real helper of public/js/functions.js, which the page loads before this script
+const functionsJs = fs.readFileSync(path.join(__dirname, '../../../public/js/functions.js'), 'utf8');
+const htmlEntitiesSource = functionsJs.match(/function htmlEntities\(str\) \{[\s\S]*?\n\}/)[0];
+global.htmlEntities = new Function(`${htmlEntitiesSource} return htmlEntities;`)();
 global.createUserAutocomplete = jest.fn().mockReturnValue({ inputId: 'autocomplete' });
 global.clearErrors = jest.fn();
 
@@ -558,6 +565,50 @@ describe('invitereviewer-modal.js Test Suite', () => {
             const tpl = '%%RECIPIENT_SCREEN_NAME%%';
             const result = moduleUnderTest.replaceTags(tpl, reviewer, 'fr');
             expect(result).toBe('Rev FullName');
+        });
+
+        describe('with a paper title containing markup', () => {
+            const originalPaper = global.paper;
+            const payload = '<img src=x onerror=alert(1)>';
+
+            beforeEach(() => {
+                global.paper = { ...originalPaper, title: { fr: payload } };
+            });
+
+            afterEach(() => {
+                global.paper = originalPaper;
+            });
+
+            test('escapes the values of an HTML template', () => {
+                const result = moduleUnderTest.replaceTags('<p>%%ARTICLE_TITLE%%</p>', { full_name: 'Rev' }, 'fr', true);
+                expect(result).toBe('<p>&lt;img src=x onerror=alert(1)&gt;</p>');
+            });
+
+            test('keeps the values of a text template as they are', () => {
+                const result = moduleUnderTest.replaceTags('%%ARTICLE_TITLE%%', { full_name: 'Rev' }, 'fr');
+                expect(result).toBe(payload);
+            });
+
+            test('setInvitationValues escapes the title in the mail body and the editor tags only', () => {
+                const originalTemplates = global.templates;
+                global.templates = { 2: { subject: { fr: '%%ARTICLE_TITLE%%' }, body: { fr: '%%ARTICLE_TITLE%%' } } };
+                global.__initMCE.mockClear();
+
+                try {
+                    moduleUnderTest.setInvitationValues({ full_name: 'Rev', email: 'rev@example.com' }, 2);
+
+                    const options = global.__initMCE.mock.calls[0][2];
+                    const editor = { setContent: jest.fn() };
+                    options.init_instance_callback(editor);
+
+                    expect(document.getElementById('subject').value).toBe(payload);
+                    expect(editor.setContent).toHaveBeenCalledWith('&lt;img src=x onerror=alert(1)&gt;');
+                    const titleTag = options.tags.find(tag => tag.text === "Titre de l'article");
+                    expect(titleTag.value).toBe('&lt;img src=x onerror=alert(1)&gt;');
+                } finally {
+                    global.templates = originalTemplates;
+                }
+            });
         });
     });
 

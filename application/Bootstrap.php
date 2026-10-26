@@ -138,6 +138,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         $view->addHelperPath('ZendX/JQuery/View/Helper', 'ZendX_JQuery_View_Helper');
         $view->addHelperPath('Ccsd/View/Helper', 'Ccsd_View_Helper');
         $view->addHelperPath('Episciences/View/Helper', 'Episciences_View_Helper');
+        $view->addHelperPath('Episciences/View/Helper', 'Episciences\\View\\Helper\\');
 
 
         $view->addScriptPath(APPLICATION_PATH . '/modules/common/views/scripts');

@@ -58,6 +58,11 @@ class PaperFiltersLayoutTest extends TestCase
                 'value' => '',
             ]));
         }
+        // The elements are rendered with this view, not with the one of the view renderer, which
+        // another test may have reset
+        foreach ($form->getElements() as $element) {
+            $element->setView($this->view);
+        }
 
         $this->view->element = $form;
         $this->view->open = true;

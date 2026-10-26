@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences\Security\AccessLog;
 use Episciences_Csrf_Helper;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -16,6 +17,9 @@ use Zend_Db_Select;
 use Zend_Db_Table_Abstract;
 use Zend_Session;
 use Zend_Session_Namespace;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Journal scoping and request token of the mail template actions.
@@ -28,6 +32,8 @@ use Zend_Session_Namespace;
  */
 final class AdministratemailControllerTemplateScopeTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private Zend_Db_Adapter_Abstract $previousAdapter;
 
     private bool $previousUnitTestEnabled;
@@ -291,5 +297,47 @@ final class AdministratemailControllerTemplateScopeTest extends TestCase
         self::assertStringEndsWith('/administratemail/templates', $url);
         self::assertCount(1, $this->selects);
         self::assertStringContainsString('PARENTID > 0', $this->selects[0]);
+    }
+
+    // ------------------------------------------------------------------
+    // Security log
+    // ------------------------------------------------------------------
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function editingActionProvider(): array
+    {
+        return [
+            'edit form' => ['edittemplateAction'],
+            'save' => ['savetemplateAction'],
+            'revert' => ['deletetemplateAction'],
+        ];
+    }
+
+    #[DataProvider('editingActionProvider')]
+    public function testEditingRefusedToTheRoleIsLogged(string $action): void
+    {
+        $this->assertNoWrite();
+
+        $url = $this->callAction($action, ['id' => '7'], true, false, ['X-Requested-With' => 'XMLHttpRequest']);
+
+        self::assertStringEndsWith('/error/deny', $url);
+        self::assertSame([[AccessLog::ACL_DENIED, 'role_check']], $this->loggedEvents());
+    }
+
+    public function testEditFormOutsideOfTheModalIsLogged(): void
+    {
+        $url = $this->callAction('edittemplateAction', ['id' => '7']);
+
+        self::assertStringEndsWith('/error/deny', $url);
+        self::assertSame([[AccessLog::ACL_DENIED, 'not_xhr']], $this->loggedEvents());
+    }
+
+    public function testEditFormOfATemplateOfAnotherJournalIsLogged(): void
+    {
+        $this->callAction('edittemplateAction', ['id' => '7'], true, true, ['X-Requested-With' => 'XMLHttpRequest']);
+
+        self::assertSame([[AccessLog::ACL_DENIED, 'foreign_template']], $this->loggedEvents());
     }
 }

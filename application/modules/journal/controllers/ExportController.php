@@ -55,14 +55,6 @@ class ExportController extends DefaultController
     }
 
     /**
-     * @throws Zend_Db_Statement_Exception
-     */
-    protected function findPublishedDocId(int $paperId): int
-    {
-        return Episciences_PapersManager::getPublishedPaperId($paperId);
-    }
-
-    /**
      * Answers 404 and stops the request
      */
     protected function notFound(): never
@@ -74,32 +66,18 @@ class ExportController extends DefaultController
     }
 
     /**
-     * Restricts the export of an unpublished paper to the users allowed to see it
-     * (same rule as the paper page): redirects to the published version if there is one,
-     * to the login page for anonymous visitors, and to the home page otherwise.
-     * redirect() exits the request.
-     * @param Zend_Controller_Request_Http $request
-     * @param Episciences_Paper $paper
+     * Restricts the export of an unpublished paper to the users allowed to see it (same rule as the paper page,
+     * see redirectFromUnpublishedVersion())
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     private function redirectIfNotPublished(Zend_Controller_Request_Http $request, Episciences_Paper $paper): void
     {
-        if (!$this->isRestrictedAccess($paper)) {
-            return;
-        }
-
-        $paperId = $paper->getPaperid() ?: $paper->getDocid();
-        $id = $this->findPublishedDocId((int)$paperId);
-
-        if ($id !== 0) {
-            // redirect to the published version
-            $this->redirect(sprintf('%s%s/%s', PREFIX_URL, $id, $request->getActionName()));
-        } elseif (!Episciences_Auth::isLogged()) {
-            $this->redirect($this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => $request->getControllerName(), 'id' => $paper->getDocid(), 'forward-action' => $request->getActionName()]));
-        } else {
-            $this->redirectsIfHaveNotEnoughPermissions($paper);
-        }
+        $this->redirectFromUnpublishedVersion(
+            $paper,
+            '/%d/' . $request->getActionName(),
+            '/user/login/forward-controller/' . $request->getControllerName() . '/id/' . $paper->getDocid() . '/forward-action/' . $request->getActionName()
+        );
     }
 
     public function jsonv2Action(): void

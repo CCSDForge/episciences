@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences\Security\AccessLog;
 use Episciences_Acl;
 use Episciences_Paper;
 use Episciences_Review;
@@ -15,6 +16,9 @@ use Zend_Auth;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
 use Zend_Registry;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * ExportController::getPaperToExport(): the paper page access rules applied to the metadata exports.
@@ -23,6 +27,8 @@ use Zend_Registry;
  */
 final class ExportControllerAccessTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const UID = 4242;
     private const DOCID = 12;
     private const PAPERID = 10;
@@ -140,6 +146,7 @@ final class ExportControllerAccessTest extends TestCase
     public function testUnpublishedVersionRedirectsToThePublishedOne(): void
     {
         $this->assertStopsWith('redirect:/' . self::PUBLISHED_DOCID . '/bibtex', $this->controller($this->paper(), self::PUBLISHED_DOCID));
+        self::assertSame([], $this->loggedEvents(), 'nothing is refused');
     }
 
     public function testAnonymousVisitorIsSentToTheLoginPage(): void
@@ -149,6 +156,7 @@ final class ExportControllerAccessTest extends TestCase
             'redirect:' . (defined('PREFIX_URL') ? PREFIX_URL : '/') . 'user/login?forward-controller=export&id=' . self::DOCID . '&forward-action=bibtex',
             $this->controller($this->paper())
         );
+        self::assertSame([[AccessLog::AUTH_REQUIRED, 'unpublished_paper']], $this->loggedEvents());
     }
 
     public function testMemberWithoutRoleOnThePaperIsSentToTheHomePage(): void
@@ -156,6 +164,7 @@ final class ExportControllerAccessTest extends TestCase
         $this->logInAs();
 
         $this->assertStopsWith('redirect:/', $this->controller($this->paper()));
+        self::assertSame([[AccessLog::ACCESS_REDIRECTED, 'unpublished_paper']], $this->loggedEvents());
     }
 
     public function testUnassignedEditorIsRefusedWhenTheJournalRestrictsEditors(): void

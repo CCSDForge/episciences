@@ -3,13 +3,20 @@
 declare(strict_types=1);
 
 use Episciences\Maintenance\ReadOnlyMode;
+use Episciences\Security\AccessLog;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * @covers Episciences_Auth_Plugin
  */
 class Episciences_Auth_PluginTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private Episciences_Auth_Plugin $plugin;
 
     protected function setUp(): void
@@ -296,6 +303,211 @@ class Episciences_Auth_PluginTest extends TestCase
             ReadOnlyMode::setOverride(null);
             Episciences_User::forgetStaticCache($uid);
             Zend_Controller_Action_HelperBroker::removeHelper('redirector');
+        }
+    }
+
+    public function testGuestDeniedByTheAclIsLoggedAsAuthRequired(): void
+    {
+        $this->dispatchWithApplicationAcl('user', 'findCasUsers', []);
+
+        self::assertSame([[AccessLog::AUTH_REQUIRED, 'user-findcasusers']], $this->loggedEvents('resource'));
+    }
+
+    public function testMemberDeniedByTheAclIsLoggedAsAclDenied(): void
+    {
+        $this->dispatchWithApplicationAcl('user', 'findcasusers', [Episciences_Acl::ROLE_MEMBER]);
+
+        self::assertSame([[AccessLog::ACL_DENIED, 'user-findcasusers']], $this->loggedEvents('resource'));
+    }
+
+    public function testAllowedPageIsNotLogged(): void
+    {
+        $this->dispatchWithApplicationAcl('error', 'deny', []);
+
+        self::assertSame([], $this->loggedEvents('resource'));
+    }
+
+    /**
+     * @param bool $actionExists answer of the dispatcher lookup
+     */
+    private function pluginWithAclStubAndAction(bool $actionExists): Episciences_Auth_Plugin
+    {
+        $acl = $this->createMock(Episciences_Acl::class);
+        $acl->method('has')->willReturn(false);
+        $acl->method('getResources')->willReturn([]);
+
+        return new class($acl, $actionExists) extends Episciences_Auth_Plugin {
+            public function __construct(private readonly Episciences_Acl $stub, private readonly bool $exists)
+            {
+            }
+
+            public function getAcl(): ?Episciences_Acl
+            {
+                return $this->stub;
+            }
+
+            protected function actionExists(Zend_Controller_Request_Abstract $request): bool
+            {
+                return $this->exists;
+            }
+        };
+    }
+
+    public function testExistingActionMissingFromTheAclIsLoggedAsAConfigurationError(): void
+    {
+        $request = new Zend_Controller_Request_Http();
+        $request->setControllerName('website')->setActionName('notdeclared');
+
+        $this->pluginWithAclStubAndAction(true)->preDispatch($request);
+
+        self::assertSame([[AccessLog::ACL_MISSING, 'website-notdeclared']], $this->loggedEvents('resource'));
+        self::assertSame(\Monolog\Level::Error, $this->securityLogRecords()[0]->level);
+        self::assertSame(['index', 'notfound'], [$request->getControllerName(), $request->getActionName()]);
+    }
+
+    public function testUnknownPageOfARegularRequestIsNotLogged(): void
+    {
+        $request = new Zend_Controller_Request_Http();
+        $request->setControllerName('wp-admin')->setActionName('setup');
+
+        $this->pluginWithAclStubAndAction(false)->preDispatch($request);
+
+        self::assertSame([], $this->loggedEvents('resource'));
+    }
+
+    public function testUnknownResourceOfAnXhrRequestIsLogged(): void
+    {
+        $request = new class extends Zend_Controller_Request_Http {
+            public function isXmlHttpRequest(): bool
+            {
+                return true;
+            }
+        };
+        $request->setControllerName('foo')->setActionName('bar');
+
+        $this->pluginWithAclStubAndAction(false)->preDispatch($request);
+
+        self::assertSame([[AccessLog::UNKNOWN_RESOURCE, 'foo-bar']], $this->loggedEvents('resource'));
+    }
+
+    /**
+     * @return array<string, array{string, string, bool}>
+     */
+    public static function dispatchableProvider(): array
+    {
+        return [
+            'existing action' => ['aclprobe', 'existing', true],
+            'missing action' => ['aclprobe', 'missing', false],
+            'missing controller' => ['nosuchcontroller', 'index', false],
+            'action of a shared parent' => ['aclprobe', 'shared', true],
+            'protected action' => ['aclprobe', 'protected', true],
+            'private action, not dispatched' => ['aclprobe', 'hidden', false],
+            'own action of a child controller' => ['aclprobechild', 'own', true],
+            'action inherited from a routed controller' => ['aclprobechild', 'existing', false],
+            'shared action inherited through a routed controller' => ['aclprobechild', 'shared', false],
+        ];
+    }
+
+    /**
+     * actionExists() asks the real dispatcher, here pointed at a fixture controller directory.
+     *
+     * @dataProvider dispatchableProvider
+     */
+    public function testActionExistsMatchesWhatTheDispatcherWouldRun(string $controller, string $action, bool $expected): void
+    {
+        $front = Zend_Controller_Front::getInstance();
+        $previousDispatcher = $front->getDispatcher();
+        $dispatcher = new Zend_Controller_Dispatcher_Standard();
+        $dispatcher->setControllerDirectory(__DIR__ . '/fixtures/controllers');
+        $front->setDispatcher($dispatcher);
+
+        try {
+            $request = new Zend_Controller_Request_Http();
+            $request->setControllerName($controller)->setActionName($action);
+            $method = new ReflectionMethod(Episciences_Auth_Plugin::class, 'actionExists');
+
+            self::assertSame($expected, $method->invoke($this->plugin, $request));
+        } finally {
+            $front->setDispatcher($previousDispatcher);
+        }
+    }
+
+    /**
+     * The action names of a controller are cached: the next lookups, for any action, read the cache.
+     */
+    public function testActionLookupsOfAControllerShareACachedList(): void
+    {
+        $front = Zend_Controller_Front::getInstance();
+        $previousDispatcher = $front->getDispatcher();
+        $dispatcher = new Zend_Controller_Dispatcher_Standard();
+        $dispatcher->setControllerDirectory(__DIR__ . '/fixtures/controllers');
+        $front->setDispatcher($dispatcher);
+        $cache = new ArrayAdapter(0, false);
+        $plugin = new class($cache) extends Episciences_Auth_Plugin {
+            public function __construct(private readonly ArrayAdapter $cache)
+            {
+            }
+
+            protected function actionsCache(): ArrayAdapter
+            {
+                return $this->cache;
+            }
+        };
+        $method = new ReflectionMethod(Episciences_Auth_Plugin::class, 'actionExists');
+
+        try {
+            $request = new Zend_Controller_Request_Http();
+            $request->setControllerName('aclprobe')->setActionName('existing');
+            self::assertTrue($method->invoke($plugin, $request));
+            self::assertCount(1, $cache->getValues());
+
+            $request->setActionName('missing');
+            self::assertFalse($method->invoke($plugin, $request));
+            self::assertCount(1, $cache->getValues());
+        } finally {
+            $front->setDispatcher($previousDispatcher);
+        }
+    }
+
+    /**
+     * A cached list is rebuilt once a file of the class hierarchy (a shared parent too) has changed.
+     */
+    public function testCachedActionsAreRebuiltWhenAFileOfTheHierarchyChanged(): void
+    {
+        $front = Zend_Controller_Front::getInstance();
+        $previousDispatcher = $front->getDispatcher();
+        $dispatcher = new Zend_Controller_Dispatcher_Standard();
+        $dispatcher->setControllerDirectory(__DIR__ . '/fixtures/controllers');
+        $front->setDispatcher($dispatcher);
+        $cache = new ArrayAdapter(0, false);
+        $plugin = new class($cache) extends Episciences_Auth_Plugin {
+            public function __construct(private readonly ArrayAdapter $cache)
+            {
+            }
+
+            protected function actionsCache(): ArrayAdapter
+            {
+                return $this->cache;
+            }
+        };
+        $method = new ReflectionMethod(Episciences_Auth_Plugin::class, 'actionExists');
+
+        try {
+            $request = new Zend_Controller_Request_Http();
+            $request->setControllerName('aclprobe')->setActionName('shared');
+            self::assertTrue($method->invoke($plugin, $request));
+
+            // Stale entry: the shared parent was modified since, and lost its action
+            $key = array_key_first($cache->getValues());
+            $item = $cache->getItem($key);
+            $entry = $item->get();
+            $entry['files'][(string)realpath(__DIR__ . '/fixtures/AclprobeDefaultController.php')] = 0;
+            $entry['actions'] = [];
+            $cache->save($item->set($entry));
+
+            self::assertTrue($method->invoke($plugin, $request));
+        } finally {
+            $front->setDispatcher($previousDispatcher);
         }
     }
 }

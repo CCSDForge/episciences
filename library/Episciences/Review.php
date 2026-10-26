@@ -670,15 +670,16 @@ class Episciences_Review
             return;
         }
 
-        if ($forceReload) {
-            $this->_settings = [];
-        }
+        // settings set in memory (setSetting(), setOptions()) win over the stored ones, unless reloading
+        $inMemorySettings = $forceReload ? [] : $this->_settings;
+        $this->_settings = [];
 
         // review configuration
         $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from(T_REVIEW_SETTINGS)->where('RVID = ?', $this->_rvid);
 
         $rows = Zend_Db_Table_Abstract::getDefaultAdapter()->fetchAll($select);
         $this->applySettingsFromRows($rows);
+        $this->_settings = array_replace($this->_settings, $inMemorySettings);
     }
 
     /**
@@ -2584,11 +2585,16 @@ class Episciences_Review
     }
 
     /**
-     * get review settings
+     * get review settings, loaded from the database when not loaded yet
+     * (settings set in memory, by setSetting() or setOptions(), are not replaced by the stored ones)
      * @return array
      */
     public function getSettings(): array
     {
+        if (!$this->_settingsLoaded) {
+            $this->loadSettings();
+        }
+
         return $this->_settings;
     }
 

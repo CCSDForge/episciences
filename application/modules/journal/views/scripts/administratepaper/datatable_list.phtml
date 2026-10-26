@@ -108,7 +108,7 @@ foreach ($this->list as $paper) : ?>
             >
                 <strong><?= htmlspecialchars(Ccsd_Tools::truncate(Episciences_Tools::decodeLatex($title), 75)) ?></strong>
                 <?php if ($paper->getMetadata('version') && (int)$paper->getMetadata('version') !== 1) : ?>
-                    (v<?= $paper->getMetadata('version') ?>)
+                    (v<?= $this->escape($paper->getMetadata('version')) ?>)
                 <?php endif; ?>
             </a>
         </td>

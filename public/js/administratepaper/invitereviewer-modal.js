@@ -435,7 +435,7 @@ function setInvitationValues(user, type) {
     let tpl = templates[type];
     let recipient = user.full_name + ' <' + user.email + '>';
     let subject = replaceTags(tpl.subject[locale], user, locale);
-    let body = replaceTags(tpl.body[locale], user, locale);
+    let body = replaceTags(tpl.body[locale], user, locale, true);
 
     $('#recipient').val(recipient);
     $('#subject').val(subject);
@@ -529,6 +529,8 @@ function setInvitationValues(user, type) {
             });
         }
     }
+    // The editor inserts the values of the tags as HTML
+    tags = tags.map(tag => ({ ...tag, value: htmlEntities(tag.value) }));
 
     let options = {
         init_instance_callback: function (editor) {
@@ -555,9 +557,11 @@ function setInvitationValues(user, type) {
  * @param string
  * @param reviewer
  * @param locale
+ * @param asHtml the template is HTML: the values are escaped
  * @returns {string}
  */
-function replaceTags(string, reviewer, locale) {
+function replaceTags(string, reviewer, locale, asHtml = false) {
+    const value = v => (asHtml ? htmlEntities(v) : v);
     let language = locale;
     let country = locale;
     let paper_title;
@@ -576,31 +580,51 @@ function replaceTags(string, reviewer, locale) {
 
     string = string.replaceAll(
         '%%RATING_DEADLINE%%',
-        getLocaleDate(review['rating_deadline'], { language, country })
+        value(getLocaleDate(review['rating_deadline'], { language, country }))
     );
     string = string.replaceAll(
         '%%INVITATION_DEADLINE%%',
-        translateInvitationDeadline(review['invitation_deadline'], locale)
+        value(
+            translateInvitationDeadline(review['invitation_deadline'], locale)
+        )
     );
-    string = string.replaceAll('%%REVIEW_CODE%%', review['code']);
-    string = string.replaceAll('%%REVIEW_NAME%%', review['name']);
+    string = string.replaceAll('%%REVIEW_CODE%%', value(review['code']));
+    string = string.replaceAll('%%REVIEW_NAME%%', value(review['name']));
     // if we don't have a screen_name, we use the full_name
     string = reviewer.screen_name
-        ? string.replaceAll('%%RECIPIENT_SCREEN_NAME%%', reviewer.screen_name)
-        : string.replaceAll('%%RECIPIENT_SCREEN_NAME%%', reviewer.full_name);
-    string = string.replaceAll('%%RECIPIENT_USERNAME%%', reviewer.user_name);
-    string = string.replaceAll('%%RECIPIENT_FULL_NAME%%', reviewer.full_name);
-    string = string.replaceAll('%%SENDER_FULL_NAME%%', editor.full_name);
-    string = string.replaceAll('%%SENDER_EMAIL%%', editor.email);
-    string = string.replaceAll('%%ARTICLE_ID%%', paper.id);
-    string = string.replaceAll('%%PERMANENT_ARTICLE_ID%%', paper.paperId);
-    string = string.replaceAll('%%ARTICLE_TITLE%%', paper_title);
+        ? string.replaceAll(
+              '%%RECIPIENT_SCREEN_NAME%%',
+              value(reviewer.screen_name)
+          )
+        : string.replaceAll(
+              '%%RECIPIENT_SCREEN_NAME%%',
+              value(reviewer.full_name)
+          );
+    string = string.replaceAll(
+        '%%RECIPIENT_USERNAME%%',
+        value(reviewer.user_name)
+    );
+    string = string.replaceAll(
+        '%%RECIPIENT_FULL_NAME%%',
+        value(reviewer.full_name)
+    );
+    string = string.replaceAll('%%SENDER_FULL_NAME%%', value(editor.full_name));
+    string = string.replaceAll('%%SENDER_EMAIL%%', value(editor.email));
+    string = string.replaceAll('%%ARTICLE_ID%%', value(paper.id));
+    string = string.replaceAll(
+        '%%PERMANENT_ARTICLE_ID%%',
+        value(paper.paperId)
+    );
+    string = string.replaceAll('%%ARTICLE_TITLE%%', value(paper_title));
     string = string.replaceAll(
         '%%CONTRIBUTOR_FULL_NAME%%',
-        contributor.full_name
+        value(contributor.full_name)
     );
-    string = string.replaceAll('%%CONTRIBUTOR_EMAIL%%', contributor.email);
-    string = string.replaceAll('%%AUTHORS_NAMES%%', allAuthors);
+    string = string.replaceAll(
+        '%%CONTRIBUTOR_EMAIL%%',
+        value(contributor.email)
+    );
+    string = string.replaceAll('%%AUTHORS_NAMES%%', value(allAuthors));
 
     return string;
 }
@@ -938,7 +962,6 @@ if (typeof module !== 'undefined' && module.exports) {
         showElements,
         ajaxAlertFail,
         translateInvitationDeadline,
-        submit
+        submit,
     };
 }
-

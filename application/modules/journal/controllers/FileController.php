@@ -4,6 +4,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Episciences\AppRegistry;
 use Episciences\Paper\Files\DocumentFilePolicy;
+use Episciences\Security\AccessLog;
 use Episciences\Upload\SafeFileName;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
@@ -28,11 +29,28 @@ class FileController extends DefaultController
             !preg_match('/^\w+$/D', $extension) ||
             str_ends_with($filename, '-crypto')
         ) {
+            $this->logUnsafeFlatName($filename, $extension);
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
 
         $this->loadFile(REVIEW_FILES_PATH, $filename . '.' . $extension);
+    }
+
+    /**
+     * The names refused by indexAction() are only logged when they try to reach another file:
+     * a directory part, a control character or a reserved file (arXiv encryption key).
+     */
+    private function logUnsafeFlatName(string $filename, string $extension): void
+    {
+        if (str_ends_with($filename, '-crypto')) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'reserved_file_name');
+        } elseif (
+            SafeFileName::isUnsafe($filename . '.' . $extension) ||
+            SafeFileName::hasControlCharacter($filename . $extension)
+        ) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name');
+        }
     }
 
     public function docfilesAction(): void
@@ -48,14 +66,23 @@ class FileController extends DefaultController
 
         // Other sub-directories of the document (reports, ratings, tmp...) have their own access rules
         if (!in_array($folder, DocumentFilePolicy::FOLDERS, true)) {
+            if ($folder !== '') {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'unexpected_folder', ['folder' => $folder]);
+            }
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
 
         $parentCommentId = $params['parentCommentId'] ?? null;
         $docId = (int)$params['docId'];
-        $filename = $params['filename'];
+        $filename = $params['filename'] ?? null;
         $extension = $params['extension'] ?? null;
+
+        // Missing name, or forged as an array (filename[]=...)
+        if (!is_string($filename) || ($extension !== null && !is_string($extension))) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
 
         $file = $filename;
 
@@ -66,13 +93,22 @@ class FileController extends DefaultController
         // The folder allow-list would be pointless if a segment could climb out of it (e.g. "../reports").
         // Only copy-editing files are stored by comment: elsewhere the access check, made on the file name,
         // would not be about the file served.
+        if (!SafeFileName::isBare($file)) {
+            if (SafeFileName::isUnsafe($file)) {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $file]);
+            }
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         if (
-            !SafeFileName::isBare($file) ||
-            (
-                null !== $parentCommentId &&
-                ($folder !== DocumentFilePolicy::FOLDER_COPY_EDITING || !preg_match('/^\d+$/D', (string)$parentCommentId))
-            )
+            null !== $parentCommentId &&
+            ($folder !== DocumentFilePolicy::FOLDER_COPY_EDITING || !preg_match('/^\d+$/D', (string)$parentCommentId))
         ) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'unexpected_parent_comment_id', [
+                'folder' => $folder,
+                'parent_comment_id' => $parentCommentId,
+            ]);
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
@@ -125,7 +161,7 @@ class FileController extends DefaultController
                 ? $this->findCommentTypes($docId, $file)
                 : [];
 
-            return DocumentFilePolicy::isAllowed(
+            $isAllowed = DocumentFilePolicy::isAllowed(
                 $folder,
                 $paper->isPublished(),
                 $isOwnerOrCoAuthor,
@@ -134,6 +170,16 @@ class FileController extends DefaultController
                 $isReviewer,
                 $commentTypes
             );
+
+            if (!$isAllowed) {
+                AccessLog::denied(AccessLog::NOT_FOUND_MASKED, 'document_file_access', [
+                    'docid' => $docId,
+                    'folder' => $folder,
+                    'file' => $file,
+                ]);
+            }
+
+            return $isAllowed;
         } catch (Exception $e) {
             // Refused, but not to be mistaken for a missing file
             AppRegistry::getMonoLogger()?->warning('Document file access check failed', [
@@ -164,11 +210,13 @@ class FileController extends DefaultController
             $review = $this->findJournal();
             $uid = (int)Episciences_Auth::getUid();
             $hasConflict = null;
+            $hasVersion = false;
             // Only the assignment to the paper depends on the version
             $isStaffOfEveryPaper = static::isEditorialStaffOfEveryPaper($review->getSettings());
 
             // The versions are loaded one at a time, the latest first: the first one granting access ends the check
             foreach ($this->findPaperVersions($paperId) as $paper) {
+                $hasVersion = true;
                 $isOwnerOrCoAuthor = $paper->isOwnerOrCoAuthor();
                 // Not isAssignedEditorOrCopyEditor(), which loads the latest version again: it is one of the versions
                 $isEditorialStaff = $isStaffOfEveryPaper || $paper->getEditor($uid) || $paper->getCopyEditor($uid);
@@ -191,6 +239,16 @@ class FileController extends DefaultController
                 if ($isAllowed) {
                     return true;
                 }
+            }
+
+            // No version: the paper does not exist, nothing was refused
+            if ($hasVersion) {
+                // Reading is refused with a 404, upload and removal with a 403
+                AccessLog::denied(
+                    $toWrite ? AccessLog::HTTP_FORBIDDEN : AccessLog::NOT_FOUND_MASKED,
+                    $toWrite ? 'temporary_version_file_write' : 'temporary_version_file_access',
+                    ['paperid' => $paperId]
+                );
             }
 
             return false;
@@ -294,10 +352,27 @@ class FileController extends DefaultController
         $params = $this->getRequest()->getParams();
 
         $paperId = (int)($params['docId'] ?? 0);
-        $file = ($params['filename'] ?? '') . '.' . ($params['extension'] ?? '');
+        $filename = $params['filename'] ?? '';
+        $extension = $params['extension'] ?? '';
+
+        // Forged as an array (filename[]=...)
+        if (!is_string($filename) || !is_string($extension)) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
+        $file = $filename . '.' . $extension;
+
+        if (!SafeFileName::isBare($file)) {
+            if (SafeFileName::isUnsafe($file)) {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $file]);
+            }
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
 
         // 404 rather than 403: do not disclose that the file exists
-        if ($paperId <= 0 || !SafeFileName::isBare($file) || !$this->isAllowedToReadTemporaryVersionFile($paperId)) {
+        if ($paperId <= 0 || !$this->isAllowedToReadTemporaryVersionFile($paperId)) {
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
@@ -339,15 +414,10 @@ class FileController extends DefaultController
         // which handles the "switch user" (su) case via getOriginalIdentity().
         $uid = Episciences_Auth::isLogged() ? Episciences_Auth::getUid() : null;
 
-        // Check if user has declared a conflict of interest for this paper.
-        // An unresolved response ('later') counts as a conflict too, and root/
-        // admin-only users are exempt, consistent with isConflictDetected().
-        $isCoiEnabled = (bool)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
-        $hasConflict = false;
-        if ($isCoiEnabled && $uid !== null && !Episciences_Auth::isRoot() && !Episciences_Auth::hasOnlyAdministratorRole()) {
-            $conflictResponses = [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']];
-            $hasConflict = in_array($paper->checkConflictResponse($uid), $conflictResponses, true);
-        }
+        // Same conflict of interest check as the other paper pages, including the
+        // answer of the original user when signed in as another one (su).
+        // A visitor is not logged in: no role grants them access anyway.
+        $hasConflict = $uid !== null && static::isConflictDetected($paper, $review);
 
         $isAllowed = Episciences_Rating_Report_Access::mayDownloadAttachment(
             paper: $paper,
@@ -364,7 +434,7 @@ class FileController extends DefaultController
 
         if (!$isAllowed) {
             // Return 404 rather than 403 to avoid disclosing the report's existence.
-            $this->renderNotFound();
+            $this->renderNotFound('rating_report_access');
             return;
         }
 
@@ -385,9 +455,15 @@ class FileController extends DefaultController
 
     /**
      * Renders a generic 404 "file not found" error page.
+     *
+     * @param string $deniedReason set when the 404 hides an access refusal rather than a missing file
      */
-    private function renderNotFound(): void
+    private function renderNotFound(string $deniedReason = ''): void
     {
+        if ($deniedReason !== '') {
+            AccessLog::denied(AccessLog::NOT_FOUND_MASKED, $deniedReason);
+        }
+
         $this->getResponse()->setHttpResponseCode(404);
         $this->view->message = "Fichier introuvable";
         $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
@@ -608,6 +684,9 @@ class FileController extends DefaultController
 
         // Only a flat file name is expected here; strip any directory component
         // to neutralise path traversal (e.g. "../../somefile").
+        if (SafeFileName::isUnsafe($filename)) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $filename]);
+        }
         $filename = basename($filename);
 
         if ($filename === '' || $filename === '.' || $filename === '..') {

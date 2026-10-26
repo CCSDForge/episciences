@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Security\AccessLog;
 use Episciences\User\UserNotFoundException;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
@@ -214,6 +215,7 @@ class ReviewerController extends PaperDefaultController
                 $assignment->isTmp_user() &&
                 (!$tmpUser || md5((string)$tmpUser->getEmail()) !== $request->getParam('tmp'))
             ) {
+                AccessLog::denied(AccessLog::TOKEN_INVALID, 'legacy_invitation_link', ['invitation_id' => (int)$invitation->getId()]);
                 $this->view->errors = $invalidLink;
                 return false;
             }
@@ -228,11 +230,18 @@ class ReviewerController extends PaperDefaultController
         try {
             $isValid = $this->getInvitationToken()->isValid((int)$invitation->getId(), $rowSecret, $request->getParam(InvitationToken::URL_PARAM));
         } catch (LogicException $e) {
+            // Configuration error (missing signing secret): not a forged token, kept out of the security log
             trigger_error($e->getMessage(), E_USER_WARNING);
-            $isValid = false;
+            $this->view->errors = $invalidLink;
+            return false;
         }
 
         if (!$isValid || ($assignment->isTmp_user() && !Episciences_Auth::isLogged() && !$tmpUser)) {
+            AccessLog::denied(
+                AccessLog::TOKEN_INVALID,
+                $isValid ? 'unknown_temporary_reviewer' : 'invitation_token',
+                ['invitation_id' => (int)$invitation->getId()]
+            );
             $this->view->errors = $invalidLink;
             return false;
         }

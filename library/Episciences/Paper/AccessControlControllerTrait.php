@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Episciences\Paper\ManagementRefusal;
+use Episciences\Security\AccessLog;
 use Episciences\User\SuLogger;
 
 /**
@@ -29,21 +31,55 @@ trait Episciences_Paper_AccessControlControllerTrait
      */
     protected function checkPermissions(Episciences_Review $review, Episciences_Paper $paper): bool
     {
-        // chief editors, administrator and secretary (git #235) can do whatever they want
-        if (Episciences_Auth::isSecretary()) {
-            return true;
-        } // check if editors have sufficient permission for accessing paper or changing its status
-
-        $redirection = $this->buildRedirectionMessage($review, $paper);
+        $redirection = $this->buildPermissionRedirection($review, $paper);
         $params = array_key_exists('params', $redirection) ? $redirection['params'] : [];
 
         if (!empty($redirection) && array_key_exists('message', $redirection)) {
+            $this->logPaperRedirection('paper_permissions', $paper);
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($redirection['message']);
             // redirect target is always the editor's assigned papers list, regardless of the caller
             $this->_helper->redirector->gotoUrl($this->url(array_merge(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'assigned'], $params)));
         }
 
         return empty($redirection);
+    }
+
+    /**
+     * Why the logged user may not change a paper, null when they may: paper of the current journal,
+     * neither deleted nor removed, not their own submission, no conflict of interest, editor permissions.
+     * The paper management page (viewAction) itself still shows a deleted or removed paper.
+     * @param Episciences_Review $review
+     * @param Episciences_Paper $paper
+     * @return ManagementRefusal|null
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function findManagementRefusal(Episciences_Review $review, Episciences_Paper $paper): ?ManagementRefusal
+    {
+        return match (true) {
+            $paper->getRvid() !== RVID => ManagementRefusal::OTHER_JOURNAL,
+            $paper->isDeleted() || $paper->isRemoved() => ManagementRefusal::DELETED_OR_REMOVED,
+            $paper->isOwner() || self::isConflictDetected($paper, $review) => ManagementRefusal::OWN_SUBMISSION_OR_CONFLICT,
+            $this->buildPermissionRedirection($review, $paper) !== [] => ManagementRefusal::PERMISSIONS,
+            default => null,
+        };
+    }
+
+    /**
+     * Redirection for a user lacking the permissions for a paper, empty when access is granted
+     * @param Episciences_Review $review
+     * @param Episciences_Paper $paper
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function buildPermissionRedirection(Episciences_Review $review, Episciences_Paper $paper): array
+    {
+        // chief editors, administrator and secretary (git #235) can do whatever they want
+        if (Episciences_Auth::isSecretary()) {
+            return [];
+        }
+
+        // check if editors have sufficient permission for accessing paper or changing its status
+        return $this->buildRedirectionMessage($review, $paper);
     }
 
     /**
@@ -154,9 +190,12 @@ trait Episciences_Paper_AccessControlControllerTrait
         $docId = $paper->getDocid();
 
         if ($paper->isOwner()) {
+            $this->logPaperRedirection('own_submission', $paper);
             $message = $this->buildOwnSubmissionRedirectMessage();
             $url = $this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]);
         } elseif (self::isConflictDetected($paper, $review)) {
+            // logged before a possible switch back to the original identity
+            $this->logPaperRedirection('conflict_of_interest', $paper);
             $message = $this->buildConflictRedirectMessage($paper->checkConflictResponse(Episciences_Auth::getUid()));
             $this->switchBackIfConflictConfirmationExpected();
             $url = $this->url(['controller' => 'coi', 'action' => 'report', 'id' => $docId]);
@@ -167,6 +206,18 @@ trait Episciences_Paper_AccessControlControllerTrait
         $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
         $this->_helper->redirector->gotoUrl($url);
     }
+
+    private function logPaperRedirection(string $reason, Episciences_Paper $paper): void
+    {
+        AccessLog::denied(AccessLog::ACCESS_REDIRECTED, $reason, static::paperLogContext($paper));
+    }
+
+    /**
+     * Provided by DefaultController
+     *
+     * @return array<string, mixed>
+     */
+    abstract protected static function paperLogContext(Episciences_Paper $paper): array;
 
     /**
      * Message shown when a user tries to manage their own submission,

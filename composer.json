@@ -66,6 +66,11 @@
     "symfony/test-pack": "^1.0",
     "phpunit/phpunit": "^10.5"
   },
+  "autoload-dev": {
+    "psr-4": {
+      "unit\\": "tests/unit/"
+    }
+  },
   "license": "GNU GENERAL PUBLIC LICENSE Version 3",
   "support": {
     "docs": "https://docs.episciences.org",

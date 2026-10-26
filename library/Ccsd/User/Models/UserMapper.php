@@ -363,6 +363,51 @@ class Ccsd_User_Models_UserMapper {
 
 
     /**
+     * Account matching a username, whether it has been activated or not (VALID column), without its password
+     *
+     * @return array{UID: int|string, USERNAME: string, EMAIL: string, CIV: ?string, FIRSTNAME: ?string, MIDDLENAME: ?string, LASTNAME: ?string, VALID: int|string}|null
+     */
+    public function findByUsernameIncludingInactive(string $username): ?array
+    {
+        $table = $this->getDbTable();
+        $select = $table->select()
+            ->from($table, ['UID', 'USERNAME', 'EMAIL', 'CIV', 'FIRSTNAME', 'MIDDLENAME', 'LASTNAME', 'VALID'])
+            ->where('USERNAME = ?', $username)
+            ->limit(1);
+
+        $row = $table->fetchRow($select);
+
+        return $row === null ? null : $row->toArray();
+    }
+
+    /**
+     * Whether an account has been activated (VALID column), read from the database without any cache
+     */
+    public function isActive(int $uid): bool
+    {
+        $table = $this->getDbTable();
+        $select = $table->select()->from($table, ['VALID'])->where('UID = ?', $uid);
+
+        $row = $table->fetchRow($select);
+
+        return $row !== null && (int)$row->VALID === 1;
+    }
+
+    /**
+     * Current e-mail address of an account, read from the database without any cache
+     * @return ?string null when the account does not exist
+     */
+    public function findEmail(int $uid): ?string
+    {
+        $table = $this->getDbTable();
+        $select = $table->select()->from($table, ['EMAIL'])->where('UID = ?', $uid);
+
+        $row = $table->fetchRow($select);
+
+        return $row === null ? null : (string)$row->EMAIL;
+    }
+
+    /**
      * Trouve un utilisateur avec un compte actif ou pas, par son login ou UID, sinon renvoi
      * null
      *

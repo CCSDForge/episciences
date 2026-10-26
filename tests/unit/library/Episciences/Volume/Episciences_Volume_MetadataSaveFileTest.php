@@ -78,4 +78,43 @@ final class Episciences_Volume_MetadataSaveFileTest extends TestCase
         self::assertFileExists($this->volumeDir . 'previous.png');
         self::assertSame(['previous.png'], array_map('basename', glob($this->volumeDir . '*') ?: []), 'no file is added to the volume');
     }
+
+    public function testFileNameWithADirectoryPartIsDropped(): void
+    {
+        $meta = new Episciences_Volume_Metadata();
+        $meta->setVid(self::VID);
+        $meta->setFile('../previous.png');
+
+        self::assertNull($meta->getFile());
+    }
+
+    public function testDeleteListOnlyRemovesFilesOfTheJournalUploadsAndOfTheVolume(): void
+    {
+        $outside = REVIEW_PUBLIC_PATH . 'volumes/volume-metadata-save-test-outside-' . getmypid();
+        file_put_contents($outside, 'kept');
+
+        try {
+            $meta = new Episciences_Volume_Metadata();
+            $meta->setVid(self::VID);
+            $meta->setId(42);
+            $meta->setDeletelist([
+                ['type' => 'tmp_file', 'path' => $outside],
+                ['type' => 'current_file', 'name' => '../' . basename($outside)],
+                ['type' => 'tmp_file', 'path' => $this->upload],
+                ['type' => 'current_file', 'name' => 'previous.png'],
+            ]);
+            $this->adapter->expects(self::once())->method('update')
+                ->with(T_VOLUME_METADATAS, self::anything(), ['ID = ?' => 42, 'VID = ?' => self::VID])
+                ->willReturn(1);
+
+            self::assertTrue($meta->save());
+            self::assertFileExists($outside, 'a path outside the journal uploads is not removed');
+            self::assertFileDoesNotExist($this->upload);
+            self::assertFileDoesNotExist($this->volumeDir . 'previous.png');
+        } finally {
+            if (is_file($outside)) {
+                unlink($outside);
+            }
+        }
+    }
 }
