@@ -65,6 +65,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1163](https://github.com/CCSDForge/episciences/pull/1163): Display bibliographic references count in `papers:update-document` with `-vv`.
 - [#1214](https://github.com/CCSDForge/episciences/pull/1214) Add volume editors to CrossRef XML export. When a paper belongs to a volume with assigned editors, their names and ORCID identifiers are now included in the `<journal_issue><contributors>` block.
 
+### Fixed
+
+- [#1385](https://github.com/CCSDForge/episciences/pull/1385): Temporary version: a file whose upload failed is no longer silently dropped; nothing is recorded and the author is asked to attach the files again. Failed uploads are now always displayed in the file upload widget. Answering without any file is still possible.
+- [#1386](https://github.com/CCSDForge/episciences/pull/1386): Tighten the checks of the attachment upload and removal endpoints. Copy-editing answer: like a temporary version, it is no longer saved without a file the author attached; a new file never takes the name of a file already sent. **Deployment**: set `UPLOADED_FILE.HMAC_SECRET` in `config/pwd.json` (at least 64 characters, e.g. `openssl rand -hex 32`); without it, attachment uploads are refused.
+
 ## v1.0.58 - 2026-10-25
 
 ### Changed

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences\Files\UploadedFileToken;
 use Episciences\Security\AccessLog;
 use Episciences_Acl;
 use Episciences_Paper;
@@ -28,7 +29,7 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
 {
     use SecurityLogCaptureTrait;
 
-    private const UID = 4242;
+    public const UID = 4242;
     private const PAPERID = 12;
 
     /** Conflict of interest answer of the logged user, read by the controller under test */
@@ -510,12 +511,16 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
         // The test request keeps what an earlier one posted
         $_POST = [];
 
+        // The file was uploaded by the user: its token is sent back with the removal
+        $token = new UploadedFileToken(self::UID, str_repeat('t', UploadedFileToken::MIN_SECRET_LENGTH));
+
         $request = new Zend_Controller_Request_HttpTestCase();
         $request->setMethod('POST')->setPost([
             'csrf_token' => 'tmp-files-token',
             'path' => 'tmp_attachments',
             'paperId' => (string)self::PAPERID,
             'file' => 'answer.pdf',
+            'token' => $token->sign(REVIEW_FILES_PATH . self::PAPERID . '/tmp/', 'answer.pdf'),
         ]);
         $response = new Zend_Controller_Response_HttpTestCase();
 
@@ -523,9 +528,14 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
             /** @var list<array{int, string}> */
             public array $lookedUp = [];
 
-            protected function isAllowedToHandleDocumentFiles(string $path, int $docId, int $paperId): bool
+            protected function isAllowedToHandleDocumentFiles(string $path, int $docId, int $paperId, int $pcId = 0): bool
             {
                 return true;
+            }
+
+            protected function uploadedFileToken(): UploadedFileToken
+            {
+                return new UploadedFileToken(FileControllerTemporaryVersionFileTest::UID, str_repeat('t', UploadedFileToken::MIN_SECRET_LENGTH));
             }
 
             protected function isSubmittedTemporaryVersionFile(int $paperId, string $file): bool

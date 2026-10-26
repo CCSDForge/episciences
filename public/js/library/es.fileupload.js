@@ -64,6 +64,9 @@ $(function () {
                 '<input class="upload_filename" type="hidden" name="attachments[]" value="' +
                 file_name +
                 '" />';
+            // Sent back to remove the file or to attach it to the answer: set once the upload succeeded
+            tpl_content +=
+                '<input class="upload_token" type="hidden" name="attachment_tokens[]" value="" />';
             tpl_content += '<p>';
             tpl_content +=
                 '<a target="_blank" id="href-' +
@@ -99,22 +102,24 @@ $(function () {
                 }
                 tpl.fadeOut('fast', function () {
                     let file = tpl.find('.upload_filename').val();
-                    // if not errors in ajax file/upload response
-                    //if ('' !== file) {
-                    let data = $.extend({}, formData, { file: file });
-                    // ajax call: delete
-                    ajaxDeleteFile(data).done(function () {
+                    let token = tpl.find('.upload_token').val();
+
+                    // No token: the file is not stored on the server (upload failed or cancelled)
+                    if ('' === token) {
                         tpl.remove();
-                        if ($('.errors').length > 0) {
-                            $('button[id^="submit-modal"]').prop(
-                                'disabled',
-                                true
-                            );
-                        } else {
-                            $('button[id^="submit"]').prop('disabled', false);
-                        }
+                        refreshSubmitButtons();
+                        return;
+                    }
+
+                    let data = $.extend({}, formData, {
+                        file: file,
+                        token: token,
                     });
-                    //}
+                    // ajax call: delete
+                    ajaxDeleteFile(data).always(function () {
+                        tpl.remove();
+                        refreshSubmitButtons();
+                    });
                 });
             });
 
@@ -125,40 +130,30 @@ $(function () {
         done: function (e, data) {
             let result = data.result;
 
-            if (result.status === 'error') {
-                data.context.find('.upload_filename').val('');
-                let errors = Object.values(result.messages);
-                if (errors.length) {
-                    $('button[id^="submit-modal"]').prop('disabled', true);
-                    let html =
-                        '<div style="padding-left: 15px" class="errors">';
-                    html +=
-                        '<div style="margin-bottom: 5px; color: red"><strong>' +
-                        translate('Erreurs :') +
-                        '</strong></div>';
-                    for (let i in errors) {
-                        html +=
-                            '<div style="margin-left: 10px; color: red"> * ' +
-                            errors[i] +
-                            '</div>';
-                    }
-                    html += '</div>';
-
-                    $('#file_container_errors_' + data.idCpt).html(html);
-                }
+            // Anything but an explicit success means that the file is not stored on the server
+            if (!result || result.status !== 'success') {
+                let errors =
+                    result && result.messages
+                        ? Object.values(result.messages)
+                        : [];
+                showUploadError(data, errors);
             } else {
                 if (result.filename) {
                     // replace filename string
                     data.context.find('.file_name').text(result.filename);
                     // update filename in hidden input
                     data.context.find('.upload_filename').val(result.filename);
+                    data.context
+                        .find('.upload_token')
+                        .val(result.fileToken || '');
                     //update href
                     data.context
                         .find('[id^=href-]')
                         .attr('href', result.fileUrl);
                 }
 
-                $('button[id^="submit-modal"]').prop('disabled', false);
+                data.context.removeClass('working');
+                refreshSubmitButtons();
             }
         },
 
@@ -169,21 +164,92 @@ $(function () {
             // Update the hidden input field and trigger a change
             data.context.find('progress').val(progress);
             data.context.find('.progress_value').html(progress + '%');
-
-            if (progress === 100) {
-                data.context.removeClass('working');
-            }
+            // the upload is over only once the server has answered (see done / fail)
         },
 
+        // HTTP error, expired session, network failure...
         fail: function (e, data) {
-            if (data.jqXHR.statusText === 'OK') {
-                $('button[id^="submit-modal"]').prop('disabled', false);
+            if (data.errorThrown === 'abort') {
+                // cancelled by the user (see remove_file)
+                return;
             }
 
-            data.context.addClass('error');
+            showUploadError(data, []);
         },
     });
 });
+
+/**
+ * Flag a file whose upload failed: the author is warned and has to remove it
+ * (and try again) before submitting the form
+ * @param data jQuery File Upload data of the file
+ * @param {Array} errors error messages returned by the server
+ */
+function showUploadError(data, errors) {
+    const container = data.context[0];
+    container.classList.remove('working');
+    container.classList.add('error');
+
+    // An empty name tells the server that this file is missing
+    container.querySelector('.upload_filename').value = '';
+    container.querySelector('.upload_token').value = '';
+
+    if (!errors.length) {
+        errors = [
+            translate(
+                'Le téléversement du fichier a échoué. Veuillez le retirer et réessayer.'
+            ),
+        ];
+    }
+
+    const errorsBlock = document.createElement('div');
+    errorsBlock.className = 'errors';
+    errorsBlock.setAttribute('role', 'alert');
+    errorsBlock.style.paddingLeft = '15px';
+
+    const title = document.createElement('div');
+    title.style.marginBottom = '5px';
+    title.style.color = 'red';
+    const strong = document.createElement('strong');
+    strong.textContent = translate('Erreurs :');
+    title.appendChild(strong);
+    errorsBlock.appendChild(title);
+
+    errors.forEach(function (error) {
+        const line = document.createElement('div');
+        line.style.marginLeft = '10px';
+        line.style.color = 'red';
+        // messages may contain markup: only keep their text
+        line.textContent =
+            ' * ' +
+            new DOMParser().parseFromString(String(error), 'text/html').body
+                .textContent;
+        errorsBlock.appendChild(line);
+    });
+
+    const target = document.getElementById(
+        'file_container_errors_' + data.idCpt
+    );
+    target.replaceChildren(errorsBlock);
+
+    refreshSubmitButtons();
+}
+
+/**
+ * The form can only be submitted once every upload is over and successful
+ */
+function refreshSubmitButtons() {
+    const isBlocked =
+        document.querySelector(
+            '.uploads_container .file_container.working, .uploads_container .file_container.error'
+        ) !== null;
+
+    document
+        .querySelectorAll('button[id^="submit-modal"]')
+        .forEach(function (button) {
+            button.disabled = isBlocked;
+        });
+}
 
 /**
  * @param formData
