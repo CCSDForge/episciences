@@ -76,7 +76,7 @@ class ExportController extends DefaultController
         $this->redirectFromUnpublishedVersion(
             $paper,
             '/%d/' . $request->getActionName(),
-            '/user/login/forward-controller/' . $request->getControllerName() . '/id/' . $paper->getDocid() . '/forward-action/' . $request->getActionName()
+            $this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => $request->getControllerName(), 'forward-action' => $request->getActionName(), 'id' => $paper->getDocid()])
         );
     }
 

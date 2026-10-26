@@ -161,7 +161,7 @@ class PaperController extends PaperDefaultController
         $this->view->metadata = $paper->getDatasetsFromEnrichment();
         $this->view->classifications = $paper->getClassifications();
 
-        $this->redirectFromUnpublishedVersion($paper, '/%d', '/user/login/forward-controller/paper/forward-action/view/id/' . $docId);
+        $this->redirectFromUnpublishedVersion($paper, '/%d', $this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => 'paper', 'forward-action' => 'view', 'id' => $docId]));
 
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
         $this->updatePaperStats($paper);

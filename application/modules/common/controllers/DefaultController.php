@@ -34,7 +34,7 @@ class DefaultController extends Episciences_Controller_Action
         $this->redirectFromUnpublishedVersion(
             $paper,
             '/%d/pdf',
-            '/user/login/forward-controller/paper/forward-action/pdf/id/' . $paper->getDocid(),
+            $this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => 'paper', 'forward-action' => 'pdf', 'id' => $paper->getDocid()]),
             true
         );
     }
@@ -64,7 +64,8 @@ class DefaultController extends Episciences_Controller_Action
         $publishedDocId = $this->findPublishedDocId((int)($paper->getPaperid() ?: $paper->getDocid()));
 
         if ($publishedDocId !== 0) {
-            $this->redirectToPublishedVersion(sprintf($publishedUrlFormat, $publishedDocId), $permanent);
+            $publishedUrl = sprintf($publishedUrlFormat, $publishedDocId);
+            $this->redirectToPublishedVersion($this->prefixUrl($publishedUrl), $permanent);
             return;
         }
 
@@ -107,6 +108,16 @@ class DefaultController extends Episciences_Controller_Action
             // Guests too are sent to the home page, not to the login page
             $this->redirectHomeWithoutAccess($paper);
         }
+    }
+
+    /**
+     * The journal prefix (PREFIX_URL) is prepended to the built path, as target URL mechanics require
+     * (the published version is served under the journal/portal prefix, not from the site root).
+     */
+    private function prefixUrl(string $url): string
+    {
+        $prefix = defined('PREFIX_URL') ? rtrim(PREFIX_URL, '/') : '';
+        return $prefix . '/' . ltrim($url, '/');
     }
 
     /**
