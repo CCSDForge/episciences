@@ -31,6 +31,8 @@ class StatsController extends Zend_Controller_Action
     public const NB_ACCEPTED = 'nbAccepted';
     public const SUBMISSION_ACCEPTANCE_DELAY = 'submissionAcceptanceTime';
     public const SUBMISSION_PUBLICATION_DELAY = 'submissionPublicationTime';
+    public const SUBMISSION_ACCEPTANCE_MEDIAN_DELAY = 'submissionAcceptanceTimeMedian';
+    public const SUBMISSION_PUBLICATION_MEDIAN_DELAY = 'submissionPublicationTimeMedian';
     public const NB_USERS = 'nbUsers';
     public const NB_IMPORTED_PUBLISHED = 'nbImportedPublished';
     public const NB_ACCEPTED_NOT_YET_PUBLISHED = 'nbAcceptedNotYetPublished';
@@ -288,10 +290,10 @@ class StatsController extends Zend_Controller_Action
         $this->view->submissionAcceptanceTimeUnit = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['unit'] ?? null;
         $this->view->submissionPublicationTime = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['value'] ?? null;
         $this->view->submissionPublicationTimeUnit = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['unit'] ?? null;
-        $this->view->submissionPublicationTimeMedian = $dashboard['value']['submissionPublicationTimeMedian']['value'] ?? null;
-        $this->view->submissionPublicationTimeMedianUnit = $dashboard['value']['submissionPublicationTimeMedian']['unit'] ?? null;
-        $this->view->submissionAcceptanceTimeMedian = $dashboard['value']['submissionAcceptanceTimeMedian']['value'] ?? null;
-        $this->view->submissionAcceptanceTimeMedianUnit = $dashboard['value']['submissionAcceptanceTimeMedian']['unit'] ?? null;
+        $this->view->submissionPublicationTimeMedian = $dashboard['value'][self::SUBMISSION_PUBLICATION_MEDIAN_DELAY]['value'] ?? null;
+        $this->view->submissionPublicationTimeMedianUnit = $dashboard['value'][self::SUBMISSION_PUBLICATION_MEDIAN_DELAY]['unit'] ?? null;
+        $this->view->submissionAcceptanceTimeMedian = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_MEDIAN_DELAY]['value'] ?? null;
+        $this->view->submissionAcceptanceTimeMedianUnit = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_MEDIAN_DELAY]['unit'] ?? null;
 
 
         // Charts: the imported papers are left out of the charts by year (an import makes a single year dwarf the others)
@@ -309,6 +311,12 @@ class StatsController extends Zend_Controller_Action
             $this->getImportedByYearAndRepo($startStatsAfterDate, $logger),
             array_map(fn(string $label) => $this->view->translate($label), self::CHART_LABELS)
         );
+
+        // titles of the delays chart, following the selector "moyenne" / "médiane" of the delay table
+        $charts['delays']['titles'] = [
+            'mean' => $this->view->chart4Title,
+            'median' => $this->view->translate('Délai médian en jours entre dépôt et acceptation | dépôt et publication'),
+        ];
 
         $isAvailableUsersStats = !$yearQuery && isset($dashboard['value'][self::NB_USERS]);
 
@@ -477,12 +485,26 @@ class StatsController extends Zend_Controller_Action
             ];
         }
 
-        // delays: the years without any delay are left out
+        // delays (mean and median by year): the years without any delay are left out
         $delay = static fn(string $key, $year) => isset($details[$key][$year]['delay']['value']) ? (float)$details[$key][$year]['delay']['value'] : null;
+        $delayKeys = [self::SUBMISSION_ACCEPTANCE_DELAY, self::SUBMISSION_PUBLICATION_DELAY, self::SUBMISSION_ACCEPTANCE_MEDIAN_DELAY, self::SUBMISSION_PUBLICATION_MEDIAN_DELAY];
         $delayYears = array_values(array_filter(
             $years,
-            static fn($year) => $delay(self::SUBMISSION_ACCEPTANCE_DELAY, $year) !== null || $delay(self::SUBMISSION_PUBLICATION_DELAY, $year) !== null
+            static function ($year) use ($delay, $delayKeys): bool {
+                foreach ($delayKeys as $key) {
+                    if ($delay($key, $year) !== null) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         ));
+        $delayDatasets = static fn(string $acceptanceKey, string $publicationKey): array => [
+            ['label' => $labels['acceptanceDelay'] ?? 'acceptanceDelay', 'data' => array_map(static fn($year) => $delay($acceptanceKey, $year), $delayYears)],
+            ['label' => $labels['publicationDelay'] ?? 'publicationDelay', 'data' => array_map(static fn($year) => $delay($publicationKey, $year), $delayYears)],
+        ];
+        $hasMedian = isset($details[self::SUBMISSION_ACCEPTANCE_MEDIAN_DELAY]) || isset($details[self::SUBMISSION_PUBLICATION_MEDIAN_DELAY]);
 
         return [
             'years' => $years,
@@ -490,10 +512,9 @@ class StatsController extends Zend_Controller_Action
             'byRepo' => ['datasets' => $repoDatasets, 'imported' => $imported, 'stacked' => true],
             'delays' => [
                 'years' => $delayYears,
-                'datasets' => [
-                    ['label' => $labels['acceptanceDelay'] ?? 'acceptanceDelay', 'data' => array_map(static fn($year) => $delay(self::SUBMISSION_ACCEPTANCE_DELAY, $year), $delayYears)],
-                    ['label' => $labels['publicationDelay'] ?? 'publicationDelay', 'data' => array_map(static fn($year) => $delay(self::SUBMISSION_PUBLICATION_DELAY, $year), $delayYears)],
-                ],
+                'datasets' => $delayDatasets(self::SUBMISSION_ACCEPTANCE_DELAY, self::SUBMISSION_PUBLICATION_DELAY),
+                // null when the API does not give the median by year: the chart keeps the mean
+                'medianDatasets' => $hasMedian ? $delayDatasets(self::SUBMISSION_ACCEPTANCE_MEDIAN_DELAY, self::SUBMISSION_PUBLICATION_MEDIAN_DELAY) : null,
             ],
         ];
     }

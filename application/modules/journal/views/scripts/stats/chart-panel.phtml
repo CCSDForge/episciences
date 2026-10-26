@@ -3,7 +3,7 @@
 $title = $this->title ?? '';
 ?>
 <div class="panel panel-default collapsable">
-    <div class="panel-heading"><h2 class="panel-title"><?= $title ?></h2></div>
+    <div class="panel-heading"><h2 class="panel-title"><span class="stat-chart-title"><?= $title ?></span></h2></div>
     <div class="panel-body in">
         <?php if (!empty($this->description)): ?>
             <p class="help-block small"><?= $this->escape($this->translate($this->description)) ?></p>

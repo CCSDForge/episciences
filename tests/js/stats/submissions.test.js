@@ -4,9 +4,12 @@
 
 const path = require('path');
 
-const { initStatsDelayMode } = require(
-    path.join(__dirname, '../../../public/js/stats/submissions.js')
-);
+const {
+    STATS_DELAY_MODE_EVENT,
+    initStatsDelayMode,
+    currentStatsDelayMode,
+    createDelayChart,
+} = require(path.join(__dirname, '../../../public/js/stats/submissions.js'));
 
 describe('initStatsDelayMode', function () {
     beforeEach(function () {
@@ -106,5 +109,108 @@ describe('initStatsDelayMode', function () {
         document.body.innerHTML = '<p>No selector</p>';
 
         expect(() => initStatsDelayMode()).not.toThrow();
+    });
+
+    it('sends the chosen mode to the document', function () {
+        const modes = [];
+        const listener = event => modes.push(event.detail.mode);
+        document.addEventListener(STATS_DELAY_MODE_EVENT, listener);
+
+        initStatsDelayMode();
+        document
+            .querySelector('[data-delay-mode="median"]')
+            .dispatchEvent(new Event('click'));
+
+        document.removeEventListener(STATS_DELAY_MODE_EVENT, listener);
+
+        expect(modes).toEqual(['mean', 'median']);
+        expect(currentStatsDelayMode()).toBe('median');
+    });
+});
+
+describe('currentStatsDelayMode', function () {
+    it('is the mean without a selector', function () {
+        document.body.innerHTML = '<p>No selector</p>';
+
+        expect(currentStatsDelayMode()).toBe('mean');
+    });
+});
+
+describe('createDelayChart', function () {
+    const delays = {
+        years: ['2023', '2024'],
+        datasets: [{ label: 'Acceptance', data: [57, 162] }],
+        medianDatasets: [{ label: 'Acceptance', data: [41, 150] }],
+        titles: { mean: 'Mean delay', median: 'Median delay' },
+    };
+    let destroy;
+
+    beforeEach(function () {
+        document.body.innerHTML = `
+            <div class="panel">
+                <div class="panel-heading">
+                    <h2 class="panel-title"><span class="stat-chart-title">Mean delay</span><div class="collapseButton"></div></h2>
+                </div>
+                <canvas id="submissions-delay-chart" aria-label="Mean delay"></canvas>
+            </div>
+        `;
+        destroy = jest.fn();
+        global.createBarChart = jest.fn(() => ({ destroy: destroy }));
+        global.statTranslate = jest.fn(text => text);
+    });
+
+    afterEach(function () {
+        delete global.createBarChart;
+        delete global.statTranslate;
+    });
+
+    it('plots the mean, then the median with its title', function () {
+        const show = createDelayChart('submissions-delay-chart', delays);
+
+        show('mean');
+        expect(createBarChart).toHaveBeenLastCalledWith(
+            'submissions-delay-chart',
+            delays.years,
+            delays.datasets,
+            expect.any(Object)
+        );
+
+        show('median');
+        expect(destroy).toHaveBeenCalledTimes(1);
+        expect(createBarChart).toHaveBeenLastCalledWith(
+            'submissions-delay-chart',
+            delays.years,
+            delays.medianDatasets,
+            expect.any(Object)
+        );
+        expect(document.querySelector('.stat-chart-title').textContent).toBe(
+            'Median delay'
+        );
+        expect(
+            document
+                .getElementById('submissions-delay-chart')
+                .getAttribute('aria-label')
+        ).toBe('Median delay');
+        // the collapse button of the panel is kept
+        expect(document.querySelector('.collapseButton')).not.toBeNull();
+    });
+
+    it('keeps the mean without the median by year', function () {
+        const show = createDelayChart(
+            'submissions-delay-chart',
+            Object.assign({}, delays, { medianDatasets: null })
+        );
+
+        show('median');
+
+        expect(createBarChart).toHaveBeenLastCalledWith(
+            'submissions-delay-chart',
+            delays.years,
+            delays.datasets,
+            expect.any(Object)
+        );
+        expect(document.querySelector('.stat-chart-title').textContent).toBe(
+            'Mean delay'
+        );
     });
 });

@@ -48,6 +48,13 @@ class StatsControllerChartsTest extends TestCase
             'submissionPublicationTime' => [
                 2023 => ['delay' => ['value' => 234]],
             ],
+            'submissionAcceptanceTimeMedian' => [
+                2023 => ['delay' => ['value' => 41]],
+                2024 => ['delay' => ['value' => 150]],
+            ],
+            'submissionPublicationTimeMedian' => [
+                2023 => ['delay' => ['value' => 210]],
+            ],
         ];
     }
 
@@ -126,6 +133,45 @@ class StatsControllerChartsTest extends TestCase
         $this->assertSame([57.0, 162.0], $delays['datasets'][0]['data']);
         $this->assertSame([234.0, null], $delays['datasets'][1]['data']);
         $this->assertSame('Submission → acceptance', $delays['datasets'][0]['label']);
+    }
+
+    public function testBuildChartsData_Delays_MedianByYear(): void
+    {
+        $delays = self::charts()['delays'];
+
+        // the same years and series as the mean
+        $this->assertSame([41.0, 150.0], $delays['medianDatasets'][0]['data']);
+        $this->assertSame([210.0, null], $delays['medianDatasets'][1]['data']);
+        $this->assertSame('Submission → publication', $delays['medianDatasets'][1]['label']);
+    }
+
+    /**
+     * The API does not give the median by year: no median series (the chart keeps the mean)
+     */
+    public function testBuildChartsData_Delays_WithoutMedianByYear(): void
+    {
+        $details = self::details();
+        unset($details['submissionAcceptanceTimeMedian'], $details['submissionPublicationTimeMedian']);
+
+        $delays = StatsController::buildChartsData($details, [2022, 2023, 2024], [], self::LABELS)['delays'];
+
+        $this->assertSame(['2023', '2024'], $delays['years']);
+        $this->assertNull($delays['medianDatasets']);
+    }
+
+    /**
+     * A year with a median delay only is kept
+     */
+    public function testBuildChartsData_Delays_YearWithMedianOnlyKept(): void
+    {
+        $details = self::details();
+        $details['submissionPublicationTimeMedian'][2022] = ['delay' => ['value' => 12]];
+
+        $delays = StatsController::buildChartsData($details, [2022, 2023, 2024], [], self::LABELS)['delays'];
+
+        $this->assertSame(['2022', '2023', '2024'], $delays['years']);
+        $this->assertSame([null, 57.0, 162.0], $delays['datasets'][0]['data']);
+        $this->assertSame([12.0, 210.0, null], $delays['medianDatasets'][1]['data']);
     }
 
     public function testBuildChartsData_ByYearPage(): void
