@@ -68,7 +68,7 @@ $(function () {
                 token: token,
             });
 
-            ajaxDeleteFile(data).always(function () {
+            ajaxDeleteFile(data).finally(function () {
                 $(value).parent().remove();
             });
         });
