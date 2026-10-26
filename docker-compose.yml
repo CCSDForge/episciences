@@ -79,7 +79,6 @@ services:
         - SMTP_PORT=1025
     extra_hosts:
         - "host.docker.internal:host-gateway"
-        - "api-dev.episciences.org:172.19.0.11"
     expose:
         - "9000"
     networks:
@@ -121,7 +120,6 @@ services:
         - COMPOSER_HOME=/tmp/composer
     extra_hosts:
         - "host.docker.internal:host-gateway"
-        - "api-dev.episciences.org:172.19.0.11"
     networks:
         - epi-network
     dns:
@@ -149,7 +147,6 @@ services:
         - COMPOSER_HOME=/tmp/composer
     extra_hosts:
         - "host.docker.internal:host-gateway"
-        - "api-dev.episciences.org:172.19.0.11"
     networks:
         - epi-network
     dns:
