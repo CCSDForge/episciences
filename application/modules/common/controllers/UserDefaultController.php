@@ -1313,7 +1313,7 @@ class UserDefaultController extends Episciences_Controller_Action
 
         $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
             ->addMessage($this->view->translate(self::ACCOUNT_ACTIVATED_MESSAGE));
-        $this->_helper->redirector->gotoUrl('/');
+        $this->redirect($this->url(['controller' => 'index']));
     }
 
     /**

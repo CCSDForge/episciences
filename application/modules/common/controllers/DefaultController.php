@@ -131,7 +131,7 @@ class DefaultController extends Episciences_Controller_Action
         AccessLog::denied(AccessLog::ACCESS_REDIRECTED, 'unpublished_paper', self::paperLogContext($paper));
         $message = $this->view->translate("Vous n'avez pas accès à cet article.");
         $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
-        $this->redirect('/');
+        $this->redirect($this->url(['controller' => 'index']));
     }
 
     /**
