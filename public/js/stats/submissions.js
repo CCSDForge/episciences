@@ -65,6 +65,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // event sent (on the selector, it bubbles up to the document) when the delay value to display changes
 const STATS_DELAY_MODE_EVENT = 'stats:delay-mode';
+// the chosen delay value is kept from a page to another (e.g. the page of a year)
+const STATS_DELAY_MODE_STORAGE_KEY = 'episciences.stats.delayMode';
+
+/**
+ * Delay value chosen on a previous page
+ * @returns {?string} "mean", "median" or null
+ */
+function storedStatsDelayMode() {
+    try {
+        const mode = window.localStorage.getItem(STATS_DELAY_MODE_STORAGE_KEY);
+        return mode === 'mean' || mode === 'median' ? mode : null;
+    } catch (e) {
+        // storage not available (e.g. disabled by the browser)
+        return null;
+    }
+}
+
+/**
+ * Keeps the chosen delay value for the next pages
+ * @param {string} mode
+ */
+function storeStatsDelayMode(mode) {
+    try {
+        window.localStorage.setItem(STATS_DELAY_MODE_STORAGE_KEY, mode);
+    } catch (e) {
+        // storage not available: the choice is only kept on this page
+    }
+}
 
 /**
  * Selector "moyenne" / "médiane" of the delay table: only the chosen column is shown.
@@ -102,24 +130,28 @@ function initStatsDelayMode() {
             );
         };
 
-        // the mode of the button active in the page (the median by default)
+        // the mode chosen on a previous page, otherwise the one of the button active in the page (the median by default)
         const active = group.querySelector('.stat-delay-mode-btn.active');
         selectMode(
-            active && active.getAttribute('data-delay-mode') === 'mean'
-                ? 'mean'
-                : 'median'
+            storedStatsDelayMode() ||
+                (active && active.getAttribute('data-delay-mode') === 'mean'
+                    ? 'mean'
+                    : 'median')
         );
 
         group.querySelectorAll('.stat-delay-mode-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                selectMode(btn.getAttribute('data-delay-mode'));
+                const mode = btn.getAttribute('data-delay-mode');
+                storeStatsDelayMode(mode);
+                selectMode(mode);
             });
         });
     });
 }
 
 /**
- * Delay value chosen with the selector of the delay table ("median" without selector)
+ * Delay value chosen with the selector of the delay table
+ * (without selector: the one chosen on a previous page, otherwise "median")
  * @returns {string} "mean" or "median"
  */
 function currentStatsDelayMode() {
@@ -127,7 +159,11 @@ function currentStatsDelayMode() {
         '.stat-delay-mode .stat-delay-mode-btn.active'
     );
 
-    return active && active.getAttribute('data-delay-mode') === 'mean'
+    if (!active) {
+        return storedStatsDelayMode() || 'median';
+    }
+
+    return active.getAttribute('data-delay-mode') === 'mean'
         ? 'mean'
         : 'median';
 }
@@ -193,6 +229,7 @@ function createDelayChart(canvasId, delays) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         STATS_DELAY_MODE_EVENT,
+        STATS_DELAY_MODE_STORAGE_KEY,
         initStatsDelayMode,
         currentStatsDelayMode,
         createDelayChart,

@@ -6,6 +6,7 @@ const path = require('path');
 
 const {
     STATS_DELAY_MODE_EVENT,
+    STATS_DELAY_MODE_STORAGE_KEY,
     initStatsDelayMode,
     currentStatsDelayMode,
     createDelayChart,
@@ -13,6 +14,7 @@ const {
 
 describe('initStatsDelayMode', function () {
     beforeEach(function () {
+        window.localStorage.clear();
         document.body.innerHTML = `
             <div>
                 <h3>Délai</h3>
@@ -121,6 +123,7 @@ describe('initStatsDelayMode', function () {
 
 describe('currentStatsDelayMode', function () {
     it('is the median without a selector', function () {
+        window.localStorage.clear();
         document.body.innerHTML = '<p>No selector</p>';
 
         expect(currentStatsDelayMode()).toBe('median');
@@ -203,5 +206,89 @@ describe('createDelayChart', function () {
         expect(document.querySelector('.stat-chart-title').textContent).toBe(
             'Mean delay'
         );
+    });
+});
+
+describe('delay value kept from a page to another', function () {
+    beforeEach(function () {
+        window.localStorage.clear();
+        document.body.innerHTML = `
+            <div>
+                <div class="stat-delay-mode">
+                    <button type="button" class="stat-delay-mode-btn" data-delay-mode="mean">Moyenne</button>
+                    <button type="button" class="stat-delay-mode-btn active" data-delay-mode="median">Médiane</button>
+                </div>
+                <table class="stat-delays">
+                    <tr>
+                        <td data-delay="mean">12</td>
+                        <td data-delay="median">10</td>
+                    </tr>
+                </table>
+            </div>
+        `;
+    });
+
+    afterEach(function () {
+        window.localStorage.clear();
+    });
+
+    it('keeps the chosen value', function () {
+        initStatsDelayMode();
+        document
+            .querySelector('[data-delay-mode="mean"]')
+            .dispatchEvent(new Event('click'));
+
+        expect(window.localStorage.getItem(STATS_DELAY_MODE_STORAGE_KEY)).toBe(
+            'mean'
+        );
+    });
+
+    it('shows the value chosen on a previous page', function () {
+        window.localStorage.setItem(STATS_DELAY_MODE_STORAGE_KEY, 'mean');
+
+        initStatsDelayMode();
+
+        expect(currentStatsDelayMode()).toBe('mean');
+        expect(document.querySelector('[data-delay="median"]').hidden).toBe(
+            true
+        );
+    });
+
+    it('ignores an unknown stored value', function () {
+        window.localStorage.setItem(STATS_DELAY_MODE_STORAGE_KEY, 'mode');
+
+        initStatsDelayMode();
+
+        expect(currentStatsDelayMode()).toBe('median');
+    });
+
+    it('gives the stored value without selector', function () {
+        window.localStorage.setItem(STATS_DELAY_MODE_STORAGE_KEY, 'mean');
+        document.body.innerHTML = '<p>No selector</p>';
+
+        expect(currentStatsDelayMode()).toBe('mean');
+    });
+
+    it('works without storage', function () {
+        const getItem = jest
+            .spyOn(Storage.prototype, 'getItem')
+            .mockImplementation(() => {
+                throw new Error('disabled');
+            });
+        const setItem = jest
+            .spyOn(Storage.prototype, 'setItem')
+            .mockImplementation(() => {
+                throw new Error('disabled');
+            });
+
+        initStatsDelayMode();
+        document
+            .querySelector('[data-delay-mode="mean"]')
+            .dispatchEvent(new Event('click'));
+
+        expect(currentStatsDelayMode()).toBe('mean');
+
+        getItem.mockRestore();
+        setItem.mockRestore();
     });
 });
