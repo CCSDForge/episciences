@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class UploadedFileTokenTest extends TestCase
 {
-    private const SECRET = 'uploaded-file-test-secret';
+    private const SECRET = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     private const UID = 4242;
     private const NOW = 1_800_000_000;
     private const FOLDER = '/data/journal/files/12/tmp/';
@@ -60,7 +60,7 @@ final class UploadedFileTokenTest extends TestCase
 
     public function testTokenSignedWithAnotherSecretIsRefused(): void
     {
-        $token = $this->token(self::UID, 'another-secret')->sign(self::FOLDER, 'answer.pdf');
+        $token = $this->token(self::UID, str_repeat('b', UploadedFileToken::MIN_SECRET_LENGTH))->sign(self::FOLDER, 'answer.pdf');
 
         self::assertFalse($this->token()->isValid(self::FOLDER, 'answer.pdf', $token));
     }
@@ -112,6 +112,15 @@ final class UploadedFileTokenTest extends TestCase
     public function testWithoutSecretSigningFails(): void
     {
         $token = $this->token(self::UID, '');
+
+        self::assertFalse($token->isConfigured());
+        $this->expectException(LogicException::class);
+        $token->sign(self::FOLDER, 'answer.pdf');
+    }
+
+    public function testPlaceholderOrShortSecretIsNotConfigured(): void
+    {
+        $token = $this->token(self::UID, 'generate-a-long-random-secret-eg-openssl-rand-hex-32');
 
         self::assertFalse($token->isConfigured());
         $this->expectException(LogicException::class);

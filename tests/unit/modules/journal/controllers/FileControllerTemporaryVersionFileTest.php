@@ -512,7 +512,7 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
         $_POST = [];
 
         // The file was uploaded by the user: its token is sent back with the removal
-        $token = new UploadedFileToken(self::UID, 'tmp-files-secret');
+        $token = new UploadedFileToken(self::UID, str_repeat('t', UploadedFileToken::MIN_SECRET_LENGTH));
 
         $request = new Zend_Controller_Request_HttpTestCase();
         $request->setMethod('POST')->setPost([
@@ -535,7 +535,7 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
 
             protected function uploadedFileToken(): UploadedFileToken
             {
-                return new UploadedFileToken(FileControllerTemporaryVersionFileTest::UID, 'tmp-files-secret');
+                return new UploadedFileToken(FileControllerTemporaryVersionFileTest::UID, str_repeat('t', UploadedFileToken::MIN_SECRET_LENGTH));
             }
 
             protected function isSubmittedTemporaryVersionFile(int $paperId, string $file): bool

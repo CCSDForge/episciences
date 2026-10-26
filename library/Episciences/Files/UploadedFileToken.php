@@ -15,7 +15,8 @@ use LogicException;
  * secret (UPLOADED_FILE.HMAC_SECRET in config/pwd.json). Nothing is recorded on the server: concurrent uploads
  * cannot overwrite each other's record, whatever the session handler, and nothing grows with the uploads.
  *
- * An empty global secret is a configuration error: signing throws and every token is invalid (fail closed).
+ * An empty or short global secret (under MIN_SECRET_LENGTH characters, e.g. a placeholder left as is) is a
+ * configuration error: signing throws and every token is invalid (fail closed).
  */
 final class UploadedFileToken
 {
@@ -26,6 +27,9 @@ final class UploadedFileToken
 
     /** Lifetime of a token, in seconds: longer than an answer can reasonably take to write */
     public const TTL = 86400;
+
+    /** Shortest secret accepted: 32 random bytes in hexadecimal (openssl rand -hex 32) */
+    public const MIN_SECRET_LENGTH = 64;
 
     private const ALGORITHM = 'sha256';
 
@@ -45,7 +49,7 @@ final class UploadedFileToken
 
     public function isConfigured(): bool
     {
-        return $this->secret !== '';
+        return strlen($this->secret) >= self::MIN_SECRET_LENGTH;
     }
 
     /**

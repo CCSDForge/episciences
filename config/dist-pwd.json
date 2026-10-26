@@ -91,7 +91,7 @@
     "HMAC_SECRET": ""
   },
   "UPLOADED_FILE": {
-    "HMAC_SECRET": "generate-a-long-random-secret-eg-openssl-rand-hex-32"
+    "HMAC_SECRET": ""
   },
   "USER_TOKEN": {
     "PASSWORD_RESET_TTL": 3600,

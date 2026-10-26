@@ -32,7 +32,7 @@ final class FileControllerUploadedFileTest extends TestCase
     use SecurityLogCaptureTrait;
 
     public const UID = 4242;
-    public const SECRET = 'uploaded-file-test-secret';
+    public const SECRET = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     private const CSRF_TOKEN = 'uploaded-file-csrf-token';
     private const DOCID = 31;
     private const PAPERID = 30;

@@ -74,7 +74,7 @@ To enable peer reviewers to access invitation forms without requiring immediate 
 3. **Fail-Closed Security:** Forging an invitation URL requires both direct database access (row secret) and access to server credentials in `config/pwd.json`. If `REVIEWER_INVITATION.HMAC_SECRET` is unset, token generation throws a configuration exception.
 
 ### Uploaded File Tokens
-The attachment upload endpoint returns, with each stored file, a token (`Episciences\Files\UploadedFileToken`): an HMAC-SHA256 of the user, the storage directory, the file name and an expiry date, keyed with `UPLOADED_FILE.HMAC_SECRET` in `config/pwd.json`. Removing a file, or attaching it to an answer, requires that token: users only handle the files they uploaded themselves. Nothing is stored in the session. If the secret is unset, uploads are refused (fail closed).
+The attachment upload endpoint returns, with each stored file, a token (`Episciences\Files\UploadedFileToken`): an HMAC-SHA256 of the user, the storage directory, the file name and an expiry date, keyed with `UPLOADED_FILE.HMAC_SECRET` in `config/pwd.json`. Removing a file, or attaching it to an answer, requires that token: users only handle the files they uploaded themselves. Nothing is stored in the session. If the secret is unset or shorter than 64 characters, uploads are refused (fail closed).
 
 ---
 

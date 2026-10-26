@@ -25,7 +25,7 @@ final class PaperControllerCopyEditingAnswerFilesTest extends TestCase
     use SecurityLogCaptureTrait;
 
     public const UID = 4242;
-    public const SECRET = 'copy-editing-answer-test-secret';
+    public const SECRET = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
     private string $root;
     private string $requestDir;
