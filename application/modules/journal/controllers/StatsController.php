@@ -905,7 +905,7 @@ class StatsController extends Zend_Controller_Action
      */
     private static function canSeePapers(): bool
     {
-        return Episciences_Auth::isLogged() && (Episciences_Auth::isAdministrator(RVID) || Episciences_Auth::isRoot());
+        return Episciences_Auth::isLogged() && (Episciences_Auth::isSecretary(RVID) || Episciences_Auth::isAdministrator(RVID) || Episciences_Auth::isRoot());
     }
 
     /**

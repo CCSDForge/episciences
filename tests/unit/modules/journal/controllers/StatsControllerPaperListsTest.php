@@ -6,6 +6,7 @@ namespace unit\modules\journal\controllers;
 
 use PHPUnit\Framework\TestCase;
 use StatsController;
+use Episciences_Acl;
 
 /**
  * Papers of the statistics figures (StatsController).
@@ -398,6 +399,20 @@ class StatsControllerPaperListsTest extends TestCase
         $this->assertArrayHasKey('allow.stats-papers', $acl['administrator']);
         $this->assertArrayNotHasKey('allow.stats-papers', $acl['guest']);
         $this->assertArrayNotHasKey('allow.stats-papers', $acl['member']);
+    }
+
+    public function testPapersAction_DeclaredForTheSecretary(): void
+    {
+        $acl = parse_ini_file(APPLICATION_PATH . '/configs/acl.ini', true);
+
+        // A secretary must be able to display the papers of the statistics figures
+        // (the Episciences_Auth_Plugin ACL gate forwards to error/error otherwise,
+        // which returns HTTP 403 and breaks the paper-list.js AJAX call).
+        $this->assertArrayHasKey('allow.stats-papers', $acl['secretary']);
+
+        // The resource must remain configurable per journal for the secretary role.
+        $configurableResources = constant(Episciences_Acl::class . '::CONFIGURABLE_RESOURCES');
+        $this->assertArrayHasKey('stats-papers', $configurableResources[Episciences_Acl::ROLE_SECRETARY]);
     }
 
     // -------------------------------------------------------------------------
