@@ -2273,6 +2273,7 @@ return array(
     'Soumissions, décisions et publications par année' => 'Submissions, decisions and publications by year',
     'Soumissions, décisions et publications' => 'Submissions, decisions and publications',
     "Chaque article est compté l'année de l'événement : dépôt, décision ou publication." => 'Each article is counted in the year of the event: submission, decision or publication.',
+    "Chaque article est compté l'année de son acceptation ou de sa publication (la dernière, s'il y en a eu plusieurs)." => 'Each article is counted in the year of its acceptance or of its publication (the latest one, if there were several).',
     'Soumissions (hors imports)' => 'Submissions (imports excluded)',
     'Acceptés' => 'Accepted',
     'Refusés' => 'Refused',

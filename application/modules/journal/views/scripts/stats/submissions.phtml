@@ -260,5 +260,6 @@ if (!empty($charts['byYear']['imported'])) {
     <?= $this->partial('stats/chart-panel.phtml', [
             'title' => $this->chart4Title,
             'canvasId' => 'submissions-delay-chart',
+            'description' => "Chaque article est compté l'année de son acceptation ou de sa publication (la dernière, s'il y en a eu plusieurs).",
     ]) ?>
 <?php endif; ?>
