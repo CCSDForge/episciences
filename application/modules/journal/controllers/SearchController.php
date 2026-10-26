@@ -91,9 +91,7 @@ class SearchController extends Zend_Controller_Action
 
         $facetsConfig = Episciences_Settings::getConfigFile('solr.es.facets.json');
         // Only the fields used by the facet links are accepted as filters
-        if (is_array($facetsConfig)) {
-            $search->setAllowedFilterFields(array_values(array_filter(array_column($facetsConfig, 'searchMapping'))));
-        }
+        $search->setAllowedFilterFields(Ccsd_Search_Solr_Search::getFilterFieldsFromFacetsConfig($facetsConfig));
 
         $search->queryAddSort()
             ->queryAddDefaultFilters(Episciences_Settings::getConfigFile('solr.es.defaultFilters.json'))

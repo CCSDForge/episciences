@@ -5,6 +5,7 @@ namespace unit\library\Ccsd\Search\Solr;
 use Ccsd_Search_Solr_Search;
 use PHPUnit\Framework\TestCase;
 use Solarium\QueryType\Select\Query\Query;
+use Zend_Config_Json;
 
 /**
  * Unit tests for Ccsd_Search_Solr_Search
@@ -373,6 +374,99 @@ class Ccsd_Search_Solr_SearchTest extends TestCase
         self::assertArrayHasKey('other_t', $filters);
     }
 
+    public function testQueryAddFiltersWithEmptyAllowListRejectsAllFields(): void
+    {
+        $filters = $this->runFilters(['section_id_i' => '12', 'author_fullname_t' => 'Doe'], []);
+
+        self::assertSame([], $filters);
+    }
+
+    public function testQueryAddFiltersKeepsAllowedTextFieldValue(): void
+    {
+        $filters = $this->runFilters(
+            ['author_fullname_t' => 'Jane Doe'],
+            ['author_fullname_t', 'publication_date_year_fs']
+        );
+
+        self::assertSame(['author_fullname_t'], array_keys($filters));
+        self::assertSame('Jane Doe', $this->search->getParsedSearchParamsbyKey('author_fullname_t'));
+    }
+
+    /**
+     * @dataProvider arrayParameterProvider
+     * @param array<string, mixed> $params
+     */
+    public function testQueryAddFiltersIgnoresArrayParameters(array $params): void
+    {
+        $filters = $this->runFilters($params + ['section_id_i' => '12'], ['section_id_i', 'publication_date_year_fs', 'author_fullname_t']);
+
+        self::assertSame(['section_id_i' => 'section_id_i:(12)'], $filters);
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function arrayParameterProvider(): array
+    {
+        return [
+            'unknown field' => [['rv-code' => ['foo']]],
+            'numeric field' => [['publication_date_year_fs' => ['2021']]],
+            'text field' => [['author_fullname_t' => ['Doe']]],
+        ];
+    }
+
+    public function testQueryAddFiltersDropsOutOfRangeInteger(): void
+    {
+        $filters = $this->runFilters(['volume_id_i' => '99999999999'], ['volume_id_i']);
+
+        self::assertSame([], $filters);
+    }
+
+    public function testFilterFieldsFromFacetsConfig(): void
+    {
+        $facetsConfig = [
+            1 => ['fieldName' => 'volume_fs', 'searchMapping' => 'volume_id_i'],
+            2 => ['fieldName' => 'section_fs', 'searchMapping' => 'section_id_i'],
+            3 => ['fieldName' => 'no_mapping_fs', 'searchMapping' => ''],
+            4 => ['fieldName' => 'missing_mapping_fs'],
+        ];
+
+        self::assertSame(
+            ['volume_id_i', 'section_id_i'],
+            Ccsd_Search_Solr_Search::getFilterFieldsFromFacetsConfig($facetsConfig)
+        );
+    }
+
+    public function testFilterFieldsFromMissingFacetsConfigDisablesTheAllowList(): void
+    {
+        self::assertNull(Ccsd_Search_Solr_Search::getFilterFieldsFromFacetsConfig(false));
+    }
+
+    public function testFilterFieldsFromShippedDefaultFacetsConfig(): void
+    {
+        $config = new Zend_Config_Json(
+            dirname(__DIR__, 6) . '/src/data/default/config/solr.es.facets.json',
+            null,
+            ['ignoreconstants' => true]
+        );
+
+        $fields = Ccsd_Search_Solr_Search::getFilterFieldsFromFacetsConfig($config->toArray());
+
+        self::assertSame(
+            ['volume_id_i', 'section_id_i', 'author_fullname_t', 'publication_date_year_fs'],
+            $fields
+        );
+        // Every filter link produced by the facets must survive queryAddFilters()
+        $filters = $this->runFilters([
+            'volume_id_i' => '3',
+            'section_id_i' => '12',
+            'author_fullname_t' => 'Doe',
+            'publication_date_year_fs' => '2021',
+            'rv-code' => 'foo',
+        ], $fields);
+        self::assertSame(['volume_id_i', 'section_id_i', 'author_fullname_t', 'publication_date_year_fs'], array_keys($filters));
+    }
+
     public function testQueryAddFiltersKeepsValidYears(): void
     {
         $filters = $this->runFilters(['publication_date_year_fs' => '2021 OR 2012'], ['publication_date_year_fs']);
@@ -433,6 +527,11 @@ class Ccsd_Search_Solr_SearchTest extends TestCase
             'empty' => ['', null],
             'negative' => ['-1', null],
             'mixed' => ['2021 OR x', '2021'],
+            'max int' => ['2147483647', '2147483647'],
+            'leading zeros' => ['0002021', '0002021'],
+            'above max int' => ['2147483648', null],
+            'too many digits' => ['99999999999999999999', null],
+            'out of range term dropped' => ['2021 OR 99999999999', '2021'],
         ];
     }
 }

@@ -8,6 +8,8 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
     const SOLR_DEFAULT_BOOLEAN_OPERATOR = 'AND';
     const SOLR_DEFAULT_SORT_TYPE = 'score desc';
     private const PUBLICATION_YEAR_FIELD = 'publication_date_year_fs';
+    // Solr int fields are signed 32-bit integers: larger values fail with "Invalid Number"
+    private const SOLR_MAX_INT = 2147483647;
     /**
      *
      * @var Query object
@@ -310,6 +312,24 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
     }
 
     /**
+     * Solr fields used by the facet links (the "searchMapping" of each facet)
+     *
+     * @param mixed $facetsConfig content of solr.es.facets.json, false when the file is missing
+     * @return string[]|null null when there is no facets configuration
+     */
+    public static function getFilterFieldsFromFacetsConfig($facetsConfig): ?array
+    {
+        if (!is_array($facetsConfig)) {
+            return null;
+        }
+
+        return array_values(array_filter(
+            array_column($facetsConfig, 'searchMapping'),
+            static fn($field): bool => is_string($field) && $field !== ''
+        ));
+    }
+
+    /**
      * Keep only the integer terms of a numeric filter such as "2021 OR 2012"
      * ("+" is accepted as a separator for doubly encoded URLs)
      *
@@ -319,7 +339,10 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
     {
         $terms = preg_split('/[\s+]+OR[\s+]+/', trim($filterValue, " \"+")) ?: [];
         $terms = array_values(array_filter(array_map('trim', $terms), static function (string $term): bool {
-            return $term !== '' && ctype_digit($term);
+            return $term !== ''
+                && ctype_digit($term)
+                && strlen(ltrim($term, '0')) <= strlen((string)self::SOLR_MAX_INT)
+                && (int)$term <= self::SOLR_MAX_INT;
         }));
 
         return $terms === [] ? null : implode(' OR ', array_unique($terms));
@@ -366,18 +389,22 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
 
         foreach ($searchParams as $solrFieldName => $filterValue) {
 
-            $filterParams [$solrFieldName] = explode(' OR ', $searchParams [$solrFieldName]);
+            // Array parameters (?field[]=...) are not valid filters
+            if (!is_scalar($filterValue)) {
+                continue;
+            }
 
             // Unknown fields would make Solr fail with "undefined field"
             if ($this->allowedFilterFields !== null && !in_array($solrFieldName, $this->allowedFilterFields, true)) {
                 continue;
             }
 
-            $filterValue = $this->getRawSearchParamsbyKey($solrFieldName);
+            $filterValue = (string)$filterValue;
+            $filterParams [$solrFieldName] = explode(' OR ', $filterValue);
 
             // Non-numeric values on numeric fields would make Solr fail with "Invalid Number"
-            if ($filterValue !== null && self::isNumericFilterField((string)$solrFieldName)) {
-                $filterValue = is_scalar($filterValue) ? self::sanitizeNumericFilterValue((string)$filterValue) : null;
+            if (self::isNumericFilterField((string)$solrFieldName)) {
+                $filterValue = self::sanitizeNumericFilterValue($filterValue);
             }
 
             if ($filterValue != null) {
