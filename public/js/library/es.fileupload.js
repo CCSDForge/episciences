@@ -116,7 +116,7 @@ $(function () {
                         token: token,
                     });
                     // ajax call: delete
-                    ajaxDeleteFile(data).always(function () {
+                    ajaxDeleteFile(data).finally(function () {
                         tpl.remove();
                         refreshSubmitButtons();
                     });
@@ -252,13 +252,27 @@ function refreshSubmitButtons() {
 }
 
 /**
- * @param formData
- * @returns {*}
+ * Remove an uploaded file from the server (shared with paper/copy_editing_form.js)
+ * keepalive: the request survives the page being left (see pagehide in copy_editing_form.js)
+ * @param {Object} formData
+ * @returns {Promise<void>} always resolved: the file is removed from the form whatever the answer
  */
 function ajaxDeleteFile(formData) {
-    return $.ajax({
-        url: '/file/delete',
-        type: 'POST',
-        data: formData,
+    const body = new URLSearchParams();
+
+    Object.entries(formData).forEach(function ([name, value]) {
+        if (value !== undefined && value !== null) {
+            body.append(name, value);
+        }
     });
+
+    return fetch('/file/delete', {
+        method: 'POST',
+        body: body,
+        credentials: 'same-origin',
+        keepalive: true,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+        .then(function () {})
+        .catch(function () {});
 }
