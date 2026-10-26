@@ -2695,4 +2695,8 @@ return array(
     "Maintenance commencée le %s." => "Maintenance started on %s.",
     "Maintenance à venir : le site restera consultable, mais les connexions, soumissions et modifications seront temporairement suspendues." => "Upcoming maintenance: the website will remain available for browsing, but logins, submissions and changes will be temporarily suspended.",
     "Début de maintenance prévu : %s." => "Maintenance scheduled to start on %s.",
+    // Tmp version: upload failures
+    "Votre version temporaire n'a pas été enregistrée : le téléversement d'au moins un fichier joint a échoué." => "Your temporary version has not been saved: the upload of at least one attached file failed.",
+    "Veuillez joindre à nouveau vos fichiers et recommencer." => "Please attach your files again and try again.",
+    "Le fichier n'a pas pu être enregistré. Veuillez réessayer." => "The file could not be saved. Please try again.",
 );
