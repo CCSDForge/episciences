@@ -98,6 +98,15 @@ describe('initStatsDelayMode', function () {
         expectMode('median');
     });
 
+    it('shows the selector, hidden without JavaScript', function () {
+        const group = document.querySelector('.stat-delay-mode');
+        group.hidden = true;
+
+        initStatsDelayMode();
+
+        expect(group.hidden).toBe(false);
+    });
+
     it('does nothing without a selector', function () {
         document.body.innerHTML = '<p>No selector</p>';
 

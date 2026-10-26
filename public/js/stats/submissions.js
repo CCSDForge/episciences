@@ -108,6 +108,9 @@ function initStatsDelayMode() {
             return;
         }
 
+        // the selector only works with JavaScript
+        group.hidden = false;
+
         // :target cells of the table, e.g. header <th> and value <td> of the chosen column
         const selectMode = function (mode) {
             group

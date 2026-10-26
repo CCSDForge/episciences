@@ -370,6 +370,11 @@
   // delays: a light table, numbers aligned
   .stat-delay-mode {
     display: inline-flex;
+
+    // hidden without JavaScript
+    &[hidden] {
+      display: none;
+    }
     gap: 2px;
     margin: 0 0 10px;
     padding: 3px;
