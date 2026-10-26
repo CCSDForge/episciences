@@ -44,7 +44,8 @@ class DefaultController extends Episciences_Controller_Action
      * redirected: to the published version when there is one, to the login page when they are not logged in,
      * to the home page otherwise. The redirection ends the request.
      *
-     * @param string $publishedUrlFormat URL of the published version, "%d" standing for its docid
+     * @param string $publishedUrlFormat path of the published version relative to the journal root, "%d" standing
+     * for its docid; the journal prefix is added here
      * @param string $loginUrl login page, coming back to the requested page once logged in
      * @param bool $permanent whether the move to the published version is permanent (301)
      * @throws Zend_Db_Statement_Exception
@@ -111,13 +112,20 @@ class DefaultController extends Episciences_Controller_Action
     }
 
     /**
-     * The journal prefix (PREFIX_URL) is prepended to the built path, as target URL mechanics require
-     * (the published version is served under the journal/portal prefix, not from the site root).
+     * Prepends the journal prefix to a path built from the site root: on path-based deployments
+     * the published version is served under /<rvcode>/.
      */
     private function prefixUrl(string $url): string
     {
-        $prefix = defined('PREFIX_URL') ? rtrim(PREFIX_URL, '/') : '';
-        return $prefix . '/' . ltrim($url, '/');
+        return rtrim($this->journalPrefix(), '/') . '/' . ltrim($url, '/');
+    }
+
+    /**
+     * '/<rvcode>/' for a journal, '/' for the portal
+     */
+    protected function journalPrefix(): string
+    {
+        return defined('PREFIX_URL') ? PREFIX_URL : '';
     }
 
     /**

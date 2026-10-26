@@ -62,12 +62,12 @@ final class PaperRedirectionAccessLogTest extends TestCase
         return $paper;
     }
 
-    private function defaultController(bool $isRestricted, int $publishedDocId = 0): RedirectionTestController
+    private function defaultController(bool $isRestricted, int $publishedDocId = 0, ?string $journalPrefix = null): RedirectionTestController
     {
         $controller = new RedirectionTestController(
             new Zend_Controller_Request_HttpTestCase(),
             new Zend_Controller_Response_HttpTestCase(),
-            ['restricted' => $isRestricted, 'publishedId' => $publishedDocId]
+            ['restricted' => $isRestricted, 'publishedId' => $publishedDocId, 'journalPrefix' => $journalPrefix]
         );
         $controller->view = new Zend_View();
         $controller->getHelper('redirector')->setExit(false);
@@ -214,6 +214,31 @@ final class PaperRedirectionAccessLogTest extends TestCase
         self::assertSame(302, $controller->getResponse()->getHttpResponseCode());
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function journalPrefixes(): iterable
+    {
+        yield 'journal' => ['/rvcode/'];
+        yield 'portal' => ['/'];
+    }
+
+    /**
+     * On path-based deployments the published version is served under the journal prefix
+     * @dataProvider journalPrefixes
+     */
+    public function testPublishedVersionIsServedUnderTheJournalPrefix(string $journalPrefix): void
+    {
+        $file = $this->defaultController(true, 15, $journalPrefix);
+        $file->checkFile($this->paper());
+
+        $page = $this->defaultController(true, 15, $journalPrefix);
+        $page->checkPage($this->paper());
+
+        self::assertSame($journalPrefix . '15/pdf', self::redirectionOf($file));
+        self::assertSame($journalPrefix . '15', self::redirectionOf($page));
+    }
+
     public function testAllowedFileIsNotLookedUpNorLogged(): void
     {
         $controller = $this->defaultController(false);
@@ -276,6 +301,11 @@ final class RedirectionTestController extends \DefaultController
     protected function isRestrictedAccess(Episciences_Paper $paper): bool
     {
         return (bool)$this->getInvokeArg('restricted');
+    }
+
+    protected function journalPrefix(): string
+    {
+        return $this->getInvokeArg('journalPrefix') ?? parent::journalPrefix();
     }
 
     /** @var list<int> paper ids whose published version was looked up */
