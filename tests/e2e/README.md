@@ -26,6 +26,7 @@ npx playwright test tests/e2e/specs/07-review/   # one directory
 npx playwright test -g "minor revision"          # by test title
 yarn test:e2e:ui                                 # interactive mode
 yarn test:e2e:report                             # last HTML report
+yarn lint:e2e                                    # ESLint with eslint-plugin-playwright, run by the CI
 ```
 
 Before the tests, `global-setup.js` runs `php scripts/console.php app:e2e-seed --reset`:
@@ -97,7 +98,8 @@ tests/e2e/
   retry, as a failed workflow cannot run again on the same data until the next reset.
 - **Assert, do not guard.** Do not wrap actions in `if (await locator.isVisible())`: a test that
   silently skips its actions passes for the wrong reason. Conditions are only legitimate for journal
-  settings (for instance the data descriptor some journals require at submission).
+  settings (for instance the data descriptor some journals require at submission). `yarn lint:e2e`
+  flags conditional assertions, fixed waits and `networkidle`.
 - **TinyMCE editors.** Some buttons are only enabled by an `input` event of the editor: type into
   its iframe (`frameLocator('#<id>_ifr').locator('body')`) rather than calling `setContent()`.
 

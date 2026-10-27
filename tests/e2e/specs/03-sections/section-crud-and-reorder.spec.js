@@ -27,8 +27,7 @@ test.describe('Section (Rubrique) Administration & Reordering', () => {
         await submitBtn.click();
 
         // Should redirect back to section list with success message
-        await secretaryPage.waitForLoadState('networkidle');
-        expect(secretaryPage.url()).toContain('section');
+        await expect(secretaryPage).not.toHaveURL(/section\/add/);
 
         // Verify the created section is in the table
         const createdRow = secretaryPage.locator(`table#sections tr:has-text("${testSectionTitle}")`).first();
@@ -59,7 +58,6 @@ test.describe('Section (Rubrique) Administration & Reordering', () => {
         await expect(confirmBtn).toBeVisible({ timeout: 5000 });
         await confirmBtn.click();
 
-        await secretaryPage.waitForLoadState('networkidle');
         await expect(secretaryPage.locator(`table#sections tr:has-text("${testSectionTitle}")`)).not.toBeVisible({ timeout: 10000 });
     });
 });

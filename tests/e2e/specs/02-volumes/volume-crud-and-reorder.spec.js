@@ -35,8 +35,7 @@ test.describe('Volume administration and reordering', () => {
         await submitBtn.click();
 
         // Should redirect back to volume list with success message
-        await secretaryPage.waitForLoadState('networkidle');
-        expect(secretaryPage.url()).toContain('volume/list');
+        await expect(secretaryPage).toHaveURL(/volume\/list/);
 
         // Verify the created volume is in the table
         const createdRow = secretaryPage.locator(`table#volumes tr:has-text("${testVolumeTitle}")`).first();
@@ -68,7 +67,6 @@ test.describe('Volume administration and reordering', () => {
         await expect(confirmBtn).toBeVisible({ timeout: 5000 });
         await confirmBtn.click();
 
-        await secretaryPage.waitForLoadState('networkidle');
         // Ensure volume was removed
         await expect(secretaryPage.locator(`table#volumes tr:has-text("${testVolumeTitle}")`)).not.toBeVisible({ timeout: 10000 });
     });

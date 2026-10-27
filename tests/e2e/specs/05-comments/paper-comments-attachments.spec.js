@@ -5,13 +5,9 @@ test.describe('Comment attachment deletion security', () => {
         // Direct GET request must be rejected
         await secretaryPage.goto('comments/removefilecomment?docid=8&pcid=1&file=test.pdf');
 
-        // Should be redirected to root or show error flash message
+        // Redirected to the home page with an error flash message
         expect(secretaryPage.url()).not.toContain('comments/removefilecomment');
-        const alert = secretaryPage.locator('.alert-danger, .alert-warning, .alert');
-        if (await alert.count() > 0) {
-            const alertText = await alert.first().textContent();
-            expect(alertText).toMatch(/Invalid request method|invalide|expiré|erreur/i);
-        }
+        await expect(secretaryPage.getByText('Invalid request method.').first()).toBeVisible();
     });
 
     test('rejects POST to removefilecomment with invalid or missing CSRF token', async ({ secretaryPage }) => {

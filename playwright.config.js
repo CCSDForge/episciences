@@ -32,10 +32,15 @@ module.exports = defineConfig({
     workers: process.env.CI ? 1 : undefined,
     reporter: [
         ['list'],
-        ['html', { outputFolder: 'playwright-report', open: 'never' }]
+        ['html', { outputFolder: 'playwright-report', open: 'never' }],
+        // Failures annotated on the pull request diff
+        ...(process.env.CI ? [['github']] : [])
     ],
     use: {
         baseURL,
+        // The interface language follows the browser one, and dates are rendered in the local time
+        locale: 'en-US',
+        timezoneId: 'Europe/Paris',
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',

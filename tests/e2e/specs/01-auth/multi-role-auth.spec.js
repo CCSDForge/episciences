@@ -7,8 +7,7 @@ test.describe('Multi-Role Interface Access & Permissions', () => {
         expect(response.status()).toBe(200);
 
         // Verification of author elements
-        const bodyText = await authorPage.textContent('body');
-        expect(bodyText).toMatch(/Articles|Mes articles|Dashboard|Espace auteur/i);
+        await expect(authorPage.locator('body')).toContainText(/Articles|Mes articles|Dashboard|Espace auteur/i);
 
         // Author should be rejected when trying to access admin paper list
         const adminResponse = await authorPage.goto('administratepaper/list');
@@ -48,7 +47,7 @@ test.describe('Multi-Role Interface Access & Permissions', () => {
         // Secretary user list
         const usersResponse = await secretaryPage.goto('user/list');
         expect(usersResponse.status()).toBe(200);
-        await expect(usersResponse.url()).toContain('user/list');
+        expect(usersResponse.url()).toContain('user/list');
     });
 
     test('administrator / chief editor can access review settings', async ({ adminPage }) => {

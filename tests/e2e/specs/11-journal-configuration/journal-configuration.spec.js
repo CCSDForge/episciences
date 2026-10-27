@@ -68,6 +68,8 @@ test.describe('Journal configuration', () => {
         await adminPage.goto('review/settings');
         const initialValues = await formValues(settingsForm);
         const initialSectionChoice = await adminPage.locator('#canPickSEction').inputValue();
+        // The test switches this setting off: it has nothing to check if the journal already forbids it
+        // eslint-disable-next-line playwright/no-skipped-test
         test.skip(initialSectionChoice === '0', 'The journal already forbids authors to choose a section');
 
         try {
