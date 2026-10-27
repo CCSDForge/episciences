@@ -79,6 +79,9 @@ final class Episciences_PapersManager_DeleteTest extends TestCase
     /** @var array<int, int> dataset metadata of each paper version */
     private array $datasetsMetaIds = [];
 
+    /** @var array<int, int> reviewer invitation of each paper version, kept once its assignment is deleted */
+    private array $invitationIds = [];
+
     /** @var array<int, int> temporary reviewer of each paper version */
     private array $tmpUserIds = [];
 
@@ -300,6 +303,7 @@ final class Episciences_PapersManager_DeleteTest extends TestCase
             'EXPIRATION_DATE' => self::DATE,
         ]);
         $invitationId = (int)$this->db->lastInsertId();
+        $this->invitationIds[$docId] = $invitationId;
         $this->db->insert(T_USER_INVITATION_ANSWER, ['ID' => $invitationId, 'ANSWER' => 'yes', 'ANSWER_DATE' => self::DATE]);
         $this->db->insert(T_USER_INVITATION_ANSWER_DETAIL, ['ID' => $invitationId, 'NAME' => 'comment', 'VALUE' => 'ok']);
     }
@@ -348,8 +352,7 @@ final class Episciences_PapersManager_DeleteTest extends TestCase
      */
     private function countVersionRows(int $docId): array
     {
-        $assignmentIds = $this->assignmentIds($docId);
-        $invitationIds = $this->invitationIds($assignmentIds);
+        $invitationId = $this->invitationIds[$docId] ?? 0;
 
         return [
             'files' => $this->countWhere(T_FILES, 'docid = ?', $docId),
@@ -361,10 +364,10 @@ final class Episciences_PapersManager_DeleteTest extends TestCase
             'mail_log' => $this->countWhere(T_MAIL_LOG, 'DOCID = ?', $docId),
             'paper_citations' => $this->countWhere(T_PAPER_CITATIONS, 'docid = ?', $docId),
             'paper_classifications' => $this->countWhere(T_PAPER_CLASSIFICATIONS, 'docid = ?', $docId),
-            'assignments' => count($assignmentIds),
-            'invitations' => count($invitationIds),
-            'answers' => $invitationIds === [] ? 0 : $this->countWhere(T_USER_INVITATION_ANSWER, 'ID IN (?)', $invitationIds),
-            'answer details' => $invitationIds === [] ? 0 : $this->countWhere(T_USER_INVITATION_ANSWER_DETAIL, 'ID IN (?)', $invitationIds),
+            'assignments' => count($this->assignmentIds($docId)),
+            'invitations' => $this->countWhere(T_USER_INVITATIONS, 'ID = ?', $invitationId),
+            'answers' => $this->countWhere(T_USER_INVITATION_ANSWER, 'ID = ?', $invitationId),
+            'answer details' => $this->countWhere(T_USER_INVITATION_ANSWER_DETAIL, 'ID = ?', $invitationId),
             'temporary reviewers' => $this->countWhere(T_TMP_USER, 'ID = ?', $this->tmpUserIds[$docId] ?? 0),
         ];
     }
@@ -401,28 +404,14 @@ final class Episciences_PapersManager_DeleteTest extends TestCase
         );
     }
 
-    /**
-     * @param array<int|string> $assignmentIds
-     * @return array<int|string>
-     */
-    private function invitationIds(array $assignmentIds): array
-    {
-        if ($assignmentIds === []) {
-            return [];
-        }
-
-        return $this->db->fetchCol($this->db->select()->from(T_USER_INVITATIONS, ['ID'])->where('AID IN (?)', $assignmentIds));
-    }
-
     private function deleteAssignmentRows(int $docId): void
     {
+        $invitationId = $this->invitationIds[$docId] ?? 0;
+        $this->db->delete(T_USER_INVITATION_ANSWER_DETAIL, ['ID = ?' => $invitationId]);
+        $this->db->delete(T_USER_INVITATION_ANSWER, ['ID = ?' => $invitationId]);
+        $this->db->delete(T_USER_INVITATIONS, ['ID = ?' => $invitationId]);
+
         $assignmentIds = $this->assignmentIds($docId);
-        $invitationIds = $this->invitationIds($assignmentIds);
-        if ($invitationIds !== []) {
-            $this->db->delete(T_USER_INVITATION_ANSWER_DETAIL, ['ID IN (?)' => $invitationIds]);
-            $this->db->delete(T_USER_INVITATION_ANSWER, ['ID IN (?)' => $invitationIds]);
-            $this->db->delete(T_USER_INVITATIONS, ['ID IN (?)' => $invitationIds]);
-        }
         if ($assignmentIds !== []) {
             $this->db->delete(T_ASSIGNMENTS, ['ID IN (?)' => $assignmentIds]);
         }
