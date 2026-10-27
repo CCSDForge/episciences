@@ -1,8 +1,8 @@
 name: End-to-End Tests (Playwright)
 
-# Manual trigger only until the workflow has had a first green run on GitHub Actions; it can then
-# be enabled on pull requests (see tests/e2e/README.md).
 on:
+  pull_request:
+    branches: [ staging, main ]
   workflow_dispatch:
 
 jobs:

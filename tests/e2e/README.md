@@ -107,5 +107,5 @@ tests/e2e/
 `php -S` (`.github/scripts/e2e-router.php` mirrors `public/.htaccess`) under `dev.episciences.org`,
 which absolute URLs require, and runs the suite with `E2E_PHP_EXEC=php`.
 
-It is only triggered manually (`workflow_dispatch`) until it has had a first green run; it can then
-be enabled on pull requests.
+It runs on pull requests targeting `staging` or `main`, and can be triggered manually
+(`workflow_dispatch`).
