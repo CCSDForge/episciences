@@ -2473,11 +2473,29 @@ class Episciences_PapersManager
             $db->delete(T_REVIEWER_REPORTS, ['DOCID = ?' => $docid]);
             $db->delete(T_PAPER_SETTINGS, ['DOCID = ?' => $docid]);
             $db->delete(T_ALIAS, ['DOCID = ?' => $docid]);
+            // paper_citations references PAPERS: remove it first
+            $db->delete(T_PAPER_CITATIONS, ['docid = ?' => $docid]);
             $db->delete(T_PAPERS, ['DOCID = ?' => $docid]);
             $db->delete(T_VOLUME_PAPER, ['DOCID = ?' => $docid]);
             $db->delete(T_PAPER_LICENCES, ['docid = ?' => $docid]);
-            $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
-            $db->delete(T_PAPER_PROJECTS, ['paperid = ?' => $paper->getPaperid()]);
+            // data_descriptor references files: remove it first
+            $db->delete(T_PAPER_DATA_DESCRIPTOR, ['docid = ?' => $docid]);
+            $db->delete(T_FILES, ['docid = ?' => $docid]);
+            $db->delete(T_PAPER_FILES, ['doc_id = ?' => $docid]);
+            $db->delete(T_PAPER_DATASETS, ['doc_id = ?' => $docid]);
+            $db->delete(T_PAPER_CLASSIFICATIONS, ['docid = ?' => $docid]);
+            self::deleteAssignments($db, (int)$docid);
+
+            // These tables are keyed by paperid, shared by every version of the paper:
+            // they go with the last remaining version only.
+            $paperId = (int)$paper->getPaperid();
+            if (!self::hasOtherVersions($db, $paperId)) {
+                $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paperId]);
+                $db->delete(T_PAPER_PROJECTS, ['paperid = ?' => $paperId]);
+                $db->delete(T_PAPER_CONFLICTS, ['paper_id = ?' => $paperId]);
+                $db->delete(T_PAPER_AUTHORS, ['paperid = ?' => $paperId]);
+                $db->delete(T_DOI_QUEUE, ['paperid = ?' => $paperId]);
+            }
 
             $db->commit();
         } catch (Exception $e) {
@@ -2499,9 +2517,6 @@ class Episciences_PapersManager
             Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
         }
 
-        // TODO: delete user assignments
-        // TODO: delete user invitations
-        // TODO: delete user invitation answers
         // TODO: if published paper, update HAL metadata
 
         // Enqueue Next.js cache revalidation for deleted article
@@ -2514,6 +2529,46 @@ class Episciences_PapersManager
 
         return true;
 
+    }
+
+    /**
+     * Delete the assignments of a paper version (reviewers, editors, copy editors...),
+     * with the invitations hanging off them and their answers.
+     */
+    private static function deleteAssignments(Zend_Db_Adapter_Abstract $db, int $docId): void
+    {
+        $assignmentIds = $db->fetchCol(
+            $db->select()
+                ->from(T_ASSIGNMENTS, ['ID'])
+                ->where('ITEM = ?', Episciences_User_Assignment::ITEM_PAPER)
+                ->where('ITEMID = ?', $docId)
+        );
+
+        if ($assignmentIds === []) {
+            return;
+        }
+
+        $invitationIds = $db->fetchCol(
+            $db->select()->from(T_USER_INVITATIONS, ['ID'])->where('AID IN (?)', $assignmentIds)
+        );
+
+        if ($invitationIds !== []) {
+            $db->delete(T_USER_INVITATION_ANSWER_DETAIL, ['ID IN (?)' => $invitationIds]);
+            $db->delete(T_USER_INVITATION_ANSWER, ['ID IN (?)' => $invitationIds]);
+            $db->delete(T_USER_INVITATIONS, ['ID IN (?)' => $invitationIds]);
+        }
+
+        $db->delete(T_ASSIGNMENTS, ['ID IN (?)' => $assignmentIds]);
+    }
+
+    /**
+     * Whether another version of the paper is still in the database (to be called once the deleted version is gone).
+     */
+    private static function hasOtherVersions(Zend_Db_Adapter_Abstract $db, int $paperId): bool
+    {
+        return (bool)$db->fetchOne(
+            $db->select()->from(T_PAPERS, [new Zend_Db_Expr('1')])->where('PAPERID = ?', $paperId)->limit(1)
+        );
     }
 
     /**
