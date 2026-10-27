@@ -8,8 +8,7 @@ on:
 jobs:
   playwright-e2e:
     name: Playwright E2E Tests
-    # Playwright 1.60 cannot install its browsers on ubuntu-latest (26.04)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     env:
       PWD_PATH: ${{ github.workspace }}/tests/config

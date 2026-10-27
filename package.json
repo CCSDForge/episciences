@@ -59,7 +59,7 @@
     "uuid": "^11.1.1"
   },
   "dependencies": {
-    "@playwright/test": "^1.60.0",
+    "@playwright/test": "^1.64.1",
     "altcha": "3.1.0",
     "filepond": "4.32.12",
     "filepond-plugin-file-validate-size": "2.2.8",
