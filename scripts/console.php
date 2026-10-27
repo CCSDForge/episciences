@@ -33,6 +33,7 @@ require_once __DIR__ . '/UpdateGeoIpCommand.php';
 require_once __DIR__ . '/GenerateDownloadKpiCommand.php';
 require_once __DIR__ . '/UpdatePapersDocumentCommand.php';
 require_once __DIR__ . '/CleanHalRecordDescriptionsCommand.php';
+require_once __DIR__ . '/DeletePapersCommand.php';
 require_once __DIR__ . '/UpdateTranslationsCommand.php';
 require_once __DIR__ . '/GetDoiCommand.php';
 require_once __DIR__ . '/Command/AbstractCommand.php';
@@ -126,6 +127,7 @@ $application->addCommand(new UpdatePapersDocumentCommand());
 $application->addCommand(new UpdateLicensesCommand());
 $application->addCommand(new ImportSpdxLicenseListCommand());
 $application->addCommand(new CleanHalRecordDescriptionsCommand());
+$application->addCommand(new DeletePapersCommand());
 
 // Translation commands
 $application->addCommand(new UpdateTranslationsCommand());

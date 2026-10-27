@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 
+- [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Console command `papers:delete` deletes paper versions of a journal (`--rvcode`), with their files and every related row; it asks to type a confirmation phrase, so it never deletes in non-interactive mode, and `--dry-run` only checks the papers. Deletions and failures, with their cause, are logged to `papers_delete-YYYY-MM-DD.log`. Replaces `scripts/DeletePaper.php`.
 - [#1362](https://github.com/CCSDForge/episciences/pull/1362): Console commands `user:purge-expired-tokens` (daily cron) and `user:import-legacy-tokens` (one-off, right after creating the `user_token` table, see `src/mysql/2026-10-23-create-user-token-table.sql`).
 - [#1361](https://github.com/CCSDForge/episciences/pull/1361): Security log of denied accesses: a daily JSON file (`logs/security-YYYY-MM-DD.log`, kept 180 days) records access refusals, CSRF failures, invalid tokens, unsafe file paths and failed logins, as well as existing pages missing from the access rules.
 - [#1308](https://github.com/CCSDForge/episciences/pull/1308): BAOBAB submissions now store the licence, the ROR of affiliations (including an organisational author's own ROR) and the translated abstracts filed as other descriptions.
@@ -69,6 +70,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#1385](https://github.com/CCSDForge/episciences/pull/1385): Temporary version: a file whose upload failed is no longer silently dropped; nothing is recorded and the author is asked to attach the files again. Failed uploads are now always displayed in the file upload widget. Answering without any file is still possible.
 - [#1386](https://github.com/CCSDForge/episciences/pull/1386): Tighten the checks of the attachment upload and removal endpoints. Copy-editing answer: like a temporary version, it is no longer saved without a file the author attached; a new file never takes the name of a file already sent. **Deployment**: set `UPLOADED_FILE.HMAC_SECRET` in `config/pwd.json` (at least 64 characters, e.g. `openssl rand -hex 32`); without it, attachment uploads are refused.
+- [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Deleting a paper version also deletes its authors, declared files, data descriptor, DOI queue entry, assignments with their invitations and answers, reviewers without an account no longer invited to any paper, repository files, linked datasets with their metadata, citations, classifications, SPDX licence code and sent e-mails log. The deletion is all or nothing: if one row cannot be deleted, nothing is. Rows shared by every version of a paper (authors, DOI queue, volume position, projects, conflicts of interest) are deleted with the last version only: deleting one version no longer removes the volume position and projects of the others. A cited paper can now be deleted.
+
+### Removed
+
+- [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Remove the legacy `scripts/DeletePaper.php` script (replaced by the `papers:delete` console command), which reported a deletion as successful even when it had failed.
 
 ## v1.0.58 - 2026-10-25
 
