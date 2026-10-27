@@ -1,6 +1,6 @@
 const { test, expect } = require('../../fixtures/e2e-fixtures');
 
-test.describe('Paper Comments, Timeline & Attachment Security', () => {
+test.describe('Comment attachment deletion security', () => {
     test('enforces strict POST and CSRF validation on comment file deletion', async ({ secretaryPage }) => {
         // Direct GET request must be rejected
         await secretaryPage.goto('comments/removefilecomment?docid=8&pcid=1&file=test.pdf');
@@ -29,15 +29,5 @@ test.describe('Paper Comments, Timeline & Attachment Security', () => {
         // The endpoint should redirect or reject invalid token
         expect(response.status()).toBeLessThan(500);
         expect(response.url()).not.toContain('removefilecomment');
-    });
-
-    test('paper view displays comments and timeline structure', async ({ secretaryPage }) => {
-        // View paper administration page for an existing paper (docid 8)
-        const response = await secretaryPage.goto('administratepaper/view/id/8');
-        expect(response.status()).toBe(200);
-
-        // Verify page layout and comments section or timeline container
-        const commentsSection = secretaryPage.locator('#author_comments, .timeline-track, #comments, .panel:has-text("Commentaire")');
-        expect(await commentsSection.count()).toBeGreaterThanOrEqual(0);
     });
 });

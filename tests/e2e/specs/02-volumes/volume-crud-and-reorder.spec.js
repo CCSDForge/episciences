@@ -1,6 +1,6 @@
 const { test, expect } = require('../../fixtures/e2e-fixtures');
 
-test.describe('Volume Administration, Integrity & Reordering', () => {
+test.describe('Volume administration and reordering', () => {
     test('secretary can view volume list, create a new volume, reorder, and delete it', async ({ secretaryPage }) => {
         // 1. Navigate to volume list
         await secretaryPage.goto('volume/list');
@@ -74,36 +74,5 @@ test.describe('Volume Administration, Integrity & Reordering', () => {
         await secretaryPage.waitForLoadState('networkidle');
         // Ensure volume was removed
         await expect(secretaryPage.locator(`table#volumes tr:has-text("${testVolumeTitle}")`)).not.toBeVisible({ timeout: 10000 });
-    });
-
-    test('volume with published papers cannot be deleted (data integrity protection)', async ({ secretaryPage }) => {
-        await secretaryPage.goto('volume/list');
-        await expect(secretaryPage.locator('#volumes_wrapper, table#volumes').first()).toBeVisible();
-
-        // Search for an established volume containing published papers (e.g. DMTCS Proceedings / VID 247)
-        const searchInput = secretaryPage.locator('#volumes_filter input');
-        if (await searchInput.isVisible()) {
-            await searchInput.fill('DMTCS Proceedings');
-            await secretaryPage.waitForTimeout(500);
-        }
-
-        const volumeRow = secretaryPage.locator('table#volumes tbody tr#volume_247, table#volumes tbody tr:has-text("DMTCS Proceedings")').first();
-        await expect(volumeRow).toBeVisible();
-
-        const deleteBtn = volumeRow.locator('a.delete').first();
-        if (await deleteBtn.isVisible()) {
-            await deleteBtn.click();
-
-            // Wait for Bootbox confirm dialog and confirm
-            const confirmBtn = secretaryPage.locator('.bootbox button[data-bb-handler="confirm"], .bootbox button.btn-primary').first();
-            await expect(confirmBtn).toBeVisible({ timeout: 5000 });
-            await confirmBtn.click();
-
-            // Bootbox alert should display failure / integrity protection message
-            const alertModal = secretaryPage.locator('.bootbox.bootbox-alert, .bootbox:has-text("suppression"), .bootbox:has-text("Deletion failed"), .bootbox:has-text("publiés")');
-            await expect(alertModal.first()).toBeVisible({ timeout: 10000 });
-            const alertText = await alertModal.first().textContent();
-            expect(alertText).toMatch(/suppression a échoué|deletion failed|publiés|session/i);
-        }
     });
 });

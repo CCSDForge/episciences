@@ -18,13 +18,17 @@ const baseURL = rawBaseUrl.endsWith('/') ? rawBaseUrl : `${rawBaseUrl}/`;
 
 module.exports = defineConfig({
     testDir: './tests/e2e',
+    // Seeds the E2E accounts and removes what previous runs left in the journal
+    globalSetup: require.resolve('./tests/e2e/global-setup.js'),
     timeout: 30 * 1000,
     expect: {
         timeout: 5000
     },
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
+    // No retry: an editorial workflow test cannot run twice on the same data (an arXiv preprint is
+    // submitted only once), the global setup has to clean the journal first
+    retries: 0,
     workers: process.env.CI ? 1 : undefined,
     reporter: [
         ['list'],
@@ -32,21 +36,15 @@ module.exports = defineConfig({
     ],
     use: {
         baseURL,
-        trace: 'on-first-retry',
+        trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
-        video: 'on-first-retry',
+        video: 'retain-on-failure',
         ignoreHTTPSErrors: true // Required for local self-signed certificates in dev/Traefik
     },
     projects: [
         {
-            name: 'setup:auth',
-            testMatch: /.*\.setup\.js/
-        },
-        {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'] },
-            dependencies: ['setup:auth'],
-            testIgnore: /.*\.setup\.js/
+            use: { ...devices['Desktop Chrome'] }
         }
     ]
 });

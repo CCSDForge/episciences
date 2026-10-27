@@ -1,20 +1,25 @@
 name: End-to-End Tests (Playwright)
 
+# Manual trigger only until the workflow has had a first green run on GitHub Actions; it can then
+# be enabled on pull requests (see tests/e2e/README.md).
 on:
-  pull_request:
-    branches: [ staging, main ]
-    paths:
-      - 'application/**'
-      - 'library/**'
-      - 'public/**'
-      - 'tests/e2e/**'
-      - 'playwright.config.js'
   workflow_dispatch:
 
 jobs:
   playwright-e2e:
     name: Playwright E2E Tests
     runs-on: ubuntu-latest
+
+    env:
+      PWD_PATH: ${{ github.workspace }}/tests/config
+      # Absolute URLs built by the application use https?://<rvcode>.episciences.org (DOMAIN
+      # constant): the journal is served under that name, resolved to the runner in /etc/hosts
+      BASE_URL: http://dev.episciences.org/
+      MAILPIT_URL: http://127.0.0.1:8025/
+      # PHP runs on the runner itself, not in the docker-compose container
+      E2E_PHP_EXEC: php
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: 1025
 
     services:
       mysql:
@@ -40,7 +45,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, zip
+          extensions: mbstring, xml, xsl, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, zip, curl
           tools: composer:v2
 
       - name: Install PHP dependencies
@@ -61,10 +66,15 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences_auth < tests/fixtures/schema-cas.sql
           php .github/scripts/setup-test-config.php
 
-      - name: Seed E2E test users
-        run: php scripts/console.php app:e2e-seed
-        env:
-          PWD_PATH: ${{ github.workspace }}/tests/config
+      - name: Use the MySQL authentication adapter
+        # The E2E accounts only exist in the local authentication database
+        run: |
+          php -r '
+            $path = getenv("PWD_PATH") . "/pwd.json";
+            $config = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+            $config["EPISCIENCES"]["AUTH_ADAPTER_NAME"] = "MYSQL";
+            file_put_contents($path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+          '
 
       - name: Setup Node.js 20.x
         uses: actions/setup-node@v6
@@ -74,7 +84,7 @@ jobs:
 
       - name: Install JS dependencies & Build assets
         run: |
-          yarn install
+          yarn install --frozen-lockfile
           yarn build
 
       - name: Install Playwright Browsers
@@ -82,18 +92,26 @@ jobs:
 
       - name: Start Web Server
         run: |
-          php -S 127.0.0.1:8000 -t public public/index.php &
+          echo "127.0.0.1 dev.episciences.org" | sudo tee -a /etc/hosts
+          # Lets PHP listen on port 80 without running as root
+          sudo setcap cap_net_bind_service=+ep "$(readlink -f "$(command -v php)")"
+          nohup php -S 127.0.0.1:80 -t public .github/scripts/e2e-router.php > /tmp/php-server.log 2>&1 &
           sleep 2
+          curl --fail --silent --show-error --output /dev/null http://dev.episciences.org/user/login
         env:
-          PWD_PATH: ${{ github.workspace }}/tests/config
-          APPLICATION_ENV: testing
+          # The development environment does not require HTTPS for the session cookie
+          APPLICATION_ENV: development
+          RVCODE: dev
 
+      # The global setup seeds the E2E accounts and cleans the journal (tests/e2e/global-setup.js)
       - name: Run Playwright Tests
         run: yarn test:e2e
         env:
-          BASE_URL: http://127.0.0.1:8000/
-          MAILPIT_URL: http://127.0.0.1:8025/
           CI: true
+
+      - name: Show web server log
+        if: failure()
+        run: tail -n 200 /tmp/php-server.log
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4

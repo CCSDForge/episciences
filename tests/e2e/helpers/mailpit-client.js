@@ -1,94 +1,101 @@
+const { request } = require('@playwright/test');
+const { flushMailQueue } = require('./app-cli');
+
 /**
- * Mailpit REST API Client for Playwright tests
- * Allows polling, inspecting and extracting confirmation / invitation links from sent emails.
+ * Mailpit REST API client for the E2E tests.
+ *
+ * The application does not send emails itself: it queues them on disk and a cron sends them. Each
+ * polling round flushes that queue first (see app-cli.js), then searches Mailpit.
+ *
+ * Tests run in parallel and share the same mailbox: never empty it, look for a message with criteria
+ * that only the current test can match instead (the paper id is part of every paper-related subject).
  */
 class MailpitClient {
     /**
-     * @param {string} [baseUrl]
+     * @param {string} [baseUrl] defaults to MAILPIT_URL, then to the docker-compose Mailpit host
      */
     constructor(baseUrl) {
-        // Priority: explicit argument -> env MAILPIT_URL -> default host container bridge -> localhost
-        this.baseUrl = (baseUrl || process.env.MAILPIT_URL || 'http://172.18.0.12:8025').replace(/\/+$/, '');
+        this.baseUrl = (baseUrl || process.env.MAILPIT_URL || 'https://mailpit.episciences.org').replace(/\/+$/, '');
+        this.api = null;
     }
 
-    /**
-     * Retrieve all messages stored in Mailpit
-     * @returns {Promise<Array<Object>>}
-     */
-    async getMessages() {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/v1/messages`);
-            if (!response.ok) {
-                return [];
-            }
-            const data = await response.json();
-            return data.messages || [];
-        } catch (error) {
-            return [];
+    async getApi() {
+        if (!this.api) {
+            this.api = await request.newContext({ baseURL: `${this.baseUrl}/`, ignoreHTTPSErrors: true });
+        }
+        return this.api;
+    }
+
+    async dispose() {
+        if (this.api) {
+            await this.api.dispose();
+            this.api = null;
         }
     }
 
     /**
-     * Wait for an email matching criteria (recipient, subject substring)
-     * @param {Object} options
-     * @param {string} [options.to]
-     * @param {string} [options.subject]
-     * @param {number} [options.timeoutMs=10000]
-     * @param {number} [options.pollIntervalMs=500]
-     * @returns {Promise<Object|null>}
+     * @param {string} query Mailpit search query, for instance: to:"someone@example.org" subject:"#123"
+     * @returns {Promise<Array<Object>>} message summaries, most recent first
      */
-    async waitForEmail({ to, subject, timeoutMs = 10000, pollIntervalMs = 500 }) {
-        const startTime = Date.now();
+    async search(query) {
+        const api = await this.getApi();
+        const response = await api.get('api/v1/search', { params: { query } });
+        if (!response.ok()) {
+            throw new Error(`Mailpit search failed with HTTP ${response.status()}`);
+        }
+        return (await response.json()).messages || [];
+    }
 
-        while (Date.now() - startTime < timeoutMs) {
-            const messages = await this.getMessages();
+    /**
+     * @param {string} id
+     * @returns {Promise<Object>} the full message, with its Text and HTML bodies
+     */
+    async getMessage(id) {
+        const api = await this.getApi();
+        const response = await api.get(`api/v1/message/${id}`);
+        if (!response.ok()) {
+            throw new Error(`Mailpit message ${id} could not be read: HTTP ${response.status()}`);
+        }
+        return response.json();
+    }
 
-            const match = messages.find(msg => {
-                const matchesTo = !to || (msg.To && msg.To.some(t => t.Address.toLowerCase().includes(to.toLowerCase())));
-                const matchesSubject = !subject || (msg.Subject && msg.Subject.includes(subject));
-                return matchesTo && matchesSubject;
-            });
+    /**
+     * Waits for the first email sent to a recipient whose subject contains every given fragment.
+     * @param {Object} options
+     * @param {string} options.to recipient address
+     * @param {string[]} [options.subjectContains] case-sensitive subject fragments
+     * @param {number} [options.timeoutMs=30000]
+     * @returns {Promise<Object>} the full message
+     */
+    async waitForEmail({ to, subjectContains = [], timeoutMs = 30000 }) {
+        const deadline = Date.now() + timeoutMs;
+
+        while (Date.now() < deadline) {
+            flushMailQueue();
+
+            const match = (await this.search(`to:"${to}"`)).find(message =>
+                subjectContains.every(fragment => (message.Subject || '').includes(fragment))
+            );
 
             if (match) {
-                // Fetch full message detail including HTML/text bodies
-                try {
-                    const detailRes = await fetch(`${this.baseUrl}/api/v1/message/${match.ID}`);
-                    if (detailRes.ok) {
-                        return await detailRes.json();
-                    }
-                } catch {
-                    return match;
-                }
+                return this.getMessage(match.ID);
             }
 
-            await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
-        return null;
+        throw new Error(`No email to ${to} with a subject containing ${JSON.stringify(subjectContains)} within ${timeoutMs} ms`);
     }
 
     /**
-     * Extract all HTTP/HTTPS links found in a text or HTML body
-     * @param {string} content
-     * @returns {string[]}
+     * @param {string} content text or HTML body
+     * @returns {string[]} every HTTP(S) link it contains
      */
     extractLinks(content) {
-        if (!content) return [];
-        const regex = /https?:\/\/[^\s"'<>]+/g;
-        return content.match(regex) || [];
-    }
-
-    /**
-     * Delete all messages stored in Mailpit
-     * @returns {Promise<boolean>}
-     */
-    async deleteAllMessages() {
-        try {
-            const res = await fetch(`${this.baseUrl}/api/v1/messages`, { method: 'DELETE' });
-            return res.ok;
-        } catch {
-            return false;
+        if (!content) {
+            return [];
         }
+        return content.match(/https?:\/\/[^\s"'<>\]]+/g) || [];
     }
 }
 
