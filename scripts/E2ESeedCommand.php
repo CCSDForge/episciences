@@ -192,7 +192,6 @@ class E2ESeedCommand extends Command
 
     /**
      * Deletes every version of every paper submitted by the E2E author in the journal.
-     * Episciences_PapersManager::delete() leaves assignments and invitations behind, they are purged here.
      */
     private function deleteE2ePapers(int $authorUid, int $rvid): int
     {
@@ -204,18 +203,6 @@ class E2ESeedCommand extends Command
         $deleted = 0;
 
         foreach ($docIds as $docId) {
-            $assignmentIds = $db->fetchCol(
-                $db->select()
-                    ->from(T_ASSIGNMENTS, ['ID'])
-                    ->where('ITEM = ?', Episciences_User_Assignment::ITEM_PAPER)
-                    ->where('ITEMID = ?', (int)$docId)
-            );
-
-            if ($assignmentIds !== []) {
-                $db->delete(T_USER_INVITATIONS, ['AID IN (?)' => $assignmentIds]);
-                $db->delete(T_ASSIGNMENTS, ['ID IN (?)' => $assignmentIds]);
-            }
-
             if (Episciences_PapersManager::delete((int)$docId)) {
                 $deleted++;
             }
