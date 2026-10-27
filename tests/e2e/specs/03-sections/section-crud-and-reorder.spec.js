@@ -36,32 +36,30 @@ test.describe('Section (Rubrique) Administration & Reordering', () => {
 
         // 3. Test reordering interaction
         const positionInput = createdRow.locator('.reorder-position-input');
-        if (await positionInput.isVisible()) {
-            await positionInput.fill('1');
-            await positionInput.dispatchEvent('input');
-            await positionInput.dispatchEvent('change');
+        await expect(positionInput).toBeVisible();
+        await positionInput.fill('1');
+        await positionInput.dispatchEvent('input');
+        await positionInput.dispatchEvent('change');
 
-            const reorderBar = secretaryPage.locator('#reorder-bar');
-            await expect(reorderBar).toBeVisible();
+        const reorderBar = secretaryPage.locator('#reorder-bar');
+        await expect(reorderBar).toBeVisible();
 
-            const saveReorderBtn = secretaryPage.locator('#reorder-save');
-            await expect(saveReorderBtn).toBeVisible();
-            await saveReorderBtn.click();
+        const saveReorderBtn = secretaryPage.locator('#reorder-save');
+        await expect(saveReorderBtn).toBeVisible();
+        await saveReorderBtn.click();
 
-            await expect(secretaryPage.locator('.reorder-save__busy')).not.toBeVisible({ timeout: 10000 });
-        }
+        await expect(secretaryPage.locator('.reorder-save__busy')).not.toBeVisible({ timeout: 10000 });
 
         // 4. Delete the test section
         const deleteBtn = createdRow.locator('a.delete, a[href*="section/delete"]').first();
-        if (await deleteBtn.isVisible()) {
-            await deleteBtn.click();
+        await expect(deleteBtn).toBeVisible();
+        await deleteBtn.click();
 
-            const confirmBtn = secretaryPage.locator('.bootbox button[data-bb-handler="confirm"], .modal button.btn-primary').first();
-            await expect(confirmBtn).toBeVisible({ timeout: 5000 });
-            await confirmBtn.click();
+        const confirmBtn = secretaryPage.locator('.bootbox button[data-bb-handler="confirm"], .modal button.btn-primary').first();
+        await expect(confirmBtn).toBeVisible({ timeout: 5000 });
+        await confirmBtn.click();
 
-            await secretaryPage.waitForLoadState('networkidle');
-            await expect(secretaryPage.locator(`table#sections tr:has-text("${testSectionTitle}")`)).not.toBeVisible({ timeout: 10000 });
-        }
+        await secretaryPage.waitForLoadState('networkidle');
+        await expect(secretaryPage.locator(`table#sections tr:has-text("${testSectionTitle}")`)).not.toBeVisible({ timeout: 10000 });
     });
 });

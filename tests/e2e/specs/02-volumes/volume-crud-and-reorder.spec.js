@@ -23,14 +23,12 @@ test.describe('Volume administration and reordering', () => {
         }
 
         const yearInput = secretaryPage.locator('input#year, input[name="year"]');
-        if (await yearInput.isVisible()) {
-            await yearInput.fill('2026');
-        }
+        await expect(yearInput).toBeVisible();
+        await yearInput.fill('2026');
 
         const numInput = secretaryPage.locator('input#num, input[name="num"]');
-        if (await numInput.isVisible()) {
-            await numInput.fill('99');
-        }
+        await expect(numInput).toBeVisible();
+        await numInput.fill('99');
 
         // Submit creation using specific primary submit button
         const submitBtn = secretaryPage.getByRole('button', { name: /Valider|Save|Submit/i }).first();
@@ -46,21 +44,20 @@ test.describe('Volume administration and reordering', () => {
 
         // 3. Test reordering interaction (reorder-bar)
         const positionInput = createdRow.locator('.reorder-position-input');
-        if (await positionInput.isVisible()) {
-            await positionInput.fill('1');
-            await positionInput.dispatchEvent('input');
-            await positionInput.dispatchEvent('change');
+        await expect(positionInput).toBeVisible();
+        await positionInput.fill('1');
+        await positionInput.dispatchEvent('input');
+        await positionInput.dispatchEvent('change');
 
-            const reorderBar = secretaryPage.locator('#reorder-bar');
-            await expect(reorderBar).toBeVisible();
+        const reorderBar = secretaryPage.locator('#reorder-bar');
+        await expect(reorderBar).toBeVisible();
 
-            const saveReorderBtn = secretaryPage.locator('#reorder-save');
-            await expect(saveReorderBtn).toBeVisible();
-            await saveReorderBtn.click();
+        const saveReorderBtn = secretaryPage.locator('#reorder-save');
+        await expect(saveReorderBtn).toBeVisible();
+        await saveReorderBtn.click();
 
-            // Wait for save operation to complete (busy spinner hidden)
-            await expect(secretaryPage.locator('.reorder-save__busy')).not.toBeVisible({ timeout: 10000 });
-        }
+        // Wait for save operation to complete (busy spinner hidden)
+        await expect(secretaryPage.locator('.reorder-save__busy')).not.toBeVisible({ timeout: 10000 });
 
         // 4. Delete the test volume via Bootbox
         const deleteBtn = createdRow.locator('a.delete, a[href*="volume/delete"]').first();
