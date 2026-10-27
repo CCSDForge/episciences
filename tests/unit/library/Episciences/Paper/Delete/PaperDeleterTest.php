@@ -8,12 +8,13 @@ use Episciences\Paper\Delete\DeletionOutcome;
 use Episciences\Paper\Delete\PaperDeleter;
 use Episciences_Paper;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Table_Abstract;
 
 /**
  * PaperDeleter deletes the paper versions of its journal only.
- * The deletion itself is replaced by a spy (Episciences_PapersManager::delete() has its own test),
+ * The deletion itself is replaced by a spy (Episciences_PapersManager::deletePaper() has its own test),
  * so the rows can be inserted in a transaction rolled back after each test.
  *
  * @covers \Episciences\Paper\Delete\PaperDeleter
@@ -52,14 +53,14 @@ final class PaperDeleterTest extends TestCase
         self::assertSame([$docId], $this->deleted);
     }
 
-    public function testReportsAFailedDeletion(): void
+    public function testLetsAFailedDeletionThrough(): void
     {
         $docId = $this->insertPaper(RVID);
 
-        $outcome = $this->deleter(false)->delete($docId);
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Lock wait timeout exceeded');
 
-        self::assertSame(DeletionOutcome::Failed, $outcome);
-        self::assertFalse($outcome->isSuccess());
+        $this->deleter(false)->delete($docId);
     }
 
     public function testDryRunDeletesNothing(): void
@@ -97,9 +98,11 @@ final class PaperDeleterTest extends TestCase
 
     private function deleter(bool $deletionSucceeds): PaperDeleter
     {
-        return new PaperDeleter(RVID, function (int $docId) use ($deletionSucceeds): bool {
-            $this->deleted[] = $docId;
-            return $deletionSucceeds;
+        return new PaperDeleter(RVID, function (Episciences_Paper $paper) use ($deletionSucceeds): void {
+            if (!$deletionSucceeds) {
+                throw new RuntimeException('Lock wait timeout exceeded');
+            }
+            $this->deleted[] = (int)$paper->getDocid();
         });
     }
 

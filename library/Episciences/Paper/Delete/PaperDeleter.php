@@ -6,24 +6,28 @@ namespace Episciences\Paper\Delete;
 use Closure;
 use Episciences_Paper;
 use Episciences_PapersManager;
+use Throwable;
 
 /**
  * Deletes paper versions of one journal, refusing those of any other journal.
  */
 final class PaperDeleter
 {
-    /** @var Closure(int): bool */
+    /** @var Closure(Episciences_Paper): void */
     private readonly Closure $delete;
 
     /**
-     * @param Closure(int): bool|null $delete deletes a paper version, returns false on failure;
-     *                                        Episciences_PapersManager::delete() by default
+     * @param Closure(Episciences_Paper): void|null $delete deletes a paper version, throws on failure;
+     *                                                     Episciences_PapersManager::deletePaper() by default
      */
     public function __construct(private readonly int $rvid, ?Closure $delete = null)
     {
-        $this->delete = $delete ?? static fn(int $docId): bool => Episciences_PapersManager::delete($docId);
+        $this->delete = $delete ?? Episciences_PapersManager::deletePaper(...);
     }
 
+    /**
+     * @throws Throwable when the deletion fails: nothing was deleted
+     */
     public function delete(int $docId, bool $dryRun = false): DeletionOutcome
     {
         $paper = Episciences_PapersManager::get($docId, false);
@@ -40,6 +44,8 @@ final class PaperDeleter
             return DeletionOutcome::WouldBeDeleted;
         }
 
-        return ($this->delete)($docId) ? DeletionOutcome::Deleted : DeletionOutcome::Failed;
+        ($this->delete)($paper);
+
+        return DeletionOutcome::Deleted;
     }
 }

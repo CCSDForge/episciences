@@ -701,7 +701,7 @@ php scripts/console.php papers:clean-hal-descriptions [options]
 
 ### `papers:delete`
 
-Deletes paper versions of a journal, with their files and every related row (see `Episciences_PapersManager::delete()`). Replaces `scripts/DeletePaper.php`.
+Deletes paper versions of a journal, with their files and every related row (tables listed in `Episciences_PapersManager::VERSION_TABLES` and `PAPER_TABLES`). Replaces `scripts/DeletePaper.php`.
 
 ```bash
 php scripts/console.php papers:delete --rvcode=<code> <docid>... [--dry-run]
@@ -718,7 +718,9 @@ Any other answer, or the non-interactive mode (`-n`), deletes nothing. `--dry-ru
 
 A paper of another journal, or a missing paper, is reported and skipped. Rows shared by every version of a
 paper (authors, DOI queue, volume position, projects, conflicts of interest) are deleted with the last version
-only. The command exits with a failure code if any paper version could not be deleted.
+only. The deletion of a paper version is all or nothing: when it fails, nothing is deleted and the cause is
+displayed. The command exits with a failure code if any paper version could not be deleted. Deletions and
+failures are logged to `papers_delete-YYYY-MM-DD.log` in the log directory.
 
 Example:
 

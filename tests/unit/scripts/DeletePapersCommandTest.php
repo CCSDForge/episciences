@@ -9,6 +9,7 @@ use Episciences_Paper;
 use Episciences_Review;
 use Episciences_ReviewsManager;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 use Zend_Db_Adapter_Abstract;
@@ -19,7 +20,7 @@ require_once __DIR__ . '/../../../scripts/DeletePapersCommand.php';
 /**
  * papers:delete deletes nothing until the operator types the confirmation phrase.
  * The journal is loaded without bootstrapping, and the deletion is replaced by a spy
- * (Episciences_PapersManager::delete() has its own test): rows are rolled back after each test.
+ * (Episciences_PapersManager::deletePaper() has its own test): rows are rolled back after each test.
  *
  * @covers DeletePapersCommand
  */
@@ -124,12 +125,17 @@ final class DeletePapersCommandTest extends TestCase
     {
         $docId = $this->insertPaper(RVID);
 
-        $tester = new CommandTester(new DeletePapersCommand($this->journalLoader(), static fn(int $docId): bool => false));
+        $failingDeletion = static function (Episciences_Paper $paper): void {
+            throw new RuntimeException('Lock wait timeout exceeded');
+        };
+        $tester = new CommandTester(new DeletePapersCommand($this->journalLoader(), $failingDeletion));
         $tester->setInputs([DeletePapersCommand::CONFIRMATION_PHRASE]);
         $status = $tester->execute(['docids' => [(string)$docId], '--rvcode' => $this->journal->getCode()]);
 
         self::assertSame(Command::FAILURE, $status);
+        // The operator sees why the deletion failed
         self::assertStringContainsString('deletion failed', $tester->getDisplay());
+        self::assertStringContainsString('Lock wait timeout exceeded', $tester->getDisplay());
     }
 
     /**
@@ -159,9 +165,8 @@ final class DeletePapersCommandTest extends TestCase
 
     private function tester(): CommandTester
     {
-        return new CommandTester(new DeletePapersCommand($this->journalLoader(), function (int $docId): bool {
-            $this->deleted[] = $docId;
-            return true;
+        return new CommandTester(new DeletePapersCommand($this->journalLoader(), function (Episciences_Paper $paper): void {
+            $this->deleted[] = (int)$paper->getDocid();
         }));
     }
 

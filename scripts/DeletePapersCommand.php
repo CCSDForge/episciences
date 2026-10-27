@@ -2,7 +2,9 @@
 declare(strict_types=1);
 
 use Episciences\AppRegistry;
+use Episciences\Paper\Delete\DeletionOutcome;
 use Episciences\Paper\Delete\PaperDeleter;
+use scripts\Command\Bootstrapper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -25,13 +27,13 @@ class DeletePapersCommand extends Command
 {
     public const CONFIRMATION_PHRASE = 'Yes delete I understand the consequences';
 
-    /** @var Closure(string): ?Episciences_Review */
+    /** @var Closure(string, InputInterface, OutputInterface): ?Episciences_Review */
     private readonly Closure $journalLoader;
 
     /**
-     * @param Closure(string): ?Episciences_Review|null $journalLoader loads the journal from its RVCODE and prepares
-     *                                                                 the application for it; bootstraps the application by default
-     * @param Closure(int): bool|null $deleteVersion deletes a paper version, see PaperDeleter
+     * @param (Closure(string, InputInterface, OutputInterface): ?Episciences_Review)|null $journalLoader loads the journal
+     *        from its RVCODE and prepares the application for it; bootstraps the application by default
+     * @param (Closure(Episciences_Paper): void)|null $deleteVersion deletes a paper version, see PaperDeleter
      */
     public function __construct(?Closure $journalLoader = null, private readonly ?Closure $deleteVersion = null)
     {
@@ -64,7 +66,7 @@ class DeletePapersCommand extends Command
             return Command::FAILURE;
         }
 
-        $journal = ($this->journalLoader)($rvcode);
+        $journal = ($this->journalLoader)($rvcode, $input, $output);
         if (!$journal instanceof Episciences_Review) {
             $io->error("Unknown journal: {$rvcode}");
             return Command::FAILURE;
@@ -129,8 +131,15 @@ class DeletePapersCommand extends Command
         $failures = 0;
 
         foreach ($docIds as $docId) {
-            $outcome = $deleter->delete($docId, $dryRun);
-            $rows[] = [$docId, $outcome->value];
+            try {
+                $outcome = $deleter->delete($docId, $dryRun);
+                $result = $outcome->value;
+            } catch (Throwable $e) {
+                $outcome = DeletionOutcome::Failed;
+                $result = sprintf('%s: %s', $outcome->value, $e->getMessage());
+                AppRegistry::getMonoLogger()?->error(sprintf('papers:delete: paper #%d of %s not deleted: %s', $docId, $journal->getCode(), $e->getMessage()));
+            }
+            $rows[] = [$docId, $result];
 
             if (!$outcome->isSuccess()) {
                 $failures++;
@@ -153,32 +162,14 @@ class DeletePapersCommand extends Command
 
     /**
      * Bootstraps the application for the journal: the files of a paper are deleted from the journal directory,
-     * which the journal constants point to.
+     * which the journal constants point to. Registers the command logger as the application logger,
+     * so that deletions are logged.
      */
-    private function loadJournal(string $rvcode): ?Episciences_Review
+    private function loadJournal(string $rvcode, InputInterface $input, OutputInterface $output): ?Episciences_Review
     {
-        if (!defined('APPLICATION_PATH')) {
-            define('APPLICATION_PATH', realpath(__DIR__ . '/../application'));
-        }
-        require_once __DIR__ . '/../public/const.php';
-        require_once __DIR__ . '/../public/bdd_const.php';
-
-        defineProtocol();
-        defineSimpleConstants();
-        defineSQLTableConstants();
-        defineApplicationConstants();
-
-        $libraries = [realpath(APPLICATION_PATH . '/../library')];
-        set_include_path(implode(PATH_SEPARATOR, array_merge($libraries, [get_include_path()])));
-        require_once 'Zend/Application.php';
-
-        // Do NOT call $application->bootstrap(): see ImportPapersCommand::bootstrap()
-        $application = new Zend_Application('production', APPLICATION_PATH . '/configs/application.ini');
-        Zend_Loader_Autoloader::getInstance()->setFallbackAutoloader(true);
-        Zend_Db_Table::setDefaultAdapter(Zend_Db::factory('PDO_MYSQL', $application->getOption('resources')['db']['params']));
-
-        Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
-        Zend_Registry::set('Zend_Locale', new Zend_Locale('en'));
+        $bootstrapper = new Bootstrapper(null, false);
+        $bootstrapper->initialize($input, $output, 'papers_delete');
+        AppRegistry::set('appLogger', $bootstrapper->getLogger());
 
         $journal = Episciences_ReviewsManager::find($rvcode);
         if (!$journal instanceof Episciences_Review) {
