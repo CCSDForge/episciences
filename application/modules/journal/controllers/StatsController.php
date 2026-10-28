@@ -114,8 +114,6 @@ class StatsController extends Zend_Controller_Action
 
         $params = ['withDetails' => true];
 
-        $evalOptions = [];
-
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
@@ -164,7 +162,6 @@ class StatsController extends Zend_Controller_Action
 
         if ($yearQuery) {
             $params['year'] = $yearQuery;
-            $evalOptions['year'] = $yearQuery;
         }
 
         $yearCategories = [];
@@ -199,7 +196,7 @@ class StatsController extends Zend_Controller_Action
             }
 
             try {
-                $this->processEvaluationStats($evalOptions, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
+                $this->processEvaluationStats(self::getEvaluationQuery($yearQuery, $startStatsAfterDate), $dashboardToken, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
             } catch (GuzzleException|JsonException $e) {
                 $this->view->errorMessage = $errorMessage;
                 $logger?->warning($e->getMessage());
@@ -1127,8 +1124,30 @@ class StatsController extends Zend_Controller_Action
 
 
     /**
+     * Query of the evaluation statistics: the same year and start date as the dashboard
+     * @param int|null $year
+     * @param string|null $startAfterDate the start date applied to the statistics (null: all the data)
+     * @return array<string, int|string>
+     */
+    public static function getEvaluationQuery(?int $year, ?string $startAfterDate): array
+    {
+        $query = [];
+
+        if ($year) {
+            $query['year'] = $year;
+        }
+
+        if ($startAfterDate) {
+            $query['startAfterDate'] = $startAfterDate;
+        }
+
+        return $query;
+    }
+
+    /**
      *
      * @param array $evalOptions
+     * @param string|null $token
      * @param float|null $reviewsRequested
      * @param float|null $reviewsReceived
      * @param float|null $medianReviewsNumber
@@ -1136,11 +1155,11 @@ class StatsController extends Zend_Controller_Action
      * @throws GuzzleException
      * @throws JsonException
      */
-    private function processEvaluationStats(array $evalOptions, float &$reviewsRequested = null, float &$reviewsReceived = null, float &$medianReviewsNumber = null): void
+    private function processEvaluationStats(array $evalOptions, ?string $token, float &$reviewsRequested = null, float &$reviewsReceived = null, float &$medianReviewsNumber = null): void
     {
         $evalOptions = array_merge(['rvcode' => RVCODE], $evalOptions);
         $evalUri = 'statistics/evaluation';
-        $evaluations = json_decode($this->askApi($evalUri, $evalOptions), true, 512, JSON_THROW_ON_ERROR);
+        $evaluations = json_decode($this->askApi($evalUri, $evalOptions, $token), true, 512, JSON_THROW_ON_ERROR);
 
         foreach ($evaluations as $stats) {
             $key = Episciences_Tools::convertToCamelCase($stats['name'] ?? '', '-');
