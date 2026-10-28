@@ -51,6 +51,15 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
+      # The public pages listing papers query Solr. The index stays empty: the suite does not run the
+      # indexing worker. ICU fields of the configset need the analysis-extras module.
+      - name: Start Solr
+        run: |
+          docker run --detach --name solr --publish 127.0.0.1:8983:8983 \
+            --env SOLR_MODULES=analysis-extras \
+            --volume "$PWD/src/solr/episciences:/opt/episciences-configset:ro" \
+            solr:9.9 solr-precreate episciences /opt/episciences-configset
+
       - name: Wait for MySQL
         run: |
           while ! mysqladmin ping -h"127.0.0.1" -P3306 --silent; do
@@ -69,13 +78,19 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/e2e-journal.sql
           cp tests/fixtures/e2e-navigation.json data/dev/config/navigation.json
 
-      - name: Use the MySQL authentication adapter
+      - name: Use the MySQL authentication adapter and the Solr container
         # The E2E accounts only exist in the local authentication database
         run: |
           php -r '
             $path = getenv("PWD_PATH") . "/pwd.json";
             $config = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
             $config["EPISCIENCES"]["AUTH_ADAPTER_NAME"] = "MYSQL";
+            foreach (["INDEXING", "SEARCH"] as $use) {
+              $config["ENDPOINTS"][$use . "_HOST"] = "127.0.0.1";
+              $config["ENDPOINTS"][$use . "_PORT"] = 8983;
+              $config["ENDPOINTS"][$use . "_PATH"] = "/solr";
+            }
+            $config["ENDPOINTS"]["CORENAME"] = "episciences";
             file_put_contents($path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
           '
 
@@ -118,13 +133,21 @@ jobs:
           echo "127.0.0.1 dev.episciences.org" | sudo tee -a /etc/hosts
           # Lets PHP listen on port 80 without running as root
           sudo setcap cap_net_bind_service=+ep "$(readlink -f "$(command -v php)")"
-          nohup php -S 127.0.0.1:80 -t public .github/scripts/e2e-router.php > /tmp/php-server.log 2>&1 &
+          # Upload limits of the php-fpm container (src/php-fpm/upload.ini): with the default 2M, the
+          # submission form raises a notice before its redirect
+          nohup php -d upload_max_filesize=16M -d post_max_size=32M \
+            -S 127.0.0.1:80 -t public .github/scripts/e2e-router.php > /tmp/php-server.log 2>&1 &
           sleep 2
           curl --fail --silent --show-error --output /dev/null http://dev.episciences.org/user/login
         env:
           # The development environment does not require HTTPS for the session cookie
           APPLICATION_ENV: development
           RVCODE: dev
+
+      - name: Wait for Solr
+        run: |
+          curl --retry 30 --retry-delay 2 --retry-all-errors --fail --silent --show-error --output /dev/null \
+            'http://127.0.0.1:8983/solr/episciences/select?q=*:*&rows=0'
 
       # The global setup seeds the E2E accounts and cleans the journal (tests/e2e/global-setup.js)
       - name: Run Playwright Tests

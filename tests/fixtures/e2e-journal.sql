@@ -39,4 +39,10 @@ INSERT INTO `REVIEW_SETTING` (`RVID`, `SETTING`, `VALUE`) VALUES
 (1, 'invitation_deadline', '1 month'),
 (1, 'rating_deadline', '2 month'),
 (1, 'rating_deadline_min', '2 month'),
-(1, 'rating_deadline_max', '6 month');
+(1, 'rating_deadline_max', '6 month'),
+(1, 'requiredReviewers', '');
+
+-- Interface languages: English only, as the dev journal (without it, every platform language is
+-- enabled and multilingual fields such as volume and criterion names require each of them)
+INSERT INTO `WEBSITE_SETTINGS` (`SID`, `SETTING`, `VALUE`) VALUES
+(1, 'languages', 'a:1:{i:0;s:2:"en";}');
