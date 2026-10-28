@@ -1,0 +1,7 @@
+// User list: keep the table header visible below the fixed navbar
+#localUsers thead th {
+  position: sticky;
+  top: $navbar-fixed-height;
+  z-index: 1;
+  background: $white;
+}
