@@ -27,6 +27,13 @@ div.dataTables_filter input {
   padding: 2px 5px;
 }
 
+// With scrollX, the column widths are measured on the header cells copied into the body, then
+// their content is wrapped in this div: it must keep the font of the header cell, whatever the
+// rules of the journal stylesheet for div elements, or the body columns no longer match the header
+div.dataTables_scrollBody .dataTables_sizing {
+  font: inherit;
+}
+
 .dt-columns label {
   font-weight: normal;
 }
