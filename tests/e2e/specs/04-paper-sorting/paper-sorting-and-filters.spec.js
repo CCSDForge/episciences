@@ -14,6 +14,9 @@ test.describe('Paper DataTables Sorting, Search & Length Pagination', () => {
         await secretaryPage.goto('administratepaper/list');
         const rows = secretaryPage.locator('#papers tbody tr');
         const processingIndicator = secretaryPage.locator('#papers_processing');
+        // Row whose Permanent Id cell is exactly this id (the permanent id of a first version is its docid)
+        const rowOfPaper = docid =>
+            rows.filter({ has: secretaryPage.locator('td:first-child', { hasText: new RegExp(`^\\s*${docid}\\s*$`) }) });
         await expect(rows.first()).toBeVisible();
 
         // 1. Column Sorting: Click on Permanent Id column header. With horizontal scrolling, DataTables
@@ -38,13 +41,13 @@ test.describe('Paper DataTables Sorting, Search & Length Pagination', () => {
         await searchInput.fill(SEARCHED_PAPER.titleWords);
         await searchInput.press('Enter');
 
-        await expect(rows.filter({ hasText: SEARCHED_PAPER.titleWords }).first()).toContainText(String(searchedDocid));
-        await expect(rows.filter({ hasText: String(otherDocid) })).toHaveCount(0);
+        await expect(rowOfPaper(otherDocid)).toHaveCount(0);
+        await expect(rowOfPaper(searchedDocid)).toContainText(SEARCHED_PAPER.titleWords);
 
         // Clearing the search restores the other papers
         await searchInput.fill('');
         await searchInput.press('Enter');
-        await expect(rows.filter({ hasText: String(otherDocid) }).first()).toBeVisible({ timeout: 10000 });
+        await expect(rowOfPaper(otherDocid)).toBeVisible({ timeout: 10000 });
 
         // 3. Page Length Selector: Change to 25 lines
         const lengthSelect = secretaryPage.locator('select[name="papers_length"], #papers_length select').first();

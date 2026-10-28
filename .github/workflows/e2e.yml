@@ -74,8 +74,13 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/seed.sql
           mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences_auth < tests/fixtures/schema-cas.sql
           php .github/scripts/setup-test-config.php
-          # Repositories, journal settings and public pages of the E2E journal
+          # Repositories, journal settings, default mail templates and public pages of the E2E journal
           mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/e2e-journal.sql
+          for templates in src/mysql/Default_MAIL_TEMPLATE.sql \
+            src/mysql/2026-03-24_Insert_coi_unassign_mail_templates.sql \
+            src/mysql/2026-09-22-insert-paper-new-and-former-contributor-notification-mail-templates.sql; do
+            mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < "$templates"
+          done
           cp tests/fixtures/e2e-navigation.json data/dev/config/navigation.json
 
       - name: Use the MySQL authentication adapter and the Solr container

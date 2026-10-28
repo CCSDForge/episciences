@@ -1,5 +1,10 @@
 const { test, expect } = require('../../fixtures/e2e-fixtures');
-const { createVolume, createVolumeGrid, addQuantitativeCriterion } = require('../../helpers/editorial-workflow');
+const {
+    createSection,
+    createVolume,
+    createVolumeGrid,
+    addQuantitativeCriterion,
+} = require('../../helpers/editorial-workflow');
 
 /**
  * @param {import('@playwright/test').Locator} form
@@ -64,6 +69,8 @@ test.describe('Journal configuration', () => {
         authorPage,
     }) => {
         const settingsForm = adminPage.locator('form:has(#canPickSEction)');
+        // Authors are only offered a choice when the journal has sections
+        await createSection(adminPage, `E2E Configuration section ${Date.now()}`);
 
         await adminPage.goto('review/settings');
         const initialValues = await formValues(settingsForm);

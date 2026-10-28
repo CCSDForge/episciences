@@ -158,6 +158,23 @@ async function completeReview({ adminPage, reviewerPage, mailpit }, docid, { vid
 }
 
 /**
+ * Creates a section.
+ * @param {import('@playwright/test').Page} page editorial page
+ * @param {string} title must start with "E2E " so that the next run removes it
+ */
+async function createSection(page, title) {
+    await page.goto('section/add');
+    // One required title field per journal language
+    const titleInputs = page.locator('input[id^="title_"]');
+    await expect(titleInputs.first()).toBeVisible();
+    for (const titleInput of await titleInputs.all()) {
+        await titleInput.fill(title);
+    }
+    await page.locator('#submit').click();
+    await expect(page).not.toHaveURL(/section\/add/);
+}
+
+/**
  * Creates a volume and returns its id.
  * @param {import('@playwright/test').Page} page editorial page
  * @param {string} title must start with "E2E " so that the next run removes it
@@ -244,6 +261,7 @@ module.exports = {
     applyDecision,
     inviteKnownReviewer,
     completeReview,
+    createSection,
     createVolume,
     assignMasterVolume,
     createVolumeGrid,
