@@ -225,7 +225,8 @@ class StatsController extends Zend_Controller_Action
             }
 
             try {
-                $evaluations ??= $this->getEvaluations($evaluationQuery, $dashboardToken);
+                // the figures of the evaluation are public: no token
+                $evaluations ??= $this->getEvaluations($evaluationQuery, null);
                 $this->processEvaluationStats($evaluations, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
             } catch (GuzzleException|JsonException $e) {
                 $this->view->errorMessage = $errorMessage;
