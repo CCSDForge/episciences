@@ -65,6 +65,9 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/seed.sql
           mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences_auth < tests/fixtures/schema-cas.sql
           php .github/scripts/setup-test-config.php
+          # Repositories, journal settings and public pages of the E2E journal
+          mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/e2e-journal.sql
+          cp tests/fixtures/e2e-navigation.json data/dev/config/navigation.json
 
       - name: Use the MySQL authentication adapter
         # The E2E accounts only exist in the local authentication database

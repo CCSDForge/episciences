@@ -111,7 +111,12 @@ async function inviteKnownReviewer(page, docid, username) {
  */
 async function createVolume(page, title) {
     await page.goto('volume/add');
-    await page.locator('#title_en').fill(title);
+    // One required title field per journal language
+    const titleInputs = page.locator('input[id^="title_"]');
+    await expect(titleInputs.first()).toBeVisible();
+    for (const titleInput of await titleInputs.all()) {
+        await titleInput.fill(title);
+    }
     await page.locator('#year').fill(String(new Date().getFullYear()));
     await page.locator('#submit').click();
     await expect(page).toHaveURL(/volume\/list/);

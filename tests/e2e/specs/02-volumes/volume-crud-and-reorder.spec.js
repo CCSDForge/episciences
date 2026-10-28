@@ -4,7 +4,8 @@ test.describe('Volume administration and reordering', () => {
     test('secretary can view volume list, create a new volume, reorder, and delete it', async ({ secretaryPage }) => {
         // 1. Navigate to volume list
         await secretaryPage.goto('volume/list');
-        await expect(secretaryPage.locator('#volumes_wrapper, table#volumes').first()).toBeVisible();
+        // The table is only rendered once the journal has a volume
+        await expect(secretaryPage.getByRole('heading', { level: 1, name: 'Volumes' })).toBeVisible();
 
         // 2. Open volume creation form
         const addBtn = secretaryPage.locator('a[href*="/volume/add"]');

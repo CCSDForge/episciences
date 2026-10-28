@@ -4,7 +4,8 @@ test.describe('Section (Rubrique) Administration & Reordering', () => {
     test('secretary can view section list, create a new section, reorder, and delete it', async ({ secretaryPage }) => {
         // 1. Navigate to section list
         await secretaryPage.goto('section/list');
-        await expect(secretaryPage.locator('#sections_wrapper, table#sections').first()).toBeVisible();
+        // The table is only rendered once the journal has a section
+        await expect(secretaryPage.getByRole('heading', { level: 1, name: 'Sections' })).toBeVisible();
 
         // 2. Open section creation form
         const addBtn = secretaryPage.locator('a[href*="/section/add"]');
