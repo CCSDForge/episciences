@@ -196,7 +196,8 @@ class StatsController extends Zend_Controller_Action
             }
 
             try {
-                $this->processEvaluationStats(self::getEvaluationQuery($yearQuery, $startStatsAfterDate), $dashboardToken, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
+                // the figures of the evaluation are public: no token
+                $this->processEvaluationStats(self::getEvaluationQuery($yearQuery, $startStatsAfterDate), $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
             } catch (GuzzleException|JsonException $e) {
                 $this->view->errorMessage = $errorMessage;
                 $logger?->warning($e->getMessage());
@@ -1147,7 +1148,6 @@ class StatsController extends Zend_Controller_Action
     /**
      *
      * @param array $evalOptions
-     * @param string|null $token
      * @param float|null $reviewsRequested
      * @param float|null $reviewsReceived
      * @param float|null $medianReviewsNumber
@@ -1155,11 +1155,11 @@ class StatsController extends Zend_Controller_Action
      * @throws GuzzleException
      * @throws JsonException
      */
-    private function processEvaluationStats(array $evalOptions, ?string $token, float &$reviewsRequested = null, float &$reviewsReceived = null, float &$medianReviewsNumber = null): void
+    private function processEvaluationStats(array $evalOptions, float &$reviewsRequested = null, float &$reviewsReceived = null, float &$medianReviewsNumber = null): void
     {
         $evalOptions = array_merge(['rvcode' => RVCODE], $evalOptions);
         $evalUri = 'statistics/evaluation';
-        $evaluations = json_decode($this->askApi($evalUri, $evalOptions, $token), true, 512, JSON_THROW_ON_ERROR);
+        $evaluations = json_decode($this->askApi($evalUri, $evalOptions), true, 512, JSON_THROW_ON_ERROR);
 
         foreach ($evaluations as $stats) {
             $key = Episciences_Tools::convertToCamelCase($stats['name'] ?? '', '-');
