@@ -487,4 +487,16 @@ class ProcessInboxNotificationsCommandTest extends TestCase
         $this->assertNotFalse($protocolPos);
         $this->assertLessThan($protocolPos, $httpsPos);
     }
+
+    public function testAutoAssignEditorsSkipsJournalsWithoutChiefEditorsAssignment(): void
+    {
+        $journal = $this->createMock(\Episciences_Review::class);
+        $journal->method('getSetting')
+            ->with(\Episciences_Review::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT)
+            ->willReturn([\Episciences_Review::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS]);
+
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'autoAssignEditors');
+
+        $this->assertSame([], $method->invoke($this->command, new \Episciences_Paper(), $journal, $this->logger));
+    }
 }

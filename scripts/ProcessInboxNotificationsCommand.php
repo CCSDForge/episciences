@@ -928,7 +928,14 @@ class ProcessInboxNotificationsCommand extends Command
 
         $this->sendAuthorNotification($author, $authorTemplateKey, $commonTags, $paper, $paperUrl, $journalOptions, $logger);
 
-        [$recipients, $cc] = $this->resolveManagerRecipients($paper, $originalRequest, $isFirstSubmission, $journal, $logger);
+        [$recipients, $cc] = $this->resolveManagerRecipients(
+            $paper,
+            $originalRequest,
+            $isFirstSubmission,
+            $journal,
+            $logger,
+            $options['assignedEditors'] ?? []
+        );
 
         if (!$isFirstSubmission && $originalRequest !== null) {
             $commentType = $originalRequest->getType();
@@ -1064,9 +1071,11 @@ class ProcessInboxNotificationsCommand extends Command
         ?Episciences_Comment $originalRequest,
         bool                 $isFirstSubmission,
         Episciences_Review   $journal,
-        ?LoggerInterface     $logger
+        ?LoggerInterface     $logger,
+        array                $assignedEditors = []
     ): array {
-        $recipients = [];
+        // On a first submission, the editors just assigned automatically are notified (as on the web)
+        $recipients = $assignedEditors;
         $cc         = [];
 
         if (!$isFirstSubmission) {
@@ -1331,6 +1340,12 @@ class ProcessInboxNotificationsCommand extends Command
                 }
 
                 $this->logAction($paper, $logDetails, self::FIRST_SUBMISSION, $logger);
+
+                // As on the web, a refused paper submitted again keeps no editor: only a new paper is assigned
+                if (empty($nOptions['canBeReplaced'])) {
+                    $nOptions['assignedEditors'] = $this->autoAssignEditors($paper, $journal, $logger);
+                }
+
                 $this->notifyAuthorAndEditorialCommittee($journal, $paper, $nOptions, $logger);
                 $this->enrichment($paper, $data, $logger);
 
@@ -1619,6 +1634,47 @@ class ProcessInboxNotificationsCommand extends Command
                 }
             }
         }
+    }
+
+    /**
+     * Assigns the editors of a new paper according to the journal settings, as Episciences_Submit::assignEditors()
+     * does on the web. A notification carries no volume, section nor suggested editor: only the chief editors apply.
+     * @return Episciences_User[] the assigned editors, indexed by UID
+     */
+    private function autoAssignEditors(Episciences_Paper $paper, Episciences_Review $journal, ?LoggerInterface $logger): array
+    {
+        $autoAssignment = (array) $journal->getSetting(Episciences_Review::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT);
+
+        if (!in_array(Episciences_Review::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignment, true)) {
+            return [];
+        }
+
+        try {
+            // Scoped to the journal set by Episciences_Review::setCurrentReviewId()
+            $editors = Episciences_Review::getChiefEditors();
+        } catch (\Throwable $e) {
+            if ($logger !== null) {
+                $logger->critical('Failed fetching chief editors for automatic assignment: ' . $e->getMessage());
+            }
+            return [];
+        }
+
+        // The author of the paper cannot be one of its editors
+        unset($editors[$paper->getUid()]);
+
+        foreach ($editors as $editor) {
+            if (method_exists($editor, 'setTag')) {
+                $editor->setTag(Episciences_Editor::TAG_CHIEF_EDITOR);
+            }
+        }
+
+        $this->reassignPaperManagers($editors, $paper, Episciences_User_Assignment::ROLE_EDITOR, $logger);
+
+        if ($logger !== null && $editors) {
+            $logger->info(sprintf('%d editor(s) automatically assigned to doc ID %s.', count($editors), $paper->getDocid()));
+        }
+
+        return $editors;
     }
 
     private function reassignPaperManagers(
