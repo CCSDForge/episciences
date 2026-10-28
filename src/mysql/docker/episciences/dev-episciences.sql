@@ -7681,107 +7681,111 @@ CREATE TABLE `MAIL_TEMPLATE` (
 --
 
 INSERT INTO `MAIL_TEMPLATE` (`ID`, `PARENTID`, `RVID`, `RVCODE`, `KEY`, `TYPE`, `POSITION`) VALUES
-(NULL, NULL, NULL, NULL, 'paper_abandon_publication_author_copy', 'abandon_publication_process', NULL),
-(NULL, NULL, NULL, NULL, 'paper_abandon_publication_by_author_author_copy', 'abandon_publication_process', NULL),
-(NULL, NULL, NULL, NULL, 'paper_abandon_publication_editor_copy', 'abandon_publication_process', NULL),
-(NULL, NULL, NULL, NULL, 'paper_abandon_publication_no_assigned_editors', 'abandon_publication_process', NULL),
-(NULL, NULL, NULL, NULL, 'paper_abandon_publication_reviewer_removal', 'abandon_publication_process', 3),
-(NULL, NULL, NULL, NULL, 'paper_accepted', 'paper_final_decision', 1),
-(NULL, NULL, NULL, NULL, 'paper_accepted_editors_copy', 'paper_final_decision', 2),
-(NULL, NULL, NULL, NULL, 'paper_accepted_tmp_version', 'paper_final_decision', 3),
-(NULL, NULL, NULL, NULL, 'paper_ask_other_editors', 'paper_final_decision', NULL),
-(NULL, NULL, NULL, NULL, 'paper_ce_accepted_final_version_author_copy', 'paper_copy_editing', 14),
-(NULL, NULL, NULL, NULL, 'paper_ce_accepted_final_version_copyeditor_and_editor_copy', 'paper_copy_editing', 13),
-(NULL, NULL, NULL, NULL, 'paper_ce_author_sources_deposed_response_author_copy', 'paper_copy_editing', 8),
-(NULL, NULL, NULL, NULL, 'paper_ce_author_sources_deposed_response_copyeditors_and_editors_copy', 'paper_copy_editing', 7),
-(NULL, NULL, NULL, NULL, 'paper_ce_author_vesrion_finale_deposed_author_copy', 'paper_copy_editing', 12),
-(NULL, NULL, NULL, NULL, 'paper_ce_author_vesrion_finale_deposed_editor_and_copyeditor_copy', 'paper_copy_editing', 11),
-(NULL, NULL, NULL, NULL, 'paper_ce_review_formatting_deposed_author_copy', 'paper_copy_editing', 16),
-(NULL, NULL, NULL, NULL, 'paper_ce_review_formatting_deposed_editor_and_copyeditor_copy', 'paper_copy_editing', 15),
-(NULL, NULL, NULL, NULL, 'paper_ce_waiting_for_author_formatting_author_copy', 'paper_copy_editing', 10),
-(NULL, NULL, NULL, NULL, 'paper_ce_waiting_for_author_formatting_editor_and_copyeditor_copy', 'paper_copy_editing', 9),
-(NULL, NULL, NULL, NULL, 'paper_ce_waiting_for_author_sources_author_copy', 'paper_copy_editing', 6),
-(NULL, NULL, NULL, NULL, 'paper_ce_waiting_for_author_sources_editor_copy', 'paper_copy_editing', 5),
-(NULL, NULL, NULL, NULL, 'paper_comment_answer_editor_copy', 'paper_comment', 4),
-(NULL, NULL, NULL, NULL, 'paper_comment_answer_reviewer_copy', 'paper_comment', 3),
-(NULL, NULL, NULL, NULL, 'paper_comment_author_copy', 'paper_comment', 1),
-(NULL, NULL, NULL, NULL, 'paper_comment_by_editor_editor_copy', 'paper_comment', 5),
-(NULL, NULL, NULL, NULL, 'paper_comment_editor_copy', 'paper_comment', 2),
-(NULL, NULL, NULL, NULL, 'paper_continue_publication_author_copy', 'continue_publication_process', NULL),
-(NULL, NULL, NULL, NULL, 'paper_continue_publication_editor_copy', 'continue_publication_process', NULL),
-(NULL, NULL, NULL, NULL, 'paper_copyeditor_assign', 'paper_copy_editing', 1),
-(NULL, NULL, NULL, NULL, 'paper_copyeditor_assign_author_copy', 'paper_copy_editing', 3),
-(NULL, NULL, NULL, NULL, 'paper_copyeditor_assign_editor_copy', 'paper_copy_editing', 2),
-(NULL, NULL, NULL, NULL, 'paper_copyeditor_unassign', 'paper_copy_editing', 4),
-(NULL, NULL, NULL, NULL, 'paper_deleted_author_copy', 'paper_submission', 3),
-(NULL, NULL, NULL, NULL, 'paper_deleted_editor_copy', 'paper_submission', 4),
-(NULL, NULL, NULL, NULL, 'paper_deleted_reviewer_copy', 'paper_submission', 5),
-(NULL, NULL, NULL, NULL, 'paper_editor_assign', 'paper_editor_assign', 1),
-(NULL, NULL, NULL, NULL, 'paper_editor_refused_monitoring', 'paper_editor_assign', 3),
-(NULL, NULL, NULL, NULL, 'paper_editor_unassign', 'paper_editor_assign', 2),
-(NULL, NULL, NULL, NULL, 'paper_major_revision_request', 'paper_revision', NULL),
-(NULL, NULL, NULL, NULL, 'paper_minor_revision_request', 'paper_revision', NULL),
-(NULL, NULL, NULL, NULL, 'paper_new_version_submitted', 'paper_revision', 4),
-(NULL, NULL, NULL, NULL, 'paper_published_author_copy', 'paper_final_decision', NULL),
-(NULL, NULL, NULL, NULL, 'paper_published_editor_copy', 'paper_final_decision', NULL),
-(NULL, NULL, NULL, NULL, 'paper_refused', 'paper_final_decision', 3),
-(NULL, NULL, NULL, NULL, 'paper_refused_editors_copy', 'paper_final_decision', 3),
-(NULL, NULL, NULL, NULL, 'paper_reviewed_editor_copy', 'paper_review', 5),
-(NULL, NULL, NULL, NULL, 'paper_reviewed_reviewer_copy', 'paper_review', 4),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_acceptation_editor_copy', 'paper_review', NULL),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_acceptation_reviewer_copy', 'paper_review', NULL),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_invitation1', 'paper_review', NULL),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_invitation2', 'paper_review', NULL),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_invitation3', 'paper_review', NULL),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_paper_accepted_stop_pending_reviewing', 'paper_review', 8),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_paper_published_stop_pending_reviewing', 'paper_review', 11),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_paper_refused_stop_pending_reviewing', 'paper_review', 10),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_paper_revision_request_stop_pending_reviewing', 'paper_review', 9),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_refusal_editor_copy', 'paper_review', NULL),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_refusal_reviewer_copy', 'paper_review', NULL),
-(NULL, NULL, NULL, NULL, 'paper_reviewer_removal', 'paper_review', NULL),
-(NULL, NULL, NULL, NULL, 'paper_revision_answer', 'paper_revision', 2),
-(NULL, NULL, NULL, NULL, 'paper_section_editor_assign', 'paper_editor_assign', 1),
-(NULL, NULL, NULL, NULL, 'paper_submission_author_copy', 'paper_submission', 1),
-(NULL, NULL, NULL, NULL, 'paper_submission_editor_copy', 'paper_submission', 2),
-(NULL, NULL, NULL, NULL, 'paper_submission_other_recipient_copy', 'paper_submission', 8),
-(NULL, NULL, NULL, NULL, 'paper_submission_updated_author_copy', 'paper_submission', 7),
-(NULL, NULL, NULL, NULL, 'paper_submission_updated_editor_copy', 'paper_submission', 6),
-(NULL, NULL, NULL, NULL, 'paper_suggested_editor_assign', 'paper_editor_assign', 1),
-(NULL, NULL, NULL, NULL, 'paper_suggest_acceptation', 'paper_editor_suggestion', 1),
-(NULL, NULL, NULL, NULL, 'paper_suggest_new_version', 'paper_editor_suggestion', 3),
-(NULL, NULL, NULL, NULL, 'paper_suggest_refusal', 'paper_editor_suggestion', 2),
-(NULL, NULL, NULL, NULL, 'paper_tmp_version_reviewer_reassign', 'paper_review', 7),
-(NULL, NULL, NULL, NULL, 'paper_tmp_version_submitted', 'paper_revision', 3),
-(NULL, NULL, NULL, NULL, 'paper_updated_rating_deadline', 'paper_review', NULL),
-(NULL, NULL, NULL, NULL, 'paper_volume_editor_assign', 'paper_editor_assign', 1),
-(NULL, NULL, NULL, NULL, 'reminder_after_deadline_editor_version', 'paper_review_reminder', 5),
-(NULL, NULL, NULL, NULL, 'reminder_after_deadline_reviewer_version', 'paper_review_reminder', 3),
-(NULL, NULL, NULL, NULL, 'reminder_after_revision_deadline_author_version', 'paper_review_reminder', NULL),
-(NULL, NULL, NULL, NULL, 'reminder_after_revision_deadline_editor_version', 'paper_review_reminder', NULL),
-(NULL, NULL, NULL, NULL, 'reminder_article_blocked_in_accepted_state_editor_version', 'paper_review_reminder', NULL),
-(NULL, NULL, NULL, NULL, 'reminder_before_deadline_editor_version', 'paper_review_reminder', 6),
-(NULL, NULL, NULL, NULL, 'reminder_before_deadline_reviewer_version', 'paper_review_reminder', 2),
-(NULL, NULL, NULL, NULL, 'reminder_before_revision_deadline_author_version', 'paper_review_reminder', NULL),
-(NULL, NULL, NULL, NULL, 'reminder_before_revision_deadline_editor_version', 'paper_review_reminder', NULL),
-(NULL, NULL, NULL, NULL, 'reminder_not_enough_reviewers', 'paper_review_reminder', NULL),
-(NULL, NULL, NULL, NULL, 'reminder_unanswered_reviewer_invitation_editor_version', 'paper_review_reminder', 4),
-(NULL, NULL, NULL, NULL, 'reminder_unanswered_reviewer_invitation_reviewer_version', 'paper_review_reminder', 1),
-(NULL, NULL, NULL, NULL, 'user_lost_login', 'user', 2),
-(NULL, NULL, NULL, NULL, 'user_lost_password', 'user', 3),
-(NULL, NULL, NULL, NULL, 'user_registration', 'user', 1),
-(NULL, NULL, NULL, NULL, 'paper_accepted_tmp_version_managers_copy', 'paper_final_decision', 2),
-(NULL, NULL, NULL, NULL, 'paper_accepted_ask_authors_final_version', 'paper_final_decision', 4),
-(NULL, NULL, NULL, NULL, 'paper_formatted_by_journal_waiting_author_validation', 'paper_copy_editing', 17),
-(NULL, NULL, NULL, NULL, 'paper_accepted_ask_authors_final_version', 'paper_final_decision', 4),
-(NULL, NULL, NULL, NULL, 'paper_formatted_by_journal_waiting_author_validation', 'paper_copy_editing', 17),
-(NULL, NULL, NULL, NULL, 'paper_new_version_submission_author', 'paper_submission', NULL),
-(NULL, NULL, NULL, NULL, 'paper_new_version_temporary_submission_author', 'paper_submission', NULL),
-(NULL, NULL, NULL, NULL, 'inbox_paper_submission_author_copy', 'paper_submission', 1),
-(NULL, NULL, NULL, NULL, 'reminder_submitted_article_editors_copy', 'paper_review_reminder', NULL),
-(NULL, NULL, NULL, NULL, 'reminder_reviewed_article_editors_copy', 'paper_review_reminder', NULL),
-(NULL, NULL, NULL, NULL, 'paper_author_comment_editor_copy', 'paper_comment', NULL),
-(NULL, NULL, NULL, NULL, 'paper_revision_request', 'paper_revision', 1);
+(1, NULL, NULL, NULL, 'paper_abandon_publication_author_copy', 'abandon_publication_process', NULL),
+(2, NULL, NULL, NULL, 'paper_abandon_publication_by_author_author_copy', 'abandon_publication_process', NULL),
+(3, NULL, NULL, NULL, 'paper_abandon_publication_editor_copy', 'abandon_publication_process', NULL),
+(4, NULL, NULL, NULL, 'paper_abandon_publication_no_assigned_editors', 'abandon_publication_process', NULL),
+(5, NULL, NULL, NULL, 'paper_abandon_publication_reviewer_removal', 'abandon_publication_process', 3),
+(6, NULL, NULL, NULL, 'paper_accepted', 'paper_final_decision', 1),
+(7, NULL, NULL, NULL, 'paper_accepted_editors_copy', 'paper_final_decision', 2),
+(8, NULL, NULL, NULL, 'paper_accepted_tmp_version', 'paper_final_decision', 3),
+(9, NULL, NULL, NULL, 'paper_ask_other_editors', 'paper_final_decision', NULL),
+(10, NULL, NULL, NULL, 'paper_ce_accepted_final_version_author_copy', 'paper_copy_editing', 14),
+(11, NULL, NULL, NULL, 'paper_ce_accepted_final_version_copyeditor_and_editor_copy', 'paper_copy_editing', 13),
+(12, NULL, NULL, NULL, 'paper_ce_author_sources_deposed_response_author_copy', 'paper_copy_editing', 8),
+(13, NULL, NULL, NULL, 'paper_ce_author_sources_deposed_response_copyeditors_and_editors_copy', 'paper_copy_editing', 7),
+(14, NULL, NULL, NULL, 'paper_ce_author_vesrion_finale_deposed_author_copy', 'paper_copy_editing', 12),
+(15, NULL, NULL, NULL, 'paper_ce_author_vesrion_finale_deposed_editor_and_copyeditor_copy', 'paper_copy_editing', 11),
+(16, NULL, NULL, NULL, 'paper_ce_review_formatting_deposed_author_copy', 'paper_copy_editing', 16),
+(17, NULL, NULL, NULL, 'paper_ce_review_formatting_deposed_editor_and_copyeditor_copy', 'paper_copy_editing', 15),
+(18, NULL, NULL, NULL, 'paper_ce_waiting_for_author_formatting_author_copy', 'paper_copy_editing', 10),
+(19, NULL, NULL, NULL, 'paper_ce_waiting_for_author_formatting_editor_and_copyeditor_copy', 'paper_copy_editing', 9),
+(20, NULL, NULL, NULL, 'paper_ce_waiting_for_author_sources_author_copy', 'paper_copy_editing', 6),
+(21, NULL, NULL, NULL, 'paper_ce_waiting_for_author_sources_editor_copy', 'paper_copy_editing', 5),
+(22, NULL, NULL, NULL, 'paper_comment_answer_editor_copy', 'paper_comment', 4),
+(23, NULL, NULL, NULL, 'paper_comment_answer_reviewer_copy', 'paper_comment', 3),
+(24, NULL, NULL, NULL, 'paper_comment_author_copy', 'paper_comment', 1),
+(25, NULL, NULL, NULL, 'paper_comment_by_editor_editor_copy', 'paper_comment', 5),
+(26, NULL, NULL, NULL, 'paper_comment_editor_copy', 'paper_comment', 2),
+(27, NULL, NULL, NULL, 'paper_continue_publication_author_copy', 'continue_publication_process', NULL),
+(28, NULL, NULL, NULL, 'paper_continue_publication_editor_copy', 'continue_publication_process', NULL),
+(29, NULL, NULL, NULL, 'paper_copyeditor_assign', 'paper_copy_editing', 1),
+(30, NULL, NULL, NULL, 'paper_copyeditor_assign_author_copy', 'paper_copy_editing', 3),
+(31, NULL, NULL, NULL, 'paper_copyeditor_assign_editor_copy', 'paper_copy_editing', 2),
+(32, NULL, NULL, NULL, 'paper_copyeditor_unassign', 'paper_copy_editing', 4),
+(33, NULL, NULL, NULL, 'paper_deleted_author_copy', 'paper_submission', 3),
+(34, NULL, NULL, NULL, 'paper_deleted_editor_copy', 'paper_submission', 4),
+(35, NULL, NULL, NULL, 'paper_deleted_reviewer_copy', 'paper_submission', 5),
+(36, NULL, NULL, NULL, 'paper_editor_assign', 'paper_editor_assign', 1),
+(37, NULL, NULL, NULL, 'paper_editor_refused_monitoring', 'paper_editor_assign', 3),
+(38, NULL, NULL, NULL, 'paper_editor_unassign', 'paper_editor_assign', 2),
+(39, NULL, NULL, NULL, 'paper_major_revision_request', 'paper_revision', NULL),
+(40, NULL, NULL, NULL, 'paper_minor_revision_request', 'paper_revision', NULL),
+(41, NULL, NULL, NULL, 'paper_new_version_submitted', 'paper_revision', 4),
+(42, NULL, NULL, NULL, 'paper_published_author_copy', 'paper_final_decision', NULL),
+(43, NULL, NULL, NULL, 'paper_published_editor_copy', 'paper_final_decision', NULL),
+(44, NULL, NULL, NULL, 'paper_refused', 'paper_final_decision', 3),
+(45, NULL, NULL, NULL, 'paper_refused_editors_copy', 'paper_final_decision', 3),
+(46, NULL, NULL, NULL, 'paper_reviewed_editor_copy', 'paper_review', 5),
+(47, NULL, NULL, NULL, 'paper_reviewed_reviewer_copy', 'paper_review', 4),
+(48, NULL, NULL, NULL, 'paper_reviewer_acceptation_editor_copy', 'paper_review', NULL),
+(49, NULL, NULL, NULL, 'paper_reviewer_acceptation_reviewer_copy', 'paper_review', NULL),
+(50, NULL, NULL, NULL, 'paper_reviewer_invitation1', 'paper_review', NULL),
+(51, NULL, NULL, NULL, 'paper_reviewer_invitation2', 'paper_review', NULL),
+(52, NULL, NULL, NULL, 'paper_reviewer_invitation3', 'paper_review', NULL),
+(53, NULL, NULL, NULL, 'paper_reviewer_paper_accepted_stop_pending_reviewing', 'paper_review', 8),
+(54, NULL, NULL, NULL, 'paper_reviewer_paper_published_stop_pending_reviewing', 'paper_review', 11),
+(55, NULL, NULL, NULL, 'paper_reviewer_paper_refused_stop_pending_reviewing', 'paper_review', 10),
+(56, NULL, NULL, NULL, 'paper_reviewer_paper_revision_request_stop_pending_reviewing', 'paper_review', 9),
+(57, NULL, NULL, NULL, 'paper_reviewer_refusal_editor_copy', 'paper_review', NULL),
+(58, NULL, NULL, NULL, 'paper_reviewer_refusal_reviewer_copy', 'paper_review', NULL),
+(59, NULL, NULL, NULL, 'paper_reviewer_removal', 'paper_review', NULL),
+(60, NULL, NULL, NULL, 'paper_revision_answer', 'paper_revision', 2),
+(61, NULL, NULL, NULL, 'paper_section_editor_assign', 'paper_editor_assign', 1),
+(62, NULL, NULL, NULL, 'paper_submission_author_copy', 'paper_submission', 1),
+(63, NULL, NULL, NULL, 'paper_submission_editor_copy', 'paper_submission', 2),
+(64, NULL, NULL, NULL, 'paper_submission_other_recipient_copy', 'paper_submission', 8),
+(65, NULL, NULL, NULL, 'paper_submission_updated_author_copy', 'paper_submission', 7),
+(66, NULL, NULL, NULL, 'paper_submission_updated_editor_copy', 'paper_submission', 6),
+(67, NULL, NULL, NULL, 'paper_suggested_editor_assign', 'paper_editor_assign', 1),
+(68, NULL, NULL, NULL, 'paper_suggest_acceptation', 'paper_editor_suggestion', 1),
+(69, NULL, NULL, NULL, 'paper_suggest_new_version', 'paper_editor_suggestion', 3),
+(70, NULL, NULL, NULL, 'paper_suggest_refusal', 'paper_editor_suggestion', 2),
+(71, NULL, NULL, NULL, 'paper_tmp_version_reviewer_reassign', 'paper_review', 7),
+(72, NULL, NULL, NULL, 'paper_tmp_version_submitted', 'paper_revision', 3),
+(73, NULL, NULL, NULL, 'paper_updated_rating_deadline', 'paper_review', NULL),
+(74, NULL, NULL, NULL, 'paper_volume_editor_assign', 'paper_editor_assign', 1),
+(75, NULL, NULL, NULL, 'reminder_after_deadline_editor_version', 'paper_review_reminder', 5),
+(76, NULL, NULL, NULL, 'reminder_after_deadline_reviewer_version', 'paper_review_reminder', 3),
+(77, NULL, NULL, NULL, 'reminder_after_revision_deadline_author_version', 'paper_review_reminder', NULL),
+(78, NULL, NULL, NULL, 'reminder_after_revision_deadline_editor_version', 'paper_review_reminder', NULL),
+(79, NULL, NULL, NULL, 'reminder_article_blocked_in_accepted_state_editor_version', 'paper_review_reminder', NULL),
+(80, NULL, NULL, NULL, 'reminder_before_deadline_editor_version', 'paper_review_reminder', 6),
+(81, NULL, NULL, NULL, 'reminder_before_deadline_reviewer_version', 'paper_review_reminder', 2),
+(82, NULL, NULL, NULL, 'reminder_before_revision_deadline_author_version', 'paper_review_reminder', NULL),
+(83, NULL, NULL, NULL, 'reminder_before_revision_deadline_editor_version', 'paper_review_reminder', NULL),
+(84, NULL, NULL, NULL, 'reminder_not_enough_reviewers', 'paper_review_reminder', NULL),
+(85, NULL, NULL, NULL, 'reminder_unanswered_reviewer_invitation_editor_version', 'paper_review_reminder', 4),
+(86, NULL, NULL, NULL, 'reminder_unanswered_reviewer_invitation_reviewer_version', 'paper_review_reminder', 1),
+(87, NULL, NULL, NULL, 'user_lost_login', 'user', 2),
+(88, NULL, NULL, NULL, 'user_lost_password', 'user', 3),
+(89, NULL, NULL, NULL, 'user_registration', 'user', 1),
+(90, NULL, NULL, NULL, 'paper_accepted_tmp_version_managers_copy', 'paper_final_decision', 2),
+(91, NULL, NULL, NULL, 'paper_accepted_ask_authors_final_version', 'paper_final_decision', 4),
+(92, NULL, NULL, NULL, 'paper_formatted_by_journal_waiting_author_validation', 'paper_copy_editing', 17),
+(93, NULL, NULL, NULL, 'paper_accepted_ask_authors_final_version', 'paper_final_decision', 4),
+(94, NULL, NULL, NULL, 'paper_formatted_by_journal_waiting_author_validation', 'paper_copy_editing', 17),
+(95, NULL, NULL, NULL, 'paper_new_version_submission_author', 'paper_submission', NULL),
+(96, NULL, NULL, NULL, 'paper_new_version_temporary_submission_author', 'paper_submission', NULL),
+(97, NULL, NULL, NULL, 'inbox_paper_submission_author_copy', 'paper_submission', 1),
+(98, NULL, NULL, NULL, 'reminder_submitted_article_editors_copy', 'paper_review_reminder', NULL),
+(99, NULL, NULL, NULL, 'reminder_reviewed_article_editors_copy', 'paper_review_reminder', NULL),
+(100, NULL, NULL, NULL, 'paper_author_comment_editor_copy', 'paper_comment', NULL),
+(101, NULL, NULL, NULL, 'paper_revision_request', 'paper_revision', 1),
+(102, NULL, NULL, NULL, 'paper_coi_unassign_chief_editor_copy', 'paper_editor_assign', 4),
+(103, NULL, NULL, NULL, 'paper_coi_unassign_other_editors_copy', 'paper_editor_assign', 5),
+(104, NULL, NULL, NULL, 'paper_former_contributor_notification', 'paper_submission', NULL),
+(105, NULL, NULL, NULL, 'paper_new_contributor_notification', 'paper_submission', NULL);
 
 -- --------------------------------------------------------
 
@@ -8022,6 +8026,7 @@ CREATE TABLE `paper_files` (
                                `self_link` varchar(750) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
                                `file_size` bigint UNSIGNED NOT NULL,
                                `file_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                               `is_main` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Indicates that this is the main file ',
                                `time_modified` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -8036,8 +8041,21 @@ CREATE TABLE `paper_licences` (
                                   `licence` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
                                   `docid` int UNSIGNED NOT NULL,
                                   `source_id` int UNSIGNED NOT NULL,
-                                  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                  `uid` int UNSIGNED DEFAULT NULL COMMENT 'edited by'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `paper_license_code`
+--
+
+CREATE TABLE `paper_license_code` (
+                                      `id` int UNSIGNED NOT NULL,
+                                      `docid` int UNSIGNED NOT NULL,
+                                      `code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'SPDX identifier'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -8484,6 +8502,43 @@ CREATE TABLE `USER_TMP` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `user_su_log`
+--
+
+CREATE TABLE `user_su_log` (
+                               `id` int UNSIGNED NOT NULL,
+                               `rvid` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Review ID, 0 for portal',
+                               `from_uid` int UNSIGNED NOT NULL COMMENT 'Initiating user UID',
+                               `to_uid` int UNSIGNED NOT NULL COMMENT 'Target user UID',
+                               `action` varchar(30) NOT NULL COMMENT 'GRANTED, DENIED, UNSU',
+                               `reason` varchar(50) DEFAULT NULL COMMENT 'Reason code when DENIED, or how an UNSU happened (conflict_confirmation, logout)',
+                               `ip_address` varchar(45) DEFAULT NULL COMMENT 'Client IP from REMOTE_ADDR (IPv4 up to 15, IPv6 up to 45 chars)',
+                               `user_agent` varchar(255) DEFAULT NULL COMMENT 'Client HTTP User-Agent',
+                               `session_id` varchar(128) DEFAULT NULL COMMENT 'SHA-256 of the session identifier',
+                               `details` json DEFAULT NULL COMMENT 'Snapshot of roles and context',
+                               `is_anonymized` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 once IP, user agent and session hash have been anonymized after retention period',
+                               `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Audit trail of Switch User (impersonation) sessions';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_token`
+--
+
+CREATE TABLE `user_token` (
+                              `id` int UNSIGNED NOT NULL,
+                              `uid` int UNSIGNED NOT NULL COMMENT 'Account UID',
+                              `email` varchar(320) NOT NULL COMMENT 'E-mail address the link was sent to',
+                              `purpose` varchar(30) NOT NULL COMMENT 'ACCOUNT_ACTIVATION, PASSWORD_RESET, ACCOUNT_SETUP',
+                              `token_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'SHA-256 of the link token, never the token itself',
+                              `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              `expires_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Single-use account link tokens with an expiry date';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `VOLUME`
 --
 
@@ -8863,8 +8918,10 @@ ALTER TABLE `paper_datasets_meta`
 --
 ALTER TABLE `paper_files`
     ADD PRIMARY KEY (`id`),
+    ADD UNIQUE KEY `unique_docid_self_link` (`doc_id`,`self_link`),
     ADD KEY `doc_id` (`doc_id`),
-    ADD KEY `source` (`source`);
+    ADD KEY `source` (`source`),
+    ADD KEY `is_main_index` (`is_main`);
 
 --
 -- Indexes for table `paper_licences`
@@ -8872,7 +8929,15 @@ ALTER TABLE `paper_files`
 ALTER TABLE `paper_licences`
     ADD PRIMARY KEY (`id`),
     ADD UNIQUE KEY `docid` (`docid`),
-    ADD KEY `source_id` (`source_id`);
+    ADD KEY `source_id` (`source_id`),
+    ADD KEY `uid` (`uid`);
+
+--
+-- Indexes for table `paper_license_code`
+--
+ALTER TABLE `paper_license_code`
+    ADD PRIMARY KEY (`id`),
+    ADD UNIQUE KEY `uniq_docid` (`docid`) USING BTREE;
 
 --
 -- Indexes for table `PAPER_LOG`
@@ -9075,6 +9140,27 @@ ALTER TABLE `USER_TMP`
     ADD KEY `EMAIL` (`EMAIL`(150));
 
 --
+-- Indexes for table `user_su_log`
+--
+ALTER TABLE `user_su_log`
+    ADD PRIMARY KEY (`id`),
+    ADD KEY `idx_from_uid` (`from_uid`),
+    ADD KEY `idx_to_uid` (`to_uid`),
+    ADD KEY `idx_rvid` (`rvid`),
+    ADD KEY `idx_action` (`action`),
+    ADD KEY `idx_anonymization` (`is_anonymized`,`created_at`),
+    ADD KEY `idx_created_at` (`created_at`);
+
+--
+-- Indexes for table `user_token`
+--
+ALTER TABLE `user_token`
+    ADD PRIMARY KEY (`id`),
+    ADD UNIQUE KEY `uniq_token_hash` (`token_hash`),
+    ADD KEY `idx_uid_purpose` (`uid`,`purpose`),
+    ADD KEY `idx_expires_at` (`expires_at`);
+
+--
 -- Indexes for table `VOLUME`
 --
 ALTER TABLE `VOLUME`
@@ -9275,6 +9361,12 @@ ALTER TABLE `paper_licences`
     MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `paper_license_code`
+--
+ALTER TABLE `paper_license_code`
+    MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `PAPER_LOG`
 --
 ALTER TABLE `PAPER_LOG`
@@ -9387,6 +9479,18 @@ ALTER TABLE `USER_MERGE`
 --
 ALTER TABLE `USER_TMP`
     MODIFY `ID` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `user_su_log`
+--
+ALTER TABLE `user_su_log`
+    MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `user_token`
+--
+ALTER TABLE `user_token`
+    MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `VOLUME`
