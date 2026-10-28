@@ -341,17 +341,21 @@ class StatsController extends Zend_Controller_Action
         $this->view->totalsExplained = !isset($dashboard['value']['totalWithoutStartAfterDate']);
 
         // CSV exports: base name of the files, and the figures of the page
-        $this->view->exportName = self::getExportName(RVCODE, $yearQuery, $fullHistory);
+        $this->view->exportName = self::getExportName(RVCODE, $yearQuery, $fullHistory, fn(string $text): string => (string)$this->view->translate($text));
         $this->view->figuresExport = $this->getFiguresExport($startStatsAfterDate);
 
     }
 
     /**
-     * Base name of the CSV files of the page: journal, year, all the data or not
+     * Base name of the CSV files of the page, in the language of the page: journal, year, all the data or not
+     * (made a file name by the page: lower case, without accents nor spaces)
+     * @param callable(string): string|null $translate
      */
-    public static function getExportName(string $journalCode, ?int $year, bool $fullHistory = false): string
+    public static function getExportName(string $journalCode, ?int $year, bool $fullHistory = false, ?callable $translate = null): string
     {
-        return implode('-', array_filter(['statistiques', $journalCode, $year ?: 'tout', $fullHistory ? 'donnees-completes' : null]));
+        $translate ??= static fn(string $text): string => $text;
+
+        return implode('-', array_filter([$translate('statistiques'), $journalCode, $year ?: $translate('tout'), $fullHistory ? $translate('données complètes') : null]));
     }
 
     /**

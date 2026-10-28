@@ -1,5 +1,6 @@
 <?php
-// Papers of a figure: button opening the papers window, and number of papers not listed (conflict of interest)
+// Papers of a figure: button opening the papers window, and number of papers not listed (conflict of interest);
+// the window takes the title of the figure, or the title given with the list (a list shown under another title)
 $paperList = $this->paperList ?? null;
 
 if (!is_array($paperList) || !isset($paperList['figure'])) {
@@ -17,7 +18,7 @@ if (!$count && !$hidden) {
 <div class="stat-papers">
     <?php if ($count): ?>
         <button type="button" class="btn btn-link btn-xs stat-papers-open" aria-haspopup="dialog"
-                data-figure="<?= $this->escape($paperList['figure']) ?>">
+                data-figure="<?= $this->escape($paperList['figure']) ?>"<?php if (!empty($paperList['title'])): ?> data-title="<?= $this->escape($paperList['title']) ?>"<?php endif; ?>>
             <span class="fas fa-list fa-sm" aria-hidden="true"></span>
             <?= sprintf($this->translate($label), $count) ?>
         </button>

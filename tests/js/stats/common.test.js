@@ -312,23 +312,53 @@ describe('CSV file of a chart', function () {
         delete global.statCsvFileName;
     });
 
-    it('is named after the chart and its export suffix', function () {
+    function exportedFileName(canvas, options) {
         document.body.innerHTML = `
-            <canvas id="submissions-delay-chart"></canvas>
-            <div class="stat-chart-data" data-chart="submissions-delay-chart"></div>
+            ${canvas}
+            <div class="stat-chart-data" data-chart="submissions-by-year-chart"></div>
         `;
-        let fileParts = null;
+        let fileName = null;
         global.statCsvFileName = jest.fn(parts => parts.join('-'));
         global.createCsvButton = jest.fn((label, getData) => {
-            fileParts = getData().fileName;
+            fileName = getData().fileName;
             return document.createElement('button');
         });
 
-        createBarChart('submissions-delay-chart', ['2023'], datasets(), {
-            exportSuffix: 'mediane',
-        });
+        createBarChart(
+            'submissions-by-year-chart',
+            ['2023'],
+            datasets(),
+            options
+        );
 
-        expect(fileParts).toBe('statistiques-submissions-delay-mediane');
+        return fileName;
+    }
+
+    it('is named after the title of the chart, as shown', function () {
+        expect(
+            exportedFileName(
+                '<canvas id="submissions-by-year-chart" aria-label="Submissions, decisions and publications by year"></canvas>',
+                {}
+            )
+        ).toBe('statistiques-Submissions, decisions and publications by year');
+    });
+
+    it('is named after the name given by the chart', function () {
+        expect(
+            exportedFileName(
+                '<canvas id="submissions-by-year-chart" aria-label="Median delay in days between submission and acceptance | submission and publication"></canvas>',
+                { exportName: 'Delays Median' }
+            )
+        ).toBe('statistiques-Delays Median');
+    });
+
+    it('is named after the chart without title', function () {
+        expect(
+            exportedFileName(
+                '<canvas id="submissions-by-year-chart"></canvas>',
+                {}
+            )
+        ).toBe('statistiques-submissions-by-year');
     });
 });
 
