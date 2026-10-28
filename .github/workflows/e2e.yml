@@ -144,6 +144,16 @@ jobs:
           APPLICATION_ENV: development
           RVCODE: dev
 
+      # Indexes published papers in Solr, as the worker-solr-index service of docker-compose.yml: the
+      # volume pages list the indexed papers
+      - name: Start Solr Indexing Worker
+        run: |
+          nohup php scripts/console.php episciences:worker --transport=solr_index --time-limit=3600 \
+            --memory-limit=512M > /tmp/solr-worker.log 2>&1 &
+        env:
+          APPLICATION_ENV: development
+          RVCODE: dev
+
       - name: Wait for Solr
         run: |
           curl --retry 30 --retry-delay 2 --retry-all-errors --fail --silent --show-error --output /dev/null \
@@ -157,7 +167,10 @@ jobs:
 
       - name: Show web server log
         if: failure()
-        run: tail -n 200 /tmp/php-server.log
+        run: |
+          tail -n 200 /tmp/php-server.log
+          echo '--- Solr indexing worker'
+          tail -n 50 /tmp/solr-worker.log
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v7
