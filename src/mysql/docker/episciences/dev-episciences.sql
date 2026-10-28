@@ -7619,6 +7619,19 @@ CREATE TABLE `mailing_lists` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `license_spdx`
+-- Filled from the official SPDX list by: php scripts/console.php import:spdx-license-list
+--
+
+CREATE TABLE `license_spdx` (
+                                `code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                                `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                                `recommended` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `mailing_list_roles`
 --
 
@@ -8770,6 +8783,12 @@ ALTER TABLE `mailing_lists`
     ADD PRIMARY KEY (`id`),
     ADD UNIQUE KEY `name_unique` (`name`),
     ADD KEY `rvid` (`rvid`);
+
+--
+-- Indexes for table `license_spdx`
+--
+ALTER TABLE `license_spdx`
+    ADD PRIMARY KEY (`code`);
 
 --
 -- Indexes for table `mailing_list_roles`
