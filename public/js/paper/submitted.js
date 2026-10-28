@@ -220,10 +220,36 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
         },
     });
 
+    // Re-measure the columns when an image of the rows is loaded (capture: load does not bubble).
+    // The same listener is added once, even if the table is rebuilt.
+    oTable.table().node().addEventListener('load', adjustColumnsOnImageLoad, true);
+
     // oTable.column(9).visible(false);
     addToggleButton('.dataTable', '.dt-header .right');
 
     return oTable;
+}
+
+var tablesToAdjust = new Set();
+
+/**
+ * The column widths are measured when the table is drawn. With scrollX the header is a separate
+ * table: an image loaded afterwards (paper status icon) widens its column in the body only.
+ * @param {Event} event
+ */
+function adjustColumnsOnImageLoad(event) {
+    const table = this;
+
+    if (event.target.tagName !== 'IMG' || tablesToAdjust.has(table)) {
+        return;
+    }
+
+    // Once per frame, the images of a page being loaded together
+    tablesToAdjust.add(table);
+    requestAnimationFrame(function () {
+        tablesToAdjust.delete(table);
+        $(table).DataTable().columns.adjust();
+    });
 }
 
 /**
