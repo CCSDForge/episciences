@@ -10,6 +10,8 @@ const { expect } = require('@playwright/test');
  */
 
 const ARXIV_REPO_ID = '2';
+const REVIEWER_USERNAME = 'e2e_reviewer';
+const REVIEWER_EMAIL = 'e2e_reviewer@example.org';
 const MINIMAL_PDF = path.resolve(__dirname, '..', 'fixtures', 'files', 'minimal.pdf');
 
 // Fetching metadata from arXiv goes over the network
@@ -104,6 +106,58 @@ async function inviteKnownReviewer(page, docid, username) {
 }
 
 /**
+ * Has the E2E reviewer review a paper: the journal requires a completed review before a paper can be
+ * accepted, published or sent back for revision (requiredReviewers, set by app:e2e-seed).
+ * The paper is first assigned to a volume with its own rating grid, so that the review form does not
+ * depend on the default grid of the journal.
+ * @param {Object} pages
+ * @param {import('@playwright/test').Page} pages.adminPage editorial page
+ * @param {import('@playwright/test').Page} pages.reviewerPage
+ * @param {import('./mailpit-client').MailpitClient} pages.mailpit
+ * @param {number} docid
+ * @param {Object} [options]
+ * @param {number} [options.vid] volume to review the paper in, a new one by default
+ */
+async function completeReview({ adminPage, reviewerPage, mailpit }, docid, { vid } = {}) {
+    vid ??= await createVolume(adminPage, `E2E Review volume ${Date.now()}`);
+    await createVolumeGrid(adminPage, vid);
+    await addQuantitativeCriterion(adminPage, vid, {
+        title: `E2E soundness ${Date.now()}`,
+        description: 'Is the paper sound?',
+    });
+    await assignMasterVolume(adminPage, docid, vid);
+
+    await inviteKnownReviewer(adminPage, docid, REVIEWER_USERNAME);
+
+    const email = await mailpit.waitForEmail({
+        to: REVIEWER_EMAIL,
+        subjectContains: [`#${docid} `, 'You are invited to review an article'],
+    });
+    const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
+    expect(invitationUrl).toBeTruthy();
+
+    // The link targets the configured application URL: only its path is kept
+    await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+    await reviewerPage.locator('#submitaccept').click();
+    await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
+
+    // The grid has a single criterion, graded on a 0-5 scale, with a comment
+    const grade = reviewerPage.locator('form#rating-grid select[name^="note_item_"]');
+    await expect(grade).toHaveCount(1);
+    await grade.selectOption({ label: '4/5' });
+    // Comment fields are TinyMCE editors, initialised once the page has loaded
+    await reviewerPage.waitForFunction(() => {
+        const editors = window.tinymce?.get() ?? [];
+        return editors.length > 0 && editors.every(editor => editor.initialized);
+    });
+    await reviewerPage.evaluate(() => {
+        window.tinymce.get().forEach(editor => editor.setContent('<p>E2E review.</p>'));
+    });
+    await reviewerPage.locator('#validateRating').click();
+    await expect(reviewerPage).toHaveURL(/paper\/ratings/);
+}
+
+/**
  * Creates a volume and returns its id.
  * @param {import('@playwright/test').Page} page editorial page
  * @param {string} title must start with "E2E " so that the next run removes it
@@ -189,6 +243,7 @@ module.exports = {
     statusPanel,
     applyDecision,
     inviteKnownReviewer,
+    completeReview,
     createVolume,
     assignMasterVolume,
     createVolumeGrid,

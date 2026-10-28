@@ -16,7 +16,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * With --reset, it also removes what previous E2E runs left in the journal: every paper submitted by
  * the E2E author (with its assignments and invitations), then every volume and section whose title
  * starts with E2E_TITLE_PREFIX, together with the rating grid of each removed volume.
- * Nothing else is touched: data that does not belong to the E2E accounts stays as it is.
+ * Nothing else is touched: data that does not belong to the E2E accounts stays as it is, apart from the
+ * journal settings the suite relies on (see applyJournalSettings()).
  */
 #[AsCommand(name: 'app:e2e-seed', description: 'Seeds deterministic E2E test users with known credentials and roles.')]
 class E2ESeedCommand extends Command
@@ -156,6 +157,8 @@ class E2ESeedCommand extends Command
 
         $io->table(['Username', 'Roles', 'Email', 'Status'], $results);
 
+        $this->applyJournalSettings($rvid);
+
         if ($input->getOption('reset')) {
             $this->resetJournalData($io, $rvid);
         }
@@ -163,6 +166,26 @@ class E2ESeedCommand extends Command
         $io->success("E2E seed finished. All test user passwords are: $password");
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Applies the journal settings the suite relies on, on every run.
+     */
+    private function applyJournalSettings(int $rvid): void
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $settings = [
+            // A paper needs a completed review before it can be accepted, published or sent back for revision
+            Episciences_Review::SETTING_REQUIRED_REVIEWERS => '1',
+        ];
+
+        foreach ($settings as $setting => $value) {
+            $db->query(
+                'INSERT INTO ' . T_REVIEW_SETTINGS . ' (RVID, SETTING, VALUE) VALUES (?, ?, ?) AS new_row'
+                . ' ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE',
+                [$rvid, $setting, $value]
+            );
+        }
     }
 
     /**

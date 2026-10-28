@@ -5,6 +5,7 @@ const {
     openPaperManagement,
     statusPanel,
     applyDecision,
+    completeReview,
 } = require('../../helpers/editorial-workflow');
 
 const AUTHOR_EMAIL = 'e2e_author@example.org';
@@ -23,10 +24,12 @@ test.describe('Revisions', () => {
     test('a minor revision answered with a new version starts a new round on the new version', async ({
         authorPage,
         adminPage,
+        reviewerPage,
         mailpit,
     }) => {
-        test.setTimeout(180000);
+        test.setTimeout(240000);
         const docid = await submitArxivPaper(authorPage, { arxivId: '1312.6114', version: 1 });
+        await completeReview({ adminPage, reviewerPage, mailpit }, docid);
 
         await test.step('the editorial team asks for a minor revision', async () => {
             await applyDecision(adminPage, docid, 'minor-revision-modal');
@@ -69,9 +72,15 @@ test.describe('Revisions', () => {
         });
     });
 
-    test('a major revision can be answered without modifying the paper', async ({ authorPage, adminPage }) => {
-        test.setTimeout(120000);
+    test('a major revision can be answered without modifying the paper', async ({
+        authorPage,
+        adminPage,
+        reviewerPage,
+        mailpit,
+    }) => {
+        test.setTimeout(180000);
         const docid = await submitArxivPaper(authorPage, { arxivId: '1406.2661' });
+        await completeReview({ adminPage, reviewerPage, mailpit }, docid);
 
         await test.step('the editorial team asks for a major revision', async () => {
             await applyDecision(adminPage, docid, 'major-revision-modal');

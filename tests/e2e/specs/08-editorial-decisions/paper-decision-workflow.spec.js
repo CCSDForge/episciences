@@ -1,12 +1,27 @@
 const { test, expect } = require('../../fixtures/e2e-fixtures');
-const { submitArxivPaper, openPaperManagement, statusPanel, applyDecision } = require('../../helpers/editorial-workflow');
+const {
+    submitArxivPaper,
+    openPaperManagement,
+    statusPanel,
+    applyDecision,
+    completeReview,
+} = require('../../helpers/editorial-workflow');
 
 const AUTHOR_EMAIL = 'e2e_author@example.org';
 
 test.describe('Editorial decisions', () => {
-    test('accepting a paper changes its status and notifies the author', async ({ authorPage, adminPage, mailpit }) => {
-        test.setTimeout(120000);
+    test('accepting a paper changes its status and notifies the author', async ({
+        authorPage,
+        adminPage,
+        reviewerPage,
+        mailpit,
+    }) => {
+        test.setTimeout(180000);
         const docid = await submitArxivPaper(authorPage, { arxivId: '1412.6980' });
+
+        await test.step('the paper is reviewed', async () => {
+            await completeReview({ adminPage, reviewerPage, mailpit }, docid);
+        });
 
         await test.step('the editorial team accepts the paper', async () => {
             await applyDecision(adminPage, docid, 'acceptance-modal');

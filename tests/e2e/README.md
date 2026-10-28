@@ -36,7 +36,10 @@ Before the tests, `global-setup.js` runs `php scripts/console.php app:e2e-seed -
   in chief);
 - it removes what previous runs left in the journal: every paper of `e2e_author`, then every volume
   and section whose English title starts with `E2E `, with the rating grid of each removed volume.
-  Nothing else is touched.
+  Nothing else is touched;
+- it sets the journal settings the suite relies on: one completed review at least before a paper can
+  be accepted, published or sent back for revision (`requiredReviewers`). The specs have the paper
+  reviewed first (`completeReview()` in `helpers/editorial-workflow.js`).
 
 Environment variables:
 
@@ -108,6 +111,11 @@ tests/e2e/
 `.github/workflows/e2e.yml` installs the application on the runner, serves it with
 `php -S` (`.github/scripts/e2e-router.php` mirrors `public/.htaccess`) under `dev.episciences.org`,
 which absolute URLs require, and runs the suite with `E2E_PHP_EXEC=php`.
+
+The CI journal starts empty: `tests/fixtures/e2e-journal.sql` adds the repositories and journal
+settings the specs need, `tests/fixtures/e2e-navigation.json` declares its public pages. A Solr
+container (configset of `src/solr/episciences`) and the Solr indexing worker run next to the web
+server: the volume pages list the papers indexed in Solr.
 
 It runs on pull requests targeting `staging` or `main`, and can be triggered manually
 (`workflow_dispatch`).

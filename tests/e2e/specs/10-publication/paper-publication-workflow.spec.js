@@ -5,8 +5,8 @@ const {
     submitArxivPaper,
     statusPanel,
     applyDecision,
+    completeReview,
     createVolume,
-    assignMasterVolume,
 } = require('../../helpers/editorial-workflow');
 
 const AUTHOR_EMAIL = 'e2e_author@example.org';
@@ -16,20 +16,20 @@ test.describe('Publication', () => {
     test('an accepted paper is published in a volume, which can then no longer be deleted', async ({
         authorPage,
         adminPage,
+        reviewerPage,
         page,
         mailpit,
     }) => {
-        test.setTimeout(180000);
+        test.setTimeout(240000);
         const volumeTitle = `E2E Publication volume ${Date.now()}`;
         let docid;
         let vid;
 
-        await test.step('an accepted paper is assigned to a volume', async () => {
+        await test.step('the paper is reviewed in a volume, then accepted', async () => {
             docid = await submitArxivPaper(authorPage, { arxivId: '1505.04597' });
-            await applyDecision(adminPage, docid, 'acceptance-modal');
-
             vid = await createVolume(adminPage, volumeTitle);
-            await assignMasterVolume(adminPage, docid, vid);
+            await completeReview({ adminPage, reviewerPage, mailpit }, docid, { vid });
+            await applyDecision(adminPage, docid, 'acceptance-modal');
             await expect(adminPage.locator('.panel:has(h2:has-text("Volumes & sections"))')).toContainText(volumeTitle);
         });
 
@@ -43,8 +43,11 @@ test.describe('Publication', () => {
         });
 
         await test.step('anonymous visitors see the paper in its volume', async () => {
-            await page.goto(`volume/view/id/${vid}`);
-            await expect(page.getByRole('link', { name: PAPER_TITLE }).first()).toBeVisible();
+            // The volume page lists the papers indexed in Solr, which the indexing worker updates asynchronously
+            await expect(async () => {
+                await page.goto(`volume/view/id/${vid}`);
+                await expect(page.getByRole('link', { name: PAPER_TITLE }).first()).toBeVisible({ timeout: 1000 });
+            }).toPass({ timeout: 30000 });
 
             await page.goto(`paper/view/id/${docid}`);
             await expect(page.getByText(PAPER_TITLE).first()).toBeVisible();
@@ -67,10 +70,12 @@ test.describe('Publication', () => {
     test('copy editing by the author: the formatted version is uploaded, then the paper is published', async ({
         authorPage,
         adminPage,
+        reviewerPage,
         mailpit,
     }) => {
-        test.setTimeout(180000);
+        test.setTimeout(240000);
         const docid = await submitArxivPaper(authorPage, { arxivId: '1502.03167' });
+        await completeReview({ adminPage, reviewerPage, mailpit }, docid);
 
         await test.step('the editorial team accepts the paper and asks the author for the formatted version', async () => {
             await applyDecision(adminPage, docid, 'acceptance-modal');
