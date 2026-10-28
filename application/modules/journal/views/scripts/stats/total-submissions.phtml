@@ -3,6 +3,10 @@
 $totalsPaperLists = $this->totalsExplained ? ($this->paperLists ?? []) : [];
 $isYear = isset($this->year);
 $importedMessage = static fn($count) => $count > 1 ? 'dont %s importés' : 'dont %s importé';
+// the list of the submissions, under the title of the tile (articles)
+$articlesPaperList = isset($totalsPaperLists[StatsController::NB_SUBMISSIONS])
+    ? $totalsPaperLists[StatsController::NB_SUBMISSIONS] + ['title' => ucfirst($this->translate('articles'))]
+    : null;
 ?>
 <li class="stat-tiles-row submissions-totals">
     <ul class="list-unstyled stat-tiles">
@@ -12,7 +16,7 @@ $importedMessage = static fn($count) => $count > 1 ? 'dont %s importés' : 'dont
                     'itemValue' => $this->totalArticles,
                     'help' => $isYear ? ['message' => 'Cela inclut seulement les articles soumis cette année.', 'isTooltip' => true] : null,
                     'context' => $this->totalImportedArticles ? ['message' => $importedMessage($this->totalImportedArticles), 'value' => $this->totalImportedArticles] : null,
-                    'paperList' => $totalsPaperLists[StatsController::NB_SUBMISSIONS] ?? null,
+                    'paperList' => $articlesPaperList,
                     'morePaperLists' => $this->totalImportedArticles ? [['paperList' => $totalsPaperLists[StatsController::NB_IMPORTED] ?? null, 'label' => 'Voir les articles importés (%s)']] : [],
             ]) ?>
 

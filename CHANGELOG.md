@@ -75,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Statistics page: when the journal starts its statistics at a given date, its administrators can include the earlier data with an on / off switch; the public still sees the statistics from that date.
 - Statistics page: CSV exports of the figures of the page, of the data of each chart and, for the journal administrators, of the lists of papers.
 - Statistics page: a "Mean | Median" selector chooses the delay shown by the delay table and by the delays-by-year chart, without reloading the page; the median is shown by default and the choice is kept from a page to another. The chart gives the number of articles of each delay, explains that an article is counted the year of its acceptance or publication, uses the unit of the delays given by the API, and its CSV file is named after the value shown. Without JavaScript, the selector is hidden and the table shows both values. The median by year requires the matching Episciences API version; otherwise the chart keeps showing the mean.
+- Statistics page: the CSV files are named in the language of the page after the indicator, as shown: the title of the chart, the title of the list of papers (e.g. `statistics-dev-all-accepted-articles.csv`), instead of an internal name (`nbaccepted`, `submissions-by-year`). The list of the "articles" tile is titled "Articles" instead of "Submissions".
 
 ### Fixed
 

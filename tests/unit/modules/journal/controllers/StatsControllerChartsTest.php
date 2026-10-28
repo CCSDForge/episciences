@@ -226,7 +226,17 @@ class StatsControllerChartsTest extends TestCase
     {
         $this->assertSame('statistiques-dev-tout', StatsController::getExportName('dev', null));
         $this->assertSame('statistiques-dev-2026', StatsController::getExportName('dev', 2026));
-        $this->assertSame('statistiques-dev-2026-donnees-completes', StatsController::getExportName('dev', 2026, true));
+        // made a file name by the page (lower case, without accents nor spaces)
+        $this->assertSame('statistiques-dev-2026-données complètes', StatsController::getExportName('dev', 2026, true));
+    }
+
+    public function testGetExportName_InTheLanguageOfThePage(): void
+    {
+        $english = ['statistiques' => 'statistics', 'tout' => 'all', 'données complètes' => 'full data'];
+        $translate = static fn(string $text): string => $english[$text] ?? $text;
+
+        $this->assertSame('statistics-dev-all', StatsController::getExportName('dev', null, false, $translate));
+        $this->assertSame('statistics-dev-2026-full data', StatsController::getExportName('dev', 2026, true, $translate));
     }
 
     public function testBuildFiguresExport_FiguresWithoutValueLeftOut(): void

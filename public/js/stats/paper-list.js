@@ -156,6 +156,7 @@ function initStatPapers() {
 
     const state = {
         figure: null,
+        title: '',
         rows: [],
         // date columns of the figure (only the relevant dates), sent by the server
         columns: [],
@@ -362,9 +363,11 @@ function initStatPapers() {
         return data;
     }
 
-    async function open(figure) {
+    async function open(figure, title) {
         state.figure = figure;
-        titleEl.textContent = titles[figure] || '';
+        // the title of the figure, or the one of the button (a list shown under another title)
+        state.title = title || titles[figure] || '';
+        titleEl.textContent = state.title;
         state.rows = [];
         state.query = '';
         searchEl.value = '';
@@ -419,7 +422,9 @@ function initStatPapers() {
     }
 
     document.querySelectorAll('.stat-papers-open').forEach(button => {
-        button.addEventListener('click', () => open(button.dataset.figure));
+        button.addEventListener('click', () =>
+            open(button.dataset.figure, button.dataset.title)
+        );
     });
 
     dialog.querySelector('.stat-papers-close').addEventListener('click', close);
@@ -455,7 +460,8 @@ function initStatPapers() {
                     typeof statsExportName === 'function'
                         ? statsExportName()
                         : 'statistiques',
-                    state.figure,
+                    // named after the indicator, as shown
+                    state.title || state.figure,
                 ]),
                 buildPapersCsvRows(
                     statPapersFilterSort(
