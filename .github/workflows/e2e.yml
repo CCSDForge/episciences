@@ -170,12 +170,14 @@ jobs:
         env:
           CI: true
 
-      - name: Show web server log
+      - name: Show web server and application logs
         if: failure()
         run: |
           tail -n 200 /tmp/php-server.log
           echo '--- Solr indexing worker'
           tail -n 50 /tmp/solr-worker.log
+          echo '--- Application logs'
+          find tmp/test-logs -type f -exec tail -n 50 {} +
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v7
