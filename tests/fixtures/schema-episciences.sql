@@ -980,9 +980,11 @@ CREATE TABLE `paper_licences` (
   `docid` int unsigned NOT NULL,
   `source_id` int unsigned NOT NULL,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `uid` int unsigned DEFAULT NULL COMMENT 'edited by',
   PRIMARY KEY (`id`),
   UNIQUE KEY `docid` (`docid`),
-  KEY `source_id` (`source_id`)
+  KEY `source_id` (`source_id`),
+  KEY `uid` (`uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `paper_license_code`;
