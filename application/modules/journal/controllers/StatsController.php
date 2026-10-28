@@ -413,7 +413,7 @@ class StatsController extends Zend_Controller_Action
             [$t('délai soumission-publication') . ' – ' . $view->translate('médiane') . $unit($view->submissionPublicationTimeMedianUnit), $view->submissionPublicationTimeMedian],
             [$t('Évaluations demandées'), $view->reviewsRequested],
             [$t('Évaluations reçues'), $view->reviewsReceived],
-            [$t("Nombre médian d'évaluations d'articles de recherche"), $view->medianReviewsNumber],
+            [$t("Nombre médian d'évaluations par article évalué"), $view->medianReviewsNumber],
             [$t("Nombre total d'utilisateurs"), $view->isAvailableUsersStats ? $view->allUsers : null],
         ]);
     }

@@ -80,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Statistics page: the evaluations block is also shown when only the median number of reviews is known.
 - Statistics page: the evaluation figures (reviews requested, reviews received, median number of reviews) follow the start date of the statistics of the journal and the full-history switch, as the other figures. The start date requires the matching Episciences API version; the number of reviews requested now counts all the invitations sent, not only the pending ones (Episciences API).
+- Statistics page: the median number of reviews is labelled "per reviewed article" instead of "of research articles" (it is computed on all the reviewed articles, all their versions together), and each evaluation figure explains what it counts in a tooltip.
 - Statistics page: in the chart by year and status, the values of a series were shown one year too early after a year without any value.
 - Statistics page: the page no longer waits indefinitely when the Episciences API is unreachable (5 s to connect, 30 s in total).
 
