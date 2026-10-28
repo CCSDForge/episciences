@@ -507,4 +507,16 @@ class ProcessInboxNotificationsCommandTest extends TestCase
         $this->assertLessThan($flagPos, $clonePos, 'The FLAG must be reset after the previous version is cloned.');
         $this->assertLessThan($savePos, $flagPos, 'The FLAG must be reset before the new version is saved.');
     }
+
+    public function testAutoAssignEditorsSkipsJournalsWithoutChiefEditorsAssignment(): void
+    {
+        $journal = $this->createMock(\Episciences_Review::class);
+        $journal->method('getSetting')
+            ->with(\Episciences_Review::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT)
+            ->willReturn([\Episciences_Review::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS]);
+
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'autoAssignEditors');
+
+        $this->assertSame([], $method->invoke($this->command, new \Episciences_Paper(), $journal, $this->logger));
+    }
 }
