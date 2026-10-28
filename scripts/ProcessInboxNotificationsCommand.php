@@ -44,17 +44,17 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 #[AsCommand(name: 'notify:process-inbox', description: 'Process inbound COAR Notify notifications from repository inboxes (e.g. HAL)', aliases: ['inbox:process'])]
 class ProcessInboxNotificationsCommand extends Command
 {
-    public const COAR_NOTIFY_AT_CONTEXT = [
+    public const array COAR_NOTIFY_AT_CONTEXT = [
         'https://www.w3.org/ns/activitystreams',
         'https://purl.org/coar/notify',
     ];
-    public const NOTIFICATION_ID       = 'notificationId';
-    public const INBOX_SERVICE_TYPE     = ['Service'];
-    public const OBJECT_IDENTIFIER_URL  = 'ietf:cite-as';
-    public const FIRST_SUBMISSION       = 'firstSubmission';
-    public const NEW_VERSION            = 'newVersion';
-    public const VERSION_UPDATE         = 'versionUpdate';
-    public const PAPER_CONTEXT          = 'previousPaperObject';
+    public const string NOTIFICATION_ID       = 'notificationId';
+    public const array INBOX_SERVICE_TYPE     = ['Service'];
+    public const string OBJECT_IDENTIFIER_URL  = 'ietf:cite-as';
+    public const string FIRST_SUBMISSION       = 'firstSubmission';
+    public const string NEW_VERSION            = 'newVersion';
+    public const string VERSION_UPDATE         = 'versionUpdate';
+    public const string PAPER_CONTEXT          = 'previousPaperObject';
 
     private PreprintUrlParser $urlParser;
 
@@ -396,9 +396,7 @@ class ProcessInboxNotificationsCommand extends Command
     public function getRvCodeFromUrl(?string $url = null, ?LoggerInterface $logger = null): string
     {
         if (!$url) {
-            if ($logger !== null) {
-                $logger->warning('Target URL identifier is empty.');
-            }
+            $logger?->warning('Target URL identifier is empty.');
             return '';
         }
 
@@ -440,7 +438,7 @@ class ProcessInboxNotificationsCommand extends Command
             $path        = trim((string) parse_url($actorId, PHP_URL_PATH), '/');
             $lastSegment = basename($path);
             if (is_numeric($lastSegment)) {
-                $actorId = $lastSegment;
+                $actorId = (string)$lastSegment;
             }
         }
 
@@ -575,25 +573,19 @@ class ProcessInboxNotificationsCommand extends Command
             $paper->setWhen();
             $alreadyExists = $paper->alreadyExists();
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical(sprintf('Failed to instantiate or check Episciences_Paper for %s: %s', $data['identifier'] ?? 'unknown', $e->getMessage()), [
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
+            $logger?->critical(sprintf('Failed to instantiate or check Episciences_Paper for %s: %s', $data['identifier'] ?? 'unknown', $e->getMessage()), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return false;
         }
 
         if ($alreadyExists) {
-            if ($logger !== null) {
-                $logger->info(sprintf('This article (identifier = %s) has already been submitted.', $data['identifier']));
-            }
+            $logger?->info(sprintf('This article (identifier = %s) has already been submitted.', $data['identifier']));
 
             if ($context !== null && $context->getVersion() >= $paper->getVersion()) {
                 // Not an error: this version was already applied, there is nothing to do.
                 $this->isOutdatedNotification = true;
-                if ($logger !== null) {
-                    $logger->info(sprintf('Skipping paper %s: identical or older version (%d <= %d).', $data['identifier'], $paper->getVersion(), $context->getVersion()));
-                }
+                $logger?->info(sprintf('Skipping paper %s: identical or older version (%d <= %d).', $data['identifier'], $paper->getVersion(), $context->getVersion()));
                 return false;
             }
         } elseif ($this->addLocalUserIfNotExist($data, $logger, $isDryRun) === null) {
@@ -618,9 +610,7 @@ class ProcessInboxNotificationsCommand extends Command
     ): bool {
         try {
             if ($isDryRun) {
-                if ($logger !== null) {
-                    $logger->info(sprintf('[Dry-run] Article (identifier = %s) first submission simulated.', $data['identifier']));
-                }
+                $logger?->info(sprintf('[Dry-run] Article (identifier = %s) first submission simulated.', $data['identifier']));
                 return true;
             }
 
@@ -632,11 +622,9 @@ class ProcessInboxNotificationsCommand extends Command
 
             return $isAdded;
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical(sprintf('Exception during first submission of %s: %s', $data['identifier'], $e->getMessage()), [
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
+            $logger?->critical(sprintf('Exception during first submission of %s: %s', $data['identifier'], $e->getMessage()), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return false;
         }
     }
@@ -659,17 +647,13 @@ class ProcessInboxNotificationsCommand extends Command
             } elseif (!$isDryRun) {
                 $isAdded = $this->saveNewVersion($context, $data, $journal, $logDetails, $logger);
             } else {
-                if ($logger !== null) {
-                    $logger->info(sprintf('[Dry-run] Subsequent submission of %s v%d simulated.', $paper->getIdentifier(), $paper->getVersion()));
-                }
+                $logger?->info(sprintf('[Dry-run] Subsequent submission of %s v%d simulated.', $paper->getIdentifier(), $paper->getVersion()));
                 $isAdded = true;
             }
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical(sprintf('Exception during subsequent submission of %s: %s', $paper->getIdentifier(), $e->getMessage()), [
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
+            $logger?->critical(sprintf('Exception during subsequent submission of %s: %s', $paper->getIdentifier(), $e->getMessage()), [
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
 
         if ($logger !== null && $isAdded) {
@@ -679,6 +663,11 @@ class ProcessInboxNotificationsCommand extends Command
         return $isAdded;
     }
 
+    /**
+     * @throws DOMException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
     private function handleVersionReplacement(
         Episciences_Paper  $paper,
         Episciences_Paper  $context,
@@ -706,31 +695,23 @@ class ProcessInboxNotificationsCommand extends Command
         try {
             $uResult = $context->updatePaper($values);
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical(sprintf('updatePaper failed for %s: %s', $paper->getIdentifier(), $e->getMessage()), [
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
+            $logger?->critical(sprintf('updatePaper failed for %s: %s', $paper->getIdentifier(), $e->getMessage()), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return false;
         }
 
         if (!isset($uResult['message'])) {
-            if ($logger !== null) {
-                $logger->warning(sprintf('updatePaper for %s returned unexpected result (no message key).', $paper->getIdentifier()));
-            }
+            $logger?->warning(sprintf('updatePaper for %s returned unexpected result (no message key).', $paper->getIdentifier()));
             return false;
         }
 
         if ($uResult['code'] === 0) {
-            if ($logger !== null) {
-                $logger->info('updatePaper: ' . $uResult['message']);
-            }
+            $logger?->info('updatePaper: ' . $uResult['message']);
             return false;
         }
 
-        if ($logger !== null) {
-            $logger->warning('updatePaper warning code: ' . $uResult['message']);
-        }
+        $logger?->warning('updatePaper warning code: ' . $uResult['message']);
 
         if ($isDryRun) {
             return true;
@@ -769,6 +750,18 @@ class ProcessInboxNotificationsCommand extends Command
         return $isAdded;
     }
 
+    /**
+     * @param Episciences_Paper $paper
+     * @param Episciences_Paper $context
+     * @param Episciences_Review $journal
+     * @param array $data
+     * @param array $logDetails
+     * @param LoggerInterface|null $logger
+     * @return bool
+     * @throws DOMException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
     private function performInPlaceVersionUpdate(
         Episciences_Paper  $paper,
         Episciences_Paper  $context,
@@ -809,14 +802,12 @@ class ProcessInboxNotificationsCommand extends Command
         $uid  = (int) ($data['uid'] ?? 0);
 
         if ($uid <= 0) {
-            if ($logger !== null) {
-                $logger->warning(sprintf(
-                    'Cannot add/find user for notification [%s]: invalid CAS UID (%d). Original actor string was: %s',
-                    $data[self::NOTIFICATION_ID] ?? 'undefined',
-                    $uid,
-                    $data['actorId'] ?? 'unknown'
-                ));
-            }
+            $logger?->warning(sprintf(
+                'Cannot add/find user for notification [%s]: invalid CAS UID (%d). Original actor string was: %s',
+                $data[self::NOTIFICATION_ID] ?? 'undefined',
+                $uid,
+                $data['actorId'] ?? 'unknown'
+            ));
             return null;
         }
 
@@ -825,23 +816,19 @@ class ProcessInboxNotificationsCommand extends Command
         try {
             $casUser = $user->findWithCAS($uid);
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical(sprintf('Database error in findWithCAS(%d): %s', $uid, $e->getMessage()), [
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
+            $logger?->critical(sprintf('Database error in findWithCAS(%d): %s', $uid, $e->getMessage()), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return null;
         }
 
         if (!$casUser) {
-            if ($logger !== null) {
-                $logger->warning(sprintf(
-                    'Notification [%s] not processed: CAS UID %d not found in CAS database (actor: %s)',
-                    $data[self::NOTIFICATION_ID] ?? 'undefined',
-                    $uid,
-                    $data['actorId'] ?? 'unknown'
-                ));
-            }
+            $logger?->warning(sprintf(
+                'Notification [%s] not processed: CAS UID %d not found in CAS database (actor: %s)',
+                $data[self::NOTIFICATION_ID] ?? 'undefined',
+                $uid,
+                $data['actorId'] ?? 'unknown'
+            ));
             return null;
         }
 
@@ -849,19 +836,15 @@ class ProcessInboxNotificationsCommand extends Command
             if (!$user->hasLocalData()) {
                 if (!$isDryRun) {
                     $user->save(false, false, $rvId);
-                    if ($logger !== null) {
-                        $logger->info(sprintf('Local User profile created [UID = %d, RVID = %d]', $uid, $rvId));
-                    }
+                    $logger?->info(sprintf('Local User profile created [UID = %d, RVID = %d]', $uid, $rvId));
                 }
             } elseif ($logger !== null) {
                 $logger->debug(sprintf('Existing profile for UID %d.', $uid));
             }
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical(sprintf('Failed to save local user data for UID %d: %s', $uid, $e->getMessage()), [
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
+            $logger?->critical(sprintf('Failed to save local user data for UID %d: %s', $uid, $e->getMessage()), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return null;
         }
 
@@ -869,9 +852,7 @@ class ProcessInboxNotificationsCommand extends Command
             try {
                 $user->addRole(Episciences_Acl::ROLE_AUTHOR, $rvId);
             } catch (\Throwable $e) {
-                if ($logger !== null) {
-                    $logger->warning(sprintf('Failed assigning author role to UID %d: %s', $uid, $e->getMessage()));
-                }
+                $logger?->warning(sprintf('Failed assigning author role to UID %d: %s', $uid, $e->getMessage()));
             }
         }
 
@@ -923,9 +904,7 @@ class ProcessInboxNotificationsCommand extends Command
 
         $commonTags = $this->buildCommonNotificationTags($journal, $paper, $author);
 
-        if ($logger !== null) {
-            $logger->info(sprintf('Sending notifications for doc ID %s (Journal: %s)...', $paper->getDocid(), $journal->getCode()));
-        }
+        $logger?->info(sprintf('Sending notifications for doc ID %s (Journal: %s)...', $paper->getDocid(), $journal->getCode()));
 
         $this->sendAuthorNotification($author, $authorTemplateKey, $commonTags, $paper, $paperUrl, $journalOptions, $logger);
 
@@ -975,9 +954,7 @@ class ProcessInboxNotificationsCommand extends Command
         try {
             $translator = Zend_Registry::get('Zend_Translate');
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->warning('Translator not found in registry: ' . $e->getMessage());
-            }
+            $logger?->warning('Translator not found in registry: ' . $e->getMessage());
             return;
         }
 
@@ -988,9 +965,7 @@ class ProcessInboxNotificationsCommand extends Command
             try {
                 $translator->addTranslation($languagesDir);
             } catch (\Throwable $e) {
-                if ($logger !== null) {
-                    $logger->warning('Failed adding journal translation from ' . $languagesDir . ': ' . $e->getMessage());
-                }
+                $logger?->warning('Failed adding journal translation from ' . $languagesDir . ': ' . $e->getMessage());
             }
         }
     }
@@ -1027,9 +1002,7 @@ class ProcessInboxNotificationsCommand extends Command
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES  => $paper->formatAuthorsMetadata($aLocale),
             ];
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->warning('Failed formatting author notification metadata: ' . $e->getMessage());
-            }
+            $logger?->warning('Failed formatting author notification metadata: ' . $e->getMessage());
             $authorTags = $commonTags + [Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl];
         }
 
@@ -1054,11 +1027,9 @@ class ProcessInboxNotificationsCommand extends Command
                 }
             }
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical(sprintf('Failed sending notification email to author (%s): %s', $author->getScreenName(), $e->getMessage()), [
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
+            $logger?->critical(sprintf('Failed sending notification email to author (%s): %s', $author->getScreenName(), $e->getMessage()), [
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
     }
 
@@ -1083,18 +1054,14 @@ class ProcessInboxNotificationsCommand extends Command
             try {
                 $recipients = $paper->getEditors(true, true) + $paper->getCopyEditors(true, true);
             } catch (\Throwable $e) {
-                if ($logger !== null) {
-                    $logger->critical('Failed fetching editors for paper: ' . $e->getMessage());
-                }
+                $logger?->critical('Failed fetching editors for paper: ' . $e->getMessage());
             }
         }
 
         try {
             Episciences_Review::checkReviewNotifications($recipients, !empty($recipients), $journal->getRvid());
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical('Failed checking review notifications: ' . $e->getMessage());
-            }
+            $logger?->critical('Failed checking review notifications: ' . $e->getMessage());
         }
 
         // Pass the RVID explicitly: the RVID constant is not defined in CLI
@@ -1117,9 +1084,7 @@ class ProcessInboxNotificationsCommand extends Command
                     $recipients = [$principalRecipient];
                 }
             } catch (\Throwable $e) {
-                if ($logger !== null) {
-                    $logger->critical('Failed resolving principal editor recipient: ' . $e->getMessage());
-                }
+                $logger?->critical('Failed resolving principal editor recipient: ' . $e->getMessage());
             }
         }
 
@@ -1164,17 +1129,13 @@ class ProcessInboxNotificationsCommand extends Command
             try {
                 $adminTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($rLocale, true);
             } catch (\Throwable $e) {
-                if ($logger !== null) {
-                    $logger->warning('Failed getting localized title for editor notification: ' . $e->getMessage());
-                }
+                $logger?->warning('Failed getting localized title for editor notification: ' . $e->getMessage());
             }
 
             try {
                 $adminTags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($rLocale);
             } catch (\Throwable $e) {
-                if ($logger !== null) {
-                    $logger->warning('Failed getting localized authors metadata for editor notification: ' . $e->getMessage());
-                }
+                $logger?->warning('Failed getting localized authors metadata for editor notification: ' . $e->getMessage());
             }
 
             if ($refMessage !== '') {
@@ -1200,11 +1161,9 @@ class ProcessInboxNotificationsCommand extends Command
                     $journalOptions
                 );
             } catch (\Throwable $e) {
-                if ($logger !== null) {
-                    $logger->critical(sprintf('Failed sending notification to editor (UID %d): %s', $recipient->getUid(), $e->getMessage()), [
-                        'trace' => $e->getTraceAsString(),
-                    ]);
-                }
+                $logger?->critical(sprintf('Failed sending notification to editor (UID %d): %s', $recipient->getUid(), $e->getMessage()), [
+                    'trace' => $e->getTraceAsString(),
+                ]);
                 $isNotified = false;
                 $unsent[]   = $recipient->getUid();
             }
@@ -1243,9 +1202,7 @@ class ProcessInboxNotificationsCommand extends Command
         try {
             $paper->log(Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW, EPISCIENCES_UID, $details);
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical('Failed logging COAR Notify review action to paper history: ' . $e->getMessage());
-            }
+            $logger?->critical('Failed logging COAR Notify review action to paper history: ' . $e->getMessage());
         }
 
         if ($submissionType === self::VERSION_UPDATE) {
@@ -1270,9 +1227,7 @@ class ProcessInboxNotificationsCommand extends Command
                 ]
             );
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical('Failed logging paper version update: ' . $e->getMessage());
-            }
+            $logger?->critical('Failed logging paper version update: ' . $e->getMessage());
         }
     }
 
@@ -1285,9 +1240,7 @@ class ProcessInboxNotificationsCommand extends Command
                 ['status' => $paper->getStatus()]
             );
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical('Failed logging paper status change: ' . $e->getMessage());
-            }
+            $logger?->critical('Failed logging paper status change: ' . $e->getMessage());
         }
     }
 
@@ -1303,18 +1256,14 @@ class ProcessInboxNotificationsCommand extends Command
         ?LoggerInterface $logger = null,
         bool             $isEpiNotify = true
     ): array {
-        if ($logger !== null) {
-            $logger->debug(sprintf('Fetching document from repository: repoId=%d, identifier=%s, version=%s, rvId=%s', $repoId, $identifier, (string) $version, (string) $rvId));
-        }
+        $logger?->debug(sprintf('Fetching document from repository: repoId=%d, identifier=%s, version=%s, rvId=%s', $repoId, $identifier, (string)$version, (string)$rvId));
 
         try {
             return Episciences_Submit::getDoc($repoId, $identifier, $version, null, true, $rvId, $isEpiNotify);
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical(sprintf('Episciences_Submit::getDoc error for paper %s (repoId=%d): %s', $identifier, $repoId, $e->getMessage()), [
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
+            $logger?->critical(sprintf('Episciences_Submit::getDoc error for paper %s (repoId=%d): %s', $identifier, $repoId, $e->getMessage()), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return ['error' => $e->getMessage()];
         }
     }
@@ -1336,9 +1285,7 @@ class ProcessInboxNotificationsCommand extends Command
 
         try {
             if ($paper->save()) {
-                if ($logger !== null) {
-                    $logger->info(sprintf('Article (identifier = %s, docId = %s) successfully persisted.', $data['identifier'], $paper->getDocid()));
-                }
+                $logger?->info(sprintf('Article (identifier = %s, docId = %s) successfully persisted.', $data['identifier'], $paper->getDocid()));
 
                 $this->logAction($paper, $logDetails, self::FIRST_SUBMISSION, $logger);
 
@@ -1353,11 +1300,9 @@ class ProcessInboxNotificationsCommand extends Command
                 return true;
             }
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical(sprintf('Paper::save() exception for %s: %s', $data['identifier'], $e->getMessage()), [
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
+            $logger?->critical(sprintf('Paper::save() exception for %s: %s', $data['identifier'], $e->getMessage()), [
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
 
         return false;
@@ -1506,6 +1451,18 @@ class ProcessInboxNotificationsCommand extends Command
         return $isAssignedReviewers ? Episciences_Paper::STATUS_OK_FOR_REVIEWING : Episciences_Paper::STATUS_SUBMITTED;
     }
 
+    /**
+     * @param Episciences_Paper $context
+     * @param Episciences_Review $journal
+     * @param array $reviewers
+     * @param array $editors
+     * @param array $copyEditors
+     * @param bool $isCopyEditingProcessStarted
+     * @param LoggerInterface|null $logger
+     * @return void
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     */
     private function unassignPaperMembers(
         Episciences_Paper  $context,
         Episciences_Review $journal,
@@ -1635,11 +1592,9 @@ class ProcessInboxNotificationsCommand extends Command
 
                 Episciences_Mail_Send::sendMailFromReview($reviewer, $templateKey, $tags, $paper, null, [], false, [], $journalOptions);
             } catch (\Throwable $e) {
-                if ($logger !== null) {
-                    $logger->critical(sprintf('Failed reinviting reviewer (UID %d): %s', $reviewer->getUid(), $e->getMessage()), [
-                        'trace' => $e->getTraceAsString(),
-                    ]);
-                }
+                $logger?->critical(sprintf('Failed reinviting reviewer (UID %d): %s', $reviewer->getUid(), $e->getMessage()), [
+                    'trace' => $e->getTraceAsString(),
+                ]);
             }
         }
     }
@@ -1661,9 +1616,7 @@ class ProcessInboxNotificationsCommand extends Command
             // Scoped to the journal set by Episciences_Review::setCurrentReviewId()
             $editors = Episciences_Review::getChiefEditors();
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical('Failed fetching chief editors for automatic assignment: ' . $e->getMessage());
-            }
+            $logger?->critical('Failed fetching chief editors for automatic assignment: ' . $e->getMessage());
             return [];
         }
 
@@ -1699,18 +1652,14 @@ class ProcessInboxNotificationsCommand extends Command
             try {
                 $aid = $paper->assign($manager->getUid(), $roleId, Episciences_User_Assignment::STATUS_ACTIVE);
             } catch (\Throwable $e) {
-                if ($logger !== null) {
-                    $logger->critical(sprintf('Failed assigning manager role (%s) to UID %d: %s', $roleId, $manager->getUid(), $e->getMessage()));
-                }
+                $logger?->critical(sprintf('Failed assigning manager role (%s) to UID %d: %s', $roleId, $manager->getUid(), $e->getMessage()));
                 $aid = 0;
             }
 
             try {
                 $paper->log($action, null, ['aid' => $aid, 'user' => $manager->toArray()]);
             } catch (\Throwable $e) {
-                if ($logger !== null) {
-                    $logger->critical(sprintf('Failed logging manager assignment to paper history: %s', $e->getMessage()));
-                }
+                $logger?->critical(sprintf('Failed logging manager assignment to paper history: %s', $e->getMessage()));
             }
         }
     }
@@ -1743,11 +1692,9 @@ class ProcessInboxNotificationsCommand extends Command
                 );
             }
         } catch (\Throwable $e) {
-            if ($logger !== null) {
-                $logger->critical(sprintf('Enrichment error for paper %s: %s', $paper->getIdentifier(), $e->getMessage()), [
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
+            $logger?->critical(sprintf('Enrichment error for paper %s: %s', $paper->getIdentifier(), $e->getMessage()), [
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
     }
 
