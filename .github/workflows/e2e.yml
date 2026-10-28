@@ -70,17 +70,11 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences;"
           mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences_auth;"
-          mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/schema-episciences.sql
-          mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/seed.sql
+          # The development dataset: the dev journal with its repositories, settings and mail templates
+          mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < src/mysql/docker/episciences/dev-episciences.sql
           mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences_auth < tests/fixtures/schema-cas.sql
           php .github/scripts/setup-test-config.php
-          # Repositories, journal settings, default mail templates and public pages of the E2E journal
-          mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/e2e-journal.sql
-          for templates in src/mysql/Default_MAIL_TEMPLATE.sql \
-            src/mysql/2026-03-24_Insert_coi_unassign_mail_templates.sql \
-            src/mysql/2026-09-22-insert-paper-new-and-former-contributor-notification-mail-templates.sql; do
-            mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < "$templates"
-          done
+          # Public pages of the journal
           cp tests/fixtures/e2e-navigation.json data/dev/config/navigation.json
 
       - name: Use the MySQL authentication adapter and the Solr container
@@ -98,6 +92,12 @@ jobs:
             $config["ENDPOINTS"]["CORENAME"] = "episciences";
             file_put_contents($path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
           '
+
+      - name: Create the Messenger queue tables
+        # The development dataset leaves them to the queue command, as on every environment
+        run: |
+          php scripts/console.php episciences:queue --transport=solr_index --setup
+          php scripts/console.php episciences:queue --transport=next_revalidation --setup
 
       - name: Setup Node.js
         uses: actions/setup-node@v6

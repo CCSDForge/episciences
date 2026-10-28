@@ -112,8 +112,11 @@ tests/e2e/
 `php -S` (`.github/scripts/e2e-router.php` mirrors `public/.htaccess`) under `dev.episciences.org`,
 which absolute URLs require, and runs the suite with `E2E_PHP_EXEC=php`.
 
-The CI journal starts empty: `tests/fixtures/e2e-journal.sql` adds the repositories and journal
-settings the specs need, `tests/fixtures/e2e-navigation.json` declares its public pages. A Solr
+The CI database is the development dataset (`src/mysql/docker/episciences/dev-episciences.sql`,
+also loaded by `make load-dev-db`): the dev journal with its repositories, settings and mail
+templates. The Messenger tables are created with `episciences:queue --setup`, and
+`tests/fixtures/e2e-navigation.json` declares the public pages of the journal. A new migration
+must also be applied to that dataset, or the E2E suite runs on an outdated schema. A Solr
 container (configset of `src/solr/episciences`) and the Solr indexing worker run next to the web
 server: the volume pages list the papers indexed in Solr.
 
