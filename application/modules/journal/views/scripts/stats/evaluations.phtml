@@ -6,12 +6,16 @@
                     'itemLabel' => 'Évaluations demandées',
                     'itemValue' => $this->reviewsRequested,
                     'help' => ['message' => "Invitations envoyées aux relecteurs, quelle que soit leur réponse (hors invitations annulées), comptées à leur date d'envoi.", 'isTooltip' => true],
+                    'paperList' => $this->paperLists[StatsController::REVIEWS_REQUESTED] ?? null,
+                    'paperListLabel' => 'Voir les invitations (%s)',
             ]) ?>
 
             <?= $this->partial('stats/stat-item.phtml', [
                     'itemLabel' => 'Évaluations reçues',
                     'itemValue' => $this->reviewsReceived,
                     'help' => ['message' => 'Rapports de relecture terminés, comptés à leur date de validation.', 'isTooltip' => true],
+                    'paperList' => $this->paperLists[StatsController::REVIEWS_RECEIVED] ?? null,
+                    'paperListLabel' => 'Voir les rapports (%s)',
             ]) ?>
 
             <?= $this->partial('stats/stat-item.phtml', [

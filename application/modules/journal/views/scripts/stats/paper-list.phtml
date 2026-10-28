@@ -25,7 +25,11 @@ if (!$count && !$hidden) {
     <?php endif; ?>
     <?php if ($hidden): ?>
         <p class="help-block small">
-            <?= sprintf($this->translate($hidden > 1 ? "%s articles non listés : conflit d'intérêts déclaré" : "%s article non listé : conflit d'intérêts déclaré"), $hidden) ?>
+            <?php if (!empty($paperList['reviews'])): // a list of reviews (invitations, reports) ?>
+                <?= sprintf($this->translate($hidden > 1 ? "%s évaluations non listées : conflit d'intérêts déclaré" : "%s évaluation non listée : conflit d'intérêts déclaré"), $hidden) ?>
+            <?php else: ?>
+                <?= sprintf($this->translate($hidden > 1 ? "%s articles non listés : conflit d'intérêts déclaré" : "%s article non listé : conflit d'intérêts déclaré"), $hidden) ?>
+            <?php endif; ?>
         </p>
     <?php endif; ?>
     <?php if (!empty($paperList['incomplete'])): ?>

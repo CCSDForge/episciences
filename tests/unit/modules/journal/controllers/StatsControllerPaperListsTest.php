@@ -277,6 +277,9 @@ class StatsControllerPaperListsTest extends TestCase
             'nbOtherStatus' => [$submission],
             'submissionAcceptanceTime' => [$submission, $acceptance],
             'submissionPublicationTime' => [$submission, $publication],
+            // lists of reviews: one row by invitation or by report
+            'reviewsRequested' => [StatsController::COLUMN_INVITATION, StatsController::COLUMN_ANSWER],
+            'reviewsReceived' => [StatsController::COLUMN_REPORT],
         ], StatsController::FIGURE_COLUMNS);
     }
 

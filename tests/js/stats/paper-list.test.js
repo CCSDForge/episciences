@@ -553,6 +553,57 @@ describe('Statistics papers window', function () {
         expect(exported).toBe('statistics-dev-all-Articles.csv');
     });
 
+    it('lists the reviews: a row by invitation, its answer as text, the counts given by the server', async function () {
+        document.body.insertAdjacentHTML(
+            'afterbegin',
+            '<button type="button" class="stat-papers-open" data-figure="reviewsRequested">View</button>'
+        );
+        const dialog = document.getElementById('stat-papers-dialog');
+        const labels = JSON.parse(dialog.dataset.columnLabels);
+        labels.invitationDate = 'Invitation sent on';
+        labels.invitationAnswer = 'Answer';
+        dialog.dataset.columnLabels = JSON.stringify(labels);
+        new Function('module', script)(undefined);
+
+        const rows = makeRows(2).map((row, i) => ({
+            ...row,
+            docid: 201,
+            invitationDate: '2024-03-0' + (i + 1),
+            invitationAnswer: i ? 'declined' : 'accepted',
+        }));
+        mockFetch({
+            reviewsRequested: {
+                body: {
+                    columns: ['invitationDate', 'invitationAnswer'],
+                    total: 2,
+                    hidden: 1,
+                    rows: rows,
+                    countLabel: 'invitation(s)',
+                    hiddenLabel: 'review(s) not listed',
+                },
+            },
+        });
+        document.querySelector('[data-figure="reviewsRequested"]').click();
+        await flush();
+
+        expect(headerLabels().slice(3)).toEqual([
+            'Invitation sent on',
+            'Answer',
+        ]);
+        // all the rows (the two invitations have the same paper: their order is not tested)
+        const cells = Array.from(document.querySelectorAll('tbody td')).map(
+            td => td.textContent
+        );
+        expect(cells).toContain(date('2024-03-01'));
+        expect(cells).toContain('accepted');
+        expect(document.querySelector('.stat-papers-count').textContent).toBe(
+            '2 invitation(s)'
+        );
+        expect(document.querySelector('.stat-papers-hidden').textContent).toBe(
+            '1 review(s) not listed'
+        );
+    });
+
     it('renders the titles as text', async function () {
         const rows = makeRows(1);
         rows[0].title = '<img src=x onerror=alert(1)>';

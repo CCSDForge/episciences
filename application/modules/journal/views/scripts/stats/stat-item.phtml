@@ -7,6 +7,8 @@ $paperList = $this->paperList ?? null;
 // optional: a context line (message with %s, value) besides a tooltip, and other lists of papers ([paperList, label])
 $context = $this->context ?? null;
 $morePaperLists = $this->morePaperLists ?? [];
+// label of the button of the list (e.g. the invitations of a figure), "Voir les articles (%s)" by default
+$paperListLabel = $this->paperListLabel ?? null;
 
 if (!$itemLabel && !$itemValue) {
     return;
@@ -33,7 +35,7 @@ if (!$itemLabel && !$itemValue) {
             </p>
         <?php endif; ?>
     <?php endforeach; ?>
-    <?= $this->partial('stats/paper-list.phtml', ['paperList' => $paperList]) ?>
+    <?= $this->partial('stats/paper-list.phtml', ['paperList' => $paperList, 'label' => $paperListLabel]) ?>
     <?php foreach ($morePaperLists as $morePaperList): ?>
         <?= $this->partial('stats/paper-list.phtml', ['paperList' => $morePaperList['paperList'] ?? null, 'label' => $morePaperList['label'] ?? null]) ?>
     <?php endforeach; ?>

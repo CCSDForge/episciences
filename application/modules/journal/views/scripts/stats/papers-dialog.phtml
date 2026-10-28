@@ -10,6 +10,10 @@ $columnLabels = [
     StatsController::COLUMN_REFUSAL => $this->translate('Refusé le'),
     StatsController::COLUMN_ACCEPTANCE => $this->translate('Accepté le'),
     StatsController::COLUMN_PUBLICATION => $this->translate('Publié le'),
+    // lists of reviews: one row by invitation or by report
+    StatsController::COLUMN_INVITATION => $this->translate('Invitation envoyée le'),
+    StatsController::COLUMN_ANSWER => $this->translate('Réponse'),
+    StatsController::COLUMN_REPORT => $this->translate('Rapport rendu le'),
 ];
 ?>
 <dialog id="stat-papers-dialog" class="stat-papers-dialog" aria-labelledby="stat-papers-dialog-title"
