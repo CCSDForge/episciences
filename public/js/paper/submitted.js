@@ -221,7 +221,8 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
     });
 
     // Re-measure the columns when an image of the rows is loaded (capture: load does not bubble).
-    // The same listener is added once, even if the table is rebuilt.
+    // The same listener is added once, even if the table is rebuilt: it uses the current API.
+    tableApis.set(oTable.table().node(), oTable);
     oTable.table().node().addEventListener('load', adjustColumnsOnImageLoad, true);
 
     // oTable.column(9).visible(false);
@@ -231,6 +232,7 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
 }
 
 var tablesToAdjust = new Set();
+var tableApis = new WeakMap();
 
 /**
  * The column widths are measured when the table is drawn. With scrollX the header is a separate
@@ -248,7 +250,7 @@ function adjustColumnsOnImageLoad(event) {
     tablesToAdjust.add(table);
     requestAnimationFrame(function () {
         tablesToAdjust.delete(table);
-        $(table).DataTable().columns.adjust();
+        tableApis.get(table).columns.adjust();
     });
 }
 
