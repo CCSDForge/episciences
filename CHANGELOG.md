@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Papers management and other tables loaded page by page (my papers, ratings, mail history): the header stays aligned with the columns when the paper status icons load after the table.
-- Tables with a horizontal scrollbar (papers management, my papers, ratings, mail history): the header stays aligned with the columns when the journal stylesheet sets the font size of div elements.
+- Tables with a horizontal scrollbar (papers management, my papers, ratings, mail history): the header stays aligned with the columns whatever the rules of the journal stylesheet for div elements.
 
 ## v1.0.58 - 2026-10-25
 

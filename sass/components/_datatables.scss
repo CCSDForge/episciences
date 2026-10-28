@@ -27,11 +27,27 @@ div.dataTables_filter input {
   padding: 2px 5px;
 }
 
-// With scrollX, the column widths are measured on the header cells copied into the body, then
-// their content is wrapped in this div: it must keep the font of the header cell, whatever the
-// rules of the journal stylesheet for div elements, or the body columns no longer match the header
-div.dataTables_scrollBody .dataTables_sizing {
-  font: inherit;
+// With scrollX, the header and the body are separate tables aligned by DataTables. The rules of
+// a journal stylesheet for div elements must not change their layout:
+// - the column widths are measured on the header cells copied into the body, then their content
+//   is wrapped in this div: it must lay out as the bare content of the header cell (DataTables
+//   sets its height and overflow inline)
+div.dataTables_scrollBody table thead .dataTables_sizing {
+  all: unset;
+  display: block;
+}
+
+// - the header and the body containers must keep the same horizontal position
+div.dataTables_scroll,
+div.dataTables_scrollHead,
+div.dataTables_scrollHeadInner,
+div.dataTables_scrollBody,
+div.dataTables_scrollFoot,
+div.dataTables_scrollFootInner {
+  margin: 0;
+  padding: 0;
+  border-left: 0;
+  border-right: 0;
 }
 
 .dt-columns label {
