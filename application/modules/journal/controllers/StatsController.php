@@ -56,8 +56,8 @@ class StatsController extends Zend_Controller_Action
     public const PAPERS_SESSION_TTL = 1800;
     // the administrators of the journal can show all the data, without the "startStatsAfterDate" setting of the journal
     public const FULL_HISTORY_PARAM = 'fullHistory';
-    // date columns of the papers table: only the dates relevant to each figure
-    // (the submission date is the import date for an imported paper)
+    // columns of the papers table, besides the paper: only the dates relevant to each figure
+    // (the submission date is the import date for an imported paper); the columns ending with "Date" are dates
     public const COLUMN_SUBMISSION = 'submissionDate';
     public const COLUMN_REFUSAL = 'refusalDate';
     public const COLUMN_ACCEPTANCE = 'acceptanceDate';
@@ -217,7 +217,8 @@ class StatsController extends Zend_Controller_Action
             // the reviews counted by the figures (journal administrators only)
             if ($token !== null && self::canSeePapers()) {
                 try {
-                    $evaluations = $this->getEvaluations(array_merge($evaluationQuery, [self::WITH_PAPERS_PARAM => 'true']), $token);
+                    // an unusable answer falls back to the public figures as well
+                    $evaluations = $this->getEvaluations(array_merge($evaluationQuery, [self::WITH_PAPERS_PARAM => 'true']), $token) ?: null;
                 } catch (GuzzleException|JsonException $e) {
                     // falls back to the figures without the reviews
                     $logger?->warning(sprintf('Statistics of %s: the reviews are not available: %s', RVCODE, $e->getMessage()));
@@ -721,13 +722,14 @@ class StatsController extends Zend_Controller_Action
 
         foreach ($paperLists as $figure => $list) {
             // the lists of reviews count the reviews (several by paper)
-            $count = isset($list['reviews']) ? count($list['reviews']) : count($list['docIds']);
+            $isReviewList = isset($list['reviews']);
+            $count = $isReviewList ? count($list['reviews']) : count($list['docIds']);
             $incomplete = isset($figureValues[$figure]) && $count + $list['hidden'] !== $figureValues[$figure];
 
             if ($incomplete) {
                 $logger?->warning(sprintf(
-                    'Statistics of %s: %s, %d papers listed and %d hidden for a figure of %d',
-                    defined('RVCODE') ? RVCODE : '', $figure, $count, $list['hidden'], $figureValues[$figure]
+                    'Statistics of %s: %s, %d %s listed and %d hidden for a figure of %d',
+                    defined('RVCODE') ? RVCODE : '', $figure, $count, $isReviewList ? 'reviews' : 'papers', $list['hidden'], $figureValues[$figure]
                 ));
             }
 

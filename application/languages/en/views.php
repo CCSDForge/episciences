@@ -2304,6 +2304,7 @@ return array(
     "%s article non listé : conflit d'intérêts déclaré" => '%s article not listed: declared conflict of interest',
     "%s articles non listés : conflit d'intérêts déclaré" => '%s articles not listed: declared conflict of interest',
     "Liste incomplète : le nombre d'articles ne correspond pas au chiffre affiché" => 'Incomplete list: the number of articles does not match the figure',
+    "Liste incomplète : le nombre d'évaluations ne correspond pas au chiffre affiché" => 'Incomplete list: the number of reviews does not match the figure',
     'Rechercher (titre, identifiant)' => 'Search (title, identifier)',
     'Déposé le' => 'Submitted on',
     'Accepté le' => 'Accepted on',

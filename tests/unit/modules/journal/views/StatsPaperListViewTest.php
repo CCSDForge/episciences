@@ -71,4 +71,13 @@ final class StatsPaperListViewTest extends TestCase
 
         self::assertStringContainsString('data-export-name="Soumissions par année"', $html);
     }
+
+    public function testAnIncompleteListOfReviewsSpeaksOfReviews(): void
+    {
+        $reviews = $this->render(['figure' => 'reviewsRequested', 'count' => 3, 'hidden' => 0, 'incomplete' => true, 'reviews' => true]);
+        $papers = $this->render(['figure' => 'nbAccepted', 'count' => 3, 'hidden' => 0, 'incomplete' => true]);
+
+        self::assertStringContainsString("le nombre d'évaluations ne correspond pas", $reviews);
+        self::assertStringContainsString("le nombre d'articles ne correspond pas", $papers);
+    }
 }

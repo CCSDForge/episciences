@@ -35,7 +35,9 @@ if (!$count && !$hidden) {
     <?php if (!empty($paperList['incomplete'])): ?>
         <p class="help-block small">
             <span class="fas fa-exclamation-triangle fa-sm" aria-hidden="true"></span>
-            <?= $this->translate("Liste incomplète : le nombre d'articles ne correspond pas au chiffre affiché") ?>
+            <?= $this->translate(!empty($paperList['reviews'])
+                ? "Liste incomplète : le nombre d'évaluations ne correspond pas au chiffre affiché"
+                : "Liste incomplète : le nombre d'articles ne correspond pas au chiffre affiché") ?>
         </p>
     <?php endif; ?>
 </div>
