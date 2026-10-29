@@ -1104,12 +1104,13 @@ class Episciences_PapersManager
     {
         $db = Zend_Db_Table::getDefaultAdapter();
 
-        $subMaxDate = $db?->select()
+        // the latest row of each invitation: an answer or a cancellation inserts a row with the same AID, possibly
+        // in the same second as the previous one, so the latest row is the one with the highest ID, not the latest date
+        $subLatest = $db?->select()
             ->from(
                 T_USER_INVITATIONS,
                 [
-                    'AID',
-                    'max_date' => 'MAX(SENDING_DATE)'
+                    'latest_id' => new Zend_Db_Expr('MAX(ID)')
                 ]
             )
             ->group('AID');
@@ -1120,8 +1121,8 @@ class Episciences_PapersManager
                 ['ID', 'AID', 'STATUS', 'SENDING_DATE', 'SENDER_UID', 'EXPIRATION_DATE']
             )
             ->join(
-                ['t2' => $subMaxDate],
-                't1.AID = t2.AID AND t1.SENDING_DATE = t2.max_date',
+                ['t2' => $subLatest],
+                't1.ID = t2.latest_id',
                 []
             );
 
@@ -1199,13 +1200,14 @@ class Episciences_PapersManager
 
         //recuperation des relecteurs qui n'ont pas encore de compte
         if ($status === Episciences_User_Assignment::STATUS_PENDING || (is_array($status) && in_array(Episciences_User_Assignment::STATUS_PENDING, $status, true))) {
+            // the latest row of each invitation (highest ID: two rows can have the same date)
             $subquery2 = $db->select()
-                ->from(T_USER_INVITATIONS, ['AID', 'latest' => 'MAX(SENDING_DATE)'])
+                ->from(T_USER_INVITATIONS, ['latest_id' => new Zend_Db_Expr('MAX(ID)')])
                 ->group('AID');
 
             $subquery1 = $db->select()
                 ->from(['answer' => $subquery2], ['i.AID'])
-                ->joinInner(['i' => T_USER_INVITATIONS], 'i.AID = answer.AID AND i.SENDING_DATE = answer.latest', [])
+                ->joinInner(['i' => T_USER_INVITATIONS], 'i.ID = answer.latest_id', [])
                 ->where('STATUS = ?', 'pending');
 
             $select = $db->select()
