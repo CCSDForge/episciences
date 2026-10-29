@@ -1783,7 +1783,7 @@ class Episciences_Submit
         $canReplace = (bool)Ccsd_Tools::ifsetor($data['can_replace'], false);
 
         Episciences_Review::checkReviewNotifications($recipients, self::isStrictNotification($canReplace, $recipients));
-        $recipients = $this->filterConflictRecipients($recipients, $paper);
+        $recipients = self::filterConflictRecipients($recipients, $paper);
         unset($recipients[$paper->getUid()]);
 
         if ($canReplace) {
@@ -1816,13 +1816,15 @@ class Episciences_Submit
     }
 
     /**
+     * Removes the recipients who declared a conflict of interest on a new paper (web and inbox submissions).
+     * Reads the settings of the current journal from the 'reviewSettings' registry entry.
      * @param array $recipients
      * @param Episciences_Paper|DataSet $paper
      * @return array
      * @throws Zend_Exception
      */
 
-    private function filterConflictRecipients(array $recipients, Episciences_Paper|DataSet $paper): array
+    public static function filterConflictRecipients(array $recipients, Episciences_Paper|DataSet $paper): array
     {
         $journalSettings = Zend_Registry::get('reviewSettings');
         $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED])
