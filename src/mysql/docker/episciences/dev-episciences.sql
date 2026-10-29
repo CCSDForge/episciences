@@ -8493,7 +8493,7 @@ CREATE TABLE `VOLUME` (
                           `descriptions` json DEFAULT NULL,
                           `vol_year` varchar(9) DEFAULT NULL,
                           `vol_type` set('special_issue','proceedings') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
-                          `vol_num` varchar(6) DEFAULT NULL
+                          `vol_num` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='Journal volumes';
 
 -- --------------------------------------------------------

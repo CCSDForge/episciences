@@ -25,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- [#1396](https://github.com/CCSDForge/episciences/pull/1396): volume management: increase volume number max length to 20 characters and sanitize input while preserving "0".
+- Update Composer dependencies.
+
+### Fixed
+- [#1383](https://github.com/CCSDForge/episciences/pull/1383): search: ignore invalid, unknown or out-of-range filter parameters.
+
 ## v1.0.58 - 2026-10-25
 
 ### Changed
