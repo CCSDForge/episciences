@@ -690,6 +690,8 @@ class ProcessInboxNotificationsCommand extends Command
             ],
             'rvid'        => $journal->getRvid(),
             'isEpiNotify' => true,
+            // Dry run: nothing is written, the refused paper keeps its identifier
+            'isDryRun'    => $isDryRun,
         ];
 
         try {
@@ -716,10 +718,6 @@ class ProcessInboxNotificationsCommand extends Command
         $isRefused = $context->getStatus() === Episciences_Paper::STATUS_REFUSED;
 
         if ($isDryRun) {
-            // Nothing is submitted: the refused paper keeps its identifier
-            if ($isRefused) {
-                $context->restoreRefusedIdentifier();
-            }
             return true;
         }
 
