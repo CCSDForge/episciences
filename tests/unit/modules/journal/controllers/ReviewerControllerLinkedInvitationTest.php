@@ -33,6 +33,7 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
     private const INVITED_UID = 200;
     private const AUTHOR_UID = 300;
     private const SESSION = 'linked_invitation_test';
+    private const CSRF_TOKEN = 'linked-invitation-test-token';
 
     private mixed $previousAuthStorage;
     private \ReviewerController $controller;
@@ -80,6 +81,9 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
     {
         Zend_Auth::getInstance()->setStorage($this->previousAuthStorage);
         $_POST = []; // setPost() writes the global
+        $appSession = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        unset($appSession->csrfToken);
+        $this->controller->getHelper('FlashMessenger')->setNamespace(\Ccsd_View_Helper_Message::MSG_ERROR)->clearCurrentMessages();
     }
 
     private function logIn(string $email = 'logged@example.org', int $uid = self::LOGGED_UID): void
@@ -232,6 +236,8 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
         $this->logIn('logged@example.org');
         $session = new Zend_Session_Namespace(self::SESSION);
         $session->linkedInvitationIds = [7 => ['isPreLinked' => true]];
+        $appSession = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        $appSession->csrfToken = self::CSRF_TOKEN;
     }
 
     public function testAcceptedConfirmationLinksTheInvitationAndClearsTheMarker(): void
@@ -242,13 +248,46 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
         $assignment->expects(self::once())->method('save')->willReturn(true);
 
         $request = new Zend_Controller_Request_HttpTestCase();
-        $request->setMethod('POST')->setPost(['linkInvitation' => 'acceptToLink']);
+        $request->setMethod('POST')->setPost(['linkInvitation' => 'acceptToLink', 'csrf_token' => self::CSRF_TOKEN]);
         $method = new ReflectionMethod(\ReviewerController::class, 'checkAndProcessLinkedInvitation');
         $method->setAccessible(true);
         $result = $method->invoke($this->controller, $request, $this->invitation(), $assignment, $this->paper);
 
         self::assertSame('acceptToLink', $result['decision']);
         self::assertArrayNotHasKey(7, (array)(new Zend_Session_Namespace(self::SESSION))->linkedInvitationIds);
+    }
+
+    /**
+     * @return array<string, array{array<string, string>}>
+     */
+    public static function invalidCsrfTokenProvider(): array
+    {
+        return [
+            'no token' => [[]],
+            'wrong token' => [['csrf_token' => 'forged']],
+        ];
+    }
+
+    /**
+     * @param array<string, string> $token
+     * @dataProvider invalidCsrfTokenProvider
+     */
+    public function testConfirmationWithoutAValidTokenLinksNothingAndKeepsTheMarker(array $token): void
+    {
+        $this->confirmationRequest();
+        $assignment = $this->assignment(new Episciences_User(['EMAIL' => 'other@example.org']));
+        $assignment->expects(self::never())->method('setUid');
+        $assignment->expects(self::never())->method('save');
+
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod('POST')->setPost(['linkInvitation' => 'acceptToLink'] + $token);
+        $method = new ReflectionMethod(\ReviewerController::class, 'checkAndProcessLinkedInvitation');
+        $method->setAccessible(true);
+        $result = $method->invoke($this->controller, $request, $this->invitation(), $assignment, $this->paper);
+
+        self::assertNull($result['decision'], 'the confirmation form is displayed again');
+        self::assertArrayHasKey(7, (array)(new Zend_Session_Namespace(self::SESSION))->linkedInvitationIds);
+        self::assertCount(1, $this->controller->getHelper('FlashMessenger')->setNamespace(\Ccsd_View_Helper_Message::MSG_ERROR)->getCurrentMessages());
     }
 
     public function testNoDecisionKeepsTheInvitationUnlinkedAndTheMarker(): void
@@ -313,7 +352,7 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
         $assignment->expects(self::never())->method('save');
 
         $request = new Zend_Controller_Request_HttpTestCase();
-        $request->setMethod('POST')->setPost(['linkInvitation' => 'acceptToLink']);
+        $request->setMethod('POST')->setPost(['linkInvitation' => 'acceptToLink', 'csrf_token' => self::CSRF_TOKEN]);
         $method = new ReflectionMethod(\ReviewerController::class, 'checkAndProcessLinkedInvitation');
         $method->setAccessible(true);
 
@@ -372,7 +411,7 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
         $logged = $this->expectLinkLog();
 
         $request = new Zend_Controller_Request_HttpTestCase();
-        $request->setMethod('POST')->setPost(['linkInvitation' => 'acceptToLink']);
+        $request->setMethod('POST')->setPost(['linkInvitation' => 'acceptToLink', 'csrf_token' => self::CSRF_TOKEN]);
         $method = new ReflectionMethod(\ReviewerController::class, 'checkAndProcessLinkedInvitation');
         $method->setAccessible(true);
         $method->invoke($this->controller, $request, $this->invitation(), $assignment, $this->paper);

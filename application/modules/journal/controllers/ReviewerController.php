@@ -17,6 +17,12 @@ class ReviewerController extends PaperDefaultController
     ];
 
     /**
+     * Set on the return from the login page, when the invitee clicked "accept" while logged out.
+     * It only displays a message: the acceptance itself always takes a POST with the CSRF token.
+     */
+    private const CONFIRM_ACCEPTANCE_PARAM = 'confirm-acceptance';
+
+    /**
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -64,6 +70,9 @@ class ReviewerController extends PaperDefaultController
         if (!$this->isInvitationRequestAuthorized($request, $invitation, $assignment, $tmpUser)) {
             return;
         }
+
+        // every answer form of the page (accept, decline, account creation, link) posts this token
+        $this->view->csrfToken = Episciences_Csrf_Helper::getSessionToken();
 
         // fetch reviewer answer (if there is one)
         $invitation->loadAnswer();
@@ -279,7 +288,7 @@ class ReviewerController extends PaperDefaultController
      * @param Episciences_User_Invitation $oInvitation
      * @param Episciences_User_Assignment $assignment
      * @param Episciences_Paper $paper
-     * @param $data
+     * @param array<string, mixed> $data the posted answer (CSRF token already checked)
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -287,12 +296,9 @@ class ReviewerController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function saveanswer(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data): void
+    protected function saveanswer(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, array $data): void
     {
-        if (
-            array_key_exists('submitaccept', $data) ||
-            (isset($data['is-accepted']) && $data['is-accepted'])
-        ) {
+        if (array_key_exists('submitaccept', $data)) {
 
             // accepted invitation
             $this->accept($oInvitation, $assignment, $paper, $data);
@@ -332,7 +338,8 @@ class ReviewerController extends PaperDefaultController
                     'forward-controller' => 'reviewer',
                     'forward-action' => 'invitation',
                     'id' => $oInvitation->getId(),
-                    'is-accepted' => array_key_exists('submitaccept', $data)
+                    // display only: once logged in, the invitee confirms the acceptance with the (POST) form
+                    self::CONFIRM_ACCEPTANCE_PARAM => '1',
                 ];
                 // the invitation link secret is needed again once logged in (the account may not be the invited one)
                 foreach ([InvitationToken::URL_PARAM, 'tmp'] as $linkParam) {
@@ -557,19 +564,28 @@ class ReviewerController extends PaperDefaultController
                 $this->view->user_form = $user_form;
             }
 
-            $accepted = (
-                array_key_exists('submitaccept', $request->getPost()) ||
-                (
-                    Episciences_Auth::isLogged() &&
-                    $request->getParam('is-accepted') &&
-                    $request->getParam('is-accepted') === '1'
-                )
-            );
+            // an answer is only ever read from the POST body: a GET or a URL path segment changes nothing
+            $post = $request->isPost() ? $request->getPost() : [];
+            $accepted = array_key_exists('submitaccept', $post);
+            $refused = array_key_exists('submitrefuse', $post);
 
-            $refused = (array_key_exists('submitrefuse', $request->getPost()));
+            if (($accepted || $refused) && !Episciences_Csrf_Helper::validateRequestToken($request)) {
+                $accepted = $refused = false;
+                $this->_helper->FlashMessenger
+                    ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                    ->addMessage($this->view->translate("Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre réponse n'a pas été enregistrée. Merci de recommencer."));
+            }
+
+            if (
+                !$accepted &&
+                Episciences_Auth::isLogged() &&
+                $request->getParam(self::CONFIRM_ACCEPTANCE_PARAM) === '1'
+            ) {
+                $this->view->confirmAcceptance = true;
+            }
 
             // the refusal form is validated and filtered (tags stripped, trimmed) before anything is stored
-            $refusedFormIsValid = $refused && $refuse_form->isValid($request->getPost());
+            $refusedFormIsValid = $refused && $refuse_form->isValid($post);
 
             if ($accepted || $refused) {
 
@@ -579,12 +595,12 @@ class ReviewerController extends PaperDefaultController
                         $accepted &&
                         (
                             !$assignment->isTmp_user() ||
-                            (isset($user_form) && $user_form->isValid($request->getPost()))
+                            (isset($user_form) && $user_form->isValid($post))
                         )
                     )
                 ) {
 
-                    $data = $request->isPost() ? $request->getPost() : ['is-accepted' => $accepted];
+                    $data = $post;
 
                     if ($refusedFormIsValid) {
                         $data = array_merge($data, $refuse_form->getValues());
@@ -609,6 +625,13 @@ class ReviewerController extends PaperDefaultController
     }
 
     /**
+     * Links the invitation to the logged-in account when it was sent to another one.
+     *
+     * Deliberate exception to "a GET changes nothing": when the invited address is the one of the
+     * logged-in account, the link is made as soon as the page is displayed, without confirmation
+     * (#1009). Any other account must hold the link token to get here, then confirm with a POST
+     * carrying the CSRF token (processLinkDecision()).
+     *
      * @param Zend_Controller_Request_Http $request
      * @param Episciences_User_Invitation $invitation
      * @param Episciences_User_Assignment $assignment
@@ -704,6 +727,14 @@ class ReviewerController extends PaperDefaultController
         $post = $request->getPost();
 
         if (empty($post['linkInvitation'])) {
+            return null;
+        }
+
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            // nothing changes, the pending confirmation is kept: the form is displayed again
+            $this->_helper->FlashMessenger
+                ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre réponse n'a pas été enregistrée. Merci de recommencer."));
             return null;
         }
 
