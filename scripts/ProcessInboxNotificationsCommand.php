@@ -884,7 +884,9 @@ class ProcessInboxNotificationsCommand extends Command
 
         $author              = $paper->getSubmitter();
         $authorTemplateKey   = Episciences_Mail_TemplatesManager::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY;
-        $managersTemplateKey = $canBeReplaced && !$isPreviousPaperRefused
+        // A paper not reviewed yet is replaced in place and keeps its editors; a refused paper gets a new row
+        $isInPlaceUpdate     = $canBeReplaced && !$isPreviousPaperRefused;
+        $managersTemplateKey = $isInPlaceUpdate
             ? Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY
             : Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY;
 
@@ -914,7 +916,8 @@ class ProcessInboxNotificationsCommand extends Command
             $isFirstSubmission,
             $journal,
             $logger,
-            $options['assignedEditors'] ?? []
+            $options['assignedEditors'] ?? [],
+            $isInPlaceUpdate
         );
 
         if (!$isFirstSubmission && $originalRequest !== null) {
@@ -1034,6 +1037,34 @@ class ProcessInboxNotificationsCommand extends Command
     }
 
     /**
+     * The recipients before the journal notification settings apply, as on the web:
+     * - a paper replaced in place (not reviewed yet): its editors;
+     * - another first submission: the editors just assigned automatically;
+     * - any other notification: the editors and copy editors of the paper.
+     * @return Episciences_User[] indexed by UID
+     */
+    private function initialManagerRecipients(
+        Episciences_Paper $paper,
+        bool              $isFirstSubmission,
+        bool              $isInPlaceUpdate,
+        array             $assignedEditors,
+        ?LoggerInterface  $logger
+    ): array {
+        if ($isFirstSubmission && !$isInPlaceUpdate) {
+            return $assignedEditors;
+        }
+
+        try {
+            return $isFirstSubmission
+                ? $paper->getEditors(true, true)
+                : $paper->getEditors(true, true) + $paper->getCopyEditors(true, true);
+        } catch (\Throwable $e) {
+            $logger?->critical('Failed fetching editors for paper: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Resolves the list of editorial committee members to notify, filtered for conflicts of interest.
      *
      * @return array{0: Episciences_User[], 1: Episciences_User[]} [$recipients, $cc]
@@ -1044,25 +1075,17 @@ class ProcessInboxNotificationsCommand extends Command
         bool                 $isFirstSubmission,
         Episciences_Review   $journal,
         ?LoggerInterface     $logger,
-        array                $assignedEditors = []
+        array                $assignedEditors = [],
+        bool                 $isInPlaceUpdate = false
     ): array {
-        // On a first submission, the editors just assigned automatically are notified (as on the web)
-        $recipients = $assignedEditors;
+        $recipients = $this->initialManagerRecipients($paper, $isFirstSubmission, $isInPlaceUpdate, $assignedEditors, $logger);
         $cc         = [];
-
-        if (!$isFirstSubmission) {
-            try {
-                $recipients = $paper->getEditors(true, true) + $paper->getCopyEditors(true, true);
-            } catch (\Throwable $e) {
-                $logger?->critical('Failed fetching editors for paper: ' . $e->getMessage());
-            }
-        }
 
         try {
             // As on the web, a new paper keeps the github#508 fallback even with editors assigned automatically
             Episciences_Review::checkReviewNotifications(
                 $recipients,
-                Episciences_Submit::isStrictNotification(!$isFirstSubmission, $recipients),
+                Episciences_Submit::isStrictNotification(!$isFirstSubmission || $isInPlaceUpdate, $recipients),
                 $journal->getRvid()
             );
         } catch (\Throwable $e) {
