@@ -478,6 +478,8 @@ class InboxNotifications extends AbstractScript
             ],
             'rvid' => $journal->getRvid(),
             'isEpiNotify' => true,
+            // Debug mode: nothing is written, the refused paper keeps its identifier
+            'isDryRun' => $this->isDebug(),
         ];
 
         try {
@@ -506,10 +508,6 @@ class InboxNotifications extends AbstractScript
         $isRefused = $context->getStatus() === Episciences_Paper::STATUS_REFUSED;
 
         if ($this->isDebug()) {
-            // Nothing is submitted: the refused paper keeps its identifier
-            if ($isRefused) {
-                $context->restoreRefusedIdentifier();
-            }
             return false;
         }
 
