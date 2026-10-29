@@ -3236,6 +3236,33 @@ class Episciences_PapersManager
     }
 
     /**
+     * Number of versions of a paper in its journal that renameIdentifier() would rename (dry run)
+     *
+     * @param string $identifier
+     * @param int $paperId
+     * @param int $rvId
+     * @return int 0 without a paper or a journal, or on error
+     */
+    public static function countIdentifier(string $identifier, int $paperId, int $rvId): int
+    {
+        if ($paperId <= 0 || $rvId <= 0) {
+            return 0;
+        }
+
+        try {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $select = $db->select()
+                ->from(T_PAPERS, [new Zend_Db_Expr('COUNT(*)')])
+                ->where('IDENTIFIER = ?', $identifier)
+                ->where('PAPERID = ?', $paperId)
+                ->where('RVID = ?', $rvId);
+            return (int)$db->fetchOne($select);
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
      * @param Episciences_Paper $paper
      * @return int
      * @throws Zend_Db_Adapter_Exception
@@ -3282,7 +3309,7 @@ class Episciences_PapersManager
     {
         return [
             'docId' => $params['DOCID'],
-            'identifier' => str_replace('-REFUSED', '', $params['IDENTIFIER']),
+            'identifier' => Episciences_Paper::stripRefusedSuffix((string)$params['IDENTIFIER']),
             'repoId' => (int)$params['REPOID'],
             'version' => (float)$params['VERSION'],
             'paperId' => (int)$params['PAPERID'],

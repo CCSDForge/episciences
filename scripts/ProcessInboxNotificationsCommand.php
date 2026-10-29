@@ -690,6 +690,8 @@ class ProcessInboxNotificationsCommand extends Command
             ],
             'rvid'        => $journal->getRvid(),
             'isEpiNotify' => true,
+            // Dry run: nothing is written, the refused paper keeps its identifier
+            'isDryRun'    => $isDryRun,
         ];
 
         try {
@@ -713,11 +715,13 @@ class ProcessInboxNotificationsCommand extends Command
 
         $logger?->warning('updatePaper warning code: ' . $uResult['message']);
 
+        $isRefused = $context->getStatus() === Episciences_Paper::STATUS_REFUSED;
+
         if ($isDryRun) {
             return true;
         }
 
-        if ($context->getStatus() === Episciences_Paper::STATUS_REFUSED) {
+        if ($isRefused) {
             return $this->handleRefusedPaperReplacement($paper, $context, $journal, $data, $logger);
         }
 
@@ -735,13 +739,20 @@ class ProcessInboxNotificationsCommand extends Command
         // Same paper id: the submission date is shared by all the versions of a paper
         $paper->setSubmission_date($context->getSubmission_date());
 
-        $isAdded = $this->getFirstSubmissionResult($paper, $journal, $data, [
-            'canBeReplaced' => true,
-            'logDetails'    => [
-                'oldStatus' => Episciences_Paper::STATUS_REFUSED,
-                'oldDocId'  => $context->getDocid(),
-            ],
-        ], $logger);
+        try {
+            $isAdded = $this->getFirstSubmissionResult($paper, $journal, $data, [
+                'canBeReplaced' => true,
+                'logDetails'    => [
+                    'oldStatus' => Episciences_Paper::STATUS_REFUSED,
+                    'oldDocId'  => $context->getDocid(),
+                ],
+            ], $logger);
+        } finally {
+            // The new submission has not been saved: the refused paper keeps its identifier
+            if (!$paper->getDocid()) {
+                $context->restoreRefusedIdentifier();
+            }
+        }
 
         if (!$isAdded && $logger !== null) {
             $logger->critical(sprintf('Failed saving refused replacement paper (identifier = %s)', $data['identifier']));
