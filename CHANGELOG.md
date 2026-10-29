@@ -68,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#1403](https://github.com/CCSDForge/episciences/pull/1403): Inviting a reviewer: the number of invitations of each user counts each invitation once; an answer or a cancellation was counted as another invitation.
 - [#1402](https://github.com/CCSDForge/episciences/pull/1402): Accepting a paper cancels the reviewer invitations without answer as removing a reviewer does: the invitation itself is now cancelled, not only the assignment, so that it is no longer seen as pending, then expired (e.g. by the statistics of the API).
 - [#1385](https://github.com/CCSDForge/episciences/pull/1385): Temporary version: a file whose upload failed is no longer silently dropped; nothing is recorded and the author is asked to attach the files again. Failed uploads are now always displayed in the file upload widget. Answering without any file is still possible.
 - [#1386](https://github.com/CCSDForge/episciences/pull/1386): Tighten the checks of the attachment upload and removal endpoints. Copy-editing answer: like a temporary version, it is no longer saved without a file the author attached; a new file never takes the name of a file already sent. **Deployment**: set `UPLOADED_FILE.HMAC_SECRET` in `config/pwd.json` (at least 64 characters, e.g. `openssl rand -hex 32`); without it, attachment uploads are refused.
