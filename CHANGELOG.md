@@ -77,10 +77,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1393](https://github.com/CCSDForge/episciences/pull/1393): Papers management and other tables loaded page by page (my papers, ratings, mail history): the header stays aligned with the columns when the paper status icons load after the table.
 - [#1393](https://github.com/CCSDForge/episciences/pull/1393): Tables with a horizontal scrollbar (papers management, my papers, ratings, mail history): the header stays aligned with the columns whatever the rules of the journal stylesheet for div elements.
 - [#1343](https://github.com/CCSDForge/episciences/pull/1343): the "-REFUSED" suffix of a refused paper submitted again is no longer shown, whatever the status of the paper (e.g. its previous versions made obsolete), nor sent to the repositories (link to the document, HAL enrichment scripts); it is no longer removed from the database when the paper is saved, and it is removed again when the new submission is not saved; the COAR Notify debug and dry-run modes no longer add it (`Episciences_Paper::getIdentifier()`, `Episciences_Paper::restoreRefusedIdentifier()`).
+- [#1341](https://github.com/CCSDForge/episciences/pull/1341): submitting a refused paper again only renames ("-REFUSED" suffix) the versions of that paper in its journal, never another paper sharing its identifier, e.g. the same document accepted in another journal (`Episciences_PapersManager::renameIdentifier()`).
 
 ### Removed
 
 - [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Remove the legacy `scripts/DeletePaper.php` script (replaced by the `papers:delete` console command), which reported a deletion as successful even when it had failed.
+
+## v1.0.58.1 - 2026-10-29
+
+### Changed
+- [#1396](https://github.com/CCSDForge/episciences/pull/1396): volume management: increase volume number max length to 20 characters and sanitize input while preserving "0".
+- Update Composer dependencies.
+
+### Fixed
+- [#1383](https://github.com/CCSDForge/episciences/pull/1383): search: ignore invalid, unknown or out-of-range filter parameters.
 
 ## v1.0.58 - 2026-10-25
 
