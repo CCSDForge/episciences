@@ -519,4 +519,79 @@ class ProcessInboxNotificationsCommandTest extends TestCase
 
         $this->assertSame([], $method->invoke($this->command, new \Episciences_Paper(), $journal, $this->logger));
     }
+
+    public function testAutoAssignEditorsLogsAndSkipsWhenTheSettingCannotBeRead(): void
+    {
+        $journal = $this->createMock(\Episciences_Review::class);
+        $journal->method('getSetting')->willThrowException(new \Zend_Db_Statement_Exception('db down'));
+
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'autoAssignEditors');
+
+        $this->assertSame([], $method->invoke($this->command, new \Episciences_Paper(), $journal, $this->logger));
+        $this->assertTrue($this->testHandler->hasCriticalThatContains('db down'));
+    }
+
+    public function testReassignPaperManagersReturnsOnlyTheManagersActuallyAssigned(): void
+    {
+        $assigned = $this->userWithUid(2);
+        $failed   = $this->userWithUid(3);
+        $rejected = $this->userWithUid(4);
+
+        $paper = $this->createMock(\Episciences_Paper::class);
+        $paper->method('assign')->willReturnCallback(static function ($uid) {
+            return match ($uid) {
+                2 => 10,
+                3 => throw new \Zend_Exception('Failed to save assignment.'),
+                default => false,
+            };
+        });
+        // Only the successful assignment is written to the paper history
+        $paper->expects($this->once())
+            ->method('log')
+            ->with(\Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT, null, $this->callback(
+                static fn(array $detail): bool => $detail['aid'] === 10
+            ));
+
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'reassignPaperManagers');
+        $result = $method->invoke(
+            $this->command,
+            [2 => $assigned, 3 => $failed, 4 => $rejected],
+            $paper,
+            \Episciences_User_Assignment::ROLE_EDITOR,
+            $this->logger
+        );
+
+        $this->assertSame([2 => $assigned], $result);
+        $this->assertTrue($this->testHandler->hasCriticalThatContains('UID 3'));
+        $this->assertTrue($this->testHandler->hasCriticalThatContains('UID 4'));
+    }
+
+    public function testAssignedEditorsGetTheEditorTemplateOnAFirstSubmission(): void
+    {
+        $editor = $this->userWithUid(2);
+        $other  = $this->userWithUid(3);
+        $others = \Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY;
+
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'managerTemplateKey');
+
+        $this->assertSame(
+            \Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_EDITOR_COPY,
+            $method->invoke($this->command, $others, $editor, [2 => $editor])
+        );
+        $this->assertSame($others, $method->invoke($this->command, $others, $other, [2 => $editor]));
+        // Other notifications keep their template, even for an assigned editor
+        $this->assertSame(
+            \Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY,
+            $method->invoke($this->command, \Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY, $editor, [2 => $editor])
+        );
+    }
+
+    private function userWithUid(int $uid): \Episciences_User
+    {
+        $user = $this->createMock(\Episciences_User::class);
+        $user->method('getUid')->willReturn($uid);
+        $user->method('toArray')->willReturn(['uid' => $uid]);
+
+        return $user;
+    }
 }

@@ -1091,6 +1091,22 @@ class ProcessInboxNotificationsCommand extends Command
         return [$recipients, $cc];
     }
 
+    /**
+     * As on the web (git #230), the editors just assigned to a new paper get the editor template, the others a copy.
+     * @param Episciences_User[] $assignedEditors indexed by UID
+     */
+    private function managerTemplateKey(string $managersTemplateKey, Episciences_User $recipient, array $assignedEditors): string
+    {
+        if (
+            $managersTemplateKey === Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY
+            && isset($assignedEditors[$recipient->getUid()])
+        ) {
+            return Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_EDITOR_COPY;
+        }
+
+        return $managersTemplateKey;
+    }
+
     private function sendManagerNotifications(
         array              $recipients,
         array              $cc,
@@ -1121,10 +1137,13 @@ class ProcessInboxNotificationsCommand extends Command
             );
         }
 
-        $unsent = [];
+        $unsent          = [];
+        $assignedEditors = $options['assignedEditors'] ?? [];
 
         foreach ($recipients as $recipient) {
             $rLocale = $recipient->getLangueid(true);
+
+            $templateKey = $this->managerTemplateKey($managersTemplateKey, $recipient, $assignedEditors);
 
             try {
                 $adminTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($rLocale, true);
@@ -1151,7 +1170,7 @@ class ProcessInboxNotificationsCommand extends Command
             try {
                 $isNotified = Episciences_Mail_Send::sendMailFromReview(
                     $recipient,
-                    $managersTemplateKey,
+                    $templateKey,
                     $adminTags,
                     $paper,
                     null,
@@ -1606,7 +1625,13 @@ class ProcessInboxNotificationsCommand extends Command
      */
     private function autoAssignEditors(Episciences_Paper $paper, Episciences_Review $journal, ?LoggerInterface $logger): array
     {
-        $autoAssignment = (array) $journal->getSetting(Episciences_Review::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT);
+        // The paper is already saved: a failure here must not abort its notifications
+        try {
+            $autoAssignment = (array) $journal->getSetting(Episciences_Review::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT);
+        } catch (\Throwable $e) {
+            $logger?->critical('Failed reading the automatic editor assignment setting: ' . $e->getMessage());
+            return [];
+        }
 
         if (!in_array(Episciences_Review::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignment, true)) {
             return [];
@@ -1629,7 +1654,8 @@ class ProcessInboxNotificationsCommand extends Command
             }
         }
 
-        $this->reassignPaperManagers($editors, $paper, Episciences_User_Assignment::ROLE_EDITOR, $logger);
+        // Only the editors actually assigned are notified as such
+        $editors = $this->reassignPaperManagers($editors, $paper, Episciences_User_Assignment::ROLE_EDITOR, $logger);
 
         if ($logger !== null && $editors) {
             $logger->info(sprintf('%d editor(s) automatically assigned to doc ID %s.', count($editors), $paper->getDocid()));
@@ -1638,23 +1664,35 @@ class ProcessInboxNotificationsCommand extends Command
         return $editors;
     }
 
+    /**
+     * @return Episciences_User[] the managers actually assigned, with the keys of $paperManagers
+     */
     private function reassignPaperManagers(
         array             $paperManagers,
         Episciences_Paper $paper,
         string            $roleId = Episciences_User_Assignment::ROLE_EDITOR,
         ?LoggerInterface  $logger = null
-    ): void {
+    ): array {
         $action = $roleId === Episciences_User_Assignment::ROLE_COPY_EDITOR
             ? Episciences_Paper_Logger::CODE_COPY_EDITOR_ASSIGNMENT
             : Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT;
 
-        foreach ($paperManagers as $manager) {
+        $assigned = [];
+
+        foreach ($paperManagers as $key => $manager) {
             try {
                 $aid = $paper->assign($manager->getUid(), $roleId, Episciences_User_Assignment::STATUS_ACTIVE);
             } catch (\Throwable $e) {
                 $logger?->critical(sprintf('Failed assigning manager role (%s) to UID %d: %s', $roleId, $manager->getUid(), $e->getMessage()));
-                $aid = 0;
+                continue;
             }
+
+            if (!$aid) {
+                $logger?->critical(sprintf('Failed assigning manager role (%s) to UID %d.', $roleId, $manager->getUid()));
+                continue;
+            }
+
+            $assigned[$key] = $manager;
 
             try {
                 $paper->log($action, null, ['aid' => $aid, 'user' => $manager->toArray()]);
@@ -1662,6 +1700,8 @@ class ProcessInboxNotificationsCommand extends Command
                 $logger?->critical(sprintf('Failed logging manager assignment to paper history: %s', $e->getMessage()));
             }
         }
+
+        return $assigned;
     }
 
     // -------------------------------------------------------------------------
