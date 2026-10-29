@@ -33,6 +33,7 @@ global.requestAnimationFrame = jest.fn(callback => frames.push(callback));
 global.translate = jest.fn(text => text);
 global.getLoader = jest.fn(() => '');
 global.addToggleButton = jest.fn();
+global.JS_PREFIX_URL = '/';
 
 const submittedJs = fs.readFileSync(
     path.join(__dirname, '../../../public/js/paper/submitted.js'),
