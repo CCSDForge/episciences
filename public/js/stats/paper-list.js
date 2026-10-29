@@ -157,6 +157,8 @@ function initStatPapers() {
     const state = {
         figure: null,
         title: '',
+        // label of the count (articles by default; invitations, reports)
+        countLabel: '',
         rows: [],
         // date columns of the figure (only the relevant dates), sent by the server
         columns: [],
@@ -197,8 +199,12 @@ function initStatPapers() {
 
         state.columns.forEach(key => {
             const cell = document.createElement('td');
-            cell.className = 'stat-papers-date';
-            cell.textContent = statPapersFormatDate(row[key]);
+            // the date columns (…Date), and the text columns (e.g. the answer to an invitation)
+            const isDate = /Date$/.test(key);
+            cell.className = isDate ? 'stat-papers-date' : 'stat-papers-text';
+            cell.textContent = isDate
+                ? statPapersFormatDate(row[key])
+                : String(row[key] ?? '');
 
             // submitted and imported papers in the same column: the imported ones are marked
             if (
@@ -230,8 +236,11 @@ function initStatPapers() {
 
         tbody.replaceChildren(...view.rows.map(renderRow));
 
+        // a list of reviews counts invitations or reports: its label is given by the server
         countEl.textContent =
-            view.total + ' ' + statPapersTranslate('article(s)');
+            view.total +
+            ' ' +
+            (state.countLabel || statPapersTranslate('article(s)'));
         pageEl.textContent = view.page + ' / ' + view.pages;
         prevEl.disabled = view.page <= 1;
         nextEl.disabled = view.page >= view.pages;
@@ -304,6 +313,7 @@ function initStatPapers() {
 
     function showData(data) {
         state.rows = Array.isArray(data.rows) ? data.rows : [];
+        state.countLabel = data.countLabel || '';
         state.page = 1;
         setColumns(data.columns, data.submissionLabel);
 
@@ -312,9 +322,10 @@ function initStatPapers() {
         hiddenEl.textContent = hidden
             ? hidden +
               ' ' +
-              statPapersTranslate(
-                  "article(s) non listé(s) : conflit d'intérêts déclaré"
-              )
+              (data.hiddenLabel ||
+                  statPapersTranslate(
+                      "article(s) non listé(s) : conflit d'intérêts déclaré"
+                  ))
             : '';
 
         showMessage(
@@ -369,6 +380,7 @@ function initStatPapers() {
         state.title = title || titles[figure] || '';
         titleEl.textContent = state.title;
         state.rows = [];
+        state.countLabel = '';
         state.query = '';
         searchEl.value = '';
         hiddenEl.hidden = true;

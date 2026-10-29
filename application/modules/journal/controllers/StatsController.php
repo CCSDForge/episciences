@@ -38,6 +38,16 @@ class StatsController extends Zend_Controller_Action
     public const NB_ACCEPTED_NOT_YET_PUBLISHED = 'nbAcceptedNotYetPublished';
     // papers of the published total: published and imported published papers
     public const TOTAL_PUBLISHED_PAPERS = 'totalPublished';
+    // figures of the evaluation listed by review (invitations, reports), not by paper
+    public const REVIEWS_REQUESTED = 'reviewsRequested';
+    public const REVIEWS_RECEIVED = 'reviewsReceived';
+    // answer to an invitation (API), as displayed
+    public const INVITATION_ANSWER_LABELS = [
+        'pending' => 'en attente de réponse',
+        'accepted' => 'acceptée',
+        'declined' => 'déclinée',
+        'expired' => 'expirée',
+    ];
     public const WITH_PAPERS_PARAM = 'withPapers';
     // value of the "displayStatistics" setting: statistics reserved for the editorial secretaries (the API checks it too)
     public const DISPLAY_STATISTICS_RESERVED = '2';
@@ -46,12 +56,16 @@ class StatsController extends Zend_Controller_Action
     public const PAPERS_SESSION_TTL = 1800;
     // the administrators of the journal can show all the data, without the "startStatsAfterDate" setting of the journal
     public const FULL_HISTORY_PARAM = 'fullHistory';
-    // date columns of the papers table: only the dates relevant to each figure
-    // (the submission date is the import date for an imported paper)
+    // columns of the papers table, besides the paper: only the dates relevant to each figure
+    // (the submission date is the import date for an imported paper); the columns ending with "Date" are dates
     public const COLUMN_SUBMISSION = 'submissionDate';
     public const COLUMN_REFUSAL = 'refusalDate';
     public const COLUMN_ACCEPTANCE = 'acceptanceDate';
     public const COLUMN_PUBLICATION = 'publicationDate';
+    // columns of the lists of reviews: one row by invitation or by report (the reviewers are not listed)
+    public const COLUMN_INVITATION = 'invitationDate';
+    public const COLUMN_ANSWER = 'invitationAnswer';
+    public const COLUMN_REPORT = 'reportDate';
     public const FIGURE_COLUMNS = [
         self::NB_SUBMISSIONS => [self::COLUMN_SUBMISSION, self::COLUMN_REFUSAL, self::COLUMN_ACCEPTANCE, self::COLUMN_PUBLICATION],
         self::NB_IMPORTED => [self::COLUMN_SUBMISSION, self::COLUMN_PUBLICATION],
@@ -64,6 +78,8 @@ class StatsController extends Zend_Controller_Action
         self::NB_OTHER_STATUS => [self::COLUMN_SUBMISSION],
         self::SUBMISSION_ACCEPTANCE_DELAY => [self::COLUMN_SUBMISSION, self::COLUMN_ACCEPTANCE],
         self::SUBMISSION_PUBLICATION_DELAY => [self::COLUMN_SUBMISSION, self::COLUMN_PUBLICATION],
+        self::REVIEWS_REQUESTED => [self::COLUMN_INVITATION, self::COLUMN_ANSWER],
+        self::REVIEWS_RECEIVED => [self::COLUMN_REPORT],
     ];
     public const DEFAULT_COLUMNS = [self::COLUMN_SUBMISSION, self::COLUMN_PUBLICATION];
     // statuses of these dates in the history of a paper, as for the figures of the API
@@ -114,8 +130,6 @@ class StatsController extends Zend_Controller_Action
 
         $params = ['withDetails' => true];
 
-        $evalOptions = [];
-
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $yearQuery = (!empty($request->getParam('year'))) ? (int)$request->getParam('year') : null;
@@ -164,7 +178,6 @@ class StatsController extends Zend_Controller_Action
 
         if ($yearQuery) {
             $params['year'] = $yearQuery;
-            $evalOptions['year'] = $yearQuery;
         }
 
         $yearCategories = [];
@@ -198,8 +211,24 @@ class StatsController extends Zend_Controller_Action
                 return;
             }
 
+            $evaluationQuery = self::getEvaluationQuery($yearQuery, $startStatsAfterDate);
+            $evaluations = null;
+
+            // the reviews counted by the figures (journal administrators only)
+            if ($token !== null && self::canSeePapers()) {
+                try {
+                    // an unusable answer falls back to the public figures as well
+                    $evaluations = $this->getEvaluations(array_merge($evaluationQuery, [self::WITH_PAPERS_PARAM => 'true']), $token) ?: null;
+                } catch (GuzzleException|JsonException $e) {
+                    // falls back to the figures without the reviews
+                    $logger?->warning(sprintf('Statistics of %s: the reviews are not available: %s', RVCODE, $e->getMessage()));
+                }
+            }
+
             try {
-                $this->processEvaluationStats($evalOptions, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
+                // the figures of the evaluation are public: no token
+                $evaluations ??= $this->getEvaluations($evaluationQuery, null);
+                $this->processEvaluationStats($evaluations, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
             } catch (GuzzleException|JsonException $e) {
                 $this->view->errorMessage = $errorMessage;
                 $logger?->warning($e->getMessage());
@@ -336,9 +365,13 @@ class StatsController extends Zend_Controller_Action
         $this->view->isAvailableUsersStats = $isAvailableUsersStats;
 
         // Papers of the figures (journal administrators only): kept in session, the page only gets their number
-        $paperLists = self::getPaperLists($dashboard['value'] ?? []);
+        $paperLists = self::getPaperLists($dashboard['value'] ?? []) + self::getReviewLists($evaluations ?? []);
+        $figureValues = self::getFigureValues($dashboard['value'] ?? []) + array_map('intval', array_filter([
+                self::REVIEWS_REQUESTED => $reviewsRequested ?? null,
+                self::REVIEWS_RECEIVED => $reviewsReceived ?? null,
+            ], static fn($value) => $value !== null));
         $this->storePaperLists($paperLists, $yearQuery, $fullHistory);
-        $this->view->paperLists = self::countPaperLists($paperLists, self::getFigureValues($dashboard['value'] ?? []), $logger);
+        $this->view->paperLists = self::countPaperLists($paperLists, $figureValues, $logger);
         $this->view->paperListTitles = $paperLists ? $this->getPaperListTitles() : [];
         // without the "startAfterDate" filter, the totals are not explained by the papers
         $this->view->totalsExplained = !isset($dashboard['value']['totalWithoutStartAfterDate']);
@@ -420,7 +453,7 @@ class StatsController extends Zend_Controller_Action
             [$t('délai soumission-publication') . ' – ' . $view->translate('médiane') . $unit($view->submissionPublicationTimeMedianUnit), $view->submissionPublicationTimeMedian],
             [$t('Évaluations demandées'), $view->reviewsRequested],
             [$t('Évaluations reçues'), $view->reviewsReceived],
-            [$t("Nombre médian d'évaluations d'articles de recherche"), $view->medianReviewsNumber],
+            [$t("Nombre médian d'évaluations par article évalué"), $view->medianReviewsNumber],
             [$t("Nombre total d'utilisateurs"), $view->isAvailableUsersStats ? $view->allUsers : null],
         ]);
     }
@@ -655,16 +688,25 @@ class StatsController extends Zend_Controller_Action
 
         $list = $stored['lists'][$figure];
         $columns = self::FIGURE_COLUMNS[$figure] ?? self::DEFAULT_COLUMNS;
-        $rows = self::getPaperRows($list['docIds'], $columns);
-
-        $this->sendJson(200, [
+        $isReviewList = isset($list['reviews']);
+        $translate = fn(string $text): string => (string)$this->view->translate($text);
+        $rows = $isReviewList ? self::getReviewRows($list['reviews'], $translate) : self::getPaperRows($list['docIds'], $columns);
+        $data = [
             'figure' => $figure,
             'columns' => $columns,
             'submissionLabel' => self::getSubmissionLabel($rows),
-            'total' => count($list['docIds']),
+            'total' => $isReviewList ? count($list['reviews']) : count($list['docIds']),
             'hidden' => (int)$list['hidden'],
             'rows' => $rows,
-        ]);
+        ];
+
+        // a row by invitation or by report: the counts are of reviews, not of papers
+        if ($isReviewList) {
+            $data['countLabel'] = $translate($figure === self::REVIEWS_REQUESTED ? 'invitation(s)' : 'rapport(s)');
+            $data['hiddenLabel'] = $translate("évaluation(s) non listée(s) : conflit d'intérêts déclaré");
+        }
+
+        $this->sendJson(200, $data);
     }
 
     /**
@@ -679,17 +721,20 @@ class StatsController extends Zend_Controller_Action
         $counts = [];
 
         foreach ($paperLists as $figure => $list) {
-            $count = count($list['docIds']);
+            // the lists of reviews count the reviews (several by paper)
+            $isReviewList = isset($list['reviews']);
+            $count = $isReviewList ? count($list['reviews']) : count($list['docIds']);
             $incomplete = isset($figureValues[$figure]) && $count + $list['hidden'] !== $figureValues[$figure];
 
             if ($incomplete) {
                 $logger?->warning(sprintf(
-                    'Statistics of %s: %s, %d papers listed and %d hidden for a figure of %d',
-                    defined('RVCODE') ? RVCODE : '', $figure, $count, $list['hidden'], $figureValues[$figure]
+                    'Statistics of %s: %s, %d %s listed and %d hidden for a figure of %d',
+                    defined('RVCODE') ? RVCODE : '', $figure, $count, $isReviewList ? 'reviews' : 'papers', $list['hidden'], $figureValues[$figure]
                 ));
             }
 
-            $counts[$figure] = ['figure' => $figure, 'count' => $count, 'hidden' => $list['hidden'], 'incomplete' => $incomplete];
+            $counts[$figure] = ['figure' => $figure, 'count' => $count, 'hidden' => $list['hidden'], 'incomplete' => $incomplete]
+                + (isset($list['reviews']) ? ['reviews' => true] : []);
         }
 
         return $counts;
@@ -1019,6 +1064,8 @@ class StatsController extends Zend_Controller_Action
             self::NB_OTHER_STATUS => 'autres statuts',
             self::SUBMISSION_ACCEPTANCE_DELAY => 'délai soumission-acceptation',
             self::SUBMISSION_PUBLICATION_DELAY => 'délai soumission-publication',
+            self::REVIEWS_REQUESTED => 'Évaluations demandées',
+            self::REVIEWS_RECEIVED => 'Évaluations reçues',
         ];
 
         return array_map(fn(string $title) => ucfirst($this->view->translate($title)), $titles);
@@ -1131,21 +1178,50 @@ class StatsController extends Zend_Controller_Action
 
 
     /**
-     *
-     * @param array $evalOptions
+     * Query of the evaluation statistics: the same year and start date as the dashboard
+     * @param int|null $year
+     * @param string|null $startAfterDate the start date applied to the statistics (null: all the data)
+     * @return array<string, int|string>
+     */
+    public static function getEvaluationQuery(?int $year, ?string $startAfterDate): array
+    {
+        $query = [];
+
+        if ($year) {
+            $query['year'] = $year;
+        }
+
+        if ($startAfterDate) {
+            $query['startAfterDate'] = $startAfterDate;
+        }
+
+        return $query;
+    }
+
+    /**
+     * The evaluation statistics of the journal (API)
+     * @param array $evalOptions see getEvaluationQuery()
+     * @param string|null $token
+     * @return array
+     * @throws GuzzleException
+     * @throws JsonException
+     */
+    private function getEvaluations(array $evalOptions, ?string $token): array
+    {
+        $evaluations = json_decode($this->askApi('statistics/evaluation', array_merge(['rvcode' => RVCODE], $evalOptions), $token), true, 512, JSON_THROW_ON_ERROR);
+
+        return is_array($evaluations) ? $evaluations : [];
+    }
+
+    /**
+     * @param array $evaluations see getEvaluations()
      * @param float|null $reviewsRequested
      * @param float|null $reviewsReceived
      * @param float|null $medianReviewsNumber
      * @return void
-     * @throws GuzzleException
-     * @throws JsonException
      */
-    private function processEvaluationStats(array $evalOptions, float &$reviewsRequested = null, float &$reviewsReceived = null, float &$medianReviewsNumber = null): void
+    private function processEvaluationStats(array $evaluations, float &$reviewsRequested = null, float &$reviewsReceived = null, float &$medianReviewsNumber = null): void
     {
-        $evalOptions = array_merge(['rvcode' => RVCODE], $evalOptions);
-        $evalUri = 'statistics/evaluation';
-        $evaluations = json_decode($this->askApi($evalUri, $evalOptions), true, 512, JSON_THROW_ON_ERROR);
-
         foreach ($evaluations as $stats) {
             $key = Episciences_Tools::convertToCamelCase($stats['name'] ?? '', '-');
             $value = $stats['value'] ?? null;
@@ -1165,6 +1241,83 @@ class StatsController extends Zend_Controller_Action
                     break;
             }
         }
+    }
+
+    /**
+     * The reviews counted by the figures of the evaluation (API, with "withPapers"): one item by invitation or by report
+     * @param array $evaluations see getEvaluations()
+     * @return array<string, array{docIds: int[], reviews: array<int, array{docid: int, date: ?string, answer?: string}>, hidden: int}>
+     */
+    public static function getReviewLists(array $evaluations): array
+    {
+        $figures = [
+            'reviews-requested' => self::REVIEWS_REQUESTED,
+            'reviews-received' => self::REVIEWS_RECEIVED,
+        ];
+        $lists = [];
+
+        foreach ($evaluations as $stats) {
+            $figure = $figures[$stats['name'] ?? ''] ?? null;
+
+            if ($figure === null || !isset($stats['reviews']) || !is_array($stats['reviews'])) {
+                continue;
+            }
+
+            $reviews = [];
+
+            foreach ($stats['reviews'] as $review) {
+                $docId = (int)($review['docid'] ?? 0);
+
+                if ($docId > 0) {
+                    $reviews[] = ['docid' => $docId, 'date' => self::toDate($review['date'] ?? null)] + (isset($review['answer']) ? ['answer' => (string)$review['answer']] : []);
+                }
+            }
+
+            $lists[$figure] = [
+                'docIds' => array_values(array_unique(array_column($reviews, 'docid'))),
+                'reviews' => $reviews,
+                'hidden' => max(0, (int)($stats['hiddenReviews'] ?? 0)),
+            ];
+        }
+
+        return $lists;
+    }
+
+    /**
+     * Rows of a list of reviews: the paper of each invitation (date of sending, answer) or report (date of validation)
+     * @param array<int, array{docid: int, date: ?string, answer?: string}> $reviews
+     * @param callable(string): string $translate
+     * @return array<int, array<string, mixed>>
+     */
+    public static function getReviewRows(array $reviews, callable $translate): array
+    {
+        $papers = [];
+
+        foreach (self::getPaperRows(array_column($reviews, 'docid'), []) as $paper) {
+            $papers[$paper['docid']] = $paper;
+        }
+
+        $rows = [];
+
+        foreach ($reviews as $review) {
+            // a version no longer in the journal: not listed (the window says that some papers were not found)
+            if (!isset($papers[$review['docid']])) {
+                continue;
+            }
+
+            $row = $papers[$review['docid']];
+
+            if (isset($review['answer'])) {
+                $row[self::COLUMN_INVITATION] = $review['date'];
+                $row[self::COLUMN_ANSWER] = $translate(self::INVITATION_ANSWER_LABELS[$review['answer']] ?? $review['answer']);
+            } else {
+                $row[self::COLUMN_REPORT] = $review['date'];
+            }
+
+            $rows[] = $row;
+        }
+
+        return $rows;
     }
 
 }

@@ -25,13 +25,19 @@ if (!$count && !$hidden) {
     <?php endif; ?>
     <?php if ($hidden): ?>
         <p class="help-block small">
-            <?= sprintf($this->translate($hidden > 1 ? "%s articles non listés : conflit d'intérêts déclaré" : "%s article non listé : conflit d'intérêts déclaré"), $hidden) ?>
+            <?php if (!empty($paperList['reviews'])): // a list of reviews (invitations, reports) ?>
+                <?= sprintf($this->translate($hidden > 1 ? "%s évaluations non listées : conflit d'intérêts déclaré" : "%s évaluation non listée : conflit d'intérêts déclaré"), $hidden) ?>
+            <?php else: ?>
+                <?= sprintf($this->translate($hidden > 1 ? "%s articles non listés : conflit d'intérêts déclaré" : "%s article non listé : conflit d'intérêts déclaré"), $hidden) ?>
+            <?php endif; ?>
         </p>
     <?php endif; ?>
     <?php if (!empty($paperList['incomplete'])): ?>
         <p class="help-block small">
             <span class="fas fa-exclamation-triangle fa-sm" aria-hidden="true"></span>
-            <?= $this->translate("Liste incomplète : le nombre d'articles ne correspond pas au chiffre affiché") ?>
+            <?= $this->translate(!empty($paperList['reviews'])
+                ? "Liste incomplète : le nombre d'évaluations ne correspond pas au chiffre affiché"
+                : "Liste incomplète : le nombre d'articles ne correspond pas au chiffre affiché") ?>
         </p>
     <?php endif; ?>
 </div>

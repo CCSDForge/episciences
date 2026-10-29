@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1163](https://github.com/CCSDForge/episciences/pull/1163): Add `title_translations` to the `PAPERS.DOCUMENT` JSON column.
 - [#1163](https://github.com/CCSDForge/episciences/pull/1163): Display bibliographic references count in `papers:update-document` with `-vv`.
 - [#1214](https://github.com/CCSDForge/episciences/pull/1214) Add volume editors to CrossRef XML export. When a paper belongs to a volume with assigned editors, their names and ORCID identifiers are now included in the `<journal_issue><contributors>` block.
+- Statistics page: the journal administrators can view the invitations ("Reviews requested": date of sending, answer) and the reports ("Reviews received": date of validation) counted by the evaluation figures, one row by invitation or by report, without the reviewers, with the CSV export of the lists of papers. The reviews of the papers with a declared conflict of interest are not listed, only counted. Requires the matching Episciences API version (`withPapers` on the evaluation statistics).
 
 ### Changed
 
@@ -80,6 +81,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Statistics page: the evaluations block is also shown when only the median number of reviews is known.
+- Statistics page: the evaluation figures (reviews requested, reviews received, median number of reviews) follow the start date of the statistics of the journal and the full-history switch, as the other figures. The start date requires the matching Episciences API version; the number of reviews requested now counts all the invitations sent, not only the pending ones (Episciences API).
+- Statistics page: the median number of reviews is labelled "per reviewed article" instead of "of research articles" (it is computed on all the reviewed articles, all their versions together), and each evaluation figure explains what it counts in a tooltip.
 - Statistics page: in the chart by year and status, the values of a series were shown one year too early after a year without any value.
 - Statistics page: the page no longer waits indefinitely when the Episciences API is unreachable (5 s to connect, 30 s in total).
 
