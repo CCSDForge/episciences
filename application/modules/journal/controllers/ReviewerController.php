@@ -298,19 +298,30 @@ class ReviewerController extends PaperDefaultController
      */
     protected function saveanswer(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, array $data): void
     {
+        // both answers end with a redirect, which ends the request: the message is added before it
         if (array_key_exists('submitaccept', $data)) {
 
-            // accepted invitation
-            $this->accept($oInvitation, $assignment, $paper, $data);
-            $this->_helper->redirector->gotoUrl($this->_helper->url('rating', 'paper', null, ['id' => $paper->getDocid()]));
+            // accepted invitation (not yet when the invitee has to log in first)
+            if ($this->accept($oInvitation, $assignment, $paper, $data)) {
+                $this->addAnswerSavedMessage();
+                $this->_helper->redirector->gotoUrl($this->_helper->url('rating', 'paper', null, ['id' => $paper->getDocid()]));
+            }
 
         } elseif (array_key_exists('submitrefuse', $data)) {
 
             // declined invitation
             $this->decline($oInvitation, $assignment, $paper, $data);
+            $this->addAnswerSavedMessage();
             $this->redirect('/');
 
         }
+    }
+
+    private function addAnswerSavedMessage(): void
+    {
+        $this->_helper->FlashMessenger
+            ->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
+            ->addMessage($this->view->translate("Votre réponse a bien été enregistrée."));
     }
 
     /**
@@ -323,8 +334,9 @@ class ReviewerController extends PaperDefaultController
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
+     * @return bool false when the invitee is sent to the login page first: nothing is stored yet
      */
-    private function accept(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data): void
+    private function accept(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data): bool
     {
         // update user permissions
         if ($assignment->isTmp_user()) {
@@ -349,7 +361,7 @@ class ReviewerController extends PaperDefaultController
                     }
                 }
                 $this->redirect($this->view->url($redirect_params));
-                return;
+                return false;
             }
 
             $user = $this->createNewReviewerWithExistingAccountProcessing($assignment->getUid());
@@ -359,6 +371,8 @@ class ReviewerController extends PaperDefaultController
         // rating report, log, paper status and e-mails) — shared with the editor
         // "accept on behalf" flow in AdministratepaperController.
         $this->performReviewerInvitationAcceptance($oInvitation, $assignment, $paper, $user);
+
+        return true;
     }
 
     /**
@@ -607,7 +621,6 @@ class ReviewerController extends PaperDefaultController
                     }
 
                     $this->saveanswer($invitation, $assignment, $paper, $data);
-                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($this->view->translate("Votre réponse a bien été enregistrée."));
 
 
                 } elseif ($refused) {

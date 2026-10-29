@@ -96,7 +96,7 @@ final class ReviewerControllerInvitationAnswerTest extends TestCase
         }
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
         unset($session->csrfToken);
-        foreach ([Ccsd_View_Helper_Message::MSG_ERROR, 'success'] as $namespace) {
+        foreach ([Ccsd_View_Helper_Message::MSG_ERROR, Ccsd_View_Helper_Message::MSG_SUCCESS] as $namespace) {
             $this->flashMessenger()->setNamespace($namespace)->clearCurrentMessages();
         }
         $_POST = []; // setPost() writes the global
@@ -384,13 +384,20 @@ final class ReviewerControllerInvitationAnswerTest extends TestCase
         $previousRoute = $currentRoute->getValue($router);
         $currentRoute->setValue($router, null);
 
-        $method = new ReflectionMethod(\ReviewerController::class, 'accept');
+        // the real saveanswer() (the test double only records), down to accept()
+        $method = new ReflectionMethod(\ReviewerController::class, 'saveanswer');
         $method->setAccessible(true);
         try {
             $method->invoke($this->controller, $this->invitation(), $this->assignment(), $this->createMock(Episciences_Paper::class), ['submitaccept' => '']);
         } finally {
             $currentRoute->setValue($router, $previousRoute);
         }
+
+        self::assertSame(
+            [],
+            $this->flashMessenger()->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->getCurrentMessages(),
+            'nothing is stored before the invitee logs in: no "answer saved" message'
+        );
 
         $url = (string)$this->controller->redirectedTo;
         self::assertStringContainsString('/user/login/', $url);
