@@ -4256,23 +4256,8 @@ class PaperController extends PaperDefaultController
 
         if ($reviewingStatus !== Episciences_Reviewer_Reviewing::STATUS_COMPLETE) { // On garde les relectures déjà terminées
 
-            //Mettre à jour l'invitati]on
-            $invitation->setStatus($invitation::STATUS_CANCELLED);
-            $invitation->save();
-
-            //Mettre à jour l'assignation
-            $params = [
-                'itemid' => $assignment->getItemid(),
-                'item' => Episciences_User_Assignment::ITEM_PAPER,
-                'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
-                'status' => Episciences_User_Assignment::STATUS_CANCELLED,
-                'tmp_user' => $assignment->isTmp_user()
-            ];
-
-            /** @var Episciences_User_Assignment $nAssignment */
-            $nAssignment = Episciences_UsersManager::unassign($assignment->getUid(), $params)[0];
-            $nAssignment->setInvitation_id($invitation->getId());
-            $nAssignment->save();
+            // cancel the invitation and the assignment
+            $nAssignment = Episciences_User_AssignmentsManager::cancelReviewerAssignment($assignment, $invitation);
 
             // logger la suppression de relecteur
 
