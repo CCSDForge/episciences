@@ -25,6 +25,35 @@ final class Episciences_Paper_MiscTest extends TestCase
     protected function setUp(): void
     {
         $this->paper = new Episciences_Paper();
+
+        if (!defined('SESSION_NAMESPACE')) {
+            define('SESSION_NAMESPACE', 'Episciences_Auth');
+        }
+
+        \Episciences_Auth::getInstance()->clearIdentity();
+        $session = new \Zend_Session_Namespace(SESSION_NAMESPACE);
+        unset($session->realIdentities);
+        \Episciences_Auth::clearImpersonation();
+    }
+
+    protected function tearDown(): void
+    {
+        \Episciences_Auth::getInstance()->clearIdentity();
+        $session = new \Zend_Session_Namespace(SESSION_NAMESPACE);
+        unset($session->realIdentities);
+        \Episciences_Auth::clearImpersonation();
+    }
+
+    private function createMockUser(int $uid): \Episciences_User
+    {
+        $user = $this->createMock(\Episciences_User::class);
+        $user->method('getUid')->willReturn($uid);
+        return $user;
+    }
+
+    private function loginUser(\Episciences_User $user): void
+    {
+        \Episciences_Auth::getInstance()->getStorage()->write($user);
     }
 
     // -----------------------------------------------------------------------
@@ -111,6 +140,70 @@ final class Episciences_Paper_MiscTest extends TestCase
         self::assertSame('secret123', $this->paper->getPassword());
     }
 
+    public function testSetPasswordStoresEncryptedValueWhenEncryptFlagIsTrue(): void
+    {
+        $paper = $this->createPartialMock(Episciences_Paper::class, ['encryptPassword']);
+        $paper->expects(self::once())
+            ->method('encryptPassword')
+            ->with('secret123')
+            ->willReturn('def5-cipher');
+
+        $paper->setPassword('secret123', true);
+
+        self::assertSame('def5-cipher', $paper->getPassword());
+    }
+
+    public function testSetPasswordNeverKeepsPlainTextWhenEncryptionFails(): void
+    {
+        $paper = $this->createPaperWithFailingEncryption();
+
+        $warnings = $this->collectUserWarnings(static fn() => $paper->setPassword('secret123', true));
+
+        self::assertSame(['missing crypto key'], $warnings);
+        self::assertNull($paper->getPassword());
+    }
+
+    public function testSetPasswordKeepsPreviousValueWhenEncryptionFails(): void
+    {
+        $paper = $this->createPaperWithFailingEncryption();
+        $paper->setPassword('def5-previous-cipher');
+
+        $warnings = $this->collectUserWarnings(static fn() => $paper->setPassword('new-secret', true));
+
+        self::assertSame(['missing crypto key'], $warnings);
+        self::assertSame('def5-previous-cipher', $paper->getPassword());
+    }
+
+    private function createPaperWithFailingEncryption(): Episciences_Paper
+    {
+        $paper = $this->createPartialMock(Episciences_Paper::class, ['encryptPassword']);
+        $paper->method('encryptPassword')->willThrowException(new \Zend_Exception('missing crypto key'));
+
+        return $paper;
+    }
+
+    /**
+     * Runs $callback and returns the E_USER_WARNING messages it raised.
+     *
+     * @return string[]
+     */
+    private function collectUserWarnings(callable $callback): array
+    {
+        $warnings = [];
+        set_error_handler(static function (int $errno, string $errstr) use (&$warnings): bool {
+            $warnings[] = $errstr;
+            return true;
+        }, E_USER_WARNING);
+
+        try {
+            $callback();
+        } finally {
+            restore_error_handler();
+        }
+
+        return $warnings;
+    }
+
     public function testSetPasswordNullResultsInNullPassword(): void
     {
         $this->paper->setPassword(null);
@@ -166,14 +259,56 @@ final class Episciences_Paper_MiscTest extends TestCase
 
     public function testIsOwnerReturnsTrueWhenCurrentUserMatchesPaperUid(): void
     {
-        // isOwner() calls Episciences_Auth::getUid() which returns 0 in test env
         $paper = new Episciences_Paper();
-        $paper->setUid(0); // match the default test-environment uid
+        $paper->setUid(42);
 
-        // We can only verify that the method is callable without error in a
-        // no-auth environment; the actual return value depends on Auth state.
-        $result = $paper->isOwner();
-        self::assertIsBool($result);
+        $this->loginUser($this->createMockUser(42));
+
+        self::assertTrue($paper->isOwner());
+    }
+
+    public function testIsOwnerReturnsFalseWhenNoIdentityMatchesPaperUid(): void
+    {
+        $paper = new Episciences_Paper();
+        $paper->setUid(42);
+
+        $this->loginUser($this->createMockUser(99));
+
+        self::assertFalse($paper->isOwner());
+    }
+
+    /**
+     * When an admin uses "switch user" (su) to act as someone else, the paper
+     * author should still be recognized as owner via the original identity —
+     * this is the case Episciences_Auth::getOriginalIdentity() exists for.
+     */
+    public function testIsOwnerReturnsTrueWhenOriginalIdentityMatchesPaperUidDuringSu(): void
+    {
+        $paper = new Episciences_Paper();
+        $paper->setUid(99); // the admin's own uid, i.e. the paper they authored
+
+        $admin = $this->createMockUser(99);
+        $impersonated = $this->createMockUser(42);
+
+        $this->loginUser($admin);
+        \Episciences_Auth::startImpersonation($impersonated);
+
+        // Current identity (42) doesn't match, but the original identity (99) does
+        self::assertTrue($paper->isOwner());
+    }
+
+    public function testIsOwnerReturnsFalseWhenNeitherCurrentNorOriginalIdentityMatchesDuringSu(): void
+    {
+        $paper = new Episciences_Paper();
+        $paper->setUid(123); // belongs to some other, unrelated user
+
+        $admin = $this->createMockUser(99);
+        $impersonated = $this->createMockUser(42);
+
+        $this->loginUser($admin);
+        \Episciences_Auth::startImpersonation($impersonated);
+
+        self::assertFalse($paper->isOwner());
     }
 
     // -----------------------------------------------------------------------

@@ -1,8 +1,11 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -15,16 +18,14 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
  *
  * Replaces: scripts/getLicenceDataEnrichment.php (JournalScript)
  */
+#[AsCommand(name: 'enrichment:licences', description: 'Enrich licence data for all papers from repository APIs')]
 class GetLicenceDataCommand extends Command
 {
-    protected static $defaultName = 'enrichment:licences';
-
     private const ONE_MONTH = 3600 * 24 * 31;
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Enrich licence data for all papers from repository APIs')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }
@@ -40,9 +41,11 @@ class GetLicenceDataCommand extends Command
         $this->bootstrap();
 
         $logger = new Logger('licenceEnrichment');
-        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'licenceEnrichment_' . date('Y-m-d') . '.log', Logger::INFO));
-        if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'licenceEnrichment_' . date('Y-m-d') . '.log', Level::Info));
+        $stdoutHandler = null;
+        if (!$io->isQuiet() && !$io->isSilent()) {
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
+            $logger->pushHandler($stdoutHandler);
         }
 
         if ($dryRun) {
@@ -71,7 +74,9 @@ class GetLicenceDataCommand extends Command
         }
 
         $rows = $db->fetchAll($select);
-        $io->progressStart(count($rows));
+        $progressBar = $io->createProgressBar(count($rows));
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         $cache = new FilesystemAdapter('enrichmentLicences', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
 
@@ -104,10 +109,12 @@ class GetLicenceDataCommand extends Command
                 $logger->info("Licence data from cache for {$identifier}");
             }
 
-            $io->progressAdvance();
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('Licence data enrichment completed.');
 
         return Command::SUCCESS;

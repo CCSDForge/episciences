@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Security\ParamRedactor;
+
 class ErrorDefaultController extends Zend_Controller_Action
 {
 	
@@ -38,12 +40,14 @@ class ErrorDefaultController extends Zend_Controller_Action
 	                break;
 	        }
 	        
+	        // Credential-like values are masked for both the log and the error page
+	        $loggableParams = ParamRedactor::redact($errors->request->getParams());
+
 	        // Log exception, if logger available
 	        if ($log = $this->getLog()) {
 	        	$log->log("******* " . $this->view->message . " : " . $errors->exception->getMessage(), $priority, $errors->exception);
 	        	$log->log("Exception thrown in : " . $errors->exception->getFile() . " - l." .$errors->exception->getLine(), $priority);
-	            $loggableParams = $this->redactSensitiveParams($errors->request->getParams());
-            $log->log('Request Parameters : ' . Zend_Json::encode($loggableParams), $priority, $loggableParams);
+	        	$log->log('Request Parameters : ' . Zend_Json::encode($loggableParams), $priority, $loggableParams);
 	        }
 	        
 	        // conditionally display exceptions
@@ -61,30 +65,10 @@ class ErrorDefaultController extends Zend_Controller_Action
 	        }
 	        
 	        $this->view->request   = $errors->request;
+	        $this->view->requestParams = $loggableParams;
 	        
 	        
         }
-    }
-
-    /**
-     * Replace the value of credential-like parameters before they reach the logs.
-     *
-     * @param array $params
-     * @return array
-     */
-    public function redactSensitiveParams(array $params): array
-    {
-        $sensitive = ['password', 'passwd', 'pwd', 'previous_password', 'api_password', 'token', 'secret', 'csrf_token'];
-
-        foreach ($params as $key => $value) {
-            if (is_array($value)) {
-                $params[$key] = $this->redactSensitiveParams($value);
-            } elseif (in_array(strtolower((string)$key), $sensitive, true)) {
-                $params[$key] = '***';
-            }
-        }
-
-        return $params;
     }
 
     public function getLog()
@@ -118,7 +102,37 @@ class ErrorDefaultController extends Zend_Controller_Action
     
     public function denyAction()
     {
+        $this->getResponse()->setHttpResponseCode(403);
         $this->view->message = "Vous n'êtes pas autorisé à accéder à cette page.";
+    }
+
+    /**
+     * Read-only maintenance mode: the requested page could write to the database (see ReadOnlyGate plugin).
+     */
+    public function readonlyAction(): void
+    {
+        if ($this->getResponse()->isRedirect()) {
+            // Language switch turned into a redirect by the ReadOnlyGate plugin
+            $this->_helper->layout()->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
+
+        if (!\Episciences\Maintenance\ReadOnlyMode::isEnabled()) {
+            // Only meaningful during a maintenance: otherwise the page does not exist
+            $this->getResponse()->setHttpResponseCode(404);
+            $this->view->message = 'Page not found';
+            $this->_helper->viewRenderer->setScriptAction('error');
+            return;
+        }
+
+        $this->getResponse()
+            ->setHttpResponseCode(503)
+            ->setHeader('Retry-After', (string) \Episciences\Maintenance\ReadOnlyMode::getRetryAfterSeconds(), true);
+
+        if ($this->getRequest()->isXmlHttpRequest()) {
+            $this->_helper->layout()->disableLayout();
+        }
     }
 
 

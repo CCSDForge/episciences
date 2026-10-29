@@ -21,6 +21,7 @@
     "apereo/phpcas": "1.6.1",
     "cottagelabs/coarnotify": "dev-main",
     "defuse/php-encryption": "^2.3",
+    "doctrine/dbal": "^4.2.5",
     "ezyang/htmlpurifier": "^4.14",
     "geoip2/geoip2": "~3.0",
     "geertw/ip-anonymizer": "^1.1",
@@ -31,7 +32,7 @@
     "laravolt/avatar": "^6.0",
     "league/commonmark": "^2.4",
     "league/html-to-markdown": "^5.1",
-    "monolog/monolog": "^1.27",
+    "monolog/monolog": "^3.0",
     "phpmailer/phpmailer": "^6.9",
     "ramsey/uuid": "^4.7",
     "seboettg/citeproc-php": "^2.6",
@@ -39,18 +40,20 @@
     "shardj/zf1-future": "1.25.0",
     "smalot/pdfparser": "^2.2",
     "solarium/solarium": "^6.3.1",
-    "symfony/cache": "^6.4",
-    "symfony/console": "^6.4",
-    "symfony/event-dispatcher": "^6.4",
-    "symfony/filesystem": "^6.4",
+    "symfony/cache": "^7.4",
+    "symfony/console": "^7.4",
+    "symfony/doctrine-messenger": "^7.4",
+    "symfony/event-dispatcher": "^7.4",
+    "symfony/filesystem": "^7.4",
+    "symfony/messenger": "^7.4",
     "symfony/polyfill-mbstring": "*",
     "symfony/polyfill-php84": "*",
-    "symfony/property-access": "^6.4",
-    "symfony/serializer": "^6.4",
-    "symfony/yaml": "^6.4",
-    "symfony/intl": "^6.4",
-    "symfony/dotenv": "^6.4",
-    "symfony/mime": "^6.4"
+    "symfony/property-access": "^7.4",
+    "symfony/serializer": "^7.4",
+    "symfony/yaml": "^7.4",
+    "symfony/intl": "^7.4",
+    "symfony/dotenv": "^7.4",
+    "symfony/mime": "^7.4"
   },
   "require-dev": {
     "fakerphp/faker": "^1.23",
@@ -61,6 +64,11 @@
     "phpstan/phpstan": "^2.1",
     "symfony/test-pack": "^1.0",
     "phpunit/phpunit": "^10.5"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "unit\\": "tests/unit/"
+    }
   },
   "license": "GNU GENERAL PUBLIC LICENSE Version 3",
   "support": {

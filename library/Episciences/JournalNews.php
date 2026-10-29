@@ -233,13 +233,17 @@ class Episciences_JournalNews
 
         try {
             $resUpdate = $db->insert(T_JOURNAL_NEWS, $news);
-            return $resUpdate;
         } catch (Zend_Db_Adapter_Exception $exception) {
             error_log($exception->getMessage());
             $resUpdate = 0;
         }
-        return $resUpdate;
 
+        if ($resUpdate > 0 && isset($news['code']) && $news['code'] !== '') {
+            $rvcode = (string) $news['code'];
+            \Episciences\Next\RevalidationService::enqueueTag($rvcode, "news-{$rvcode}");
+        }
+
+        return $resUpdate;
     }
 
     public static function update(Episciences_JournalNews $journalNews): int
@@ -261,8 +265,15 @@ class Episciences_JournalNews
             error_log($exception->getMessage());
             $resUpdate = 0;
         }
+
+        if ($resUpdate > 0) {
+            $rvcode = $journalNews->getCode();
+            \Episciences\Next\RevalidationService::enqueueTag($rvcode, "news-{$rvcode}");
+        }
+
         return $resUpdate;
     }
+
     public static function findByLegacyId(int $legacyId): ?Episciences_JournalNews
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -279,11 +290,22 @@ class Episciences_JournalNews
         }
         return $journalNew;
     }
-    public static function deleteByLegacyId(int $legacyId) {
+    public static function deleteByLegacyId(int $legacyId): bool
+    {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        // Fetch rvcode before deletion for cache revalidation
+        $row = $db->fetchRow(
+            $db->select()->from(T_JOURNAL_NEWS, ['code'])->where('legacy_id = ?', $legacyId)
+        );
+        $rvcode = is_array($row) && isset($row['code']) ? (string) $row['code'] : null;
+
         $resDelete = $db->delete(T_JOURNAL_NEWS, ['legacy_id = ?' => $legacyId]);
+
+        if ($resDelete > 0 && $rvcode !== null && $rvcode !== '') {
+            \Episciences\Next\RevalidationService::enqueueTag($rvcode, "news-{$rvcode}");
+        }
+
         return $resDelete > 0;
-
-
     }
 }

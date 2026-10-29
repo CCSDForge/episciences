@@ -1,6 +1,6 @@
 <script>
     var sender_uid = <?= Episciences_Auth::getUid() ?>;
-    var target = '<?= $this->target ?>';
+    var target = <?= json_encode((string)$this->target, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     var all_contacts = <?= $this->js_contacts ?>;
 
 
@@ -96,7 +96,7 @@
                     asort($rolesTranslated);
                     echo "<td>";
                     foreach ($rolesTranslated as $untranslatedRole => $translatedRole): ?>
-                        <span class="label label-default role-<?= $untranslatedRole ?>" ><?= $translatedRole ?></span>
+                        <span class="label label-default role-<?= $untranslatedRole ?>" ><?= Episciences_Acl::getRoleLabelHtml($untranslatedRole) ?></span>
                     <?php endforeach; ?>
                     <?php echo "</td>"; ?>
                     <td><?= $contact['mail'] ?></td>

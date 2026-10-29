@@ -4,8 +4,10 @@ declare(strict_types=1);
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,9 +19,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/createDoajVolumeExports.php (JournalScript)
  */
+#[AsCommand(name: 'doaj:export-volumes', description: 'Create DOAJ XML volume exports for one journal or all journals.')]
 class CreateDoajVolumeExportsCommand extends Command
 {
-    protected static $defaultName = 'doaj:export-volumes';
     public const APICALLVOL = 'volumes?page=1&itemsPerPage=1000&rvcode=';
 
     private Logger $logger;
@@ -28,7 +30,6 @@ class CreateDoajVolumeExportsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Create DOAJ XML volume exports for one journal or all journals.')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Journal RV code, or "allJournals"')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulate without writing files or updating cache')
             ->addOption('ignore-cache', null, InputOption::VALUE_NONE, 'Bypass cache and force re-export')
@@ -64,10 +65,10 @@ class CreateDoajVolumeExportsCommand extends Command
         $failed = false;
 
         foreach ($allJournals as $journal) {
-            $this->initLoggerForJournal($journal, $io->isQuiet());
+            $this->initLoggerForJournal($journal, $io->isQuiet() || $io->isSilent());
             try {
                 if ($removeCache) {
-                    $cache = new FilesystemAdapter("doaj-volume-export-{$journal}", 0, CACHE_PATH_METADATA);
+                    $cache = new FilesystemAdapter('doaj-volume-export', 0, CACHE_PATH_METADATA . $journal);
                     $cache->clear();
                     $this->logger->info("Cache cleared for RV code: {$journal}");
                 }
@@ -252,7 +253,7 @@ class CreateDoajVolumeExportsCommand extends Command
      */
     public static function getCacheDocIdsList(string $vid, string $rvCode): string
     {
-        $cache = new FilesystemAdapter("doaj-volume-export-{$rvCode}", 0, CACHE_PATH_METADATA);
+        $cache = new FilesystemAdapter('doaj-volume-export', 0, CACHE_PATH_METADATA . $rvCode);
         $item  = $cache->getItem($vid);
         if (!$item->isHit()) {
             return json_encode([''], JSON_THROW_ON_ERROR);
@@ -269,7 +270,7 @@ class CreateDoajVolumeExportsCommand extends Command
      */
     public static function setCacheDocIdsList(string $vid, array $jsonVidList, string $rvCode): void
     {
-        $cache = new FilesystemAdapter("doaj-volume-export-{$rvCode}", 0, CACHE_PATH_METADATA);
+        $cache = new FilesystemAdapter('doaj-volume-export', 0, CACHE_PATH_METADATA . $rvCode);
         $item  = $cache->getItem($vid);
         $item->set(json_encode($jsonVidList, JSON_THROW_ON_ERROR));
         $cache->save($item);
@@ -306,10 +307,10 @@ class CreateDoajVolumeExportsCommand extends Command
         $loggerName   = 'doajVolumeExports-' . $journalCode;
         $this->logger = new Logger($loggerName);
         $this->logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . $loggerName . '_' . date('Y-m-d') . '.log', Logger::INFO
+            EPISCIENCES_LOG_PATH . $loggerName . '_' . date('Y-m-d') . '.log', Level::Info
         ));
         if (!$quiet) {
-            $this->logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
     }
 

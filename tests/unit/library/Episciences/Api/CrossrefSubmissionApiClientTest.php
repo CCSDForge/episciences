@@ -26,20 +26,7 @@ class CrossrefSubmissionApiClientTest extends TestCase
     private const LOGIN            = 'test_login';
     private const PASSWORD         = 'test_password';
 
-    private string $tmpFile;
-
-    protected function setUp(): void
-    {
-        $this->tmpFile = tempnam(sys_get_temp_dir(), 'crossref_test_') . '.xml';
-        file_put_contents($this->tmpFile, '<doi_batch><batch_data><success_count>1</success_count></batch_data></doi_batch>');
-    }
-
-    protected function tearDown(): void
-    {
-        if (file_exists($this->tmpFile)) {
-            unlink($this->tmpFile);
-        }
-    }
+    private const XML_CONTENT = '<doi_batch><batch_data><success_count>1</success_count></batch_data></doi_batch>';
 
     // -------------------------------------------------------------------------
     // Helpers
@@ -75,7 +62,7 @@ class CrossrefSubmissionApiClientTest extends TestCase
     {
         $apiClient = $this->makeApiClient($this->makeClient([new Response(200, [], 'OK')]));
 
-        $response = $apiClient->postMetadata($this->tmpFile, 'epiga-42.xml', false);
+        $response = $apiClient->postMetadata(self::XML_CONTENT, 'epiga-42.xml', false);
 
         $this->assertSame(200, $response->getStatusCode());
     }
@@ -85,7 +72,7 @@ class CrossrefSubmissionApiClientTest extends TestCase
         $history   = [];
         $apiClient = $this->makeApiClient($this->makeClient([new Response(200)], $history));
 
-        $apiClient->postMetadata($this->tmpFile, 'epiga-42.xml', false);
+        $apiClient->postMetadata(self::XML_CONTENT, 'epiga-42.xml', false);
 
         $uri = (string) $history[0]['request']->getUri();
         $this->assertSame(self::DEPOSIT_URL, $uri);
@@ -96,7 +83,7 @@ class CrossrefSubmissionApiClientTest extends TestCase
         $history   = [];
         $apiClient = $this->makeApiClient($this->makeClient([new Response(200)], $history));
 
-        $apiClient->postMetadata($this->tmpFile, 'epiga-42.xml', true);
+        $apiClient->postMetadata(self::XML_CONTENT, 'epiga-42.xml', true);
 
         $uri = (string) $history[0]['request']->getUri();
         $this->assertSame(self::DEPOSIT_TEST_URL, $uri);
@@ -107,20 +94,14 @@ class CrossrefSubmissionApiClientTest extends TestCase
         $history   = [];
         $apiClient = $this->makeApiClient($this->makeClient([new Response(200)], $history));
 
-        $apiClient->postMetadata($this->tmpFile, 'epiga-42.xml', false);
+        $apiClient->postMetadata(self::XML_CONTENT, 'epiga-42.xml', false);
 
         $body = (string) $history[0]['request']->getBody();
         $this->assertStringContainsString('doMDUpload', $body);
         $this->assertStringContainsString(self::LOGIN, $body);
         $this->assertStringContainsString(self::PASSWORD, $body);
         $this->assertStringContainsString('epiga-42.xml', $body);
-    }
-
-    public function testPostMetadata_MissingFile_ThrowsRuntimeException(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $apiClient = $this->makeApiClient($this->makeClient([new Response(200)]));
-        $apiClient->postMetadata('/nonexistent/path/does-not-exist.xml', 'file.xml', false);
+        $this->assertStringContainsString(self::XML_CONTENT, $body);
     }
 
     // -------------------------------------------------------------------------

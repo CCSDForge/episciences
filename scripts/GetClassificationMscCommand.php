@@ -3,9 +3,12 @@ declare(strict_types=1);
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,15 +20,14 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/getClassificationMsc.php (JournalScript)
  */
+#[AsCommand(name: 'enrichment:classifications-msc', description: 'Enrich MSC 2020 classification data from zbMath Open API')]
 class GetClassificationMscCommand extends Command
 {
-    protected static $defaultName = 'enrichment:classifications-msc';
     private const ONE_MONTH = 3600 * 24 * 31;
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Enrich MSC 2020 classification data from zbMath Open API')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }
@@ -40,10 +42,12 @@ class GetClassificationMscCommand extends Command
 
         $logger = new Logger('mscEnrichment');
         $logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . 'mscEnrichment_' . date('Y-m-d') . '.log', Logger::INFO
+            EPISCIENCES_LOG_PATH . 'mscEnrichment_' . date('Y-m-d') . '.log', Level::Info
         ));
-        if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        $stdoutHandler = null;
+        if (!$io->isQuiet() && !$io->isSilent()) {
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
+            $logger->pushHandler($stdoutHandler);
         }
         if ($dryRun) {
             $io->note('Dry-run mode enabled — no data will be written.');
@@ -76,7 +80,9 @@ class GetClassificationMscCommand extends Command
         $papers = $db->fetchAll($select);
 
         $logger->info('Starting MSC 2020 enrichment for ' . count($papers) . ' papers');
-        $io->progressStart(count($papers));
+        $progressBar = $io->createProgressBar(count($papers));
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         foreach ($papers as $row) {
             $doi   = $row['DOI'];
@@ -100,10 +106,12 @@ class GetClassificationMscCommand extends Command
             } catch (\Throwable $e) {
                 $logger->error("MSC enrichment error for DOI {$doi}: " . $e->getMessage());
             }
-            $io->progressAdvance();
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('MSC 2020 classification enrichment completed.');
         return Command::SUCCESS;
     }

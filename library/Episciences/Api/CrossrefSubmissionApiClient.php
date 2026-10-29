@@ -35,20 +35,13 @@ class CrossrefSubmissionApiClient
     /**
      * POST XML metadata to the Crossref deposit API.
      *
-     * @throws \RuntimeException  if the XML file cannot be read.
+     * @param string $xmlContent  Raw XML body, kept in memory only (no disk write).
+     * @param string $fileName    Filename Crossref associates with the submission; also
+     *                            reused as the correlation key by fetchStatus().
      * @throws GuzzleException    on HTTP/network failure (propagated to caller).
      */
-    public function postMetadata(string $xmlFilePath, string $fileName, bool $dryRun): ResponseInterface
+    public function postMetadata(string $xmlContent, string $fileName, bool $dryRun): ResponseInterface
     {
-        if (!is_readable($xmlFilePath)) {
-            throw new \RuntimeException("Cannot open XML file for reading: {$xmlFilePath}");
-        }
-
-        $handle = fopen($xmlFilePath, 'rb');
-        if ($handle === false) {
-            throw new \RuntimeException("fopen failed for: {$xmlFilePath}");
-        }
-
         $url = $dryRun ? $this->depositTestUrl : $this->depositUrl;
         $this->logger->info("Posting {$fileName} to {$url}");
 
@@ -57,7 +50,7 @@ class CrossrefSubmissionApiClient
                 ['name' => 'operation',    'contents' => 'doMDUpload'],
                 ['name' => 'login_id',     'contents' => $this->login],
                 ['name' => 'login_passwd', 'contents' => $this->password],
-                ['name' => 'fname',        'filename' => $fileName, 'contents' => $handle],
+                ['name' => 'fname',        'filename' => $fileName, 'contents' => $xmlContent],
             ],
         ]);
     }

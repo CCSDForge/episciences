@@ -411,7 +411,7 @@ CREATE TABLE `USER_INVITATION` (
   `ID` int unsigned NOT NULL AUTO_INCREMENT,
   `AID` int unsigned NOT NULL COMMENT 'Assignment ID',
   `STATUS` varchar(50) NOT NULL DEFAULT 'pending',
-  `TOKEN` varchar(40) DEFAULT NULL,
+  `TOKEN` char(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Per-invitation random value for the link token; NULL = legacy invitation',
   `SENDER_UID` int unsigned DEFAULT NULL,
   `SENDING_DATE` datetime NOT NULL,
   `EXPIRATION_DATE` datetime NOT NULL,
@@ -495,7 +495,7 @@ CREATE TABLE `VOLUME` (
   `descriptions` json DEFAULT NULL,
   `vol_year` varchar(9) DEFAULT NULL,
   `vol_type` set('special_issue','proceedings') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
-  `vol_num` varchar(6) DEFAULT NULL,
+  `vol_num` varchar(20) DEFAULT NULL,
   PRIMARY KEY (`VID`),
   KEY `FK_CONFID_idx` (`RVID`),
   KEY `POSITION` (`POSITION`)
@@ -716,6 +716,16 @@ CREATE TABLE `files` (
   KEY `INDEX_DOCID` (`docid`),
   KEY `INDEX_SOURCE` (`source`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `license_spdx`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `license_spdx` (
+  `code` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `recommended` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mailing_list_roles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -975,6 +985,17 @@ CREATE TABLE `paper_licences` (
   KEY `source_id` (`source_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `paper_license_code`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `paper_license_code` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `docid` int unsigned NOT NULL,
+  `code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'SPDX identifier',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_docid` (`docid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `paper_projects`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -987,7 +1008,6 @@ CREATE TABLE `paper_projects` (
   PRIMARY KEY (`idproject`),
   UNIQUE KEY `paperid` (`paperid`),
   KEY `idx_source_id` (`source_id`),
-  CONSTRAINT `paper_projects_ibfk_1` FOREIGN KEY (`paperid`) REFERENCES `PAPERS` (`PAPERID`),
   CONSTRAINT `paper_projects_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `metadata_sources` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1048,6 +1068,48 @@ CREATE TABLE `volume_proceeding` (
   `VALUE` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci,
   PRIMARY KEY (`VID`,`SETTING`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `user_su_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_su_log` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `rvid` int unsigned NOT NULL DEFAULT 0,
+  `from_uid` int unsigned NOT NULL,
+  `to_uid` int unsigned NOT NULL,
+  `action` varchar(30) NOT NULL,
+  `reason` varchar(50) DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `session_id` varchar(128) DEFAULT NULL,
+  `details` json DEFAULT NULL,
+  `is_anonymized` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_from_uid` (`from_uid`),
+  KEY `idx_to_uid` (`to_uid`),
+  KEY `idx_rvid` (`rvid`),
+  KEY `idx_action` (`action`),
+  KEY `idx_anonymization` (`is_anonymized`, `created_at`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `user_token`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_token` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `uid` int unsigned NOT NULL,
+  `email` varchar(320) NOT NULL,
+  `purpose` varchar(30) NOT NULL,
+  `token_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_token_hash` (`token_hash`),
+  KEY `idx_uid_purpose` (`uid`, `purpose`),
+  KEY `idx_expires_at` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50001 DROP VIEW IF EXISTS `v_mailing_lists_resolved`*/;
 /*!50001 SET @saved_cs_client          = @@character_set_client */;

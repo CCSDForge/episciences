@@ -57,13 +57,13 @@
                     <?php if ((int)$this->log['uid'] === EPISCIENCES_UID) : ?>
                         <?= "Episciences" ?>
                     <?php else : ?>
-                        <?= $this->user['fullname'] ?>
+                        <?= $this->escape($this->user['fullname']) ?>
                     <?php endif; ?>
                 </td>
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Nom") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['fullname'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['fullname']) ?></td>
             </tr>
         </table>
         <?php break; ?>
@@ -75,15 +75,15 @@
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Nom") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['fullname'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['fullname']) ?></td>
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Identifiant") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['username'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['username']) ?></td>
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Adresse e-mail") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['email'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['email']) ?></td>
             </tr>
             <?php if (!empty($this->log['detail']['accepted_by']['fullname'])): ?>
                 <tr>
@@ -91,6 +91,43 @@
                     <td class="small"><?= $this->escape($this->log['detail']['accepted_by']['fullname']) ?></td>
                 </tr>
             <?php endif; ?>
+        </table>
+        <?php break; ?>
+    <?php case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_LINKED: ?>
+        <?php
+        $invited = (array)($this->log['detail']['invited'] ?? []);
+        $linkedTo = (array)($this->log['detail']['linked_to'] ?? []);
+        ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?= $this->translate("Invitation associée le") ?></td>
+                <td class="small"><?= $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Invitation envoyée à") ?></td>
+                <td class="small">
+                    <?= $this->escape($invited['fullname'] ?? '') ?>
+                    <?php if (!empty($invited['email'])): ?>
+                        &lt;<?= $this->escape($invited['email']) ?>&gt;
+                    <?php endif; ?>
+                    <?php if (!empty($invited['tmp'])): ?>
+                        (<?= $this->translate("relecteur sans compte") ?>)
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Associée au compte") ?></td>
+                <td class="small">
+                    <?= $this->escape($linkedTo['fullname'] ?? '') ?>
+                    <?php if (!empty($linkedTo['email'])): ?>
+                        &lt;<?= $this->escape($linkedTo['email']) ?>&gt;
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Association automatique (adresses e-mail identiques)") ?></td>
+                <td class="small"><?= $this->translate(!empty($this->log['detail']['automatic']) ? 'Oui' : 'Non') ?></td>
+            </tr>
         </table>
         <?php break; ?>
     <?php case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED: ?>
@@ -101,27 +138,27 @@
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Nom") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['fullname'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['fullname']) ?></td>
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Identifiant") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['username'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['username']) ?></td>
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Adresse e-mail") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['email'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['email']) ?></td>
             </tr>
         </table>
         <?php if ($this->log['detail']['reviewer_suggestion']) : ?>
             <div>
                 <span style="font-weight:bold"><?= $this->translate('Suggestion de relecteur :') ?></span>
-                <?= $this->log['detail']['reviewer_suggestion'] ?>
+                <?= $this->escape($this->log['detail']['reviewer_suggestion']) ?>
             </div>
         <?php endif; ?>
         <?php if ($this->log['detail']['refusal_reason']) : ?>
             <div>
                 <span style="font-weight:bold"><?= $this->translate('Motif du refus :') ?></span>
-                <?= $this->log['detail']['refusal_reason'] ?>
+                <?= $this->escape($this->log['detail']['refusal_reason']) ?>
             </div>
         <?php endif; ?>
         <?php break; ?>
@@ -180,7 +217,7 @@
                 <td class="td-label"><?= $this->translate('Sujet') ?></td>
                 <td class="small">
                     <?php if (array_key_exists('Subject', $this->log['detail']['mail']) && $this->log['detail']['mail']['Subject']) : ?>
-                        <?= htmlspecialchars_decode($this->log['detail']['mail']['Subject']) ?>
+                        <?= htmlentities($this->log['detail']['mail']['Subject']) ?>
                     <?php else : ?>
                         -
                     <?php endif; ?>
@@ -235,7 +272,7 @@
             <tr>
                 <td class="td-label"><?= $this->translate("Effectué par") ?></td>
                 <td class="small">
-                    <?= $this->user['fullname'] ?>
+                    <?= $this->escape($this->user['fullname']) ?>
                 </td>
             </tr>
             <tr>
@@ -254,7 +291,7 @@
             <tr>
                 <td class="td-label"><?= $this->translate("Effectué par") ?></td>
                 <td class="small">
-                    <?= $this->user['fullname'] ?>
+                    <?= $this->escape($this->user['fullname']) ?>
                 </td>
             </tr>
             <tr>
@@ -296,6 +333,36 @@
 
     <?php case Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE : ?>
         <?= $this->partial('administratepaper/new-deadline-log-details.phtml', ['log' => $this->log, 'user' => $this->user]) ?>
+        <?php break; ?>
+
+    <?php case Episciences_Paper_Logger::CODE_CONTRIBUTOR_CHANGED: ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?= $this->translate("Date") ?></td>
+                <td class="small"><?= $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Effectué(e) par") ?></td>
+                <td class="small"><?= $this->escape($this->user['fullname']) ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Ancien contributeur / Ancienne contributrice") ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['oldContributor']['fullname']) ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Nouveau contributeur / Nouvelle contributrice") ?></td>
+                <td class="small"><strong><?= $this->escape($this->log['detail']['newContributor']['fullname']) ?></strong></td>
+            </tr>
+            <?php if (!empty($this->log['detail']['addedAsCoAuthor'])): ?>
+            <tr>
+                <td class="td-label"><?= $this->translate("Co-auteur / Co-autrice") ?></td>
+                <td class="small text-info">
+                    <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+                    <?= $this->translate("L'ancien contributeur / L'ancienne contributrice a été ajouté(e) comme co-auteur / co-autrice") ?>
+                </td>
+            </tr>
+            <?php endif; ?>
+        </table>
         <?php break; ?>
 
     <?php

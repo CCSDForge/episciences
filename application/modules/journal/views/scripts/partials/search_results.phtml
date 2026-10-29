@@ -64,6 +64,10 @@ if ($this->results) {
             $section = '';
         }
 
+        // Solr dynamic fields may be multivalued: keep the first value only
+        $volume = is_array($volume) ? (string)reset($volume) : (string)$volume;
+        $section = is_array($section) ? (string)reset($section) : (string)$section;
+
         $docid = $this->escape($doc->docid);
         ?>
 
@@ -92,7 +96,7 @@ if ($this->results) {
                             'action' => 'index',
                             'q' => '*',
                             'author_fullname_t' => $this->escape($authorName)), null, TRUE);
-                        $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                        $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $this->escape($url), $this->escape($authorName));
                     }
                     $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
                 } else {
@@ -103,7 +107,7 @@ if ($this->results) {
                             'action' => 'index',
                             'q' => '*',
                             'author_fullname_t' => $this->escape($authorName)), null, TRUE);
-                        $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                        $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $this->escape($url), $this->escape($authorName));
                     }
                     $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
                     if (mb_substr($authorList, -1) !== '.') {
@@ -119,8 +123,7 @@ if ($this->results) {
         <?php
         if (!empty($doc->abstract_t)) {
             echo '<blockquote class="abstract">';
-            $abstract = Ccsd_Tools_String::truncate($doc->abstract_t[0], 300, '&nbsp;[&hellip;]');
-            echo $this->escape($abstract);
+            echo $this->escape(Ccsd_Tools_String::truncate($doc->abstract_t[0], 300, "\u{00A0}[…]"));
             echo '</blockquote>';
         }
         ?>
@@ -135,13 +138,13 @@ if ($this->results) {
 
         <?php if ($volume) : ?>
             <div class="volume">
-                <a href="/volume/view/id/<?php echo $this->escape($doc->volume_id_i) ?>"><?php echo $volume; ?></a>
+                <a href="/volume/view/id/<?php echo $this->escape($doc->volume_id_i) ?>"><?php echo $this->escape($volume); ?></a>
             </div>
         <?php endif; ?>
 
         <?php if ($section) : ?>
             <div class="section">
-                <a href="/section/view/id/<?php echo $this->escape($doc->section_id_i) ?>"><?php echo $section; ?></a>
+                <a href="/section/view/id/<?php echo $this->escape($doc->section_id_i) ?>"><?php echo $this->escape($section); ?></a>
             </div>
         <?php endif; ?>
 

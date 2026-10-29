@@ -2,6 +2,8 @@
 
 namespace unit\library\Episciences\Reviewer;
 
+use Episciences\User\EmailAlreadyInUseException;
+use Episciences\User\EmailPolicy;
 use Episciences_Reviewer_AccountResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -129,5 +131,70 @@ class Episciences_Reviewer_AccountResolverTest extends TestCase
         $second = Episciences_Reviewer_AccountResolver::generateStrongPassword(32);
 
         self::assertNotSame($first, $second);
+    }
+
+    // -------------------------------------------------------------------------
+    // createReviewerAccount() email-conflict guard — no DB required: the
+    // conflict finder is injected, so the method returns before touching the
+    // database.
+    // -------------------------------------------------------------------------
+
+    public function testCreateReviewerAccountThrowsWhenConflictFinderSignalsUid(): void
+    {
+        $this->expectException(EmailAlreadyInUseException::class);
+
+        Episciences_Reviewer_AccountResolver::createReviewerAccount(
+            'Fabio',
+            'Zanasi',
+            'fabio@example.org',
+            'en',
+            'fzanasi',
+            'irrelevant-password',
+            static fn(string $email): array => [42]
+        );
+    }
+
+    public function testCreateReviewerAccountExceptionCarriesConflictingUid(): void
+    {
+        try {
+            Episciences_Reviewer_AccountResolver::createReviewerAccount(
+                'Fabio',
+                'Zanasi',
+                'fabio@example.org',
+                'en',
+                'fzanasi',
+                'irrelevant-password',
+                static fn(string $email): array => [42]
+            );
+            self::fail('Expected EmailAlreadyInUseException');
+        } catch (EmailAlreadyInUseException $e) {
+            self::assertSame(42, $e->getUid());
+        }
+    }
+
+    public function testCreateReviewerAccountPassesNormalizedEmailToConflictFinder(): void
+    {
+        $rawEmail = ' Fabio<>@Example.org ';
+        $capturedEmail = null;
+
+        try {
+            Episciences_Reviewer_AccountResolver::createReviewerAccount(
+                'Fabio',
+                'Zanasi',
+                $rawEmail,
+                'en',
+                'fzanasi',
+                'irrelevant-password',
+                function (string $email) use (&$capturedEmail): array {
+                    $capturedEmail = $email;
+                    return [42];
+                }
+            );
+            self::fail('Expected EmailAlreadyInUseException');
+        } catch (EmailAlreadyInUseException $e) {
+            // expected
+        }
+
+        self::assertSame(EmailPolicy::normalize($rawEmail), $capturedEmail);
     }
 }

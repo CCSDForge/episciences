@@ -2,7 +2,9 @@
 declare(strict_types=1);
 
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
@@ -25,10 +27,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * The stats:process cron (ProcessStatTempCommand) then enriches STAT_TEMP
  * rows with GeoIP data and moves them to PAPER_STAT.
  */
+#[AsCommand(name: 'stats:import-logs', description: 'Parse Apache access logs and insert article visits into STAT_TEMP.')]
 class ImportApacheLogsCommand extends Command
 {
-    protected static $defaultName = 'stats:import-logs';
-
     private string $logsBasePath = '../logs/httpd';
 
     private ?ProgressBar $progressBar = null;
@@ -36,7 +37,6 @@ class ImportApacheLogsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Parse Apache access logs and insert article visits into STAT_TEMP.')
             ->addOption('rvcode',      null, InputOption::VALUE_REQUIRED, 'Journal code (e.g., mbj) — mutually exclusive with --all')
             ->addOption('all',         null, InputOption::VALUE_NONE,     'Process all journals with is_new_front_switched = yes — mutually exclusive with --rvcode')
             ->addOption('date',        null, InputOption::VALUE_OPTIONAL, 'Single date to process (YYYY-MM-DD; default: yesterday)')
@@ -534,11 +534,11 @@ class ImportApacheLogsCommand extends Command
         $logDir  = dirname($logFile);
 
         if (is_dir($logDir) && is_writable($logDir)) {
-            $logger->pushHandler(new StreamHandler($logFile, Logger::INFO));
+            $logger->pushHandler(new StreamHandler($logFile, Level::Info));
         }
 
-        if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        if (!$io->isQuiet() && !$io->isSilent()) {
+            $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         return $logger;

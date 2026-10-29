@@ -56,6 +56,25 @@ final class Episciences_Paper_Projects_ViewFormatterTest extends TestCase
         self::assertStringContainsString('href="https://example.com/?a=1&amp;b=2&quot;evil"', $html);
     }
 
+    /**
+     * Only http(s) URLs are rendered as links: a script scheme must not reach an href.
+     */
+    public function testNonHttpUrlIsNotRenderedAsLink(): void
+    {
+        $tr = $this->buildTranslator();
+
+        foreach (['javascript:alert(1)', ' JavaScript:alert(1)', 'data:text/html,x', 'ftp://example.com/'] as $url) {
+            $html = $this->invokeRenderFundingEntry([
+                'projectTitle' => 'Test Project',
+                'funderName' => 'Test Funder',
+                'url' => $url,
+            ], $tr);
+
+            self::assertStringNotContainsString('<a ', $html, $url);
+            self::assertStringNotContainsString('href', $html, $url);
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Display text of URL must also be HTML-escaped
     // -------------------------------------------------------------------------

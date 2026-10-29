@@ -5,7 +5,9 @@ require_once __DIR__ . '/../library/Episciences/Translation/Replacer.php';
 
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -28,10 +30,9 @@ use Symfony\Component\Yaml\Yaml;
  *
  * Replaces: scripts/translationUpdater.php
  */
+#[AsCommand(name: 'translations:update', description: 'Update translation strings in a PHP array file.')]
 class UpdateTranslationsCommand extends Command
 {
-    protected static $defaultName = 'translations:update';
-
     /** @var list<string> Keys that existed in the old YAML format and are now CLI options. */
     private const LEGACY_YAML_KEYS = ['force', 'silent', 'case-sensitive', 'log'];
 
@@ -40,7 +41,6 @@ class UpdateTranslationsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Update translation strings in a PHP array file.')
             ->addOption('config', null, InputOption::VALUE_REQUIRED, 'Path to the YAML config file')
             ->addOption('force', null, InputOption::VALUE_NONE, 'Overwrite the output file without asking')
             ->addOption('case-sensitive', null, InputOption::VALUE_NONE, 'Use case-sensitive search (default: case-insensitive)')
@@ -60,7 +60,7 @@ class UpdateTranslationsCommand extends Command
             return Command::FAILURE;
         }
 
-        $this->initLogger($logFile, $io->isQuiet());
+        $this->initLogger($logFile, $io->isQuiet() || $io->isSilent());
         $io->title('Translation update');
 
         $config = $this->loadConfig($configPath, $io);
@@ -166,13 +166,13 @@ class UpdateTranslationsCommand extends Command
         $this->logger = new Logger('translations-update');
 
         if (is_string($logFile) && $logFile !== '') {
-            $fileHandler = new StreamHandler($logFile, Logger::DEBUG);
+            $fileHandler = new StreamHandler($logFile, Level::Debug);
             $fileHandler->setFormatter(new LineFormatter("[%datetime%] %level_name%: %message% %context%\n", null, false, true));
             $this->logger->pushHandler($fileHandler);
         }
 
         if (!$quiet) {
-            $consoleHandler = new StreamHandler('php://stdout', Logger::INFO);
+            $consoleHandler = new StreamHandler('php://stdout', Level::Info);
             $consoleHandler->setFormatter(new LineFormatter("%level_name%: %message%\n", null, false, false));
             $this->logger->pushHandler($consoleHandler);
         }

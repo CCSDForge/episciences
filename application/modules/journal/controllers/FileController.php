@@ -3,14 +3,23 @@
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Episciences\AppRegistry;
+use Episciences\Files\UploadedFileToken;
 use Episciences\Paper\Files\DocumentFilePolicy;
+use Episciences\Security\AccessLog;
 use Episciences\Upload\SafeFileName;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
 class FileController extends DefaultController
 {
-    public const APPLICATION_OCTET_STREAM = 'application/octet-stream';
+    /** Content types the browser may display instead of downloading */
+    private const INLINE_CONTENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+
+    /** Upload directories (see buildStorageFolder()): mail attachments, temporary versions, copy-editing answers */
+    public const PATH_ATTACHMENTS = '';
+    public const PATH_TMP_ATTACHMENTS = 'tmp_attachments';
+    public const PATH_CE_ATTACHMENTS = 'ce_attachments';
+    private const UPLOAD_PATHS = [self::PATH_ATTACHMENTS, self::PATH_TMP_ATTACHMENTS, self::PATH_CE_ATTACHMENTS];
 
     public function indexAction(): void
     {
@@ -27,11 +36,28 @@ class FileController extends DefaultController
             !preg_match('/^\w+$/D', $extension) ||
             str_ends_with($filename, '-crypto')
         ) {
+            $this->logUnsafeFlatName($filename, $extension);
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
 
         $this->loadFile(REVIEW_FILES_PATH, $filename . '.' . $extension);
+    }
+
+    /**
+     * The names refused by indexAction() are only logged when they try to reach another file:
+     * a directory part, a control character or a reserved file (arXiv encryption key).
+     */
+    private function logUnsafeFlatName(string $filename, string $extension): void
+    {
+        if (str_ends_with($filename, '-crypto')) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'reserved_file_name');
+        } elseif (
+            SafeFileName::isUnsafe($filename . '.' . $extension) ||
+            SafeFileName::hasControlCharacter($filename . $extension)
+        ) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name');
+        }
     }
 
     public function docfilesAction(): void
@@ -47,12 +73,15 @@ class FileController extends DefaultController
 
         // Other sub-directories of the document (reports, ratings, tmp...) have their own access rules
         if (!in_array($folder, DocumentFilePolicy::FOLDERS, true)) {
+            if ($folder !== '') {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'unexpected_folder', ['folder' => $folder]);
+            }
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
 
         $parentCommentId = $params['parentCommentId'] ?? null;
-        $docId = (int)($params['docId'] ?? 0);
+        $docId = (int)$params['docId'];
         $filename = $params['filename'] ?? null;
         $extension = $params['extension'] ?? null;
 
@@ -71,13 +100,22 @@ class FileController extends DefaultController
         // The folder allow-list would be pointless if a segment could climb out of it (e.g. "../reports").
         // Only copy-editing files are stored by comment: elsewhere the access check, made on the file name,
         // would not be about the file served.
+        if (!SafeFileName::isBare($file)) {
+            if (SafeFileName::isUnsafe($file)) {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $file]);
+            }
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         if (
-            !SafeFileName::isBare($file) ||
-            (
-                null !== $parentCommentId &&
-                ($folder !== DocumentFilePolicy::FOLDER_COPY_EDITING || !preg_match('/^\d+$/D', (string)$parentCommentId))
-            )
+            null !== $parentCommentId &&
+            ($folder !== DocumentFilePolicy::FOLDER_COPY_EDITING || !preg_match('/^\d+$/D', (string)$parentCommentId))
         ) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'unexpected_parent_comment_id', [
+                'folder' => $folder,
+                'parent_comment_id' => $parentCommentId,
+            ]);
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
@@ -130,7 +168,7 @@ class FileController extends DefaultController
                 ? $this->findCommentTypes($docId, $file)
                 : [];
 
-            return DocumentFilePolicy::isAllowed(
+            $isAllowed = DocumentFilePolicy::isAllowed(
                 $folder,
                 $paper->isPublished(),
                 $isOwnerOrCoAuthor,
@@ -139,6 +177,16 @@ class FileController extends DefaultController
                 $isReviewer,
                 $commentTypes
             );
+
+            if (!$isAllowed) {
+                AccessLog::denied(AccessLog::NOT_FOUND_MASKED, 'document_file_access', [
+                    'docid' => $docId,
+                    'folder' => $folder,
+                    'file' => $file,
+                ]);
+            }
+
+            return $isAllowed;
         } catch (Exception $e) {
             // Refused, but not to be mistaken for a missing file
             AppRegistry::getMonoLogger()?->warning('Document file access check failed', [
@@ -157,15 +205,26 @@ class FileController extends DefaultController
      */
     protected function isAllowedToReadTemporaryVersionFile(int $paperId): bool
     {
+        return $this->isAllowedOnTemporaryVersionFiles($paperId, false);
+    }
+
+    /**
+     * @param bool $toWrite upload or removal (see DocumentFilePolicy::isTemporaryVersionFileWritable()), else reading
+     */
+    private function isAllowedOnTemporaryVersionFiles(int $paperId, bool $toWrite): bool
+    {
         try {
             $review = $this->findJournal();
             $uid = (int)Episciences_Auth::getUid();
             $hasConflict = null;
+            $hasVersion = false;
             // Only the assignment to the paper depends on the version
             $isStaffOfEveryPaper = static::isEditorialStaffOfEveryPaper($review->getSettings());
 
             // The versions are loaded one at a time, the latest first: the first one granting access ends the check
             foreach ($this->findPaperVersions($paperId) as $paper) {
+                $hasVersion = true;
+                $isOwnerOrCoAuthor = $paper->isOwnerOrCoAuthor();
                 // Not isAssignedEditorOrCopyEditor(), which loads the latest version again: it is one of the versions
                 $isEditorialStaff = $isStaffOfEveryPaper || $paper->getEditor($uid) || $paper->getCopyEditor($uid);
 
@@ -175,14 +234,28 @@ class FileController extends DefaultController
                     $hasConflict ??= static::isConflictDetected($paper, $review);
                 }
 
-                if (DocumentFilePolicy::isTemporaryVersionFileAllowed(
-                    $paper->isOwnerOrCoAuthor(),
-                    (bool)$hasConflict,
-                    $isEditorialStaff,
-                    array_key_exists($uid, $paper->getReviewers())
-                )) {
+                $isAllowed = $toWrite
+                    ? DocumentFilePolicy::isTemporaryVersionFileWritable($isOwnerOrCoAuthor, (bool)$hasConflict, $isEditorialStaff)
+                    : DocumentFilePolicy::isTemporaryVersionFileAllowed(
+                        $isOwnerOrCoAuthor,
+                        (bool)$hasConflict,
+                        $isEditorialStaff,
+                        array_key_exists($uid, $paper->getReviewers())
+                    );
+
+                if ($isAllowed) {
                     return true;
                 }
+            }
+
+            // No version: the paper does not exist, nothing was refused
+            if ($hasVersion) {
+                // Reading is refused with a 404, upload and removal with a 403
+                AccessLog::denied(
+                    $toWrite ? AccessLog::HTTP_FORBIDDEN : AccessLog::NOT_FOUND_MASKED,
+                    $toWrite ? 'temporary_version_file_write' : 'temporary_version_file_access',
+                    ['paperid' => $paperId]
+                );
             }
 
             return false;
@@ -197,7 +270,8 @@ class FileController extends DefaultController
     }
 
     /**
-     * Versions of the paper in the current journal, the latest first, each one loaded when it is reached
+     * Versions of the paper in the current journal, the latest first (see
+     * Episciences_PapersManager::getDocIdsByPaperIdInJournal()), each one loaded when it is reached
      *
      * @return iterable<Episciences_Paper>
      * @throws Exception
@@ -296,8 +370,16 @@ class FileController extends DefaultController
 
         $file = $filename . '.' . $extension;
 
+        if (!SafeFileName::isBare($file)) {
+            if (SafeFileName::isUnsafe($file)) {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $file]);
+            }
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         // 404 rather than 403: do not disclose that the file exists
-        if (!SafeFileName::isBare($file) || $paperId <= 0 || !$this->isAllowedToReadTemporaryVersionFile($paperId)) {
+        if ($paperId <= 0 || !$this->isAllowedToReadTemporaryVersionFile($paperId)) {
             $this->getResponse()->setHttpResponseCode(404);
             return;
         }
@@ -310,7 +392,7 @@ class FileController extends DefaultController
     {
         $params = $this->getRequest()->getParams();
 
-        $id = $params['id'];
+        $id = (int)$params['id'];
         $filename = $params['filename'];
         $extension = $params['extension'];
         $file = $filename . '.' . $extension;
@@ -318,22 +400,48 @@ class FileController extends DefaultController
         // check if report exists
         $report = Episciences_Rating_Report::findById($id);
         if (!$report) {
-            $this->getResponse()->setHttpResponseCode(404);
-            $this->view->message = "Fichier introuvable";
-            $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
-            $this->renderScript('error/error.phtml');
+            $this->renderNotFound();
             return;
         }
 
-        // Rating reports are confidential: see Episciences_Rating_Report::isAttachmentAccessibleToLoggedUser()
+        // Rating reports are confidential: access control aligns with the report
+        // display gate that filters by user role and criterion visibility.
         $paper = Episciences_PapersManager::get($report->getDocid());
+        if (!$paper) {
+            $this->renderNotFound();
+            return;
+        }
 
-        if (!$report->isAttachmentAccessibleToLoggedUser($paper ?: null)) {
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+
+        // Resolve all role-related flags here (controller context) to keep
+        // the Access class free of static dependencies and fully testable.
+        // Note: isReportsVisibleToAuthor() already calls isOwner() internally,
+        // which handles the "switch user" (su) case via getOriginalIdentity().
+        $uid = Episciences_Auth::isLogged() ? Episciences_Auth::getUid() : null;
+
+        // Same conflict of interest check as the other paper pages, including the
+        // answer of the original user when signed in as another one (su).
+        // A visitor is not logged in: no role grants them access anyway.
+        $hasConflict = $uid !== null && static::isConflictDetected($paper, $review);
+
+        $isAllowed = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            paper: $paper,
+            report: $report,
+            filename: $file,
+            uid: $uid,
+            review: $review,
+            isSecretary: Episciences_Auth::isSecretary(),
+            isEditor: Episciences_Auth::isEditor(),
+            isCopyEditor: Episciences_Auth::isCopyEditor(),
+            isReportsVisibleToAuthor: $paper->isReportsVisibleToAuthor(),
+            hasConflict: $hasConflict
+        );
+
+        if (!$isAllowed) {
             // Return 404 rather than 403 to avoid disclosing the report's existence.
-            $this->getResponse()->setHttpResponseCode(404);
-            $this->view->message = "Fichier introuvable";
-            $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
-            $this->renderScript('error/error.phtml');
+            $this->renderNotFound('rating_report_access');
             return;
         }
 
@@ -343,16 +451,30 @@ class FileController extends DefaultController
         $filepath = $this->resolveSafePath($baseDir, $file);
 
         if ($filepath === null) {
-            $this->getResponse()->setHttpResponseCode(404);
-            $this->view->message = "Fichier introuvable";
-            $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
-            $this->renderScript('error/error.phtml');
+            $this->renderNotFound();
             return;
         }
 
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $this->openFile($filepath);
+    }
+
+    /**
+     * Renders a generic 404 "file not found" error page.
+     *
+     * @param string $deniedReason set when the 404 hides an access refusal rather than a missing file
+     */
+    private function renderNotFound(string $deniedReason = ''): void
+    {
+        if ($deniedReason !== '') {
+            AccessLog::denied(AccessLog::NOT_FOUND_MASKED, $deniedReason);
+        }
+
+        $this->getResponse()->setHttpResponseCode(404);
+        $this->view->message = "Fichier introuvable";
+        $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
+        $this->renderScript('error/error.phtml');
     }
 
     /**
@@ -377,32 +499,68 @@ class FileController extends DefaultController
     }
 
     /**
+     * Whether a file of this content type may be displayed by the browser instead of downloaded
+     *
+     * @param string $contentType Value returned by Episciences_Tools::getMimeType() (may carry a charset)
+     */
+    public static function isInlineContentType(string $contentType): bool
+    {
+        $type = strtolower(trim(explode(';', $contentType)[0]));
+
+        return in_array($type, self::INLINE_CONTENT_TYPES, true);
+    }
+
+    /**
+     * Builds the response headers used to serve a file
+     *
+     * Only PDF and raster images are displayed in the browser: anything else (SVG, XML, text,
+     * application/octet-stream...) is downloaded, because it could run script on the journal origin.
+     *
+     * @param string $filename Base name of the file
+     * @param string $contentType Value returned by Episciences_Tools::getMimeType()
+     * @param int $size File size in bytes
+     * @param bool $forceDownload Download even if the browser could display the file
+     * @return list<string>
+     */
+    public static function buildFileHeaders(string $filename, string $contentType, int $size, bool $forceDownload = false): array
+    {
+        $downloadableFilename = '"' . $filename . '"';
+        $headers = ['X-Content-Type-Options: nosniff'];
+
+        if ($forceDownload || !self::isInlineContentType($contentType)) {
+            $headers[] = 'Content-Description: File Transfer';
+            $headers[] = 'Expires: 0';
+            $headers[] = 'Cache-Control: must-revalidate';
+            $headers[] = 'Pragma: public';
+            $headers[] = 'Content-Disposition: attachment;filename=' . $downloadableFilename;
+        } else {
+            $headers[] = 'Content-Disposition: inline; filename=' . $downloadableFilename;
+        }
+
+        $headers[] = 'Content-Type: ' . $contentType;
+        $headers[] = 'Content-Length: ' . $size;
+
+        return $headers;
+    }
+
+    /**
      * Reads a file and writes it to the output buffer
      * @param string $file
      * @param bool $forceDownload
      */
     protected function openFile(string $file, bool $forceDownload = false): void
     {
-        $contentType = Episciences_Tools::getMimeType($file);
-        $downloadableFilename = '"' . basename($file) . '"';
+        $headers = self::buildFileHeaders(
+            basename($file),
+            Episciences_Tools::getMimeType($file),
+            (int)filesize($file),
+            $forceDownload
+        );
 
-        if ($contentType === self::APPLICATION_OCTET_STREAM) {
-            // force download because application/octet-stream would burn user eyes anyway
-            $forceDownload = true;
-        } else {
-            header("Content-Disposition: inline; filename=$downloadableFilename");
+        foreach ($headers as $header) {
+            header($header);
         }
 
-        if ($forceDownload) {
-            header('Content-Description: File Transfer');
-            header('Expires: 0');
-            header('Cache-Control: must-revalidate');
-            header('Pragma: public');
-            header('Content-Disposition: attachment;filename=' . $downloadableFilename);
-        }
-
-        header("Content-Type: " . $contentType);
-        header("Content-Length: " . filesize($file));
         ob_clean();
         flush();
         readfile($file);
@@ -428,8 +586,14 @@ class FileController extends DefaultController
         }
 
         $result = [];
+        $fileToken = $this->uploadedFileToken();
 
-        if ($this->isPostMaxSizeReached()) {
+        if (!$fileToken->isConfigured()) {
+            // Without a token, the file could neither be removed nor attached to an answer
+            AppRegistry::getMonoLogger()?->error(sprintf('Upload refused: %s is not configured', UploadedFileToken::SECRET_CONSTANT_NAME));
+            $result['status'] = 'error';
+            $result['messages'] = [$this->view->translate("Le fichier n'a pas pu être enregistré. Veuillez réessayer.")];
+        } elseif ($this->isPostMaxSizeReached()) {
             $result ['status'] = 'error';
             $result ['messages'][] = $this->buildReachedMessage();
         } else {
@@ -437,9 +601,16 @@ class FileController extends DefaultController
             $path = (string)$request->getPost('path');
             $pcId = (int)$request->getPost('pcId');
             $docId = (int)$request->getPost('docId');
-            $paperId = (int)$request->getPost('paperId');
 
-            if (!$this->isAllowedToHandleDocumentFiles($docId, $paperId)) {
+            if (!in_array($path, self::UPLOAD_PATHS, true)) {
+                $this->getResponse()->setHttpResponseCode(400);
+                echo Zend_Json::encode(['status' => 'error']);
+                return;
+            }
+
+            $paperId = $this->resolvePaperId($docId, (int)$request->getPost('paperId'));
+
+            if ($paperId === null || !$this->isAllowedToHandleDocumentFiles($path, $docId, $paperId, $pcId)) {
                 $this->getResponse()->setHttpResponseCode(403);
                 echo Zend_Json::encode(['status' => 'error']);
                 return;
@@ -481,19 +652,35 @@ class FileController extends DefaultController
                     }
 
                     // rotate filename
-                    $filename = Episciences_Tools::filenameRotate($sFolder, $filename);
+                    $filename = $this->uploadFileName($sFolder, $filename, $path, $docId, $pcId);
+
+                    if ($filename === null) {
+                        $result['status'] = 'error';
+                        $result['messages'] = [$this->view->translate("Le fichier n'a pas pu être enregistré. Veuillez réessayer.")];
+                        break;
+                    }
 
                     // move file to tmp folder
                     if (move_uploaded_file($info['tmp_name'], $sFolder . $filename)) {
                         $result['status'] = 'success';
                         $result['filename'] = $filename;
                         $result['fileUrl'] = $this->buildFileUrl($filename, $path, $paperId, $docId, $pcId);
+                        // Only whoever uploaded the file can remove it or attach it to an answer
+                        $result['fileToken'] = $fileToken->sign($sFolder, $filename);
                     }
                 }
 
             } catch (Exception $e) {
+                // The message may hold server paths (e.g. Episciences_Tools::recursiveMkdir()): logged, not displayed
+                AppRegistry::getMonoLogger()?->error('Upload failed', ['exception' => $e->getMessage()]);
                 $result['status'] = 'error';
-                $result['messages'] = $e->getMessage();
+                $result['messages'] = [$this->view->translate("Le fichier n'a pas pu être enregistré. Veuillez réessayer.")];
+            }
+
+            // No file received or the file could not be stored: never let the client believe the upload succeeded
+            if (!isset($result['status'])) {
+                $result['status'] = 'error';
+                $result['messages'] = [$this->view->translate("Le fichier n'a pas pu être enregistré. Veuillez réessayer.")];
             }
 
         }
@@ -529,10 +716,19 @@ class FileController extends DefaultController
         $filename = (string)$request->getPost('file');
         $docId = (int)$request->getPost('docId');
         $pcId = (int)$request->getPost('pcId');
-        $paperId = (int)$request->getPost('paperId');
+
+        if (!in_array($path, self::UPLOAD_PATHS, true)) {
+            $this->getResponse()->setHttpResponseCode(400);
+            return;
+        }
+
+        $paperId = $this->resolvePaperId($docId, (int)$request->getPost('paperId'));
 
         // Only a flat file name is expected here; strip any directory component
         // to neutralise path traversal (e.g. "../../somefile").
+        if (SafeFileName::isUnsafe($filename)) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'unsafe_file_name', ['file' => $filename]);
+        }
         $filename = basename($filename);
 
         if ($filename === '' || $filename === '.' || $filename === '..') {
@@ -540,12 +736,29 @@ class FileController extends DefaultController
             return;
         }
 
-        if (!$this->isAllowedToHandleDocumentFiles($docId, $paperId)) {
+        if ($paperId === null || !$this->isAllowedToHandleDocumentFiles($path, $docId, $paperId, $pcId)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
 
         $baseDir = $this->buildStorageFolder($path, $paperId, $docId, $pcId);
+
+        // Only the files uploaded by the user, not the other files of the same directory
+        if (!$this->uploadedFileToken()->isValid($baseDir, $filename, $request->getPost('token'))) {
+            AccessLog::denied(AccessLog::TOKEN_INVALID, 'uploaded_file_token', ['path' => $path, 'file' => $filename]);
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        // Only the uploads not submitted yet can be removed: the files of a saved answer are read by the editors
+        if (
+            ($path === self::PATH_TMP_ATTACHMENTS && $this->isSubmittedTemporaryVersionFile($paperId, $filename)) ||
+            ($path === self::PATH_CE_ATTACHMENTS && $this->isSubmittedCopyEditingFile($docId, $pcId, $filename))
+        ) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         $filepath = $this->resolveSafePath($baseDir, $filename);
 
         if ($filepath !== null && is_file($filepath)) {
@@ -580,7 +793,7 @@ class FileController extends DefaultController
         $paper = Episciences_PapersManager::get($docId);
 
         // check if paper exists
-        if (!$paper || !$paper->hasHook || ($paper->getRvid() !== RVID) || ($paper->getRepoid() === 0)) {
+        if (!$paper || !$paper->hasFilesEnrichment() || ($paper->getRvid() !== RVID) || ($paper->getRepoid() === 0)) {
             $this->getResponse()->setHttpResponseCode(404);
             $this->renderScript('index/notfound.phtml');
             return;
@@ -618,9 +831,19 @@ class FileController extends DefaultController
      * When an upload or a removal targets a document's storage (docId or paperId
      * given), the user must be related to the paper: contributor, reviewer,
      * copy editor or editor of the paper, or allowed to manage it.
+     * The files of the temporary versions and of the copy-editing answers have their own rules (see
+     * isAllowedToHandleTemporaryVersionFiles() and isAllowedToHandleCopyEditingFiles()).
      */
-    private function isAllowedToHandleDocumentFiles(int $docId, int $paperId): bool
+    protected function isAllowedToHandleDocumentFiles(string $path, int $docId, int $paperId, int $pcId = 0): bool
     {
+        if ($path === self::PATH_TMP_ATTACHMENTS) {
+            return $this->isAllowedToHandleTemporaryVersionFiles($paperId);
+        }
+
+        if ($path === self::PATH_CE_ATTACHMENTS) {
+            return $this->isAllowedToHandleCopyEditingFiles($docId, $pcId);
+        }
+
         if (!$docId && !$paperId) {
             // session-scoped attachments directory: no document involved
             return true;
@@ -648,6 +871,179 @@ class FileController extends DefaultController
     }
 
     /**
+     * The paper id of the version when a docId is given, else the paper id given: resolved once for the access
+     * check, the storage folder and the link to the file, so that they cannot disagree. A paper id given with the
+     * docId must be the one of the version.
+     * Like the save paths of the temporary versions, a version without paper id falls back to its docId.
+     *
+     * @return int|null null when the version cannot be loaded or does not belong to the paper id given
+     */
+    protected function resolvePaperId(int $docId, int $paperId): ?int
+    {
+        if (!$docId) {
+            return $paperId;
+        }
+
+        try {
+            $paper = $this->findPaper($docId);
+        } catch (Exception $e) {
+            return null;
+        }
+
+        if (!$paper) {
+            return null;
+        }
+
+        $versionPaperId = (int)$paper->getPaperid() ?: (int)$paper->getDocid();
+
+        return !$paperId || $paperId === $versionPaperId ? $versionPaperId : null;
+    }
+
+    /**
+     * Files of an answer to a copy-editing request, uploaded in the directory of the request before the answer is
+     * saved: the request must be one of the paper version, and the user the author, a co-author or the editorial
+     * staff of the paper out of conflict of interest (see DocumentFilePolicy::isCopyEditingFileWritable()).
+     */
+    protected function isAllowedToHandleCopyEditingFiles(int $docId, int $pcId): bool
+    {
+        try {
+            if (!$this->isCopyEditingRequest($docId, $pcId)) {
+                AccessLog::denied(AccessLog::HTTP_FORBIDDEN, 'unexpected_copy_editing_request', ['docid' => $docId, 'pcid' => $pcId]);
+                return false;
+            }
+
+            $paper = $this->findPaper($docId);
+
+            if (!$paper) {
+                return false;
+            }
+
+            $review = $this->findJournal();
+            $uid = (int)Episciences_Auth::getUid();
+            $isOwnerOrCoAuthor = $paper->isOwnerOrCoAuthor();
+            $isEditorialStaff = static::isEditorialStaffOfEveryPaper($review->getSettings())
+                || $paper->getEditor($uid)
+                || $paper->getCopyEditor($uid);
+            // Only withdraws the access of the editorial staff: not looked up for the others
+            $hasConflict = $isEditorialStaff && static::isConflictDetected($paper, $review);
+
+            if (DocumentFilePolicy::isCopyEditingFileWritable($isOwnerOrCoAuthor, $hasConflict, $isEditorialStaff)) {
+                return true;
+            }
+
+            AccessLog::denied(AccessLog::HTTP_FORBIDDEN, 'copy_editing_file_write', ['docid' => $docId, 'pcid' => $pcId]);
+            return false;
+        } catch (Exception $e) {
+            AppRegistry::getMonoLogger()?->warning('Copy-editing file access check failed', [
+                'docId' => $docId,
+                'pcId' => $pcId,
+                'exception' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function isCopyEditingRequest(int $docId, int $pcId): bool
+    {
+        return Episciences_CommentsManager::isCopyEditingRequest($docId, $pcId);
+    }
+
+    /**
+     * The file is attached to the copy-editing request or to an answer already saved (see
+     * copyEditingAttachedFiles()). Considered submitted when the lookup fails, so that it is not removed.
+     */
+    protected function isSubmittedCopyEditingFile(int $docId, int $pcId, string $file): bool
+    {
+        $attachedFiles = $this->copyEditingAttachedFiles($docId, $pcId);
+
+        return $attachedFiles === null || in_array($file, $attachedFiles, true);
+    }
+
+    /**
+     * Names of the files attached to the copy-editing request and to its saved answers (see
+     * Episciences_CommentsManager::getCopyEditingAttachments()), null when the lookup fails
+     *
+     * @return string[]|null
+     */
+    protected function copyEditingAttachedFiles(int $docId, int $pcId): ?array
+    {
+        try {
+            return Episciences_CommentsManager::getCopyEditingAttachments($docId, $pcId);
+        } catch (Exception $e) {
+            AppRegistry::getMonoLogger()?->warning('Copy-editing file lookup failed', [
+                'docId' => $docId,
+                'pcId' => $pcId,
+                'exception' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Name under which an uploaded file is stored: not the name of another file of the directory and, in the
+     * directory of a copy-editing request, not the name of a file of the request or of a saved answer either (an
+     * answer's files are moved out of the directory once saved), whose removal is refused (see
+     * isSubmittedCopyEditingFile()). Null when these names cannot be looked up.
+     */
+    protected function uploadFileName(string $folder, string $filename, string $path, int $docId, int $pcId): ?string
+    {
+        $reservedNames = [];
+
+        if ($path === self::PATH_CE_ATTACHMENTS) {
+            $reservedNames = $this->copyEditingAttachedFiles($docId, $pcId);
+
+            if ($reservedNames === null) {
+                return null;
+            }
+        }
+
+        return Episciences_Tools::filenameRotate($folder, $filename, $reservedNames);
+    }
+
+    /**
+     * Signs the uploaded files and checks the tokens sent back (see UploadedFileToken)
+     */
+    protected function uploadedFileToken(): UploadedFileToken
+    {
+        return new UploadedFileToken((int)Episciences_Auth::getUid());
+    }
+
+    /**
+     * The file is attached to an answer already saved with a temporary version of the paper
+     * (see Episciences_CommentsManager::isTemporaryVersionAnswerAttachment()). Considered submitted when the
+     * lookup fails, so that it is not removed.
+     */
+    protected function isSubmittedTemporaryVersionFile(int $paperId, string $file): bool
+    {
+        try {
+            return Episciences_CommentsManager::isTemporaryVersionAnswerAttachment(
+                Episciences_PapersManager::getDocIdsByPaperIdInJournal($paperId, RVID),
+                $file
+            );
+        } catch (Exception $e) {
+            AppRegistry::getMonoLogger()?->warning('Temporary version file lookup failed', [
+                'paperId' => $paperId,
+                'file' => $file,
+                'exception' => $e->getMessage(),
+            ]);
+            return true;
+        }
+    }
+
+    /**
+     * The files of the temporary versions are stored by paper (see buildStorageFolder()): uploading or removing
+     * one is reserved to the authors and the editorial staff, the reviewers only read them.
+     */
+    private function isAllowedToHandleTemporaryVersionFiles(int $paperId): bool
+    {
+        // Without a paper, the files would be stored in a "0/tmp/" directory
+        return $paperId > 0 && $this->isAllowedOnTemporaryVersionFiles($paperId, true);
+    }
+
+    /**
      * return storage folder
      * @param string $path
      * @param int $paperId
@@ -658,19 +1054,9 @@ class FileController extends DefaultController
      */
     private function buildStorageFolder(string $path = "", int $paperId = 0, int $docId = 0, int $pcId = 0): string
     {
-        if ($docId && !$paperId) {
-            $paper = Episciences_PapersManager::get($docId);
-
-            if ($paper) {
-                $paperId = $paper->getPaperid();
-            }
-        }
-
-        if ($path === 'tmp_attachments') {
+        if ($path === self::PATH_TMP_ATTACHMENTS) {
             $folder = $paperId . '/tmp/';
-        } elseif ($path === 'comment_attachments') {
-            $folder = $docId . '/comments/';
-        } elseif ($path === 'ce_attachments') {
+        } elseif ($path === self::PATH_CE_ATTACHMENTS) {
             $folder = $docId;
             $folder .= DIRECTORY_SEPARATOR;
             $folder .= Episciences_CommentsManager::COPY_EDITING_SOURCES;
@@ -695,11 +1081,9 @@ class FileController extends DefaultController
      */
     private function buildFileUrl(string $fileName, string $path, int $paperId, int $docId, int $pcId): string
     {
-        if ($path === 'tmp_attachments') {
-            $fileUrl = '/tmp_files/' . $paperId . '/' . $fileName;
-        } elseif ($path === 'comment_attachments') {
-            $fileUrl = '/docfiles/comments/' . $docId . '/' . $fileName;
-        } elseif ($path === 'ce_attachments') {
+        if ($path === self::PATH_TMP_ATTACHMENTS) {
+            $fileUrl = Episciences_Tools::buildTmpFileUrl($paperId, $fileName);
+        } elseif ($path === self::PATH_CE_ATTACHMENTS) {
             $fileUrl = '/docfiles/ce/' . $docId . '/' . $fileName . '/' . $pcId;
         } else {
             $fileUrl = '/';

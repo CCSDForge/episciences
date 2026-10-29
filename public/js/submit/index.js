@@ -25,15 +25,23 @@ $(document).ready(function () {
 
         setPlaceholder();
 
+        // isRequiredVersion is only known once this request resolves; block the
+        // identifier field in the meantime so SubmitIdentifier.parse() can't
+        // run against the previous repository's stale value (e.g. wrongly
+        // stripping "v1011" from a BAOBAB slug pasted right after switching repo).
+        $searchDocDocId.prop('disabled', true);
+
         let hasHookRequest = ajaxRequest('/submit/ajaxhashook', {
             repoId: repoValue,
+        });
+        hasHookRequest.always(function () {
+            $searchDocDocId.prop('disabled', false);
         });
         hasHookRequest.done(function (response) {
             let oResponse = JSON.parse(response);
 
             if (oResponse) {
                 // initialized in submit/index.phtml
-                hasHook = oResponse.hasHook;
                 isRequiredVersion = oResponse.isRequiredVersion.result;
 
                 if (!isRequiredVersion) {
@@ -68,119 +76,33 @@ $(document).ready(function () {
         }
     }
 
-    // Extracting the ID from URL
+    // Extracting the identifier and the version from the pasted identifier or URL
+    // @see public/js/submit/identifier.js
 
     $searchDocDocId.change(function () {
-        input = $(this).val().trim();
+        const input = this.value.trim();
         if (!input) {
             return;
         }
 
-        let processedIdentifier;
+        const versionField = document.getElementById('search_doc-version');
 
-        if (isValidHttpUrl(input)) {
-            processedIdentifier = processUrlIdentifier(input);
-        } else {
-            processedIdentifier = processDirectIdentifier(input);
-        }
-        $(this).val(processedIdentifier);
+        // Without a version field, the version suffix is kept in the identifier
+        const { identifier, version } = SubmitIdentifier.parse(input, {
+            isDataverseRepo: $isDataverseRepo,
+            isRequiredVersion: isRequiredVersion && versionField !== null,
+        });
+
+        this.value = identifier;
+        SubmitIdentifier.applyVersion(versionField, version);
     });
 
-    function processUrlIdentifier(input) {
-        try {
-            const url = new URL(input);
-            let identifier = '';
-            let versionFromUrl = null;
-
-            // Handle different repository types
-            if ($isDataverseRepo || url.search) {
-                // For Dataverse repos or URLs with query parameters
-                if (url.search.includes('persistentId=')) {
-                    identifier =
-                        url.searchParams.get('persistentId') ||
-                        url.search
-                            .replace(/^\?.*persistentId=/, '')
-                            .split('&')[0];
-
-                    // Check for version parameter in URL
-                    const versionParam = url.searchParams.get('version');
-                    if (versionParam) {
-                        versionFromUrl = versionParam;
-                        const versionField =
-                            document.getElementById('search_doc-version');
-                        if (versionField) {
-                            // Keep full version number (e.g. "1.1", "2.0", "1.5")
-                            versionField.value = versionParam;
-                        }
-                    }
-                } else {
-                    // Fallback to pathname if no persistentId found
-                    identifier = url.pathname.replace(/^\/+|\/+$/g, '');
-                }
-            } else {
-                // For non-Dataverse repos without query parameters
-                if (
-                    url.hostname === 'arxiv.org' &&
-                    url.pathname.includes('/abs/')
-                ) {
-                    // Special handling for ArXiv URLs: extract only the ArXiv ID
-                    // For new format (e.g., 2310.02192), use as-is
-                    // For old format (e.g., hep-th/9704188, alg-geom/9202002), extract only the final identifier
-                    identifier = url.pathname.replace(/^\/abs\//, '');
-                    // If it contains a slash (old format), take only the part after the last slash
-                    if (identifier.includes('/')) {
-                        identifier = identifier.split('/').pop();
-                    }
-                } else {
-                    // General handling for other repos
-                    // Remove leading path segments and slashes
-                    identifier = url.pathname
-                        .replace(/^\/+/, '') // Remove leading slashes
-                        .replace(/\/\w+\/$/, '') // Remove trailing /word/ pattern
-                        .replace(/\/+$/, ''); // Remove trailing slashes
-                }
-            }
-
-            // Clean up empty identifier
-            if (!identifier.trim()) {
-                identifier = url.pathname.replace(/^\/+|\/+$/g, '') || url.href;
-            }
-
-            // Only call removeVersionFromIdentifier if we didn't already handle version from URL params
-            if (versionFromUrl) {
-                return identifier; // Don't process further since we already handled the version
-            } else {
-                return removeVersionFromIdentifier(identifier);
-            }
-        } catch (error) {
-            // If URL parsing fails, return the original input
-            console.warn('URL parsing failed for:', input, error);
-            return removeVersionFromIdentifier(input);
-        }
-    }
-
-    function processDirectIdentifier(input) {
-        return removeVersionFromIdentifier(input);
-    }
-
-    //Extracts version information from an identifier string and populates the version field.
-    function removeVersionFromIdentifier(identifier) {
-        const versionField = document.getElementById('search_doc-version');
-        const versionMatch = identifier.match(/v([1-9]\d*)$/);
-
-        if (versionMatch && versionField) {
-            // Extract the version number (without the 'v' prefix)
-            versionField.value = versionMatch[1];
-
-            // Return identifier without the version
-            return identifier.replace(/v[1-9]\d*$/, '');
-        }
-
-        // If no version found, clear the version field and return original identifier
-        if (versionField) {
-            versionField.value = '';
-        }
-        return identifier;
+    // Once edited by the author, the version field is no longer cleared automatically
+    const versionInput = document.getElementById('search_doc-version');
+    if (versionInput) {
+        versionInput.addEventListener('input', function () {
+            delete this.dataset.fromIdentifier;
+        });
     }
 
     function checkDataverse() {

@@ -62,14 +62,9 @@ $autoloader->setFallbackAutoloader(true);
 $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
 
-// init translator
-$default = 'fr';
+// init translator (locale detected from the environment)
 try {
-    $translator = new Zend_Translate(Zend_Translate::AN_ARRAY, PATH_TRANSLATION, null, [
-        'scan' => Zend_Translate::LOCALE_DIRECTORY,
-        'locale' => $default,
-        'disableNotices' => true
-    ]);
+    $translator = \Episciences\Translation\TranslatorFactory::create(PATH_TRANSLATION, null, 'auto');
 
     Zend_Registry::set('Zend_Translate', $translator);
     Zend_Registry::set('Zend_Locale', new Zend_Locale($translator->getLocale()));
@@ -96,7 +91,7 @@ try {
         displayMessage($sql . PHP_EOL);
     }
 
-    $remindersData = $db->fetchAll($sql);
+    $remindersData = Episciences_Mail_Reminder::sortByRecipientPriority($db->fetchAll($sql));
 
     $settings = ['is' => ['code' => $opts->rvcode]];
 
@@ -135,6 +130,8 @@ try {
         // journal settings
         $website = new Ccsd_Website_Common($review->getRvid(), ['sidField' => 'SID']);
         $review->loadSettings();
+        // reminders already sent in this journal (key => recipient role), @see Episciences_Mail_Reminder::getDeduplicationKey()
+        $sentKeys = [];
 
         $languages = $website->getLanguages();
         if (empty($languages)) {
@@ -176,21 +173,35 @@ try {
             $origin = !$opts->date ? new DateTime("now") : date_create($opts->date);
             $origin->setTime(0,0); // otherwise, the number of days before the review deadline was calculated incorrectly (one day difference).
 
+            // papers loaded once per reminder: several recipients (editors, chief editors, secretaries) share the same paper
+            $papers = [];
+
             foreach ($recipients as $recipient) {
+
+                $deduplicationKey = Episciences_Mail_Reminder::getDeduplicationKey(
+                    (int)$reminder->getType(), (string)$reminder->getRecipient(), $recipient
+                );
+                if (Episciences_Mail_Reminder::isAlreadySentThroughAnotherRole(
+                    $sentKeys, $deduplicationKey, (string)$reminder->getRecipient()
+                )) {
+                    displayMessage('Skipped > ' . $recipient['fullname'] . ' (' . $recipient['uid'] . ') already received this reminder through another role', 'default', true);
+                    continue;
+                }
 
                 $tags = (array_key_exists('tags', $recipient)) ? $recipient['tags'] : [];
                 $paper = null;
 
-                $mail = new Episciences_Mail('UTF-8');
+                $mail = new Episciences_Mail('UTF-8', $rvCode);
                 if (isset($tags['%%ARTICLE_ID%%'])) {
-                    $paper = Episciences_PapersManager::get($tags['%%ARTICLE_ID%%']);
-                    $mail->setDocid($paper->getDocid());
+                    $docId = (int)$tags['%%ARTICLE_ID%%'];
+                    $paper = $papers[$docId] ??= Episciences_PapersManager::get($docId);
+                    $mail->setDocid($paper->getDocid(), $paper->getPaperid());
                     displayMessage('DOCID > #' . $paper->getDocid(), 'default', true);
                 }
 
                 $mail->setFrom($rvCode . '@' . DOMAIN, $rvCode);
                 $mail->setRvid($review->getRvid());
-                $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, $rvCode);
+                $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, $review->getMailDisplayCode());
                 $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_NAME, $review->getName());
 
                 if (isset($recipient['deadline'])) {
@@ -218,7 +229,16 @@ try {
 
                 $mail->setSubject($reminder->getSubject($recipient['lang']));
                 $mail->setRawBody($reminder->getBody($recipient['lang']));
-                $mail->writeMail($rvCode, $rvId, $isDebug);
+
+                if (!$mail->writeMail($rvCode, $rvId, $isDebug)) {
+                    // not marked as sent: the copy intended for another role of this person can still be sent
+                    displayMessage('Failed to write the reminder to ' . $recipient['fullname'] . ' (' . $recipient['uid'] . ')', 'red', true);
+                    continue;
+                }
+
+                if ($deduplicationKey !== null) {
+                    $sentKeys[$deduplicationKey] = (string)$reminder->getRecipient();
+                }
 
                 $msg = "reminder sent to " . $recipient['fullname'] . ' (' . $recipient['uid'] . ')';
                 if (isset($tags['%%ARTICLE_ID%%'])) {

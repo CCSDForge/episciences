@@ -29,4 +29,21 @@ final class PublicFileStore
 
         return str_starts_with($file, rtrim($directory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR) ? $file : null;
     }
+
+    /**
+     * Name to store the file under: the extension is kept (it was checked against the content of the file),
+     * and the dots of the rest of the name are removed so that no earlier extension can be interpreted by the
+     * web server (e.g. "script.php.png").
+     */
+    public static function storedName(string $originalName): string
+    {
+        $extension = MimeTypePolicy::extensionOf($originalName);
+        $base = str_replace('.', '_', pathinfo($originalName, PATHINFO_FILENAME));
+
+        if (trim($base, '_ ') === '') {
+            $base = 'file';
+        }
+
+        return $extension === '' ? $base : $base . '.' . $extension;
+    }
 }

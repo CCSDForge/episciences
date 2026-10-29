@@ -1,8 +1,6 @@
 <?php
 
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\RotatingFileHandler;
-use Monolog\Logger;
+use Episciences\Log\LoggerFactory;
 
 /**
  * Zend_Auth adapter for CAS authentication
@@ -50,12 +48,7 @@ class Ccsd_Auth_Adapter_Cas extends Ccsd_Auth_Adapter_CasAbstract
             }
         }
 
-        $casLogger = new Logger('CASLogger');
-        $handler = new RotatingFileHandler($logPath, 0, Logger::DEBUG, true, 0664);
-
-        $formatter = new LineFormatter(null, null, false, true);
-        $handler->setFormatter($formatter);
-        $casLogger->pushHandler($handler);
+        $casLogger = LoggerFactory::rotating('CASLogger', $logPath);
 
         phpCAS::setLogger($casLogger);
 

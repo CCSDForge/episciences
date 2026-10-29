@@ -123,10 +123,23 @@ $config['EPISCIENCES']['EXCEPTIONS_LOG_PATH'] = $logPath;
 $config['EPISCIENCES']['SOLR_LOG_PATH'] = $logPath;
 $config['EPISCIENCES']['MAIL_PATH'] = $mailPath;
 
+// EPISCIENCES_ENABLE_NEXT_FRONT is a PHP constant that can never be redefined once set, and the
+// Next.js revalidation unit tests (RevalidationServiceTest, RevalidateTagMessageHandlerTest)
+// toggle it on in their own process via define(). bdd_const.php would otherwise turn the
+// template's ENABLE_NEXT_FRONT=false into an already-defined falsy constant, so those tests
+// could never switch the flag on and silently no-oped. Leaving it undefined in the test
+// environment restores the "flag is off unless a test turns it on" invariant those tests rely
+// on (isEnabled() already treats an undefined constant as false).
+unset($config['EPISCIENCES']['ENABLE_NEXT_FRONT']);
+
 // The template value contains spaces, which Episciences_Api_OpenAlexApiClient percent-encodes
 // into the query string. OpenAlexApiClientTest asserts on the raw value, so a space-free key is
 // needed for the assertion to mean anything.
 $config['OPENALEX']['APIKEY'] = 'ci-openalex-api-key';
+
+// The template leaves the reviewer invitation secret empty, which makes the link token fail
+// closed; the test environment needs a value for the invitation pages to work.
+$config['REVIEWER_INVITATION']['HMAC_SECRET'] = 'ci-reviewer-invitation-hmac-secret';
 
 writeFileOrFail(
     $root . '/tests/config/pwd.json',

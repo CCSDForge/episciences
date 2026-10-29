@@ -2,7 +2,9 @@
 declare(strict_types=1);
 
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -15,17 +17,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Reads PAPER_STAT for every published paper (STATUS=16 with a DOI) and writes
  * a JSON file keyed by journal rvcode, suitable for Next.js visualisations.
  */
+#[AsCommand(name: 'stats:download-kpi', description: 'Aggregate download KPIs for all published articles and write a JSON file.')]
 class GenerateDownloadKpiCommand extends Command
 {
-    protected static $defaultName = 'stats:download-kpi';
-
     private const CONSULT_FILE   = 'file';    // PDF/file download
     private const CONSULT_NOTICE = 'notice'; // abstract page view
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Aggregate download KPIs for all published articles and write a JSON file.')
             ->addOption('output', null, InputOption::VALUE_REQUIRED, 'Destination path for the JSON file (default: data/kpi_downloads.json)')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict to one journal (RV code)')
             ->addOption('pretty', null, InputOption::VALUE_NONE, 'Pretty-print the JSON output')
@@ -485,11 +485,11 @@ class GenerateDownloadKpiCommand extends Command
         $logDir  = dirname($logFile);
 
         if (is_dir($logDir) && is_writable($logDir)) {
-            $logger->pushHandler(new StreamHandler($logFile, Logger::INFO));
+            $logger->pushHandler(new StreamHandler($logFile, Level::Info));
         }
 
-        if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        if (!$io->isQuiet() && !$io->isSilent()) {
+            $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         return $logger;

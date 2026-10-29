@@ -10,6 +10,8 @@ use GuzzleHttp\Exception\GuzzleException;
 use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use League\HTMLToMarkdown\HtmlConverter;
+use Symfony\Component\Intl\Exception\MissingResourceException;
+use Symfony\Component\Intl\Languages;
 
 class Episciences_Tools
 {
@@ -594,11 +596,12 @@ class Episciences_Tools
      * retourne un nouveau nom de fichier si le nom fourni existe déjà dans le répertoire donné en paramètre
      * @param $dir
      * @param $filename
+     * @param string[] $reservedNames names to avoid as well, e.g. files already moved out of the directory
      * @return string|null (NULL en cas d'erreur)
      */
-    public static function filenameRotate($dir, $filename)
+    public static function filenameRotate($dir, $filename, array $reservedNames = [])
     {
-        while (is_file($dir . $filename)) {
+        while (is_file($dir . $filename) || in_array($filename, $reservedNames, true)) {
             // Always inject/increment a counter. The previous pattern produced an empty
             // replacement for a name without a trailing "_N" and no extension (e.g. "foo"),
             // leaving the filename unchanged and spinning forever.
@@ -856,7 +859,27 @@ class Episciences_Tools
         return trim($name);
     }
 
+    /** Elements kept in repository descriptions */
+    private const SAFE_DESCRIPTION_ELEMENTS = [
+        'a', 'b', 'blockquote', 'br', 'code', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'li', 'ol',
+        'p', 'pre', 's', 'span', 'strong', 'sub', 'sup', 'table', 'tbody', 'td', 'th', 'thead', 'tr', 'u', 'ul',
+    ];
+
+    /** Known HTML elements that are removed from repository descriptions */
+    private const DROPPED_DESCRIPTION_ELEMENTS = [
+        'script', 'style', 'img', 'iframe', 'object', 'embed', 'svg', 'math', 'form', 'input', 'button', 'link',
+        'meta', 'div', 'font', 'center', 'video', 'audio', 'base', 'frame', 'frameset', 'textarea', 'select',
+    ];
+
     public static function decodeLatex($string, $preserveLineBreaks = false): string
+    {
+        return self::decodeAmpersand(self::latexToUtf8((string)$string, (bool)$preserveLineBreaks));
+    }
+
+    /**
+     * Replace LaTeX sequences by UTF-8 characters and, optionally, line breaks by <br />
+     */
+    private static function latexToUtf8(string $string, bool $preserveLineBreaks): string
     {
         $result = str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
 
@@ -877,7 +900,84 @@ class Episciences_Tools
             $result = preg_replace('/\n/', '<br />', $result);
         }
 
-        return self::decodeAmpersand($result);
+        return $result;
+    }
+
+    /**
+     * Decode a repository description (abstract) and return HTML that is safe to print unescaped.
+     *
+     * Descriptions are plain text or light HTML supplied by the depositor: line breaks are kept,
+     * links are limited to http(s) and the markup is reduced to a restricted allow-list
+     * (no script, no image, no attribute except a.href).
+     * A "<" that does not start a known HTML tag (e.g. "n<m and m>k") is plain text and is kept.
+     */
+    public static function decodeLatexToSafeHtml(string $text): string
+    {
+        static $purifier = null;
+
+        if ($purifier === null) {
+            $purifier = new Episciences_HTMLPurifier([
+                'HTML.AllowedElements' => self::SAFE_DESCRIPTION_ELEMENTS,
+                'HTML.AllowedAttributes' => ['a.href'],
+                'URI.AllowedSchemes' => Episciences_HTMLPurifier::$URI_ALLOWED_SCHEMES,
+            ]);
+        }
+
+        // No decodeAmpersand() here: the purifier handles entities itself, a second decoding would alter the text
+        $knownTags = implode('|', array_merge(self::SAFE_DESCRIPTION_ELEMENTS, self::DROPPED_DESCRIPTION_ELEMENTS));
+        $text = preg_replace('#<(?!/?(?:' . $knownTags . ')(?:\s[^<>]*)?/?>)#i', '&lt;', $text) ?? $text;
+
+        return $purifier->purifyHtml(self::latexToUtf8($text, true));
+    }
+
+    /**
+     * Name of a language in the interface language ("fr" displayed as
+     * "Français" in French, "French" in English), for metadata language labels.
+     * Accepts ISO 639-1 and 639-2/3 codes, optionally followed by a script or
+     * region subtag ("fr-CA", "pt_BR"); an unknown code is returned as is.
+     *
+     * @param string|null $langCode e.g. 'fr', 'eng', 'fr-CA'
+     * @param string|null $displayLocale defaults to the interface language
+     */
+    public static function getLanguageName(?string $langCode, ?string $displayLocale = null): string
+    {
+        $subtags = explode('_', str_replace('-', '_', trim((string)$langCode)));
+        $code = strtolower(array_shift($subtags));
+
+        if ($code === '') {
+            return '';
+        }
+
+        $displayLocale ??= self::getLocale();
+
+        try {
+            if (Languages::exists($code)) {
+                // Symfony names known variants ("français canadien") and falls back to the base language otherwise
+                $name = Languages::getName(self::normalizeLanguageTag($code, $subtags), $displayLocale);
+            } elseif (Languages::alpha3CodeExists($code)) {
+                $name = Languages::getAlpha3Name($code, $displayLocale);
+            } else {
+                return (string)$langCode;
+            }
+        } catch (MissingResourceException $e) {
+            return (string)$langCode;
+        }
+
+        return mb_strtoupper(mb_substr($name, 0, 1)) . mb_substr($name, 1);
+    }
+
+    /**
+     * ICU form of a language tag: script in title case, region in upper case ("zh_Hant", "fr_CA").
+     *
+     * @param string[] $subtags
+     */
+    private static function normalizeLanguageTag(string $language, array $subtags): string
+    {
+        foreach (array_filter($subtags, static fn(string $subtag): bool => $subtag !== '') as $subtag) {
+            $language .= '_' . (strlen($subtag) === 4 ? ucfirst(strtolower($subtag)) : strtoupper($subtag));
+        }
+
+        return $language;
     }
 
     /**
@@ -1247,6 +1347,15 @@ class Episciences_Tools
     }
 
     /**
+     * Link to a file of the temporary versions, stored by paper (see FileController::tmpAction()). The file name is
+     * a path segment: encoded, a "#", "?" or "%" in it does not break the link. Not HTML-escaped.
+     */
+    public static function buildTmpFileUrl(int $paperId, string $fileName): string
+    {
+        return '/tmp_files/' . $paperId . '/' . rawurlencode($fileName);
+    }
+
+    /**
      * Construit les liens vers les fichiers joints à une réponse avec une version temporaire
      * @param array $domElements
      * @return string
@@ -1290,15 +1399,13 @@ class Episciences_Tools
             trigger_error($e->getMessage());
         }
 
+        // Answering a revision request with a tmp version may be done without any file
         if (empty($result)) {
-            trigger_error('No file(s) attached to the tmp version (docId = ' . $paper->getDocid() . "): the upload of the file(s) failed when responding to a revision request !");
             return $text;
         }
 
-        $cHref = '/tmp_files/' . $paperId . '/';
-
         foreach ($result as $index => $fileName) {
-            $href = $cHref . urlencode($fileName);
+            $href = self::buildTmpFileUrl((int)$paperId, (string)$fileName);
             $text .= '<a target="_blank" href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">';
             $text .= $fileExp . ' ' . ($index + 1) . ' > ' . htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8');
             $text .= '</a>';
@@ -1809,7 +1916,7 @@ class Episciences_Tools
 
     /**
      * Keep only the attachment names that resolve inside the attachments directory
-     * (see resolveAttachmentPath()). Keys are preserved.
+     * (see resolveAttachmentPath()). The list is re-indexed.
      *
      * @param string $baseDir attachments directory
      * @param array<mixed> $names names submitted by the client
@@ -1818,6 +1925,19 @@ class Episciences_Tools
     public static function filterAttachmentNames(string $baseDir, array $names): array
     {
         return array_values(array_filter($names, static fn($name) => self::resolveAttachmentPath($baseDir, $name) !== null));
+    }
+
+    /**
+     * Return the attachment names that do not resolve inside the attachments directory
+     * (see resolveAttachmentPath()), e.g. an empty name or a file whose upload failed.
+     *
+     * @param string $baseDir attachments directory
+     * @param array<mixed> $names names submitted by the client
+     * @return array<mixed> rejected names
+     */
+    public static function rejectedAttachmentNames(string $baseDir, array $names): array
+    {
+        return array_values(array_filter($names, static fn($name) => self::resolveAttachmentPath($baseDir, $name) === null));
     }
 
     public static function startsWithNumber(string $string): bool
@@ -2007,6 +2127,45 @@ class Episciences_Tools
         $matches = [];
         preg_match("~[a-z]+[_-][0-9]{8}(v[0-9]*)?~", $url, $matches);
         return $matches;
+    }
+
+    /**
+     * Splits the HAL id found in a value (bare id or URL) from its version suffix.
+     *
+     * @return array{0: string, 1: string, 2: int}|null [HAL id as found, HAL id
+     *         without its version suffix, version (0 when none)], or null when
+     *         the value carries no HAL id
+     */
+    public static function splitHalIdentifier(string $value): ?array
+    {
+        $halMatch = self::getHalIdInString($value);
+
+        if (empty($halMatch)) {
+            return null;
+        }
+
+        $halId = $halMatch[0];
+        $versionSuffix = $halMatch[1] ?? '';
+
+        if ($versionSuffix === '') {
+            return [$halId, $halId, 0];
+        }
+
+        return [$halId, substr($halId, 0, -strlen($versionSuffix)), (int)ltrim($versionSuffix, 'v')];
+    }
+
+    /**
+     * Whether a value can safely become an href: an absolute http(s) URL
+     * (scheme in any case) with no quote, angle bracket or whitespace. Also
+     * called from the paper stylesheets through php:function.
+     */
+    public static function isHttpUrl(string $url): bool
+    {
+        $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true)
+            && filter_var($url, FILTER_VALIDATE_URL) !== false
+            && preg_match('/["\'<>\s]/', $url) !== 1;
     }
 
     /**
@@ -2323,9 +2482,9 @@ class Episciences_Tools
     }
 
 
-    public static function isIPv6(string $ipv6): bool
+    public static function isIPv6(?string $ipv6): bool
     {
-        return filter_var($ipv6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
+        return $ipv6 !== null && filter_var($ipv6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
     }
 
     /**

@@ -1,0 +1,4 @@
+identifier;repoid;version;status;volume_id;volume_title_fr;volume_title_en;volume_num;volume_year;section_id;section_title_fr;section_title_en;uid;publication_date;editors;doi;docid;rvid;submission_date
+hal-04123456;1;1;;;Numéro spécial 2024;Special issue 2024;5;2024;;;;;;;;;arima;
+hal-04222333;1;1;;;;;;;;Comptes rendus;Reports;;2024-03-15;;;;10;
+hal-04000111;1;2;16;42;;;;;7;;;;;12-34;10.1234/example.2024.01;98765;10;

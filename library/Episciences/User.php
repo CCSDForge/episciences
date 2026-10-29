@@ -164,14 +164,15 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public static function deleteLocalData($uid, $everywhere = false)
     {
+        $uid = (int)$uid;
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         if ($everywhere) {
-            // Supprime son compte ES et ses rôles pour toutes les revues
-            $db->delete(T_USER_ROLES, 'UID = ' . (int)$uid);
-            $db->delete(T_USERS, 'UID = ' . (int)$uid);
+            // Delete the Episciences account and its roles for every journal
+            $db->delete(T_USER_ROLES, ['UID = ?' => $uid]);
+            $db->delete(T_USERS, ['UID = ?' => $uid]);
 
-            // Désactive toutes ses assignations (relecture, édition) pour toutes les revues
+            // Disable all assignments (review, editing) for every journal
             $db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
             SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
             FROM USER_ASSIGNMENT `u`
@@ -193,10 +194,10 @@ class Episciences_User extends Ccsd_User_Models_User
             AND ROLEID != 'member'
             )", $uid);
         } else {
-            // Supprime uniquement ses rôles pour cette revue
-            $db->delete(T_USER_ROLES, 'RVID = ' . RVID . ' AND UID = ' . $uid);
+            // Delete the roles for this journal only
+            $db->delete(T_USER_ROLES, ['RVID = ?' => RVID, 'UID = ?' => $uid]);
 
-            // Désactive toutes ses assignations (relecture, édition) pour cette revue
+            // Disable all assignments (review, editing) for this journal
             $db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
             SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
             FROM USER_ASSIGNMENT `u`
@@ -224,66 +225,7 @@ class Episciences_User extends Ccsd_User_Models_User
         return true;
     }
 
-    /**
-     * delete user from CAS database
-     * @param $uid
-     * @return int
-     */
-    public static function deleteFromCAS($uid)
-    {
-        $db = Ccsd_Db_Adapter_Cas::getAdapter();
-        return $db->delete(T_CAS_USERS, 'UID = ' . (int)$uid);
-    }
-
     // Retourne les droits de l'utilisateur (pour toutes les revues / portails)
-
-    public static function filterUsers($filter, $withoutRoles = true)
-    {
-        $result = null;
-        $filter = trim($filter);
-        $keywords = explode(' ', $filter);
-
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_USERS);
-        $subSelect = $db->select()->from(T_USER_ROLES, ['UID'])->where('RVID = ?', RVID);
-        if ($withoutRoles) {
-            $subSelect->where('ROLEID != ?', Episciences_Acl::ROLE_MEMBER);
-            $select->where('UID NOT IN (' . new Zend_Db_Expr($subSelect) . ')');
-        } else {
-            $select->where('UID IN (' . new Zend_Db_Expr($subSelect) . ')');
-        }
-
-        $users = $db->fetchAssoc($select);
-
-        if ($users) {
-            $casDb = Ccsd_Db_Adapter_Cas::getAdapter();
-            $select = $casDb->select()->from(T_CAS_USERS)->where('UID IN (?)', array_keys($users))->order('LASTNAME');
-
-            $where = '(';
-            $isFirstKeyword = true;
-            foreach ($keywords as $keyword) {
-                if (!empty($keyword)) {
-                    if (!$isFirstKeyword) {
-                        $where .= ' AND ';
-                    }
-                    $isFirstKeyword = false;
-                    $where .= '(';
-                    $where .= $casDb->quoteInto('FIRSTNAME LIKE ? OR ', '%' . $keyword . '%');
-                    $where .= $casDb->quoteInto('LASTNAME LIKE ?', '%' . $keyword . '%');
-                    $where .= ')';
-                }
-            }
-            $where .= ' OR ';
-            $where .= $casDb->quoteInto('EMAIL LIKE ?', '%' . $filter . '%');
-            $where .= ')';
-
-            $select->where($where);
-            $select->limit(25);
-            $result = $casDb->fetchAll($select);
-        }
-
-        return ($result);
-    }
 
     public static function filterCasUsers($filter)
     {
@@ -323,11 +265,7 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public function getRoles(int $rvId = RVID): ?array
     {
-        if ($this->_roles === null) {
-            $this->_roles = $this->loadRoles();
-        }
-
-        return (is_array($this->_roles) && array_key_exists($rvId, $this->_roles)) ? $this->_roles[$rvId] : null;
+        return $this->getAllRoles()[$rvId] ?? null;
     }
 
 
@@ -445,12 +383,35 @@ class Episciences_User extends Ccsd_User_Models_User
         return $this;
     }
 
-    public function getAllRoles()
+    /**
+     * @return array<int, array<int, string>> roles indexed by journal (RVID)
+     */
+    public function getAllRoles(): array
     {
         if ($this->_roles === null) {
             $this->_roles = $this->loadRoles();
         }
+
+        // The roles may have been loaded for another journal (the identity is kept in a session
+        // shared by the journals of the same host): without any role in the current journal,
+        // a registered user is a member, as in loadRoles()
+        if (defined('RVID') && $this->getUid() && !isset($this->_roles[RVID])) {
+            $this->_roles[RVID] = [Episciences_Acl::ROLE_MEMBER];
+        }
+
         return $this->_roles;
+    }
+
+    /**
+     * Replace the roles of one journal, keeping the roles of the other journals
+     * @param array<int, string> $roles
+     */
+    public function setJournalRoles(int $rvId, array $roles): self
+    {
+        $allRoles = $this->getAllRoles();
+        $allRoles[$rvId] = $roles;
+
+        return $this->setRoles($allRoles);
     }
 
     /**
@@ -475,6 +436,11 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if ($isCasRecording) {
             $casId = parent::save($forceInsert);
+
+            if ($casId === false) {
+                trigger_error('CAS write failed for UID ' . $this->getUid(), E_USER_WARNING);
+                return false;
+            }
         }
 
         $uid = ($casId) ?: $this->getUid();
@@ -569,11 +535,17 @@ class Episciences_User extends Ccsd_User_Models_User
                 return false;
             }
 
+            // hasLocalData() above may have cached this UID's row before this write;
+            // drop it so the next find() re-reads the row this save() just wrote.
+            self::forgetStaticCache((int)$uid);
+
             return $uid;
         }
 
         // Mise à jour des données locales
         $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
+
+        self::forgetStaticCache((int)$this->getUid());
 
         return $this->getUid();
 
@@ -931,15 +903,32 @@ class Episciences_User extends Ccsd_User_Models_User
     }
 
 
-    public function hasOnlyAdministratorRole(): bool
+    /**
+     * @param int|null $rvId journal to check; defaults to the current journal (RVID constant, web context only)
+     */
+    public function hasOnlyAdministratorRole(?int $rvId = null): bool
     {
+        if ($rvId === null) {
+            return
+                $this->isAdministrator() &&
+                !$this->isChiefEditor() &&
+                !$this->isSecretary() &&
+                !$this->isEditor() &&
+                !$this->isGuestEditor() &&
+                !$this->isCopyEditor();
+        }
+
+        $roles = $this->getRoles($rvId) ?? [];
+
         return
-            $this->isAdministrator() &&
-            !$this->isChiefEditor() &&
-            !$this->isSecretary() &&
-            !$this->isEditor() &&
-            !$this->isGuestEditor() &&
-            !$this->isCopyEditor();
+            in_array(Episciences_Acl::ROLE_ADMIN, $roles) &&
+            empty(array_intersect([
+                Episciences_Acl::ROLE_CHIEF_EDITOR,
+                Episciences_Acl::ROLE_SECRETARY,
+                Episciences_Acl::ROLE_EDITOR,
+                Episciences_Acl::ROLE_GUEST_EDITOR,
+                Episciences_Acl::ROLE_COPY_EDITOR,
+            ], $roles));
     }
 
     public function getReviews()
@@ -993,7 +982,6 @@ class Episciences_User extends Ccsd_User_Models_User
             $roles = $acl->getRolesCodes();
             $acl = new Episciences_Acl();
             unset($roles[$acl::ROLE_GUEST], $roles[$acl::ROLE_MEMBER], $roles[$acl::ROLE_ROOT]);
-            $translator = Zend_Registry::get('Zend_Translate');
 
             foreach ($users as $uid => $user) {
 
@@ -1033,7 +1021,7 @@ class Episciences_User extends Ccsd_User_Models_User
                         $class = '';
                     }
 
-                    $tag = '<span class="label ' . $class . '">' . $translator->translate($role) . '</span>';
+                    $tag = '<span class="label ' . $class . '">' . Episciences_Acl::getRoleLabelHtml($role) . '</span>';
                     $form->addElement('html', 'tag_' . $uid . '_' . $role, ['value' => $tag]);
 
                 }
@@ -1117,42 +1105,101 @@ class Episciences_User extends Ccsd_User_Models_User
             $this->_db->delete(T_USER_ROLES, ['RVID = ?' => $rvId, 'UID = ?' => $uid, 'ROLEID = ?' => $role]);
         }
 
-        if (!empty($roles)) {
+        // Préparation de la requête (valeurs à insérer)
+        $values = [];
+        foreach ((array)$roles as $roleId) {
+            $values[] = '(' . $uid . ',' . $rvId . ',' . $this->_db->quote($roleId) . ')';
+        }
 
-            // Préparation de la requête (valeurs à insérer)
-            foreach ($roles as $roleId) {
-                $roleId = $this->_db->quote($roleId);
-                $values[] = '(' . $uid . ',' . $rvId . ',' . $roleId . ')';
-            }
+        // Preserve member as a role if the user has no other roles, to avoid they disappear from the user list
+        if (empty($values) && !$this->hasAnyRole($uid, $rvId)) {
+            $values[] = '(' . $uid . ',' . $rvId . ',' . $this->_db->quote(Episciences_Acl::ROLE_MEMBER) . ')';
+        }
 
-            // Preserve member as a role is the user has no other roles, to avoid they disappear from the user list
-            if (empty($values)) {
-                $roleId = Episciences_Acl::ROLE_MEMBER;
-                $values[] = '(' . $uid . ',' . $rvId . ',' . $roleId . ')';
-            }
-
-            // Save roles
+        // Save roles
+        if (!empty($values)) {
             $sql = 'INSERT IGNORE INTO ' . T_USER_ROLES . ' (UID, RVID, ROLEID) VALUES ' . implode(',', $values);
             $this->_db->query($sql);
+        }
 
-            // Si on update les rôles de son propre compte, il faut mettre à jour la session
-            if (PHP_SAPI !== 'cli') {
-                $user = Episciences_Auth::getInstance()->getIdentity();
-                if ($uid === Episciences_Auth::getUid()) {
-                    $userRoles[$rvId] = $roles;
-                    $user->setRoles($userRoles);
-                    Episciences_Auth::updateIdentity($user);
-                }
-            }
+        // Si on update les rôles de son propre compte, il faut mettre à jour la session
+        // Reload them from the database: the submitted roles only hold the roles the caller may edit,
+        // and an empty submission must also remove the former roles from the session
+        if (PHP_SAPI !== 'cli' && $uid === Episciences_Auth::getUid()) {
+            $user = Episciences_Auth::getInstance()->getIdentity();
+            $user->setJournalRoles($rvId, $this->fetchJournalRoles($uid, $rvId));
+            Episciences_Auth::updateIdentity($user);
         }
 
         // Détecter les rôles retirés et désactiver leurs assignments si nécessaire
-        $removedRoles = array_diff($currentRoles, $roles);
+        // Only roles the caller may edit can be removed (the reset above is limited the same way)
+        $removedRoles = self::computeRemovedRoles($currentRoles, (array)$roles, array_keys($editableRoles));
         $this->disableAssignmentsForRemovedRoles($uid, $rvId, $removedRoles);
+
+        // Enqueue Next.js cache revalidation if any board role was added or removed
+        $boardRoles = [
+            Episciences_Acl::ROLE_EDITORIAL_BOARD,
+            Episciences_Acl::ROLE_TECHNICAL_BOARD,
+            Episciences_Acl::ROLE_SCIENTIFIC_ADVISORY_BOARD,
+            Episciences_Acl::ROLE_ADVISORY_BOARD,
+        ];
+        $affectedRoles = array_merge((array) $roles, $removedRoles);
+        if (!empty(array_intersect($affectedRoles, $boardRoles))) {
+            $journal = Episciences_ReviewsManager::find($rvId);
+            if ($journal !== false) {
+                $rvcode = $journal->getCode();
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "members-{$rvcode}");
+            }
+        }
 
         return true;
     }
 
+
+    /**
+     * Roles of a user in one journal, as saved in the database; member if none, as in loadRoles()
+     *
+     * @internal public for unit tests only, called by saveUserRoles()
+     *
+     * @return array<int, string>
+     */
+    public function fetchJournalRoles(int $uid, int $rvId): array
+    {
+        $roles = $this->_db->fetchCol(
+            $this->_db->select()
+                ->from(T_USER_ROLES, 'ROLEID')
+                ->where('UID = ?', $uid)
+                ->where('RVID = ?', $rvId)
+        ) ?: [];
+
+        return $roles ?: [Episciences_Acl::ROLE_MEMBER];
+    }
+
+    /**
+     * Roles actually removed by a save: current roles that are editable by the caller and no longer submitted
+     *
+     * @internal public for unit tests only, called by saveUserRoles()
+     *
+     * @param array<int, string> $currentRoles
+     * @param array<int, string> $submittedRoles
+     * @param array<int, string> $editableRoles
+     * @return array<int, string>
+     */
+    public static function computeRemovedRoles(array $currentRoles, array $submittedRoles, array $editableRoles): array
+    {
+        return array_values(array_diff(array_intersect($currentRoles, $editableRoles), $submittedRoles));
+    }
+
+    private function hasAnyRole(int $uid, int $rvId): bool
+    {
+        return (bool)$this->_db->fetchOne(
+            $this->_db->select()
+                ->from(T_USER_ROLES, 'ROLEID')
+                ->where('UID = ?', $uid)
+                ->where('RVID = ?', $rvId)
+                ->limit(1)
+        );
+    }
 
     public function saveNewRoles(int $uid, string|array $roles = Episciences_Acl::ROLE_MEMBER, int $rvId = null): bool
     {
@@ -1186,6 +1233,21 @@ class Episciences_User extends Ccsd_User_Models_User
         if (!$db->getConnection()->query($sql)) {
             trigger_error(sprintf('Failed to execute SQL query: %s', $sql));
             return false;
+        }
+
+        // Enqueue Next.js cache revalidation if any board role was added
+        $boardRoles = [
+            Episciences_Acl::ROLE_EDITORIAL_BOARD,
+            Episciences_Acl::ROLE_TECHNICAL_BOARD,
+            Episciences_Acl::ROLE_SCIENTIFIC_ADVISORY_BOARD,
+            Episciences_Acl::ROLE_ADVISORY_BOARD,
+        ];
+        if (!empty(array_intersect($roles, $boardRoles))) {
+            $journal = Episciences_ReviewsManager::find($rvId);
+            if ($journal !== false) {
+                $rvcode = $journal->getCode();
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "members-{$rvcode}");
+            }
         }
 
         return true;
@@ -1524,13 +1586,10 @@ class Episciences_User extends Ccsd_User_Models_User
         if (!empty($currentRoles)) {
             $this->multipleRolesUnsetMemberRole($currentRoles);
             $this->saveUserRoles($this->getUid(), $currentRoles, $rvId);
-            $userRoles[$rvId] = $currentRoles;
-        } else {
-            $userRoles[$rvId] = $selfRoles;
+            return $this->setJournalRoles($rvId, $currentRoles);
         }
-        $this->setRoles($userRoles);
 
-        return $this;
+        return $this->setJournalRoles($rvId, $selfRoles);
     }
 
 
@@ -1632,6 +1691,20 @@ class Episciences_User extends Ccsd_User_Models_User
 
         // Supprimer les doublons (editor, chief_editor mappent tous vers 'editor')
         $assignmentRolesToDisable = array_unique($assignmentRolesToDisable);
+
+        if (empty($assignmentRolesToDisable)) {
+            return;
+        }
+
+        // Keep the assignments still covered by a role the user holds (e.g. chief_editor removed, editor kept)
+        $keptRoles = $this->_db->fetchCol(
+            $this->_db->select()
+                ->from(T_USER_ROLES, 'ROLEID')
+                ->where('UID = ?', $uid)
+                ->where('RVID = ?', $rvId)
+        ) ?: [];
+        $keptAssignmentRoles = array_intersect_key($userRoleToAssignmentRole, array_flip($keptRoles));
+        $assignmentRolesToDisable = array_diff($assignmentRolesToDisable, $keptAssignmentRoles);
 
         if (empty($assignmentRolesToDisable)) {
             return;

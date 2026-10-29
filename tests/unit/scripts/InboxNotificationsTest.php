@@ -12,38 +12,30 @@ use Script;
 
 class InboxNotificationsTest extends TestCase
 {
-    /** @var array<int, string>|null */
+    /** @var list<string>|null */
     private ?array $originalArgv = null;
 
     /**
-     * Shields the tests from the command line PHPUnit itself was started with.
-     *
-     * InboxNotifications extends Script, whose constructor hands $_SERVER['argv'] to
-     * Zend_Console_Getopt. Any argument the script does not declare -- every PHPUnit option, so
-     * --coverage-clover on CI -- raises Zend_Console_Getopt_Exception and terminates the process
-     * on the spot. The whole run then stopped here, silently: Script used to bail out with die(),
-     * which returns exit code 0, so PHPUnit reported nothing and CI reported success while a
-     * couple of hundred tests had never run.
-     *
-     * backupGlobals is disabled in phpunit.xml, hence the manual save and restore.
+     * InboxNotifications::__construct() -> Script::__construct() parses the
+     * real process argv via Zend_Console_Getopt and die()s on any option it
+     * doesn't recognize (see Script.php). Under PHPUnit, argv contains flags
+     * like --no-coverage or --filter, which are foreign to this script and
+     * would kill the whole test run. Swap argv for a safe placeholder for
+     * the duration of these tests only.
      */
     protected function setUp(): void
     {
-        parent::setUp();
-
         $this->originalArgv = $_SERVER['argv'] ?? null;
-        $_SERVER['argv'] = [$this->originalArgv[0] ?? 'phpunit'];
+        $_SERVER['argv'] = ['phpunit'];
     }
 
     protected function tearDown(): void
     {
-        if ($this->originalArgv === null) {
-            unset($_SERVER['argv']);
-        } else {
+        if ($this->originalArgv !== null) {
             $_SERVER['argv'] = $this->originalArgv;
+        } else {
+            unset($_SERVER['argv']);
         }
-
-        parent::tearDown();
     }
 
     // -------------------------------------------------------------------------

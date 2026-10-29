@@ -13,6 +13,7 @@ class Episciences_Paper_Dataset
     public const URL_CODE = 'url';
 
     public const HANDLE_CODE = 'handle';
+    public const HAL_CODE = 'hal';
     public const SOFTWARE_CODE = 'software';
     public const PUBLICATION = 'publication';
     public const DATASET = 'dataset';

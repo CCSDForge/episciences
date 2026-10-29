@@ -1,12 +1,58 @@
 <?php
 
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Psr\Log\LogLevel;
 
 class Episciences_PapersManager
 {
 
     public const NONE_FILTER = '0';
     public const WITH_FILTER = '-1';
+
+    /**
+     * Tables holding the rows of one paper version (table => DOCID column), purged by deletePaper().
+     * In deletion order: a table referencing another one comes first.
+     */
+    public const VERSION_TABLES = [
+        T_PAPER_COMMENTS => 'DOCID',
+        T_MAIL_LOG => 'DOCID',
+        T_PAPER_VISITS => 'DOCID',
+        VISITS_TEMP => 'DOCID',
+        T_LOGS => 'DOCID',
+        T_REVIEWER_REPORTS => 'DOCID',
+        T_PAPER_SETTINGS => 'DOCID',
+        T_ALIAS => 'DOCID',
+        // paper_citations references PAPERS
+        T_PAPER_CITATIONS => 'docid',
+        T_PAPERS => 'DOCID',
+        T_VOLUME_PAPER => 'DOCID',
+        T_PAPER_LICENCES => 'docid',
+        T_PAPER_LICENSE_CODE => 'docid',
+        // data_descriptor references files
+        T_PAPER_DATA_DESCRIPTOR => 'docid',
+        T_FILES => 'docid',
+        T_PAPER_FILES => 'doc_id',
+        T_PAPER_DATASETS => 'doc_id',
+        T_PAPER_CLASSIFICATIONS => 'docid',
+    ];
+
+    /**
+     * Tables holding the rows shared by every version of a paper (table => PAPERID column),
+     * purged with the last remaining version only.
+     */
+    public const PAPER_TABLES = [
+        T_VOLUME_PAPER_POSITION => 'PAPERID',
+        T_PAPER_PROJECTS => 'paperid',
+        T_PAPER_CONFLICTS => 'paper_id',
+        T_PAPER_AUTHORS => 'paperid',
+        T_DOI_QUEUE => 'paperid',
+    ];
+    // "suggestion" filter value matching any known decision suggestion type
+    public const ANY_SUGGESTION_FILTER = 'any';
+    // Only the paper management lists offer the decision-suggestion filter
+    public const SUGGESTION_FILTER_CONTROLLER = 'administratepaper';
     public const ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE = 'acceptedAskAuthorsFinalVersion';
 
     /**
@@ -161,9 +207,19 @@ class Episciences_PapersManager
             $volumes = (array_key_exists('volumes', $settings)) ? $settings['volumes'] : [];
             $sections = (array_key_exists('sections', $settings)) ? $settings['sections'] : [];
 
-            $select = self::dataTableSearchQuery($select, $word, $volumes, $sections);
+            $select = self::dataTableSearchQuery($select, $word, $volumes, $sections, self::extractFilteredRvid($settings));
         }
         return $select;
+    }
+
+    /**
+     * @param array $settings
+     * @return int|null Journal to scope the query to, or null to fall back to the global RVID constant
+     */
+    private static function extractFilteredRvid(array $settings): ?int
+    {
+        $rvid = $settings['is']['rvid'] ?? $settings['is']['RVID'] ?? null;
+        return is_numeric($rvid) ? (int)$rvid : null;
     }
 
     /**
@@ -177,6 +233,7 @@ class Episciences_PapersManager
     {
         $validFilters = ['rvid', 'repoid', 'uid', 'docid', 'vid', 'sid', 'status'];
         if (array_key_exists('is', $settings)) {
+            $filteredRvid = self::extractFilteredRvid($settings);
             foreach ($settings['is'] as $setting => $value) {
                 if (in_array(strtolower($setting), $validFilters)) {
                     $setting = strtoupper($setting);
@@ -188,7 +245,7 @@ class Episciences_PapersManager
                         }
 
                     } else {
-                        $select = self::volumesFilter($select, $value, $isFilterInfos);
+                        $select = self::volumesFilter($select, (array)$value, $isFilterInfos, $filteredRvid);
                     }
 
                 }
@@ -207,6 +264,10 @@ class Episciences_PapersManager
 
                 if ($setting === 'repositories') {
                     $select = self::applyRepositoriesFilter($select, $value);
+                }
+
+                if ($setting === 'suggestion' && self::isSuggestionFilterAllowed()) {
+                    $select = self::applySuggestionFilter($select, $value);
                 }
             }
         }
@@ -230,12 +291,13 @@ class Episciences_PapersManager
      * @param Zend_Db_Select $select
      * @param array $value
      * @param bool $includeSecondaryVolume
+     * @param int|null $rvid Journal to scope the volume lookup to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      */
-    private static function volumesFilter(Zend_Db_Select $select, array $value, bool $includeSecondaryVolume = false): \Zend_Db_Select
+    private static function volumesFilter(Zend_Db_Select $select, array $value, bool $includeSecondaryVolume = false, ?int $rvid = null): \Zend_Db_Select
     {
         // Filtrage par volume secondaire : inclure l'article s'il appartient à un volume primaire(git#72)
-        $select1 = self::getVolumesQuery();
+        $select1 = self::getVolumesQuery(['DOCID'], $rvid);
 
         $select1->where(" st.VID IN (?)", $value);
 
@@ -250,16 +312,17 @@ class Episciences_PapersManager
 
     /**
      * @param array $fields
+     * @param int|null $rvid Journal to scope the query to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      */
-    public static function getVolumesQuery(array $fields = ['DOCID']): \Zend_Db_Select
+    public static function getVolumesQuery(array $fields = ['DOCID'], ?int $rvid = null): \Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         return $db
             ->select()
             ->from(['st' => T_PAPERS], $fields)
             ->joinLeft(['vpt' => T_VOLUME_PAPER], 'st.DOCID = vpt.DOCID', [])
-            ->where('st.RVID = ?', RVID);
+            ->where('st.RVID = ?', $rvid ?? RVID);
     }
 
     /**
@@ -498,10 +561,11 @@ class Episciences_PapersManager
      * @param String $word
      * @param array $volumes
      * @param array $sections
+     * @param int|null $rvid Journal to scope the secondary-volume lookup to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      * @throws Zend_Db_Select_Exception
      */
-    private static function dataTableSearchQuery(Zend_Db_Select $select, string $word = '', array $volumes = [], array $sections = []): \Zend_Db_Select
+    private static function dataTableSearchQuery(Zend_Db_Select $select, string $word = '', array $volumes = [], array $sections = [], ?int $rvid = null): \Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -539,7 +603,7 @@ class Episciences_PapersManager
                 //Volume primaire
                 $where .= "OR VID IN ($volumeCondition) ";
                 //Inclure les documents qui ont un volume secondaire
-                $papersWithSecondaryVolume = self::getVolumesQuery()->where("vpt.VID IN ($volumeCondition) ");
+                $papersWithSecondaryVolume = self::getVolumesQuery(['DOCID'], $rvid)->where("vpt.VID IN ($volumeCondition) ");
                 $where .= "OR DOCID IN ($papersWithSecondaryVolume) ";
             }
 
@@ -685,35 +749,46 @@ class Episciences_PapersManager
     }
 
     /**
-     * Renvoie un tableau de papiers triés par la clé passée en paramètres
-     * @param $list
-     * @param $key
-     * @return false|mixed
+     * Counts the papers of a review with a pending decision suggestion, per suggestion type.
+     * Single grouped query: the dashboard needs all three counts at once.
+     *
+     * @param int $rvId Review id
+     * @return array<int, int> [Episciences_CommentsManager::TYPE_SUGGESTION_* => count], every known
+     *                         type present, missing types counted as 0
      */
-    public static function sortBy($list, $key)
+    public static function countPendingSuggestionsByType(int $rvId): array
     {
-        if (empty($list)) {
-            return false;
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $types = Episciences_CommentsManager::$suggestionTypes;
+
+        $select = $db->select()
+            ->from(['c' => T_PAPER_COMMENTS], ['TYPE', 'nb' => new Zend_Db_Expr('COUNT(DISTINCT c.DOCID)')])
+            ->join(['p' => T_PAPERS], 'c.DOCID = p.DOCID', [])
+            ->where('p.RVID = ?', $rvId)
+            ->where('p.STATUS NOT IN (?)', self::getFinalizedStatusForSuggestions())
+            ->where(self::getPendingSuggestionCondition($types))
+            ->group('c.TYPE');
+
+        $counts = array_fill_keys($types, 0);
+
+        foreach ($db->fetchAll($select) as $row) {
+            $counts[(int)$row['TYPE']] = (int)$row['nb'];
         }
 
-        $result = [];
-        foreach ($list as $id => $item) {
-            $method = 'get' . ucfirst(strtolower($key));
-            $itemKey = 0;
-            if (method_exists($item, $method)) {
-                $itemKey = $item->$method();
-            }
-            $result[$itemKey][$id] = $item;
-        }
+        return $counts;
+    }
 
-        Episciences_Tools::multi_ksort($result);
-
-        if ($key === 'STATUS') {
-            uksort($result, self::statusCmp(...));
-        }
-
-
-        return $result;
+    /**
+     * Counts the papers of a review with a pending decision suggestion of the given type
+     *
+     * @param int $rvId Review id
+     * @param int $type Suggestion type (Episciences_CommentsManager::TYPE_SUGGESTION_*)
+     * @return int
+     */
+    public static function countPapersWithPendingSuggestions(int $rvId, int $type): int
+    {
+        return self::countPendingSuggestionsByType($rvId)[$type] ?? 0;
     }
 
     /**
@@ -2401,63 +2476,168 @@ class Episciences_PapersManager
     }
 
     /**
-     * delete a paper from datbase, and all associated files
+     * Delete a paper version from the database, with its files.
      * @param $docid
-     * @return bool
+     * @return bool false when the paper does not exist or the deletion failed
      */
     public static function delete($docid): bool
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $paper = Episciences_PapersManager::get($docid, false);
+        $paper = self::get($docid, false);
 
-        // get() returns false when the paper does not exist: bail out before purging
-        // anything rather than crashing on $paper->getPaperid() after 8 tables are gone.
         if (!$paper instanceof Episciences_Paper) {
             return false;
+        }
+
+        try {
+            self::deletePaper($paper);
+        } catch (Throwable $e) {
+            trigger_error(sprintf('Failed to delete paper #%s: %s', $docid, $e->getMessage()));
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Delete a paper version: every row belonging to it (VERSION_TABLES, assignments), the rows shared
+     * by every version (PAPER_TABLES) with the last version only, then its files.
+     * @throws Throwable when the database purge fails: it is rolled back, nothing is deleted
+     */
+    public static function deletePaper(Episciences_Paper $paper): void
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $docId = (int)$paper->getDocid();
+        $paperId = (int)$paper->getPaperid();
+
+        // Capture rvcode before deletion for Next.js cache revalidation
+        $rvcode = null;
+        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+        if ($journal !== false) {
+            $rvcode = $journal->getCode();
         }
 
         // Purge every table atomically: a failure mid-way must not leave the paper
         // half-deleted with dangling rows in the remaining tables.
         $db->beginTransaction();
         try {
-            Episciences_CommentsManager::deleteByDocid($docid);
-            Episciences_Mail_LogManager::deleteByDocid($docid);
+            $datasetsMetaIds = $db->fetchCol(
+                $db->select()
+                    ->distinct()
+                    ->from(T_PAPER_DATASETS, ['id_paper_datasets_meta'])
+                    ->where('doc_id = ?', $docId)
+                    ->where('id_paper_datasets_meta IS NOT NULL')
+            );
 
-            $db->delete(T_PAPER_VISITS, ['DOCID = ?' => $docid]);
-            $db->delete(VISITS_TEMP, ['DOCID = ?' => $docid]);
-            $db->delete(T_LOGS, ['DOCID = ?' => $docid]);
-            $db->delete(T_REVIEWER_REPORTS, ['DOCID = ?' => $docid]);
-            $db->delete(T_PAPER_SETTINGS, ['DOCID = ?' => $docid]);
-            $db->delete(T_ALIAS, ['DOCID = ?' => $docid]);
-            $db->delete(T_PAPERS, ['DOCID = ?' => $docid]);
-            $db->delete(T_VOLUME_PAPER, ['DOCID = ?' => $docid]);
-            $db->delete(T_PAPER_LICENCES, ['docid = ?' => $docid]);
-            $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
-            $db->delete(T_PAPER_PROJECTS, ['paperid = ?' => $paper->getPaperid()]);
+            foreach (self::VERSION_TABLES as $table => $column) {
+                $db->delete($table, ["$column = ?" => $docId]);
+            }
+            self::deleteOrphanDatasetsMeta($db, $datasetsMetaIds);
+            self::deleteAssignments($db, $docId);
+
+            if (!self::hasOtherVersions($db, $paperId)) {
+                foreach (self::PAPER_TABLES as $table => $column) {
+                    $db->delete($table, ["$column = ?" => $paperId]);
+                }
+            }
 
             $db->commit();
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $db->rollBack();
-            trigger_error(sprintf('Failed to delete paper #%s: %s', $docid, $e->getMessage()));
-            return false;
+            throw $e;
         }
+
+        Episciences_CommentsManager::getCachePool()->clear();
 
         // Filesystem and index cleanup happen only after the DB purge is committed
         // (they cannot participate in the transaction).
-        if (defined('RVCODE') && defined('REVIEW_FILES_PATH') && $docid) {
-            Episciences_Tools::deleteDir(self::buildDocumentPath($docid));
+        if (defined('RVCODE') && defined('REVIEW_FILES_PATH')) {
+            Episciences_Tools::deleteDir(self::buildDocumentPath($docId));
         }
 
         // remove from index
-        Ccsd_Search_Solr_Indexer::addToIndexQueue([$docid], 'episciences', 'DELETE', 'episciences');
+        try {
+            SolrIndexing::enqueueDelete($docId);
+        } catch (Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+        }
 
-        // TODO: delete user assignments
-        // TODO: delete user invitations
-        // TODO: delete user invitation answers
         // TODO: if published paper, update HAL metadata
 
-        return true;
+        // Enqueue Next.js cache revalidation for deleted article
+        if ($rvcode !== null) {
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "article-{$docId}",
+                "articles-{$rvcode}",
+            ]);
+        }
+    }
 
+    /**
+     * Delete the dataset metadata no dataset refers to anymore.
+     * @param array<int|string> $metaIds metadata of the deleted datasets
+     */
+    private static function deleteOrphanDatasetsMeta(Zend_Db_Adapter_Abstract $db, array $metaIds): void
+    {
+        if ($metaIds === []) {
+            return;
+        }
+
+        $stillUsed = $db->select()
+            ->from(T_PAPER_DATASETS, ['id_paper_datasets_meta'])
+            ->where('id_paper_datasets_meta IS NOT NULL');
+
+        $db->delete(T_PAPER_DATASETS_META, ['id IN (?)' => $metaIds, "id NOT IN ($stillUsed)"]);
+    }
+
+    /**
+     * Delete the assignments of a paper version (reviewers, editors, copy editors...),
+     * with the invitations hanging off them and their answers,
+     * and the temporary reviewers (without an account) no other assignment refers to.
+     */
+    private static function deleteAssignments(Zend_Db_Adapter_Abstract $db, int $docId): void
+    {
+        $assignments = $db->fetchAll(
+            $db->select()
+                ->from(T_ASSIGNMENTS, ['ID', 'UID', 'TMP_USER'])
+                ->where('ITEM = ?', Episciences_User_Assignment::ITEM_PAPER)
+                ->where('ITEMID = ?', $docId)
+        );
+
+        if ($assignments === []) {
+            return;
+        }
+
+        $assignmentIds = array_column($assignments, 'ID');
+        $tmpUserIds = array_unique(array_column(
+            array_filter($assignments, static fn(array $assignment): bool => (int)$assignment['TMP_USER'] === 1),
+            'UID'
+        ));
+
+        $invitationIds = $db->fetchCol(
+            $db->select()->from(T_USER_INVITATIONS, ['ID'])->where('AID IN (?)', $assignmentIds)
+        );
+
+        if ($invitationIds !== []) {
+            $db->delete(T_USER_INVITATION_ANSWER_DETAIL, ['ID IN (?)' => $invitationIds]);
+            $db->delete(T_USER_INVITATION_ANSWER, ['ID IN (?)' => $invitationIds]);
+            $db->delete(T_USER_INVITATIONS, ['ID IN (?)' => $invitationIds]);
+        }
+        $db->delete(T_ASSIGNMENTS, ['ID IN (?)' => $assignmentIds]);
+
+        if ($tmpUserIds !== []) {
+            $stillAssigned = $db->select()->from(T_ASSIGNMENTS, ['UID'])->where('TMP_USER = 1');
+            $db->delete(T_TMP_USER, ['ID IN (?)' => $tmpUserIds, "ID NOT IN ($stillAssigned)"]);
+        }
+    }
+
+    /**
+     * Whether another version of the paper is still in the database (to be called once the deleted version is gone).
+     */
+    private static function hasOtherVersions(Zend_Db_Adapter_Abstract $db, int $paperId): bool
+    {
+        return (bool)$db->fetchOne(
+            $db->select()->from(T_PAPERS, [new Zend_Db_Expr('1')])->where('PAPERID = ?', $paperId)->limit(1)
+        );
     }
 
     /**
@@ -2481,6 +2661,7 @@ class Episciences_PapersManager
         'VERSION',
         'REPOID',
         'TYPE',
+        'RECORD',
         'CONCEPT_IDENTIFIER',
         'FLAG',
         'WHEN',
@@ -3006,21 +3187,47 @@ class Episciences_PapersManager
     }
 
     /**
-     * renome l'identifiant d'un article
-     * @param $old
-     * @param $new
-     * @return bool|int
+     * Update the contributor (owner) of a paper across all versions.
+     *
+     * @param int $paperId The PAPERID (applies to all versions of the article)
+     * @param int $newUid  The UID of the new contributor
+     * @return bool True if at least one row was updated
      */
+    public static function updateContributor(int $paperId, int $newUid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $affectedRows = $db->update(
+            T_PAPERS,
+            [
+                'UID' => $newUid,
+                'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()')
+            ],
+            ['PAPERID = ?' => $paperId]
+        );
+        return $affectedRows > 0;
+    }
 
-    public static function renameIdentifier($old, $new)
+    /**
+     * Rename the identifier of the versions of a paper, in its journal only.
+     * The same document can be submitted to several journals, or as another paper: those are left untouched.
+     *
+     * @param string $old
+     * @param string $new
+     * @param int $paperId the paper whose versions are renamed
+     * @param int $rvId the journal of the paper
+     * @return bool|int the number of renamed rows, false on error
+     */
+    public static function renameIdentifier($old, $new, int $paperId, int $rvId)
     {
         try {
-            if (!is_string($old) || !is_string($new)) {
+            if (!is_string($old) || !is_string($new) || $paperId <= 0 || $rvId <= 0) {
                 return false;
             }
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $data['IDENTIFIER'] = $new;
-            $where['IDENTIFIER = ?'] = (string)$old;
+            $where['IDENTIFIER = ?'] = $old;
+            $where['PAPERID = ?'] = $paperId;
+            $where['RVID = ?'] = $rvId;
             return $db->update(T_PAPERS, $data, $where);
         } catch (Exception $e) {
             return false;
@@ -3189,7 +3396,7 @@ class Episciences_PapersManager
         Episciences_Paper $paper, array $context, int $affectedRows
     ): int
     {
-        if (Episciences_Repositories::hasHook($context['repoId'])) {
+        if (Episciences_Repositories::handlesOwnEnrichment((int)$context['repoId'])) {
             $hookData = Episciences_Repositories::callHook('hookLinkedDataProcessing', [
                 'repoId' => $context['repoId'],
                 'identifier' => $context['identifier'],
@@ -3560,6 +3767,20 @@ class Episciences_PapersManager
     }
 
     /**
+     * Move every version of a paper, in its journal, to a section
+     * @param int $paperId
+     * @param int $rvId
+     * @param int $sid 0 = no section
+     * @return int the number of updated rows
+     */
+    public static function updateSection(int $paperId, int $rvId, int $sid): int
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        return $db->update(T_PAPERS, ['SID' => $sid], ['PAPERID = ?' => $paperId, 'RVID = ?' => $rvId]);
+    }
+
+    /**
      * @param string $doi
      * @param int $paperId
      * @return int
@@ -3679,25 +3900,6 @@ class Episciences_PapersManager
             $strMail .= ";";
         }
         return $strMail;
-    }
-
-    /**
-     * @param $a
-     * @param $b
-     * @return int
-     */
-    private static function statusCmp($a, $b): int
-    {
-        $a = Episciences_Paper::$_statusOrder[$a];
-        $b = Episciences_Paper::$_statusOrder[$b];
-
-        if ($a === $b) {
-            $r = 0;
-        } else {
-            $r = ($a > $b) ? 1 : -1;
-        }
-
-        return $r;
     }
 
     /**
@@ -4182,6 +4384,161 @@ class Episciences_PapersManager
     }
 
     /**
+     * Is the decision-suggestion filter available in the current context?
+     *
+     * Editors' decision suggestions are confidential and only meaningful on the paper management
+     * lists. The other lists that share the filter form show the current user's own papers
+     * ("paper/submitted") or the papers they review ("paper/ratings"), where exposing the pending
+     * suggestion would be both pointless and a disclosure.
+     *
+     * Single source of truth for showing the form element (Episciences_View_Helper_PaperFilter)
+     * and for applying it to the query, so the two cannot drift apart.
+     *
+     * @return bool
+     */
+    public static function isSuggestionFilterAllowed(): bool
+    {
+        $request = Zend_Controller_Front::getInstance()->getRequest();
+
+        return $request !== null
+            && $request->getControllerName() === self::SUGGESTION_FILTER_CONTROLLER
+            && Episciences_Auth::isAllowedToManagePaper();
+    }
+
+    /**
+     * @param Zend_Db_Select $select
+     * @param array<int, int|string>|string $values
+     * @return Zend_Db_Select
+     */
+    private static function applySuggestionFilter(Zend_Db_Select $select, array|string $values): Zend_Db_Select
+    {
+        return $select->where(
+            'DOCID IN (?)',
+            self::getPapersWithPendingSuggestionQuery(self::sanitizeSuggestionTypes($values))
+        );
+    }
+
+    /**
+     * Turns raw filter input into a list of known suggestion types.
+     * Anything unknown is dropped, so an arbitrary PAPER_COMMENTS.TYPE cannot be filtered on.
+     *
+     * @param array<int, int|string>|string $values
+     * @return int[]
+     */
+    private static function sanitizeSuggestionTypes(array|string $values): array
+    {
+        $values = is_array($values) ? $values : [$values];
+
+        if (in_array(self::ANY_SUGGESTION_FILTER, $values, true)) {
+            return Episciences_CommentsManager::$suggestionTypes;
+        }
+
+        return array_values(
+            array_intersect(array_map('intval', $values), Episciences_CommentsManager::$suggestionTypes)
+        );
+    }
+
+    /**
+     * Papers of the current review with a pending decision suggestion (among $types)
+     *
+     * @param int[] $types
+     * @return Zend_Db_Select
+     */
+    private static function getPapersWithPendingSuggestionQuery(array $types): Zend_Db_Select
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        return $db->select()
+            ->from(['c' => T_PAPER_COMMENTS], ['DOCID'])
+            ->join(['p' => T_PAPERS], 'c.DOCID = p.DOCID', [])
+            ->where('p.RVID = ?', RVID)
+            ->where('p.STATUS NOT IN (?)', self::getFinalizedStatusForSuggestions())
+            ->where(self::getPendingSuggestionCondition($types));
+    }
+
+    /**
+     * SQL condition matching a pending suggestion of one of $types, each type carrying its own
+     * "already acted upon" status exclusions. Matches nothing when no known type is given.
+     *
+     * @param int[] $types
+     * @return string
+     */
+    private static function getPendingSuggestionCondition(array $types): string
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $conditions = [];
+        foreach ($types as $type) {
+            $condition = $db->quoteInto('c.TYPE = ?', $type);
+
+            $actedUponStatus = self::getActedUponStatusForSuggestionType($type);
+            if (!empty($actedUponStatus)) {
+                $condition .= ' AND ' . $db->quoteInto('p.STATUS NOT IN (?)', $actedUponStatus);
+            }
+
+            $conditions[] = "($condition)";
+        }
+
+        // No known suggestion type left: the filter must exclude everything, not match everything.
+        return empty($conditions) ? '1 = 0' : implode(' OR ', $conditions);
+    }
+
+    /**
+     * Statuses for which a decision suggestion is no longer "pending" (paper already finalized)
+     * @return int[]
+     */
+    private static function getFinalizedStatusForSuggestions(): array
+    {
+        return [
+            Episciences_Paper::STATUS_PUBLISHED,
+            Episciences_Paper::STATUS_REFUSED,
+            Episciences_Paper::STATUS_DELETED,
+            Episciences_Paper::STATUS_REMOVED,
+            Episciences_Paper::STATUS_OBSOLETE,
+            Episciences_Paper::STATUS_ABANDONED
+        ];
+    }
+
+    /**
+     * Statuses of a paper that has received an acceptance decision (Episciences_Paper::ACCEPTED_SUBMISSIONS
+     * plus the downstream validation/publication statuses it doesn't include)
+     * @return int[]
+     */
+    private static function getPostAcceptanceStatuses(): array
+    {
+        return array_merge(
+            Episciences_Paper::ACCEPTED_SUBMISSIONS,
+            [
+                Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
+                Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION
+            ]
+        );
+    }
+
+    /**
+     * Statuses indicating that a decision suggestion of the given type has already been acted upon.
+     *
+     * A suggestion stops being pending as soon as the editor in chief has taken a decision, whether
+     * that decision follows the suggestion or not: moving the paper past acceptance, or asking the
+     * author for revisions, settles all three suggestion types.
+     *
+     * @param int $type
+     * @return int[]
+     */
+    private static function getActedUponStatusForSuggestionType(int $type): array
+    {
+        return match ($type) {
+            Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
+            Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
+            Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION => array_merge(
+                [Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION, Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION],
+                self::getPostAcceptanceStatuses()
+            ),
+            default => [],
+        };
+    }
+
+    /**
      * @param int $rvId
      * @param int $limit
      * @return array
@@ -4364,16 +4721,18 @@ class Episciences_PapersManager
     /**
      * @param int $paperId
      * @param array $recipients
+     * @param int|null $rvId journal used for role checks; required in CLI where the RVID constant is not defined
+     * @param array|null $journalSettings settings of the journal; read from the registry ('reviewSettings') when null
      * @return void
      */
-    public static function keepOnlyUsersWithoutConflict(int $paperId, array &$recipients = []): void
+    public static function keepOnlyUsersWithoutConflict(int $paperId, array &$recipients = [], ?int $rvId = null, ?array $journalSettings = null): void
     {
 
         $isCoiEnabled = false;
 
 
         try {
-            $journalSettings = Zend_Registry::get('reviewSettings');
+            $journalSettings ??= Zend_Registry::get('reviewSettings');
             $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED]) && (int)$journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED] === 1;
         } catch (Zend_Exception $e) {
             trigger_error($e->getMessage());
@@ -4387,7 +4746,7 @@ class Episciences_PapersManager
 
             foreach ($recipients as $recipient) {
 
-                if ($recipient->hasOnlyAdministratorRole()) {
+                if ($recipient->hasOnlyAdministratorRole($rvId)) {
                     continue;
                 }
 
@@ -4421,17 +4780,30 @@ class Episciences_PapersManager
         return $db->fetchOne($select);
     }
 
-    public static function updateJsonDocumentData(int $docId): void
+    public static function updateJsonDocumentData(int $docId): bool
     {
+        $paper = self::get($docId, false);
+
+        if (!$paper) {
+            return false;
+        }
+
         try {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-            $paper = self::get($docId, false);
             $toJson = $paper->toJson();
             $str = sprintf('UPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', $db->quote($toJson), $docId);
             $db->query($str)->closeCursor();
         } catch (Zend_Db_Statement_Exception $e) {
             trigger_error($e->getMessage());
+            return false;
         }
+
+        // invalidate the getJsonV2 metadata cache entry (up to CACHE_EXPIRE_METADATA_PUBLISHED = 31 days)
+        // so callers going through Episciences_Paper::get('json', 2) don't keep serving the stale DOCUMENT
+        (new FilesystemAdapter(Episciences_Paper::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA))
+            ->deleteItem($paper->getPaperid() . '-getJsonV2');
+
+        return true;
     }
 
     /**
@@ -4515,11 +4887,9 @@ class Episciences_PapersManager
         }
 
         if (!empty($fileFound[0])) {
-            $fundingArray       = [];
             $globalfundingArray = [];
             $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB(
                 $fileFound,
-                $fundingArray,
                 $globalfundingArray
             );
             $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId(

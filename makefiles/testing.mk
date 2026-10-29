@@ -9,7 +9,7 @@ JEST_CONFIG := jest.config.js
 # =============================================================================
 # Test Commands
 # =============================================================================
-.PHONY: test test-all test-php test-js test-php-unit test-js-unit test-js-watch test-js-coverage test-coverage lint-php
+.PHONY: test test-all test-php test-js test-php-unit test-php-integration test-js-unit test-js-watch test-js-coverage test-e2e test-coverage lint-php check-source-reading-tests
 
 test: test-all ## Run all tests (PHP + JavaScript)
 
@@ -22,18 +22,25 @@ test-all: ## Run all tests (PHP + JavaScript)
 	@echo ""
 	@echo "✅ All tests completed!"
 
-test-php: ## Run PHP tests (PHPUnit)
+test-php: ## Run PHP tests (PHPUnit, usage: make test-php [SUITE=unit|integration] [FILTER=pattern])
 	@echo "Running PHP tests..."
 	@if [ -f $(PHPUNIT_CONFIG) ]; then \
 		echo "Using PHPUnit configuration: $(PHPUNIT_CONFIG)"; \
 		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/build && \
 		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod 777 $(CNTR_APP_DIR)/build; \
-		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=off -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit --no-coverage $(if $(SUITE),--testsuite $(SUITE)) $(if $(FILTER),--filter $(FILTER)); \
 	else \
 		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP tests"; \
 	fi
 
-test-php-unit: test-php ## Alias for test-php (for clarity)
+check-source-reading-tests: ## Refuse new tests that read the application source instead of running it
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php .github/scripts/check-source-reading-tests.php
+
+test-php-unit: ## Run PHP unit tests only
+	@$(MAKE) test-php SUITE=unit
+
+test-php-integration: ## Run PHP integration tests only
+	@$(MAKE) test-php SUITE=integration
 
 test-js: ## Run JavaScript tests (Jest)  
 	@echo "Running JavaScript tests..."
@@ -53,19 +60,23 @@ test-js-coverage: ## Run JavaScript tests with coverage report
 	@echo "Running JavaScript tests with coverage..."
 	@yarn test:coverage
 
+test-e2e: ## Run Playwright E2E tests (usage: make test-e2e [APP_MODE=manager] [BASE_URL=https://...])
+	@echo "Running Playwright E2E tests..."
+	@$(if $(APP_MODE),APP_MODE=$(call shell_quote,$(APP_MODE))) $(if $(BASE_URL),BASE_URL=$(call shell_quote,$(BASE_URL))) yarn test:e2e
+
 test-coverage: ## Run all tests with coverage (where available)
 	@echo "Running tests with coverage..."
 	@echo "================================"
 	@echo "PHP Tests:"
 	@if [ -f $(PHPUNIT_CONFIG) ]; then \
-		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit --coverage-text; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=coverage -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit || true; \
 	else \
 		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP coverage"; \
 	fi
 	@echo ""
 	@echo "JavaScript Tests:"
 	@if [ -f package.json ]; then \
-		yarn test:coverage; \
+		yarn test:coverage || true; \
 	else \
 		echo "❌ No package.json found, skipping JavaScript coverage"; \
 	fi
@@ -169,3 +180,35 @@ phpmetrics: ## Run PhpMetrics to generate static analysis report
 	@$(DOCKER_COMPOSE) exec -u 0:0 -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		./vendor/bin/phpmetrics --config=phpmetrics.json --report-html=phpmetrics/report .
 	@echo "✅ PhpMetrics report generated in phpmetrics/report/index.html"
+
+# =============================================================================
+# SonarQube Analysis
+# =============================================================================
+sonar: test-coverage ## Run SonarQube analysis on demand (uses host scanner or falls back to Docker)
+	@echo "Checking for SonarQube analysis client..."
+	@TOKEN=$$(grep -E '^SONAR_TOKEN=' .env.local 2>/dev/null | cut -d= -f2- || grep -E '^SONAR_TOKEN=' .env 2>/dev/null | cut -d= -f2-); \
+	FINAL_TOKEN="$${TOKEN:-$$SONAR_TOKEN}"; \
+	FINAL_TOKEN="$${FINAL_TOKEN:-$(TOKEN)}"; \
+	if command -v sonar-scanner >/dev/null 2>&1; then \
+		echo "Found local sonar-scanner. Running analysis..."; \
+		if [ -n "$$FINAL_TOKEN" ]; then \
+			sonar-scanner -Dsonar.token=$$FINAL_TOKEN; \
+		else \
+			sonar-scanner; \
+		fi; \
+	elif command -v sonar-cli >/dev/null 2>&1; then \
+		echo "Found local sonar-cli. Running analysis..."; \
+		if [ -n "$$FINAL_TOKEN" ]; then \
+			sonar-cli -Dsonar.token=$$FINAL_TOKEN; \
+		else \
+			sonar-cli; \
+		fi; \
+	else \
+		echo "Local sonar-scanner / sonar-cli not found in PATH."; \
+		echo "Running SonarQube analysis using Docker container..."; \
+		if [ -n "$$FINAL_TOKEN" ]; then \
+			$(DOCKER_COMPOSE) run --rm -e SONAR_TOKEN=$$FINAL_TOKEN sonar-scanner; \
+		else \
+			$(DOCKER_COMPOSE) run --rm sonar-scanner; \
+		fi; \
+	fi

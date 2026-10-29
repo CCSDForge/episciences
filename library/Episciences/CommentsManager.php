@@ -298,7 +298,8 @@ class Episciences_CommentsManager
             'validators' => array(
                 'Count' => array(false, 1),
                 'Extension' => array(false, $descriptions['extensions']),
-                'Size' => array(false, MAX_FILE_SIZE))));
+                'Size' => array(false, MAX_FILE_SIZE),
+                new Episciences_Form_Validate_MimeType())));
 
         if (!$modal) {
             $translator = Zend_Registry::get('Zend_Translate');
@@ -383,7 +384,8 @@ class Episciences_CommentsManager
                 'validators' => [
                     'Count' => [false, 1],
                     'Extension' => [false, $descriptions['extensions']],
-                    'Size' => [false, MAX_FILE_SIZE]
+                    'Size' => [false, MAX_FILE_SIZE],
+                    new Episciences_Form_Validate_MimeType()
                 ]
             ]);
 
@@ -442,7 +444,8 @@ class Episciences_CommentsManager
                 'validators' => [
                     'Count' => [false, 1],
                     'Extension' => [false, $descriptions['extensions']],
-                    'Size' => [false, MAX_FILE_SIZE]
+                    'Size' => [false, MAX_FILE_SIZE],
+                    new Episciences_Form_Validate_MimeType()
                 ]
             ]
         );
@@ -577,7 +580,8 @@ class Episciences_CommentsManager
                 'validators' => [
                     'Count' => [false, 1],
                     'Extension' => [false, $descriptions['extensions']],
-                    'Size' => [false, MAX_FILE_SIZE]
+                    'Size' => [false, MAX_FILE_SIZE],
+                    new Episciences_Form_Validate_MimeType()
                 ]
             ]);
 
@@ -915,19 +919,112 @@ class Episciences_CommentsManager
         $types = [];
 
         foreach ($db->fetchAll($select) as $row) {
-            // Several files are stored as a JSON list (author / editor exchanges), a single one as a plain name
-            $files = json_decode((string)$row['FILE'], true);
-
-            if (!is_array($files)) {
-                $files = [$row['FILE']];
-            }
-
-            if (in_array($file, $files, true)) {
+            if (in_array($file, self::attachedFiles((string)$row['FILE']), true)) {
                 $types[] = (int)$row['TYPE'];
             }
         }
 
         return array_values(array_unique($types));
+    }
+
+    /**
+     * The file is attached to an answer already saved with a temporary version, on one of these paper versions.
+     * The temporary versions directory of a paper is shared by its answers and by the uploads not submitted yet.
+     *
+     * @param int[] $docIds the versions of the paper: the answer is saved on the version it answers
+     */
+    public static function isTemporaryVersionAnswerAttachment(array $docIds, string $file): bool
+    {
+        if ($docIds === []) {
+            return false;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPER_COMMENTS, ['FILE'])
+            ->where('DOCID IN (?)', $docIds)
+            ->where('TYPE = ?', self::TYPE_REVISION_ANSWER_TMP_VERSION)
+            ->where('FILE IS NOT NULL')
+            ->where("FILE != ''");
+
+        foreach ($db->fetchCol($select) as $files) {
+            if (in_array($file, self::attachedFiles((string)$files), true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The comment is a copy-editing request on this paper version: the author's answer files are uploaded in its
+     * copy-editing directory before the answer is saved (see PaperController::saveAuthorFormattingAnswer())
+     *
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function isCopyEditingRequest(int $docId, int $pcId): bool
+    {
+        if ($docId <= 0 || $pcId <= 0) {
+            return false;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPER_COMMENTS, ['PCID'])
+            ->where('PCID = ?', $pcId)
+            ->where('DOCID = ?', $docId)
+            ->where('TYPE IN (?)', self::$_copyEditingRequestTypes);
+
+        return $db->fetchOne($select) !== false;
+    }
+
+    /**
+     * The file is attached to the copy-editing comment $pcId or to an answer to it, both kept in the copy-editing
+     * directory of $pcId (the answer's files are moved to its own directory once saved, see
+     * PaperController::saveAuthorFormattingAnswer())
+     *
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function isCopyEditingAttachment(int $docId, int $pcId, string $file): bool
+    {
+        return in_array($file, self::getCopyEditingAttachments($docId, $pcId), true);
+    }
+
+    /**
+     * Names of the files attached to the copy-editing comment $pcId and to its answers (see isCopyEditingAttachment())
+     *
+     * @return string[]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function getCopyEditingAttachments(int $docId, int $pcId): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPER_COMMENTS, ['FILE'])
+            ->where('DOCID = ?', $docId)
+            ->where('(PCID = ? OR PARENTID = ?)', $pcId)
+            ->where('FILE IS NOT NULL')
+            ->where("FILE != ''");
+
+        $names = [];
+
+        foreach ($db->fetchCol($select) as $files) {
+            $names[] = self::attachedFiles((string)$files);
+        }
+
+        return array_values(array_unique(array_filter(array_merge(...$names), 'is_string')));
+    }
+
+    /**
+     * Several files are stored as a JSON list (author / editor exchanges), a single one as a plain name
+     *
+     * @return array<int|string, mixed>
+     */
+    private static function attachedFiles(string $files): array
+    {
+        $decoded = json_decode($files, true);
+
+        return is_array($decoded) ? $decoded : [$files];
     }
 
     /**

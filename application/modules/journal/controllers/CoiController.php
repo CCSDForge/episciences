@@ -222,13 +222,17 @@ class CoiController extends PaperDefaultController
             $id = (int)$request->getPost('conflictId');
             $docId = (int)$request->getPost('docId');
 
-            $currentConflict = Episciences_Paper_ConflictsManager::findById($id);
             $respond = false;
 
             try {
 
+                // get() is scoped to the current journal (RVID)
                 $paper = Episciences_PapersManager::get($docId, false);
-                $respond = Episciences_Paper_ConflictsManager::deleteById($id);
+
+                if ($paper instanceof Episciences_Paper) {
+                    $currentConflict = Episciences_Paper_ConflictsManager::findById($id);
+                    $respond = Episciences_Paper_ConflictsManager::deleteByIdAndPaperId($id, $paper->getPaperid());
+                }
 
                 if ($respond) {
 

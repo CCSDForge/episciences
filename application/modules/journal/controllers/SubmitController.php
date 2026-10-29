@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\AppRegistry;
+use Episciences\Submit\SubmittedRecord;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
@@ -155,6 +157,17 @@ class SubmitController extends DefaultController
         array                        $post
     ): void
     {
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            // Keep what the user typed (uploaded files cannot be restored by the browser), but never
+            // echo back the rejected token, nor the posted record: the form must keep its fresh token
+            unset($post[Episciences_Submit::CSRF_TOKEN_ELEMENT_NAME], $post['xml']);
+            $form->populate($post);
+            $this->_helper->FlashMessenger
+                ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre article n'a pas été enregistré. Les informations saisies ont été conservées, merci de sélectionner à nouveau vos fichiers puis de valider le formulaire."));
+            return;
+        }
+
         $canReplace = (bool)$request->getPost('can_replace');
 
         Episciences_Submit::normalizeSubmissionParameters($post);
@@ -172,6 +185,24 @@ class SubmitController extends DefaultController
         }
 
         $formValues = $this->mergeFormValuesWithPost($form->getValues(), $post);
+
+        // Never trust the record (nor the concept identifier) posted by the form: use those of the searched document
+        $searchDoc = (array)($formValues['search_doc'] ?? []);
+        $document = SubmittedRecord::resolveDocument(
+            (string)($searchDoc['repoId'] ?? ''),
+            (string)($searchDoc['docId'] ?? ''),
+            (float)($searchDoc['version'] ?? 1),
+            ((int)($searchDoc['newVersionOf'] ?? 0)) ?: null
+        );
+
+        if ($document === null) {
+            $this->_helper->FlashMessenger
+                ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article."));
+            return;
+        }
+
+        $formValues = Episciences_Submit::applySubmittedDocument($formValues, $document);
 
         if ($canReplace) {
             [$result, $message] = $this->handlePaperReplacement($formValues);
@@ -267,20 +298,47 @@ class SubmitController extends DefaultController
      */
     private function handlePaperReplacement(array &$formValues): array
     {
+        // The previous paper is never described by the client: load it from the database,
+        // restricted to the current journal and to its owner.
+        $oldPaper = Episciences_PapersManager::get((int)($formValues['old_docid'] ?? 0), false);
 
-        $formValues['old_paper_status'] = (int)$formValues['old_paper_status'];
-        $formValues['old_version'] = (float)$formValues['old_version'];
-        $formValues['old_repoid'] = (int)$formValues['old_repoid'];
-        $formValues['old_docid'] = (int)$formValues['old_docid'];
+        if (!$oldPaper instanceof Episciences_Paper || $oldPaper->getRvid() !== RVID) {
+            $oldPaper = null;
+        }
 
-        $selfPaper = new Episciences_Paper([
-            'docid' => $formValues['old_docid'],
-            'identifier' => $formValues['old_identifier'] ?? '',
-            'version' => $formValues['old_version'],
-            'repoId' => $formValues['old_repoid'],
-            'status' => $formValues['old_paper_status'],
-            'concept_identifier' => $formValues['old_conceptIdentifier'] ?? null
-        ]);
+        $error = Episciences_Submit::getReplacementError(
+            $oldPaper,
+            $oldPaper?->isOwner() ?? false,
+            $this->canResubmitRefusedPaper()
+        );
+
+        if ($error !== null || $oldPaper === null) {
+            AppRegistry::getMonoLogger()?->warning('Paper replacement rejected', [
+                'old_docid' => $formValues['old_docid'] ?? null,
+                'uid' => Episciences_Auth::getUid(),
+                'reason' => $error,
+            ]);
+
+            $translator = Zend_Registry::get('Zend_Translate');
+            $result = ['code' => 0, 'message' => $translator->translate($error ?? Episciences_Submit::REPLACEMENT_ERROR_NOT_FOUND)];
+            return [$result, '<strong>' . $result['message'] . '</strong>'];
+        }
+
+        $formValues['old_docid'] = $oldPaper->getDocid();
+        $formValues['old_paperid'] = $oldPaper->getPaperid();
+        $formValues['old_paper_status'] = $oldPaper->getStatus();
+        $formValues['old_version'] = $oldPaper->getVersion();
+        $formValues['old_paper_vid'] = $oldPaper->getVid();
+        $formValues['old_paper_sid'] = $oldPaper->getSid();
+
+        // A paper replaced in place keeps its submission date, a resubmitted refused paper gets a new one
+        if ($oldPaper->canBeReplacedInPlace()) {
+            $formValues['old_submissiondate'] = $oldPaper->getSubmission_date();
+        } else {
+            unset($formValues['old_submissiondate']);
+        }
+
+        $selfPaper = $oldPaper;
 
         unset(
             $formValues['old_identifier'],
@@ -292,6 +350,16 @@ class SubmitController extends DefaultController
         $message = '<strong>' . $result['message'] . '</strong>';
 
         return [$result, $message];
+    }
+
+    /**
+     * Whether the current journal accepts a new submission of a refused paper.
+     */
+    private function canResubmitRefusedPaper(): bool
+    {
+        $settings = Zend_Registry::isRegistered('reviewSettings') ? (array)Zend_Registry::get('reviewSettings') : [];
+
+        return !empty($settings[Episciences_Review::SETTING_CAN_RESUBMIT_REFUSED_PAPER]);
     }
 
     /**
@@ -308,6 +376,9 @@ class SubmitController extends DefaultController
      */
     private function handleNewSubmission(Episciences_Submit $submit, array $formValues): array
     {
+        // Only a replaced paper provides a submission date
+        unset($formValues['old_submissiondate']);
+
         $result = $submit->saveDoc($formValues);
         $message = $result['message'];
 
@@ -436,18 +507,16 @@ class SubmitController extends DefaultController
      */
     private function prepareRecord(array $response, array $params): array
     {
-        $response['record'] = preg_replace('#xmlns="(.*)"#', '', $response['record']);
+        $response = SubmittedRecord::clean($response, (string)$params['repoId']);
 
-        if ($params['repoId'] === Episciences_Repositories::CWI_REPO_ID) {
-            $response['record'] = Episciences_Repositories_Common::checkAndCleanRecord($response['record']);
-        }
-
-        // Apply repository hook
-        $hookData = array_merge($response, ['repoId' => $params['repoId']]);
-        $hookResult = Episciences_Repositories::callHook('hookCleanXMLRecordInput', $hookData);
-        unset($hookResult['repoId']);
-
-        $response = !empty($hookResult) ? $hookResult : $response;
+        // The document stored at submission is this one, never the one posted back by the form,
+        // which identifies it with the identifier and version given by the repository (h_doc, h_version)
+        SubmittedRecord::remember(
+            (string)$params['repoId'],
+            (string)($response['hookId'] ?? $params['docId']),
+            (float)($response['hookVersion'] ?? $params['version']),
+            $response
+        );
 
         // Determine data display options
         $response['ddOptions'] = [
@@ -577,58 +646,59 @@ class SubmitController extends DefaultController
         return $cEditors;
     }
 
-    public function ajaxhashookAction()
+    public function ajaxhashookAction(): void
     {
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
+        $repoId = $this->ajaxRepositoryId();
 
-        if (!$request->isXmlHttpRequest() || !$request->isPost()) {
+        if ($repoId === null) {
             return;
         }
 
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
+        $isRequiredVersion = $repoId !== (int)Episciences_Repositories::CWI_REPO_ID
+            && Episciences_Repositories::isVersionRequired($repoId);
 
-        $repoId = (int)$request->get('repoId');
-        $hasHook = !empty(Episciences_Repositories::hasHook($repoId));
-
-        if ($repoId !== (int)Episciences_Repositories::CWI_REPO_ID) {
-
-            $isRequiredVersion = $hasHook ?
-                Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $repoId]) :
-                ['result' => true];
-
-        } else {
-            $isRequiredVersion = ['result' => false];
-
-        }
-
-        $response = ['hasHook' => $hasHook, 'isRequiredVersion' => $isRequiredVersion];
-
-        try {
-            echo json_encode($response, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            trigger_error($e->getMessage());
-        }
-
+        // Kept nested: public/js/submit/index.js reads isRequiredVersion.result
+        $this->echoJson(['isRequiredVersion' => ['result' => $isRequiredVersion]]);
     }
 
-    public function ajaxisdataverseAction()
+    public function ajaxisdataverseAction(): void
     {
+        $repoId = $this->ajaxRepositoryId();
+
+        if ($repoId !== null) {
+            $this->echoJson(['isDataverse' => Episciences_Repositories::isDataverse($repoId)]);
+        }
+    }
+
+    /**
+     * Disable the views of a repository AJAX action, which answers in JSON or not at all.
+     *
+     * @return int|null the posted repository, null when the request is not an AJAX POST
+     */
+    private function ajaxRepositoryId(): ?int
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
         if (!$request->isXmlHttpRequest() || !$request->isPost()) {
-            return;
+            return null;
         }
 
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
+        return (int)$request->get('repoId');
+    }
 
-        $repoId = (int)$request->get('repoId');
-
+    /**
+     * Echo $response as JSON: public/js/submit/index.js parses the response text itself.
+     *
+     * @param array<string, mixed> $response
+     */
+    private function echoJson(array $response): void
+    {
         try {
-            echo json_encode(['isDataverse' => Episciences_Repositories::isDataverse($repoId)], JSON_THROW_ON_ERROR);
+            echo json_encode($response, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             trigger_error($e->getMessage());
         }

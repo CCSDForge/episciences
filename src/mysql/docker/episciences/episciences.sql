@@ -712,7 +712,7 @@ CREATE TABLE `USER_INVITATION` (
                                    `ID` int UNSIGNED NOT NULL,
                                    `AID` int UNSIGNED NOT NULL COMMENT 'Assignment ID',
                                    `STATUS` varchar(50) NOT NULL DEFAULT 'pending',
-                                   `TOKEN` varchar(40) DEFAULT NULL,
+                                   `TOKEN` char(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Per-invitation random value for the link token; NULL = legacy invitation',
                                    `SENDER_UID` int UNSIGNED DEFAULT NULL,
                                    `SENDING_DATE` datetime NOT NULL,
                                    `EXPIRATION_DATE` datetime NOT NULL
@@ -801,7 +801,7 @@ CREATE TABLE `VOLUME` (
                           `descriptions` json DEFAULT NULL,
                           `vol_year` varchar(9) DEFAULT NULL,
                           `vol_type` set('special_issue','proceedings') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
-                          `vol_num` varchar(6) DEFAULT NULL
+                          `vol_num` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='Journal volumes';
 
 -- --------------------------------------------------------

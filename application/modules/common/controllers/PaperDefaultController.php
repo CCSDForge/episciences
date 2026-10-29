@@ -609,6 +609,8 @@ class PaperDefaultController extends DefaultController
                         try {
                             // Verify co-author is still valid before sending (race condition protection)
                             if (!$paper->isCoAuthorByUid($coAuthorUid)) {
+                                // A former co-author is not a recipient: do not expect a notification
+                                --$totalCoAuthorsToNotify;
                                 $logger?->info('Skipping notification to former co-author UID ' . $coAuthorUid);
                                 continue;
                             }
@@ -643,7 +645,7 @@ class PaperDefaultController extends DefaultController
                             }
 
                             // Send email to co-author using the dedicated co-author template
-                            Episciences_Mail_Send::sendMailFromReview(
+                            $coAuthorNotificationSent = Episciences_Mail_Send::sendMailFromReview(
                                 $coAuthor,
                                 Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_COAUTHOR_COPY,
                                 $coAuthorTags,
@@ -653,6 +655,12 @@ class PaperDefaultController extends DefaultController
                                 true,
                                 []
                             );
+
+                            if (!$coAuthorNotificationSent) {
+                                $logger?->warning('FAILED_TO_WRITE_AUTHOR_MESSAGE_NOTIFICATION_TO_COAUTHOR_UID_' . $coAuthorUid);
+                                continue;
+                            }
+
                             ++$nbNotifications;
                             ++$coAuthorsNotifiedCount;
                         } catch (Exception $e) {
@@ -667,12 +675,8 @@ class PaperDefaultController extends DefaultController
         }
 
         // For editor messages to authors, notify the author (main author + co-authors in CC)
-        $authorNotificationExpected = false;
+        $authorNotificationSent = false;
         if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
-            // The author notification is always expected for this comment type: if the author
-            // cannot be resolved, it must still count as a missed notification so the editor
-            // is warned instead of being told the message was delivered.
-            $authorNotificationExpected = true;
             try {
                 $parentCommentId = $oComment->getParentid();
                 $parentComment = null;
@@ -803,8 +807,9 @@ class PaperDefaultController extends DefaultController
         // - The author was notified
         // This handles the case where $recipients is empty (editor responding is the only assigned editor)
         if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
-            // Expected notifications: editors (if any) + author (not whether it succeeded, which would make the check always true)
-            $expectedNotifications = count($recipients) + ($authorNotificationExpected ? 1 : 0);
+            // Expected notifications: editors (if any) + the author, always expected:
+            // an unresolved author or an exception before the send is a failure, not a success
+            $expectedNotifications = count($recipients) + 1;
             return $nbNotifications === $expectedNotifications;
         }
 

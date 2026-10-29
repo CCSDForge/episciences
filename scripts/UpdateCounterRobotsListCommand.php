@@ -4,7 +4,9 @@ declare(strict_types=1);
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,10 +19,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Stores the plain-text list at COUNTER_ROBOTS_LIST_PATH for use by
  * ProcessStatTempCommand and BotDetector.
  */
+#[AsCommand(name: 'stats:update-robots-list', description: 'Download the COUNTER Robots list for bot detection')]
 class UpdateCounterRobotsListCommand extends Command
 {
-    protected static $defaultName = 'stats:update-robots-list';
-
     public const COUNTER_ROBOTS_URL =
         'https://raw.githubusercontent.com/atmire/COUNTER-Robots/master/generated/COUNTER_Robots_list.txt';
 
@@ -30,7 +31,6 @@ class UpdateCounterRobotsListCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Download the COUNTER Robots list for bot detection')
             ->addOption('force', null, InputOption::VALUE_NONE, 'Re-download even if the file is recent')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show what would be done without writing');
     }
@@ -46,10 +46,10 @@ class UpdateCounterRobotsListCommand extends Command
         $logger = new Logger('updateRobotsList');
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'updateRobotsList_' . date('Y-m-d') . '.log',
-            Logger::INFO
+            Level::Info
         ));
-        if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        if (!$io->isQuiet() && !$io->isSilent()) {
+            $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         $destPath = $this->buildDestinationPath();

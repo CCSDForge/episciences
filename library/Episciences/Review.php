@@ -10,6 +10,11 @@ class Episciences_Review
     public const STATUS_NOTVALID = 0;
     public const STATUS_VALID = 1;
     public const STATUS_REFUSED = 2;
+    /** Units accepted for the deadline settings (see the date/time relative formats of strtotime()) */
+    public const DEADLINE_UNITS = ['day', 'week', 'month'];
+    /** Upper bound of the numeric part of a deadline setting (keeps strtotime() computations sane) */
+    public const DEADLINE_VALUE_MAX = 999;
+
     public const DEFAULT_INVITATION_DEADLINE = '1 month';
     public const DEFAULT_RATING_DEADLINE = '2 month';
     public const DEFAULT_RATING_DEADLINE_MIN = '2 month';
@@ -49,6 +54,9 @@ class Episciences_Review
     public const COVER_LETTER_REQUIREMENT_DISABLED = 0;
     public const COVER_LETTER_REQUIREMENT_OPTIONAL = 1;
     public const COVER_LETTER_REQUIREMENT_REQUIRED = 2;
+    // Journal licenses (SPDX codes)
+    public const SETTING_LICENSE_DEFAULT = 'licenseDefault';
+    public const SETTING_LICENSES_ALLOWED = 'licensesAllowed';
 
     //const SETTING_EDITORS_CAN_MAKE_DECISIONS = 'editorsCanMakeDecisions';
     public const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
@@ -145,6 +153,8 @@ class Episciences_Review
         'refusedArticleAuthorsMsgSentToReviewers';
     public const SETTING_TO_REQUIRE_REVISION_DEADLINE = 'toRequireRevisionDeadline';
     public const SETTING_START_STATS_AFTER_DATE = 'startStatsAfterDate';
+    // Label displayed in place of the review code (RVCODE) in the subject/body of automatic emails
+    public const SETTING_MAIL_DISPLAY_CODE = 'mailDisplayCode';
 
     /** @var int */
     public static $_currentReviewId = null;
@@ -248,11 +258,15 @@ class Episciences_Review
             self::SETTING_DISPLAY_EMPTY_VOLUMES,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
             self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
+            self::SETTING_MAIL_DISPLAY_CODE,
+            self::SETTING_LICENSE_DEFAULT,
+            self::SETTING_LICENSES_ALLOWED,
         ];
 
 
         $this->_jsonSettings = [
             self::SETTING_REPOSITORIES,
+            self::SETTING_LICENSES_ALLOWED,
             self::SETTING_DOMAINS,
             self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
             self::SETTING_SYSTEM_NOTIFICATIONS,
@@ -645,15 +659,16 @@ class Episciences_Review
             return;
         }
 
-        if ($forceReload) {
-            $this->_settings = [];
-        }
+        // settings set in memory (setSetting(), setOptions()) win over the stored ones, unless reloading
+        $inMemorySettings = $forceReload ? [] : $this->_settings;
+        $this->_settings = [];
 
         // review configuration
         $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from(T_REVIEW_SETTINGS)->where('RVID = ?', $this->_rvid);
 
         $rows = Zend_Db_Table_Abstract::getDefaultAdapter()->fetchAll($select);
         $this->applySettingsFromRows($rows);
+        $this->_settings = array_replace($this->_settings, $inMemorySettings);
     }
 
     /**
@@ -683,12 +698,20 @@ class Episciences_Review
 
     /**
      * fetch review chief editors
-     * @return array
+     * As editors, they can be tagged (Episciences_Editor::TAG_CHIEF_EDITOR) when assigned automatically to a paper,
+     * so that the paper history shows why they were assigned
+     * @return Episciences_Editor[] indexed by UID
      * @throws Zend_Db_Statement_Exception
      */
     public static function getChiefEditors(): array
     {
-        return self::getUsers(Episciences_Acl::ROLE_CHIEF_EDITOR);
+        $chiefEditors = [];
+
+        foreach (self::getUsers(Episciences_Acl::ROLE_CHIEF_EDITOR) as $uid => $user) {
+            $chiefEditors[$uid] = new Episciences_Editor($user->toArray());
+        }
+
+        return $chiefEditors;
     }
 
     /**
@@ -726,6 +749,16 @@ class Episciences_Review
     public function getCode(): string
     {
         return $this->_code;
+    }
+
+    /**
+     * Code displayed in the subject/body of automatic emails: the review's custom
+     * mail display code (SETTING_MAIL_DISPLAY_CODE) if set, its own code otherwise.
+     */
+    public function getMailDisplayCode(): string
+    {
+        $customMailDisplayCode = trim((string)$this->getSetting(self::SETTING_MAIL_DISPLAY_CODE));
+        return $customMailDisplayCode !== '' ? $customMailDisplayCode : $this->getCode();
     }
 
     /**
@@ -971,6 +1004,22 @@ class Episciences_Review
     }
 
     /**
+     * Validators of the numeric part of a deadline setting (a positive integer, at most DEADLINE_VALUE_MAX, with a known unit)
+     *
+     * @param string $unitKey name of the posted field holding the unit
+     * @return array
+     */
+    private static function getDeadlineValueValidators(string $unitKey): array
+    {
+        return [
+            new \Episciences\Form\Validate\DeadlineUnit($unitKey),
+            ['Digits', true],
+            ['GreaterThan', true, ['min' => 0]],
+            ['LessThan', true, ['max' => self::DEADLINE_VALUE_MAX + 1]],
+        ];
+    }
+
+    /**
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
@@ -1068,6 +1117,14 @@ class Episciences_Review
             ]
         );
 
+        $form->addElement('text', self::SETTING_MAIL_DISPLAY_CODE, [
+                'label' => "Code affiché dans les courriels",
+                'description' => "Remplace le code de la revue dans le sujet et le corps des courriels automatiques. Laisser vide pour utiliser le code par défaut. 100 caractères maximum.",
+                'maxlength' => '100',
+                'validators' => [new Zend_Validate_StringLength(['max' => 100])]
+            ]
+        );
+
         $form->getElement(self::SETTING_ISSN)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_ISSN_PRINT)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_JOURNAL_DOI)->getDecorator('label')->setOption('class', 'col-md-2');
@@ -1080,9 +1137,10 @@ class Episciences_Review
         $form->getElement(self::SETTING_JOURNAL_DESCRIPTION)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_JOURNAL_KEYWORDS)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_JOURNAL_CREATION_YEAR)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_MAIL_DISPLAY_CODE)->getDecorator('label')->setOption('class', 'col-md-2');
 
         // display group: global settings
-        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, self::SETTING_JOURNAL_DESCRIPTION, self::SETTING_JOURNAL_KEYWORDS, self::SETTING_JOURNAL_CREATION_YEAR], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
+        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, self::SETTING_JOURNAL_DESCRIPTION, self::SETTING_JOURNAL_KEYWORDS, self::SETTING_JOURNAL_CREATION_YEAR, self::SETTING_MAIL_DISPLAY_CODE], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
         $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
 
         // publication settings **********************************************
@@ -1392,7 +1450,8 @@ class Episciences_Review
                 'label' => "Délai avant expiration d'une invitation",
                 'style' => 'width: 40px',
                 'required' => true,
-                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]]
+                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
+                'validators' => self::getDeadlineValueValidators(self::SETTING_INVITATION_DEADLINE_UNIT)
             ]
         );
 
@@ -1405,7 +1464,7 @@ class Episciences_Review
                 'style' => 'width: 40px',
                 'required' => true,
                 'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
-                'validators' => [new Episciences_Form_Validate_CheckDefaultRatingDeadline()]
+                'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_UNIT), [new Episciences_Form_Validate_CheckDefaultRatingDeadline()])
             ]
         );
 
@@ -1418,7 +1477,7 @@ class Episciences_Review
                 'style' => 'width: 40px',
                 'required' => true,
                 'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
-                'validators' => [new Episciences_Form_Validate_CheckMinimumDeadlineDelay()]
+                'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_MIN_UNIT), [new Episciences_Form_Validate_CheckMinimumDeadlineDelay()])
             ]
         );
 
@@ -1431,7 +1490,7 @@ class Episciences_Review
                 'style' => 'width: 40px',
                 'required' => true,
                 'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
-                'validators' => [new Episciences_Form_Validate_CheckMaximumDeadlineDelay()]
+                'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_MAX_UNIT), [new Episciences_Form_Validate_CheckMaximumDeadlineDelay()])
             ]
         );
 
@@ -1939,6 +1998,101 @@ class Episciences_Review
     }
 
     /**
+     * Journal licenses form (dedicated page: review/licenses)
+     */
+    public function licensesSettingsForm(): Ccsd_Form
+    {
+        $form = new Ccsd_Form();
+        $form->setAttrib('class', 'form-horizontal');
+        $form->getDecorator('FormRequired')->setOption('style', 'float: none;');
+
+        $licenses = \Episciences\Paper\Spdx\LicenseManager::fetchRecommendedOptions();
+
+        // the saved codes are always offered (and accepted on submit), even if they are not / no longer recommended;
+        // the labels are built by the licenseFormSelect helper
+        foreach (array_merge(array_filter([$this->getDefaultLicense()]), $this->getAllowedLicenses()) as $code) {
+            $licenses[$code] ??= $code;
+        }
+
+        $form->addElement('select', self::SETTING_LICENSE_DEFAULT, [
+                'label' => 'Licence par défaut',
+                'description' => "Pré-sélectionnée lors du choix de la licence d'un article qui n'en a pas encore",
+                'helper' => 'licenseFormSelect',
+                'class' => 'form-control',
+                'required' => true,
+                'multioptions' => ['' => Episciences_View_Helper_LicenseFormSelect::EMPTY_LABEL] + $licenses,
+            ]
+        );
+
+        $form->addElement('multiselect', self::SETTING_LICENSES_ALLOWED, [
+                'label' => 'Licences autorisées',
+                'description' => 'Aucune sélection : toutes les licences recommandées sont proposées.',
+                'helper' => 'licenseFormSelect',
+                'class' => 'form-control',
+                'size' => 10,
+                'multioptions' => $licenses,
+            ]
+        );
+
+        $form->getElement(self::SETTING_LICENSE_DEFAULT)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_LICENSES_ALLOWED)->getDecorator('label')->setOption('class', 'col-md-2');
+
+        $form->addDisplayGroup([
+            self::SETTING_LICENSE_DEFAULT,
+            self::SETTING_LICENSES_ALLOWED
+        ], 'licenses', ['legend' => 'Licences']);
+        $form->getDisplayGroup('licenses')->removeDecorator('DtDdWrapper');
+
+        $form->setActions(true)->createSubmitButton('submit', [
+                'label' => 'Enregistrer les paramètres',
+                'class' => 'btn btn-primary'
+            ]
+        );
+
+        return $form;
+    }
+
+    /**
+     * Save only the journal licenses settings (the other settings are left untouched)
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function saveLicenseSettings(): bool
+    {
+        return $this->upsertSettings([
+            self::SETTING_LICENSE_DEFAULT => (string)$this->getDefaultLicense(),
+            self::SETTING_LICENSES_ALLOWED => $this->getAllowedLicenses(),
+        ]);
+    }
+
+    /**
+     * SPDX code pre-selected for a paper without license
+     */
+    public function getDefaultLicense(): ?string
+    {
+        $code = trim((string)$this->getSetting(self::SETTING_LICENSE_DEFAULT));
+
+        return $code !== '' ? $code : null;
+    }
+
+    /**
+     * SPDX codes allowed by the journal; empty: no restriction.
+     * When the journal restricts the licenses, the default license is always one of them.
+     * @return string[]
+     */
+    public function getAllowedLicenses(): array
+    {
+        $allowed = $this->getSetting(self::SETTING_LICENSES_ALLOWED);
+        $allowed = \Episciences\Paper\Spdx\LicenseManager::normalizeCodes(is_array($allowed) ? $allowed : []);
+        $default = $this->getDefaultLicense();
+
+        if ($allowed !== [] && $default !== null && !\Episciences\Paper\Spdx\LicenseManager::containsCode($default, $allowed)) {
+            $allowed[] = $default;
+        }
+
+        return $allowed;
+    }
+
+    /**
      * Save review settings in DB
      * @return bool
      * @throws Zend_Db_Statement_Exception
@@ -1979,6 +2133,8 @@ class Episciences_Review
             $allSettings[$setting] = $this->getSetting($setting);
         }
 
+        $allSettings[self::SETTING_MAIL_DISPLAY_CODE] = trim(strip_tags((string)$this->getSetting(self::SETTING_MAIL_DISPLAY_CODE)));
+
         // Deadlines with units
         $deadlines = [
             self::SETTING_RATING_DEADLINE => self::SETTING_RATING_DEADLINE_UNIT,
@@ -2015,10 +2171,28 @@ class Episciences_Review
         $doiSettings = $this->getDoiSettings();
         $allSettings = array_merge($allSettings, $doiSettings->__toArray());
 
+        if (!$this->upsertSettings($allSettings)) {
+            return false;
+        }
+
+        $this->checkAndCreateIfNotExistsCryptoFile();
+
+        return true;
+    }
+
+    /**
+     * Insert or update the given review settings
+     * @param array<string, mixed> $settings setting => value (arrays are stored as JSON)
+     */
+    private function upsertSettings(array $settings): bool
+    {
+        if ($settings === []) {
+            return true;
+        }
+
         $values = [];
 
-        // Enregistrement des paramètres
-        foreach ($allSettings as $setting => $value) {
+        foreach ($settings as $setting => $value) {
             $setting = $this->_db->quote($setting);
             // Encode every array, including an empty one, so [] is stored as '[]' rather
             // than quoted to '' (which json_decode()s back to null on reload).
@@ -2036,13 +2210,7 @@ class Episciences_Review
         $sql .= implode(',', $values);
         $sql .= ' AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE';
 
-        if (!$this->_db->getConnection()?->query($sql)) {
-            return false;
-        }
-
-        $this->checkAndCreateIfNotExistsCryptoFile();
-
-        return true;
+        return (bool)$this->_db->getConnection()?->query($sql);
     }
 
     /**
@@ -2398,11 +2566,16 @@ class Episciences_Review
     }
 
     /**
-     * get review settings
+     * get review settings, loaded from the database when not loaded yet
+     * (settings set in memory, by setSetting() or setOptions(), are not replaced by the stored ones)
      * @return array
      */
     public function getSettings(): array
     {
+        if (!$this->_settingsLoaded) {
+            $this->loadSettings();
+        }
+
         return $this->_settings;
     }
 

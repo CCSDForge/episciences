@@ -1,8 +1,6 @@
 <?php
 
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\RotatingFileHandler;
-use Monolog\Logger;
+use Episciences\Log\LoggerFactory;
 
 /**
  * Adapter Zend_Auth for authentication via LemonLDAP using the CAS protocol
@@ -50,12 +48,7 @@ class Episciences_Auth_Adapter_LmLDAP_Protocol_Cas extends Ccsd_Auth_Adapter_Cas
             $logPath = LEMON_LDAP_SERVICE_LOG_PATH;
         }
 
-        $casLogger = new Logger('lmCASLogger');
-        $handler = new RotatingFileHandler($logPath, 0, Logger::DEBUG, true, 0664);
-
-        $formatter = new LineFormatter(null, null, false, true);
-        $handler->setFormatter($formatter);
-        $casLogger->pushHandler($handler);
+        $casLogger = LoggerFactory::rotating('lmCASLogger', $logPath);
 
         phpCAS::setLogger($casLogger);
 

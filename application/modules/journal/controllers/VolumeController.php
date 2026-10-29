@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Upload\UploadChecker;
+
 class VolumeController extends Zend_Controller_Action
 {
     public const JSON_MIMETYPE = 'application/json';
@@ -46,7 +48,10 @@ class VolumeController extends Zend_Controller_Action
         }
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
 
-            if ($form->isValid($request->getPost())) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($request->getPost())) {
 
                 $oVolume = new Episciences_Volume();
 
@@ -71,7 +76,7 @@ class VolumeController extends Zend_Controller_Action
 
                 $this->_helper->redirector('index', 'volume');
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
             }
@@ -105,32 +110,41 @@ class VolumeController extends Zend_Controller_Action
     {
         $request = $this->getRequest();
 
-        $params = $request->getPost('params');
-        $id = (int) $params['id'] ?? $request->getQuery('id');
+        if ($request->isPost() && Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $params = $request->getPost('params');
+            $id = (int) $params['id'] ?? $request->getQuery('id');
 
-        $respond = Episciences_VolumesManager::delete($id);
+            // Only volumes of the current journal can be deleted
+            $respond = Episciences_VolumesManager::find($id, RVID) ? Episciences_VolumesManager::delete($id) : false;
+        } else {
+            // Shown by the delete button as the reason of the failure
+            $respond = $this->view->translate('Votre session a expiré, veuillez réessayer.');
+        }
+
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
     }
 
     /**
-     * @return false|void
+     * @return void
      * @throws Zend_Db_Adapter_Exception
      */
     public function sortAction()
     {
         $request = $this->getRequest();
-        if (!$request->isXmlHttpRequest()) {
-            return false;
+        $this->_helper->viewRenderer->setNoRender();
+        $this->_helper->getHelper('layout')->disableLayout();
+
+        if (!$request->isXmlHttpRequest() || !$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
         }
 
         $params = $request->getPost();
         $params['rvid'] = RVID;
 
         Episciences_VolumesAndSectionsManager::sort($params);
-        $this->_helper->viewRenderer->setNoRender();
-        $this->_helper->getHelper('layout')->disableLayout();
     }
 
     // Affiche le formulaire d'assignation de rédacteurs à un volume
@@ -149,7 +163,12 @@ class VolumeController extends Zend_Controller_Action
             return false;
         }
 
-        $volume = Episciences_VolumesManager::find($vid);
+        $volume = Episciences_VolumesManager::find($vid, RVID);
+        if (!$volume) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return false;
+        }
         $currentEditors = $volume->getEditors();
         $formData = Episciences_VolumesManager::getEditorsForm($currentEditors);
 
@@ -174,14 +193,17 @@ class VolumeController extends Zend_Controller_Action
         $request = $this->getRequest();
         $vid = ($request->getPost('vid')) ? $request->getPost('vid') : $request->getParam('vid');
 
-        if ($request->isPost()) {
+        if ($request->isPost() && Episciences_Csrf_Helper::validateRequestToken($request)) {
 
             // Rédacteurs nouvellement assignés
             $submittedEditors = $request->getPost('editors');
             $editors = ($submittedEditors) ? array_map('intval', $submittedEditors) : [];
 
             // Rédacteurs déjà assignés
-            $volume = Episciences_VolumesManager::find($vid);
+            $volume = Episciences_VolumesManager::find($vid, RVID);
+            if (!$volume) {
+                return;
+            }
             $currentEditors = ($volume->getEditors()) ? array_keys($volume->getEditors()) : [];
 
             // Tri des rédacteurs ajoutés des rédacteurs supprimés
@@ -216,7 +238,12 @@ class VolumeController extends Zend_Controller_Action
         $params = $request->getPost();
         $vid = $params['vid'];
 
-        $volume = Episciences_VolumesManager::find($vid);
+        $volume = Episciences_VolumesManager::find($vid, RVID);
+        if (!$volume) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
         $editors = $volume->getEditors();
 
         $this->view->editors = $editors;
@@ -242,6 +269,19 @@ class VolumeController extends Zend_Controller_Action
 
         $upload = new Zend_File_Transfer_Adapter_Http();
         $file = $upload->getFileInfo();
+
+        $error = UploadChecker::firstPublicFileError(
+            (string)($file[0]['tmp_name'] ?? ''),
+            (string)($file[0]['name'] ?? ''),
+            (int)($file[0]['error'] ?? UPLOAD_ERR_NO_FILE)
+        );
+
+        if ($error !== null) {
+            $this->getResponse()->setHttpResponseCode(422);
+            echo Zend_Json::encode(['error' => 1, 'message' => $error]);
+            return;
+        }
+
         $response = ['file' => $file[0]];
         $newpath = tempnam(REVIEW_TMP_PATH, 'md_');
         if (!rename($file[0]['tmp_name'], $newpath)) {
@@ -267,7 +307,7 @@ class VolumeController extends Zend_Controller_Action
         }
 
         if (!$errorMessage) {
-            $volume = Episciences_VolumesManager::find($vid);
+            $volume = Episciences_VolumesManager::find($vid, RVID);
             if (!$volume) {
                 $errorMessage = "Ce volume n'existe pas.";
             } else {
@@ -339,7 +379,7 @@ class VolumeController extends Zend_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $vid = (int)$request->getParam('id');
-        $docId = $request->getParam('docid');
+        $docId = (int)$request->getParam('docid');
         $from = $request->getParam('from');
 
         if (!empty($from) && $from === 'view' && !empty($docId)) {
@@ -429,7 +469,10 @@ class VolumeController extends Zend_Controller_Action
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
             $post = $request->getPost();
 
-            if ($form->isValid($post)) {
+            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+
+            // A refused request does not fill the form: its values may come from another site
+            if ($isTokenValid && $form->isValid($post)) {
                 // Backend protection: Restore original titles if volume has published papers
                 if ($hasPublishedPapers) {
                     $originalTitles = $volume->getTitles();
@@ -462,6 +505,19 @@ class VolumeController extends Zend_Controller_Action
                 if ($resVol) {
                     $message = '<strong>' . $this->view->translate("Vos modifications ont bien été prises en compte.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+
+                    if ($volumeHasPublishedPapers) {
+                        $publishedPapers = Episciences_PapersManager::getList(
+                            ['is' => ['vid' => $vid, 'status' => Episciences_Paper::STATUS_PUBLISHED]]
+                        );
+                        foreach ($publishedPapers as $publishedPaper) {
+                            try {
+                                \Episciences\Solr\Indexing\Enqueue\SolrIndexing::enqueueIndex($publishedPaper->getDocid());
+                            } catch (Exception $e) {
+                                trigger_error($e->getMessage());
+                            }
+                        }
+                    }
                 } else {
                     $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
@@ -470,7 +526,7 @@ class VolumeController extends Zend_Controller_Action
                 $this->_helper->redirector->gotoUrl($referer);
 
             } else {
-                $message = '<strong>' . $this->view->translate("Ce formulaire comporte des erreurs.") . '</strong>';
+                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }

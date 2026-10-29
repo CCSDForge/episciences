@@ -15,7 +15,6 @@ parameters:
 		- logs (?)
 		- tmp (?)
 		- vendor (?)
-		- application/resources (?)
 		- application/languages/en/Zend.php
 		- application/languages/fr/Zend.php
 	ignoreErrors:

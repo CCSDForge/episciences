@@ -3,9 +3,12 @@ declare(strict_types=1);
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,16 +20,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/getZbReviews.php (JournalScript)
  */
+#[AsCommand(name: 'enrichment:zb-reviews', description: 'Discover and store zbMATH Open reviews for published papers')]
 class GetZbReviewsCommand extends Command
 {
-    protected static $defaultName = 'enrichment:zb-reviews';
     private const ONE_MONTH = 3600 * 24 * 31;
     private const ZB_MATH_BASE_URL = 'https://zbmath.org/';
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Discover and store zbMATH Open reviews for published papers')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }
@@ -41,10 +43,12 @@ class GetZbReviewsCommand extends Command
 
         $logger = new Logger('zbReviews');
         $logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . 'zbReviews_' . date('Y-m-d') . '.log', Logger::INFO
+            EPISCIENCES_LOG_PATH . 'zbReviews_' . date('Y-m-d') . '.log', Level::Info
         ));
-        if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        $stdoutHandler = null;
+        if (!$io->isQuiet() && !$io->isSilent()) {
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
+            $logger->pushHandler($stdoutHandler);
         }
         if ($dryRun) {
             $io->note('Dry-run mode enabled — no data will be written.');
@@ -77,7 +81,9 @@ class GetZbReviewsCommand extends Command
         $papers = $db->fetchAll($select);
 
         $logger->info('Starting zbMATH reviews discovery for ' . count($papers) . ' papers');
-        $io->progressStart(count($papers));
+        $progressBar = $io->createProgressBar(count($papers));
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         foreach ($papers as $row) {
             $doi   = $row['DOI'];
@@ -108,10 +114,12 @@ class GetZbReviewsCommand extends Command
             } catch (\Throwable $e) {
                 $logger->error("zbMATH review error for DOI {$doi}: " . $e->getMessage());
             }
-            $io->progressAdvance();
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('zbMATH Open reviews discovery completed.');
         return Command::SUCCESS;
     }

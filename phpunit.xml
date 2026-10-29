@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- https://phpunit.readthedocs.io/fr/latest/configuration.html s-->
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" backupGlobals="false" colors="true" bootstrap="tests/bootstrap.php" cacheResult="false" cacheDirectory=".phpunit.cache">
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" backupGlobals="false" colors="true" bootstrap="tests/bootstrap.php" cacheResult="true" cacheDirectory=".phpunit.cache">
   <php>
     <ini name="display_errors" value="1"/>
     <ini name="error_reporting" value="-1"/>
@@ -11,8 +11,11 @@
     <env name="SYMFONY_DEPRECATIONS_HELPER" value="disabled"/>
   </php>
   <testsuites>
-    <testsuite name="Project Test Suite">
-      <directory>tests</directory>
+    <testsuite name="unit">
+      <directory>tests/unit</directory>
+    </testsuite>
+    <testsuite name="integration">
+      <directory>tests/integration</directory>
     </testsuite>
   </testsuites>
   <!--
@@ -23,14 +26,21 @@
   -->
   <source>
     <include>
-      <directory>application</directory>
-      <directory>library</directory>
-      <directory>scripts</directory>
+      <directory suffix=".php">application</directory>
+      <directory suffix=".php">library</directory>
+      <directory suffix=".php">scripts</directory>
+      <directory suffix=".php">src</directory>
     </include>
   </source>
   <logging>
     <junit outputFile="build/junit.xml"/>
   </logging>
+  <coverage>
+    <report>
+      <clover outputFile="build/coverage.xml"/>
+      <text outputFile="php://stdout" showOnlySummary="true"/>
+    </report>
+  </coverage>
   <!-- Run `composer require symfony/panther` before enabling this extension -->
   <!--
     <extensions>

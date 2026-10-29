@@ -55,8 +55,23 @@ class Episciences_ToolsTest extends TestCase
     /**
      * Regression S5: $fileName from JSON payload injected into href and link text
      * without encoding — allows XSS and path traversal.
-     * The fix uses urlencode() for the href and htmlspecialchars() for the display text.
+     * The fix encodes the file name in the href (buildTmpFileUrl(), see testBuildTmpFileUrl*()) and uses
+     * htmlspecialchars() for the href and the display text.
      */
+    public function testBuildTmpFileUrlLinksWithThePaperId(): void
+    {
+        self::assertSame('/tmp_files/10/answer.pdf', Episciences_Tools::buildTmpFileUrl(10, 'answer.pdf'));
+    }
+
+    public function testBuildTmpFileUrlEncodesTheFileNameAsAPathSegment(): void
+    {
+        // A space is "%20", not "+"; "#", "?", "%" and quotes do not end or alter the link
+        self::assertSame(
+            '/tmp_files/10/r%C3%A9ponse%20%232%3F%25%22.pdf',
+            Episciences_Tools::buildTmpFileUrl(10, 'réponse #2?%".pdf')
+        );
+    }
+
     public function testBuildHtmlTmpDocUrlsEscapesFileName(): void
     {
         $method = new ReflectionMethod(Episciences_Tools::class, 'buildHtmlTmpDocUrls');
@@ -64,9 +79,9 @@ class Episciences_ToolsTest extends TestCase
         $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
 
         self::assertStringContainsString(
-            'urlencode($fileName)',
+            'self::buildTmpFileUrl(',
             $source,
-            'Security S5: $fileName must be urlencode()d in the href attribute'
+            'Security S5: $fileName must be encoded by buildTmpFileUrl() in the href attribute'
         );
         self::assertMatchesRegularExpression(
             '/htmlspecialchars\s*\(\s*\$href/',
@@ -79,6 +94,7 @@ class Episciences_ToolsTest extends TestCase
             'Security S5: $fileName must be escaped with htmlspecialchars() in the link text'
         );
     }
+
 
     private function makeAttachmentSandbox(): array
     {
@@ -227,6 +243,62 @@ class Episciences_ToolsTest extends TestCase
         [$root, $base] = $this->makeAttachmentSandbox();
         try {
             self::assertSame(['é.txt'], Episciences_Tools::filterAttachmentNames($base, [3 => '../secret.txt', 7 => 'é.txt']));
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    /**
+     * An empty name (upload failed client side) or a name with no stored file (upload failed server side)
+     * must be reported, so that a tmp version is not recorded without the files its author attached.
+     */
+    public function testRejectedAttachmentNamesReportsMissingAndEmptyNames(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            self::assertSame(
+                ['', 'nonexistent.pdf', '../secret.txt'],
+                Episciences_Tools::rejectedAttachmentNames($base, [3 => 'report 1.pdf', 4 => '', 5 => 'nonexistent.pdf', 6 => 'é.txt', 7 => '../secret.txt'])
+            );
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    public function testRejectedAttachmentNamesIsEmptyWhenEveryFileIsStoredOrNoFileIsAttached(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            self::assertSame([], Episciences_Tools::rejectedAttachmentNames($base, ['report 1.pdf', 'é.txt']));
+            self::assertSame([], Episciences_Tools::rejectedAttachmentNames($base, []));
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    public function testFilenameRotateKeepsAFreeName(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            self::assertSame('sources.zip', Episciences_Tools::filenameRotate($base, 'sources.zip'));
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    /**
+     * A reserved name (e.g. a file of a saved copy-editing answer, moved out of the directory) is avoided as if it
+     * were stored in the directory
+     */
+    public function testFilenameRotateAvoidsStoredAndReservedNames(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            self::assertSame('report 1_1.pdf', Episciences_Tools::filenameRotate($base, 'report 1.pdf'));
+            self::assertSame(
+                'sources_2.zip',
+                Episciences_Tools::filenameRotate($base, 'sources.zip', ['sources.zip', 'sources_1.zip'])
+            );
         } finally {
             $this->removeSandbox($root);
         }

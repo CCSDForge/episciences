@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences\Files\UploadedFileToken;
+use Episciences\Security\AccessLog;
 use Episciences_Acl;
 use Episciences_Paper;
 use Episciences_Review;
@@ -13,6 +15,9 @@ use RuntimeException;
 use Zend_Auth;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * FileController::tmpAction(): the files of the temporary versions, stored by paper, are only given to the
@@ -22,7 +27,9 @@ use Zend_Controller_Response_HttpTestCase;
  */
 final class FileControllerTemporaryVersionFileTest extends TestCase
 {
-    private const UID = 4242;
+    use SecurityLogCaptureTrait;
+
+    public const UID = 4242;
     private const PAPERID = 12;
 
     /** Conflict of interest answer of the logged user, read by the controller under test */
@@ -178,6 +185,36 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
         self::assertSame([], $delivered);
     }
 
+    /**
+     * Reading is refused with a "not found", logged as such
+     */
+    public function testReadingRefusalIsLoggedAsAMaskedNotFound(): void
+    {
+        $this->logInAs();
+
+        $this->runTmpAction([$this->version()]);
+
+        self::assertSame([[AccessLog::NOT_FOUND_MASKED, 'temporary_version_file_access']], $this->loggedEvents());
+    }
+
+    /**
+     * Without file name nor extension, the request is broken: refused, but not logged as an unsafe path
+     */
+    public function testEmptyFileNameIsRefusedWithoutBeingLogged(): void
+    {
+        $this->logInAs();
+
+        [$code, $delivered, $lookedUp] = $this->runTmpAction(
+            [$this->version(['author' => true])],
+            ['filename' => '', 'extension' => '']
+        );
+
+        self::assertSame(404, $code);
+        self::assertSame([], $delivered);
+        self::assertSame([], $lookedUp);
+        self::assertSame([], $this->loggedEvents());
+    }
+
     public function testReviewerOfTheTemporaryVersionOnlyIsAllowed(): void
     {
         $this->logInAs([Episciences_Acl::ROLE_REVIEWER]);
@@ -253,5 +290,314 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
         self::assertSame(404, $code);
         self::assertSame([], $delivered);
         self::assertSame([], $lookedUp);
+    }
+
+    /**
+     * Upload and removal of the files of the temporary versions: the paper id resolved once
+     * (FileController::resolvePaperId()), then FileController::isAllowedToHandleDocumentFiles(), as uploadAction()
+     * and deleteAction() do
+     *
+     * @param Episciences_Paper[] $versions
+     * @param Episciences_Paper|RuntimeException|false|null $version the version of the docId: by default one of
+     *                                                               the paper, false when it is not found
+     * @return array{bool, list<int>} access granted, paper ids looked up
+     */
+    private function runHandleCheck(
+        array $versions,
+        int $docId,
+        int $paperId,
+        Episciences_Paper|RuntimeException|false|null $version = null
+    ): array
+    {
+        $journal = $this->createMock(Episciences_Review::class);
+        $journal->method('getSettings')->willReturn([]);
+
+        if ($version === null) {
+            $version = $this->versionOfDocId(self::PAPERID, $docId);
+        }
+
+        $controller = new class (
+            new Zend_Controller_Request_HttpTestCase(),
+            new Zend_Controller_Response_HttpTestCase(),
+            ['versions' => $versions, 'journal' => $journal, 'version' => $version]
+        ) extends \FileController {
+            /** @var list<int> */
+            public array $lookedUp = [];
+
+            public function check(int $docId, int $paperId): bool
+            {
+                $paperId = $this->resolvePaperId($docId, $paperId);
+
+                return $paperId !== null && $this->isAllowedToHandleDocumentFiles('tmp_attachments', $docId, $paperId);
+            }
+
+            protected function findPaper(int $docId): ?Episciences_Paper
+            {
+                $version = $this->getInvokeArg('version');
+                if ($version instanceof RuntimeException) {
+                    throw $version;
+                }
+
+                return $version ?: null;
+            }
+
+            protected function findPaperVersions(int $paperId): array
+            {
+                $this->lookedUp[] = $paperId;
+                return $this->getInvokeArg('versions');
+            }
+
+            protected function findJournal(): Episciences_Review
+            {
+                return $this->getInvokeArg('journal');
+            }
+
+            public static function isConflictDetected(Episciences_Paper $paper, Episciences_Review $journal = null): bool
+            {
+                FileControllerTemporaryVersionFileTest::$conflictLookups++;
+                return FileControllerTemporaryVersionFileTest::$hasConflict;
+            }
+        };
+
+        return [$controller->check($docId, $paperId), $controller->lookedUp];
+    }
+
+    public function testAuthorCanHandleTheTemporaryVersionFiles(): void
+    {
+        $this->logInAs();
+
+        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 15, self::PAPERID);
+
+        self::assertTrue($allowed);
+        self::assertSame([self::PAPERID], $lookedUp);
+    }
+
+    public function testReviewerCannotHandleTheTemporaryVersionFiles(): void
+    {
+        // Reads the author's answer (see testReviewerOfTheTemporaryVersionOnlyIsAllowed()), but must not alter it
+        $this->logInAs([Episciences_Acl::ROLE_REVIEWER]);
+
+        [$allowed] = $this->runHandleCheck([$this->version(), $this->version(['reviewer' => true])], 15, self::PAPERID);
+
+        self::assertFalse($allowed);
+        // Upload and removal answer 403, not a masked "not found"
+        self::assertSame([[AccessLog::HTTP_FORBIDDEN, 'temporary_version_file_write']], $this->loggedEvents());
+    }
+
+    public function testAssignedEditorCanHandleTheTemporaryVersionFiles(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+
+        [$allowed] = $this->runHandleCheck([$this->version(['assigned' => true])], 15, self::PAPERID);
+
+        self::assertTrue($allowed);
+    }
+
+    public function testUnassignedEditorCannotHandleTheTemporaryVersionFiles(): void
+    {
+        // Allowed to manage the papers of the journal, but encapsulated and not assigned to this one
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+
+        [$allowed] = $this->runHandleCheck([$this->version()], 15, self::PAPERID);
+
+        self::assertFalse($allowed);
+    }
+
+    public function testEditorInConflictOfInterestCannotHandleTheTemporaryVersionFiles(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+        self::$hasConflict = true;
+
+        [$allowed] = $this->runHandleCheck([$this->version(['assigned' => true])], 15, self::PAPERID);
+
+        self::assertFalse($allowed);
+    }
+
+    /**
+     * Version loaded for the docId given (see FileController::resolvePaperId())
+     */
+    private function versionOfDocId(int $paperId, int $docId): Episciences_Paper
+    {
+        $version = $this->createMock(Episciences_Paper::class);
+        $version->method('getPaperid')->willReturn($paperId);
+        $version->method('getDocid')->willReturn($docId);
+
+        return $version;
+    }
+
+    public function testPaperIdIsTakenFromTheVersionWhenOnlyTheDocIdIsGiven(): void
+    {
+        $this->logInAs();
+
+        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 15, 0);
+
+        self::assertTrue($allowed);
+        self::assertSame([self::PAPERID], $lookedUp);
+    }
+
+    public function testPaperIdOfAnotherPaperThanTheVersionIsRefused(): void
+    {
+        // Allowed on the paper of the version: the paper id given must not point the files elsewhere
+        $this->logInAs();
+
+        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 15, 555);
+
+        self::assertFalse($allowed);
+        self::assertSame([], $lookedUp);
+    }
+
+    public function testVersionOfTheDocIdNotFoundIsRefused(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+
+        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 15, self::PAPERID, false);
+
+        self::assertFalse($allowed);
+        self::assertSame([], $lookedUp);
+    }
+
+    public function testVersionWithoutPaperIdFallsBackToItsDocId(): void
+    {
+        // As the save paths of the temporary versions do (getPaperid() ?: docId)
+        $this->logInAs();
+
+        [$allowed, $lookedUp] = $this->runHandleCheck(
+            [$this->version(['author' => true])],
+            15,
+            15,
+            $this->versionOfDocId(0, 15)
+        );
+
+        self::assertTrue($allowed);
+        self::assertSame([15], $lookedUp);
+    }
+
+    public function testFailureWhileLoadingTheVersionOfTheDocIdIsRefused(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+
+        [$allowed, $lookedUp] = $this->runHandleCheck(
+            [$this->version(['author' => true])],
+            15,
+            0,
+            new RuntimeException('Database unavailable')
+        );
+
+        self::assertFalse($allowed);
+        self::assertSame([], $lookedUp);
+    }
+
+    public function testTemporaryVersionFilesWithoutPaperAreRefused(): void
+    {
+        // Not the session-scoped attachments directory: the files would be written in a "0/tmp/" directory
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+
+        [$allowed, $lookedUp] = $this->runHandleCheck([$this->version(['author' => true])], 0, 0);
+
+        self::assertFalse($allowed);
+        self::assertSame([], $lookedUp);
+    }
+
+    /**
+     * FileController::deleteAction() on the temporary versions directory, for a user allowed to handle its files
+     *
+     * @return array{int, list<array{int, string}>} HTTP response code, submitted files looked up
+     */
+    private function runDeleteAction(bool $isSubmitted): array
+    {
+        \Zend_Session::$_unitTestEnabled = true;
+        $session = new \Zend_Session_Namespace(SESSION_NAMESPACE);
+        $session->csrfToken = 'tmp-files-token';
+        // The test request keeps what an earlier one posted
+        $_POST = [];
+
+        // The file was uploaded by the user: its token is sent back with the removal
+        $token = new UploadedFileToken(self::UID, str_repeat('t', UploadedFileToken::MIN_SECRET_LENGTH));
+
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod('POST')->setPost([
+            'csrf_token' => 'tmp-files-token',
+            'path' => 'tmp_attachments',
+            'paperId' => (string)self::PAPERID,
+            'file' => 'answer.pdf',
+            'token' => $token->sign(REVIEW_FILES_PATH . self::PAPERID . '/tmp/', 'answer.pdf'),
+        ]);
+        $response = new Zend_Controller_Response_HttpTestCase();
+
+        $controller = new class ($request, $response, ['isSubmitted' => $isSubmitted]) extends \FileController {
+            /** @var list<array{int, string}> */
+            public array $lookedUp = [];
+
+            protected function isAllowedToHandleDocumentFiles(string $path, int $docId, int $paperId, int $pcId = 0): bool
+            {
+                return true;
+            }
+
+            protected function uploadedFileToken(): UploadedFileToken
+            {
+                return new UploadedFileToken(FileControllerTemporaryVersionFileTest::UID, str_repeat('t', UploadedFileToken::MIN_SECRET_LENGTH));
+            }
+
+            protected function isSubmittedTemporaryVersionFile(int $paperId, string $file): bool
+            {
+                $this->lookedUp[] = [$paperId, $file];
+                return $this->getInvokeArg('isSubmitted');
+            }
+        };
+
+        try {
+            $controller->deleteAction();
+        } finally {
+            unset($session->csrfToken);
+        }
+
+        return [$response->getHttpResponseCode(), $controller->lookedUp];
+    }
+
+    public function testFileOfASubmittedAnswerIsNotRemoved(): void
+    {
+        $this->logInAs();
+
+        [$code, $lookedUp] = $this->runDeleteAction(true);
+
+        self::assertSame(403, $code);
+        self::assertSame([[self::PAPERID, 'answer.pdf']], $lookedUp);
+    }
+
+    public function testUploadNotSubmittedYetCanBeRemoved(): void
+    {
+        $this->logInAs();
+
+        [$code, $lookedUp] = $this->runDeleteAction(false);
+
+        self::assertSame(200, $code);
+        self::assertSame([[self::PAPERID, 'answer.pdf']], $lookedUp);
+    }
+
+    public function testFileIsConsideredSubmittedWhenTheLookupFails(): void
+    {
+        $previousAdapter = \Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = $this->getMockBuilder($previousAdapter::class)
+            ->setConstructorArgs([$previousAdapter->getConfig()])
+            ->onlyMethods(['fetchCol'])
+            ->getMock();
+        $adapter->method('fetchCol')->willThrowException(new \Zend_Db_Statement_Exception('Database unavailable'));
+        \Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+
+        $controller = new class (
+            new Zend_Controller_Request_HttpTestCase(),
+            new Zend_Controller_Response_HttpTestCase()
+        ) extends \FileController {
+            public function check(int $paperId, string $file): bool
+            {
+                return $this->isSubmittedTemporaryVersionFile($paperId, $file);
+            }
+        };
+
+        try {
+            self::assertTrue($controller->check(self::PAPERID, 'answer.pdf'));
+        } finally {
+            \Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
     }
 }

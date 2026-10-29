@@ -27,6 +27,7 @@ $this->layout()->description = $this->translate("Personnalisez le bandeau en-tê
 <div aria-live="polite" aria-atomic="true" class="sr-only" id="header-announcer"></div>
 
 <form enctype="multipart/form-data" method="post" class="form-horizontal" action="/website/header">
+    <input type="hidden" name="csrf_token" value="<?php echo $this->escape($this->csrfToken); ?>">
     <ul class="menu-sortable" id="sortable-header">
         <?php foreach ($this->forms as $i => $form) {
             $hasImgError = isset($this->errors[$i]) && $this->errors[$i] == Ccsd_Website_Header::LOGO_IMG;

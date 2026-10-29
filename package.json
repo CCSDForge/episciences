@@ -1,8 +1,14 @@
 {
   "scripts": {
+    "dev": "encore dev",
+    "watch": "encore dev --watch",
+    "build": "encore production",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
     "format": "prettier --write \"public/js/**/*.js\" \"tests/js/**/*.js\"",
     "format:check": "prettier --check \"public/js/**/*.js\" \"tests/js/**/*.js\"",
     "format:js": "prettier --write \"public/js/**/*.js\" \"tests/js/**/*.js\"",
@@ -15,6 +21,7 @@
     "@babel/core": "^7.29.7",
     "@babel/preset-env": "^7.29.7",
     "@symfony/webpack-encore": "^5.3.1",
+    "core-js": "^3",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
     "jsdom": "^29.0.0",
@@ -53,6 +60,10 @@
   },
   "dependencies": {
     "@playwright/test": "^1.60.0",
-    "altcha": "3.1.0"
+    "altcha": "3.1.0",
+    "filepond": "4.32.12",
+    "filepond-plugin-file-validate-size": "2.2.8",
+    "filepond-plugin-file-validate-type": "1.2.9",
+    "filepond-plugin-image-preview": "4.6.12"
   }
 }

@@ -1,79 +1,86 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Upload\MimeTypePolicy;
 use Symfony\Component\Mime\Exception\InvalidArgumentException;
-use Symfony\Component\Mime\Exception\LogicException;
 use Symfony\Component\Mime\FileBinaryMimeTypeGuesser;
 
 
 /**
- * Enhanced MIME type validator
- * Using FileBinaryMimeTypeGuesser
+ * Checks the real content of an uploaded file (not the type announced by the browser)
+ * against the content types expected for its extension.
  *
- * */
+ * An empty file is always refused.
+ */
 class Episciences_Form_Validate_MimeType extends Zend_Validate_Abstract
 {
 
     public const FALSE_TYPE = 'fileMimeTypeFalse';
     public const NOT_DETECTED = 'fileMimeTypeNotDetected';
     public const NOT_READABLE = 'fileMimeTypeNotReadable';
+    public const EMPTY_FILE = 'fileMimeTypeEmpty';
+
+    /** Option: list of content types accepted whatever the extension is */
     public const ALLOWED_MIME_TYPE_KEY = 'allowedMimeTypes';
 
-    protected string $_type = '';
+    /** Option: MimeTypePolicy giving the content types accepted for each extension */
+    public const POLICY_KEY = 'policy';
 
-    protected $_messageVariables = [
-            'type' => '_type',
-    ];
+    private const DEFAULT_MIME_TYPES = ['application/pdf'];
 
+    protected MimeTypePolicy $_policy;
 
-    protected array $_allowedMimeTypes = [];
-
+    /** @var array<string, string> */
     protected $_messageTemplates = [
-            self::FALSE_TYPE => "File '%value%' has a false mimetype of '%type%'",
-            self::NOT_DETECTED => "The mimetype of file '%value%' could not be detected",
-            self::NOT_READABLE => "File '%value%' is not readable or does not exist",
+        self::FALSE_TYPE => "The file '%value%' cannot be accepted: its content does not match its extension. Please check that it is a valid file and that it has not been renamed.",
+        self::NOT_DETECTED => "The type of the file '%value%' could not be checked. Please try again with another copy of the file.",
+        self::NOT_READABLE => "The file '%value%' could not be read. Please try to upload it again.",
+        self::EMPTY_FILE => "The file '%value%' is empty. Please choose a file that contains data.",
     ];
 
+    /**
+     * Without option, the policy configured for the journal is used.
+     *
+     * @param array{allowedMimeTypes?: array<string>, policy?: MimeTypePolicy} $options
+     */
     public function __construct(array $options = [])
     {
-
-        // Set allowed MIME types
-        if (isset($options[self::ALLOWED_MIME_TYPE_KEY])) {
-            $this->_allowedMimeTypes = (array)$options[self::ALLOWED_MIME_TYPE_KEY];
-        } elseif (defined('ALLOWED_MIMES_TYPES')) {
-            $this->_allowedMimeTypes = (array)ALLOWED_MIMES_TYPES;
+        if (($options[self::POLICY_KEY] ?? null) instanceof MimeTypePolicy) {
+            $this->_policy = $options[self::POLICY_KEY];
+        } elseif (isset($options[self::ALLOWED_MIME_TYPE_KEY])) {
+            $this->_policy = MimeTypePolicy::forAnyExtension((array)$options[self::ALLOWED_MIME_TYPE_KEY]);
         } else {
-            $this->_allowedMimeTypes = ['application/pdf'];
+            $this->_policy = self::configuredPolicy();
         }
     }
 
     /**
-     * @param $value // $value is the temporary path of the uploaded file
-     * @param $file // File data from Zend_File_Transfer
+     * @param mixed $value temporary path of the uploaded file
+     * @param array<string, mixed>|null $file file data from Zend_File_Transfer
      * @return bool
      */
-
-
     public function isValid($value, $file = null): bool
     {
-
-
-        // Validate input parameters
-        if (!is_string($value) || empty($value)) {
-            return $this->_throw(null, self::NOT_READABLE);
+        if (!is_string($value) || $value === '') {
+            return $this->_throw($file, self::NOT_READABLE);
         }
 
         // Normalize file data if not provided
-        if ($file === null) {
-            $file = [
-                    'type' => null,
-                    'name' => basename($value),
-                    'tmp_name' => $value,
-            ];
-        }
-
+        $file ??= [
+            'type' => null,
+            'name' => basename($value),
+            'tmp_name' => $value,
+        ];
 
         $this->_setValue($value);
+
+        if (!is_file($value) || !is_readable($value)) {
+            return $this->_throw($file, self::NOT_READABLE);
+        }
+
+        if (filesize($value) === 0) {
+            return $this->_throw($file, self::EMPTY_FILE);
+        }
 
         $guesser = new FileBinaryMimeTypeGuesser();
 
@@ -84,37 +91,61 @@ class Episciences_Form_Validate_MimeType extends Zend_Validate_Abstract
 
         try {
             $type = $guesser->guessMimeType($value);
-
         } catch (InvalidArgumentException $e) {
             error_log("MIME Guesser InvalidArgumentException: " . $e->getMessage());
             return $this->_throw($file, self::NOT_READABLE);
         }
 
-
         if (!$type) {
             return $this->_throw($file, self::NOT_DETECTED);
         }
 
-        $this->_type = $type ;
-
-        if (!in_array($type, $this->_allowedMimeTypes, true)) {
+        if (!$this->_policy->accepts(MimeTypePolicy::extensionOf((string)($file['name'] ?? '')), $type)) {
             return $this->_throw($file, self::FALSE_TYPE);
         }
 
         return true;
-
     }
 
-    protected function _throw($file, $errorType): bool
+    /**
+     * @param array<string, mixed>|string|null $file
+     */
+    protected function _throw(array|string|null $file, string $errorType): bool
     {
-        $this->_value = is_array($file) ? $file['name'] : $file ?? '';
+        $this->_value = is_array($file) ? (string)($file['name'] ?? '') : (string)($file ?? '');
         $this->_error($errorType);
         return false;
     }
 
+    /**
+     * Accept these content types whatever the extension is.
+     *
+     * @param array<string> $allowedMimeTypes
+     */
     public function setAllowedMimeTypes(array $allowedMimeTypes): void
     {
-        $this->_allowedMimeTypes = $allowedMimeTypes;
+        $this->_policy = MimeTypePolicy::forAnyExtension($allowedMimeTypes);
+    }
+
+    public function setPolicy(MimeTypePolicy $policy): void
+    {
+        $this->_policy = $policy;
+    }
+
+    /**
+     * Policy of the journal, with fallbacks for the constants not defined by older configurations.
+     */
+    public static function configuredPolicy(): MimeTypePolicy
+    {
+        if (defined('ALLOWED_MIMES_BY_EXTENSION') && ALLOWED_MIMES_BY_EXTENSION !== []) {
+            return new MimeTypePolicy(ALLOWED_MIMES_BY_EXTENSION);
+        }
+
+        $mimeTypes = defined('ALLOWED_MIMES_TYPES') && ALLOWED_MIMES_TYPES !== []
+            ? (array)ALLOWED_MIMES_TYPES
+            : self::DEFAULT_MIME_TYPES;
+
+        return MimeTypePolicy::forAnyExtension($mimeTypes);
     }
 
 }

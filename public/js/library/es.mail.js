@@ -829,6 +829,11 @@ function updateModalButton(step) {
                 $modal_body.html(translate(result));
                 $modal_footer.hide();
             });
+            // Refused request: the typed text stays saved in the browser
+            request.fail(function (xhr) {
+                $modal_body.html(translate(xhr.responseText));
+                $modal_footer.hide();
+            });
         });
     }
 }

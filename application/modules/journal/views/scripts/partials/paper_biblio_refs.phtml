@@ -43,7 +43,7 @@
                 </div>
                 <div id="visualize-biblio-refs" data-value="<?= $this->urlcallapibib ?>"
                      data-api="<?= $this->apiEpiBibCitation ?>"
-                     <?php if ($showButton): ?>data-all="1" <?php endif; ?>
+                     <?php if ($showButton || $this->showAllBib): ?>data-all="1" <?php endif; ?>
                      hidden></div>
             </div>
         </div>

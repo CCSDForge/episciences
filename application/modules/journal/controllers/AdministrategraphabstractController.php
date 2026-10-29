@@ -1,165 +1,275 @@
 <?php
 
+use Episciences\AppRegistry;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstract;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractPolicy;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractValidator;
+
+/**
+ * Illustration or graphical abstract of a paper version (AJAX endpoints of paper/paper_graphical_abstract.phtml).
+ *
+ * Every response is JSON: {status: "success"|"error", messages: {field: message}}.
+ */
 class AdministrategraphabstractController extends Zend_Controller_Action
 {
-    public const PATH_FILE = REVIEW_PATH . "public";
-    public const DOCUMENT_COL = "DOCUMENT";
-    public const JSON_PATH_ABS_FILE = Episciences_Paper::JSON_PATH_ABS_FILE;
+    /** Name of the response message that is not tied to a form field */
+    private const GLOBAL_MESSAGE = 'form';
 
-    public const FILE_SIZE = 100000;
+    private const STORED_FILE_BASENAME = 'graphical_abstract';
+
+    public function addgraphabsAction(): void
+    {
+        $this->disableView();
+
+        $paper = $this->loadAuthorizedPaper();
+
+        if ($paper === null) {
+            return;
+        }
+
+        $docId = (int)$paper->getDocid();
+        $request = $this->getRequest();
+        $current = GraphicalAbstractRepository::find($docId);
+
+        $text = GraphicalAbstractValidator::validateText(
+            $request->getPost(GraphicalAbstractValidator::FIELD_ALT),
+            $request->getPost(GraphicalAbstractValidator::FIELD_LICENSE)
+        );
+        $errors = $text['errors'];
+
+        $upload = $this->getUploadedFile();
+        $fileError = $upload === null
+            // the file is optional when only the text alternative or the license is updated
+            ? ($current === null ? GraphicalAbstractValidator::ERROR_FILE_REQUIRED : null)
+            : $this->validateUploadedFile($upload);
+
+        if ($fileError !== null) {
+            $errors[GraphicalAbstractValidator::FIELD_FILE] = $fileError;
+        }
+
+        if (!empty($errors)) {
+            $isTooLarge = $fileError === GraphicalAbstractValidator::ERROR_FILE_TOO_LARGE;
+            $this->sendErrors($isTooLarge ? 413 : 400, $this->translateErrors($errors));
+            return;
+        }
+
+        $file = $current?->file;
+        $isNewFile = false;
+
+        try {
+            if ($upload !== null) {
+                $file = $this->storeUploadedFile($docId, $upload);
+                $isNewFile = $current === null || basename($current->file) !== $file;
+            }
+
+            GraphicalAbstractRepository::save($docId, new GraphicalAbstract((string)$file, $text['alt'], $text['license']));
+        } catch (Throwable $e) {
+            AppRegistry::getMonoLogger()?->error(sprintf('Failed to save the graphical abstract of document #%d: %s', $docId, $e->getMessage()));
+            // the database still references the previous file: only the new one is dropped
+            if ($isNewFile) {
+                GraphicalAbstractRepository::removeFile($docId, (string)$file);
+            }
+            $this->sendErrors(500, [self::GLOBAL_MESSAGE => $this->view->translate("L'illustration n'a pas pu être enregistrée.")]);
+            return;
+        }
+
+        // the previous file (other image type) is removed once the database no longer references it
+        if ($isNewFile && $current !== null) {
+            GraphicalAbstractRepository::removeFile($docId, $current->file);
+        }
+
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($this->view->translate('Illustration enregistrée'));
+        $this->sendJson(200, ['status' => 'success', 'messages' => []]);
+    }
+
+    public function deletegraphabsAction(): void
+    {
+        $this->disableView();
+
+        $paper = $this->loadAuthorizedPaper();
+
+        if ($paper === null) {
+            return;
+        }
+
+        $docId = (int)$paper->getDocid();
+        // the file shown on the page, so that a stale page does not delete a newer illustration
+        $file = basename((string)$this->getRequest()->getPost('file'));
+        $current = GraphicalAbstractRepository::find($docId);
+
+        if ($current === null || basename($current->file) !== $file) {
+            $this->sendErrors(404, [self::GLOBAL_MESSAGE => $this->view->translate('Fichier à supprimer inconnu')]);
+            return;
+        }
+
+        try {
+            GraphicalAbstractRepository::delete($docId);
+        } catch (Throwable $e) {
+            AppRegistry::getMonoLogger()?->error(sprintf('Failed to delete the graphical abstract of document #%d: %s', $docId, $e->getMessage()));
+            $this->sendErrors(500, [self::GLOBAL_MESSAGE => $this->view->translate("L'illustration n'a pas pu être supprimée.")]);
+            return;
+        }
+
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($this->view->translate('Illustration supprimée'));
+        $this->sendJson(200, ['status' => 'success', 'messages' => []]);
+    }
 
     /**
-     * Accepted MIME types, detected from the file content, and the extension the file is stored with.
-     * SVG is deliberately excluded: it can embed scripts and is served from the journal's domain.
+     * Common request guard: AJAX POST with a valid request token, on a paper version of the journal
+     * whose illustration the user may change (see GraphicalAbstractPolicy). Sends the error response otherwise.
      */
-    public const ACCEPTED_MIME = [
-        'image/gif' => 'gif',
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-    ];
-
-    public function addgraphabsAction()
+    private function loadAuthorizedPaper(): ?Episciences_Paper
     {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        // Reject the request if it is not a proper AJAX POST with a valid request
-        // token, OR the user is not authorised.
-        if (
-            (!$request->isXmlHttpRequest() || !$request->isPost())
-            || !Episciences_Csrf_Helper::validateRequestToken($request)
-            || !$this->canManagePaper((int)$request->getPost('docId'))
-        ) {
-            echo json_encode([false], JSON_THROW_ON_ERROR);
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
-            exit();
+
+        if ($request->isXmlHttpRequest() && $this->exceedsPostMaxSize($request)) {
+            $this->sendErrors(413, $this->translateErrors([GraphicalAbstractValidator::FIELD_FILE => GraphicalAbstractValidator::ERROR_FILE_TOO_LARGE]));
+            return null;
         }
+
+        if (!$request->isXmlHttpRequest() || !$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->sendForbidden();
+            return null;
+        }
+
         $docId = (int)$request->getPost('docId');
-        $upload = new Zend_File_Transfer_Adapter_Http();
-        $file = $upload->getFileInfo();
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        if ($file['file']['size'] >= self::FILE_SIZE) {
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Fichier trop volumineux 100 ko max autorisé');
-            exit();
-        }
-        if (0 < $file['file']['error']) {
-            echo 'Error: ' . $file['file']['error'] . '<br>';
-        } else {
-            $ext = self::getAcceptedImageExtension($file['file']);
-            if ($ext === null) {
-                echo json_encode([false], JSON_THROW_ON_ERROR);
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Fichier non accepté');
-                exit();
-            }
-            if (!is_dir($docPath = self::PATH_FILE . "/documents") && !mkdir($docPath, 0775) && !is_dir($docPath)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', self::PATH_FILE . "/documents/"));
-            }
-            if (!is_dir($pathFolder = self::PATH_FILE . "/documents" . "/" . $docId) && !mkdir($pathFolder, 0775) && !is_dir($pathFolder)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', self::PATH_FILE . "/documents/" . $docId));
-            }
-            $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(".self::DOCUMENT_COL.", ".$db->quote(self::JSON_PATH_ABS_FILE).")) FROM ".T_PAPERS." WHERE DOCID = ?",[$docId]);
-            $oldFile = "";
-            foreach ($query->fetch() as $val)
-            {
-                $oldFile = $val;
-                $fileName = "graphical_abstract." . $ext;
-                if (is_null($val) || $val !== $fileName) {
-                    $db->query("UPDATE ".T_PAPERS." SET DOCUMENT = JSON_SET(".self::DOCUMENT_COL.", ".$db->quote(self::JSON_PATH_ABS_FILE).",".$db->quote($fileName)
-                        .") WHERE DOCID = ?",[$docId]);
-                }
-            }
-            foreach (glob(self::PATH_FILE . "/documents/" . $docId . "/". $oldFile) as $filename) {
-                if (is_file($filename)) {
-                    unlink($filename);
-                }
-            }
-            move_uploaded_file($file['file']['tmp_name'], self::PATH_FILE . "/documents/" . $docId . "/graphical_abstract." . $ext);
-        }
-        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Ajout de l'abstract graphique réussi");
-        exit();
-    }
+        $paper = $docId > 0 ? Episciences_PapersManager::get($docId, false, RVID) : false;
 
-    public function deletegraphabsAction()
-    {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
-        // Reject the request if it is not a proper AJAX POST with a valid request
-        // token, OR the user is not authorised.
-        if (
-            (!$request->isXmlHttpRequest() || !$request->isPost())
-            || !Episciences_Csrf_Helper::validateRequestToken($request)
-            || !$this->canManagePaper((int)$request->getPost('docId'))
-        ) {
-            echo json_encode([false], JSON_THROW_ON_ERROR);
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
-            exit();
-        }
-        $docId = (int)$request->getPost('docId');
-        $file = basename((string)$request->getPost('file'));
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(".self::DOCUMENT_COL.", ".$db->quote(self::JSON_PATH_ABS_FILE).")) FROM ".T_PAPERS." WHERE DOCID = ?",[$docId]);
-        if (!empty($fetch = $query->fetch())){
-            $fileFetched = '';
-            foreach ($fetch as $value) {
-                $fileFetched = $value;
-            }
-            if ($fileFetched === $file){
-                $db->query("UPDATE ".T_PAPERS." SET DOCUMENT =
-                JSON_REMOVE(".self::DOCUMENT_COL.", ".$db->quote(self::JSON_PATH_ABS_FILE).") WHERE DOCID = ?",[$docId]);
-                unlink(self::PATH_FILE . "/documents" . "/" . $docId . '/' . $file);
-            } else {
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Fichier a supprimer inconnu");
-                exit();
-            }
-
-        }
-        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Suppression de l'abstract graphique réussi");
-        exit();
-    }
-
-    /**
-     * Returns the extension to store an uploaded file with, or null when it is not an uploaded
-     * image of an accepted type.
-     *
-     * @param array<string, mixed> $file entry of the uploaded file (name, tmp_name, error, ...)
-     */
-    private static function getAcceptedImageExtension(array $file): ?string
-    {
-        $tmpName = (string)($file['tmp_name'] ?? '');
-
-        return $tmpName !== '' && is_uploaded_file($tmpName) ? self::detectImageExtension($tmpName) : null;
-    }
-
-    /**
-     * Extension derived from the actual content of the file (never from its original name),
-     * or null when its MIME type is not accepted.
-     */
-    private static function detectImageExtension(string $path): ?string
-    {
-        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($path);
-
-        return is_string($mimeType) ? (self::ACCEPTED_MIME[$mimeType] ?? null) : null;
-    }
-
-    private function canManagePaper(int $docId): bool
-    {
-        if (!Episciences_Auth::isLogged() || $docId <= 0) {
-            return false;
-        }
-
-        $paper = Episciences_PapersManager::get($docId, false, RVID);
         if (!$paper instanceof Episciences_Paper) {
-            return false;
+            $this->sendErrors(404, [self::GLOBAL_MESSAGE => $this->view->translate("L'article demandé n'existe pas.")]);
+            return null;
         }
 
-        return Episciences_Auth::isSecretary()
-            || $paper->isEditor((int)Episciences_Auth::getUid())
-            || (!$paper->isPublished() && !$paper->isRemoved() && $paper->isOwnerOrCoAuthor());
+        if (!GraphicalAbstractPolicy::canEdit($paper)) {
+            $this->sendForbidden();
+            return null;
+        }
+
+        return $paper;
+    }
+
+    /**
+     * PHP empties $_POST and $_FILES when the body is larger than post_max_size, so the request
+     * token cannot be read: this case must not be reported as an authorization failure.
+     */
+    private function exceedsPostMaxSize(Zend_Controller_Request_Http $request): bool
+    {
+        return $request->isPost()
+            && empty($_POST)
+            && empty($_FILES)
+            && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0;
+    }
+
+    /**
+     * @return array{name: string, tmp_name: string, error: int}|null null if no file was sent
+     */
+    private function getUploadedFile(): ?array
+    {
+        $files = (new Zend_File_Transfer_Adapter_Http())->getFileInfo();
+        $info = $files[GraphicalAbstractValidator::FIELD_FILE] ?? null;
+
+        if (!is_array($info) || (int)($info['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+
+        return [
+            'name' => (string)($info['name'] ?? ''),
+            'tmp_name' => (string)($info['tmp_name'] ?? ''),
+            'error' => (int)$info['error'],
+        ];
+    }
+
+    /**
+     * @param array{name: string, tmp_name: string, error: int} $upload
+     * @return string|null error code
+     */
+    private function validateUploadedFile(array $upload): ?string
+    {
+        if (in_array($upload['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+            return GraphicalAbstractValidator::ERROR_FILE_TOO_LARGE;
+        }
+
+        if ($upload['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($upload['tmp_name'])) {
+            return GraphicalAbstractValidator::ERROR_FILE_REQUIRED;
+        }
+
+        return GraphicalAbstractValidator::validateFile($upload['tmp_name'], $upload['name']);
+    }
+
+    /**
+     * Moves the (already validated) upload to the paper's public documents directory,
+     * named after its actual MIME type. The previous file is left to the caller, which
+     * removes it once the new file name is saved.
+     *
+     * @param array{name: string, tmp_name: string, error: int} $upload
+     * @return string stored file name
+     */
+    private function storeUploadedFile(int $docId, array $upload): string
+    {
+        $extension = GraphicalAbstractValidator::extensionFor($upload['tmp_name']);
+
+        if ($extension === null) {
+            throw new RuntimeException('Unable to determine the image extension');
+        }
+
+        $file = self::STORED_FILE_BASENAME . '.' . $extension;
+        $target = GraphicalAbstractRepository::ensureDocumentsDir($docId) . $file;
+
+        if (!move_uploaded_file($upload['tmp_name'], $target)) {
+            throw new RuntimeException(sprintf('Unable to move the uploaded file to "%s"', $target));
+        }
+
+        chmod($target, 0644);
+
+        return $file;
+    }
+
+    /**
+     * @param array<string, string> $errors field name => error code
+     * @return array<string, string> field name => translated message
+     */
+    private function translateErrors(array $errors): array
+    {
+        $messages = [];
+
+        foreach ($errors as $field => $code) {
+            $message = $this->view->translate(GraphicalAbstractValidator::MESSAGES[$code] ?? $code);
+            $argument = GraphicalAbstractValidator::messageArgument($code);
+            $messages[$field] = $argument !== null ? sprintf($message, $argument) : $message;
+        }
+
+        return $messages;
+    }
+
+    private function sendForbidden(): void
+    {
+        $this->sendErrors(403, [self::GLOBAL_MESSAGE => $this->view->translate('Erreur: modification non autorisée')]);
+    }
+
+    /**
+     * @param array<string, string> $messages
+     */
+    private function sendErrors(int $httpCode, array $messages): void
+    {
+        $this->sendJson($httpCode, ['status' => 'error', 'messages' => $messages]);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function sendJson(int $httpCode, array $payload): void
+    {
+        $this->getResponse()
+            ->setHttpResponseCode($httpCode)
+            ->setHeader('Content-Type', 'application/json', true)
+            ->setBody(json_encode($payload, JSON_THROW_ON_ERROR));
+    }
+
+    private function disableView(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
     }
 }

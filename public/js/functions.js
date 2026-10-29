@@ -581,21 +581,18 @@ function permalink(str) {
     return str;
 }
 
+/**
+ * Display a feedback message as a toast; falls back to a native alert
+ * when the toast bundle is not loaded, so the message is never lost.
+ * @param text plain text (escaped before rendering)
+ * @param type Bootstrap alert class, e.g. 'alert-danger'
+ */
 function message(text, type) {
-    $('#flash-messages').html(getMessageHtml(text, type));
-    setTimeout(function () {
-        $('#flash-messages').find('.alert').alert('close');
-    }, 10000);
-}
-
-function getMessageHtml(text, type) {
-    return (
-        '<div class="alert ' +
-        type +
-        '"><button type="button" class="close" data-dismiss="alert">&times;</button>' +
-        htmlEntities(text) +
-        '</div>'
-    );
+    if (window.toast && typeof window.toast.show === 'function') {
+        window.toast.show(htmlEntities(text), type);
+        return;
+    }
+    window.alert(text);
 }
 
 /**
@@ -712,7 +709,13 @@ function applyCollapse(object) {
     }
 
     $('.collapseButton', object).tooltip();
-    $('.panel-heading:first', object).click(function () {
+    $('.panel-heading:first', object).click(function (e) {
+        // A panel header may embed its own controls (e.g. the dashboard paper search box):
+        // interacting with them must not collapse the panel.
+        if ($(e.target).closest('[data-component="dashboard-paper-search"]').length) {
+            return;
+        }
+
         $(this).closest('.panel').find('.panel-body').toggle();
         if (
             $(this)
@@ -983,6 +986,11 @@ function ajaxRequest(url, jData, type = 'POST', dataType = null) {
         type: type,
         data: jData,
     };
+
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) {
+        params.headers = { 'X-CSRF-Token': csrfMeta.content };
+    }
 
     if (dataType) {
         params.dataType = dataType;

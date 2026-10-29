@@ -1,0 +1,49 @@
+<?php if (!$this->invitation) {
+    return;
+} ?>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate('Détails') ?></h2>
+    </div>
+    <div class="panel-body in">
+        <?php if ($this->invitation->getSender() instanceof Episciences_User) : ?>
+            <div>
+                <?= $this->translate("Invitation envoyée par :"); ?>
+                <?= $this->invitation->getSender()->getFullname(); ?>
+            </div>
+        <?php endif; ?>
+
+        <div>
+            <?= $this->translate("Date d'envoi de l'invitation :"); ?>
+            <?= $this->Date($this->invitation->getSending_date()); ?>
+        </div>
+        <div>
+            <?= $this->translate("Date d'expiration de l'invitation :"); ?>
+            <?= $this->Date($this->invitation->getExpiration_date()); ?>
+        </div>
+
+        <br/>
+        <?php if ($this->rating_deadline) : ?>
+
+            <div>
+                <?= $this->translate("Relecture attendue avant le :"); ?>
+                <?= $this->Date($this->rating_deadline) ?>
+                <?php
+                ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($this->invitation->isAnswered()) : ?>
+            <div><?= $this->translate('Réponse envoyée le :') ?><?= $this->Date($this->invitation->getAnswer()->getAnswer_date()); ?></div>
+            <div><?= $this->translate('Vous avez répondu :') ?><?= ucfirst($this->invitation->getAnswer()->getAnswer()); ?></div>
+            <?php if ($this->invitation->getAnswer()->getDetail('comment')) : ?>
+                <div><?= $this->translate('Commentaire :') ?><?= $this->invitation->getAnswer()->getDetail('comment') ?></div>
+            <?php endif; ?>
+            <?php if ($this->invitation->getAnswer()->getDetail('reviewer_suggest')) : ?>
+                <div><?= $this->translate('Vous avez suggéré de proposer la relecture à :') ?><?= $this->invitation->getAnswer()->getDetail('reviewer_suggest') ?></div>
+            <?php endif; ?>
+
+        <?php endif; ?>
+
+    </div>
+</div>

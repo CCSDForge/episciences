@@ -372,5 +372,124 @@ class Episciences_VolumeTest extends TestCase
         $this->assertSame('2026', $result['vol_year']);
         $this->assertSame('3', $result['vol_num']);
     }
-}
+    public function testSetVolNumCleansHtmlTags(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num('<script>alert("xss")</script><b>12</b>');
+        $this->assertSame('alert("xss")12', $v->getVol_num());
+    }
 
+    public function testSetVolNumCleansControlCharactersAndNewlines(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num("Vol 1\r\n\t\0-A");
+        $this->assertSame('Vol 1-A', $v->getVol_num());
+    }
+
+    public function testSetVolNumTrimsWhitespace(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num('   Vol-2024   ');
+        $this->assertSame('Vol-2024', $v->getVol_num());
+    }
+
+    public function testSetVolNumSupportsUpToTwentyChars(): void
+    {
+        $v = new Episciences_Volume();
+        $twentyChars = '12345678901234567890';
+        $v->setVol_num($twentyChars);
+        $this->assertSame($twentyChars, $v->getVol_num());
+    }
+
+    public function testSetVolNumPreservesZero(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num('0');
+        $this->assertSame('0', $v->getVol_num());
+
+        $v->setVol_num(0);
+        $this->assertSame('0', $v->getVol_num());
+
+        $method = new ReflectionMethod(Episciences_Volume::class, 'getVolumeDataForSave');
+        $method->setAccessible(true);
+        $result = $method->invoke($v);
+        $this->assertSame('0', $result['vol_num']);
+    }
+
+    public function testSetVolNumSetsNullOnEmpty(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num('');
+        $this->assertNull($v->getVol_num());
+
+        $v->setVol_num('   ');
+        $this->assertNull($v->getVol_num());
+
+        $v->setVol_num(null);
+        $this->assertNull($v->getVol_num());
+    }
+
+    public function testDiscardForeignMetadataIdKeepsOwnedId(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => 7, 'title' => ['en' => 'T']]);
+
+        $this->assertSame(7, $result['id']);
+        $this->assertSame(['en' => 'T'], $result['title']);
+    }
+
+    public function testDiscardForeignMetadataIdDropsIdOfAnotherVolume(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => 8, 'title' => ['en' => 'T']]);
+
+        $this->assertArrayNotHasKey('id', $result);
+        $this->assertSame(['en' => 'T'], $result['title']);
+    }
+
+    public function testDiscardForeignMetadataIdDropsIdWhenVolumeHasNoMetadata(): void
+    {
+        $result = $this->invokeDiscardForeignMetadataId(new Episciences_Volume(), ['id' => 1]);
+
+        $this->assertArrayNotHasKey('id', $result);
+    }
+
+    public function testDiscardForeignMetadataIdDropsNonScalarId(): void
+    {
+        $result = $this->invokeDiscardForeignMetadataId(new Episciences_Volume(), ['id' => ['x']]);
+
+        $this->assertArrayNotHasKey('id', $result);
+    }
+
+    public function testDiscardForeignMetadataIdDropsFractionalId(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => 7.5]);
+
+        $this->assertArrayNotHasKey('id', $result);
+    }
+
+    public function testDiscardForeignMetadataIdNormalisesNumericStringToInt(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setMetadatas([7 => new \Episciences_Volume_Metadata(['id' => 7])]);
+
+        $result = $this->invokeDiscardForeignMetadataId($v, ['id' => '7']);
+
+        $this->assertSame(7, $result['id']);
+    }
+
+    private function invokeDiscardForeignMetadataId(Episciences_Volume $volume, array $values): array
+    {
+        $method = new ReflectionMethod(Episciences_Volume::class, 'discardForeignMetadataId');
+        $method->setAccessible(true);
+
+        return $method->invoke($volume, $values);
+    }
+}

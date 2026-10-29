@@ -7825,7 +7825,10 @@ INSERT INTO `metadata_sources` (`id`, `name`, `type`, `status`, `identifier`, `b
 (15, 'Recherche Data Gouv', 'dataverse', 1, NULL, NULL, '10.15454', 'https://entrepot.recherche.data.gouv.fr/api/v1/', 'https://entrepot.recherche.data.gouv.fr/dataset.xhtml?persistentId=%%ID&version=%%VERSION.%%V_MINOR_NUMBER', ''),
 (16, 'HAL-PREPROD', 'repository', 1, 'oai-preprod:HAL:%%IDv%%VERSION', 'https://api-preprod.archives-ouvertes.fr/oai/hal/', '', 'https://api-preprod.archives-ouvertes.fr', 'https://hal.halpreprod.archives-ouvertes.fr/%%IDv%%VERSION', 'https://hal.halpreprod.archives-ouvertes.fr/%%IDv%%VERSION/document'),
 (17, 'zbMATH Open', 'metadataRepository', 1, NULL, NULL, '', '', '', ''),
-(18, 'ARCHE', 'repository', 1, 'https://hdl.handle.net/%%ID', 'https://arche.acdh.oeaw.ac.at/oaipmh/', '', 'https://arche.acdh.oeaw.ac.at/api/', 'https://hdl.handle.net/%%ID', '');
+(18, 'ARCHE', 'repository', 1, 'https://hdl.handle.net/%%ID', 'https://arche.acdh.oeaw.ac.at/oaipmh/', '', 'https://arche.acdh.oeaw.ac.at/api/', 'https://hdl.handle.net/%%ID', ''),
+(19, 'Cryptology ePrint', 'repository', 1, 'oai:eprint.iacr.org:%%ID', 'https://eprint.iacr.org/oai', '', '', 'https://eprint.iacr.org/archive/%%ID', 'https://eprint.iacr.org/archive/%%ID.pdf'),
+(20, 'RepositóriUM', 'dspace', 1, 'oai:repositorium.uminho.pt:%%ID', 'https://repositorium.uminho.pt/server/oai/openaire4', '', '', 'https://hdl.handle.net/%%ID', ''),
+(22, 'BAOBAB', 'repository', 1, 'oai:baobab.wacren.net:%%ID', 'https://baobab.wacren.net/oai2d', '', 'https://baobab.wacren.net/api', 'https://baobab.wacren.net/records/%%ID', '');
 
 -- --------------------------------------------------------
 
@@ -8404,7 +8407,7 @@ CREATE TABLE `USER_INVITATION` (
                                    `ID` int UNSIGNED NOT NULL,
                                    `AID` int UNSIGNED NOT NULL COMMENT 'Assignment ID',
                                    `STATUS` varchar(50) NOT NULL DEFAULT 'pending',
-                                   `TOKEN` varchar(40) DEFAULT NULL,
+                                   `TOKEN` char(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Per-invitation random value for the link token; NULL = legacy invitation',
                                    `SENDER_UID` int UNSIGNED DEFAULT NULL,
                                    `SENDING_DATE` datetime NOT NULL,
                                    `EXPIRATION_DATE` datetime NOT NULL
@@ -8493,7 +8496,7 @@ CREATE TABLE `VOLUME` (
                           `descriptions` json DEFAULT NULL,
                           `vol_year` varchar(9) DEFAULT NULL,
                           `vol_type` set('special_issue','proceedings') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
-                          `vol_num` varchar(6) DEFAULT NULL
+                          `vol_num` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='Journal volumes';
 
 -- --------------------------------------------------------

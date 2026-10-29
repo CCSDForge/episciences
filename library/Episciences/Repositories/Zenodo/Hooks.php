@@ -1,16 +1,18 @@
 <?php
 
 use Episciences\Repositories\CommonHooksInterface;
+use Episciences\Repositories\ConceptIdentifierInterface;
 use Episciences\Repositories\DataSanitizerInterface;
 use Episciences\Repositories\FilesEnrichmentInterface;
 use Episciences\Repositories\InputSanitizerInterface;
 use Episciences\Repositories\LinkedDataEnrichmentInterface;
 use Episciences\Repositories\Zenodo\HooksInterface;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Intl\Languages;
 
-class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, InputSanitizerInterface, FilesEnrichmentInterface, LinkedDataEnrichmentInterface, DataSanitizerInterface, HooksInterface
+class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, InputSanitizerInterface, FilesEnrichmentInterface, LinkedDataEnrichmentInterface, DataSanitizerInterface, HooksInterface, ConceptIdentifierInterface
 {
     public const API_RECORDS_URL = 'https://zenodo.org/api/records';
     const ZENODO_OAI_PMH_API = 'https://zenodo.org/oai2d?verb=GetRecord&metadataPrefix=datacite&identifier=oai:zenodo.org:';
@@ -120,24 +122,22 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
         }
 
         // Fetched first: the REST API only exposes a single flattened affiliation per
-        // creator, while the DataCite OAI-PMH record carries the full list (with ROR
-        // identifiers). Merge it into the creators before enrichmentProcess() runs.
+        // creator, while the DataCite OAI-PMH record carries every affiliation (with
+        // ROR identifiers). Merge it into the creators before enrichmentProcess() runs.
         $oaiData = self::getZenodoOaiDatacite($identifier);
         $responseFromOai = [];
         if ($oaiData) {
             $responseFromOai = self::enrichmentProcessFromOAI($oaiData);
 
             if (
-                !empty($responseFromOai['creatorsAffiliations'])
+                !empty($responseFromOai['creators'])
                 && isset($response['metadata']['creators'])
                 && is_array($response['metadata']['creators'])
             ) {
-                foreach ($response['metadata']['creators'] as &$creator) {
-                    if (isset($creator['name'], $responseFromOai['creatorsAffiliations'][$creator['name']])) {
-                        $creator['affiliations'] = $responseFromOai['creatorsAffiliations'][$creator['name']];
-                    }
-                }
-                unset($creator);
+                $response['metadata']['creators'] = self::mergeOaiAffiliationsIntoCreators(
+                    $response['metadata']['creators'],
+                    $responseFromOai['creators']
+                );
             }
         }
 
@@ -248,15 +248,7 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
      */
     private static function checkResponse(array $hookParams): array
     {
-        $response = [];
-        if (isset($hookParams[Episciences_Repositories_Common::META_IDENTIFIER]) && empty($hookParams['response'])) {
-            $response = self::hookApiRecords([Episciences_Repositories_Common::META_IDENTIFIER => $hookParams[Episciences_Repositories_Common::META_IDENTIFIER]]);
-        } elseif (isset($hookParams['response'])) {
-            $response = $hookParams['response'];
-        }
-
-        return $response;
-
+        return Episciences_Repositories_Common::resolveResponse($hookParams, [self::class, 'hookApiRecords']);
     }
 
     /**
@@ -286,6 +278,18 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
     {
         $linkedIdentifiers = self::hookGetLinkedIdentifiers($hookParams);
         $affectedRows = Episciences_Submit::processDatasets($hookParams['docId'], $linkedIdentifiers);
+
+        if ($affectedRows > 0) {
+            $paper = Episciences_PapersManager::get((int) $hookParams['docId'], false);
+            if ($paper && $paper->isPublished()) {
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
+        }
+
         $response = self::checkResponse($hookParams);
         $response['affectedRows'] = $affectedRows;
         return $response;
@@ -499,76 +503,22 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
     private static function extractDescriptions($metadata, $language): array
     {
-        $descriptions = [];
-        $descriptionNodes = $metadata->xpath('//datacite:descriptions/datacite:description');
-        foreach ($descriptionNodes as $descNode) {
-
-            $desValue = Episciences_Tools::epi_html_decode((string)$descNode, ['HTML.AllowedElements' => 'p']);
-            $value = trim(str_replace(['<p>', '</p>'], '', $desValue));
-            if (!empty($value)) {
-                // Extract xml:lang attribute correctly
-                $nodeLanguage = '';
-
-                // Get all attributes including xml:lang
-                $allAttributes = [];
-                foreach ($descNode->attributes() as $attrName => $attrValue) {
-                    $allAttributes[$attrName] = (string)$attrValue;
-                }
-
-                // Check XML namespace attributes
-                $xmlAttributes = $descNode->attributes('xml', true);
-                if ($xmlAttributes) {
-                    foreach ($xmlAttributes as $attrName => $attrValue) {
-                        $allAttributes['xml:' . $attrName] = (string)$attrValue;
-                    }
-                }
-
-                // Extract xml:lang from the attributes array we just built
-                if (isset($allAttributes[Episciences_Repositories_Common::XML_LANG_ATTR])) {
-                    $nodeLanguage = $allAttributes[Episciences_Repositories_Common::XML_LANG_ATTR];
-                }
-
-                // Convert 3-letter language codes to 2-letter codes if needed
-                if (strlen($nodeLanguage) > 2) {
-                    try {
-                        $nodeLanguage = Languages::getAlpha2Code($nodeLanguage);
-                    } catch (\Exception $e) {
-                        // Conversion failed (e.g. an ISO 639-3 code with no alpha-2
-                        // equivalent, such as "cpg" for Cappadocian Greek): keep the
-                        // original code as-is. Falling back to the document language
-                        // here would tag this description with the same language as
-                        // another one and silently overwrite it later.
-                    }
-                }
-
-                // Fallback to document language
-                if (empty($nodeLanguage)) {
-                    $nodeLanguage = $language;
-                }
-
-                $descriptions[] = [
-                    'value' => $value,
-                    'language' => $nodeLanguage
-                ];
-            }
-        }
-
-        return $descriptions;
+        return Episciences_Repositories_Common::extractDescriptions($metadata, $language, false, true);
     }
 
     /**
-     * Extract multi-valued creator affiliations (with ROR identifiers when available)
-     * from the DataCite OAI-PMH XML, keyed by creator full name (e.g. "Candela, Gustavo").
+     * Parse the DataCite OAI-PMH creators: full name, ORCID and every affiliation
+     * (with its ROR identifier when available).
      *
-     * The Zenodo REST API only exposes a single flattened affiliation string per creator,
-     * even when a creator has several affiliations on the record.
+     * The Zenodo REST API only exposes a single flattened affiliation string per
+     * creator, even when a creator has several affiliations on the record.
      *
      * @param \SimpleXMLElement $metadata
-     * @return array<string, array<int, array{name: string, ROR?: string}>>
+     * @return list<array{name: string, orcid: ?string, affiliations: list<array{name: string, ROR?: string}>}>
      */
-    private static function extractOaiCreatorAffiliations(\SimpleXMLElement $metadata): array
+    private static function extractOaiCreators(\SimpleXMLElement $metadata): array
     {
-        $affiliationsByName = [];
+        $creators = [];
 
         foreach ($metadata->xpath('//datacite:creators/datacite:creator') as $creatorNode) {
             $creatorNode->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
@@ -578,6 +528,20 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
             if ($name === '') {
                 continue;
+            }
+
+            $orcid = null;
+
+            foreach ($creatorNode->xpath('datacite:nameIdentifier') as $identifierNode) {
+                $identifierAttributes = $identifierNode->attributes();
+
+                if (
+                    isset($identifierAttributes['nameIdentifierScheme'])
+                    && strtoupper((string)$identifierAttributes['nameIdentifierScheme']) === 'ORCID'
+                ) {
+                    $orcid = Episciences_Paper_AuthorsManager::normalizeOrcid((string)$identifierNode);
+                    break;
+                }
             }
 
             $affiliations = [];
@@ -590,24 +554,80 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
                 }
 
                 $affiliation = ['name' => $affiliationName];
-                $attributes = $affiliationNode->attributes();
+                $affiliationAttributes = $affiliationNode->attributes();
 
                 if (
-                    isset($attributes['affiliationIdentifier'], $attributes['affiliationIdentifierScheme'])
-                    && strtoupper((string)$attributes['affiliationIdentifierScheme']) === Episciences_Paper_Authors_AffiliationHelper::ID_TYPE_ROR
+                    isset($affiliationAttributes['affiliationIdentifier'], $affiliationAttributes['affiliationIdentifierScheme'])
+                    && strtoupper((string)$affiliationAttributes['affiliationIdentifierScheme']) === Episciences_Paper_Authors_AffiliationHelper::ID_TYPE_ROR
                 ) {
-                    $affiliation['ROR'] = (string)$attributes['affiliationIdentifier'];
+                    $affiliation['ROR'] = (string)$affiliationAttributes['affiliationIdentifier'];
                 }
 
                 $affiliations[] = $affiliation;
             }
 
-            if ($affiliations !== []) {
-                $affiliationsByName[$name] = $affiliations;
-            }
+            $creators[] = ['name' => $name, 'orcid' => $orcid, 'affiliations' => $affiliations];
         }
 
-        return $affiliationsByName;
+        return $creators;
+    }
+
+    /**
+     * Complete the Zenodo REST API creators (single flattened affiliation each) with
+     * the full affiliation list parsed from the DataCite OAI-PMH record. Creators are
+     * matched by ORCID first (most reliable), then by exact or accent-insensitive
+     * full name, to be resilient to homonyms and diacritics differences between the
+     * two Zenodo sources.
+     *
+     * @param array<int, array<string, mixed>> $restCreators creators as returned by the Zenodo REST API
+     * @param list<array{name: string, orcid: ?string, affiliations: list<array{name: string, ROR?: string}>}> $oaiCreators creators parsed from the DataCite OAI-PMH XML (see extractOaiCreators())
+     * @return array<int, array<string, mixed>> $restCreators, each completed with an 'affiliations' key when a match was found
+     */
+    private static function mergeOaiAffiliationsIntoCreators(array $restCreators, array $oaiCreators): array
+    {
+        foreach ($restCreators as &$restCreator) {
+            if (!isset($restCreator['name']) || $restCreator['name'] === '') {
+                continue;
+            }
+
+            $restOrcid = !empty($restCreator['orcid'])
+                ? Episciences_Paper_AuthorsManager::normalizeOrcid($restCreator['orcid'])
+                : null;
+
+            $matchedAffiliations = null;
+
+            if ($restOrcid !== null) {
+                foreach ($oaiCreators as $oaiCreator) {
+                    if ($oaiCreator['affiliations'] !== [] && $oaiCreator['orcid'] === $restOrcid) {
+                        $matchedAffiliations = $oaiCreator['affiliations'];
+                        break;
+                    }
+                }
+            }
+
+            if ($matchedAffiliations === null) {
+                foreach ($oaiCreators as $oaiCreator) {
+                    if ($oaiCreator['affiliations'] === []) {
+                        continue;
+                    }
+
+                    $isSameName = $restCreator['name'] === $oaiCreator['name']
+                        || Episciences_Tools::replaceAccents($restCreator['name']) === Episciences_Tools::replaceAccents($oaiCreator['name']);
+
+                    if ($isSameName) {
+                        $matchedAffiliations = $oaiCreator['affiliations'];
+                        break;
+                    }
+                }
+            }
+
+            if ($matchedAffiliations !== null) {
+                $restCreator['affiliations'] = $matchedAffiliations;
+            }
+        }
+        unset($restCreator);
+
+        return $restCreators;
     }
 
     private static function enrichmentProcessFromOAI(string $xmlString): array
@@ -645,15 +665,16 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
         // Extract descriptions
         $descriptions = self::extractDescriptions($metadata, $language);
 
-        // Extract full (multi-valued, ROR-identified) creator affiliations
-        $creatorsAffiliations = self::extractOaiCreatorAffiliations($metadata);
+        // Extract full (multi-valued, ROR-identified) creators, used to complete the
+        // REST API's single flattened affiliation per creator
+        $creators = self::extractOaiCreators($metadata);
 
         // Build additional data
         $data['title'] = $titles;
         $data['titles'] = $titles;
         $data[Episciences_Repositories_Common::META_DESCRIPTION] = $descriptions;
         $data['language'] = $language;
-        $data['creatorsAffiliations'] = $creatorsAffiliations;
+        $data['creators'] = $creators;
 
         // Prepare body data for Dublin Core conversion
         $xmlElements = [];

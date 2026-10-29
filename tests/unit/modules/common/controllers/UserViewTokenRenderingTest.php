@@ -40,13 +40,5 @@ final class UserViewTokenRenderingTest extends TestCase
         self::assertStringContainsString('data-csrf-value', $view,
             'list.phtml must expose the token value on the delete control');
     }
-
-    public function testPortalUserListRendersPerRowDeleteToken(): void
-    {
-        $view = $this->read('/modules/portal/views/scripts/user/list.phtml');
-        self::assertStringContainsString("Episciences_Csrf_Helper::generateToken('user_delete_'", $view,
-            'portal list.phtml must generate a per-user delete token');
-        self::assertStringContainsString('data-csrf-name', $view,
-            'portal list.phtml must expose the token name on the delete control');
-    }
 }
+

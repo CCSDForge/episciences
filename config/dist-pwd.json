@@ -30,9 +30,13 @@
         "DEFAULT_LANG": "MAINTENANCE ALERT: Service interruption on {date} from {1} to {h2}, EPIsciences platform will be inaccessible (more information)"
       }
     },
+    "READ_ONLY_MODE": false,
+    "READ_ONLY_MODE_START": "",
+    "READ_ONLY_MODE_END": "",
     "SUPPORT": "email-support@platform.org",
     "CONTACT": "email-support@platform.org",
-    "IGNORED_EMAILS_WHEN_INVITING_REVIEWER": []
+    "IGNORED_EMAILS_WHEN_INVITING_REVIEWER": [],
+    "ENABLE_NEXT_FRONT": false
   },
   "CAS": {
     "HOST": "a_db_host",
@@ -82,6 +86,17 @@
   },
   "ALTCHA": {
     "HMAC_SECRET": "generate-a-long-random-secret-eg-openssl-rand-hex-32"
+  },
+  "REVIEWER_INVITATION": {
+    "HMAC_SECRET": ""
+  },
+  "UPLOADED_FILE": {
+    "HMAC_SECRET": ""
+  },
+  "USER_TOKEN": {
+    "PASSWORD_RESET_TTL": 3600,
+    "ACCOUNT_ACTIVATION_TTL": 604800,
+    "ACCOUNT_SETUP_TTL": 1209600
   },
   "ENDPOINTS": {
     "INDEXING_HOST": "solr-hostname-for-indexing.example.com",
@@ -141,7 +156,7 @@
   },
   "OPENCITATIONS": {
     "TOKEN" : "YOUR-OPENCITATIONS-ACCESS-TOKEN",
-    "APIURL": "https://opencitations.net/index/api/v1/citations/"
+    "APIURL": "https://api.opencitations.net/index/v2/citations/"
   },
   "OPENALEX": {
     "MAILTO": "YOUR-MAIL-TO",
@@ -152,5 +167,21 @@
     "MAILTO": "YOUR-MAIL-TO",
     "APIURL": "https://api.crossref.org/works/",
     "PLUS_API_TOKEN": "Ash-nazg-durbatulûk"
+  },
+  "OPENAIRE": {
+    "AUTH_URL": "https://aai.openaire.eu/oidc/token",
+    "API_URL": "https://api.openaire.eu/graph/v3/research-products",
+    "CLIENT_ID": "YOUR-OPENAIRE-CLIENT-ID",
+    "CLIENT_SECRET": "YOUR-OPENAIRE-CLIENT-SECRET"
+  },
+  "SCHOLEXPLORER": {
+    "AUTH_URL": "https://aai.openaire.eu/oidc/token",
+    "API_URL": "https://api.scholexplorer.openaire.eu/v3/Links",
+    "CLIENT_ID": "YOUR-SCHOLEXPLORER-CLIENT-ID",
+    "CLIENT_SECRET": "YOUR-SCHOLEXPLORER-CLIENT-SECRET"
+  },
+  "NEXT": {
+    "BASE_URL": "https://next.example.org",
+    "REVALIDATION_SECRET": "generate-a-long-random-secret-eg-openssl-rand-hex-32"
   }
 }

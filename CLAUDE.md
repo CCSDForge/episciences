@@ -2,7 +2,7 @@
 
 ## Framework & Structure
 - zf1-future (PHP 8.1+ compatible Zend Framework 1.x)
-- MySQL 8.0 dual database (main + auth)
+- MySQL 8.4 dual database (main + auth)
 - Apache Solr integration
 - Webpack Encore + Sass
 
@@ -24,6 +24,10 @@
 - `make phpstan [TARGET=path] [LEVEL=X]` - PHPStan static analysis (level 0-9)
 - `make rector [TARGET=path] [DRY_RUN=1]` - Rector refactoring
 - `yarn format` - Format JS with Prettier
+- `make check-source-reading-tests` - Refuse new tests that read the application source
+- Tests must run the code (call the method, dispatch the action, render the view), never read
+  the source (`file_get_contents()` on code, `extractMethod()`, `getStartLine()`).
+  Controller actions: extend `tests/unit/modules/ControllerTestCase.php`. Details: `tests/README.md`
 
 ## Code
 - Write comments, documentation in English
@@ -38,6 +42,7 @@
 - writing outside the project directory is forbidden, even in /tmp
 - when asked to write a plan, write it in the ./tmp/ directory of the project
 - when creating new code files, chmod 644
+- never use `git add -A` or `git add .`: list the files to commit explicitly (`git add path/to/file ...`)
 
 # Directories to ignore
 - `data/`

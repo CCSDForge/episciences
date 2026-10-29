@@ -1,7 +1,21 @@
 <?php
 
+use Episciences\AppRegistry;
+
 class Episciences_Mail extends Zend_Mail
 {
+    /** Placeholder stored in the mail log instead of account credentials or identifiers */
+    private const LOG_REDACTED_VALUE = '[not stored in the log]';
+
+    /** Tags whose values must never be stored in the mail log (readable by journal staff) */
+    private const LOG_REDACTED_TAGS = [
+        Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK,
+        Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_INVITATION_URL,
+        Episciences_Mail_Tags::TAG_INVITATION_LINK,
+    ];
+
     /**
      * We're fine
      */
@@ -46,6 +60,9 @@ class Episciences_Mail extends Zend_Mail
     private $_rawBody;
     protected bool $_isAutomatic = false;
     private ?int $uid = null ;
+    // Code of the journal this mail is sent for (RVCODE may be undefined or null in CLI)
+    private ?string $_reviewCode = null;
+    private static array $_cache = [];
 
     /**
      * Episciences_Mail constructor.
@@ -60,9 +77,17 @@ class Episciences_Mail extends Zend_Mail
 
         $this->setPath(EPISCIENCES_MAIL_PATH);
 
+        // find() returns false for an unknown review code: guard before loadSettings()
+        // to avoid a fatal, falling back to the generic error return path.
+        $review = Episciences_ReviewsManager::find($rvCode);
+        if ($review instanceof Episciences_Review) {
+            $review->loadSettings();
+            $this->_reviewCode = $review->getCode();
+        }
 
         if (defined('RVCODE')) {
-            $this->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, RVCODE);
+            $mailDisplayCode = ($review instanceof Episciences_Review) ? $review->getMailDisplayCode() : RVCODE;
+            $this->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, $mailDisplayCode);
         }
         if (defined('RVNAME')) {
             $this->addTag(Episciences_Mail_Tags::TAG_REVIEW_NAME, RVNAME);
@@ -75,15 +100,12 @@ class Episciences_Mail extends Zend_Mail
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_LAST_NAME, Episciences_Auth::getLastname());
 
         }
-        // find() returns false for an unknown review code: guard before loadSettings()
-        // to avoid a fatal, falling back to the generic error return path.
-        $review = Episciences_ReviewsManager::find($rvCode);
+
         if (!$review instanceof Episciences_Review) {
             $this->setReturnPath('error@' . DOMAIN);
             return;
         }
 
-        $review->loadSettings();
         $mailError = $review->getSetting(Episciences_Review::SETTING_CONTACT_ERROR_MAIL);
         if ($mailError === false || $mailError === "0") {
             $this->setReturnPath('error@' . DOMAIN);
@@ -203,13 +225,7 @@ class Episciences_Mail extends Zend_Mail
         try {
             $this->write($debug);
         } catch (Exception $e) {
-            $details = [
-                'headers' => $this->getHeaders(),
-                'subject' => $this->getSubject(),
-                'body' => ($this->hasATemplate())
-                    ? $this->renderTemplate($this->getTemplatePath(), $this->getTemplateName())
-                    : $this->replaceTags($this->getRawBody())];
-            $message = $e->getCode() . ' - ' . $e->getMessage() . ' - ' . Zend_Json::encode($details);
+            $message = $e->getCode() . ' - ' . $e->getMessage() . ' - ' . Zend_Json::encode($this->buildFailureDetails());
             Ccsd_Log::message($message, false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . $rvCode . '.mail');
             return false;
         }
@@ -225,6 +241,19 @@ class Episciences_Mail extends Zend_Mail
         }
 
         return true;
+    }
+
+    /**
+     * Details written to the exceptions log when a mail cannot be written (body masked like in the mail log)
+     * @return array<string, mixed>
+     */
+    private function buildFailureDetails(): array
+    {
+        return [
+            'headers' => $this->getHeaders(),
+            'subject' => $this->getSubject(),
+            'body' => $this->getLoggableBody(),
+        ];
     }
 
     /**
@@ -439,7 +468,7 @@ class Episciences_Mail extends Zend_Mail
         } else {
             $body = $this->replaceTags($this->getRawBody());
         }
-        
+
         return $body ? htmlspecialchars($body) : '';
     }
 
@@ -587,7 +616,24 @@ class Episciences_Mail extends Zend_Mail
             $attachments = null;
         }
 
-        $data = [
+        $data = $this->buildLogData($rvId, $from, $replyto, $to, $cc, $bcc, $attachments);
+
+        if ($db->insert(T_MAIL_LOG, $data)) {
+            return $db->lastInsertId();
+        }
+
+        error_log('Logging email in db failed.');
+        $message = "Database logging failed - " . Zend_Json::encode($data);
+        throw new Exception($message, self::STATUS_FAILED_DB_LOG);
+    }
+
+    /**
+     * Row inserted in the mail log (the body is masked, see getLoggableBody())
+     * @return array<string, mixed>
+     */
+    private function buildLogData(int $rvId, string $from, string $replyto, string $to, ?string $cc, ?string $bcc, ?string $attachments): array
+    {
+        return [
             'UID' => $this->getUid(),
             'RVID' => $rvId ?: $this->getRvid(),
             'DOCID' => $this->getDocid(),
@@ -597,18 +643,30 @@ class Episciences_Mail extends Zend_Mail
             'CC' => $cc,
             'BCC' => $bcc,
             'SUBJECT' => $this->getDecodedSubject(),
-            'CONTENT' => $this->getDecodedBody(),
+            'CONTENT' => $this->getLoggableBody(),
             'FILES' => $attachments,
             'WHEN' => new Zend_DB_Expr('NOW()')
         ];
+    }
 
-        if ($db->insert(T_MAIL_LOG, $data)) {
-            return $db->lastInsertId();
+    /**
+     * Body stored in the mail log: credential-bearing links and account identifiers are masked,
+     * since the log is readable by journal staff. The mail actually sent is unaffected.
+     */
+    private function getLoggableBody(): string
+    {
+        $sensitiveTags = array_intersect(self::LOG_REDACTED_TAGS, array_keys($this->tags));
+
+        if ($sensitiveTags === []) {
+            return (string)$this->getDecodedBody();
         }
 
-        error_log('Logging email in db failed.');
-        $message = "Database logging failed - " . Zend_Json::encode($data);
-        throw new Exception($message, self::STATUS_FAILED_DB_LOG);
+        $copy = clone $this;
+        foreach ($sensitiveTags as $tag) {
+            $copy->tags[$tag] = self::LOG_REDACTED_VALUE;
+        }
+
+        return (string)$copy->getDecodedBody();
     }
 
     public function getAttachments()
@@ -644,20 +702,68 @@ class Episciences_Mail extends Zend_Mail
         return $this->_docid;
     }
 
-    public function setDocid($docid)
+    /**
+     * @param $docid
+     * @param int|null $paperId Permanent article id, when the caller already has it (avoids a DB lookup).
+     * @return $this
+     */
+    public function setDocid($docid, int $paperId = null): self
     {
-        $this->_docid = $docid;
+        $this->_docid = (int)$docid;
 
-        $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ID, $docid);
+        $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ID, $this->_docid);
 
-        if (defined('RVCODE')) {
-            $baseurl = SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN;
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL, $baseurl . '/administratepaper/view/id/' . $docid);
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, $baseurl . '/' . $docid);
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_RATING_URL, $baseurl . '/paper/rating/id/' . $docid);
+        $resolvedPaperId = $paperId ?? $this->getPaperId();
+
+        if ($resolvedPaperId !== null) {
+            $this->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $resolvedPaperId);
+        } else {
+            // Instances can be reused across documents: never let a previous docid's
+            // permanent article id leak into a mail whose resolution just failed.
+            $this->removeTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID);
+        }
+
+        $reviewCode = $this->_reviewCode ?? (defined('RVCODE') ? RVCODE : null);
+
+        if (!empty($reviewCode)) {
+            $baseurl = SERVER_PROTOCOL . '://' . $reviewCode . '.' . DOMAIN;
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL, $baseurl . '/administratepaper/view/id/' . $this->_docid);
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, $baseurl . '/' . $this->_docid);
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_RATING_URL, $baseurl . '/paper/rating/id/' . $this->_docid);
         }
 
         return $this;
+    }
+
+    private function getPaperId(): ?int
+    {
+        if (array_key_exists($this->_docid, self::$_cache)) {
+            return self::$_cache[$this->_docid];
+        }
+
+        $select = Episciences_PapersManager::partialGetQuery($this->_docid, 'PAPERID');
+        $paperId = $select?->getAdapter()->fetchOne($select);
+        $paperId = ($paperId !== false && $paperId !== null) ? (int)$paperId : null;
+
+        if ($paperId === null) {
+            AppRegistry::getMonoLogger()?->warning(sprintf(
+                'Episciences_Mail::getPaperId() - PAPERID not found for DOCID=%d, %%%%PERMANENT_ARTICLE_ID%%%% tag left unset',
+                $this->_docid
+            ));
+        }
+
+        self::$_cache[$this->_docid] = $paperId;
+        return $paperId;
+    }
+
+    /**
+     * Clear the internal PAPERID cache.
+     * Also handy for isolating static state between unit tests.
+     * @return void
+     */
+    public static function clearCache(): void
+    {
+        self::$_cache = [];
     }
 
     public function getDecodedBody()
@@ -817,8 +923,10 @@ class Episciences_Mail extends Zend_Mail
      */
     private function dataTableMailsSearchQuery(Zend_Db_Select $select, string $word = ''): Zend_Db_Select
     {
-        $where = "SUBJECT LIKE '%$word%' OR `TO` LIKE '%$word%' OR CC LIKE '%$word%' OR BCC LIKE '%$word%' OR CONVERT(`WHEN`, CHAR) LIKE '%$word%'";
-        $select->where($where);
+        // Escape LIKE wildcards, then let the adapter quote the pattern (same placeholder for each column)
+        $pattern = '%' . addcslashes($word, '%_\\') . '%';
+        $where = 'SUBJECT LIKE ? OR `TO` LIKE ? OR CC LIKE ? OR BCC LIKE ? OR CONVERT(`WHEN`, CHAR) LIKE ?';
+        $select->where($where, $pattern);
         return $select;
     }
 
@@ -832,6 +940,35 @@ class Episciences_Mail extends Zend_Mail
     {
         $select = $this->getHistoryQuery($docIds, $options, true, $isFilterInfos);
         return (int)Zend_Db_Table_Abstract::getDefaultAdapter()->fetchOne($select);
+    }
+
+    /**
+     * Whether a mail log entry belongs to the history visible with the given scope
+     * (same restrictions as getHistory(): journal, allowed documents, conflicts of interest)
+     * @param int $id
+     * @param array $docIds
+     * @param array $options
+     * @return bool
+     */
+    public function isInHistory(int $id, array $docIds = [], array $options = []): bool
+    {
+        if ($id <= 0) {
+            return false;
+        }
+
+        $select = $this->getHistoryEntryQuery($id, $docIds, $options);
+        return (int)Zend_Db_Table_Abstract::getDefaultAdapter()->fetchOne($select) > 0;
+    }
+
+    /**
+     * @param int $id
+     * @param array $docIds
+     * @param array $options
+     * @return Zend_Db_Select
+     */
+    private function getHistoryEntryQuery(int $id, array $docIds = [], array $options = []): Zend_Db_Select
+    {
+        return $this->getHistoryQuery($docIds, $options, true)->where('ID = ?', $id);
     }
 
     /**
@@ -944,7 +1081,6 @@ class Episciences_Mail extends Zend_Mail
 
     public function setSubject($subject = '', $charset = null, $encoding = Zend_Mime::ENCODING_QUOTEDPRINTABLE): void
     {
-        $subject = htmlspecialchars($subject);
         $subject = $this->replaceTags($subject);
         parent::setSubject($subject);
     }

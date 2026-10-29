@@ -8,8 +8,6 @@ class Ccsd_Form_Element_Thesaurus extends Zend_Form_Element_Xhtml implements Ccs
 {
 
 	use Ccsd_Form_Trait_ImplementFunctionJS;
-    public $pathDir = __DIR__ ;
-    public $relPublicDirPath = "../../../public"; 
 	
     protected $_delete                 = true;
     protected $_multilevel             = true;
@@ -59,7 +57,7 @@ class Ccsd_Form_Element_Thesaurus extends Zend_Form_Element_Xhtml implements Ccs
     /**
      * Ccsd_Form_Element_Thesaurus constructor.
      * @param $spec
-     * @param null $options
+     * @param array<string, mixed>|Zend_Config|null $options
      * @throws Zend_Form_Exception
      */
     public function __construct($spec, $options = null)

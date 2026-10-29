@@ -1,10 +1,11 @@
 <?php
 
 use Episciences\Repositories\CommonHooksInterface;
+use Episciences\Repositories\ConceptIdentifierInterface;
 use Episciences\Repositories\FilesEnrichmentInterface;
 use GuzzleHttp\Exception\GuzzleException;
 
-class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, FilesEnrichmentInterface, \Episciences\Repositories\InputSanitizerInterface
+class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, FilesEnrichmentInterface, \Episciences\Repositories\InputSanitizerInterface, ConceptIdentifierInterface
 {
     /**
      * Le paramétrage se fait en base de données, table "metadata_sources"

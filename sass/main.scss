@@ -2,6 +2,7 @@
 
 // variables (available colors)
 @import "abstracts/variables";
+@import "abstracts/bootstrap5-theme";
 // theme configuration (text colors, size, backgrounds...)
 @import "themes/theme";
 
@@ -20,13 +21,16 @@
 @import "components/autocomplete";
 @import "components/progress-bar";
 @import "components/modals";
+@import "components/tomselect";
 @import "components/paper-assignment-modal";
 @import "components/sortable";
 @import "components/user-role-colors";
 @import "components/paper-status-colors";
 @import "components/flags";
 @import "components/footer";
+@import "components/alerts";
 @import "components/badges";
+@import "components/buttons";
 @import "components/labels";
 @import "components/timeline-base";
 @import "components/timeline-editor-comments";
@@ -36,6 +40,8 @@
 @import "components/timeline-activity";
 @import "components/collapsible-message";
 @import "components/stats";
+@import "components/info";
+@import "components/graphical-abstract";
 
 // pages
 @import "pages/userconfirmation";
@@ -46,7 +52,8 @@
 @import "pages/rating-grids";
 @import "pages/editorial-staff";
 @import "pages/reminders-list";
-
+@import "pages/dashboard";
+@import "pages/license";
 
 
 //attachments files

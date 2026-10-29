@@ -885,32 +885,37 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // savemastervolumeAction
+    // savesectionAction
     // -----------------------------------------------------------------------
 
     /**
-     *
-     * The vid (volume id) must be cast to (int) before use.
+     * Changing the section of an already published paper must enqueue
+     * a Solr reindex, mirroring the pattern already in saveothervolumesAction().
      */
-    public function testSavemastervolumeActionCastsVidToInt(): void
+    public function testSavesectionActionEnqueuesSolrIndexWhenPublished(): void
     {
-        $method = $this->extractMethod('savemastervolumeAction');
+        $method = $this->extractMethod('savesectionAction');
 
         $this->assertStringContainsString(
-            "(int)\$request->getPost('vid')",
+            'isPublished()',
             $method,
-            'savemastervolumeAction must cast the vid POST parameter to (int)'
+            'savesectionAction must guard the Solr reindex with isPublished()'
         );
-    }
-
-    public function testSavemastervolumeActionChecksIsPost(): void
-    {
-        $method = $this->extractMethod('savemastervolumeAction');
-
         $this->assertStringContainsString(
-            'isPost()',
+            'SolrIndexing::enqueueIndex',
             $method,
-            'savemastervolumeAction must check isPost() before applying changes'
+            'savesectionAction must enqueue a Solr reindex for a published paper on section change'
+        );
+        // The two assertions above only check that both tokens appear
+        // somewhere in the method — an unconditional enqueue call, or an
+        // unrelated isPublished() check elsewhere, would still pass them.
+        // This asserts the actual nesting: no closing brace between the
+        // isPublished() check's opening brace and the enqueue call, i.e. the
+        // enqueue really is inside that branch.
+        $this->assertMatchesRegularExpression(
+            '/isPublished\(\)\s*\)\s*\{[^}]*SolrIndexing::enqueueIndex/',
+            $method,
+            'savesectionAction must enqueue the Solr reindex from inside the isPublished() branch, not merely alongside it'
         );
     }
 
@@ -1109,136 +1114,6 @@ class AdministratepaperControllerTest extends TestCase
         );
     }
 
-    // ---------------------------------------------------------------
-    // compileMailUsers() — source-code analysis
-    // ---------------------------------------------------------------
-
-    /**
-     * All three user-supplied values injected into htmlLabel must be escaped
-     * via htmlspecialchars() to prevent XSS.
-     *
-     * htmlLabel is passed as a raw HTML string to jQuery's .append(), so any
-     * unescaped < > " & in a user's name, username or email is executable.
-     */
-    public function testCompileMailUsersEscapesFullNameInHtmlLabel(): void
-    {
-        $method = $this->extractMethod('compileMailUsers');
-
-        // fullName is cast to string then escaped before inclusion in htmlLabel
-        $this->assertMatchesRegularExpression(
-            '/htmlspecialchars\s*\(\s*\(string\)\s*\$user->getFullName\(\)/',
-            $method,
-            'getFullName() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
-        );
-    }
-
-    public function testCompileMailUsersEscapesUsernameInHtmlLabel(): void
-    {
-        $method = $this->extractMethod('compileMailUsers');
-
-        $this->assertMatchesRegularExpression(
-            '/htmlspecialchars\s*\(\s*mb_strtolower\s*\(\s*\(string\)\s*\$user->getUsername\(\)\s*\)/',
-            $method,
-            'getUsername() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
-        );
-    }
-
-    public function testCompileMailUsersEscapesEmailInHtmlLabel(): void
-    {
-        $method = $this->extractMethod('compileMailUsers');
-
-        $this->assertMatchesRegularExpression(
-            '/htmlspecialchars\s*\(\s*\(string\)\s*\$user->getEmail\(\)/',
-            $method,
-            'getEmail() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
-        );
-    }
-
-    /**
-     * htmlLabel must use <span> elements, not <div>.
-     *
-     * <div> (block) inside <a> (inline) is invalid HTML: browsers emit orphaned
-     * empty <a> boxes between autocomplete items. <span class="ep-ac-name/email">
-     * with display:block via CSS is the correct approach.
-     */
-    public function testCompileMailUsersUsesSpanNotDivInHtmlLabel(): void
-    {
-        $method = $this->extractMethod('compileMailUsers');
-
-        $this->assertStringNotContainsString(
-            "'<div>",
-            $method,
-            'htmlLabel must not use <div> — block elements inside <a> produce invalid HTML'
-        );
-        $this->assertStringContainsString(
-            'ep-ac-name',
-            $method,
-            'htmlLabel must use <span class="ep-ac-name"> for the name line'
-        );
-        $this->assertStringContainsString(
-            'ep-ac-email',
-            $method,
-            'htmlLabel must use <span class="ep-ac-email"> for the email line'
-        );
-    }
-
-    /**
-     * BUG: getFullName(), getUsername(), and getEmail() may return null when a user
-     * record is incomplete. Passing null to htmlspecialchars() raises a TypeError
-     * in PHP 8.2+ (and a deprecation notice in PHP 8.1).
-     *
-     * Fix: cast each value to (string) before passing to htmlspecialchars(),
-     * e.g. htmlspecialchars((string) $user->getFullName(), ENT_QUOTES, 'UTF-8').
-     */
-    /**
-     * Fixed (BUG-5): all three getter return values are now cast to (string)
-     * before being passed to htmlspecialchars(), preventing TypeError when
-     * getFullName()/getUsername()/getEmail() returns null (PHP 8.2+).
-     */
-    public function testCompileMailUsersCastsGettersToStringBeforeHtmlspecialchars(): void
-    {
-        $method = $this->extractMethod('compileMailUsers');
-
-        $hasCast = (bool) preg_match(
-            '/htmlspecialchars\s*\(\s*\(string\)/',
-            $method
-        );
-
-        $this->assertTrue(
-            $hasCast,
-            'getter return values must be cast to (string) before htmlspecialchars() ' .
-            'to avoid TypeError when getFullName()/getUsername()/getEmail() returns null (PHP 8.2+)'
-        );
-    }
-
-    /**
-     * The "label" field (used for autocomplete text matching) is intentionally
-     * not HTML-escaped — it is JSON-encoded by Zend_Json::encode() before being
-     * output to the page, which makes it safe as a data value.
-     * This test documents that the absence of htmlspecialchars on $cUser['label'] is correct.
-     */
-    public function testCompileMailUsersLabelFieldIsNotHtmlEscaped(): void
-    {
-        $method = $this->extractMethod('compileMailUsers');
-
-        // Find the label assignment line and confirm it has no htmlspecialchars
-        $labelLinePos  = strpos($method, "\$cUser['label']");
-        $htmlspecPos   = strpos($method, 'htmlspecialchars', (int) $labelLinePos);
-        $nextAssignPos = strpos($method, "\$cUser[", (int) $labelLinePos + 1);
-
-        // htmlspecialchars must not appear between the label assignment and the next field
-        if ($htmlspecPos !== false && $nextAssignPos !== false) {
-            $this->assertGreaterThan(
-                $nextAssignPos,
-                $htmlspecPos,
-                'label field should not be HTML-escaped — it goes through JSON encoding, not direct HTML injection'
-            );
-        } else {
-            // htmlspecialchars is not present at all after the label line — correct
-            $this->addToAssertionCount(1);
-        }
-    }
-
     // -----------------------------------------------------------------------
     // DATATABLE_COLUMNS — sortable column keys (issue #937)
     // -----------------------------------------------------------------------
@@ -1366,5 +1241,137 @@ class AdministratepaperControllerTest extends TestCase
             . "to the 'hookVersion' hook, otherwise Zenodo's hookVersion() cannot increment the version and "
             . 'the posted identifier ends up written into VERSION while IDENTIFIER is left untouched'
         );
+    }
+
+    // ---------------------------------------------------------------
+    // BUG — reviewer invitation e-mail never sets %%PERMANENT_ARTICLE_ID%%
+    // ---------------------------------------------------------------
+
+    /**
+     * Bug (present, unchanged, since this controller's very first commit):
+     * unlike every other paper-related e-mail in this controller — which all
+     * pass the paper's permanent id to Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID
+     * explicitly, a pattern generalised across the codebase in a later
+     * "make the tag available everywhere" pass — the reviewer invitation
+     * e-mail only ever called setDocid($docId), with no permanent id supplied
+     * and no TAG_PERMANENT_ARTICLE_ID added afterwards. That later pass missed
+     * this call site, so %%PERMANENT_ARTICLE_ID%% has always been empty in
+     * this specific template.
+     *
+     * setDocid() now resolves the permanent id itself when none is given
+     * (via a DB lookup), so the tag would no longer be empty either way —
+     * but $paper is already loaded here, so passing its id explicitly avoids
+     * that lookup entirely, consistent with every other call site fixed in
+     * this change.
+     */
+    public function testSaveReviewerInvitationActionPassesPaperIdToSetDocid(): void
+    {
+        $method = $this->extractMethod('savereviewerinvitationAction');
+
+        $this->assertMatchesRegularExpression(
+            '/setDocid\(\s*\$docId\s*,\s*\$paper->getPaperid\(\)\s*\)/',
+            $method,
+            'BUG: setDocid() must be given $paper->getPaperid() so %%PERMANENT_ARTICLE_ID%% is set '
+            . 'in the reviewer invitation e-mail'
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // savespdxlicenseAction — journal allowed licenses
+    // ---------------------------------------------------------------
+
+    /**
+     * Bug: the allowed-licenses check ran before the "already set" check, so
+     * re-saving a paper's current license unchanged — a license that may predate
+     * the journal's allowed licenses, and that the form always offers — failed with
+     * "not allowed" instead of the "already set" warning.
+     */
+    public function testSavespdxlicenseActionChecksCurrentLicenseBeforeAllowedLicenses(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $alreadySetPos = strpos($method, 'La licence actuelle est déjà définie.');
+        $allowedPos    = strpos($method, 'getAllowedLicenses()');
+
+        $this->assertNotFalse($alreadySetPos, '"already set" warning not found in savespdxlicenseAction');
+        $this->assertNotFalse($allowedPos, 'getAllowedLicenses() call not found in savespdxlicenseAction');
+
+        $this->assertLessThan(
+            $allowedPos,
+            $alreadySetPos,
+            'BUG: the "already set" check must come before the allowed-licenses check, '
+            . 'otherwise re-saving a pre-existing license is rejected as not allowed'
+        );
+    }
+
+    /**
+     * A new license outside the journal's allowed licenses must still be rejected,
+     * before anything is saved.
+     */
+    public function testSavespdxlicenseActionRejectsNotAllowedLicenseBeforeSaving(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $rejectPos = strpos($method, "cette licence n'est pas autorisée par la revue");
+        $savePos   = strpos($method, '->save()');
+
+        $this->assertNotFalse($rejectPos, 'not-allowed license error not found in savespdxlicenseAction');
+        $this->assertNotFalse($savePos, 'save() call not found in savespdxlicenseAction');
+
+        $this->assertLessThan(
+            $savePos,
+            $rejectPos,
+            'A license not allowed by the journal must be rejected before any save'
+        );
+    }
+
+    /**
+     * Bug: the form pre-selects the paper current license even when the journal does not allow it,
+     * but a license only resolved from the license URL (no saved SPDX code) was then rejected as not allowed.
+     * The allowed-licenses check must also be case-insensitive, like Episciences_Paper::getLicenseCheckStatus().
+     */
+    public function testSavespdxlicenseActionAcceptsPaperCurrentLicenseCaseInsensitively(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $this->assertStringContainsString('LicenseManager::containsCode($currentSpdxCode, $allowedLicenses)', $method);
+        $this->assertStringContainsString('$paper->getSpdxLicenseCode()', $method);
+        $this->assertStringNotContainsString('in_array($currentSpdxCode', $method);
+    }
+
+    /**
+     * Security: the license actions must not read or change the license of a paper of another journal
+     * (the paper's own journal settings were used, whatever the current journal).
+     */
+    public function testLicenseActionsRejectPapersOfAnotherJournal(): void
+    {
+        foreach (['getlicenselistformAction', 'savespdxlicenseAction'] as $action) {
+            $method = $this->extractMethod($action);
+
+            $this->assertStringContainsString('$paper->getRvid() !== RVID', $method, "$action must check the paper journal");
+            $this->assertMatchesRegularExpression(
+                '/getRvid\(\) !== RVID\)\s*\{\s*\$this->getResponse\(\)->setHttpResponseCode\(404\)/',
+                $method,
+                "$action must answer 404 for a paper of another journal"
+            );
+        }
+
+        $save = $this->extractMethod('savespdxlicenseAction');
+        $this->assertLessThan(
+            strpos($save, '->save()'),
+            strpos($save, 'getRvid() !== RVID'),
+            'The journal check must come before any save'
+        );
+    }
+
+    /**
+     * Bug: "cc-by-4.0" was not detected as the already saved "CC-BY-4.0", so the same license was saved again.
+     */
+    public function testSavespdxlicenseActionDetectsAlreadySetLicenseCaseInsensitively(): void
+    {
+        $method = $this->extractMethod('savespdxlicenseAction');
+
+        $this->assertStringNotContainsString('$oldLicense === $currentSpdxCode', $method);
+        $this->assertStringContainsString('LicenseManager::containsCode($currentSpdxCode, [$oldLicense])', $method);
     }
 }

@@ -1,9 +1,17 @@
 <?php
 
+use Episciences\Section\SectionHasPapersException;
+
 class Episciences_SectionsManager
 {
     public const TABLE = T_SECTIONS;
     public const SETTINGS_TABLE = T_SECTION_SETTINGS;
+
+    /** Papers that can no longer be moved: they do not keep a section from being deleted */
+    public const DETACHABLE_PAPER_STATUSES = [
+        Episciences_Paper::STATUS_DELETED,
+        Episciences_Paper::STATUS_REMOVED,
+    ];
 
     public const MAX_STRING_LENGTH = 255;
 
@@ -105,6 +113,7 @@ class Episciences_SectionsManager
      * Supprime une rubrique
      * @param int $id
      * @return bool
+     * @throws SectionHasPapersException when papers are still attached to the section
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
@@ -116,31 +125,30 @@ class Episciences_SectionsManager
             return false;
         }
 
-
-        // Si des articles sont rattachés à cette rubrique, on empêche sa suppression
-        /*
-        $sql = $db->select()->from(T_PAPERS, 'COUNT(DOCID)')->where('SID = ?', $id);
-        if ($db->fetchOne($sql)) {
-            echo 'Des articles ont déjà été publiés dans cette rubrique.';
-            return false;
-        }
-        */
-
-
-        // Récupération de l'id de position pour MAJ des autres rubriques
-        $select = $db->select()->from(self::TABLE)->where('SID = ?', $id);
-        $data = $select->query()->fetch();
-
-        if (!$data) {
-            return false;
-        }
-
-        $position = $data['POSITION'];
-        $rvId = $data['RVID'];
-
         $db->beginTransaction();
 
         try {
+            // The section row stays locked until the end, so that no paper is moved into it meanwhile
+            $data = $db->fetchRow($db->select()->from(self::TABLE)->where('SID = ?', $id)->forUpdate());
+
+            if (!$data) {
+                $db->rollBack();
+                return false;
+            }
+
+            // Récupération de l'id de position pour MAJ des autres rubriques
+            $position = $data['POSITION'];
+            $rvId = (int)$data['RVID'];
+
+            // A section that still has papers is kept, so that no paper points to a missing section
+            $paperIds = self::getAttachedPaperIds($id, $rvId, true);
+            if ($paperIds !== []) {
+                throw new SectionHasPapersException($id, $paperIds);
+            }
+
+            // Papers that can no longer be moved leave the section with it
+            $db->update(T_PAPERS, ['SID' => 0], ['SID = ?' => $id, 'RVID = ?' => $rvId]);
+
             // 1. Suppression des assignations liées à la rubrique
             Episciences_User_AssignmentsManager::removeAssignment([
                 'ITEM = ?' => Episciences_User_Assignment::ITEM_SECTION,
@@ -164,13 +172,86 @@ class Episciences_SectionsManager
             // 4. Suppression des paramètres de la rubrique
             $db->delete(self::SETTINGS_TABLE, 'SID = ' . $id);
             $db->commit();
-            return true;
-
+        } catch (SectionHasPapersException $e) {
+            $db->rollBack();
+            throw $e;
         } catch (Exception $e) {
             $db->rollBack();
             trigger_error("Error deleting section: " . $e->getMessage(), E_USER_WARNING);
             return false;
         }
+
+        // Enqueue Next.js cache revalidation for deleted section
+        $journal = Episciences_ReviewsManager::find($rvId);
+        if ($journal !== false) {
+            $rvcode = $journal->getCode();
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "section-{$id}-{$rvcode}",
+                "sections-{$rvcode}",
+            ]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Ids of the papers attached to a section of a journal, apart from the papers that can no longer be moved
+     * @param int $sid
+     * @param int $rvid
+     * @param bool $forUpdate lock the matching rows until the end of the current transaction
+     * @return list<int>
+     */
+    public static function getAttachedPaperIds(int $sid, int $rvid, bool $forUpdate = false): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        // A deleted or removed paper keeps its former versions with their own status
+        $detachablePapers = $db->select()
+            ->from(T_PAPERS, 'PAPERID')
+            ->where('RVID = ?', $rvid)
+            ->where('STATUS IN (?)', self::DETACHABLE_PAPER_STATUSES);
+        $select = $db->select()
+            ->distinct()
+            ->from(T_PAPERS, 'PAPERID')
+            ->where('SID = ?', $sid)
+            ->where('RVID = ?', $rvid)
+            ->where('PAPERID NOT IN (?)', $detachablePapers)
+            ->order('PAPERID ASC')
+            ->forUpdate($forUpdate);
+
+        return array_map('intval', $db->fetchCol($select));
+    }
+
+    /**
+     * Locks a section of a journal until the end of the current transaction, so that it cannot be deleted
+     * while papers are moved into it
+     * @param int $sid
+     * @param int $rvid
+     * @return bool false if the journal has no such section
+     */
+    public static function lockForPapers(int $sid, int $rvid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(self::TABLE, 'SID')
+            ->where('SID = ?', $sid)
+            ->where('RVID = ?', $rvid)
+            ->forUpdate();
+
+        return $db->fetchOne($select) !== false;
+    }
+
+    /**
+     * @param int $sid
+     * @return bool
+     */
+    public static function isPublishedPapersInSection(int $sid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPERS, 'COUNT(DOCID)')
+            ->where('SID = ?', $sid)
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+        return (int)$db->fetchOne($select) > 0;
     }
 
     /**
@@ -311,6 +392,8 @@ class Episciences_SectionsManager
             'value' => 1,
             'style' => 'width:300px'
         ));
+
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
 
         // Boutons : Valider et Annuler
         $form->setActions(true)->createSubmitButton('submit', array(

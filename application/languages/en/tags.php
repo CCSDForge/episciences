@@ -349,6 +349,7 @@ return array(
     Episciences_Paper_Logger::CODE_REVIEWER_INVITATION => "Reviewer invitation",
     Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED => "Accepted invitation",
     Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED => "Declined invitation",
+    Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_LINKED => "Invitation linked to another account",
     Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT => "Reviewer unassignment",
     Episciences_Paper_Logger::CODE_REVIEWER_ASSIGNMENT => "Reviewer assignment",
     Episciences_Paper_Logger::CODE_REVIEWING_IN_PROGRESS => "Ongoing review",
@@ -425,6 +426,7 @@ return array(
     Episciences_Editor::TAG_SECTION_EDITOR => 'Section editor',
     Episciences_Editor::TAG_VOLUME_EDITOR => 'Volume editor',
     Episciences_Editor::TAG_SUGGESTED_EDITOR => "Suggested by author",
+    Episciences_Editor::TAG_CHIEF_EDITOR => 'Chief editor',
     Episciences_Submit::SUBMIT_DOCUMENT_LABEL => "Submit a document",
 
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION] => "accepted - waiting for author's final version",
@@ -432,7 +434,7 @@ return array(
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for formatting by copy editors",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION] => "accepted temporary version after author's modifications",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "accepted temporary version, waiting for minor revision",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted temporary version , waiting for major revision",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted temporary version, waiting for major revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_NO_REVISION] => "revision request answer: without any modifications",
 
 );

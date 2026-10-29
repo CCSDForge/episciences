@@ -1,8 +1,11 @@
 <?php
 
+use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_Paper_LicenceManager
@@ -18,7 +21,7 @@ class Episciences_Paper_LicenceManager
      * @param float $version
      * @return string
      * @throws GuzzleException
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
     public static function getApiResponseByRepoId($repoId, string $identifier, float $version): string
     {
@@ -26,13 +29,14 @@ class Episciences_Paper_LicenceManager
             return '';
         }
 
-        $repoId = (string) $repoId;
-        
+        $repoId = (string)$repoId;
+
         $response = match ($repoId) {
             Episciences_Repositories::HAL_REPO_ID => self::getLicenceFromTeiHal($identifier, $version),
             Episciences_Repositories::ARXIV_REPO_ID => self::getDataciteLicence(self::ARXIV_DOI_PREFIX . $identifier),
             Episciences_Repositories::ZENODO_REPO_ID => self::getDataciteLicence(self::ZENODO_DOI_PREFIX . $identifier),
             Episciences_Repositories::ARCHE_ID => self::getLicenceFromArcheDatacite($identifier),
+            Episciences_Repositories::BAOBAB_REPO_ID => self::getLicenceFromBaobab($identifier),
             default => ''
         };
 
@@ -52,9 +56,9 @@ class Episciences_Paper_LicenceManager
     private static function shouldRateLimit(string $repoId): bool
     {
         return in_array($repoId, [
-            Episciences_Repositories::ARXIV_REPO_ID,
-            Episciences_Repositories::ZENODO_REPO_ID,
-            Episciences_Repositories::ARCHE_ID
+                Episciences_Repositories::ARXIV_REPO_ID,
+                Episciences_Repositories::ZENODO_REPO_ID,
+                Episciences_Repositories::ARCHE_ID
         ], true);
     }
 
@@ -83,7 +87,7 @@ class Episciences_Paper_LicenceManager
      * @param string $identifier
      * @param int $version
      * @return string
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
     public static function getLicenceFromTeiHal(string $identifier, int $version): string
     {
@@ -136,23 +140,49 @@ class Episciences_Paper_LicenceManager
 
 
     /**
+     * BAOBAB (InvenioRDM) exposes the licence in its REST JSON; no DataCite DOI
+     * exists to query the DataCite API with, unlike Zenodo. Not rate limited:
+     * the call runs inside Paper::save(), right after the submission fetched
+     * the same record, which fetchRecord() then returns without a new request.
+     *
+     * @param string $identifier the InvenioRDM record id
+     * @return string
+     */
+    public static function getLicenceFromBaobab(string $identifier): string
+    {
+        try {
+            $json = Episciences_Repositories_BAOBAB_Hooks::fetchRecord($identifier);
+        } catch (GuzzleException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return '';
+        }
+
+        if ($json === null) {
+            return '';
+        }
+
+        return self::cleanLicence(Episciences_Repositories_BAOBAB_Hooks::extractLicenceUrl($json));
+    }
+
+
+    /**
      * @param string $licence
      * @return string
      */
     public static function cleanLicence(string $licence): string
     {
         $urlReplacements = [
-            'http://hal.archives-ouvertes.fr/licences/etalab/' => 'https://raw.githubusercontent.com/DISIC/politique-de-contribution-open-source/master/LICENSE',
-            'http://hal.archives-ouvertes.fr/licences/publicDomain/' => 'https://creativecommons.org/publicdomain/zero/1.0',
+                'http://hal.archives-ouvertes.fr/licences/etalab/' => 'https://raw.githubusercontent.com/DISIC/politique-de-contribution-open-source/master/LICENSE',
+                'http://hal.archives-ouvertes.fr/licences/publicDomain/' => 'https://creativecommons.org/publicdomain/zero/1.0',
         ];
 
         $ccPatterns = [
-            '/http:\/\/creativecommons\.org\/licenses\/by\/$/' => 'https://creativecommons.org/licenses/by/4.0',
-            '/http:\/\/creativecommons\.org\/licenses\/by-nc-sa\/$/' => 'https://creativecommons.org/licenses/by-nc-sa/4.0',
-            '/http:\/\/creativecommons\.org\/licenses\/by-sa\/$/' => 'https://creativecommons.org/licenses/by-sa/4.0',
-            '/http:\/\/creativecommons\.org\/licenses\/by-nd\/$/' => 'https://creativecommons.org/licenses/by-nd/4.0',
-            '/http:\/\/creativecommons\.org\/licenses\/by-nc\/$/' => 'https://creativecommons.org/licenses/by-nc/4.0',
-            '/http:\/\/creativecommons\.org\/licenses\/by-nc-nd\/$/' => 'https://creativecommons.org/licenses/by-nc-nd/4.0',
+                '/http:\/\/creativecommons\.org\/licenses\/by\/$/' => 'https://creativecommons.org/licenses/by/4.0',
+                '/http:\/\/creativecommons\.org\/licenses\/by-nc-sa\/$/' => 'https://creativecommons.org/licenses/by-nc-sa/4.0',
+                '/http:\/\/creativecommons\.org\/licenses\/by-sa\/$/' => 'https://creativecommons.org/licenses/by-sa/4.0',
+                '/http:\/\/creativecommons\.org\/licenses\/by-nd\/$/' => 'https://creativecommons.org/licenses/by-nd/4.0',
+                '/http:\/\/creativecommons\.org\/licenses\/by-nc\/$/' => 'https://creativecommons.org/licenses/by-nc/4.0',
+                '/http:\/\/creativecommons\.org\/licenses\/by-nc-nd\/$/' => 'https://creativecommons.org/licenses/by-nc-nd/4.0',
         ];
 
         $licence = str_replace(array_keys($urlReplacements), array_values($urlReplacements), $licence);
@@ -175,11 +205,11 @@ class Episciences_Paper_LicenceManager
         $client = new Client();
         try {
             return $client->get($url, [
-                'headers' => [
-                    'User-Agent' => 'CCSD Episciences support@episciences.org',
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
-                ]
+                    'headers' => [
+                            'User-Agent' => 'CCSD Episciences support@episciences.org',
+                            'Content-Type' => 'application/json',
+                            'Accept' => 'application/json'
+                    ]
             ])->getBody()->getContents();
         } catch (ClientException $e) {
             trigger_error('Api call error: ' . $url);
@@ -189,12 +219,7 @@ class Episciences_Paper_LicenceManager
     }
 
     /**
-     * @param string $repoId
-     * @param string $callArrayResp
-     * @param int $docId
-     * @param string $identifier
-     * @return int
-     * @throws JsonException|\Psr\Cache\InvalidArgumentException
+     * @throws JsonException|InvalidArgumentExceptionAlias
      */
     public static function insertLicenceFromApiByRepoId(string $repoId, string $callArrayResp, int $docId, string $identifier): int
     {
@@ -202,22 +227,45 @@ class Episciences_Paper_LicenceManager
             return 0;
         }
 
+        if (self::isPreviouslyUpdatedManually($docId)) {
+            return 0;
+        }
+
         $licenceData = self::extractLicenceData($repoId, $callArrayResp);
-        
+
         if ($licenceData === null) {
             self::cacheEmptyResult($identifier);
             return 0;
         }
 
         self::cacheLicenceData($identifier, $licenceData['cacheData']);
-        
-        return self::insert([
-            [
-                'licence' => $licenceData['licence'],
-                'docId' => $docId,
-                'sourceId' => $licenceData['sourceId']
-            ]
+
+        $paperLicenseResult = self::insert([
+                [
+                        'licence' => $licenceData['licence'],
+                        'docid' => $docId,
+                        'sourceId' => $licenceData['sourceId']
+                ]
         ]);
+
+        // Insert also into "paper_license_code" if the license code has an SPDX equivalent
+        // A failure here must not abort the paper submission: the paper row is already saved
+        try {
+            $resolved = (new LicenseSpdxResolver())->resolve($licenceData['licence']);
+
+            if ($resolved !== LicenseSpdxResolver::NO_ASSERTION) {
+
+                (new LicenseCode([
+                        'code' => $resolved,
+                        'docid' => $docId
+                ]))->save();
+
+            }
+        } catch (Throwable $e) {
+            trigger_error(sprintf('SPDX license resolution failed for docid %d: %s', $docId, $e->getMessage()), E_USER_WARNING);
+        }
+
+        return $paperLicenseResult;
     }
 
     /**
@@ -229,23 +277,29 @@ class Episciences_Paper_LicenceManager
     private static function extractLicenceData(string $repoId, string $callArrayResp): ?array
     {
         $result = null;
-        
+
         if ($repoId === Episciences_Repositories::ARXIV_REPO_ID || $repoId === Episciences_Repositories::ZENODO_REPO_ID) {
             $result = self::extractDataciteLicenceData($callArrayResp);
         } elseif ($repoId === Episciences_Repositories::HAL_REPO_ID) {
             $result = [
-                'licence' => $callArrayResp,
-                'sourceId' => Episciences_Repositories::HAL_REPO_ID,
-                'cacheData' => $callArrayResp
+                    'licence' => $callArrayResp,
+                    'sourceId' => Episciences_Repositories::HAL_REPO_ID,
+                    'cacheData' => $callArrayResp
             ];
         } elseif ($repoId === Episciences_Repositories::ARCHE_ID) {
             $result = [
-                'licence' => $callArrayResp,
-                'sourceId' => Episciences_Repositories::ARCHE_ID,
-                'cacheData' => $callArrayResp
+                    'licence' => $callArrayResp,
+                    'sourceId' => Episciences_Repositories::ARCHE_ID,
+                    'cacheData' => $callArrayResp
+            ];
+        } elseif ($repoId === Episciences_Repositories::BAOBAB_REPO_ID) {
+            $result = [
+                    'licence' => $callArrayResp,
+                    'sourceId' => Episciences_Repositories::BAOBAB_REPO_ID,
+                    'cacheData' => $callArrayResp
             ];
         }
-        
+
         return $result;
     }
 
@@ -257,25 +311,25 @@ class Episciences_Paper_LicenceManager
     private static function extractDataciteLicenceData(string $callArrayResp): ?array
     {
         $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
-        
+
         if (!isset($licenceArray['data']['attributes']['rightsList'][0]['rightsUri'])) {
             return null;
         }
-        
+
         $rightsData = $licenceArray['data']['attributes']['rightsList'][0];
         $licenceUri = $rightsData['rightsUri'];
-        
+
         return [
-            'licence' => self::cleanLicence($licenceUri),
-            'sourceId' => Episciences_Repositories::DATACITE_REPO_ID,
-            'cacheData' => $rightsData
+                'licence' => self::cleanLicence($licenceUri),
+                'sourceId' => Episciences_Repositories::DATACITE_REPO_ID,
+                'cacheData' => $rightsData
         ];
     }
 
     /**
      * @param string $identifier
      * @param mixed $data
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      */
     private static function cacheLicenceData(string $identifier, $data): void
@@ -290,7 +344,7 @@ class Episciences_Paper_LicenceManager
 
     /**
      * @param string $identifier
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      */
     private static function cacheEmptyResult(string $identifier): void
@@ -299,42 +353,61 @@ class Episciences_Paper_LicenceManager
     }
 
     /**
-     * @param array $licences
+     * @param array|Episciences_Paper_Licence $licences
+     * @param bool $force : overwrite the previous license
      * @return int
      */
 
-    public static function insert(array $licences): int
+    public static function insert(array|Episciences_Paper_Licence $licences, bool $force = true): int
     {
+        if (!$force) {
+            return 0;
+        }
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
         $values = [];
-
         $affectedRows = 0;
 
+        // Normalize to array
+        $licences = is_array($licences) ? $licences : [$licences];
+
         foreach ($licences as $licence) {
+            // Ensure proper object type
             if (!($licence instanceof Episciences_Paper_Licence)) {
                 $licence = new Episciences_Paper_Licence($licence);
             }
-            $values[] = '(' . $db->quote($licence->getLicence()) . ',' . $db->quote($licence->getDocId()) . ',' . $db->quote($licence->getSourceId()) . ')';
+
+
+            $values[] = sprintf(
+                    '(%s, %s, %s,%s)',
+                    $db->quote($licence->getLicence()),
+                    $db->quote($licence->getDocid()),
+                    $db->quote($licence->getSourceId()),
+                    self::formatValue($db, $licence->getUid())
+            );
         }
-
-        $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_LICENCES) . ' (`licence`,`docid`,`source_id`) VALUES ';
-
 
         if (!empty($values)) {
             try {
-                //Prepares and executes an SQL
-                /** @var Zend_Db_Statement_Interface $result */
-                $result = $db->query($sql . implode(', ', $values) . ' AS new_row ON DUPLICATE KEY UPDATE licence=new_row.licence');
-                $affectedRows = $result->rowCount();
+                $sql = sprintf(
+                        'INSERT INTO %s (`licence`,`docid`,`source_id`,`uid`) VALUES %s AS new_row ON DUPLICATE KEY UPDATE `licence`=new_row.licence, `uid`=new_row.uid ',
+                        $db->quoteIdentifier(T_PAPER_LICENCES),
+                        implode(', ', $values)
+                );
 
+                $result = $db->query($sql);
+                $affectedRows = $result->rowCount();
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_ERROR);
             }
         }
 
         return $affectedRows;
+    }
 
+    private static function formatValue(Zend_Db_Adapter_Abstract $db, $value): string
+    {
+        return $value !== null && $value !== '' ? $db->quote($value) : 'NULL';
     }
 
     public static function getLicenceByDocId(int $docId = null): string
@@ -345,8 +418,23 @@ class Episciences_Paper_LicenceManager
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $db->select()->from(T_PAPER_LICENCES, ['licence', 'source_id'])->where('docid = ? ', $docId);
-        return $db->fetchOne($sql);
+
+        // The license may be stored as an SPDX code in T_PAPER_LICENSE_CODE,
+        // even when there is no raw licence row in T_PAPER_LICENCES.
+        $sql = $db->select()
+            ->from(['c' => T_PAPER_LICENSE_CODE], ['c.code'])
+            ->joinLeft(['pl' => T_PAPER_LICENCES], 'pl.docid = c.docid', ['pl.licence'])
+            ->where('c.docid = ?', $docId);
+        $result = $db->fetchRow($sql);
+
+        if (isset($result['code'])) {
+            return (new LicenseCode(['code' => $result['code']]))->getReference();
+        }
+
+        // Fall back to the raw licence stored in T_PAPER_LICENCES
+        $result = $db->fetchRow(self::getLicenceByDocIdQuery($docId, ['licence']));
+
+        return $result['licence'] ?? '';
 
     }
 
@@ -361,4 +449,33 @@ class Episciences_Paper_LicenceManager
 
     }
 
+    private static function getLicenceByDocIdQuery(int $docId = null, string|array $field = '*'): ?Zend_Db_Select
+    {
+        if (!$docId) {
+            return null;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        return $db?->select()->from(['pl' => T_PAPER_LICENCES], $field)->where('pl.docid = ? ', $docId);
+    }
+
+    public static function getLicenceObjectByDocId(int $docId = null): ?Episciences_Paper_Licence
+    {
+        if (!$docId) {
+            return null;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = self::getLicenceByDocIdQuery($docId);
+        $result = $db?->fetchAll($sql)[0] ?? [];
+
+        return !empty($result) ? new Episciences_Paper_Licence($result) : null;
+
+    }
+
+
+    private static function isPreviouslyUpdatedManually($docId): bool
+    {
+        return self::getLicenceObjectByDocId($docId)?->getUid() > 0;
+    }
 }

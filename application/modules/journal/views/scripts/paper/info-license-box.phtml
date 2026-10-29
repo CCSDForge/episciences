@@ -1,0 +1,49 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+
+$status = $paper->getLicenseCheckStatus();
+
+if ($status === null) {
+    return;
+}
+
+$icon = 'fa-bell';
+$isLicenceMissing = $status === Episciences_Paper::LICENSE_CHECK_MISSING;
+
+if ($isLicenceMissing) {
+    $title = 'Licence manquante';
+    $message = 'Merci de préciser la licence pour cette publication avant sa mise en ligne.';
+} elseif ($status === Episciences_Paper::LICENSE_CHECK_MISMATCH) {
+    $title = 'Licence non conforme';
+    $message = 'La licence de cette publication ne fait pas partie des licences acceptées par la revue.';
+} else {
+    $title = 'Licence non reconnue';
+    $message = "La licence de cette publication n'a pas pu être identifiée parmi les licences SPDX.";
+}
+
+
+?>
+<div class="info-license-box" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="info-icon" aria-hidden="true">
+        <span class="fa-regular <?= $this->escape($icon) ?> fa-shake fa-sm"></span>
+    </div>
+
+    <div class="info-content">
+        <h4><?= $this->escape($this->translate($title)) ?></h4>
+        <p>
+            <?= $this->escape($this->translate($message)) ?>
+        </p>
+
+        <div class="info-license-actions">
+            <button
+                type="button"
+                class="btn btn-default btn-xs popover-link edit-license"
+                data-docid="<?= (int)$paper->getDocid() ?>"
+                onclick="getLicensesForm(this, <?= (int)$paper->getDocid() ?>)">
+                <span class="fa-solid fa-pen-to-square" aria-hidden="true"></span>
+                <?= $this->escape($this->translate($isLicenceMissing ? 'Définir la licence' : 'Modifier la licence')) ?>
+            </button>
+        </div>
+    </div>
+</div>

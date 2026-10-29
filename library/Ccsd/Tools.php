@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -603,13 +605,31 @@ class Ccsd_Tools
         return $proc->transformToXML($xml);
     }
 
+    /**
+     * @param string $str
+     * @param string|null $lang
+     * @return string
+     */
+    public static function translateLicense(string $str, string $lang = null): string
+    {
+        //No translation file is available for this type of license (SPDX); replaced with the official license names
+        $code = LicenseSpdxResolver::urlToSpdxCode($str);
+
+        if ($code !== ''){
+            return (new LicenseCode(['code' => $code]))->getName() ?? '';
+        }
+
+        return self::translate($str);
+
+    }
+
 
     /**
      * @param string $str
-     * @param string $lang
+     * @param ?string $lang
      * @return string
      */
-    public static function translate($str, $lang = null)
+    public static function translate(string $str, ?string $lang = null): string
     {
         try {
             /** @var Zend_Translate_Adapter $translator */
@@ -619,13 +639,13 @@ class Ccsd_Tools
             }
 
             if ($lang !== 'fr' && !$translator->isTranslated($str)) { // log missing translations unless and only if the language is not French
-                error_log('Missing translation: ' . $str);
+                error_log(sprintf('Missing translation for string: %s',  $str));
                 return $str;
             }
 
             return $translator->translate($str, $lang);
         } catch (Zend_Exception $e) {
-            Ccsd_Tools::panicMsg(__FILE__, __LINE__, "Zend registry: Zend_Translate not defined\n" . $e->getMessage());
+            self::panicMsg(__FILE__, __LINE__, "Zend registry: Zend_Translate not defined\n" . $e->getMessage());
             return $str;
         }
     }

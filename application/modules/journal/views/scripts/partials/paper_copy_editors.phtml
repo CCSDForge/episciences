@@ -35,14 +35,7 @@ $editors = $this->editors;
                     </span>
                 </a>
                 <?php if (Episciences_Auth::isSecretary()) : ?>
-                    <a class="btn btn-default" href="/user/su/uid/<?php echo $copyEditor->getUid(); ?>">
-                        <span data-toggle="tooltip"
-                              style="margin: 0.2rem"
-                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
-                              class="fas fa-user-secret">
-
-                        </span>
-                    </a>&nbsp;
+                    <?= $this->partial('user/su_button.phtml', ['uid' => $copyEditor->getUid()]) ?>&nbsp;
                 <?php endif; ?>
 
 

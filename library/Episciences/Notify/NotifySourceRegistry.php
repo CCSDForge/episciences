@@ -40,7 +40,10 @@ final class NotifySourceRegistry
                 label:         'HAL',
                 originId:      NOTIFY_TARGET_HAL_URL,
                 originInbox:   NOTIFY_TARGET_HAL_INBOX,
-                acceptedTypes: ['Offer', 'coar-notify:ReviewAction'],
+                acceptedTypes: [
+                    ['Offer', 'coar-notify:ReviewAction'],
+                    ['Offer', 'coar-notify:EndorsementAction'],
+                ],
             );
         }
 
