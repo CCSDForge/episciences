@@ -46,6 +46,7 @@ php scripts/console.php <command> --help
 | [`zbjats:zip`](#zbjatszip) | Package PDF + zbJATS XML into a ZIP archive per volume |
 | [`papers:update-document`](#papersupdate-document) | Update the `DOCUMENT` JSON column in `PAPERS` from `Paper::toJson()` |
 | [`papers:clean-hal-descriptions`](#papersclean-hal-descriptions) | Strip HAL non-abstract `dc:description` markers from `PAPERS.RECORD` |
+| [`papers:delete`](#papersdelete) | Delete paper versions of a journal, with their files and every related row |
 | [`import:sections`](#importsections) | Import journal sections from a CSV file |
 | [`import:volumes`](#importvolumes) | Import journal volumes from a CSV file |
 | [`import:papers`](#importpapers) | Import or update papers from a CSV file |
@@ -695,6 +696,38 @@ php scripts/console.php papers:clean-hal-descriptions [options]
 | `--update-document` | | Regenerate `PAPERS.DOCUMENT` for modified papers via `papers:update-document` |
 | `--no-reindex` | | Do not queue a Solr reindex for modified papers |
 | `--dry-run` | | Report what would change without writing anything |
+
+---
+
+### `papers:delete`
+
+Deletes paper versions of a journal, with their files and every related row (tables listed in `Episciences_PapersManager::VERSION_TABLES` and `PAPER_TABLES`). Replaces `scripts/DeletePaper.php`.
+
+```bash
+php scripts/console.php papers:delete --rvcode=<code> <docid>... [--dry-run]
+```
+
+| Argument / option | Default | Description |
+|--------|---------|-------------|
+| `docids` | | DOCIDs of the paper versions to delete, separated by spaces or commas; required |
+| `--rvcode` | | Code of the journal the papers belong to; required |
+| `--dry-run` | off | Check the papers without deleting anything |
+
+Deleting cannot be undone: before deleting, the command asks to type `Yes delete I understand the consequences`.
+Any other answer, or the non-interactive mode (`-n`), deletes nothing. `--dry-run` does not ask.
+
+A paper of another journal, or a missing paper, is reported and skipped. Rows shared by every version of a
+paper (authors, DOI queue, volume position, projects, conflicts of interest) are deleted with the last version
+only. The deletion of a paper version is all or nothing: when it fails, nothing is deleted and the cause is
+displayed. The command exits with a failure code if any paper version could not be deleted. Deletions and
+failures are logged to `papers_delete-YYYY-MM-DD.log` in the log directory.
+
+Example:
+
+```bash
+php scripts/console.php papers:delete --rvcode=dev 123 124 --dry-run
+php scripts/console.php papers:delete --rvcode=dev 123,124
+```
 
 ---
 

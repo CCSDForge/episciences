@@ -810,4 +810,33 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
 
         self::assertSame($recipients, $this->invoke('removeConflictingRecipients', [$recipients, []]));
     }
+
+    public function testFilterConflictRecipientsKeepsEveryoneWhenConflictsAreDisabled(): void
+    {
+        $previous = \Zend_Registry::isRegistered('reviewSettings') ? \Zend_Registry::get('reviewSettings') : null;
+        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '0']);
+
+        try {
+            $recipients = [2 => 'editor', 3 => 'secretary'];
+            $paper = $this->createMock(Episciences_Paper::class);
+            // Conflict declarations are not even read
+            $paper->expects($this->never())->method('getPaperid');
+
+            self::assertSame($recipients, Episciences_Submit::filterConflictRecipients($recipients, $paper));
+        } finally {
+            \Zend_Registry::set('reviewSettings', $previous);
+        }
+    }
+
+    public function testNewPaperKeepsTheNotificationFallbackEvenWithAssignedEditors(): void
+    {
+        self::assertFalse(Episciences_Submit::isStrictNotification(false, [2 => 'editor']));
+        self::assertFalse(Episciences_Submit::isStrictNotification(false, []));
+    }
+
+    public function testUpdatedPaperOnlyNotifiesTheCheckedRolesWhenItHasEditors(): void
+    {
+        self::assertTrue(Episciences_Submit::isStrictNotification(true, [2 => 'editor']));
+        self::assertFalse(Episciences_Submit::isStrictNotification(true, []));
+    }
 }

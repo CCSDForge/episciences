@@ -141,6 +141,10 @@ $config['OPENALEX']['APIKEY'] = 'ci-openalex-api-key';
 // closed; the test environment needs a value for the invitation pages to work.
 $config['REVIEWER_INVITATION']['HMAC_SECRET'] = 'ci-reviewer-invitation-hmac-secret';
 
+// Same for uploaded files: without a secret of UploadedFileToken::MIN_SECRET_LENGTH (64) characters at
+// least, /file/upload refuses every file.
+$config['UPLOADED_FILE']['HMAC_SECRET'] = 'ci-uploaded-file-hmac-secret-' . str_repeat('0', 35);
+
 writeFileOrFail(
     $root . '/tests/config/pwd.json',
     json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL,

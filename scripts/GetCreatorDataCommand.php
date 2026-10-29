@@ -143,7 +143,7 @@ class GetCreatorDataCommand extends Command
             }
 
             if ((int) $value['REPOID'] === (int) Episciences_Repositories::HAL_REPO_ID) {
-                $this->enrichFromHalTei($paper, trim($value['IDENTIFIER']), (int) $value['VERSION'], $dryRun);
+                $this->enrichFromHalTei($paper, Episciences_Paper::stripRefusedSuffix(trim($value['IDENTIFIER'])), (int) $value['VERSION'], $dryRun);
             }
 
             foreach (Episciences_Paper_Authors_EnrichmentService::getCorrections() as $correction) {

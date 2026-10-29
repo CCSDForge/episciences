@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/GenerateUsersCommand.php';
 require_once __DIR__ . '/InitDevUsersCommand.php';
+require_once __DIR__ . '/E2ESeedCommand.php';
 require_once __DIR__ . '/CreateBotUserCommand.php';
 require_once __DIR__ . '/ExtractBiblioRefsCommand.php';
 require_once __DIR__ . '/GetCitationsDataCommand.php';
@@ -33,6 +34,7 @@ require_once __DIR__ . '/UpdateGeoIpCommand.php';
 require_once __DIR__ . '/GenerateDownloadKpiCommand.php';
 require_once __DIR__ . '/UpdatePapersDocumentCommand.php';
 require_once __DIR__ . '/CleanHalRecordDescriptionsCommand.php';
+require_once __DIR__ . '/DeletePapersCommand.php';
 require_once __DIR__ . '/UpdateTranslationsCommand.php';
 require_once __DIR__ . '/GetDoiCommand.php';
 require_once __DIR__ . '/Command/AbstractCommand.php';
@@ -67,6 +69,7 @@ $application = new Application('Episciences CLI', '1.0.0');
 // Register commands
 $application->addCommand(new GenerateUsersCommand());
 $application->addCommand(new InitDevUsersCommand());
+$application->addCommand(new E2ESeedCommand());
 $application->addCommand(new CreateBotUserCommand());
 $application->addCommand(new AnonymizeSuLogsCommand());
 $application->addCommand(new PurgeExpiredUserTokensCommand());
@@ -126,6 +129,7 @@ $application->addCommand(new UpdatePapersDocumentCommand());
 $application->addCommand(new UpdateLicensesCommand());
 $application->addCommand(new ImportSpdxLicenseListCommand());
 $application->addCommand(new CleanHalRecordDescriptionsCommand());
+$application->addCommand(new DeletePapersCommand());
 
 // Translation commands
 $application->addCommand(new UpdateTranslationsCommand());
