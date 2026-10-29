@@ -38,7 +38,7 @@ final class Episciences_PapersManager_RenameIdentifierTest extends TestCase
         $this->db->rollBack();
     }
 
-    private function insertPaper(int $rvid, int $paperId, int $status): int
+    private function insertPaper(int $rvid, int $paperId, int $status, float $version = 1): int
     {
         $this->db->insert(T_PAPERS, [
             'PAPERID' => $paperId,
@@ -46,7 +46,7 @@ final class Episciences_PapersManager_RenameIdentifierTest extends TestCase
             'UID' => 1,
             'STATUS' => $status,
             'IDENTIFIER' => self::IDENTIFIER,
-            'VERSION' => 1,
+            'VERSION' => $version,
             'REPOID' => 1,
             'RECORD' => '<record/>',
             'WHEN' => '2020-01-02 03:04:05',
