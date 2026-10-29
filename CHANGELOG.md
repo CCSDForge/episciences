@@ -73,15 +73,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Deleting a paper version also deletes its authors, declared files, data descriptor, DOI queue entry, assignments with their invitations and answers, reviewers without an account no longer invited to any paper, repository files, linked datasets with their metadata, citations, classifications, SPDX licence code and sent e-mails log. The deletion is all or nothing: if one row cannot be deleted, nothing is. Rows shared by every version of a paper (authors, DOI queue, volume position, projects, conflicts of interest) are deleted with the last version only: deleting one version no longer removes the volume position and projects of the others. A cited paper can now be deleted.
 - Paper history: a chief editor assigned automatically to a new paper is shown with the reason of the assignment ("Chief editor"), like section, volume and suggested editors.
 - [#1398](https://github.com/CCSDForge/episciences/pull/1398): Inbox (COAR Notify): a new version answers the latest revision request of the paper, no longer its latest comment of any type. The reviewers are reinvited and the paper kept accepted only when this request says so, and the editors of the paper are notified even when a more recent comment, such as a cover letter, follows the request.
+- [#1393](https://github.com/CCSDForge/episciences/pull/1393): Papers management and other tables loaded page by page (my papers, ratings, mail history): the header stays aligned with the columns when the paper status icons load after the table.
+- [#1393](https://github.com/CCSDForge/episciences/pull/1393): Tables with a horizontal scrollbar (papers management, my papers, ratings, mail history): the header stays aligned with the columns whatever the rules of the journal stylesheet for div elements.
 
 ### Removed
 
 - [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Remove the legacy `scripts/DeletePaper.php` script (replaced by the `papers:delete` console command), which reported a deletion as successful even when it had failed.
-
-### Fixed
-
-- Papers management and other tables loaded page by page (my papers, ratings, mail history): the header stays aligned with the columns when the paper status icons load after the table.
-- Tables with a horizontal scrollbar (papers management, my papers, ratings, mail history): the header stays aligned with the columns whatever the rules of the journal stylesheet for div elements.
 
 ## v1.0.58 - 2026-10-25
 
