@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/GenerateUsersCommand.php';
 require_once __DIR__ . '/InitDevUsersCommand.php';
+require_once __DIR__ . '/E2ESeedCommand.php';
 require_once __DIR__ . '/CreateBotUserCommand.php';
 require_once __DIR__ . '/ExtractBiblioRefsCommand.php';
 require_once __DIR__ . '/GetCitationsDataCommand.php';
@@ -68,6 +69,7 @@ $application = new Application('Episciences CLI', '1.0.0');
 // Register commands
 $application->addCommand(new GenerateUsersCommand());
 $application->addCommand(new InitDevUsersCommand());
+$application->addCommand(new E2ESeedCommand());
 $application->addCommand(new CreateBotUserCommand());
 $application->addCommand(new AnonymizeSuLogsCommand());
 $application->addCommand(new PurgeExpiredUserTokensCommand());
