@@ -566,6 +566,43 @@ class ProcessInboxNotificationsCommandTest extends TestCase
         );
     }
 
+    public function testPaperReplacedInPlaceNotifiesItsEditors(): void
+    {
+        $editor = $this->userWithUid(2);
+        $paper  = $this->createMock(\Episciences_Paper::class);
+        $paper->method('getEditors')->willReturn([2 => $editor]);
+        // As on the web, the copy editors are not notified of a paper replaced in place
+        $paper->expects($this->never())->method('getCopyEditors');
+
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'initialManagerRecipients');
+
+        $this->assertSame([2 => $editor], $method->invoke($this->command, $paper, true, true, [], $this->logger));
+    }
+
+    public function testNewPaperNotifiesTheEditorsJustAssigned(): void
+    {
+        $assigned = [3 => $this->userWithUid(3)];
+        $paper    = $this->createMock(\Episciences_Paper::class);
+        $paper->expects($this->never())->method('getEditors');
+
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'initialManagerRecipients');
+
+        $this->assertSame($assigned, $method->invoke($this->command, $paper, true, false, $assigned, $this->logger));
+    }
+
+    public function testOtherNotificationsGoToTheEditorsAndCopyEditors(): void
+    {
+        $editor     = $this->userWithUid(2);
+        $copyEditor = $this->userWithUid(4);
+        $paper      = $this->createMock(\Episciences_Paper::class);
+        $paper->method('getEditors')->willReturn([2 => $editor]);
+        $paper->method('getCopyEditors')->willReturn([4 => $copyEditor]);
+
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'initialManagerRecipients');
+
+        $this->assertSame([2 => $editor, 4 => $copyEditor], $method->invoke($this->command, $paper, false, false, [], $this->logger));
+    }
+
     private function userWithUid(int $uid): \Episciences_User
     {
         $user = $this->createMock(\Episciences_User::class);
