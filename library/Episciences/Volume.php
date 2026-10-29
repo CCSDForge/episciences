@@ -767,7 +767,7 @@ class Episciences_Volume
         }
 
         $this->setVol_year(!empty($post['year']) ? $post['year'] : null);
-        $this->setVol_num(!empty($post['num']) ? $post['num'] : null);
+        $this->setVol_num($post['num'] ?? null);
         $this->setBib_reference($post['bib_reference']);
 
         if ($data['special_issue'] === "1" && $data['is_proceeding'] === "1") {
@@ -1493,7 +1493,7 @@ class Episciences_Volume
     public function setVol_num($volNum): \Episciences_Volume
     {
         if ($volNum !== null && $volNum !== '') {
-            $cleaned = preg_replace('/[\x00-\x1F\x7F]/u', '', strip_tags((string)$volNum));
+            $cleaned = (string) preg_replace('/[\x00-\x1F\x7F]/u', '', strip_tags((string)$volNum));
             $cleaned = trim($cleaned);
             $this->_vol_num = $cleaned !== '' ? $cleaned : null;
         } else {

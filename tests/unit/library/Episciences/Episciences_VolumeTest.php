@@ -401,6 +401,21 @@ class Episciences_VolumeTest extends TestCase
         $this->assertSame($twentyChars, $v->getVol_num());
     }
 
+    public function testSetVolNumPreservesZero(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num('0');
+        $this->assertSame('0', $v->getVol_num());
+
+        $v->setVol_num(0);
+        $this->assertSame('0', $v->getVol_num());
+
+        $method = new ReflectionMethod(Episciences_Volume::class, 'getVolumeDataForSave');
+        $method->setAccessible(true);
+        $result = $method->invoke($v);
+        $this->assertSame('0', $result['vol_num']);
+    }
+
     public function testSetVolNumSetsNullOnEmpty(): void
     {
         $v = new Episciences_Volume();
