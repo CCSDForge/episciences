@@ -19,8 +19,6 @@ use Symfony\Component\Serializer\Serializer;
 
 /**
  * Class Episciences_Paper
- * @property string | null $_revisionDeadline
- * @property array $tmpFiles
  */
 class Episciences_Paper
 {
@@ -373,6 +371,10 @@ class Episciences_Paper
     ];
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'openaire', 'crossref', 'doaj', 'zbjats', 'json'];
     public $hasHook;
+    /**
+     * Files of a temporary version, set by processTmpVersion()
+     */
+    public ?array $tmpFiles = null;
     protected array $_type = [self::TITLE_TYPE => self::DEFAULT_TYPE_TITLE, self::TYPE_TYPE => self::DEFAULT_TYPE_TITLE];
     /**
      * @var int
@@ -466,6 +468,8 @@ class Episciences_Paper
     private ?string $_password = null;
     private ?string $_graphical_abstract = null;
     private ?array $_data_descriptors = null;
+    /** Deadline of the pending revision request, read and set by controllers and views */
+    public ?string $_revisionDeadline = null;
 
     /**
      * Episciences_Paper constructor.

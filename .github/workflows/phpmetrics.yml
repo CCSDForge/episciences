@@ -21,13 +21,13 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: '8.3'
           extensions: dom, curl, libxml, mbstring, zip, pdo, mysql, xsl
           tools: composer:v2
 
       - name: Install dependencies
         run: |
-          composer config platform.php 8.1
+          composer config platform.php 8.3
           composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Setup build directory
