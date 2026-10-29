@@ -12,7 +12,8 @@ $tooltipInfo = "Un utilisateur peut avoir plusieurs rôles."
             ]) ?>
         </ul>
         <div class="stat-chart stat-chart-users">
-            <canvas id="users-by-roles-chart" role="img" aria-label="<?= $this->escape(strip_tags($this->chart5Title)) ?>"></canvas>
+            <canvas id="users-by-roles-chart" role="img" aria-label="<?= $this->escape(strip_tags($this->chart5Title)) ?>"
+                    data-export-name="<?= $this->escape(strip_tags($this->chart5Title)) ?>"></canvas>
         </div>
         <div class="stat-chart-data" data-chart="users-by-roles-chart"></div>
     </div>

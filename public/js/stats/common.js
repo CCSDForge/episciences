@@ -327,6 +327,7 @@ function createBarChart(canvasId, labels, datasets, options = {}) {
                     fileName: statCsvFileName([
                         statsExportName(),
                         options.exportName ||
+                            canvas.dataset.exportName ||
                             canvas.getAttribute('aria-label') ||
                             canvasId.replace(/-chart$/, ''),
                     ]),

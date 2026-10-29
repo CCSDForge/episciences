@@ -343,6 +343,15 @@ describe('CSV file of a chart', function () {
         ).toBe('statistiques-Submissions, decisions and publications by year');
     });
 
+    it('is named after the export name of the canvas, not its accessible label', function () {
+        expect(
+            exportedFileName(
+                '<canvas id="submissions-by-year-chart" aria-label="Submissions by year, for screen readers" data-export-name="Submissions by year"></canvas>',
+                {}
+            )
+        ).toBe('statistiques-Submissions by year');
+    });
+
     it('is named after the name given by the chart', function () {
         expect(
             exportedFileName(
