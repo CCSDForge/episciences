@@ -179,12 +179,12 @@ describe('createDelayChart', function () {
         );
 
         expect(createBarChart.mock.calls[0][3].exportName).toBe(
-            'Délais Moyenne'
+            'Délais moyens'
         );
 
         show('median');
         expect(createBarChart.mock.calls[1][3].exportName).toBe(
-            'Délais Médiane'
+            'Délais médians'
         );
         expect(destroy).toHaveBeenCalledTimes(1);
         expect(createBarChart).toHaveBeenLastCalledWith(

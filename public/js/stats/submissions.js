@@ -218,12 +218,9 @@ function createDelayChart(canvasId, delays) {
             shownMode === 'median' ? delays.medianDatasets : delays.datasets,
             {
                 // a short name (the title gives the unit and the two delays); the files of the mean and of the median are not mixed up
-                exportName:
-                    statTranslate('Délais') +
-                    ' ' +
-                    statTranslate(
-                        shownMode === 'median' ? 'Médiane' : 'Moyenne'
-                    ),
+                exportName: statTranslate(
+                    shownMode === 'median' ? 'Délais médians' : 'Délais moyens'
+                ),
                 categoryLabel: statTranslate('Année'),
                 format: value =>
                     value === null || value === undefined

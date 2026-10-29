@@ -338,9 +338,8 @@ return [
     'Télécharger (CSV)' => 'Download (CSV)',
     // Statistics: names of the CSV files
     'chiffres' => 'figures',
-    'Délais' => 'Delays',
-    'Moyenne' => 'Average',
-    'Médiane' => 'Median',
+    'Délais moyens' => 'Average delays',
+    'Délais médians' => 'Median delays',
     'Année' => 'Year',
     'Rôle' => 'Role',
     'Indicateur' => 'Indicator',

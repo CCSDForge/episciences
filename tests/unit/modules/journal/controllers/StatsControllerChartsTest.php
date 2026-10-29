@@ -226,7 +226,7 @@ class StatsControllerChartsTest extends TestCase
     {
         $this->assertSame('statistiques-dev-tout', StatsController::getExportName('dev', null));
         $this->assertSame('statistiques-dev-2026', StatsController::getExportName('dev', 2026));
-        // made a file name by the page (lower case, without accents nor spaces)
+        // raw: the page (statCsvFileName) makes it a file name
         $this->assertSame('statistiques-dev-2026-données complètes', StatsController::getExportName('dev', 2026, true));
     }
 
