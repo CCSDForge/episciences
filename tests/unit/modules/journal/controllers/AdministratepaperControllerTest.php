@@ -622,7 +622,10 @@ class AdministratepaperControllerTest extends TestCase
         // so everything before that comment belongs to the success path.
         $casElsePos = strpos($method, '// Récupération des données CAS');
         $this->assertNotFalse($casElsePos, '"Récupération des données CAS" comment not found — cannot isolate success branch in addcoauthorAction');
-        $successBranch = substr($method, 0, $casElsePos);
+        // The success branch starts at the "hasLocalData && hasRoles" test (the checks before it report errors)
+        $successStart = strpos($method, '$user->hasLocalData(');
+        $this->assertNotFalse($successStart);
+        $successBranch = substr($method, $successStart, $casElsePos - $successStart);
 
         $this->assertStringNotContainsString(
             "setNamespace('error')",

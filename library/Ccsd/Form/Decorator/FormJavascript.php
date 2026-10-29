@@ -2,11 +2,16 @@
 
 /**
  * Class Ccsd_Form_Decorator_FormJavascript
- * @property array[] $_javascript
- * @property array   $_replace
  */
 class Ccsd_Form_Decorator_FormJavascript extends Zend_Form_Decorator_HtmlTag
 {
+    /**
+     * @var array[]
+     */
+    protected array $_javascript = [];
+
+    protected array $_replace = [];
+
     /**
      * @param Ccsd_Form_Interface_Javascript $item
      */

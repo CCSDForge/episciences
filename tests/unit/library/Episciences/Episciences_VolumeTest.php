@@ -372,5 +372,62 @@ class Episciences_VolumeTest extends TestCase
         $this->assertSame('2026', $result['vol_year']);
         $this->assertSame('3', $result['vol_num']);
     }
+
+    public function testSetVolNumCleansHtmlTags(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num('<script>alert("xss")</script><b>12</b>');
+        $this->assertSame('alert("xss")12', $v->getVol_num());
+    }
+
+    public function testSetVolNumCleansControlCharactersAndNewlines(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num("Vol 1\r\n\t\0-A");
+        $this->assertSame('Vol 1-A', $v->getVol_num());
+    }
+
+    public function testSetVolNumTrimsWhitespace(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num('   Vol-2024   ');
+        $this->assertSame('Vol-2024', $v->getVol_num());
+    }
+
+    public function testSetVolNumSupportsUpToTwentyChars(): void
+    {
+        $v = new Episciences_Volume();
+        $twentyChars = '12345678901234567890';
+        $v->setVol_num($twentyChars);
+        $this->assertSame($twentyChars, $v->getVol_num());
+    }
+
+    public function testSetVolNumPreservesZero(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num('0');
+        $this->assertSame('0', $v->getVol_num());
+
+        $v->setVol_num(0);
+        $this->assertSame('0', $v->getVol_num());
+
+        $method = new ReflectionMethod(Episciences_Volume::class, 'getVolumeDataForSave');
+        $method->setAccessible(true);
+        $result = $method->invoke($v);
+        $this->assertSame('0', $result['vol_num']);
+    }
+
+    public function testSetVolNumSetsNullOnEmpty(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num('');
+        $this->assertNull($v->getVol_num());
+
+        $v->setVol_num('   ');
+        $this->assertNull($v->getVol_num());
+
+        $v->setVol_num(null);
+        $this->assertNull($v->getVol_num());
+    }
 }
 
