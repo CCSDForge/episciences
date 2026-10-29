@@ -4396,20 +4396,32 @@ class Episciences_Paper
                         return ['code' => 1, 'message' => 'Okay for the update...'];
                     }
 
-                    $isSaved = false;
+                    $needsRestore = $isRefusedIdentifierFreed;
 
-                    if ($isRefusedIdentifierFreed) {
+                    if ($needsRestore) {
                         // saveDoc() redirects and exits on some errors: the identifier is restored at shutdown
-                        register_shutdown_function(function () use (&$isSaved): void {
-                            if (!$isSaved) {
+                        register_shutdown_function(function () use (&$needsRestore): void {
+                            if ($needsRestore) {
+                                $needsRestore = false;
                                 $this->restoreRefusedIdentifier();
                             }
                         });
                     }
 
                     $submit = new Episciences_Submit();
-                    $result = $submit->saveDoc($values);
-                    $isSaved = $result['code'] !== 0;
+                    try {
+                        $result = $submit->saveDoc($values);
+                        if ($result['code'] !== 0) {
+                            $needsRestore = false;
+                        }
+                    } finally {
+                        // Not saved (error returned or thrown): the identifier is restored right away
+                        if ($needsRestore) {
+                            $needsRestore = false;
+                            $this->restoreRefusedIdentifier();
+                        }
+                    }
+
                     if ($result['code'] === 0) {
                         $message = $result['message'];
                     } else {
