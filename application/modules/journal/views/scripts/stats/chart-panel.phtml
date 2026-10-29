@@ -9,7 +9,8 @@ $title = $this->title ?? '';
             <p class="help-block small"><?= $this->escape($this->translate($this->description)) ?></p>
         <?php endif; ?>
         <div class="stat-chart <?= $this->escape($this->chartClass ?? '') ?>">
-            <canvas id="<?= $this->escape($this->canvasId) ?>" role="img" aria-label="<?= $this->escape(strip_tags($title)) ?>"></canvas>
+            <canvas id="<?= $this->escape($this->canvasId) ?>" role="img" aria-label="<?= $this->escape(strip_tags($title)) ?>"
+                    data-export-name="<?= $this->escape(strip_tags($title)) ?>"></canvas>
         </div>
         <?php if (!empty($this->note)): ?>
             <p class="help-block small"><?= $this->escape($this->note) ?></p>

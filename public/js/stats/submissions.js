@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ) {
         figuresButton.addEventListener('click', function () {
             downloadCsv(
-                statCsvFileName([statsExportName(), 'chiffres']),
+                statCsvFileName([statsExportName(), statTranslate('chiffres')]),
                 [[statTranslate('Indicateur'), statTranslate('Valeur')]].concat(
                     statsFiguresFromView
                 )
@@ -217,8 +217,10 @@ function createDelayChart(canvasId, delays) {
             delays.years,
             shownMode === 'median' ? delays.medianDatasets : delays.datasets,
             {
-                // the CSV files of the mean and of the median are not mixed up
-                exportSuffix: shownMode === 'median' ? 'mediane' : 'moyenne',
+                // a short name (the title gives the unit and the two delays); the files of the mean and of the median are not mixed up
+                exportName: statTranslate(
+                    shownMode === 'median' ? 'Délais médians' : 'Délais moyens'
+                ),
                 categoryLabel: statTranslate('Année'),
                 format: value =>
                     value === null || value === undefined

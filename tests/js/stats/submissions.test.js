@@ -178,10 +178,14 @@ describe('createDelayChart', function () {
             expect.any(Object)
         );
 
-        expect(createBarChart.mock.calls[0][3].exportSuffix).toBe('moyenne');
+        expect(createBarChart.mock.calls[0][3].exportName).toBe(
+            'Délais moyens'
+        );
 
         show('median');
-        expect(createBarChart.mock.calls[1][3].exportSuffix).toBe('mediane');
+        expect(createBarChart.mock.calls[1][3].exportName).toBe(
+            'Délais médians'
+        );
         expect(destroy).toHaveBeenCalledTimes(1);
         expect(createBarChart).toHaveBeenLastCalledWith(
             'submissions-delay-chart',

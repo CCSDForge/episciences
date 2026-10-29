@@ -498,7 +498,10 @@ describe('Statistics papers window', function () {
 
         document.querySelector('.stat-papers-export').click();
 
-        expect(exported.fileName).toBe('statistiques-dev-tout-nbAccepted.csv');
+        // named after the indicator, as shown (the title of the window)
+        expect(exported.fileName).toBe(
+            'statistiques-dev-tout-Accepted articles.csv'
+        );
         // header + the 32 matching rows (1, 10-19, 100-120), all of them: not only the page of the window
         expect(exported.rows).toHaveLength(1 + 32);
         expect(exported.rows[0].slice(0, 4)).toEqual([
@@ -513,6 +516,41 @@ describe('Statistics papers window', function () {
         delete global.downloadCsv;
         delete global.statCsvFileName;
         delete global.statsExportName;
+    });
+
+    it('takes the title of the button: a list shown under another title', async function () {
+        document.body.insertAdjacentHTML(
+            'afterbegin',
+            '<button type="button" class="stat-papers-open" data-figure="nbSubmissions" data-title="Articles">View</button>'
+        );
+        document
+            .querySelector('.stat-papers-count')
+            .insertAdjacentHTML(
+                'afterend',
+                '<button type="button" class="stat-papers-export">Export</button>'
+            );
+        let exported = null;
+        global.downloadCsv = jest.fn(fileName => {
+            exported = fileName;
+        });
+        global.statCsvFileName = parts => parts.join('-') + '.csv';
+        global.statsExportName = () => 'statistics-dev-all';
+        new Function('module', script)(undefined);
+
+        mockFetch({
+            nbSubmissions: {
+                body: { columns: [], total: 1, hidden: 0, rows: makeRows(1) },
+            },
+        });
+        document.querySelector('[data-figure="nbSubmissions"]').click();
+        await flush();
+
+        expect(
+            document.getElementById('stat-papers-dialog-title').textContent
+        ).toBe('Articles');
+
+        document.querySelector('.stat-papers-export').click();
+        expect(exported).toBe('statistics-dev-all-Articles.csv');
     });
 
     it('renders the titles as text', async function () {

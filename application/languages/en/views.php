@@ -2324,6 +2324,10 @@ return array(
     'Médiane (%s)' => 'Median (%s)',
     'Moyenne' => 'Average',
     'Médiane' => 'Median',
+    // Statistics: base name of the CSV files
+    'statistiques' => 'statistics',
+    'tout' => 'all',
+    'données complètes' => 'full data',
     'Valeur du délai à afficher' => 'Delay value to display',
     'jours' => 'days',
     'semaines' => 'weeks',

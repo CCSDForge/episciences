@@ -323,11 +323,13 @@ function createBarChart(canvasId, labels, datasets, options = {}) {
         if (typeof createCsvButton === 'function') {
             tableContainer.appendChild(
                 createCsvButton(statTranslate('Télécharger (CSV)'), () => ({
+                    // named after the chart, as shown (its title), or the name given by the chart
                     fileName: statCsvFileName([
                         statsExportName(),
-                        canvasId.replace(/-chart$/, ''),
-                        // e.g. the value shown by the chart (moyenne, médiane)
-                        options.exportSuffix,
+                        options.exportName ||
+                            canvas.dataset.exportName ||
+                            canvas.getAttribute('aria-label') ||
+                            canvasId.replace(/-chart$/, ''),
                     ]),
                     rows: buildChartCsvRows(
                         options.categoryLabel || '',

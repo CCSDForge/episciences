@@ -336,6 +336,10 @@ return [
     // Statistics: charts
     'Voir les données' => 'View the data',
     'Télécharger (CSV)' => 'Download (CSV)',
+    // Statistics: names of the CSV files
+    'chiffres' => 'figures',
+    'Délais moyens' => 'Average delays',
+    'Délais médians' => 'Median delays',
     'Année' => 'Year',
     'Rôle' => 'Role',
     'Indicateur' => 'Indicator',
