@@ -73,6 +73,7 @@ class Episciences_ReviewersManager
             'class' => 'btn btn-success',
             'decorators' => array('ViewHelper')
         )));
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
         $form->setDecorators(array(array('ViewScript', array('viewScript' => 'reviewer/invitation_part2.phtml', 'name' => 'Détails du compte'))));
 
         return $form;
@@ -143,6 +144,8 @@ class Episciences_ReviewersManager
             'onclick' => 'cancel()',
             'decorators' => array('ViewHelper')
         )));
+
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
 
         return $form;
     }

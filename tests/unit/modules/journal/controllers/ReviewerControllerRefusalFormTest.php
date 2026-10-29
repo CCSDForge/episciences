@@ -157,7 +157,7 @@ final class ReviewerControllerRefusalFormTest extends TestCase
         self::assertStringNotContainsString('&lt;', $html, 'no address bracket without an address');
     }
 
-    private function responseForm(bool $invalidRefusal): string
+    private function responseForm(bool $invalidRefusal, bool $confirmAcceptance = false): string
     {
         $invitation = $this->createMock(\Episciences_User_Invitation::class);
         $invitation->method('hasExpired')->willReturn(false);
@@ -169,6 +169,8 @@ final class ReviewerControllerRefusalFormTest extends TestCase
         $view->user_form = null;
         $view->refuse_form = '<form id="refuse"></form>';
         $view->invalid_refuse_form = $invalidRefusal;
+        $view->csrfToken = 'a"token<';
+        $view->confirmAcceptance = $confirmAcceptance;
 
         return $view->render('reviewer/invitation_response_form.phtml');
     }
@@ -184,5 +186,37 @@ final class ReviewerControllerRefusalFormTest extends TestCase
 
         self::assertStringNotContainsString('<script>', $html);
         self::assertStringContainsString('id="refuse_form" style="display: none"', $html);
+    }
+
+    public function testAcceptFormPostsTheEscapedSessionToken(): void
+    {
+        $html = $this->responseForm(false);
+
+        self::assertStringContainsString('<input type="hidden" name="csrf_token" value="a&quot;token&lt;">', $html);
+        self::assertStringContainsString('name="submitaccept"', $html);
+    }
+
+    public function testReturnFromTheLoginPageAsksToConfirm(): void
+    {
+        self::assertStringContainsString('Vous êtes connecté : confirmez votre acceptation ci-dessous.', $this->responseForm(false, true));
+        self::assertStringNotContainsString('confirmez votre acceptation', $this->responseForm(false));
+    }
+
+    public function testLinkFormPostsTheSessionTokenToTheCurrentUrl(): void
+    {
+        $previousStorage = \Zend_Auth::getInstance()->getStorage();
+        \Zend_Auth::getInstance()->setStorage(new \Zend_Auth_Storage_NonPersistent());
+        \Zend_Auth::getInstance()->getStorage()->write(new \Episciences_User(['UID' => 100, 'EMAIL' => 'logged@example.org', 'SCREEN_NAME' => 'Logged']));
+        try {
+            $view = $this->view();
+            $view->isAlreadyInvited = false;
+            $view->csrfToken = 'link-token';
+            $html = $view->render('reviewer/linkInvitationForm.phtml');
+        } finally {
+            \Zend_Auth::getInstance()->setStorage($previousStorage);
+        }
+
+        self::assertStringContainsString('<input type="hidden" name="csrf_token" value="link-token">', $html);
+        self::assertDoesNotMatchRegularExpression('#<form[^>]*\saction=#', $html, 'posted to the current URL, which holds the link token');
     }
 }

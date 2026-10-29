@@ -4,6 +4,12 @@
         !$this->invitation->isCancelled()
 ) : ?>
 
+    <?php if ($this->confirmAcceptance) : ?>
+        <p class="alert alert-info" role="status">
+            <?= $this->translate('Vous êtes connecté : confirmez votre acceptation ci-dessous.') ?>
+        </p>
+    <?php endif; ?>
+
     <div class="form-actions text-center">
         <?php if ($this->user_form) : ?>
             <button id="accept-button" type="button" class="btn btn-success" onclick="show_user_form()">
@@ -11,6 +17,7 @@
             </button>
         <?php else : ?>
             <form method="post" style="display:inline">
+                <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
                 <button name="submitaccept" id="submitaccept" type="submit"
                         class="btn btn-success"><?= $this->translate("J'accepte de relire cet article") ?></button>
             </form>
