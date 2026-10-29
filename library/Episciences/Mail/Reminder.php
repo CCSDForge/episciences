@@ -1456,27 +1456,18 @@ class Episciences_Mail_Reminder
     }
 
     /**
-     * @param $debug
-     * @param $date
-     * @param $filters
-     * @return array
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
+     * The active reviewers (latest assignment of each reviewer to each paper) whose report is not completed, past the
+     * reviewing deadline of the reminder
+     * @param string $date SQL expression of the reference date (quoted date or CURDATE())
+     * @return Zend_Db_Select
      */
-    private function getAfterReviewingDeadlineRecipients($debug, $date, $filters): array
+    private function getAfterReviewingDeadlineQuery(string $date): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $recipients = [];
-        $review = Episciences_ReviewsManager::find($this->getRvid());
 
-        $deadline_interval = $this->getDeadline();
-        if (!$deadline_interval) {
-            return $recipients;
-        }
-
-        // inner join (last assignments)
+        // inner join (last assignments: highest ID, two assignments can have the same date)
         $innerSQ = $db->select()
-            ->from(T_ASSIGNMENTS, array('RVID', 'ITEMID', 'ITEM', 'UID', 'LAST_STATUS' => new Zend_Db_Expr('MAX(`WHEN`)')))
+            ->from(T_ASSIGNMENTS, array('LAST_ID' => new Zend_Db_Expr('MAX(ID)')))
             ->where('ROLEID = ?', 'reviewer')
             ->group('RVID')
             ->group('ITEMID')
@@ -1496,17 +1487,12 @@ class Episciences_Mail_Reminder
                     'INVITATION_STATUS' => 'ua1.STATUS',
                     'DEADLINE' => 'ua1.DEADLINE'
                     //, 'RATING_STATUS'
-                    //, 'LAST_STATUS'
                 )
             )
             ->joinInner(
                 array('ua2' => $innerSQ),
-                'ua1.RVID = ua2.RVID 
-                        AND ua1.ITEMID = ua2.ITEMID
-                        AND ua1.ITEM = ua2.ITEM
-                        AND ua1.UID = ua2.UID
-                        AND ua1.`WHEN` = LAST_STATUS',
-                array('LAST_STATUS')
+                'ua1.ID = ua2.LAST_ID',
+                array()
             )
             ->joinLeft(
                 array('pr' => $leftSQ),
@@ -1516,7 +1502,6 @@ class Episciences_Mail_Reminder
             )
             ->where('ROLEID = ?', 'reviewer')
             ->where('ua1.RVID = ?', $this->getRvid())
-            ->where('ua1.`WHEN` = LAST_STATUS')
             ->where('ua1.STATUS = ?', 'active')
             ->where('RATING_STATUS = ' . Episciences_Rating_Report::STATUS_PENDING . ' OR RATING_STATUS = ' . Episciences_Rating_Report::STATUS_WIP)
             ->where("DEADLINE <= $date");
@@ -1527,6 +1512,30 @@ class Episciences_Mail_Reminder
         } else {
             $sql->where(new Zend_Db_Expr('DATE_ADD(DEADLINE, INTERVAL ' . $this->getDelay() . " DAY) = $date"));
         }
+
+        return $sql;
+    }
+
+    /**
+     * @param $debug
+     * @param $date
+     * @param $filters
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    private function getAfterReviewingDeadlineRecipients($debug, $date, $filters): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $recipients = [];
+        $review = Episciences_ReviewsManager::find($this->getRvid());
+
+        $deadline_interval = $this->getDeadline();
+        if (!$deadline_interval) {
+            return $recipients;
+        }
+
+        $sql = $this->getAfterReviewingDeadlineQuery($date);
 
         if ($debug) {
             echo Episciences_Tools::$bashColors['light_blue'] . $sql . Episciences_Tools::$bashColors['default'] . PHP_EOL;
