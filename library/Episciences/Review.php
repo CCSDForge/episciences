@@ -698,12 +698,20 @@ class Episciences_Review
 
     /**
      * fetch review chief editors
-     * @return array
+     * As editors, they can be tagged (Episciences_Editor::TAG_CHIEF_EDITOR) when assigned automatically to a paper,
+     * so that the paper history shows why they were assigned
+     * @return Episciences_Editor[] indexed by UID
      * @throws Zend_Db_Statement_Exception
      */
     public static function getChiefEditors(): array
     {
-        return self::getUsers(Episciences_Acl::ROLE_CHIEF_EDITOR);
+        $chiefEditors = [];
+
+        foreach (self::getUsers(Episciences_Acl::ROLE_CHIEF_EDITOR) as $uid => $user) {
+            $chiefEditors[$uid] = new Episciences_Editor($user->toArray());
+        }
+
+        return $chiefEditors;
     }
 
     /**
