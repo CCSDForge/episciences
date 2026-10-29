@@ -70,6 +70,7 @@ return array(
     Episciences_Editor::TAG_SECTION_EDITOR => 'Rédacteur de la rubrique',
     Episciences_Editor::TAG_VOLUME_EDITOR => 'Rédacteur du volume',
     Episciences_Editor::TAG_SUGGESTED_EDITOR => "Rédacteur suggéré par l'auteur",
+    Episciences_Editor::TAG_CHIEF_EDITOR => 'Rédacteur en chef',
     Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED => 'Nouvelle date limite de révision',
 
 

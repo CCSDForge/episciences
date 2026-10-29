@@ -425,6 +425,7 @@ return array(
     Episciences_Editor::TAG_SECTION_EDITOR => 'Section editor',
     Episciences_Editor::TAG_VOLUME_EDITOR => 'Volume editor',
     Episciences_Editor::TAG_SUGGESTED_EDITOR => "Suggested by author",
+    Episciences_Editor::TAG_CHIEF_EDITOR => 'Chief editor',
     Episciences_Submit::SUBMIT_DOCUMENT_LABEL => "Submit a document",
 
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION] => "accepted - waiting for author's final version",
