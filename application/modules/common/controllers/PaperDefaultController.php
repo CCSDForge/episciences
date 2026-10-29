@@ -1427,6 +1427,12 @@ class PaperDefaultController extends DefaultController
                 }
 
                 $oInvitation = Episciences_User_InvitationsManager::findById($oAssignment->getInvitation_id());
+
+                // cancel the invitation, as when a reviewer is removed: save() inserts a cancelled row (same AID),
+                // which the cancelled assignment refers to
+                $oInvitation->setStatus($oInvitation::STATUS_CANCELLED);
+                $oInvitation->save();
+
                 $params = [
                     'itemid' => $oAssignment->getItemid(),
                     'item' => Episciences_User_Assignment::ITEM_PAPER,
