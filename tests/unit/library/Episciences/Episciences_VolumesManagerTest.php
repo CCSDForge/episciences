@@ -281,4 +281,9 @@ class Episciences_VolumesManagerTest extends TestCase
 
         $this->assertIsInt($uids[0]);
     }
+
+    public function testMaxStringLengthVolNumIsTwenty(): void
+    {
+        $this->assertSame(20, Episciences_VolumesManager::MAX_STRING_LENGTH_VOL_NUM);
+    }
 }

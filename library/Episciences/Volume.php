@@ -1451,7 +1451,14 @@ class Episciences_Volume
 
     public function setVol_num($volNum): \Episciences_Volume
     {
-        $this->_vol_num = $volNum ? trim(strip_tags($volNum)) : null;
+        if ($volNum !== null && $volNum !== '') {
+            $cleaned = preg_replace('/[\x00-\x1F\x7F]/u', '', strip_tags((string)$volNum));
+            $cleaned = trim($cleaned);
+            $this->_vol_num = $cleaned !== '' ? $cleaned : null;
+        } else {
+            $this->_vol_num = null;
+        }
+
         return $this;
     }
 
