@@ -161,6 +161,25 @@ final class Episciences_PapersManager_RenameIdentifierTest extends TestCase
         );
     }
 
+    public function testInboxDryRunRefusesARefusedPaperWhoseIdentifierCannotBeFreed(): void
+    {
+        $paperId = 999001;
+        $refused = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_REFUSED);
+        // The stored identifier no longer matches: there is nothing to rename
+        $this->db->update(
+            T_PAPERS,
+            ['IDENTIFIER' => self::IDENTIFIER . Episciences_Paper::REFUSED_IDENTIFIER_SUFFIX],
+            ['DOCID = ?' => $refused]
+        );
+        $paper = $this->refusedPaper($refused, $paperId);
+
+        $dryRun = $paper->updatePaper($this->inboxNewVersion(['isDryRun' => true]));
+        $realRun = $paper->updatePaper($this->inboxNewVersion());
+
+        self::assertSame(0, $dryRun['code']);
+        self::assertSame($realRun['code'], $dryRun['code']);
+    }
+
     private function refusedPaper(int $docId, int $paperId): Episciences_Paper
     {
         return new Episciences_Paper([

@@ -4124,6 +4124,18 @@ class Episciences_Paper
     }
 
     /**
+     * Whether freeRefusedIdentifier() would rename at least one version, without renaming anything (dry run)
+     */
+    private function canFreeRefusedIdentifier(): bool
+    {
+        return Episciences_PapersManager::countIdentifier(
+            $this->getIdentifier(),
+            (int)$this->getPaperid(),
+            (int)$this->getRvid()
+        ) > 0;
+    }
+
+    /**
      * Give its identifier back to this refused paper when its new submission has not been saved
      */
     public function restoreRefusedIdentifier(): bool
@@ -4184,14 +4196,16 @@ class Episciences_Paper
 
             } elseif ($paper->getVersion() > $this->getVersion()) {
                 $isRefusedIdentifierFreed = false;
-                // Inbox dry run: the refused paper can be submitted again, but its identifier is not freed
+                // Inbox dry run: same answer as a real run, but the identifier of the refused paper is not freed
                 $isDryRun = !empty($values['isEpiNotify']) && !empty($values['isDryRun']);
 
                 if (
                     $this->canBeReplaced() ||
                     (
                         $status === self::STATUS_REFUSED &&
-                        ($isDryRun || ($isRefusedIdentifierFreed = $this->freeRefusedIdentifier()))
+                        ($isDryRun
+                            ? $this->canFreeRefusedIdentifier()
+                            : ($isRefusedIdentifierFreed = $this->freeRefusedIdentifier()))
                     )
                 ) {
 
