@@ -277,6 +277,12 @@ class SubmitController extends DefaultController
         // renaming the identifier of a refused paper submitted again requires both
         $storedPaper = Episciences_PapersManager::partialGet($formValues['old_docid'], RVID);
 
+        // The identifier and the status of the stored paper take precedence over the submitted values
+        if ($storedPaper !== null) {
+            $formValues['old_identifier'] = $storedPaper->getIdentifier();
+            $formValues['old_paper_status'] = (int)$storedPaper->getStatus();
+        }
+
         $selfPaper = new Episciences_Paper([
             'docid' => $formValues['old_docid'],
             'paperid' => $storedPaper?->getPaperid() ?? 0,
