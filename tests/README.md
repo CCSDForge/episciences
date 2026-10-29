@@ -24,6 +24,9 @@ make test-php SUITE=unit
 
 # JavaScript tests only (Jest)
 make test-js
+
+# End-to-end tests (Playwright), see tests/e2e/README.md
+yarn test:e2e
 ```
 
 ## PHP tests (PHPUnit)
@@ -33,6 +36,21 @@ Tests are executed inside the PHP container via `make test-php`, which runs:
 ```
 docker compose exec <php-container> ./vendor/bin/phpunit
 ```
+
+### Test the behaviour, not the source
+
+A test must run the code it covers: call the method, dispatch the controller action, render the view.
+Reading the source instead (`file_get_contents()` on a controller, `extractMethod()`,
+`ReflectionMethod::getStartLine()`, regular expressions on a `.phtml`) is not accepted: such tests
+break on any refactoring and pass on code that does not work.
+
+Controller actions run without database on top of `tests/unit/modules/ControllerTestCase.php`
+(recorded queries and writes, requests with or without token, logged or impersonated user, journal
+settings). See `ControllerTestCaseTest` and `AdministratepaperSaveSectionTest` for examples.
+
+`make check-source-reading-tests` (also run by the CI) refuses new tests that read the source. The
+older ones are listed in `tests/legacy-source-reading-tests.txt`: the list may only shrink, remove a
+file from it once converted.
 
 ### Run a subset of tests
 

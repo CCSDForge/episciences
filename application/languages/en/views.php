@@ -1011,18 +1011,13 @@ return array(
     "Courriel" => "E-mail",
     "Courriel utilisé pour vous inscrire" => "E-mail address used for subscription",
     "Recevoir mon login" => "Receive my username",
-    "Aucun compte valide n'a été trouvé pour ce nom d'utilisateur" => "There isn't any valid account for this username",
-    "Aucun nom d'utilisateur lié à cette adresse e-mail n'a été trouvé" => 'Unknown e-mail address',
-    "Votre nom d'utilisateur vous a été envoyé par e-mail" => 'Your username has been sent by e-mail',
-    "Vous allez recevoir le recevoir à l'adresse" => 'You\'re going to receive it at the following address',
-    "Vous pouvez maintenant vous authentifier" => 'You can now sign in',
+    "Si des comptes sont associés à cette adresse e-mail, la liste de leurs noms d'utilisateur vient d'y être envoyée" => 'If accounts are linked to this e-mail address, the list of their usernames has just been sent to it',
 
     // Lost password
     "Mot de passe oublié" => 'Forgotten password',
     "Entre 3 et 100 caractères" => 'Between 3 and 100 characters',
     "Demander un nouveau mot de passe" => 'Ask for a new password',
-    "Vous allez recevoir la procédure de changement de mot de passe à l'adresse e-mail associée à ce compte" =>
-        "You're about to receive the password change process by e-mail, at the address linked to this account",
+    "Si un compte correspond à ce nom d'utilisateur, un e-mail vient d'être envoyé à l'adresse associée" => 'If an account matches this username, an e-mail has just been sent to its address',
 
     // Password reset
     'Pour des raisons de sécurité, le changement de mot de passe invalide vos sessions et vous devrez vous connecter à nouveau.' => 'For security reasons, changing the password will invalidate your sessions and you will have to log in again.',
@@ -1308,7 +1303,8 @@ return array(
 
     "Erreur lors de l'activation du compte" => "Activation error",
     "Le jeton n'est pas valide" => "Invalid token",
-    "Erreur le jeton d'activation de ce compte n'est pas valable" => "Error: this activation token is invalid",
+    "Ce lien d'activation n'existe pas, a déjà été utilisé ou a expiré. Pour en recevoir un nouveau, utilisez la procédure « Mot de passe oublié »" => 'This activation link does not exist, has already been used or has expired. To receive a new one, use the "Forgotten password" procedure',
+    "Votre compte est activé. Si vous ne connaissez pas votre mot de passe, utilisez la procédure « Mot de passe oublié »" => 'Your account is activated. If you do not know your password, use the "Forgotten password" procedure',
     "Erreur d'authentification" => "Authentication error",
     "L'authentification a échoué" => "Authentication failed",
     "Vous n'êtes pas connecté" => "You are not logged in",
@@ -1621,6 +1617,8 @@ return array(
     "Seul l'auteur d'un document peut en déposer une nouvelle version. Si vous êtes l'auteur, merci de vous connecter avec le compte utilisé lors de la première soumission." => "Only the author of a document can submit a new version of it. If you are the author, please log in with the account used for the first submission.",
     "Une erreur s'est produite pendant l'enregistrement de votre article." => "An error occurred while saving your article.",
     "Votre session a expiré, veuillez réessayer." => "Your session has expired, please try again.",
+    "Des articles (%s) sont rattachés à cette rubrique." => "Papers (%s) are attached to this section.",
+    'Des articles (%1$s et %2$d autres) sont rattachés à cette rubrique.' => 'Papers (%1$s and %2$d more) are attached to this section.',
     "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre article n'a pas été enregistré. Les informations saisies ont été conservées, merci de sélectionner à nouveau vos fichiers puis de valider le formulaire." => "Your session has expired or the page has been open for too long: for security reasons, your article was not saved. The information you entered has been kept; please select your files again and submit the form.",
     "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre nouvelle version n'a pas été enregistrée. Merci de recharger cette page puis de soumettre à nouveau votre nouvelle version." => "Your session has expired or the page has been open for too long: for security reasons, your new version was not saved. Please reload this page and submit your new version again.",
     //Soumission d'une notice vide
@@ -2304,7 +2302,7 @@ return array(
     // datasets
     'administratelinkeddata-addld' => 'Add a related work',
     'administratelinkeddata-removeld' => 'Remove a related work',
-    'administratelinkeddata-setnewinfoldAction' => 'Edit a relationship with a Dataset, Publication or Software',
+    'administratelinkeddata-setnewinfold' => 'Edit a relationship with a Dataset, Publication or Software',
     'Liens publications - données - logiciels' => 'Relationships with publications - datasets - software',
     'Gérer les liens Publication - Jeux de données - Codes sources' => 'Manage relationships between Publications - Datasets - Software',
     'Publication - Jeux de données - Codes sources' => 'Publications - Datasets - Software',
@@ -2697,4 +2695,9 @@ return array(
     "Maintenance commencée le %s." => "Maintenance started on %s.",
     "Maintenance à venir : le site restera consultable, mais les connexions, soumissions et modifications seront temporairement suspendues." => "Upcoming maintenance: the website will remain available for browsing, but logins, submissions and changes will be temporarily suspended.",
     "Début de maintenance prévu : %s." => "Maintenance scheduled to start on %s.",
+    // Tmp version: upload failures
+    "Votre version temporaire n'a pas été enregistrée : le téléversement d'au moins un fichier joint a échoué." => "Your temporary version has not been saved: the upload of at least one attached file failed.",
+    "Votre réponse n'a pas été enregistrée : le téléversement d'au moins un fichier joint a échoué." => "Your answer has not been saved: the upload of at least one attached file failed.",
+    "Veuillez joindre à nouveau vos fichiers et recommencer." => "Please attach your files again and try again.",
+    "Le fichier n'a pas pu être enregistré. Veuillez réessayer." => "The file could not be saved. Please try again.",
 );

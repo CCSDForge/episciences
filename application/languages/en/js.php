@@ -332,4 +332,7 @@ return [
     
     // License save warnings
     "La licence actuelle est déjà définie." => 'The current license is already set.',
+
+    // File upload
+    "Le téléversement du fichier a échoué. Veuillez le retirer et réessayer." => 'The file upload failed. Please remove it and try again.',
 ];

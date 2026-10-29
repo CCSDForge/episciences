@@ -8,17 +8,20 @@ Episciences uses [Next.js ISR](https://nextjs.org/docs/app/building-your-applica
 
 Revalidation is queued and consumed through the same Symfony Messenger + Doctrine DBAL transport as Solr indexing (see `docs/console-commands.md#messenger-queues`), on its own `next_revalidation` queue so a slow Solr document build never blocks a cheap Next.js POST.
 
-```
-ZF1 Model / Controller
-        │
-        ▼
-RevalidationService::enqueueTag() / enqueueTags()   ←── async, zero web-request impact
-        │
-        ▼
-messenger_messages (queue_name = 'next_revalidation')
-        │
-        ▼   episciences:worker --transport=next_revalidation
-POST /api/revalidate  ──►  Next.js  ──►  revalidateTag()
+```mermaid
+flowchart TD
+    App["ZF1 Model / Controller Action"]
+    Service["RevalidationService::enqueueTag() / enqueueTags()"]
+    Queue[("messenger_messages (queue: next_revalidation)")]
+    Worker["episciences:worker --transport=next_revalidation"]
+    Next["Next.js Frontend (POST /api/revalidate)"]
+    ISR["revalidateTag() Cache Invalidation"]
+
+    App --> Service
+    Service -->|"async dispatch (zero web latency)"| Queue
+    Queue --> Worker
+    Worker -->|"Authenticated POST"| Next
+    Next --> ISR
 ```
 
 The feature is entirely guarded by the `EPISCIENCES_ENABLE_NEXT_FRONT` constant, checked both at enqueue time (`RevalidationService`) and again when the worker consumes the message (`RevalidateTagMessageHandler`) — the second check only matters if the flag was switched off between the two. All revalidation methods are no-ops when the flag is not defined or falsy.

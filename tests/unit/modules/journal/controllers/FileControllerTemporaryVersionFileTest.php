@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences\Files\UploadedFileToken;
+use Episciences\Security\AccessLog;
 use Episciences_Acl;
 use Episciences_Paper;
 use Episciences_Review;
@@ -13,6 +15,9 @@ use RuntimeException;
 use Zend_Auth;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * FileController::tmpAction(): the files of the temporary versions, stored by paper, are only given to the
@@ -22,7 +27,9 @@ use Zend_Controller_Response_HttpTestCase;
  */
 final class FileControllerTemporaryVersionFileTest extends TestCase
 {
-    private const UID = 4242;
+    use SecurityLogCaptureTrait;
+
+    public const UID = 4242;
     private const PAPERID = 12;
 
     /** Conflict of interest answer of the logged user, read by the controller under test */
@@ -176,6 +183,36 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
 
         self::assertSame(404, $code);
         self::assertSame([], $delivered);
+    }
+
+    /**
+     * Reading is refused with a "not found", logged as such
+     */
+    public function testReadingRefusalIsLoggedAsAMaskedNotFound(): void
+    {
+        $this->logInAs();
+
+        $this->runTmpAction([$this->version()]);
+
+        self::assertSame([[AccessLog::NOT_FOUND_MASKED, 'temporary_version_file_access']], $this->loggedEvents());
+    }
+
+    /**
+     * Without file name nor extension, the request is broken: refused, but not logged as an unsafe path
+     */
+    public function testEmptyFileNameIsRefusedWithoutBeingLogged(): void
+    {
+        $this->logInAs();
+
+        [$code, $delivered, $lookedUp] = $this->runTmpAction(
+            [$this->version(['author' => true])],
+            ['filename' => '', 'extension' => '']
+        );
+
+        self::assertSame(404, $code);
+        self::assertSame([], $delivered);
+        self::assertSame([], $lookedUp);
+        self::assertSame([], $this->loggedEvents());
     }
 
     public function testReviewerOfTheTemporaryVersionOnlyIsAllowed(): void
@@ -343,6 +380,8 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
         [$allowed] = $this->runHandleCheck([$this->version(), $this->version(['reviewer' => true])], 15, self::PAPERID);
 
         self::assertFalse($allowed);
+        // Upload and removal answer 403, not a masked "not found"
+        self::assertSame([[AccessLog::HTTP_FORBIDDEN, 'temporary_version_file_write']], $this->loggedEvents());
     }
 
     public function testAssignedEditorCanHandleTheTemporaryVersionFiles(): void
@@ -472,12 +511,16 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
         // The test request keeps what an earlier one posted
         $_POST = [];
 
+        // The file was uploaded by the user: its token is sent back with the removal
+        $token = new UploadedFileToken(self::UID, str_repeat('t', UploadedFileToken::MIN_SECRET_LENGTH));
+
         $request = new Zend_Controller_Request_HttpTestCase();
         $request->setMethod('POST')->setPost([
             'csrf_token' => 'tmp-files-token',
             'path' => 'tmp_attachments',
             'paperId' => (string)self::PAPERID,
             'file' => 'answer.pdf',
+            'token' => $token->sign(REVIEW_FILES_PATH . self::PAPERID . '/tmp/', 'answer.pdf'),
         ]);
         $response = new Zend_Controller_Response_HttpTestCase();
 
@@ -485,9 +528,14 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
             /** @var list<array{int, string}> */
             public array $lookedUp = [];
 
-            protected function isAllowedToHandleDocumentFiles(string $path, int $docId, int $paperId): bool
+            protected function isAllowedToHandleDocumentFiles(string $path, int $docId, int $paperId, int $pcId = 0): bool
             {
                 return true;
+            }
+
+            protected function uploadedFileToken(): UploadedFileToken
+            {
+                return new UploadedFileToken(FileControllerTemporaryVersionFileTest::UID, str_repeat('t', UploadedFileToken::MIN_SECRET_LENGTH));
             }
 
             protected function isSubmittedTemporaryVersionFile(int $paperId, string $file): bool

@@ -78,6 +78,11 @@ class StatsController extends Zend_Controller_Action
         $startStatsAfterDate = isset($journalSettings['startStatsAfterDate']) && $journalSettings['startStatsAfterDate'] !== '' ?
             $journalSettings['startStatsAfterDate'] : null;
 
+        // The API rejects a malformed date: ignore it, as before, rather than failing to display the statistics
+        if ($startStatsAfterDate && !Episciences_Tools::isValidSQLDate($startStatsAfterDate)) {
+            $logger?->warning(sprintf('Invalid startStatsAfterDate setting "%s" ignored (RVCODE: %s)', $startStatsAfterDate, RVCODE));
+            $startStatsAfterDate = null;
+        }
 
         if ($startStatsAfterDate) {
             $startStatsAfterDateYear = (int)date('Y', strtotime($startStatsAfterDate));

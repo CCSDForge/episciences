@@ -147,5 +147,11 @@
     "API_URL": "https://api.scholexplorer.openaire.eu/v3/Links",
     "CLIENT_ID": "",
     "CLIENT_SECRET": ""
+  },
+  "REVIEWER_INVITATION": {
+    "HMAC_SECRET": "four random common words"
+  },
+  "UPLOADED_FILE": {
+    "HMAC_SECRET": "four other random words"
   }
 }

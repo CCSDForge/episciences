@@ -21,6 +21,10 @@ php scripts/console.php <command> --help
 | [`app:generate-users`](#appgenerate-users) | Generate random test users |
 | [`app:init-dev-users`](#appinit-dev-users) | Seed the dev journal with 30 predefined users |
 | [`app:create-bot-user`](#appcreate-bot-user) | Create the `episciences-bot` service account |
+| [`user:purge-expired-tokens`](#userpurge-expired-tokens) | Delete the expired account link tokens (designed for cron) |
+| [`user:import-legacy-tokens`](#userimport-legacy-tokens) | One-off import of the still valid account links from the CAS token table |
+| [`user:anonymize-su-logs`](#useranonymize-su-logs) | Anonymize IP addresses in `user_su_log` records older than retention threshold |
+| [`users:normalize-affiliations`](#usersnormalize-affiliations) | Normalize legacy string-based `USER.affiliations` into `{label, rorId}` objects |
 | [`journal:create`](#journalcreate) | Create a new journal by cloning settings, menu, pages and appearance from a template journal |
 | [`journal:seed-demo`](#journalseed-demo) | Seed a journal with a small set of real demo submissions (volumes, sections, papers) for sandbox testing |
 | [`enrichment:extract-biblio-refs`](#enrichmentextract-biblio-refs) | Pre-extract bibliographic references via the Biblioref API (designed for cron) |
@@ -32,11 +36,17 @@ php scripts/console.php <command> --help
 | [`enrichment:classifications-jel`](#enrichmentclassifications-jel) | Enrich JEL classification codes from OpenAIRE Research Graph |
 | [`enrichment:classifications-msc`](#enrichmentclassifications-msc) | Enrich MSC 2020 classification codes from zbMath Open API |
 | [`enrichment:zb-reviews`](#enrichmentzb-reviews) | Discover and store zbMATH Open reviews |
+| [`enrichment:clear-cache`](#enrichmentclear-cache) | Purge OpenAIRE and Scholexplorer PSR-6 cache pools |
 | [`sitemap:generate`](#sitemapgenerate) | Generate a sitemap for a journal |
 | [`website:regenerate-headers`](#websiteregenerate-headers) | Regenerate the journal header files from `WEBSITE_HEADER` |
 | [`volume:merge-pdf`](#volumemerge-pdf) | Merge all volume PDFs for a journal |
 | [`doaj:export-volumes`](#doajexport-volumes) | Create DOAJ XML exports for journal volumes |
+| [`doaj:check-journals`](#doajcheck-journals) | Check journal indexing presence in DOAJ by ISSN |
+| [`doi:manage`](#doimanage) | Manage DOI lifecycle: assign, submit to Crossref, check status, update |
 | [`zbjats:zip`](#zbjatszip) | Package PDF + zbJATS XML into a ZIP archive per volume |
+| [`papers:update-document`](#papersupdate-document) | Update the `DOCUMENT` JSON column in `PAPERS` from `Paper::toJson()` |
+| [`papers:clean-hal-descriptions`](#papersclean-hal-descriptions) | Strip HAL non-abstract `dc:description` markers from `PAPERS.RECORD` |
+| [`papers:delete`](#papersdelete) | Delete paper versions of a journal, with their files and every related row |
 | [`import:sections`](#importsections) | Import journal sections from a CSV file |
 | [`import:volumes`](#importvolumes) | Import journal volumes from a CSV file |
 | [`import:papers`](#importpapers) | Import or update papers from a CSV file |
@@ -54,6 +64,7 @@ php scripts/console.php <command> --help
 | [`episciences:queue`](#episciencesqueue) | Inspect and manage one Messenger queue |
 | [`next:revalidate-cache`](#nextrevalidate-cache) | Immediately trigger (or enqueue) Next.js cache revalidation for a journal and one or more tags |
 | [`notify:process-inbox`](#notifyprocess-inbox) | Process inbound COAR Notify notifications from repository inboxes (e.g. HAL) |
+| [`translations:update`](#translationsupdate) | Update translation strings in a PHP array file from a YAML config |
 
 ---
 
@@ -93,6 +104,77 @@ Creates the `episciences-bot` service account with a predefined UID and credenti
 ```bash
 php scripts/console.php app:create-bot-user
 ```
+
+---
+
+## Users
+
+Account activation, password reset and account setup links are stored in the `user_token` table (SHA-256 of the
+link token only). Their lifetimes are set in `config/pwd.json`, `USER_TOKEN` section, in seconds:
+
+| Key | Default | Link |
+|-----|---------|------|
+| `PASSWORD_RESET_TTL` | `3600` (1 hour) | Lost password |
+| `ACCOUNT_ACTIVATION_TTL` | `604800` (7 days) | Activation of a self-registered account |
+| `ACCOUNT_SETUP_TTL` | `1209600` (14 days) | First password of a reviewer account created by an editor |
+
+### `user:purge-expired-tokens`
+
+Deletes the expired account link tokens. Expired tokens are already refused: the purge only keeps the table small.
+Intended to run daily from cron.
+
+```bash
+php scripts/console.php user:purge-expired-tokens
+```
+
+---
+
+### `user:import-legacy-tokens`
+
+One-off, to run once right after creating the `user_token` table
+(`src/mysql/2026-10-23-create-user-token-table.sql`): imports the links sent before, from the CAS table
+`T_UTILISATEURS_TOKENS`, so that they keep working until they expire under the lifetimes above. Only the tokens of
+Episciences accounts are imported; the CAS table is only read (it is shared with other applications).
+A former password link cannot be told apart from an account setup link, so it gets the account setup lifetime.
+
+```bash
+php scripts/console.php user:import-legacy-tokens [--dry-run]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--dry-run` | Count the tokens to import without writing anything |
+
+---
+
+### `user:anonymize-su-logs`
+
+Anonymizes IP addresses in `user_su_log` records older than the retention threshold (default 365 days / 1 year).
+Supports IPv4 (`/16` mask, e.g. `1.1.1.1` → `1.1.0.0`) and IPv6 (`/48` mask).
+
+```bash
+php scripts/console.php user:anonymize-su-logs [options]
+```
+
+| Option | Shortcut | Default | Description |
+|--------|----------|---------|-------------|
+| `--days` | `-d` | `365` | Retention threshold in days (positive integer) |
+
+---
+
+### `users:normalize-affiliations`
+
+Normalizes legacy string-based `USER.affiliations` entries stored as raw `"Label #rorId"` strings back into canonical `{"label": ..., "rorId": ...}` JSON objects.
+
+```bash
+php scripts/console.php users:normalize-affiliations [options]
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--uid` | | Process only this user ID |
+| `--buffer` | `500` | Number of users to process per page |
+| `--dry-run` | | Report what would change without writing to the database |
 
 ---
 
@@ -360,6 +442,21 @@ php scripts/console.php enrichment:zb-reviews [options]
 
 ---
 
+### `enrichment:clear-cache`
+
+Purges the OpenAIRE Research Graph and Scholexplorer PSR-6 cache pools without querying the API. Necessary after an API format migration (e.g. v1 → v3) because cache keys (`md5($doi)`) carry no version marker.
+
+```bash
+php scripts/console.php enrichment:clear-cache [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--scholexplorer` | Also purge the Scholexplorer cache pools (`scholexplorerLinkData`, `scholexplorerAuthToken`) |
+| `--all` | Purge every cache pool (OpenAIRE + Scholexplorer) |
+
+---
+
 ## Sitemap
 
 ### `sitemap:generate`
@@ -454,6 +551,41 @@ php scripts/console.php doaj:export-volumes [options]
 
 ---
 
+### `doaj:check-journals`
+
+Queries the DOAJ public API with ISSNs stored in `REVIEW_SETTING` to check journal indexing presence in DOAJ, display the matching DOAJ records, and detect missing journals.
+
+```bash
+php scripts/console.php doaj:check-journals
+```
+
+---
+
+## DOI Management
+
+### `doi:manage`
+
+Manages the DOI lifecycle for articles: assigns DOIs to accepted or published papers, submits deposits to the Crossref API, checks submission status, and updates metadata. Replaces `scripts/getDoi.php`.
+
+```bash
+php scripts/console.php doi:manage [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--rvcode <code>` | Journal RV code |
+| `--rvid <id>` | Journal RVID (integer) |
+| `--paperid <id>` | Restrict `--update` to a single paper ID |
+| `--assign-accepted` | Assign DOIs to accepted papers |
+| `--assign-published` | Assign DOIs to published papers |
+| `--request` | Submit assigned DOIs to Crossref deposit API |
+| `--check` | Check Crossref submission status |
+| `--update` | Re-send metadata to Crossref for already-registered DOIs (free update) |
+| `--fetch-journals` | Fetch active journals list from the API |
+| `--dry-run` | Simulate without writing; uses Crossref test API for `--request`/`--check`/`--update` |
+
+---
+
 ## zbJATS
 
 ### `zbjats:zip`
@@ -524,6 +656,78 @@ their absence from the CSV is expected.
 > for a paper that is already published re-triggers an assign *and* unassign
 > (`Episciences\Paper\Import\PaperImporter::processEditors()`) — this is existing `import:papers`
 > behavior, not a bug, but it does add log noise for every published paper in the file.
+
+---
+
+## Papers
+
+### `papers:update-document`
+
+Updates the `DOCUMENT` JSON column in the `PAPERS` table from `Paper::toJson()`. Replaces `scripts/UpdatePapersNewJsonFieldDocument.php`.
+
+```bash
+php scripts/console.php papers:update-document [options]
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--docid <id>` | | Process only this DOCID |
+| `--sqlwhere <clause>` | | SQL `WHERE` clause to filter DOCIDs (trusted input only) |
+| `--buffer <n>` | `500` | Number of papers to process per page |
+| `--update-record` | | Refresh the `RECORD` column from repository before updating `DOCUMENT` |
+| `--notify` | | Send COAR notifications after processing each paper |
+| `--json` | | Output each paper JSON to stdout (one per line, compatible with jq) |
+| `--dry-run` | | Build SQL queries without executing |
+
+---
+
+### `papers:clean-hal-descriptions`
+
+Strips HAL non-abstract `dc:description` markers from the `RECORD` XML column in `PAPERS` to keep legacy rows consistent with new ingestions. Can automatically update `PAPERS.DOCUMENT` and queue Solr re-indexing.
+
+```bash
+php scripts/console.php papers:clean-hal-descriptions [options]
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--docid <id>` | | Process only this DOCID |
+| `--buffer <n>` | `500` | Number of papers to process per page |
+| `--update-document` | | Regenerate `PAPERS.DOCUMENT` for modified papers via `papers:update-document` |
+| `--no-reindex` | | Do not queue a Solr reindex for modified papers |
+| `--dry-run` | | Report what would change without writing anything |
+
+---
+
+### `papers:delete`
+
+Deletes paper versions of a journal, with their files and every related row (tables listed in `Episciences_PapersManager::VERSION_TABLES` and `PAPER_TABLES`). Replaces `scripts/DeletePaper.php`.
+
+```bash
+php scripts/console.php papers:delete --rvcode=<code> <docid>... [--dry-run]
+```
+
+| Argument / option | Default | Description |
+|--------|---------|-------------|
+| `docids` | | DOCIDs of the paper versions to delete, separated by spaces or commas; required |
+| `--rvcode` | | Code of the journal the papers belong to; required |
+| `--dry-run` | off | Check the papers without deleting anything |
+
+Deleting cannot be undone: before deleting, the command asks to type `Yes delete I understand the consequences`.
+Any other answer, or the non-interactive mode (`-n`), deletes nothing. `--dry-run` does not ask.
+
+A paper of another journal, or a missing paper, is reported and skipped. Rows shared by every version of a
+paper (authors, DOI queue, volume position, projects, conflicts of interest) are deleted with the last version
+only. The deletion of a paper version is all or nothing: when it fails, nothing is deleted and the cause is
+displayed. The command exits with a failure code if any paper version could not be deleted. Deletions and
+failures are logged to `papers_delete-YYYY-MM-DD.log` in the log directory.
+
+Example:
+
+```bash
+php scripts/console.php papers:delete --rvcode=dev 123 124 --dry-run
+php scripts/console.php papers:delete --rvcode=dev 123,124
+```
 
 ---
 
@@ -688,7 +892,7 @@ visits into `STAT_TEMP`. Supports plain and `.gz`-compressed log files. Duplicat
 via the `STAT_PROCESSING_LOG` table (use `--force` to reprocess).
 
 > **Prerequisite:** run `src/mysql/2025-08-24-stat-processing-log-table.sql` before the first use.
-> See [docs/STATISTICS_UPDATE_README.md](./STATISTICS_UPDATE_README.md) for the full pipeline overview.
+> See [docs/statistics-update-readme.md](./statistics-update-readme.md) for the full pipeline overview.
 
 ```bash
 php scripts/console.php stats:import-logs [options]
@@ -1181,3 +1385,22 @@ php scripts/console.php notify:process-inbox [options]
 | `--notification-id` | | | Process only this specific notification ID (UUID) — useful for debugging issues |
 
 **Logs:** Output is written to `logs/inboxNotifications_YYYY-MM-DD.log` and printed to stdout.
+
+---
+
+## Translations
+
+### `translations:update`
+
+Updates translation strings in a PHP array file based on a YAML configuration file. Replaces `scripts/translationUpdater.php`.
+
+```bash
+php scripts/console.php translations:update --config=<path> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--config <path>` | **Required.** Path to YAML configuration file (defines `inputFile`, `outputFile`, `search`, `replace`) |
+| `--force` | Overwrite destination file without prompting |
+| `--case-sensitive` | Case-sensitive search (default is case-insensitive) |
+| `--log <path>` | Optional path to a log file |

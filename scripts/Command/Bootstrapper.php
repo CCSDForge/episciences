@@ -33,11 +33,13 @@ class Bootstrapper
 
     /**
      * @param string|null $env application.ini section; resolved from the environment when null
+     * @param bool $defineJournalConstants false when the journal is only known later: its constants
+     *                                     cannot be redefined, the command defines them itself
      * @throws Zend_Application_Exception
      * @throws Zend_Db_Exception
      */
 
-    public function __construct(?string $env = null)
+    public function __construct(?string $env = null, private readonly bool $defineJournalConstants = true)
     {
         $this->env = $env;
         $this->bootstrap();
@@ -76,7 +78,9 @@ class Bootstrapper
         defineSimpleConstants();
         defineSQLTableConstants();
         defineApplicationConstants();
-        defineJournalConstants();
+        if ($this->defineJournalConstants) {
+            defineJournalConstants();
+        }
 
         $libraries = [dirname(APPLICATION_PATH) . '/library'];
         set_include_path(implode(PATH_SEPARATOR, array_merge($libraries, [get_include_path()])));

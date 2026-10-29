@@ -7,7 +7,7 @@ $softwareCollection = $this->softwareCollection;
 $paper = $this->paper;
 $listSources = $this->listSources;
 $keepOnlySourceUsed = [];
-$isAllowedToManageRelations = Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner();
+$isAllowedToManageRelations = Episciences_Auth::isAllowedToManagePaper() || (!$paper->isPublished() && $paper->isOwner());
 ?>
 <div class="panel panel-default collapsable">
     <div class="panel-heading">

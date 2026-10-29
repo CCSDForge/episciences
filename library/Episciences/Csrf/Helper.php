@@ -1,5 +1,8 @@
 <?php
 
+use Episciences\Security\AccessLog;
+use Monolog\Level;
+
 /**
  * CSRF Helper using Zend_Form_Element_Hash
  *
@@ -52,7 +55,12 @@ class Episciences_Csrf_Helper
                 'salt' => 'episciences_csrf_' . $elementName
             ]);
 
-            return $hashElement->isValid($value);
+            $isValid = $hashElement->isValid($value);
+            if (!$isValid) {
+                self::logFailure(self::failureReason(isset($hashElement->getSession()->hash), $value), $elementName);
+            }
+
+            return $isValid;
         } catch (Exception $e) {
             trigger_error('CSRF validation error: ' . $e->getMessage(), E_USER_WARNING);
             return false;
@@ -86,11 +94,14 @@ class Episciences_Csrf_Helper
      *
      * @param string $elementName The CSRF element name (e.g., 'csrf_author_reply_form_123')
      * @param array $postData The POST data containing the token
+     * @param string|null $salt Salt of the hash element; null when it equals the element name
+     *                          (pass 'unique', the Zend_Form_Element_Hash default, for elements built without salt)
      * @return bool True if valid, false otherwise
      */
-    public static function validateFormToken(string $elementName, array $postData): bool
+    public static function validateFormToken(string $elementName, array $postData, ?string $salt = null): bool
     {
         if (!isset($postData[$elementName])) {
+            self::logFailure(AccessLog::REASON_CSRF_MISSING, $elementName);
             return false;
         }
 
@@ -100,14 +111,16 @@ class Episciences_Csrf_Helper
             //
             // In CommentsManager::getForm(), the salt equals the elementName
             // So the namespace = Zend_Form_Element_Hash_{elementName}_{elementName}
-            $salt = $elementName;
+            $salt ??= $elementName;
             $sessionName = 'Zend_Form_Element_Hash_' . $salt . '_' . $elementName;
 
             $session = new Zend_Session_Namespace($sessionName);
 
             // Use isset() - property_exists() doesn't work with Zend_Session_Namespace magic methods
+            // The PHP error log stays the place watched by the monitoring: the security log only adds the context
             if (!isset($session->hash)) {
                 trigger_error("CSRF token not found in session: $sessionName", E_USER_WARNING);
+                self::logFailure(AccessLog::REASON_CSRF_NO_SESSION_TOKEN, $elementName);
                 return false;
             }
 
@@ -115,13 +128,14 @@ class Episciences_Csrf_Helper
             $postedHash = $postData[$elementName];
 
             // Validate BEFORE clearing (prevents race condition)
-            $isValid = ($storedHash === $postedHash);
+            $isValid = is_string($storedHash) && is_string($postedHash) && hash_equals($storedHash, $postedHash);
 
             // Clear the token after validation (one-time use for security)
             unset($session->hash);
 
             if (!$isValid) {
                 trigger_error("CSRF token mismatch for: $elementName", E_USER_WARNING);
+                self::logFailure(AccessLog::REASON_CSRF_MISMATCH, $elementName);
             }
 
             return $isValid;
@@ -170,6 +184,7 @@ class Episciences_Csrf_Helper
         }
 
         if (!is_string($expected) || $expected === '') {
+            self::logFailure(AccessLog::REASON_CSRF_NO_SESSION_TOKEN, 'csrf_token');
             return false;
         }
 
@@ -179,7 +194,17 @@ class Episciences_Csrf_Helper
             $submitted = $request->getPost('csrf_token');
         }
 
-        return is_string($submitted) && $submitted !== '' && hash_equals($expected, $submitted);
+        if (!is_string($submitted) || $submitted === '') {
+            self::logFailure(AccessLog::REASON_CSRF_MISSING, 'csrf_token');
+            return false;
+        }
+
+        if (!hash_equals($expected, $submitted)) {
+            self::logFailure(AccessLog::REASON_CSRF_MISMATCH, 'csrf_token');
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -197,6 +222,33 @@ class Episciences_Csrf_Helper
             'ignore' => true,
             'decorators' => ['ViewHelper'],
         ]);
+    }
+
+    /**
+     * As in validateRequestToken(), an expired session comes first, whatever was submitted: the
+     * Identical validator then compares against null, which is not a forged token.
+     */
+    private static function failureReason(bool $hasSessionToken, string $submitted): string
+    {
+        if (!$hasSessionToken) {
+            return AccessLog::REASON_CSRF_NO_SESSION_TOKEN;
+        }
+
+        return $submitted === '' ? AccessLog::REASON_CSRF_MISSING : AccessLog::REASON_CSRF_MISMATCH;
+    }
+
+    /**
+     * A token missing from the session usually means an expired session, hence a lower level
+     * than a missing or wrong submitted token.
+     */
+    private static function logFailure(string $reason, string $tokenName): void
+    {
+        AccessLog::denied(
+            AccessLog::CSRF_FAILED,
+            $reason,
+            ['token_name' => $tokenName],
+            $reason === AccessLog::REASON_CSRF_NO_SESSION_TOKEN ? Level::Notice : null
+        );
     }
 
     /**
