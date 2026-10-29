@@ -148,7 +148,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                             <span class="sr-only"><?php echo $this->translate("Modifier le volume %s", $volumeTitle); ?></span>
                         </a>
 &nbsp;
-                        <a href="/volume/delete?id=<?= $vIdEscaped ?>" class="delete btn btn-danger btn-xs"
+                        <a href="<?= PREFIX_URL ?>volume/delete?id=<?= $vIdEscaped ?>" class="delete btn btn-danger btn-xs"
                            title="<?php echo $this->translate("Supprimer"); ?>">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                             <span class="sr-only"><?php echo $this->translate("Supprimer le volume %s", $volumeTitle); ?></span>
