@@ -52,6 +52,8 @@ class Episciences_Paper
     public const STATUS_REVIEWED = 3;
     public const STATUS_ACCEPTED = 4;
     public const STATUS_REFUSED = 5;
+    // Stored after the identifier of a refused paper (and of its previous versions) when it is submitted again
+    public const REFUSED_IDENTIFIER_SUFFIX = '-REFUSED';
     public const STATUS_OBSOLETE = 6;
     public const STATUS_WAITING_FOR_MINOR_REVISION = 7;
     public const STATUS_WAITING_FOR_COMMENTS = 8;
@@ -865,16 +867,24 @@ class Episciences_Paper
      */
     public function getIdentifier(): string
     {
-        /*
-         *  Quant un article est refusé par la revue , l'auteur pourra soumettre une nouvelle version, dans ce cas précis,
-         *  l'identfiiant de cet article est renommé en "IDENTIFIER-REFUSED"
-        */
+        // The suffix stored for a refused paper submitted again is never part of the repository identifier,
+        // whatever the current status of the paper (e.g. a previous version made obsolete)
+        return self::stripRefusedSuffix((string)$this->_identifier);
+    }
 
-        if ($this->getStatus() === self::STATUS_REFUSED && str_contains($this->_identifier, "-REFUSED")) {
-            $this->setIdentifier(str_replace('-REFUSED', '', $this->_identifier));
-        }
+    /**
+     * Identifier as stored in the database, with the suffix of a refused paper submitted again if any
+     */
+    public function getStoredIdentifier(): string
+    {
+        return (string)$this->_identifier;
+    }
 
-        return $this->_identifier;
+    public static function stripRefusedSuffix(string $identifier): string
+    {
+        return str_ends_with($identifier, self::REFUSED_IDENTIFIER_SUFFIX)
+            ? substr($identifier, 0, -strlen(self::REFUSED_IDENTIFIER_SUFFIX))
+            : $identifier;
     }
 
     /**
@@ -1022,7 +1032,7 @@ class Episciences_Paper
     public function getOALink()
     {
         if ($this->_repoId && $this->_identifier) {
-            return Episciences_Repositories::getDocUrl($this->_repoId, $this->_identifier);
+            return Episciences_Repositories::getDocUrl($this->_repoId, $this->getIdentifier());
         }
 
         return false;
@@ -1273,8 +1283,9 @@ class Episciences_Paper
             'TYPE' => $type
         ];
 
-        if ($this->getIdentifier()) {
-            $data['IDENTIFIER'] = $this->getIdentifier();
+        // Keep the suffix of a refused paper submitted again: the identifier belongs to its new submission
+        if ($this->getStoredIdentifier()) {
+            $data['IDENTIFIER'] = $this->getStoredIdentifier();
         }
         if ($this->getPublication_date()) {
             $data['PUBLICATION_DATE'] = $this->getPublication_date();
@@ -4112,6 +4123,44 @@ class Episciences_Paper
     }
 
     /**
+     * Free the identifier of this refused paper (and of its previous versions) for its new submission
+     */
+    private function freeRefusedIdentifier(): bool
+    {
+        return (bool)Episciences_PapersManager::renameIdentifier(
+            $this->getIdentifier(),
+            $this->getIdentifier() . self::REFUSED_IDENTIFIER_SUFFIX,
+            (int)$this->getPaperid(),
+            (int)$this->getRvid()
+        );
+    }
+
+    /**
+     * Whether freeRefusedIdentifier() would rename at least one version, without renaming anything (dry run)
+     */
+    private function canFreeRefusedIdentifier(): bool
+    {
+        return Episciences_PapersManager::countIdentifier(
+            $this->getIdentifier(),
+            (int)$this->getPaperid(),
+            (int)$this->getRvid()
+        ) > 0;
+    }
+
+    /**
+     * Give its identifier back to this refused paper when its new submission has not been saved
+     */
+    public function restoreRefusedIdentifier(): bool
+    {
+        return (bool)Episciences_PapersManager::renameIdentifier(
+            $this->getIdentifier() . self::REFUSED_IDENTIFIER_SUFFIX,
+            $this->getIdentifier(),
+            (int)$this->getPaperid(),
+            (int)$this->getRvid()
+        );
+    }
+
+    /**
      * @param array $values
      * @return array
      * @throws InvalidArgumentExceptionAlias
@@ -4158,16 +4207,51 @@ class Episciences_Paper
                 $message .= $translator->translate("l'entrepôt de cet article a changé.");
 
             } elseif ($paper->getVersion() > $this->getVersion()) {
+                $isRefusedIdentifierFreed = false;
+                // Inbox dry run: same answer as a real run, but the identifier of the refused paper is not freed
+                $isDryRun = !empty($values['isEpiNotify']) && !empty($values['isDryRun']);
+
                 if (
                     $this->canBeReplaced() ||
-                    ($status === self::STATUS_REFUSED && Episciences_PapersManager::renameIdentifier($this->getIdentifier(), $this->getIdentifier() . '-REFUSED'))) {
+                    (
+                        $status === self::STATUS_REFUSED &&
+                        ($isDryRun
+                            ? $this->canFreeRefusedIdentifier()
+                            : ($isRefusedIdentifierFreed = $this->freeRefusedIdentifier()))
+                    )
+                ) {
 
+                    // The caller restores the identifier (restoreRefusedIdentifier()) if the new submission is not saved
                     if (isset($values['isEpiNotify']) && $values['isEpiNotify']) {
                         return ['code' => 1, 'message' => 'Okay for the update...'];
                     }
 
+                    $needsRestore = $isRefusedIdentifierFreed;
+
+                    if ($needsRestore) {
+                        // saveDoc() redirects and exits on some errors: the identifier is restored at shutdown
+                        register_shutdown_function(function () use (&$needsRestore): void {
+                            if ($needsRestore) {
+                                $needsRestore = false;
+                                $this->restoreRefusedIdentifier();
+                            }
+                        });
+                    }
+
                     $submit = new Episciences_Submit();
-                    $result = $submit->saveDoc($values);
+                    try {
+                        $result = $submit->saveDoc($values);
+                        if ($result['code'] !== 0) {
+                            $needsRestore = false;
+                        }
+                    } finally {
+                        // Not saved (error returned or thrown): the identifier is restored right away
+                        if ($needsRestore) {
+                            $needsRestore = false;
+                            $this->restoreRefusedIdentifier();
+                        }
+                    }
+
                     if ($result['code'] === 0) {
                         $message = $result['message'];
                     } else {
