@@ -172,13 +172,13 @@ class Episciences_User extends Ccsd_User_Models_User
             $db->delete(T_USER_ROLES, ['UID = ?' => $uid]);
             $db->delete(T_USERS, ['UID = ?' => $uid]);
 
-            // Disable all assignments (review, editing) for every journal
+            // Disable all assignments (review, editing) for every journal: copy the latest assignment (highest ID: two assignments can have the same date)
             $db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
             SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
             FROM USER_ASSIGNMENT `u`
             WHERE `u`.`UID` = ?
-            AND `u`.`WHEN` IN (
-            SELECT MAX(`ua`.`WHEN`) AS `MAXDATE`
+            AND `u`.`ID` IN (
+            SELECT MAX(`ua`.`ID`) AS `MAXID`
             FROM USER_ASSIGNMENT `ua`
             WHERE `ua`.`UID` = `u`.`UID`
             AND `ua`.`ITEM` = `u`.`ITEM`
@@ -197,14 +197,14 @@ class Episciences_User extends Ccsd_User_Models_User
             // Delete the roles for this journal only
             $db->delete(T_USER_ROLES, ['RVID = ?' => RVID, 'UID = ?' => $uid]);
 
-            // Disable all assignments (review, editing) for this journal
+            // Disable all assignments (review, editing) for this journal: copy the latest assignment (highest ID: two assignments can have the same date)
             $db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
             SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
             FROM USER_ASSIGNMENT `u`
             WHERE `u`.`UID` = ?
             AND `u`.`RVID` = ?
-            AND `u`.`WHEN` IN (
-            SELECT MAX(`ua`.`WHEN`) AS `MAXDATE`
+            AND `u`.`ID` IN (
+            SELECT MAX(`ua`.`ID`) AS `MAXID`
             FROM USER_ASSIGNMENT `ua`
             WHERE `ua`.`UID` = `u`.`UID`
             AND `ua`.`ITEM` = `u`.`ITEM`
@@ -1710,6 +1710,7 @@ class Episciences_User extends Ccsd_User_Models_User
             return;
         }
 
+        // disable the active latest assignments (highest ID: two assignments can have the same date)
         foreach ($assignmentRolesToDisable as $roleToDisable) {
             $this->_db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
             SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
@@ -1718,8 +1719,8 @@ class Episciences_User extends Ccsd_User_Models_User
             AND `u`.`RVID` = ?
             AND `u`.`ROLEID` = ?
             AND `u`.`STATUS` = 'active'
-            AND `u`.`WHEN` IN (
-                SELECT MAX(`ua`.`WHEN`) AS `MAXDATE`
+            AND `u`.`ID` IN (
+                SELECT MAX(`ua`.`ID`) AS `MAXID`
                 FROM USER_ASSIGNMENT `ua`
                 WHERE `ua`.`UID` = `u`.`UID`
                 AND `ua`.`ITEM` = `u`.`ITEM`
