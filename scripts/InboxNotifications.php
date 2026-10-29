@@ -478,6 +478,8 @@ class InboxNotifications extends AbstractScript
             ],
             'rvid' => $journal->getRvid(),
             'isEpiNotify' => true,
+            // Debug mode: nothing is written, the refused paper keeps its identifier
+            'isDryRun' => $this->isDebug(),
         ];
 
         try {
@@ -503,11 +505,13 @@ class InboxNotifications extends AbstractScript
             $this->logger->warning($uResult['message']);
         }
 
+        $isRefused = $context->getStatus() === Episciences_Paper::STATUS_REFUSED;
+
         if ($this->isDebug()) {
             return false;
         }
 
-        if ($context->getStatus() === Episciences_Paper::STATUS_REFUSED) {
+        if ($isRefused) {
             return $this->handleRefusedPaperReplacement($paper, $context, $journal, $data);
         }
 
@@ -527,13 +531,20 @@ class InboxNotifications extends AbstractScript
     {
         $paper->setPaperid($context->getPaperid());
 
-        $isAdded = $this->getFirstSubmissionResult($paper, $journal, $data, [
-            'canBeReplaced' => true,
-            'logDetails' => [
-                'oldStatus' => Episciences_Paper::STATUS_REFUSED,
-                'oldDocId' => $context->getDocid(),
-            ],
-        ]);
+        try {
+            $isAdded = $this->getFirstSubmissionResult($paper, $journal, $data, [
+                'canBeReplaced' => true,
+                'logDetails' => [
+                    'oldStatus' => Episciences_Paper::STATUS_REFUSED,
+                    'oldDocId' => $context->getDocid(),
+                ],
+            ]);
+        } finally {
+            // The new submission has not been saved: the refused paper keeps its identifier
+            if (!$paper->getDocid()) {
+                $context->restoreRefusedIdentifier();
+            }
+        }
 
         if (!$isAdded) {
             $this->logger->critical(sprintf(

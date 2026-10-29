@@ -9,6 +9,8 @@ use Episciences_PapersManager;
 use PHPUnit\Framework\TestCase;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Table_Abstract;
+use Zend_Registry;
+use Zend_Translate;
 
 /**
  * Episciences_PapersManager::renameIdentifier() renames the versions of a refused paper submitted again:
@@ -31,6 +33,15 @@ final class Episciences_PapersManager_RenameIdentifierTest extends TestCase
         }
         $this->db = $db;
         $this->db->beginTransaction();
+
+        // updatePaper() translates its messages
+        if (!Zend_Registry::isRegistered('Zend_Translate')) {
+            Zend_Registry::set('Zend_Translate', new Zend_Translate([
+                'adapter' => Zend_Translate::AN_ARRAY,
+                'content' => ['' => ''],
+                'locale' => 'en',
+            ]));
+        }
     }
 
     protected function tearDown(): void
@@ -86,6 +97,109 @@ final class Episciences_PapersManager_RenameIdentifierTest extends TestCase
         self::assertSame(self::IDENTIFIER, $this->identifierOf($otherJournal));
         self::assertSame(self::IDENTIFIER, $this->identifierOf($samePaperOtherJournal));
         self::assertSame(self::IDENTIFIER, $this->identifierOf($otherPaper));
+    }
+
+    public function testRefusedPaperGetsItsIdentifierBackWhenItsNewSubmissionIsNotSaved(): void
+    {
+        $paperId = 999001;
+        $obsolete = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_OBSOLETE, 1);
+        $refused = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_REFUSED, 2);
+        // Same paper id in another journal, renamed there: its identifier is not restored
+        $otherJournal = $this->insertPaper(RVID + 1, $paperId, Episciences_Paper::STATUS_REFUSED);
+        $this->db->update(
+            T_PAPERS,
+            ['IDENTIFIER' => self::IDENTIFIER . Episciences_Paper::REFUSED_IDENTIFIER_SUFFIX],
+            ['DOCID = ?' => $otherJournal]
+        );
+
+        Episciences_PapersManager::renameIdentifier(
+            self::IDENTIFIER,
+            self::IDENTIFIER . Episciences_Paper::REFUSED_IDENTIFIER_SUFFIX,
+            $paperId,
+            RVID
+        );
+
+        $paper = new Episciences_Paper([
+            'docid' => $refused,
+            'paperid' => $paperId,
+            'rvid' => RVID,
+            'status' => Episciences_Paper::STATUS_REFUSED,
+            'identifier' => self::IDENTIFIER . Episciences_Paper::REFUSED_IDENTIFIER_SUFFIX,
+        ]);
+
+        self::assertTrue($paper->restoreRefusedIdentifier());
+        self::assertSame(self::IDENTIFIER, $this->identifierOf($refused));
+        self::assertSame(self::IDENTIFIER, $this->identifierOf($obsolete));
+        self::assertSame(
+            self::IDENTIFIER . Episciences_Paper::REFUSED_IDENTIFIER_SUFFIX,
+            $this->identifierOf($otherJournal)
+        );
+    }
+
+    public function testInboxDryRunDoesNotFreeTheIdentifierOfARefusedPaper(): void
+    {
+        $paperId = 999001;
+        $refused = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_REFUSED);
+
+        $result = $this->refusedPaper($refused, $paperId)->updatePaper($this->inboxNewVersion(['isDryRun' => true]));
+
+        self::assertSame(1, $result['code']);
+        self::assertSame(self::IDENTIFIER, $this->identifierOf($refused));
+    }
+
+    public function testInboxNewVersionFreesTheIdentifierOfARefusedPaper(): void
+    {
+        $paperId = 999001;
+        $refused = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_REFUSED);
+
+        $result = $this->refusedPaper($refused, $paperId)->updatePaper($this->inboxNewVersion());
+
+        self::assertSame(1, $result['code']);
+        self::assertSame(
+            self::IDENTIFIER . Episciences_Paper::REFUSED_IDENTIFIER_SUFFIX,
+            $this->identifierOf($refused)
+        );
+    }
+
+    public function testInboxDryRunRefusesARefusedPaperWhoseIdentifierCannotBeFreed(): void
+    {
+        $paperId = 999001;
+        $refused = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_REFUSED);
+        // The stored identifier no longer matches: there is nothing to rename
+        $this->db->update(
+            T_PAPERS,
+            ['IDENTIFIER' => self::IDENTIFIER . Episciences_Paper::REFUSED_IDENTIFIER_SUFFIX],
+            ['DOCID = ?' => $refused]
+        );
+        $paper = $this->refusedPaper($refused, $paperId);
+
+        $dryRun = $paper->updatePaper($this->inboxNewVersion(['isDryRun' => true]));
+        $realRun = $paper->updatePaper($this->inboxNewVersion());
+
+        self::assertSame(0, $dryRun['code']);
+        self::assertSame($realRun['code'], $dryRun['code']);
+    }
+
+    private function refusedPaper(int $docId, int $paperId): Episciences_Paper
+    {
+        return new Episciences_Paper([
+            'docid' => $docId,
+            'paperid' => $paperId,
+            'rvid' => RVID,
+            'status' => Episciences_Paper::STATUS_REFUSED,
+            'identifier' => self::IDENTIFIER,
+            'version' => 1,
+            'repoId' => 1,
+        ]);
+    }
+
+    private function inboxNewVersion(array $options = []): array
+    {
+        return array_merge([
+            'search_doc' => ['docId' => self::IDENTIFIER, 'version' => 2, 'repoId' => 1],
+            'rvid' => RVID,
+            'isEpiNotify' => true,
+        ], $options);
     }
 
     public function testNothingIsRenamedWithoutAPaperOrAJournal(): void

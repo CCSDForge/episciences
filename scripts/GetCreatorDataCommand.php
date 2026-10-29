@@ -127,7 +127,7 @@ class GetCreatorDataCommand extends Command
             }
 
             if ((int) $value['REPOID'] === (int) Episciences_Repositories::HAL_REPO_ID && !$dryRun) {
-                $identifier = trim($value['IDENTIFIER']);
+                $identifier = Episciences_Paper::stripRefusedSuffix(trim($value['IDENTIFIER']));
                 $version    = (int) $value['VERSION'];
 
                 $selectAuthor = Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId);
