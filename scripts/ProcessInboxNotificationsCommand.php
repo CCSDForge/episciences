@@ -1059,7 +1059,12 @@ class ProcessInboxNotificationsCommand extends Command
         }
 
         try {
-            Episciences_Review::checkReviewNotifications($recipients, !empty($recipients), $journal->getRvid());
+            // As on the web, a new paper keeps the github#508 fallback even with editors assigned automatically
+            Episciences_Review::checkReviewNotifications(
+                $recipients,
+                Episciences_Submit::isStrictNotification(!$isFirstSubmission, $recipients),
+                $journal->getRvid()
+            );
         } catch (\Throwable $e) {
             $logger?->critical('Failed checking review notifications: ' . $e->getMessage());
         }

@@ -1809,13 +1809,13 @@ class Episciences_Submit
 
         $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_AUTHOR_COPY;
 
-        Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));
-        $recipients = $this->filterConflictRecipients($recipients, $paper);
-        unset($recipients[$paper->getUid()]);
-
         $oldDocId = (int)Ccsd_Tools::ifsetor($data['old_docid'], 0);
         $oldStatus = (int)Ccsd_Tools::ifsetor($data['old_paper_status'], 0);
         $canReplace = (bool)Ccsd_Tools::ifsetor($data['can_replace'], false);
+
+        Episciences_Review::checkReviewNotifications($recipients, self::isStrictNotification($canReplace, $recipients));
+        $recipients = $this->filterConflictRecipients($recipients, $paper);
+        unset($recipients[$paper->getUid()]);
 
         if ($canReplace) {
             $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY;
@@ -1950,10 +1950,8 @@ class Episciences_Submit
         // Remove article author if included
         unset($editors[$paper->getUid()]);
 
-        // Save editor assignments
-        $this->saveEditorAssignments($paper, $editors);
-
-        return $editors;
+        // Only the editors actually assigned are notified as such
+        return $this->saveEditorAssignments($paper, $editors);
     }
 
     /**
@@ -1965,11 +1963,24 @@ class Episciences_Submit
     }
 
     /**
-     * Save and log editor assignments.
+     * Whether only the roles checked in the journal notification settings are added to the recipients.
+     * A new paper keeps the github#508 fallback (everyone when no role is checked), even with editors assigned
+     * automatically; an updated paper only notifies its editors and the checked roles.
      */
-    private function saveEditorAssignments(Episciences_Paper $paper, array $editors): void
+    public static function isStrictNotification(bool $isUpdate, array $recipients): bool
     {
-        foreach ($editors as $editor) {
+        return $isUpdate && !empty($recipients);
+    }
+
+    /**
+     * Save and log editor assignments.
+     * @return Episciences_Editor[] the editors actually assigned, with the keys of $editors
+     */
+    private function saveEditorAssignments(Episciences_Paper $paper, array $editors): array
+    {
+        $assigned = [];
+
+        foreach ($editors as $key => $editor) {
             $assignment = new Episciences_User_Assignment([
                 'rvid' => RVID,
                 'item' => Episciences_User_Assignment::ITEM_PAPER,
@@ -1979,7 +1990,12 @@ class Episciences_Submit
                 'status' => Episciences_User_Assignment::STATUS_ACTIVE, // TODO: consider inviting instead
             ]);
 
-            $assignment->save();
+            if (!$assignment->save()) {
+                error_log(sprintf('Failed to save the assignment of editor UID = %s to DOCID = %s', $editor->getUid(), $paper->getDocid()));
+                continue;
+            }
+
+            $assigned[$key] = $editor;
 
             $paper->log(
                 Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
@@ -1987,6 +2003,8 @@ class Episciences_Submit
                 ['aid' => $assignment->getId(), 'user' => $editor->toArray()]
             );
         }
+
+        return $assigned;
     }
 
     /**
