@@ -273,8 +273,20 @@ class SubmitController extends DefaultController
         $formValues['old_repoid'] = (int)$formValues['old_repoid'];
         $formValues['old_docid'] = (int)$formValues['old_docid'];
 
+        // The paper id and the journal are read from the stored paper (current journal only):
+        // renaming the identifier of a refused paper submitted again requires both
+        $storedPaper = Episciences_PapersManager::partialGet($formValues['old_docid'], RVID);
+
+        // The identifier and the status of the stored paper take precedence over the submitted values
+        if ($storedPaper !== null) {
+            $formValues['old_identifier'] = $storedPaper->getIdentifier();
+            $formValues['old_paper_status'] = (int)$storedPaper->getStatus();
+        }
+
         $selfPaper = new Episciences_Paper([
             'docid' => $formValues['old_docid'],
+            'paperid' => $storedPaper?->getPaperid() ?? 0,
+            'rvid' => $storedPaper?->getRvid() ?? 0,
             'identifier' => $formValues['old_identifier'] ?? '',
             'version' => $formValues['old_version'],
             'repoId' => $formValues['old_repoid'],

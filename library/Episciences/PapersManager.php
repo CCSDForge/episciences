@@ -3006,21 +3006,26 @@ class Episciences_PapersManager
     }
 
     /**
-     * renome l'identifiant d'un article
-     * @param $old
-     * @param $new
-     * @return bool|int
+     * Rename the identifier of the versions of a paper, in its journal only.
+     * The same document can be submitted to several journals, or as another paper: those are left untouched.
+     *
+     * @param string $old
+     * @param string $new
+     * @param int $paperId the paper whose versions are renamed
+     * @param int $rvId the journal of the paper
+     * @return bool|int the number of renamed rows, false on error
      */
-
-    public static function renameIdentifier($old, $new)
+    public static function renameIdentifier($old, $new, int $paperId, int $rvId)
     {
         try {
-            if (!is_string($old) || !is_string($new)) {
+            if (!is_string($old) || !is_string($new) || $paperId <= 0 || $rvId <= 0) {
                 return false;
             }
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $data['IDENTIFIER'] = $new;
-            $where['IDENTIFIER = ?'] = (string)$old;
+            $where['IDENTIFIER = ?'] = $old;
+            $where['PAPERID = ?'] = $paperId;
+            $where['RVID = ?'] = $rvId;
             return $db->update(T_PAPERS, $data, $where);
         } catch (Exception $e) {
             return false;

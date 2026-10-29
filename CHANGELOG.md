@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- [#1341](https://github.com/CCSDForge/episciences/pull/1341): submitting a refused paper again only renames ("-REFUSED" suffix) the versions of that paper in its journal, never another paper sharing its identifier, e.g. the same document accepted in another journal (`Episciences_PapersManager::renameIdentifier()`).
+
 ## v1.0.58.1 - 2026-10-29
 
 ### Changed
