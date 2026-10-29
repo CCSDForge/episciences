@@ -1352,6 +1352,21 @@ class ProcessInboxNotificationsCommand extends Command
     // New version processing
     // -------------------------------------------------------------------------
 
+    /**
+     * The latest revision request made on a version: the new version answers it.
+     */
+    private function findLatestRevisionRequest(int $docId): ?Episciences_Comment
+    {
+        $requests = Episciences_CommentsManager::getRevisionRequests(
+            $docId,
+            ['types' => [Episciences_CommentsManager::TYPE_REVISION_REQUEST]]
+        );
+
+        $request = reset($requests);
+
+        return $request === false ? null : new Episciences_Comment($request);
+    }
+
     private function saveNewVersion(
         Episciences_Paper  $context,
         array              $newPaperData,
@@ -1363,13 +1378,7 @@ class ProcessInboxNotificationsCommand extends Command
         $journal->loadSettings();
 
         $isCopyEditingProcessStarted = $context->isCopyEditingProcessStarted();
-        $comments = Episciences_CommentsManager::getRevisionRequests(
-            $context->getDocid(),
-            [Episciences_CommentsManager::TYPE_REVISION_REQUEST]
-        );
-
-        $commentKey        = !empty($comments) ? array_key_first($comments) : null;
-        $comment           = $commentKey !== null ? new Episciences_Comment($comments[$commentKey]) : null;
+        $comment           = $this->findLatestRevisionRequest((int) $context->getDocid());
         $reassignReviewers = $comment ? $comment->getOption('reassign_reviewers') : false;
         $isAlreadyAccepted = $comment ? $comment->getOption('isAlreadyAccepted') : false;
 
