@@ -54,8 +54,8 @@ describe('applyMultipleFilters column widths', function () {
         frames = [];
     });
 
-    function load(selector) {
-        tableNode.querySelector(selector).dispatchEvent(new Event('load'));
+    function load(selector, type = 'load') {
+        tableNode.querySelector(selector).dispatchEvent(new Event(type));
     }
 
     it('measures the columns again once the images of a frame are loaded', function () {
@@ -73,6 +73,15 @@ describe('applyMultipleFilters column widths', function () {
         expect(adjust).toHaveBeenCalledTimes(2);
     });
 
+    it('measures the columns again when an image fails to load', function () {
+        initTable('administratepaper', 'list');
+
+        load('img[alt="a"]', 'error');
+        frames.forEach(callback => callback());
+
+        expect(adjust).toHaveBeenCalledTimes(1);
+    });
+
     it('ignores the load events of other elements', function () {
         initTable('administratepaper', 'list');
 
@@ -82,12 +91,17 @@ describe('applyMultipleFilters column widths', function () {
     });
 
     it('adds the listener once when the table is rebuilt', function () {
+        const addEventListener = jest.spyOn(tableNode, 'addEventListener');
+
         initTable('administratepaper', 'list');
         initTable('administratepaper', 'list', {}, { status: ['4'] });
 
-        load('img[alt="a"]');
-
-        expect(frames).toHaveLength(1);
+        // Several frames would be merged by tablesToAdjust: check the listeners themselves
+        const listeners = addEventListener.mock.calls
+            .filter(call => call[0] === 'load' && call[2] === true)
+            .map(call => call[1]);
+        expect(listeners).toHaveLength(2);
+        expect(new Set(listeners).size).toBe(1);
     });
 
     it('measures the columns with the API of the rebuilt table', function () {
