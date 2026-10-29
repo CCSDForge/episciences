@@ -810,4 +810,16 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
 
         self::assertSame($recipients, $this->invoke('removeConflictingRecipients', [$recipients, []]));
     }
+
+    public function testNewPaperKeepsTheNotificationFallbackEvenWithAssignedEditors(): void
+    {
+        self::assertFalse(Episciences_Submit::isStrictNotification(false, [2 => 'editor']));
+        self::assertFalse(Episciences_Submit::isStrictNotification(false, []));
+    }
+
+    public function testUpdatedPaperOnlyNotifiesTheCheckedRolesWhenItHasEditors(): void
+    {
+        self::assertTrue(Episciences_Submit::isStrictNotification(true, [2 => 'editor']));
+        self::assertFalse(Episciences_Submit::isStrictNotification(true, []));
+    }
 }
