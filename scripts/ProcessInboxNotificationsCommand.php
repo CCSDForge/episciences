@@ -1069,9 +1069,16 @@ class ProcessInboxNotificationsCommand extends Command
             $logger?->critical('Failed checking review notifications: ' . $e->getMessage());
         }
 
-        // Pass the RVID explicitly: the RVID constant is not defined in CLI
-        // On a first submission no conflict declaration exists yet, so keep every recipient
-        if (!$isFirstSubmission) {
+        if ($isFirstSubmission) {
+            // As on the web: only the recipients who declared a conflict are removed. keepOnlyUsersWithoutConflict()
+            // would remove everyone but administrators, as nobody has answered yet on a new paper
+            try {
+                $recipients = Episciences_Submit::filterConflictRecipients($recipients, $paper);
+            } catch (\Throwable $e) {
+                $logger?->critical('Failed filtering conflicting recipients: ' . $e->getMessage());
+            }
+        } else {
+            // Pass the RVID explicitly: the RVID constant is not defined in CLI
             Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients, $journal->getRvid());
         }
 
