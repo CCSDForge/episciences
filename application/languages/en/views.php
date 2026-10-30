@@ -2350,7 +2350,6 @@ return array(
     'Valeur du délai à afficher' => 'Delay value to display',
     'jours' => 'days',
     'semaines' => 'weeks',
-    'mois' => 'months',
     'années' => 'years',
     "Nombre total d'utilisateurs" => 'Total number of users',
     'articles avec version temporaire' => 'articles with a temporary version',
