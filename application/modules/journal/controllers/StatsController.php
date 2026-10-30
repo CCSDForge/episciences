@@ -1101,14 +1101,31 @@ class StatsController extends Zend_Controller_Action
             return null;
         }
 
-        $client = new DelegatedTokenClient(
-            new Client(),
+        return $this->getDelegatedTokenClient($logger)->get((int)Episciences_Auth::getUid(), RVCODE);
+    }
+
+    /**
+     * Client of the delegated tokens of the Episciences API
+     * @param Monolog\Logger|null $logger
+     * @return DelegatedTokenClient
+     */
+    protected function getDelegatedTokenClient(?Monolog\Logger $logger): DelegatedTokenClient
+    {
+        return new DelegatedTokenClient(
+            $this->getHttpClient(),
             $logger ?? new NullLogger(),
             (string)EPISCIENCES_API_URL,
             defined('EPISCIENCES_API_SECRET_KEY') ? (string)EPISCIENCES_API_SECRET_KEY : ''
         );
+    }
 
-        return $client->get((int)Episciences_Auth::getUid(), RVCODE);
+    /**
+     * HTTP client of the requests to the Episciences API
+     * @return Client
+     */
+    protected function getHttpClient(): Client
+    {
+        return new Client();
     }
 
     /**
@@ -1120,8 +1137,7 @@ class StatsController extends Zend_Controller_Action
      */
     private function askApi(string $uri, array $options = [], ?string $token = null): StreamInterface
     {
-        $client = new Client();
-        return $client->request('GET', EPISCIENCES_API_URL . $uri, self::getApiRequestOptions($options, $token))->getBody();
+        return $this->getHttpClient()->request('GET', EPISCIENCES_API_URL . $uri, self::getApiRequestOptions($options, $token))->getBody();
     }
 
     /**

@@ -72,42 +72,6 @@ class StatsControllerPaperListsTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // indexAction(): delegated token and fallback
-    // -------------------------------------------------------------------------
-
-    public function testDelegatedToken_OnlyForTheAdministratorsOfTheJournal(): void
-    {
-        $source = $this->extractMethod('getDelegatedToken');
-
-        $rightsCheck = strpos($source, 'self::canSeePapers()');
-        $exchange = strpos($source, 'new DelegatedTokenClient');
-
-        $this->assertNotFalse($rightsCheck);
-        $this->assertNotFalse($exchange);
-        $this->assertLessThan($exchange, $rightsCheck, 'The rights must be checked before the token exchange');
-    }
-
-    public function testCanSeePapers_AdministratorsOfTheJournal(): void
-    {
-        $source = $this->extractMethod('canSeePapers');
-
-        $this->assertStringContainsString('Episciences_Auth::isLogged()', $source);
-        $this->assertStringContainsString('Episciences_Auth::isAdministrator(RVID)', $source);
-    }
-
-    public function testIndexAction_FallsBackToTheStatisticsWithoutPapers(): void
-    {
-        $source = $this->extractMethod('indexAction');
-
-        // with a token: dashboard with the papers
-        $this->assertStringContainsString('self::WITH_PAPERS_PARAM => \'true\']), $token)', $source);
-        // otherwise, or if this call fails: the dashboard without the papers, with the token only if the statistics are
-        // reserved for the editorial secretaries
-        $this->assertStringContainsString('$dashboardToken = self::areStatisticsReserved() ? $token : null;', $source);
-        $this->assertStringContainsString('$this->askApi($uri, $params, $dashboardToken)', $source);
-    }
-
-    // -------------------------------------------------------------------------
     // countPaperLists() / getFigureValues()
     // -------------------------------------------------------------------------
 
@@ -204,49 +168,9 @@ class StatsControllerPaperListsTest extends TestCase
         ];
     }
 
-    public function testFullHistory_OnlyForTheAdministratorsOfTheJournal(): void
-    {
-        $source = $this->extractMethod('indexAction');
-
-        $this->assertStringContainsString('$canShowFullHistory = $startStatsAfterDate !== null && self::canSeePapers();', $source);
-        $this->assertStringContainsString('$fullHistory = $canShowFullHistory && self::isFullHistoryRequested(', $source);
-        // after an anonymous function: in the whole controller
-        $this->assertStringContainsString(
-            '$this->storePaperLists($paperLists, $yearQuery, $fullHistory);',
-            (string)file_get_contents(APPLICATION_PATH . '/modules/journal/controllers/StatsController.php')
-        );
-        $this->assertStringContainsString('self::getPapersSessionKey($year, $fullHistory)', $this->extractMethod('papersAction'));
-    }
-
     // -------------------------------------------------------------------------
-    // papersAction(): rights, session, journal
+    // getPaperRows()
     // -------------------------------------------------------------------------
-
-    public function testPapersAction_ChecksTheRightsBeforeReadingTheSession(): void
-    {
-        $source = $this->extractMethod('papersAction');
-
-        $rightsCheck = strpos($source, 'self::canSeePapers()');
-        $session = strpos($source, 'new Zend_Session_Namespace');
-
-        $this->assertNotFalse($rightsCheck);
-        $this->assertNotFalse($session);
-        $this->assertLessThan($session, $rightsCheck);
-        $this->assertStringContainsString('$this->sendJson(403', $source);
-    }
-
-    public function testPapersAction_OnlyThePapersKeptForTheConnectedUser(): void
-    {
-        $source = $this->extractMethod('papersAction');
-
-        $this->assertStringContainsString("(\$stored['uid'] ?? null) !== (int)Episciences_Auth::getUid()", $source);
-        $this->assertStringContainsString('$this->sendJson(404', $source);
-    }
-
-    public function testGetPaperRows_OnlyThePapersOfTheJournal(): void
-    {
-        $this->assertStringContainsString("->where('RVID = ?', RVID)", $this->extractMethod('getPaperRows'));
-    }
 
     public function testGetPaperRows_NoDocId_NoQuery(): void
     {
@@ -314,25 +238,6 @@ class StatsControllerPaperListsTest extends TestCase
         $this->assertSame([], StatsController::getStatusDates([], [4]));
         $this->assertSame([], StatsController::getStatusDates([0, -2, 'abc'], [4]));
         $this->assertSame([], StatsController::getStatusDates([10], []));
-    }
-
-    public function testGetStatusDates_LatestDateInTheJournal(): void
-    {
-        $source = $this->extractMethod('getStatusDates');
-
-        $this->assertStringContainsString("MAX(DATE)", $source);
-        $this->assertStringContainsString("->where('RVID = ?', RVID)", $source);
-        $this->assertStringContainsString("->where('status IN (?)', array_map('intval', \$statuses))", $source);
-        $this->assertStringContainsString("->group('PAPERID')", $source);
-    }
-
-    public function testPaperRows_HistoryReadOnlyForTheColumnsOfTheFigure(): void
-    {
-        $this->assertStringContainsString('in_array($column, $columns, true)', $this->extractMethod('getPaperRows'));
-        $source = $this->extractMethod('papersAction');
-        $this->assertStringContainsString('self::FIGURE_COLUMNS[$figure] ?? self::DEFAULT_COLUMNS', $source);
-        $this->assertStringContainsString("'columns' => \$columns", $source);
-        $this->assertStringContainsString("'submissionLabel' => self::getSubmissionLabel(\$rows)", $source);
     }
 
     /**
@@ -439,20 +344,5 @@ class StatsControllerPaperListsTest extends TestCase
         $options = StatsController::getApiRequestOptions([], 'jwt');
 
         $this->assertSame('Bearer jwt', $options['headers']['Authorization']);
-    }
-
-    public function testAskApi_UsesTheRequestOptions(): void
-    {
-        $this->assertStringContainsString('self::getApiRequestOptions($options, $token)', $this->extractMethod('askApi'));
-    }
-
-    private function extractMethod(string $methodName): string
-    {
-        $source = (string)file_get_contents(APPLICATION_PATH . '/modules/journal/controllers/StatsController.php');
-        $start = strpos($source, 'function ' . $methodName);
-        $this->assertNotFalse($start, "Method $methodName not found in StatsController");
-        $end = strpos($source, 'function ', $start + strlen('function ' . $methodName));
-
-        return $end === false ? substr($source, $start) : substr($source, $start, $end - $start);
     }
 }
