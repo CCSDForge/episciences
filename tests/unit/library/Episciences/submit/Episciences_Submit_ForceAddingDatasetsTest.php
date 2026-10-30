@@ -85,17 +85,6 @@ final class Episciences_Submit_ForceAddingDatasetsTest extends TestCase
         self::assertSame('References', Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, '10.1234/second')?->getRelationship());
     }
 
-    public function testPlainValuesUseTheTypeLevelRelation(): void
-    {
-        Episciences_Submit::forceAddingDatasets($this->paper(), [
-            Episciences_Paper_Dataset::DOI_CODE => ['10.1234/plain', 'relation' => 'IsCitedBy'],
-        ]);
-
-        self::assertSame('IsCitedBy', Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, '10.1234/plain')?->getRelationship());
-        // The type-level relation is not itself stored as a value
-        self::assertNull(Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, 'IsCitedBy'));
-    }
-
     public function testUnknownCodeIsStoredWithAUrlLink(): void
     {
         $inserted = Episciences_Submit::forceAddingDatasets($this->paper(), [

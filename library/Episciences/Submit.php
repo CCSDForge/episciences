@@ -1422,9 +1422,8 @@ class Episciences_Submit
 
     /**
      * @param Episciences_Paper $paper
-     * @param array<string, array<int|string, string|array{value: string, relation?: string}>> $datasets
-     *        values per type; a value is either a plain identifier or
-     *        ['value' => identifier, 'relation' => relation type]
+     * @param array<string, list<array{value: string, relation?: string}>> $datasets
+     *        values per type, each with the relation type it was found with
      * @return int
      */
     public static function forceAddingDatasets(Episciences_Paper $paper, array $datasets = []): int
@@ -1443,16 +1442,13 @@ class Episciences_Submit
                 $code = Episciences_Paper_Dataset::UNDEFINED_CODE;
             }
 
-            $defaultRelationship = $dataset['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
-            unset($dataset['relation']);
-
             $tmpData['code'] = $code;
             $tmpData['name'] = Episciences_Paper_Dataset::$_datasetsLabel[$code];
             $tmpData['link'] = Episciences_Paper_Dataset::$_datasetsLink[$code] ?? Episciences_Paper_Dataset::URL_CODE;
 
             foreach ($dataset as $value) {
-                $tmpData['relationship'] = is_array($value) ? ($value['relation'] ?? $defaultRelationship) : $defaultRelationship;
-                $tmpData['value'] = is_array($value) ? $value['value'] : $value;
+                $tmpData['relationship'] = $value['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+                $tmpData['value'] = $value['value'];
                 $data[] = $tmpData;
             }
         }
@@ -2895,12 +2891,6 @@ class Episciences_Submit
             */
             foreach ($datasets as $key => $value) {
 
-
-                // Skip existing Dataset
-                if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
-                    continue;
-                }
-
                 if (self::isDataCiteShapedRepo($repoId)) {
 
                     if ($key !== 'identifier') {
@@ -2908,6 +2898,11 @@ class Episciences_Submit
                     }
 
                     $options['relationship'] = $datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+                }
+
+                // Skip existing Dataset
+                if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
+                    continue;
                 }
 
 
