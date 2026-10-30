@@ -238,7 +238,6 @@ test.describe('Reviewer invitation answer', () => {
             const docid = await submitArxivPaper(authorPage, { arxivId: '2311.14261' });
             await inviteNewReviewer(adminPage, docid, {
                 email: invitedEmail,
-                firstname: 'E2E',
                 lastname: `Newreviewer${suffix}`,
             });
             invitationPath = await receivedInvitationPath(mailpit, docid, invitedEmail);
@@ -299,7 +298,8 @@ test.describe('Reviewer invitation answer', () => {
         let invitationPath;
 
         await test.step('the editorial team invites a reviewer', async () => {
-            const docid = await submitArxivPaper(authorPage, { arxivId: '1512.03385' });
+            // a preprint can be submitted once only: each spec uses its own (1512.03385 is reviewer-workflow's)
+            const docid = await submitArxivPaper(authorPage, { arxivId: '1409.1556' });
             invitationPath = await inviteReviewer({ adminPage, mailpit }, docid);
         });
 
