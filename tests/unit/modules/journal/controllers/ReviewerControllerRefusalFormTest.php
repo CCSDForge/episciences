@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences\Reviewer\InvitedAccountState;
 use Episciences_Paper_Logger;
 use PHPUnit\Framework\TestCase;
 use Zend_View;
@@ -157,7 +158,14 @@ final class ReviewerControllerRefusalFormTest extends TestCase
         self::assertStringNotContainsString('&lt;', $html, 'no address bracket without an address');
     }
 
-    private function responseForm(bool $invalidRefusal, bool $confirmAcceptance = false, ?string $userForm = null, bool $invalidUserForm = false): string
+    private function responseForm(
+        bool $invalidRefusal,
+        bool $confirmAcceptance = false,
+        ?string $userForm = null,
+        bool $invalidUserForm = false,
+        ?string $loginUrl = null,
+        ?InvitedAccountState $invitedAccount = null
+    ): string
     {
         $invitation = $this->createMock(\Episciences_User_Invitation::class);
         $invitation->method('hasExpired')->willReturn(false);
@@ -172,6 +180,8 @@ final class ReviewerControllerRefusalFormTest extends TestCase
         $view->invalid_form = $invalidUserForm;
         $view->csrfToken = 'a"token<';
         $view->confirmAcceptance = $confirmAcceptance;
+        $view->loginUrl = $loginUrl;
+        $view->invitedAccountState = $invitedAccount;
 
         return $view->render('reviewer/invitation_response_form.phtml');
     }
@@ -322,6 +332,79 @@ final class ReviewerControllerRefusalFormTest extends TestCase
         self::assertStringContainsString('Cette invitation a expiré le <time datetime="2026-09-30">', $html);
         self::assertStringNotContainsString('Merci de répondre', $html);
         self::assertStringNotContainsString('rapport de relecture', $html);
+    }
+
+    public function testLoggedOutInviteeWithAnAccountIsToldToSignInBeforeAccepting(): void
+    {
+        $html = $this->responseForm(false, false, null, false, '/user/login/id/1/t/a"b');
+
+        self::assertStringContainsString('Pour accepter, vous devrez vous connecter avec votre compte.', $html);
+        self::assertStringContainsString('<a class="alert-link" href="/user/login/id/1/t/a&quot;b">Se connecter maintenant</a>.', $html);
+        self::assertStringContainsString('Refuser ne demande pas de compte.', $html);
+        self::assertStringNotContainsString('Pas encore de compte', $html);
+    }
+
+    public function testInviteeWithoutAnAccountIsToldTheAccountIsCreatedWithTheAcceptance(): void
+    {
+        $html = $this->responseForm(false, false, '<form id="accept_form"></form>', false, '/user/login/id/1');
+
+        self::assertStringContainsString(
+            'Pas encore de compte ? Cliquez sur « J\'accepte de relire cet article » : vous créerez votre compte et accepterez l\'invitation en une seule fois.',
+            $html,
+            'the account is created with the acceptance, from the button it names'
+        );
+        self::assertStringContainsString(
+            'Vous avez déjà un compte ? <a class="alert-link" href="/user/login/id/1">Connectez-vous</a> d\'abord, puis rouvrez le lien de l\'invitation reçu par e-mail pour la rattacher à votre compte.',
+            $html
+        );
+        self::assertStringContainsString('Refuser ne demande pas de compte.', $html);
+    }
+
+    public function testInviteeWhoseAddressHasAnActiveAccountAcceptsBySigningIn(): void
+    {
+        $html = $this->responseForm(false, false, '<form id="accept_form"></form>', false, '/user/login/id/1', InvitedAccountState::Active);
+
+        self::assertStringContainsString(
+            'Un compte existe déjà pour l\'adresse à laquelle cette invitation a été envoyée. Pour accepter, <a class="alert-link" href="/user/login/id/1">connectez-vous</a>',
+            $html
+        );
+        self::assertStringContainsString('<a id="accept-button" class="btn btn-success" href="/user/login/id/1">J\'accepte de relire cet article</a>', $html);
+        self::assertStringNotContainsString('id="accept_form"', $html, 'no account to create');
+        self::assertStringNotContainsString('sendactivation', $html);
+    }
+
+    public function testInviteeWhoseAccountIsNotActivatedIsOfferedANewActivationLink(): void
+    {
+        $html = $this->responseForm(false, false, '<form id="accept_form"></form>', false, '/user/login/id/1', InvitedAccountState::Inactive);
+
+        self::assertStringContainsString('mais il n\'est pas encore activé', $html);
+        self::assertMatchesRegularExpression(
+            '#<form method="post" class="invitation-answer-activation">\s*<input type="hidden" name="csrf_token" value="a&quot;token&lt;">\s*<button type="submit" name="sendactivation"#',
+            $html
+        );
+        self::assertStringNotContainsString('id="accept-button"', $html, 'not sent to a login that would fail');
+        self::assertStringNotContainsString('id="submitaccept"', $html);
+        self::assertStringNotContainsString('id="accept_form"', $html, 'the address cannot get a second account');
+        self::assertStringContainsString('id="refuse-button"', $html, 'declining stays possible');
+    }
+
+    public function testInviteeWhoseAccountOfAnotherApplicationIsNotActivatedGetsNoActivationLink(): void
+    {
+        $html = $this->responseForm(false, false, '<form id="accept_form"></form>', false, '/user/login/id/1', InvitedAccountState::InactiveElsewhere);
+
+        self::assertStringContainsString('mais il n\'est pas encore activé', $html);
+        self::assertStringNotContainsString('sendactivation', $html);
+        self::assertStringNotContainsString('id="accept-button"', $html);
+    }
+
+    public function testNoAccountNoticeOnceLoggedIn(): void
+    {
+        self::assertStringNotContainsString('Refuser ne demande pas de compte.', $this->responseForm(false));
+        self::assertStringNotContainsString(
+            'Refuser ne demande pas de compte.',
+            $this->responseForm(false, true, null, false, '/user/login/id/1'),
+            'back from the login page, the confirmation message replaces it'
+        );
     }
 
     public function testAcceptFormPostsTheEscapedSessionToken(): void

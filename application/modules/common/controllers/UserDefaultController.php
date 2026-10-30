@@ -5,6 +5,7 @@ use Episciences\Altcha\ChallengeHelper;
 use Episciences\Maintenance\ReadOnlyMode;
 use Episciences\Security\AccessLog;
 use Episciences\Trait\LocaleByCookieTrait;
+use Episciences\User\AccountActivationMailer;
 use Episciences\User\AccountMutationPolicy;
 use Episciences\User\EmailPolicy;
 use Episciences\User\ImpersonationPolicy;
@@ -1796,26 +1797,10 @@ class UserDefaultController extends Zend_Controller_Action
      */
     protected function sendActivationEmail(Episciences_User $user): void
     {
-        $token = $this->getAccountTokenRepository()->issue((int)$user->getUid(), (string)$user->getEmail(), TokenPurpose::ACCOUNT_ACTIVATION);
-
-        $tokenUrl = APPLICATION_URL . $this->view->url([
-                'controller' => 'user',
-                'action' => 'activate',
-                'token' => $token], null, true);
-
-        $tags = [
-            // TAG_REVIEW_CODE deliberately omitted: it is not in OVERRIDABLE_TAGS,
-            // so sendMailFromReview() already sets it from the review's mail display
-            // code (Episciences_Mail's constructor runs before this array is merged).
-            Episciences_Mail_Tags::TAG_REVIEW_NAME => RVNAME,
-            Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK => $tokenUrl
-        ];
-
-        try {
-            Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION, $tags);
-        } catch (Zend_Exception $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
-        }
+        (new AccountActivationMailer(
+            $this->getAccountTokenRepository(),
+            fn(array $params): string => $this->view->url($params, null, true)
+        ))->send($user);
     }
 
     /**

@@ -17,10 +17,57 @@
         $this->user_form && $this->invalid_form => 'accept_form',
         default => null,
     };
+    // reviewer without an account: an account may already use the invited address (ReviewerController::invitedAccountState())
+    $invitedAccount = $this->user_form ? ($this->invitedAccountState ?? Episciences\Reviewer\InvitedAccountState::None) : null;
+    // an active account: accepting goes through signing in with it
+    $acceptBySigningIn = $invitedAccount === Episciences\Reviewer\InvitedAccountState::Active && $this->loginUrl;
+    // an account not activated: it is activated first, nothing to accept on this page yet
+    $accountToActivate = $invitedAccount?->needsActivation() ?? false;
+    $canCreateAccount = $invitedAccount === Episciences\Reviewer\InvitedAccountState::None;
     ?>
     <div class="invitation-answer">
+        <?php if ($this->loginUrl && !$this->confirmAcceptance) : ?>
+            <?php // accepting needs an account: said before the invitee chooses, declining needs none ?>
+            <div class="alert alert-info invitation-answer-account">
+                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                <?php if ($accountToActivate) : ?>
+                    <?= $this->translate("Un compte a déjà été créé avec l'adresse à laquelle cette invitation a été envoyée, mais il n'est pas encore activé. Pour accepter, activez-le avec le lien reçu par e-mail, connectez-vous, puis rouvrez le lien de l'invitation.") ?>
+                <?php elseif ($acceptBySigningIn) : ?>
+                    <?= sprintf(
+                        $this->translate("Un compte existe déjà pour l'adresse à laquelle cette invitation a été envoyée. Pour accepter, %sconnectez-vous%s avec ce compte, puis rouvrez le lien de l'invitation reçu par e-mail."),
+                        '<a class="alert-link" href="' . $this->escape($this->loginUrl) . '">',
+                        '</a>'
+                    ) ?>
+                <?php elseif ($canCreateAccount) : ?>
+                    <?= $this->escape(sprintf(
+                        $this->translate("Pas encore de compte ? Cliquez sur « %s » : vous créerez votre compte et accepterez l'invitation en une seule fois."),
+                        $this->translate("J'accepte de relire cet article")
+                    )) ?>
+                    <?php // the return after signing in is lost for an account without an Episciences profile: the e-mail link is the reliable way back ?>
+                    <?= sprintf(
+                        $this->translate("Vous avez déjà un compte ? %sConnectez-vous%s d'abord, puis rouvrez le lien de l'invitation reçu par e-mail pour la rattacher à votre compte."),
+                        '<a class="alert-link" href="' . $this->escape($this->loginUrl) . '">',
+                        '</a>'
+                    ) ?>
+                <?php else : ?>
+                    <?= $this->translate("Pour accepter, vous devrez vous connecter avec votre compte.") ?>
+                    <a class="alert-link" href="<?= $this->escape($this->loginUrl) ?>"><?= $this->translate('Se connecter maintenant') ?></a>.
+                <?php endif; ?>
+                <?= $this->translate('Refuser ne demande pas de compte.') ?>
+                <?php if ($invitedAccount === Episciences\Reviewer\InvitedAccountState::Inactive) : ?>
+                    <form method="post" class="invitation-answer-activation">
+                        <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
+                        <button type="submit" name="sendactivation" class="btn btn-default btn-sm"><?= $this->translate("M'envoyer un nouveau lien d'activation") ?></button>
+                    </form>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
         <div id="invitation-answer-actions" class="form-actions text-center"<?= $openOnLoad !== null ? ' data-open-on-load="' . $openOnLoad . '"' : '' ?>>
-            <?php if ($this->user_form) : ?>
+            <?php if ($acceptBySigningIn) : ?>
+                <a id="accept-button" class="btn btn-success" href="<?= $this->escape($this->loginUrl) ?>"><?= $this->translate("J'accepte de relire cet article") ?></a>
+            <?php elseif ($accountToActivate) : ?>
+                <?php // the account is activated first: the notice above says how ?>
+            <?php elseif ($this->user_form) : ?>
                 <button id="accept-button" type="button" class="btn btn-success"
                         aria-expanded="false" aria-controls="accept_form">
                     <?= $this->translate("J'accepte de relire cet article") ?>
@@ -37,7 +84,7 @@
         </div>
 
         <?php
-        if ($this->user_form) {
+        if ($this->user_form && $canCreateAccount) {
             echo $this->user_form;
         }
         ?>

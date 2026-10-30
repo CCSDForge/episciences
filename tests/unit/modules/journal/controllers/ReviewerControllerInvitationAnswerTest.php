@@ -6,6 +6,7 @@ namespace unit\modules\journal\controllers;
 
 use Ccsd_View_Helper_Message;
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Reviewer\InvitedAccountState;
 use Episciences_Acl;
 use Episciences_Paper;
 use Episciences_User_Assignment;
@@ -67,8 +68,30 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
             {
                 $this->saved[] = $data;
             }
+
+            /** account already using the invited address, instead of the accounts table */
+            public InvitedAccountState $invitedAccount = InvitedAccountState::None;
+
+            /** @var list<string> addresses an activation link was sent to */
+            public array $activationSentTo = [];
+
+            protected function invitedAccountState(string $email): InvitedAccountState
+            {
+                return $this->invitedAccount;
+            }
+
+            protected function sendActivationEmailTo(string $email): void
+            {
+                $this->activationSentTo[] = $email;
+            }
         };
         $this->controller->view = new Zend_View();
+
+        // the page builds URLs (login link, account creation): a test must not depend on another one adding the routes
+        $router = Zend_Controller_Front::getInstance()->getRouter();
+        if (!$router->hasRoute('default')) {
+            $router->addDefaultRoutes();
+        }
 
         // messages left by an earlier test of the suite would be read as this test's own
         $this->clearFlashMessages();
@@ -390,6 +413,103 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
         self::assertSame([], $form->getMessages(), 'the form is not validated: no field error is displayed');
     }
 
+    public function testAccountIsCreatedWithTheInvitedAddressOnly(): void
+    {
+        // the request token is refused: the form is displayed again with what was sent
+        $this->answer($this->postRequest(['submitaccept' => '', 'EMAIL' => 'other@example.org', 'FIRSTNAME' => 'Jane']), $this->tmpUser());
+
+        /** @var \Zend_Form $form */
+        $form = $this->controller->view->user_form;
+        self::assertSame('invited@example.org', $form->getElement('EMAIL')?->getValue(), 'receiving the invitation proves this address only');
+    }
+
+    public function testInvitedAddressIsReadOnlyWithTheWayToUseAnotherOne(): void
+    {
+        $this->answer(null, $this->tmpUser());
+
+        /** @var \Zend_Form $form */
+        $form = $this->controller->view->user_form;
+        $email = $form->getElement('EMAIL');
+        self::assertNotNull($email);
+        self::assertSame('readonly', $email->getAttrib('readonly'));
+        self::assertSame('EMAIL-description', $email->getAttrib('aria-describedby'));
+
+        $html = $email->render($this->controller->view);
+        self::assertStringContainsString('id="EMAIL-description"', $html);
+        self::assertStringContainsString('<a href="/user/create" target="_blank" rel="noopener">', $html);
+    }
+
+    public function testMultiValueFieldsOfTheAccountFormGetTheirScript(): void
+    {
+        $this->answer(null, $this->tmpUser());
+
+        /** @var \Zend_Form $form */
+        $form = $this->controller->view->user_form;
+        $view = $this->controller->view;
+        $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/');
+        $html = $form->render($view);
+
+        // the "+" buttons of the affiliations and web sites call a function the form script defines
+        self::assertSame(1, preg_match("#onclick='([A-Za-z0-9_]+)\(this, \"AFFILIATIONS#", $html, $add), 'the affiliations have their "+" button');
+        $scripts = implode('', preg_match_all('#<script[^>]*>(.*?)</script>#s', $html, $blocks) ? $blocks[1] : []);
+        self::assertStringContainsString($add[1], $scripts, 'the function of the "+" button is defined');
+        self::assertStringContainsString('id="accept_form"', $html, 'laid out by the view script');
+    }
+
+    public function testStateOfTheAccountUsingTheInvitedAddressIsGivenToTheView(): void
+    {
+        $this->controller->invitedAccount = InvitedAccountState::Inactive;
+
+        $this->answer(null, $this->tmpUser());
+
+        self::assertSame(InvitedAccountState::Inactive, $this->controller->view->invitedAccountState);
+    }
+
+    public function testNewActivationLinkIsSentToTheInvitedAddress(): void
+    {
+        $this->controller->invitedAccount = InvitedAccountState::Inactive;
+
+        $this->answer($this->postRequest(['sendactivation' => '', 'EMAIL' => 'other@example.org'], true), $this->tmpUser());
+
+        self::assertSame(['invited@example.org'], $this->controller->activationSentTo);
+        self::assertSame([], $this->controller->saved, 'nothing is answered');
+        self::assertCount(1, $this->flashMessenger()->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->getCurrentMessages());
+    }
+
+    public function testNoActivationLinkWithoutTheRequestToken(): void
+    {
+        $this->controller->invitedAccount = InvitedAccountState::Inactive;
+
+        $this->answer($this->postRequest(['sendactivation' => '']), $this->tmpUser());
+
+        self::assertSame([], $this->controller->activationSentTo);
+        self::assertSame([self::SESSION_EXPIRED], $this->errorMessages());
+    }
+
+    /**
+     * @return array<string, array{InvitedAccountState}>
+     */
+    public static function accountWithoutActivationLinkProvider(): array
+    {
+        return [
+            'no account' => [InvitedAccountState::None],
+            'active account' => [InvitedAccountState::Active],
+            'account of another application' => [InvitedAccountState::InactiveElsewhere],
+        ];
+    }
+
+    /**
+     * @dataProvider accountWithoutActivationLinkProvider
+     */
+    public function testActivationLinkIsOnlySentForAnEpisciencesAccountNotActivated(InvitedAccountState $state): void
+    {
+        $this->controller->invitedAccount = $state;
+
+        $this->answer($this->postRequest(['sendactivation' => ''], true), $this->tmpUser());
+
+        self::assertSame([], $this->controller->activationSentTo);
+    }
+
     // -------------------------------------------------------------------------
     // return from the login page
     // -------------------------------------------------------------------------
@@ -461,5 +581,51 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
         self::assertStringNotContainsString('is-accepted', $url);
         self::assertStringContainsString('/confirm-acceptance/1', $url);
         self::assertStringContainsString('/' . InvitationToken::URL_PARAM . '/link-token', $url);
+    }
+
+    // -------------------------------------------------------------------------
+    // account notice
+    // -------------------------------------------------------------------------
+
+    /**
+     * Runs the answer step with the default route assembled from scratch, as the login URL needs it.
+     */
+    private function answerWithRoutes(Zend_Controller_Request_HttpTestCase $request): void
+    {
+        $router = Zend_Controller_Front::getInstance()->getRouter();
+        if (!$router->hasRoute('default')) {
+            $router->addDefaultRoutes();
+        }
+        $this->controller->view->addHelperPath(dirname(APPLICATION_PATH) . '/library/Episciences/View/Helper', 'Episciences_View_Helper_');
+
+        $currentRoute = new ReflectionProperty($router, '_currentRoute');
+        $currentRoute->setAccessible(true);
+        $previousRoute = $currentRoute->getValue($router);
+        $currentRoute->setValue($router, null);
+        try {
+            $this->answer($request);
+        } finally {
+            $currentRoute->setValue($router, $previousRoute);
+        }
+    }
+
+    public function testLoggedOutInviteeGetsALoginLinkBackToTheInvitation(): void
+    {
+        $this->answerWithRoutes($this->getRequest([], [InvitationToken::URL_PARAM => 'link-token']));
+
+        $url = (string) $this->controller->view->loginUrl;
+        self::assertStringContainsString('/user/login/', $url);
+        self::assertStringContainsString('/forward-controller/reviewer/forward-action/invitation/id/' . self::INVITATION_ID, $url);
+        self::assertStringContainsString('/' . InvitationToken::URL_PARAM . '/link-token', $url, 'the link secret is kept: the account may not be the invited one');
+        self::assertStringNotContainsString('confirm-acceptance', $url, 'signing in does not prepare an acceptance');
+    }
+
+    public function testLoggedInInviteeGetsNoLoginLink(): void
+    {
+        $this->logInAsInvitee();
+
+        $this->answerWithRoutes($this->getRequest());
+
+        self::assertNull($this->controller->view->loginUrl);
     }
 }
