@@ -106,6 +106,32 @@ async function inviteKnownReviewer(page, docid, username) {
 }
 
 /**
+ * Invites a reviewer without an account, by e-mail address.
+ * @param {import('@playwright/test').Page} page editorial page
+ * @param {number} docid
+ * @param {Object} reviewer
+ * @param {string} reviewer.email no account may use it
+ * @param {string} reviewer.firstname
+ * @param {string} reviewer.lastname no account may have it either, or the homonyms are listed instead
+ */
+async function inviteNewReviewer(page, docid, { email, firstname, lastname }) {
+    await openPaperManagement(page, docid);
+    await page.locator(`#invite_reviewer_${docid}`).click();
+    await expect(page).toHaveURL(/administratepaper\/invitereviewer/);
+
+    await page.locator('#new_user_button').click();
+    // Typing the address looks for the accounts using it: the button waits for the answer
+    await page.locator('#email').fill(email);
+    await page.locator('#firstname').fill(firstname);
+    await page.locator('#lastname').fill(lastname);
+    await page.locator('#next').click();
+    await expect(page.locator('#step-2')).toBeVisible();
+
+    await page.locator('#submit-invitation').click();
+    await page.waitForURL(new RegExp(`administratepaper/view\\?id=${docid}`));
+}
+
+/**
  * Has the E2E reviewer review a paper: the journal requires a completed review before a paper can be
  * accepted, published or sent back for revision (requiredReviewers, set by app:e2e-seed).
  * The paper is first assigned to a volume with its own rating grid, so that the review form does not
@@ -260,6 +286,7 @@ module.exports = {
     statusPanel,
     applyDecision,
     inviteKnownReviewer,
+    inviteNewReviewer,
     completeReview,
     createSection,
     createVolume,
