@@ -1,6 +1,12 @@
 const { test, expect, E2E_USERNAMES } = require('../../fixtures/e2e-fixtures');
 const { E2E_PASSWORD } = require('../../helpers/login');
-const { submitArxivPaper, inviteKnownReviewer } = require('../../helpers/editorial-workflow');
+const {
+    submitArxivPaper,
+    inviteKnownReviewer,
+    createVolume,
+    createVolumeGrid,
+    assignMasterVolume,
+} = require('../../helpers/editorial-workflow');
 
 const REVIEWER_EMAIL = 'e2e_reviewer@example.org';
 const SESSION_EXPIRED = 'Your session has expired or the page has been open for too long';
@@ -52,6 +58,10 @@ test.describe('Reviewer invitation answer', () => {
 
         await test.step('the editorial team invites a reviewer', async () => {
             docid = await submitArxivPaper(authorPage, { arxivId: '1411.4038' });
+            // Accepting an invitation creates the rating report from the grid of the paper's volume
+            const vid = await createVolume(adminPage, `E2E Invitation answer volume ${Date.now()}`);
+            await createVolumeGrid(adminPage, vid);
+            await assignMasterVolume(adminPage, docid, vid);
             invitationPath = await inviteReviewer({ adminPage, mailpit }, docid);
         });
 
