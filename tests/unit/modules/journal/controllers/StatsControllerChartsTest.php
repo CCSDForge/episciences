@@ -21,9 +21,51 @@ class StatsControllerChartsTest extends TestCase
         'publicationDelay' => 'Submission → publication',
     ];
 
+    /**
+     * The repositories known to the charts, whatever the database or the other tests registered
+     */
+    private const METADATA_SOURCES = [
+        0 => ['id' => '0', 'name' => 'Episciences', 'type' => 'repository'],
+        1 => ['id' => '1', 'name' => 'HAL', 'type' => 'repository'],
+    ];
+
+    private bool $hadMetadataSources;
+    /** @var mixed */
+    private $originalMetadataSources;
+
     public static function setUpBeforeClass(): void
     {
         require_once APPLICATION_PATH . '/modules/journal/controllers/StatsController.php';
+    }
+
+    protected function setUp(): void
+    {
+        $this->hadMetadataSources = \Zend_Registry::isRegistered('metadataSources');
+
+        if ($this->hadMetadataSources) {
+            $this->originalMetadataSources = \Zend_Registry::get('metadataSources');
+        }
+
+        \Zend_Registry::set('metadataSources', self::METADATA_SOURCES);
+        self::resetRepositoriesCache();
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->hadMetadataSources) {
+            \Zend_Registry::set('metadataSources', $this->originalMetadataSources);
+        } else {
+            \Zend_Registry::getInstance()->offsetUnset('metadataSources');
+        }
+
+        self::resetRepositoriesCache();
+    }
+
+    private static function resetRepositoriesCache(): void
+    {
+        $cache = new \ReflectionProperty(\Episciences_Repositories::class, '_repositories');
+        $cache->setAccessible(true);
+        $cache->setValue(null, []);
     }
 
     private static function details(): array
