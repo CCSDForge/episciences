@@ -1444,30 +1444,15 @@ class PaperDefaultController extends DefaultController
                     $reviewer->findWithCAS($oAssignment->getUid());
                 }
 
-                $oInvitation = Episciences_User_InvitationsManager::findById($oAssignment->getInvitation_id());
+                // findById() returns false when the invitation does not exist
+                $oInvitation = Episciences_User_InvitationsManager::findById($oAssignment->getInvitation_id()) ?: null;
 
-                // cancel the invitation, as when a reviewer is removed: save() inserts a cancelled row (same AID),
-                // which the cancelled assignment refers to
-                $oInvitation->setStatus($oInvitation::STATUS_CANCELLED);
-                $oInvitation->save();
-
-                $params = [
-                    'itemid' => $oAssignment->getItemid(),
-                    'item' => Episciences_User_Assignment::ITEM_PAPER,
-                    'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
-                    'status' => Episciences_User_Assignment::STATUS_CANCELLED,
-                    'tmp_user' => $oAssignment->isTmp_user()
-                ];
-
-                /** @var Episciences_User_Assignment $newAssignment */
-                $newAssignment = Episciences_UsersManager::unassign($oAssignment->getUid(), $params)[0];
-                $newAssignment->setInvitation_id($oInvitation->getId());
-
-                $newAssignment->save();
+                // cancel the invitation, not only the assignment, as when a reviewer is removed
+                Episciences_User_AssignmentsManager::cancelReviewerAssignment($oAssignment, $oInvitation);
 
                 $logOptions = [
                     'aid' => $oAssignment->getId(),
-                    'invitation_id' => $oInvitation->getId(),
+                    'invitation_id' => $oInvitation?->getId(),
                     'tmp_user' => $oAssignment->isTmp_user(),
                     'uid' => $oAssignment->getUid(),
                     'user' => $reviewer->toArray(),

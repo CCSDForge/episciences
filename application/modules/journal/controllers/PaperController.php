@@ -4251,28 +4251,14 @@ class PaperController extends PaperDefaultController
         }
 
         // get invitation
-        /** @var Episciences_User_Invitation $invitation */
-        $invitation = Episciences_User_InvitationsManager::findById($assignment->getInvitation_id());
+        // findById() returns false when the invitation does not exist
+        /** @var Episciences_User_Invitation|null $invitation */
+        $invitation = Episciences_User_InvitationsManager::findById($assignment->getInvitation_id()) ?: null;
 
         if ($reviewingStatus !== Episciences_Reviewer_Reviewing::STATUS_COMPLETE) { // On garde les relectures déjà terminées
 
-            //Mettre à jour l'invitati]on
-            $invitation->setStatus($invitation::STATUS_CANCELLED);
-            $invitation->save();
-
-            //Mettre à jour l'assignation
-            $params = [
-                'itemid' => $assignment->getItemid(),
-                'item' => Episciences_User_Assignment::ITEM_PAPER,
-                'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
-                'status' => Episciences_User_Assignment::STATUS_CANCELLED,
-                'tmp_user' => $assignment->isTmp_user()
-            ];
-
-            /** @var Episciences_User_Assignment $nAssignment */
-            $nAssignment = Episciences_UsersManager::unassign($assignment->getUid(), $params)[0];
-            $nAssignment->setInvitation_id($invitation->getId());
-            $nAssignment->save();
+            // cancel the invitation and the assignment
+            $nAssignment = Episciences_User_AssignmentsManager::cancelReviewerAssignment($assignment, $invitation);
 
             // logger la suppression de relecteur
 
@@ -4280,7 +4266,7 @@ class PaperController extends PaperDefaultController
                 Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT,
                 null,
                 ['aid' => $nAssignment->getId(),
-                    'invitation_id' => $invitation->getId(),
+                    'invitation_id' => $invitation?->getId(),
                     'tmp_user' => $nAssignment->isTmp_user(),
                     'uid' => $nAssignment->getUid(),
                     'user' => $reviewer->toArray()

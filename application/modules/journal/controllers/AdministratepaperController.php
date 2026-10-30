@@ -3492,22 +3492,8 @@ class AdministratepaperController extends PaperDefaultController
 
         $uid = $reviewer->getUid();
 
-        if (!$isUninvited) {
-            //invitation update (cancel)
-            $oInvitation->setStatus($oInvitation::STATUS_CANCELLED);
-            $oInvitation->save();
-        }
-
-        //update assignment  (cancel)
-        $params = [
-            'itemid' => $oAssignment->getItemid(),
-            'item' => Episciences_User_Assignment::ITEM_PAPER,
-            'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
-            'status' => Episciences_User_Assignment::STATUS_CANCELLED,
-            'tmp_user' => $oAssignment->isTmp_user()
-        ];
-        /** @var Episciences_User_Assignment $newAssignment */
-        $newAssignment = Episciences_UsersManager::unassign($oAssignment->getUid(), $params)[0];
+        // cancel the invitation, if any, and the assignment
+        Episciences_User_AssignmentsManager::cancelReviewerAssignment($oAssignment, $isUninvited ? null : $oInvitation);
 
         $logOptions = [
             'aid' => $oAssignment->getId(),
@@ -3517,13 +3503,9 @@ class AdministratepaperController extends PaperDefaultController
             'user' => $reviewer->toArray()
         ];
 
-        if (!$isUninvited) {
-            $newAssignment->setInvitation_id($oInvitation->getId());
-        } else {
+        if ($isUninvited) {
             $logOptions = array_merge($logOptions, [Episciences_Reviewer::STATUS_UNINVITED => Episciences_Reviewer::STATUS_UNINVITED]);
         }
-
-        $newAssignment->save();
 
         // log de la suppression
         $log = $paper->log(Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT, Episciences_Auth::getUid(), $logOptions);

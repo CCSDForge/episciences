@@ -123,6 +123,41 @@ class Episciences_User_AssignmentsManager
     }
 
     /**
+     * Cancels a reviewer assignment and the invitation it comes from. Both tables are insert-only: a cancelled
+     * invitation row (same AID) is inserted, then a cancelled assignment row referring to it.
+     * @param Episciences_User_Assignment $assignment the current assignment of the reviewer
+     * @param Episciences_User_Invitation|null $invitation null for a reviewer assigned without invitation
+     * @return Episciences_User_Assignment the cancelled assignment
+     * @throws Zend_Db_Adapter_Exception
+     */
+    public static function cancelReviewerAssignment(Episciences_User_Assignment $assignment, ?Episciences_User_Invitation $invitation = null): Episciences_User_Assignment
+    {
+        if ($invitation !== null) {
+            $invitation->setStatus(Episciences_User_Invitation::STATUS_CANCELLED);
+            $invitation->save();
+        }
+
+        $params = [
+            'itemid' => $assignment->getItemid(),
+            'item' => Episciences_User_Assignment::ITEM_PAPER,
+            'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
+            'status' => Episciences_User_Assignment::STATUS_CANCELLED,
+            'tmp_user' => $assignment->isTmp_user(),
+            'rvid' => $assignment->getRvid()
+        ];
+
+        /** @var Episciences_User_Assignment $cancelledAssignment */
+        $cancelledAssignment = Episciences_UsersManager::unassign($assignment->getUid(), $params)[0];
+
+        if ($invitation !== null) {
+            $cancelledAssignment->setInvitation_id($invitation->getId());
+            $cancelledAssignment->save();
+        }
+
+        return $cancelledAssignment;
+    }
+
+    /**
      * Met à jour l'UID de l'utilisateur
      * @param int $oldUid : l'UID à supprimer
      * @param int $newUid : Nouvel UID
