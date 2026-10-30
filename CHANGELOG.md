@@ -68,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Logging in: the page displayed after logging in only keeps the parameters of its address, not the content of the login form.
 - [#1403](https://github.com/CCSDForge/episciences/pull/1403): Inviting a reviewer: the number of invitations of each user counts each invitation once; an answer or a cancellation was counted as another invitation.
 - [#1402](https://github.com/CCSDForge/episciences/pull/1402): Accepting a paper cancels the reviewer invitations without answer as removing a reviewer does: the invitation itself is now cancelled, not only the assignment, so that it is no longer seen as pending, then expired (e.g. by the statistics of the API).
 - [#1385](https://github.com/CCSDForge/episciences/pull/1385): Temporary version: a file whose upload failed is no longer silently dropped; nothing is recorded and the author is asked to attach the files again. Failed uploads are now always displayed in the file upload widget. Answering without any file is still possible.

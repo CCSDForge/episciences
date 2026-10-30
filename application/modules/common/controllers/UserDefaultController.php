@@ -527,7 +527,7 @@ class UserDefaultController extends Zend_Controller_Action
                     if (null !== $this->_request->getParam('forward-action')) {
 
                         // Récupération des paramètres supplémentaires (et suppression de ceux dont on a plus besoin)
-                        $params = $this->_request->getParams();
+                        $params = $this->loginReturnParams($this->_request);
                         unset ($params['forward-controller'],
                             $params['forward-action'],
                             $params['controller'],
@@ -558,6 +558,18 @@ class UserDefaultController extends Zend_Controller_Action
                     'action' => 'dashboard'
                 ], null, true));
         }
+    }
+
+    /**
+     * Parameters carried over to the page displayed after logging in: those of the URL only
+     * (route, then query string, as getParam() reads them). The posted login form is never
+     * carried over.
+     *
+     * @return array<string, mixed>
+     */
+    private function loginReturnParams(Zend_Controller_Request_Http $request): array
+    {
+        return array_merge($request->getQuery(), $request->getUserParams());
     }
 
     /**
