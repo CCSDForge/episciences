@@ -730,6 +730,80 @@ describe('Statistics papers window', function () {
         expect(document.querySelector('.stat-papers-reload')).toBeNull();
     });
 
+    it('ignores the response of a figure no longer shown', async function () {
+        let resolveAccepted;
+        global.fetch = jest.fn(url => {
+            const figure = new URL(url, 'http://localhost').searchParams.get(
+                'figure'
+            );
+            const body =
+                figure === 'nbAccepted'
+                    ? { total: 3, hidden: 0, rows: makeRows(3) }
+                    : { total: 1, hidden: 0, rows: makeRows(1) };
+            const response = {
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve(body),
+            };
+            return figure === 'nbAccepted'
+                ? new Promise(resolve => {
+                      resolveAccepted = () => resolve(response);
+                  })
+                : Promise.resolve(response);
+        });
+
+        document.querySelector('[data-figure="nbAccepted"]').click();
+        document.querySelector('.stat-papers-close').click();
+        document.querySelector('[data-figure="nbRefused"]').click();
+        await flush();
+        resolveAccepted();
+        await flush();
+
+        const dialog = document.getElementById('stat-papers-dialog');
+        expect(
+            document.getElementById('stat-papers-dialog-title').textContent
+        ).toBe('Refused articles');
+        expect(dialog.querySelectorAll('tbody tr')).toHaveLength(1);
+    });
+
+    it('ignores the error of a figure no longer shown', async function () {
+        let rejectAccepted;
+        global.fetch = jest.fn(url => {
+            const figure = new URL(url, 'http://localhost').searchParams.get(
+                'figure'
+            );
+            return figure === 'nbAccepted'
+                ? new Promise(resolve => {
+                      rejectAccepted = () =>
+                          resolve({ ok: false, status: 500, json: () => ({}) });
+                  })
+                : Promise.resolve({
+                      ok: true,
+                      status: 200,
+                      json: () =>
+                          Promise.resolve({
+                              total: 1,
+                              hidden: 0,
+                              rows: makeRows(1),
+                          }),
+                  });
+        });
+
+        document.querySelector('[data-figure="nbAccepted"]').click();
+        document.querySelector('.stat-papers-close').click();
+        document.querySelector('[data-figure="nbRefused"]').click();
+        await flush();
+        rejectAccepted();
+        await flush();
+
+        expect(document.querySelector('.stat-papers-message').textContent).toBe(
+            ''
+        );
+        expect(
+            document.querySelectorAll('#stat-papers-dialog tbody tr')
+        ).toHaveLength(1);
+    });
+
     it('shows an error when the request fails', async function () {
         mockFetch({ nbRefused: { status: 500 } });
 

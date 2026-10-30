@@ -397,8 +397,16 @@ function initStatPapers() {
         }
 
         try {
-            showData(await load(figure));
+            const data = await load(figure);
+            // another figure was opened while this one was loading
+            if (state.figure !== figure) {
+                return;
+            }
+            showData(data);
         } catch (error) {
+            if (state.figure !== figure) {
+                return;
+            }
             if (error.status === 404) {
                 // lists kept in session for 30 minutes
                 showMessage(
