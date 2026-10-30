@@ -35,6 +35,8 @@ if ($isLicenceMissing) {
             <?= $this->escape($this->translate($message)) ?>
         </p>
 
+        <?php // Only the roles allowed to save the license (secretary and above) get the button ?>
+        <?php if (Episciences_Auth::isSecretary()) : ?>
         <div class="info-license-actions">
             <button
                 type="button"
@@ -45,5 +47,6 @@ if ($isLicenceMissing) {
                 <?= $this->escape($this->translate($isLicenceMissing ? 'Définir la licence' : 'Modifier la licence')) ?>
             </button>
         </div>
+        <?php endif; ?>
     </div>
 </div>
