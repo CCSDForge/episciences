@@ -69,11 +69,21 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
             }
         };
         $this->controller->view = new Zend_View();
+
+        // messages left by an earlier test of the suite would be read as this test's own
+        $this->clearFlashMessages();
     }
 
     protected function tearDown(): void
     {
-        // the messenger keeps its messages in a static property, outside the session
+        $this->clearFlashMessages();
+    }
+
+    /**
+     * The messenger keeps its messages in a static property, outside the session.
+     */
+    private function clearFlashMessages(): void
+    {
         foreach ([Ccsd_View_Helper_Message::MSG_ERROR, Ccsd_View_Helper_Message::MSG_SUCCESS] as $namespace) {
             $this->flashMessenger()->setNamespace($namespace)->clearCurrentMessages();
         }
