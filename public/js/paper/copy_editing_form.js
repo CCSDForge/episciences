@@ -43,6 +43,11 @@ $(function () {
         let formData = {};
         let files = $('#replyForm_' + paperCommentId).find('.upload_filename');
         let $ceHiddenPath = $('#attachments_path_type_' + paperCommentId);
+        let csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+        if (csrfMeta) {
+            formData.csrf_token = csrfMeta.content;
+        }
 
         formData.pcId = paperCommentId;
         formData.path = $ceHiddenPath.length > 0 ? $ceHiddenPath.val() : '';
@@ -50,15 +55,36 @@ $(function () {
             $ceHiddenPath.length > 0 ? $ceHiddenPath.attr('docId') : 0;
 
         files.each(function (index, value) {
-            formData.file = $(value).val();
-            ajaxDeleteFile(formData).done(function () {
+            let token = $(value).siblings('.upload_token').val();
+
+            // No token: the file is not stored on the server (see es.fileupload.js)
+            if (!token) {
+                $(value).parent().remove();
+                return;
+            }
+
+            let data = $.extend({}, formData, {
+                file: $(value).val(),
+                token: token,
+            });
+
+            ajaxDeleteFile(data).finally(function () {
                 $(value).parent().remove();
             });
         });
     }
 
-    $(window).on('unload', function () {
-        deleteAllAttachedFiles();
+    // The files of a submitted answer are kept: only an abandoned answer is cleaned up
+    let isSubmitting = false;
+
+    $(document).on('submit', 'form', function () {
+        isSubmitting = true;
+    });
+
+    $(window).on('pagehide', function () {
+        if (!isSubmitting) {
+            deleteAllAttachedFiles();
+        }
     });
 
     if (isFromZSubmit) {

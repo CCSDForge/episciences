@@ -24,6 +24,9 @@ make test-php SUITE=unit
 
 # JavaScript tests only (Jest)
 make test-js
+
+# End-to-end tests (Playwright), see tests/e2e/README.md
+yarn test:e2e
 ```
 
 ## PHP tests (PHPUnit)

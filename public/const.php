@@ -419,6 +419,9 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         // Reviewer invitation link token
         define('REVIEWER_INVITATION_HMAC_SECRET', '');
 
+        // Uploaded file token
+        define('UPLOADED_FILE_HMAC_SECRET', '');
+
         // ========================================
         // Protocol constants
         // From defineProtocol()

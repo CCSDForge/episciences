@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 
+- [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Console command `papers:delete` deletes paper versions of a journal (`--rvcode`), with their files and every related row; it asks to type a confirmation phrase, so it never deletes in non-interactive mode, and `--dry-run` only checks the papers. Deletions and failures, with their cause, are logged to `papers_delete-YYYY-MM-DD.log`. Replaces `scripts/DeletePaper.php`.
 - [#1362](https://github.com/CCSDForge/episciences/pull/1362): Console commands `user:purge-expired-tokens` (daily cron) and `user:import-legacy-tokens` (one-off, right after creating the `user_token` table, see `src/mysql/2026-10-23-create-user-token-table.sql`).
 - [#1361](https://github.com/CCSDForge/episciences/pull/1361): Security log of denied accesses: a daily JSON file (`logs/security-YYYY-MM-DD.log`, kept 180 days) records access refusals, CSRF failures, invalid tokens, unsafe file paths and failed logins, as well as existing pages missing from the access rules.
 - [#1308](https://github.com/CCSDForge/episciences/pull/1308): BAOBAB submissions now store the licence, the ROR of affiliations (including an organisational author's own ROR) and the translated abstracts filed as other descriptions.
@@ -85,6 +86,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Statistics page: the median number of reviews is labelled "per reviewed article" instead of "of research articles" (it is computed on all the reviewed articles, all their versions together), and each evaluation figure explains what it counts in a tooltip.
 - Statistics page: in the chart by year and status, the values of a series were shown one year too early after a year without any value.
 - Statistics page: the page no longer waits indefinitely when the Episciences API is unreachable (5 s to connect, 30 s in total).
+- [#1403](https://github.com/CCSDForge/episciences/pull/1403): Inviting a reviewer: the number of invitations of each user counts each invitation once; an answer or a cancellation was counted as another invitation.
+- [#1402](https://github.com/CCSDForge/episciences/pull/1402): Accepting a paper cancels the reviewer invitations without answer as removing a reviewer does: the invitation itself is now cancelled, not only the assignment, so that it is no longer seen as pending, then expired (e.g. by the statistics of the API).
+- [#1385](https://github.com/CCSDForge/episciences/pull/1385): Temporary version: a file whose upload failed is no longer silently dropped; nothing is recorded and the author is asked to attach the files again. Failed uploads are now always displayed in the file upload widget. Answering without any file is still possible.
+- [#1386](https://github.com/CCSDForge/episciences/pull/1386): Tighten the checks of the attachment upload and removal endpoints. Copy-editing answer: like a temporary version, it is no longer saved without a file the author attached; a new file never takes the name of a file already sent. **Deployment**: set `UPLOADED_FILE.HMAC_SECRET` in `config/pwd.json` (at least 64 characters, e.g. `openssl rand -hex 32`); without it, attachment uploads are refused.
+- [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Deleting a paper version also deletes its authors, declared files, data descriptor, DOI queue entry, assignments with their invitations and answers, reviewers without an account no longer invited to any paper, repository files, linked datasets with their metadata, citations, classifications, SPDX licence code and sent e-mails log. The deletion is all or nothing: if one row cannot be deleted, nothing is. Rows shared by every version of a paper (authors, DOI queue, volume position, projects, conflicts of interest) are deleted with the last version only: deleting one version no longer removes the volume position and projects of the others. A cited paper can now be deleted.
+- [#1397](https://github.com/CCSDForge/episciences/pull/1397): Paper history: a chief editor assigned automatically to a new paper is shown with the reason of the assignment ("Chief editor"), like section, volume and suggested editors.
+- [#1398](https://github.com/CCSDForge/episciences/pull/1398): Inbox (COAR Notify): a new version answers the latest revision request of the paper, no longer its latest comment of any type. The reviewers are reinvited and the paper kept accepted only when this request says so, and the editors of the paper are notified even when a more recent comment, such as a cover letter, follows the request.
+- [#1394](https://github.com/CCSDForge/episciences/pull/1394): A paper submitted through the inbox (COAR Notify) is assigned to the chief editors when the journal assigns them automatically, as on the web; they receive the editor e-mail, not the copy sent to the other recipients. On the web and through the inbox, an editor whose assignment failed is no longer notified as assigned nor recorded in the paper history. A new paper is again notified to the chief editors, secretaries and administrators when the journal checks none of these roles in its notification settings, even with editors assigned automatically. Co-authors of a new version submitted through the inbox are reassigned to the right journal.
+- [#1393](https://github.com/CCSDForge/episciences/pull/1393): Papers management and other tables loaded page by page (my papers, ratings, mail history): the header stays aligned with the columns when the paper status icons load after the table.
+- [#1393](https://github.com/CCSDForge/episciences/pull/1393): Tables with a horizontal scrollbar (papers management, my papers, ratings, mail history): the header stays aligned with the columns whatever the rules of the journal stylesheet for div elements.
+- [#1343](https://github.com/CCSDForge/episciences/pull/1343): the "-REFUSED" suffix of a refused paper submitted again is no longer shown, whatever the status of the paper (e.g. its previous versions made obsolete), nor sent to the repositories (link to the document, HAL enrichment scripts); it is no longer removed from the database when the paper is saved, and it is removed again when the new submission is not saved; the COAR Notify debug and dry-run modes no longer add it (`Episciences_Paper::getIdentifier()`, `Episciences_Paper::restoreRefusedIdentifier()`).
+- [#1341](https://github.com/CCSDForge/episciences/pull/1341): submitting a refused paper again only renames ("-REFUSED" suffix) the versions of that paper in its journal, never another paper sharing its identifier, e.g. the same document accepted in another journal (`Episciences_PapersManager::renameIdentifier()`).
+
+### Removed
+
+- [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Remove the legacy `scripts/DeletePaper.php` script (replaced by the `papers:delete` console command), which reported a deletion as successful even when it had failed.
+
+## v1.0.58.1 - 2026-10-29
+
+### Changed
+- [#1396](https://github.com/CCSDForge/episciences/pull/1396): volume management: increase volume number max length to 20 characters and sanitize input while preserving "0".
+- Update Composer dependencies.
+
+### Fixed
+- [#1383](https://github.com/CCSDForge/episciences/pull/1383): search: ignore invalid, unknown or out-of-range filter parameters.
 
 ## v1.0.58 - 2026-10-25
 

@@ -10,6 +10,45 @@ class Episciences_PapersManager
 
     public const NONE_FILTER = '0';
     public const WITH_FILTER = '-1';
+
+    /**
+     * Tables holding the rows of one paper version (table => DOCID column), purged by deletePaper().
+     * In deletion order: a table referencing another one comes first.
+     */
+    public const VERSION_TABLES = [
+        T_PAPER_COMMENTS => 'DOCID',
+        T_MAIL_LOG => 'DOCID',
+        T_PAPER_VISITS => 'DOCID',
+        VISITS_TEMP => 'DOCID',
+        T_LOGS => 'DOCID',
+        T_REVIEWER_REPORTS => 'DOCID',
+        T_PAPER_SETTINGS => 'DOCID',
+        T_ALIAS => 'DOCID',
+        // paper_citations references PAPERS
+        T_PAPER_CITATIONS => 'docid',
+        T_PAPERS => 'DOCID',
+        T_VOLUME_PAPER => 'DOCID',
+        T_PAPER_LICENCES => 'docid',
+        T_PAPER_LICENSE_CODE => 'docid',
+        // data_descriptor references files
+        T_PAPER_DATA_DESCRIPTOR => 'docid',
+        T_FILES => 'docid',
+        T_PAPER_FILES => 'doc_id',
+        T_PAPER_DATASETS => 'doc_id',
+        T_PAPER_CLASSIFICATIONS => 'docid',
+    ];
+
+    /**
+     * Tables holding the rows shared by every version of a paper (table => PAPERID column),
+     * purged with the last remaining version only.
+     */
+    public const PAPER_TABLES = [
+        T_VOLUME_PAPER_POSITION => 'PAPERID',
+        T_PAPER_PROJECTS => 'paperid',
+        T_PAPER_CONFLICTS => 'paper_id',
+        T_PAPER_AUTHORS => 'paperid',
+        T_DOI_QUEUE => 'paperid',
+    ];
     // "suggestion" filter value matching any known decision suggestion type
     public const ANY_SUGGESTION_FILTER = 'any';
     // Only the paper management lists offer the decision-suggestion filter
@@ -2437,83 +2476,168 @@ class Episciences_PapersManager
     }
 
     /**
-     * delete a paper from datbase, and all associated files
+     * Delete a paper version from the database, with its files.
      * @param $docid
-     * @return bool
+     * @return bool false when the paper does not exist or the deletion failed
      */
     public static function delete($docid): bool
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $paper = Episciences_PapersManager::get($docid, false);
+        $paper = self::get($docid, false);
 
-        // get() returns false when the paper does not exist: bail out before purging
-        // anything rather than crashing on $paper->getPaperid() after 8 tables are gone.
         if (!$paper instanceof Episciences_Paper) {
             return false;
         }
+
+        try {
+            self::deletePaper($paper);
+        } catch (Throwable $e) {
+            trigger_error(sprintf('Failed to delete paper #%s: %s', $docid, $e->getMessage()));
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Delete a paper version: every row belonging to it (VERSION_TABLES, assignments), the rows shared
+     * by every version (PAPER_TABLES) with the last version only, then its files.
+     * @throws Throwable when the database purge fails: it is rolled back, nothing is deleted
+     */
+    public static function deletePaper(Episciences_Paper $paper): void
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $docId = (int)$paper->getDocid();
+        $paperId = (int)$paper->getPaperid();
+
         // Capture rvcode before deletion for Next.js cache revalidation
         $rvcode = null;
         $journal = Episciences_ReviewsManager::find($paper->getRvid());
         if ($journal !== false) {
             $rvcode = $journal->getCode();
         }
+
         // Purge every table atomically: a failure mid-way must not leave the paper
         // half-deleted with dangling rows in the remaining tables.
         $db->beginTransaction();
         try {
+            $datasetsMetaIds = $db->fetchCol(
+                $db->select()
+                    ->distinct()
+                    ->from(T_PAPER_DATASETS, ['id_paper_datasets_meta'])
+                    ->where('doc_id = ?', $docId)
+                    ->where('id_paper_datasets_meta IS NOT NULL')
+            );
 
+            foreach (self::VERSION_TABLES as $table => $column) {
+                $db->delete($table, ["$column = ?" => $docId]);
+            }
+            self::deleteOrphanDatasetsMeta($db, $datasetsMetaIds);
+            self::deleteAssignments($db, $docId);
 
-        // delete from database
-            Episciences_CommentsManager::deleteByDocid($docid);
-            Episciences_Mail_LogManager::deleteByDocid($docid);
-
-            $db->delete(T_PAPER_VISITS, ['DOCID = ?' => $docid]);
-            $db->delete(VISITS_TEMP, ['DOCID = ?' => $docid]);
-            $db->delete(T_LOGS, ['DOCID = ?' => $docid]);
-            $db->delete(T_REVIEWER_REPORTS, ['DOCID = ?' => $docid]);
-            $db->delete(T_PAPER_SETTINGS, ['DOCID = ?' => $docid]);
-            $db->delete(T_ALIAS, ['DOCID = ?' => $docid]);
-            $db->delete(T_PAPERS, ['DOCID = ?' => $docid]);
-            $db->delete(T_VOLUME_PAPER, ['DOCID = ?' => $docid]);
-            $db->delete(T_PAPER_LICENCES, ['docid = ?' => $docid]);
-            $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
-            $db->delete(T_PAPER_PROJECTS, ['paperid = ?' => $paper->getPaperid()]);
+            if (!self::hasOtherVersions($db, $paperId)) {
+                foreach (self::PAPER_TABLES as $table => $column) {
+                    $db->delete($table, ["$column = ?" => $paperId]);
+                }
+            }
 
             $db->commit();
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $db->rollBack();
-            trigger_error(sprintf('Failed to delete paper #%s: %s', $docid, $e->getMessage()));
-            return false;
+            throw $e;
         }
+
+        Episciences_CommentsManager::getCachePool()->clear();
 
         // Filesystem and index cleanup happen only after the DB purge is committed
         // (they cannot participate in the transaction).
-        if (defined('RVCODE') && defined('REVIEW_FILES_PATH') && $docid) {
-            Episciences_Tools::deleteDir(self::buildDocumentPath($docid));
+        if (defined('RVCODE') && defined('REVIEW_FILES_PATH')) {
+            Episciences_Tools::deleteDir(self::buildDocumentPath($docId));
         }
 
         // remove from index
         try {
-            SolrIndexing::enqueueDelete((int)$docid);
+            SolrIndexing::enqueueDelete($docId);
         } catch (Exception $e) {
             Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
         }
 
-        // TODO: delete user assignments
-        // TODO: delete user invitations
-        // TODO: delete user invitation answers
         // TODO: if published paper, update HAL metadata
 
         // Enqueue Next.js cache revalidation for deleted article
         if ($rvcode !== null) {
             \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
-                "article-{$docid}",
+                "article-{$docId}",
                 "articles-{$rvcode}",
             ]);
         }
+    }
 
-        return true;
+    /**
+     * Delete the dataset metadata no dataset refers to anymore.
+     * @param array<int|string> $metaIds metadata of the deleted datasets
+     */
+    private static function deleteOrphanDatasetsMeta(Zend_Db_Adapter_Abstract $db, array $metaIds): void
+    {
+        if ($metaIds === []) {
+            return;
+        }
 
+        $stillUsed = $db->select()
+            ->from(T_PAPER_DATASETS, ['id_paper_datasets_meta'])
+            ->where('id_paper_datasets_meta IS NOT NULL');
+
+        $db->delete(T_PAPER_DATASETS_META, ['id IN (?)' => $metaIds, "id NOT IN ($stillUsed)"]);
+    }
+
+    /**
+     * Delete the assignments of a paper version (reviewers, editors, copy editors...),
+     * with the invitations hanging off them and their answers,
+     * and the temporary reviewers (without an account) no other assignment refers to.
+     */
+    private static function deleteAssignments(Zend_Db_Adapter_Abstract $db, int $docId): void
+    {
+        $assignments = $db->fetchAll(
+            $db->select()
+                ->from(T_ASSIGNMENTS, ['ID', 'UID', 'TMP_USER'])
+                ->where('ITEM = ?', Episciences_User_Assignment::ITEM_PAPER)
+                ->where('ITEMID = ?', $docId)
+        );
+
+        if ($assignments === []) {
+            return;
+        }
+
+        $assignmentIds = array_column($assignments, 'ID');
+        $tmpUserIds = array_unique(array_column(
+            array_filter($assignments, static fn(array $assignment): bool => (int)$assignment['TMP_USER'] === 1),
+            'UID'
+        ));
+
+        $invitationIds = $db->fetchCol(
+            $db->select()->from(T_USER_INVITATIONS, ['ID'])->where('AID IN (?)', $assignmentIds)
+        );
+
+        if ($invitationIds !== []) {
+            $db->delete(T_USER_INVITATION_ANSWER_DETAIL, ['ID IN (?)' => $invitationIds]);
+            $db->delete(T_USER_INVITATION_ANSWER, ['ID IN (?)' => $invitationIds]);
+            $db->delete(T_USER_INVITATIONS, ['ID IN (?)' => $invitationIds]);
+        }
+        $db->delete(T_ASSIGNMENTS, ['ID IN (?)' => $assignmentIds]);
+
+        if ($tmpUserIds !== []) {
+            $stillAssigned = $db->select()->from(T_ASSIGNMENTS, ['UID'])->where('TMP_USER = 1');
+            $db->delete(T_TMP_USER, ['ID IN (?)' => $tmpUserIds, "ID NOT IN ($stillAssigned)"]);
+        }
+    }
+
+    /**
+     * Whether another version of the paper is still in the database (to be called once the deleted version is gone).
+     */
+    private static function hasOtherVersions(Zend_Db_Adapter_Abstract $db, int $paperId): bool
+    {
+        return (bool)$db->fetchOne(
+            $db->select()->from(T_PAPERS, [new Zend_Db_Expr('1')])->where('PAPERID = ?', $paperId)->limit(1)
+        );
     }
 
     /**
@@ -3112,6 +3236,33 @@ class Episciences_PapersManager
     }
 
     /**
+     * Number of versions of a paper in its journal that renameIdentifier() would rename (dry run)
+     *
+     * @param string $identifier
+     * @param int $paperId
+     * @param int $rvId
+     * @return int 0 without a paper or a journal, or on error
+     */
+    public static function countIdentifier(string $identifier, int $paperId, int $rvId): int
+    {
+        if ($paperId <= 0 || $rvId <= 0) {
+            return 0;
+        }
+
+        try {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $select = $db->select()
+                ->from(T_PAPERS, [new Zend_Db_Expr('COUNT(*)')])
+                ->where('IDENTIFIER = ?', $identifier)
+                ->where('PAPERID = ?', $paperId)
+                ->where('RVID = ?', $rvId);
+            return (int)$db->fetchOne($select);
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
      * @param Episciences_Paper $paper
      * @return int
      * @throws Zend_Db_Adapter_Exception
@@ -3158,7 +3309,7 @@ class Episciences_PapersManager
     {
         return [
             'docId' => $params['DOCID'],
-            'identifier' => str_replace('-REFUSED', '', $params['IDENTIFIER']),
+            'identifier' => Episciences_Paper::stripRefusedSuffix((string)$params['IDENTIFIER']),
             'repoId' => (int)$params['REPOID'],
             'version' => (float)$params['VERSION'],
             'paperId' => (int)$params['PAPERID'],
