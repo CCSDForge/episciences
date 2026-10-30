@@ -435,10 +435,10 @@ class UserDefaultController extends Zend_Controller_Action
                 AccessLog::denied(AccessLog::LOGIN_FAILED, '', [
                     'result_code' => $result->getCode(),
                     'adapter' => get_class($adapter),
-                    // Read as the MySQL adapter does (route, then query, then body); the other adapters
+                    // Read as the MySQL adapter does (posted login form only); the other adapters
                     // (CAS) check the credentials on their own server, never with this parameter
                     'username' => $adapter instanceof \Ccsd\Auth\Adapter\Mysql
-                        ? $this->knownUsername($this->getRequest()->getParam('username'))
+                        ? $this->knownUsername($this->getRequest()->getPost('username'))
                         : null,
                 ]);
                 // For MySQL adapter, redisplay login form with error message
