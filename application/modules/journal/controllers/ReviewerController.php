@@ -325,10 +325,20 @@ class ReviewerController extends PaperDefaultController
     }
 
     /**
+     * The request token was refused (expired session, page left open too long): nothing was stored.
+     */
+    private function addSessionExpiredMessage(): void
+    {
+        $this->_helper->FlashMessenger
+            ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+            ->addMessage($this->view->translate("Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre réponse n'a pas été enregistrée. Merci de recommencer."));
+    }
+
+    /**
      * @param Episciences_User_Invitation $oInvitation
      * @param Episciences_User_Assignment $assignment
      * @param Episciences_Paper $paper
-     * @param $data
+     * @param array<string, mixed> $data the posted answer, with the account form fields for a reviewer without an account
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -336,7 +346,7 @@ class ReviewerController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @return bool false when the invitee is sent to the login page first: nothing is stored yet
      */
-    private function accept(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data): bool
+    private function accept(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, array $data): bool
     {
         // update user permissions
         if ($assignment->isTmp_user()) {
@@ -379,13 +389,13 @@ class ReviewerController extends PaperDefaultController
      * @param Episciences_User_Invitation $oInvitation
      * @param Episciences_User_Assignment $assignment
      * @param Episciences_Paper $paper
-     * @param $data
+     * @param array<string, mixed> $data the posted answer, with the filtered values of the refusal form
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
-    private function decline(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data): void
+    private function decline(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, array $data): void
     {
         // save invitation answer
         $oInvitationAnswer = new Episciences_User_InvitationAnswer();
@@ -583,19 +593,25 @@ class ReviewerController extends PaperDefaultController
             $accepted = array_key_exists('submitaccept', $post);
             $refused = array_key_exists('submitrefuse', $post);
 
-            if (($accepted || $refused) && !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            // the forms post one answer only: both at once would store an acceptance validated as a refusal
+            if ($accepted && $refused) {
                 $accepted = $refused = false;
-                $this->_helper->FlashMessenger
-                    ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
-                    ->addMessage($this->view->translate("Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre réponse n'a pas été enregistrée. Merci de recommencer."));
             }
 
+            // nothing to confirm while a refusal is being written
             if (
                 !$accepted &&
+                !$refused &&
                 Episciences_Auth::isLogged() &&
                 $request->getParam(self::CONFIRM_ACCEPTANCE_PARAM) === '1'
             ) {
                 $this->view->confirmAcceptance = true;
+            }
+
+            if (($accepted || $refused) && !Episciences_Csrf_Helper::validateRequestToken($request)) {
+                $this->addSessionExpiredMessage();
+                $this->redisplayTypedAnswer($post, $refused, $refuse_form, $user_form ?? null);
+                $accepted = $refused = false;
             }
 
             // the refusal form is validated and filtered (tags stripped, trimmed) before anything is stored
@@ -634,6 +650,26 @@ class ReviewerController extends PaperDefaultController
             $this->view->is_tmp_user = $assignment->isTmp_user();
             $this->view->refuse_form = $refuse_form;
             $this->view->metadata = $paper->getDatasetsFromEnrichment();
+        }
+    }
+
+    /**
+     * Displays the answer form again with what was typed, after a refused request token.
+     * The form is not validated, so no field error is displayed.
+     *
+     * @param array<string, mixed> $post
+     */
+    private function redisplayTypedAnswer(array $post, bool $refused, Zend_Form $refuseForm, ?Zend_Form $userForm): void
+    {
+        // the token field keeps the current session token, not the refused one
+        unset($post['csrf_token']);
+
+        if ($refused) {
+            $refuseForm->populate($post);
+            $this->view->invalid_refuse_form = true;
+        } elseif ($userForm !== null) {
+            $userForm->populate($post);
+            $this->view->invalid_form = true;
         }
     }
 
@@ -745,9 +781,7 @@ class ReviewerController extends PaperDefaultController
 
         if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
             // nothing changes, the pending confirmation is kept: the form is displayed again
-            $this->_helper->FlashMessenger
-                ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
-                ->addMessage($this->view->translate("Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre réponse n'a pas été enregistrée. Merci de recommencer."));
+            $this->addSessionExpiredMessage();
             return null;
         }
 
