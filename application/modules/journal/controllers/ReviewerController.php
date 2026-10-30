@@ -641,6 +641,7 @@ class ReviewerController extends PaperDefaultController
 
                 } elseif ($refused) {
                     // reopen the refusal form: it now displays its own validation errors
+                    Episciences_ReviewersManager::describeRefusalFormErrors($refuse_form);
                     $this->view->invalid_refuse_form = true;
                 } else {
                     $this->view->invalid_form = true;

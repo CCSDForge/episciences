@@ -62,8 +62,8 @@ class Episciences_ReviewersManager
         $form->addElement(new Zend_Form_Element_Button(array(
             'name' => 'cancel-user',
             'label' => "Annuler",
-            'class' => 'btn btn-danger',
-            'onclick' => 'cancel()',
+            'class' => 'btn btn-default',
+            'data-answer-cancel' => 'true',
             'decorators' => array('ViewHelper')
         )));
         $form->addElement(new Zend_Form_Element_Button(array(
@@ -80,74 +80,108 @@ class Episciences_ReviewersManager
     }
 
     /**
+     * Id of the heading naming the refusal form (reviewer/invitation_response_form.phtml)
+     */
+    public const REFUSE_FORM_TITLE_ID = 'refuse-form-title';
+
+    /**
+     * Unlike the default message, does not repeat the value: a screen reader would read it out in full
+     */
+    private const TOO_LONG_MESSAGE = 'Ce texte ne doit pas dépasser %max% caractères.';
+
+    /**
      * Renvoie le formulaire de refus de relecture d'un article
-     * @return Zend_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function refuseInvitationForm()
+    public static function refuseInvitationForm(): Zend_Form
     {
         $form = new Zend_Form();
-        // $form->setAttrib('class', 'form-inline');
         $form->removeDecorator('HtmlTag');
+        $form->setAttrib('aria-labelledby', self::REFUSE_FORM_TITLE_ID);
 
-        // Decorators
-        $decorators = array(
-            'ViewHelper',
-            'Errors',
-            array('Description', array('tag' => 'p', 'class' => 'description')),
-            'Label',
-            array('HtmlTag', array('class' => 'form-group'))
-        );
-
-        // Souhaitez-vous suggérer un relecteur ?
-        // Input Text : Suggérer relecteur
-        $form->addElement(new Zend_Form_Element_Text(array(
-            'name' => 'suggest-reviewer',
+        $form->addElement(new Zend_Form_Element_Text([
+            'name' => 'suggestreviewer',
             'class' => 'form-control',
-            'label' => 'Si vous le souhaitez, vous pouvez nous suggérer un autre relecteur :',
-            'style' => 'width: 50%',
-            'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Suggérez un relecteur'),
+            'label' => 'Suggérer un autre relecteur (facultatif)',
+            'description' => 'Indiquez par exemple son nom et son adresse e-mail.',
+            'maxlength' => 255,
+            'aria-describedby' => 'suggestreviewer-description',
             'filters' => ['StripTags', 'StringTrim'],
-            'validators' => [['StringLength', false, ['max' => 255]]],
-            'decorators' => $decorators
-        )));
+            'validators' => [['StringLength', false, ['max' => 255, 'messages' => [Zend_Validate_StringLength::TOO_LONG => self::TOO_LONG_MESSAGE]]]],
+            'decorators' => self::refusalFieldDecorators('suggestreviewer'),
+        ]));
 
-        // Commentaire (motif du refus)
-        // Input Text : Suggérer relecteur
-        $form->addElement(new Zend_Form_Element_Textarea(array(
+        $form->addElement(new Zend_Form_Element_Textarea([
             'name' => 'comment',
             'class' => 'form-control',
-            'label' => 'Si vous le souhaitez, vous pouvez nous indiquer la raison de votre refus :',
-            'style' => 'width: 50%; height: 150px',
-            'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Motif de votre refus'),
+            'label' => 'Motif du refus (facultatif)',
+            'description' => "Votre réponse est transmise à l'équipe éditoriale. 5000 caractères maximum.",
+            'rows' => 6,
+            'maxlength' => 5000,
+            'aria-describedby' => 'comment-description',
             'filters' => ['StripTags', 'StringTrim'],
-            'validators' => [['StringLength', false, ['max' => 5000]]],
-            'decorators' => $decorators
-        )));
+            'validators' => [['StringLength', false, ['max' => 5000, 'messages' => [Zend_Validate_StringLength::TOO_LONG => self::TOO_LONG_MESSAGE]]]],
+            'decorators' => self::refusalFieldDecorators('comment'),
+        ]));
 
-
-        // Confirmer
-        $form->addElement(new Zend_Form_Element_Button(array(
-            'name' => 'submit-refuse',
+        // the action of this step; declining is a choice, not a danger: no red
+        $form->addElement(new Zend_Form_Element_Button([
+            'name' => 'submitrefuse',
             'type' => 'submit',
             'label' => 'Confirmer mon refus',
-            'class' => 'btn btn-success',
-            'decorators' => array('ViewHelper')
-        )));
+            'class' => 'btn btn-primary',
+            'decorators' => ['ViewHelper'],
+        ]));
 
-        // Annuler
-        $form->addElement(new Zend_Form_Element_Button(array(
-            'name' => 'cancel-accept',
-            'label' => "J'ai changé d'avis !",
-            'class' => 'btn btn-danger',
-            'onclick' => 'cancel()',
-            'decorators' => array('ViewHelper')
-        )));
+        // closes the form and displays the answer buttons again (public/js/reviewer/invitation.js)
+        $form->addElement(new Zend_Form_Element_Button([
+            'name' => 'cancelaccept',
+            'label' => 'Annuler',
+            'class' => 'btn btn-default',
+            'data-answer-cancel' => 'true',
+            'decorators' => ['ViewHelper'],
+        ]));
+
+        $form->addDisplayGroup(['submitrefuse', 'cancelaccept'], 'refuseactions', [
+            'decorators' => ['FormElements', ['HtmlTag', ['tag' => 'div', 'class' => 'form-actions text-center']]],
+        ]);
 
         Episciences_Csrf_Helper::addSessionTokenElement($form);
 
         return $form;
+    }
+
+    /**
+     * Links the validation errors of the refusal form to their fields, for assistive technologies.
+     */
+    public static function describeRefusalFormErrors(Zend_Form $form): void
+    {
+        foreach ($form->getElements() as $element) {
+            if ($element->getMessages() === []) {
+                continue;
+            }
+
+            $describedBy = trim($element->getName() . '-errors ' . $element->getAttrib('aria-describedby'));
+            $element->setAttrib('aria-invalid', 'true');
+            $element->setAttrib('aria-describedby', $describedBy);
+        }
+    }
+
+    /**
+     * Label, field, errors then help text; the errors and the help text carry the ids the field refers to.
+     *
+     * @return array<int, string|array{0: string, 1: array<string, string>}>
+     */
+    private static function refusalFieldDecorators(string $name): array
+    {
+        return [
+            'ViewHelper',
+            ['Errors', ['id' => $name . '-errors']],
+            ['Description', ['tag' => 'p', 'class' => 'help-block', 'id' => $name . '-description']],
+            'Label',
+            ['HtmlTag', ['class' => 'form-group']],
+        ];
     }
 
     /**
