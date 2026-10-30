@@ -1,20 +1,27 @@
-<?php if ($this->reviewsRequested || $this->reviewsReceived || $this->medianReviewsNumbe) : ?>
+<?php if ($this->reviewsRequested || $this->reviewsReceived || $this->medianReviewsNumber) : ?>
     <div id="evaluation">
-        <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Évaluations') ?></h1>
-        <ul class="list-unstyled">
+        <h3 class="stat-section-title"><?= $this->translate('Évaluations') ?></h3>
+        <ul class="list-unstyled stat-tiles">
             <?= $this->partial('stats/stat-item.phtml', [
                     'itemLabel' => 'Évaluations demandées',
                     'itemValue' => $this->reviewsRequested,
+                    'help' => ['message' => "Invitations envoyées aux relecteurs, quelle que soit leur réponse (hors invitations annulées), comptées à leur date d'envoi.", 'isTooltip' => true],
+                    'paperList' => $this->paperLists[StatsController::REVIEWS_REQUESTED] ?? null,
+                    'paperListLabel' => 'Voir les invitations (%s)',
             ]) ?>
 
             <?= $this->partial('stats/stat-item.phtml', [
                     'itemLabel' => 'Évaluations reçues',
-                    'itemValue' => $this->reviewsReceived
+                    'itemValue' => $this->reviewsReceived,
+                    'help' => ['message' => 'Rapports de relecture terminés, comptés à leur date de validation.', 'isTooltip' => true],
+                    'paperList' => $this->paperLists[StatsController::REVIEWS_RECEIVED] ?? null,
+                    'paperListLabel' => 'Voir les rapports (%s)',
             ]) ?>
 
             <?= $this->partial('stats/stat-item.phtml', [
-                    'itemLabel' => "Nombre médian d'évaluations d'articles de recherche",
-                    'itemValue' => $this->medianReviewsNumber
+                    'itemLabel' => "Nombre médian d'évaluations par article évalué",
+                    'itemValue' => $this->medianReviewsNumber,
+                    'help' => ['message' => 'Rapports terminés de chaque article, toutes versions confondues, parmi les articles ayant reçu au moins un rapport.', 'isTooltip' => true],
             ]) ?>
 
         </ul>

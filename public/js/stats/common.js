@@ -1,87 +1,373 @@
-function createChart(context, data, type = null, title = '') {
-    let isPieChart = type === 'pie' || type === 'doughnut';
+/**
+ * Charts of the statistics page (Chart.js 4)
+ *
+ * Categorical colours: validated palette (light surface), always in this order and never cycled,
+ * so that a series keeps its colour. Two of them are below 3:1 on white: every chart has a table view.
+ */
+const STAT_SERIES_COLORS = [
+    '#2a78d6', // blue
+    '#eb6834', // orange
+    '#1baf7a', // aqua
+    '#eda100', // yellow
+    '#e87ba4', // magenta
+    '#008300', // green
+    '#6250d6', // violet
+    '#e34948', // red
+];
+const STAT_TEXT_COLOR = '#52514e';
+const STAT_GRID_COLOR = '#e8e7e3';
 
-    for (let i = 0; i < data.datasets.length; i++) {
-        Object.assign(data.datasets[i], { maxBarThickness: 50 }); // number (pixels)
+function statTranslate(key) {
+    return typeof translate === 'function' ? translate(key) : key;
+}
+
+/**
+ * Number of articles a value is computed from, e.g. "4 articles" ('' when unknown)
+ * @param {?number} count
+ * @returns {string}
+ */
+function statArticlesText(count) {
+    if (count === null || count === undefined) {
+        return '';
     }
 
-    let options = {
-        legend: {
-            display: true,
-            position: 'bottom',
-        },
-        plugins: {
-            title: {
-                display: true,
-                text: title,
-            },
-            datalabels: {
-                formatter: function (value, context) {
-                    return !isPieChart ? value : value + '%';
-                },
-                align: isPieChart ? 'center' : 'end',
-                anchor: isPieChart ? 'center' : 'end',
-                font: {
-                    size: '8',
-                    weight: 'bold',
-                },
-                color: '#5627a8',
-            },
-        },
+    return count + ' ' + statTranslate(count > 1 ? 'articles' : 'article');
+}
+
+/**
+ * A value of a series, with the number of articles it is computed from when the series gives it (counts)
+ * @param {object} dataset {label, data, counts}
+ * @param {number} index of the value
+ * @param {function} formatValue
+ * @returns {string}
+ */
+function statValueText(dataset, index, formatValue) {
+    const text = String(formatValue(dataset.data[index]));
+    const articles = Array.isArray(dataset.counts)
+        ? statArticlesText(dataset.counts[index])
+        : '';
+
+    return articles ? text + ' (' + articles + ')' : text;
+}
+
+/**
+ * Width of a group of bars from its number of series: the bars of a year stay side by side
+ */
+function statGroupWidth(seriesCount) {
+    if (seriesCount <= 1) {
+        return 0.6; // a single series: no group to keep together
+    }
+
+    return Math.min(0.8, 0.16 * seriesCount + 0.04);
+}
+
+/**
+ * Maximum width of a vertical bar chart: about 48px by bar, and some room between the groups and for the axis
+ */
+function statChartMaxWidth(categoryCount, seriesCount) {
+    return Math.max(
+        320,
+        Math.max(1, categoryCount) * (Math.max(1, seriesCount) * 48 + 80) + 60
+    );
+}
+
+/**
+ * A bar series, coloured by its position
+ */
+function statBarDataset(dataset, index) {
+    return Object.assign({}, dataset, {
+        backgroundColor:
+            STAT_SERIES_COLORS[Math.min(index, STAT_SERIES_COLORS.length - 1)],
+        borderRadius: 4,
+        borderSkipped: 'start', // rounded end, anchored to the baseline
+        barPercentage: 0.94, // ~2px between the bars of a group
+    });
+}
+
+/**
+ * Pure helper: Chart.js configuration of a bar chart of the statistics page
+ * @param {string[]} labels categories (years, roles…)
+ * @param {object[]} datasets [{label, data, counts}]: counts, the number of articles of each value (optional)
+ * @param {object} options horizontal: bars along the x axis; valueLabels: the values at the end of the bars
+ *                         (only for a single series); legend: false to hide it; format: of a value
+ */
+function buildBarChartConfig(labels, datasets, options = {}) {
+    const horizontal = options.horizontal === true;
+    // stacked: one bar by category, made of the series (a part-to-whole), its total in the tooltip
+    const stacked = options.stacked === true;
+    const valueAxis = {
+        beginAtZero: true,
+        grid: { color: STAT_GRID_COLOR },
+        border: { display: false },
+        ticks: { color: STAT_TEXT_COLOR, precision: 0 },
+    };
+    const categoryAxis = {
+        grid: { display: false },
+        border: { color: STAT_GRID_COLOR },
+        ticks: { color: STAT_TEXT_COLOR },
     };
 
-    if (!isPieChart) {
-        let scalesOptions = {
-            scales: {
-                xAxes: [
-                    {
-                        ticks: {
-                            beginAtZero: true,
-                        },
-                        gridLines: {
-                            display: true,
-                        },
-                        scaleLabel: {
-                            display: true,
-                            labelString: '',
-                        },
-                        afterDataLimits(scale) {
-                            // Prevent hiding data label value when the constraints of the graph are reached.
-                            scale.max += 1;
-                        },
-                    },
-                ],
-                yAxes: [
-                    {
-                        ticks: {
-                            beginAtZero: true,
-                        },
-                        gridLines: {
-                            display: true,
-                        },
-                        scaleLabel: {
-                            display: true,
-                            labelString: '',
-                        },
-                        afterDataLimits(scale) {
-                            // Prevent hiding data label value when the constraints of the graph are reached.
-                            scale.max += 20;
-                        },
-                    },
-                ],
+    const config = {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: datasets.map((dataset, index) =>
+                stacked
+                    ? Object.assign(statBarDataset(dataset, index), {
+                          borderRadius: 0,
+                          // 2px surface gap between the segments
+                          borderWidth: { top: 2 },
+                          borderColor: '#fff',
+                          borderSkipped: false,
+                      })
+                    : statBarDataset(dataset, index)
+            ),
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false, // the height is the one of the container
+            interaction: { mode: 'index', intersect: false },
+            datasets: {
+                bar: {
+                    categoryPercentage: statGroupWidth(
+                        stacked ? 1 : datasets.length
+                    ),
+                },
             },
+            scales: horizontal
+                ? { x: valueAxis, y: categoryAxis }
+                : { x: categoryAxis, y: valueAxis },
+            plugins: {
+                legend: {
+                    display: options.legend !== false,
+                    position: 'top',
+                    align: 'start',
+                    labels: {
+                        color: STAT_TEXT_COLOR,
+                        boxWidth: 12,
+                        boxHeight: 12,
+                        useBorderRadius: true,
+                        borderRadius: 2,
+                    },
+                },
+                tooltip: { padding: 8 },
+                datalabels: { display: false },
+            },
+        },
+        plugins: [],
+    };
+
+    if (horizontal) {
+        config.options.indexAxis = 'y';
+    }
+
+    if (stacked) {
+        config.options.scales.x.stacked = true;
+        config.options.scales.y.stacked = true;
+        config.options.plugins.tooltip.callbacks = {
+            footer: items =>
+                statTranslate('Total') +
+                ' : ' +
+                items.reduce((sum, item) => sum + (item.parsed.y || 0), 0),
         };
-        Object.assign(options, scalesOptions);
     }
 
-    if (type === 'barH') {
-        //options['indexAxis'] = 'y'; possible migration to v3 (currently in beta version)
-        type = 'horizontalBar';
+    // the number of articles of each value in the tooltip
+    if (datasets.some(dataset => Array.isArray(dataset.counts))) {
+        const formatValue =
+            options.format ||
+            (value => (value === null || value === undefined ? '–' : value));
+
+        config.options.plugins.tooltip.callbacks = Object.assign(
+            config.options.plugins.tooltip.callbacks || {},
+            {
+                label: item =>
+                    datasets[item.datasetIndex].label +
+                    ' : ' +
+                    statValueText(
+                        datasets[item.datasetIndex],
+                        item.dataIndex,
+                        formatValue
+                    ),
+            }
+        );
     }
 
-    return new Chart(context, {
-        data: data,
-        type: type !== null ? type : 'pie',
-        options: options,
+    if (options.valueLabels && typeof ChartDataLabels !== 'undefined') {
+        config.plugins.push(ChartDataLabels);
+        config.options.plugins.datalabels = {
+            display: true,
+            anchor: 'end',
+            align: 'end',
+            color: '#0b0b0b',
+            font: { size: 11 },
+        };
+        config.options.layout = { padding: { right: 32, top: 16 } };
+    }
+
+    return config;
+}
+
+/**
+ * Table view of a chart: the same values, readable without the colours
+ * @param {string} caption
+ * @param {string[]} labels
+ * @param {object[]} datasets [{label, data}]
+ * @param {function} format of a value
+ * @returns {HTMLDetailsElement}
+ */
+function buildChartTable(caption, labels, datasets, format = null) {
+    const formatValue =
+        format ||
+        (value => (value === null || value === undefined ? '–' : value));
+    const details = document.createElement('details');
+    details.className = 'stat-chart-table';
+
+    const summary = document.createElement('summary');
+    summary.textContent = statTranslate('Voir les données');
+    details.appendChild(summary);
+
+    const table = document.createElement('table');
+    table.className = 'table table-condensed';
+
+    const tableCaption = document.createElement('caption');
+    tableCaption.className = 'sr-only';
+    tableCaption.textContent = caption;
+    table.appendChild(tableCaption);
+
+    const head = table.createTHead().insertRow();
+    head.appendChild(document.createElement('th'));
+    datasets.forEach(dataset => {
+        const th = document.createElement('th');
+        th.scope = 'col';
+        th.textContent = dataset.label;
+        head.appendChild(th);
     });
+
+    const body = table.createTBody();
+    labels.forEach((label, i) => {
+        const row = body.insertRow();
+        const th = document.createElement('th');
+        th.scope = 'row';
+        th.textContent = label;
+        row.appendChild(th);
+        datasets.forEach(dataset => {
+            row.insertCell().textContent = statValueText(
+                dataset,
+                i,
+                formatValue
+            );
+        });
+    });
+
+    details.appendChild(table);
+    return details;
+}
+
+/**
+ * Base name of the CSV files of the page (journal, year, all the data or not), given by the page
+ */
+function statsExportName() {
+    const page =
+        typeof document !== 'undefined'
+            ? document.querySelector('.stats-page')
+            : null;
+    return (page && page.dataset.exportName) || 'statistiques';
+}
+
+/**
+ * Pure helper: rows of the CSV export of a chart: a header, then a row by category with the raw values
+ */
+function buildChartCsvRows(categoryLabel, labels, datasets) {
+    return [
+        [categoryLabel].concat(datasets.map(dataset => dataset.label)),
+    ].concat(
+        labels.map((label, i) =>
+            [label].concat(
+                datasets.map(dataset =>
+                    dataset.data[i] === null || dataset.data[i] === undefined
+                        ? ''
+                        : dataset.data[i]
+                )
+            )
+        )
+    );
+}
+
+/**
+ * Draws a bar chart in its canvas, and its table view in the panel
+ * @returns {Chart|null}
+ */
+function createBarChart(canvasId, labels, datasets, options = {}) {
+    const canvas = document.getElementById(canvasId);
+
+    if (!canvas || !Array.isArray(datasets) || datasets.length === 0) {
+        return null;
+    }
+
+    const tableContainer = document.querySelector(
+        '.stat-chart-data[data-chart="' + canvasId + '"]'
+    );
+
+    if (tableContainer) {
+        tableContainer.replaceChildren(
+            buildChartTable(
+                canvas.getAttribute('aria-label') || '',
+                labels,
+                datasets,
+                options.format
+            )
+        );
+
+        // the same data as a CSV file (raw values)
+        if (typeof createCsvButton === 'function') {
+            tableContainer.appendChild(
+                createCsvButton(statTranslate('Télécharger (CSV)'), () => ({
+                    // named after the chart, as shown (its title), or the name given by the chart
+                    fileName: statCsvFileName([
+                        statsExportName(),
+                        options.exportName ||
+                            canvas.dataset.exportName ||
+                            canvas.getAttribute('aria-label') ||
+                            canvasId.replace(/-chart$/, ''),
+                    ]),
+                    rows: buildChartCsvRows(
+                        options.categoryLabel || '',
+                        labels,
+                        datasets
+                    ),
+                }))
+            );
+        }
+    }
+
+    // few categories (the page of a year): the chart is not wider than its bars need
+    if (!options.horizontal && labels.length <= 2 && canvas.parentElement) {
+        canvas.parentElement.style.maxWidth =
+            statChartMaxWidth(
+                labels.length,
+                options.stacked ? 1 : datasets.length
+            ) + 'px';
+    }
+
+    if (typeof Chart === 'undefined') {
+        return null;
+    }
+
+    return new Chart(canvas, buildBarChartConfig(labels, datasets, options));
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        STAT_SERIES_COLORS,
+        statGroupWidth,
+        statChartMaxWidth,
+        statArticlesText,
+        statValueText,
+        buildBarChartConfig,
+        buildChartTable,
+        buildChartCsvRows,
+        statsExportName,
+        createBarChart,
+    };
 }

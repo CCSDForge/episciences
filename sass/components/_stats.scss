@@ -38,3 +38,545 @@
 .stat-code{
   font-size: 1.2rem;
 }
+// Papers of the figures (journal administrators)
+.stat-papers {
+  flex-basis: 100%;
+
+  .help-block {
+    margin: 0;
+  }
+}
+
+.stat-papers-dialog {
+  width: min(1100px, 95vw);
+  max-height: 90vh;
+  padding: 16px 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .stat-papers-dialog-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+
+    h2 {
+      margin: 0;
+    }
+  }
+
+  .stat-papers-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+
+    .stat-papers-search {
+      max-width: 360px;
+    }
+
+    .stat-papers-count {
+      margin: 0;
+    }
+  }
+
+  .stat-papers-table {
+    th .btn-link {
+      padding: 0;
+      font-weight: 600;
+      color: inherit;
+    }
+
+    th[aria-sort='ascending'] .btn-link::after {
+      content: ' ▲';
+    }
+
+    th[aria-sort='descending'] .btn-link::after {
+      content: ' ▼';
+    }
+
+    td {
+      vertical-align: top;
+    }
+
+    .stat-papers-date {
+      white-space: nowrap;
+    }
+  }
+
+  .stat-papers-pager {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+// Charts: the height is the one of the container (the charts do not keep an aspect ratio)
+.stat-chart {
+  position: relative;
+  height: 300px;
+}
+
+.stat-chart-users {
+  height: 280px;
+}
+
+// Table view of a chart (the values readable without the colours)
+.stat-chart-table {
+  summary {
+    cursor: pointer;
+    margin-top: 8px;
+    font-size: 1.2rem;
+    color: #337ab7;
+  }
+
+  table {
+    width: auto;
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  td {
+    text-align: right;
+  }
+}
+
+// Rates: meters instead of a two-slice doughnut
+.stat-meters {
+  max-width: 560px;
+  margin: 8px 0 0;
+}
+
+.stat-meter {
+  display: grid;
+  grid-template-columns: 160px 1fr 70px;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0;
+  font-size: 1.3rem;
+}
+
+.stat-meter-label {
+  font-weight: 500;
+  color: #333;
+}
+
+.stat-meter-track {
+  height: 10px;
+  overflow: hidden;
+  background: #cde2fb;
+  border-radius: 5px;
+}
+
+.stat-meter-fill {
+  display: block;
+  height: 100%;
+  background: #2a78d6;
+  border-radius: 5px;
+}
+
+.stat-meter-value {
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+// Figures: stat tiles (label, value, context), in a grid
+.stat-tiles-row {
+  list-style: none;
+}
+
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 10px 0 14px;
+  padding: 0;
+
+  > .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid #e8e7e3;
+    border-radius: 6px;
+    font-size: 1.3rem;
+    line-height: 1.3;
+  }
+
+  .stat-label {
+    font-weight: 500;
+    color: #52514e;
+  }
+
+  .stat-help {
+    margin-left: 2px;
+    color: #8a8984;
+    cursor: help;
+  }
+
+  // the number is the tile: large, proportional figures, text colour (no series colour)
+  .stat-value {
+    padding: 0;
+    background: none;
+    font-size: 2.6rem;
+    font-weight: 600;
+    line-height: 1.1;
+    color: #0b0b0b;
+    font-variant-numeric: proportional-nums;
+  }
+
+  .stat-context {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+
+  .stat-context-value {
+    font-weight: 600;
+  }
+
+  // the papers of the figure, at the bottom of the tile
+  .stat-papers {
+    margin-top: auto;
+    padding-top: 4px;
+
+    .btn-link {
+      padding-left: 0;
+    }
+  }
+}
+
+// Page: introduction, year navigation, panels, sections, notes (scoped to the statistics page)
+.stats-page {
+  .stats-intro {
+    margin: -4px 0 18px;
+    font-size: 1.5rem;
+    color: #52514e;
+
+    strong {
+      color: #0b0b0b;
+    }
+  }
+
+  // year navigation: pills, the current year marked with aria-current
+  .stats-years {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    clear: both; // after the floated Bootstrap columns
+    width: 100%;
+    margin: 0 0 16px;
+    padding-top: 4px;
+  }
+
+  .stats-year {
+    padding: 4px 12px;
+    border: 1px solid #d9d8d3;
+    border-radius: 999px;
+    font-size: 1.3rem;
+    color: #52514e;
+    background: #fff;
+    font-variant-numeric: tabular-nums;
+
+    &:hover,
+    &:focus {
+      text-decoration: none;
+      border-color: #2a78d6;
+      color: #2a78d6;
+    }
+
+    &.active {
+      border-color: #2a78d6;
+      background: #2a78d6;
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+
+  // panels: hairline border, light heading, assertive title
+  .panel {
+    border-color: #e8e7e3;
+    border-radius: 6px;
+    box-shadow: none;
+    margin-bottom: 20px;
+  }
+
+  .panel-heading {
+    padding: 12px 16px;
+    background: #fafaf9;
+    border-bottom-color: #e8e7e3;
+    border-radius: 6px 6px 0 0;
+  }
+
+  .panel-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #0b0b0b;
+
+    .stat-code {
+      margin-left: 4px;
+      padding: 1px 8px;
+      border-radius: 999px;
+      background: #cde2fb;
+      color: #1c5cab;
+      font-size: 1.3rem;
+    }
+  }
+
+  .panel-body {
+    padding: 16px;
+  }
+
+  // section titles inside a panel
+  .stat-section-title {
+    margin: 22px 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e8e7e3;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #52514e;
+  }
+
+  // the formula of the rates and the notes: discreet help text
+  .stat-formula {
+    margin: 0 0 6px;
+    font-size: 1.2rem;
+  }
+
+  .stat-note {
+    list-style: none;
+    margin: 4px 0 8px;
+    font-size: 1.25rem;
+    color: #737373;
+
+    .fas {
+      margin-right: 4px;
+      color: #8a8984;
+    }
+  }
+
+  // delays: a light table, numbers aligned
+  .stat-delay-mode {
+    display: inline-flex;
+
+    // hidden without JavaScript
+    &[hidden] {
+      display: none;
+    }
+    gap: 2px;
+    margin: 0 0 10px;
+    padding: 3px;
+    border: 1px solid #e8e7e3;
+    border-radius: 999px;
+    background: #faf9f6;
+
+    .stat-delay-mode-btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 3px 12px;
+      background: transparent;
+      font-size: 1.3rem;
+      color: #737373;
+      cursor: pointer;
+
+      &:hover {
+        color: #333;
+        background: #f0efec;
+      }
+
+      &.active {
+        background: #2a78d6;
+        color: #fff;
+      }
+
+      &:focus-visible {
+        outline: 2px solid #2a78d6;
+        outline-offset: 2px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .stat-delay-mode-btn {
+        transition: none;
+      }
+    }
+  }
+
+  .stat-delays {
+    max-width: 720px;
+    margin-bottom: 8px;
+
+    > thead > tr > th {
+      border-bottom: 1px solid #e8e7e3;
+      font-weight: 600;
+      color: #52514e;
+      text-align: right;
+
+      &:first-child {
+        text-align: left;
+      }
+    }
+
+    > tbody > tr > th,
+    > tbody > tr > td {
+      border-top: 1px solid #f0efec;
+      vertical-align: middle;
+    }
+
+    > tbody > tr > th {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .stat-value {
+      padding: 0;
+      background: none;
+      font-size: 1.5rem;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}
+
+// Toolbar: the years, and the on / off switch of the start date of the statistics (administrators)
+.stats-page {
+  .stats-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    margin: 0 0 16px;
+
+    .stats-years {
+      flex: 1 1 auto;
+      justify-content: flex-start;
+      width: auto;
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  .stats-history-switch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 4px 10px 4px 6px;
+    border: 1px solid #e8e7e3;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 1.3rem;
+    color: #52514e;
+
+    &.is-loading {
+      opacity: 0.6;
+      cursor: progress;
+    }
+  }
+
+  .stats-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-weight: 400;
+    cursor: pointer;
+  }
+
+  // the checkbox stays in the page (keyboard, screen readers), the track is drawn instead
+  .stats-switch-input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+  }
+
+  .stats-switch-track {
+    position: relative;
+    flex: none;
+    width: 36px;
+    height: 20px;
+    border-radius: 999px;
+    background: #c3c2b7;
+    transition: background-color 0.15s ease;
+  }
+
+  .stats-switch-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s ease;
+  }
+
+  .stats-switch-input:checked + .stats-switch-track {
+    background: #2a78d6;
+
+    .stats-switch-thumb {
+      transform: translateX(16px);
+    }
+  }
+
+  .stats-switch-input:focus-visible + .stats-switch-track {
+    outline: 2px solid #2a78d6;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stats-switch-track,
+    .stats-switch-thumb {
+      transition: none;
+    }
+  }
+}
+
+// CSV exports
+.stats-page {
+  .stats-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .stat-chart-data {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 4px 12px;
+
+    .stat-chart-table {
+      flex: 1 1 auto;
+    }
+
+    .stat-csv-button {
+      margin-top: 6px;
+    }
+  }
+
+  .fa-download {
+    margin-right: 2px;
+  }
+}
+
+.stat-papers-dialog .stat-papers-export {
+  margin-left: auto;
+}

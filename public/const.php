@@ -292,8 +292,8 @@ function defineVendorJsLibraries(): void
         'VENDOR_TINYMCE' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
         'VENDOR_TINYMCE_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
         'VENDOR_TOM_SELECT' => 'https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js',
-        'VENDOR_CHART' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js',
-        'VENDOR_CHART_PLUGIN_DATALABELS' => 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/0.7.0/chartjs-plugin-datalabels.min.js',
+        'VENDOR_CHART' => 'https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js',
+        'VENDOR_CHART_PLUGIN_DATALABELS' => 'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js',
     ];
 
     foreach ($jsLibraries as $name => $url) {
@@ -314,7 +314,6 @@ function defineVendorCssLibraries(): void
         'VENDOR_FONT_AWESOME_BRAND' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/brands.min.css',
         'VENDOR_FONT_AWESOME_SOLID' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/solid.min.css',
         'VENDOR_JQUERY_UI_THEME_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css',
-        'VENDOR_CHART_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css',
         'VENDOR_COOKIE_CONSENT_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css',
         'VENDOR_TOM_SELECT_CSS' => 'https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.min.css',
     ];
@@ -585,7 +584,6 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('VENDOR_FONT_AWESOME_BRAND', '');
         define('VENDOR_FONT_AWESOME_SOLID', '');
         define('VENDOR_JQUERY_UI_THEME_CSS', '');
-        define('VENDOR_CHART_CSS', '');
         define('VENDOR_COOKIE_CONSENT_CSS', '');
         define('VENDOR_TOM_SELECT_CSS', '');
     }
