@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\submit;
 
+use Episciences\Api\DoiApiClient;
+use Episciences_DoiTools;
 use Episciences_Paper;
 use Episciences_Paper_Dataset;
 use Episciences_Paper_DatasetsManager;
@@ -47,8 +49,19 @@ final class Episciences_Submit_ForceAddingDatasetsTest extends TestCase
 
     protected function tearDown(): void
     {
+        Episciences_DoiTools::setClient(null);
+
         if ($this->docId !== null) {
+            $metaIds = $this->db->fetchCol(
+                $this->db->select()
+                    ->from(T_PAPER_DATASETS, ['id_paper_datasets_meta'])
+                    ->where('doc_id = ?', $this->docId)
+                    ->where('id_paper_datasets_meta IS NOT NULL')
+            );
             $this->db->delete(T_PAPER_DATASETS, ['doc_id = ?' => $this->docId]);
+            if ($metaIds !== []) {
+                $this->db->delete(T_PAPER_DATASETS_META, ['id IN (?)' => $metaIds]);
+            }
             $this->db->delete(T_PAPERS, ['DOCID = ?' => $this->docId]);
         }
     }
@@ -81,5 +94,61 @@ final class Episciences_Submit_ForceAddingDatasetsTest extends TestCase
         self::assertSame('IsCitedBy', Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, '10.1234/plain')?->getRelationship());
         // The type-level relation is not itself stored as a value
         self::assertNull(Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, 'IsCitedBy'));
+    }
+
+    public function testUnknownCodeIsStoredWithAUrlLink(): void
+    {
+        $inserted = Episciences_Submit::forceAddingDatasets($this->paper(), [
+            Episciences_Paper_Dataset::URL_CODE => [
+                ['value' => 'https://example.org/data', 'relation' => 'References'],
+            ],
+        ]);
+
+        self::assertSame(1, $inserted);
+        self::assertSame(Episciences_Paper_Dataset::URL_CODE, Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, 'https://example.org/data')?->getLink());
+    }
+
+    public function testUnresolvedDoiUrlIsStoredAsABareDoi(): void
+    {
+        $this->stubDoiResolver('');
+
+        $inserted = Episciences_Submit::processDatasets($this->paper(), [['https://doi.org/10.1234/unresolved']]);
+
+        self::assertSame(1, $inserted);
+        self::assertNull(Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, 'https://doi.org/10.1234/unresolved'));
+        $dataset = Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, '10.1234/unresolved');
+        self::assertNotNull($dataset);
+        self::assertSame(Episciences_Paper_Dataset::DOI_CODE, $dataset->getCode());
+        self::assertSame(Episciences_Paper_Dataset::DOI_CODE, $dataset->getLink());
+    }
+
+    public function testResolvedDoiUrlIsStoredAsABareDoi(): void
+    {
+        $this->stubDoiResolver('{"type":"dataset"}');
+
+        $inserted = Episciences_Submit::processDatasets($this->paper(), [['https://dx.doi.org/10.1234/resolved']]);
+
+        self::assertSame(1, $inserted);
+        $dataset = Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, '10.1234/resolved');
+        self::assertNotNull($dataset);
+        self::assertSame(Episciences_Paper_Dataset::DOI_CODE, $dataset->getName());
+        self::assertSame(Episciences_Paper_Dataset::DOI_CODE, $dataset->getLink());
+    }
+
+    public function testDoiUrlOfAnAlreadyStoredDoiIsSkipped(): void
+    {
+        $this->stubDoiResolver('');
+        Episciences_Submit::processDatasets($this->paper(), [['10.1234/twice']]);
+
+        $inserted = Episciences_Submit::processDatasets($this->paper(), [['https://doi.org/10.1234/twice']]);
+
+        self::assertSame(0, $inserted);
+    }
+
+    private function stubDoiResolver(string $csl): void
+    {
+        $client = $this->createMock(DoiApiClient::class);
+        $client->method('fetchCsl')->willReturn($csl);
+        Episciences_DoiTools::setClient($client);
     }
 }

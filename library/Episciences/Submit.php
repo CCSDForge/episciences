@@ -1448,7 +1448,7 @@ class Episciences_Submit
 
             $tmpData['code'] = $code;
             $tmpData['name'] = Episciences_Paper_Dataset::$_datasetsLabel[$code];
-            $tmpData['link'] = Episciences_Paper_Dataset::$_datasetsLink[$code];
+            $tmpData['link'] = Episciences_Paper_Dataset::$_datasetsLink[$code] ?? Episciences_Paper_Dataset::URL_CODE;
 
             foreach ($dataset as $value) {
                 $tmpData['relationship'] = is_array($value) ? ($value['relation'] ?? $defaultRelationship) : $defaultRelationship;
@@ -2916,6 +2916,14 @@ class Episciences_Submit
 
 
                 if ($typeLd === Episciences_Paper_Dataset::DOI_CODE || Episciences_Tools::isDoiWithUrl($value)) {
+                    // A doi.org URL is stored as a bare DOI, like any other DOI
+                    $value = (string)preg_replace('~^(https?://)?(dx\.)?doi\.org/~i', '', $value);
+                    $typeLd = Episciences_Paper_Dataset::DOI_CODE;
+
+                    if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
+                        continue;
+                    }
+
                     $result = Episciences_DoiTools::getMetadataFromDoi($value);
 
                     if (!empty($result)) {
