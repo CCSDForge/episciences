@@ -1618,6 +1618,7 @@ return array(
     "Une erreur s'est produite pendant l'enregistrement de votre article." => "An error occurred while saving your article.",
     "Votre session a expiré, veuillez réessayer." => "Your session has expired, please try again.",
     "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre réponse n'a pas été enregistrée. Merci de recommencer." => "Your session has expired or the page has been open for too long: for security reasons, your answer was not saved. Please try again.",
+    "Un lien d'activation a déjà été envoyé à %s il y a moins de %d minutes. Vérifiez votre messagerie, y compris les courriers indésirables, avant d'en demander un autre." => "An activation link was already sent to %s less than %d minutes ago. Please check your mailbox, including your spam folder, before asking for another one.",
     "Vous êtes connecté : confirmez votre acceptation ci-dessous." => "You are now signed in: please confirm your acceptance below.",
     "Des articles (%s) sont rattachés à cette rubrique." => "Papers (%s) are attached to this section.",
     'Des articles (%1$s et %2$d autres) sont rattachés à cette rubrique.' => 'Papers (%1$s and %2$d more) are attached to this section.',
