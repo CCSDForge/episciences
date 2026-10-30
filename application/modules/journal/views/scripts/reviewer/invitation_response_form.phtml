@@ -10,51 +10,48 @@
         </p>
     <?php endif; ?>
 
-    <div class="form-actions text-center">
-        <?php if ($this->user_form) : ?>
-            <button id="accept-button" type="button" class="btn btn-success" onclick="show_user_form()">
-                <?= $this->translate("J'accepte de relire cet article") ?>
-            </button>
-        <?php else : ?>
-            <form method="post" style="display:inline">
-                <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
-                <button name="submitaccept" id="submitaccept" type="submit"
-                        class="btn btn-success"><?= $this->translate("J'accepte de relire cet article") ?></button>
-            </form>
-        <?php endif ?>
-        <button id="refuse-button" type="button" class="btn btn-danger"
-                onclick="refuseInvitation()"><?= $this->translate("Je refuse de relire cet article") ?></button>
-    </div>
-
     <?php
-    if ($this->user_form) {
-        echo $this->user_form;
-    }
+    // a form that was sent back invalid (or with a refused request token) is displayed open again
+    $openOnLoad = match (true) {
+        (bool) $this->invalid_refuse_form => 'refuse_form',
+        $this->user_form && $this->invalid_form => 'accept_form',
+        default => null,
+    };
     ?>
+    <div class="invitation-answer">
+        <div id="invitation-answer-actions" class="form-actions text-center"<?= $openOnLoad !== null ? ' data-open-on-load="' . $openOnLoad . '"' : '' ?>>
+            <?php if ($this->user_form) : ?>
+                <button id="accept-button" type="button" class="btn btn-success"
+                        aria-expanded="false" aria-controls="accept_form">
+                    <?= $this->translate("J'accepte de relire cet article") ?>
+                </button>
+            <?php else : ?>
+                <form method="post" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
+                    <button name="submitaccept" id="submitaccept" type="submit"
+                            class="btn btn-success"><?= $this->translate("J'accepte de relire cet article") ?></button>
+                </form>
+            <?php endif ?>
+            <button id="refuse-button" type="button" class="btn btn-default"
+                    aria-expanded="false" aria-controls="refuse_form"><?= $this->translate("Je refuse de relire cet article") ?></button>
+        </div>
 
-    <div id="refuse_form" style="display: none">
-        <div class="panel panel-default">
-            <div class="panel-heading">
-                <h2 class="panel-title"><?= $this->translate('Détails de la réponse') ?></h2>
-            </div>
-            <div class="panel-body in">
-                <p class="text-danger">
-                    <strong><?= $this->translate("Vous ne souhaitez pas relire cet article") ?></strong></p>
-                <?= $this->refuse_form; ?>
+        <?php
+        if ($this->user_form) {
+            echo $this->user_form;
+        }
+        ?>
+
+        <div id="refuse_form" hidden>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h2 class="panel-title" id="<?= Episciences_ReviewersManager::REFUSE_FORM_TITLE_ID ?>" tabindex="-1"><?= $this->translate("Refuser l'invitation") ?></h2>
+                </div>
+                <div class="panel-body in">
+                    <?= $this->refuse_form; ?>
+                </div>
             </div>
         </div>
     </div>
-
-    <?php if ($this->invalid_form) : ?>
-        <script>
-            display_errors();
-        </script>
-    <?php endif; ?>
-
-    <?php if ($this->invalid_refuse_form) : ?>
-        <script>
-            refuseInvitation();
-        </script>
-    <?php endif; ?>
 
 <?php endif; // endif (!hasExpired && !isAnswered) ?>

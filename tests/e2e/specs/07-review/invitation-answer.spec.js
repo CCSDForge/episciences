@@ -124,14 +124,20 @@ test.describe('Reviewer invitation answer', () => {
                 // The invitee changes their mind: an invalid refusal (reason too long) reopens the refusal form,
                 // without asking to confirm the acceptance
                 await page.locator('#refuse-button').click();
-                await page.locator('#refuse_form textarea[name="comment"]').fill('x'.repeat(5001));
+                // The browser stops at the limit: a reason too long can only come from a forged request
+                const comment = page.locator('#refuse_form textarea[name="comment"]');
+                await comment.evaluate(textarea => textarea.removeAttribute('maxlength'));
+                await comment.fill('x'.repeat(5001));
                 await page.locator('#refuse_form [name="submitrefuse"]').click();
                 await expect(page).toHaveURL(/reviewer\/invitation/);
                 await expect(page.locator('#refuse_form')).toBeVisible();
+                await expect(comment).toHaveAttribute('aria-invalid', 'true');
+                await expect(comment).toBeFocused();
                 await expect(page.getByText('You are now signed in: please confirm your acceptance below.')).toHaveCount(0);
 
-                // Back to the acceptance
+                // Back to the acceptance, the focus on the button that opened the refusal form
                 await page.locator('#refuse_form [name="cancelaccept"]').click();
+                await expect(page.locator('#refuse-button')).toBeFocused();
                 await page.locator('#submitaccept').click();
                 await expect(page).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
                 await expect(page.getByText('Your answer has been saved.').first()).toBeVisible();
@@ -153,6 +159,9 @@ test.describe('Reviewer invitation answer', () => {
         await test.step('a refusal sent with an expired session keeps what was typed', async () => {
             await reviewerPage.goto(invitationPath);
             await reviewerPage.locator('#refuse-button').click();
+            // The refusal form replaces the answer buttons and takes the focus
+            await expect(reviewerPage.locator('#refuse-form-title')).toBeFocused();
+            await expect(reviewerPage.locator('#refuse-button')).toBeHidden();
             const refuseForm = reviewerPage.locator('#refuse_form');
             await refuseForm.locator('[name="suggestreviewer"]').fill('Jane Doe');
             await refuseForm.locator('textarea[name="comment"]').fill('E2E: not my field.');
