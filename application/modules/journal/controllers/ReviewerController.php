@@ -1,7 +1,11 @@
 <?php
 
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Reviewer\InvitedAccountState;
 use Episciences\Security\AccessLog;
+use Episciences\User\AccountActivationMailer;
+use Episciences\User\EmailPolicy;
+use Episciences\User\Token\AccountTokenRepository;
 use Episciences\User\UserNotFoundException;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
@@ -11,6 +15,11 @@ class ReviewerController extends PaperDefaultController
     /**
      * Fields of the account form accepted when creating an account from an invitation
      */
+    /**
+     * Posted by the "send me a new activation link" button
+     */
+    private const SEND_ACTIVATION_PARAM = 'sendactivation';
+
     private const ACCOUNT_CREATION_FIELDS = [
         'USERNAME', 'PASSWORD', 'FIRSTNAME', 'LASTNAME', 'EMAIL', 'SCREEN_NAME', 'ORCID',
         'AFFILIATIONS', 'SOCIAL_MEDIAS', 'WEB_SITES', 'BIOGRAPHY', 'LANGUEID',
@@ -353,24 +362,8 @@ class ReviewerController extends PaperDefaultController
             $user = $this->createNewReviewerWithoutAccountProcessing($data);
         } else {
             if (!Episciences_Auth::isLogged()) {
-                // user needs to login
-                $redirect_params = [
-                    'controller' => 'user',
-                    'action' => 'login',
-                    'forward-controller' => 'reviewer',
-                    'forward-action' => 'invitation',
-                    'id' => $oInvitation->getId(),
-                    // display only: once logged in, the invitee confirms the acceptance with the (POST) form
-                    self::CONFIRM_ACCEPTANCE_PARAM => '1',
-                ];
-                // the invitation link secret is needed again once logged in (the account may not be the invited one)
-                foreach ([InvitationToken::URL_PARAM, 'tmp'] as $linkParam) {
-                    $linkValue = $this->getRequest()->getParam($linkParam);
-                    if (is_string($linkValue) && $linkValue !== '') {
-                        $redirect_params[$linkParam] = $linkValue;
-                    }
-                }
-                $this->redirect($this->view->url($redirect_params));
+                // user needs to login; once logged in, the invitee confirms the acceptance with the (POST) form
+                $this->redirect($this->invitationLoginUrl($oInvitation, true));
                 return false;
             }
 
@@ -383,6 +376,151 @@ class ReviewerController extends PaperDefaultController
         $this->performReviewerInvitationAcceptance($oInvitation, $assignment, $paper, $user);
 
         return true;
+    }
+
+    /**
+     * The account created from an invitation uses the invited address: it is displayed read-only, with the way to use another one.
+     */
+    private function lockInvitedEmail(Zend_Form $form): void
+    {
+        $email = $form->getElement('EMAIL');
+        if (!$email) {
+            return;
+        }
+
+        $email->setAttrib('readonly', 'readonly');
+        $email->setAttrib('aria-describedby', 'EMAIL-description');
+        $email->setDescription(sprintf(
+            $this->view->translate("C'est l'adresse à laquelle l'invitation a été envoyée. Pour utiliser une autre adresse, %scréez d'abord votre compte%s, activez-le, puis rouvrez le lien de l'invitation."),
+            '<a href="/user/create" target="_blank" rel="noopener">',
+            '<span class="sr-only"> ' . $this->view->escape($this->view->translate('(nouvel onglet)')) . '</span></a>'
+        ));
+
+        $description = $email->getDecorator('Description');
+        if ($description) {
+            $description->setOption('escape', false);
+            $description->setOption('id', 'EMAIL-description');
+        }
+    }
+
+    /**
+     * Which account, if any, already uses the address a reviewer without an account was invited at.
+     *
+     */
+    protected function invitedAccountState(string $email): InvitedAccountState
+    {
+        $mapper = new Ccsd_User_Models_UserMapper();
+        $email = EmailPolicy::normalize($email);
+        $uids = $email === '' ? [] : $mapper->findUidsByEmail($email);
+
+        if ($uids === []) {
+            return InvitedAccountState::None;
+        }
+
+        if ($mapper->findMostRecentValidByEmail($email) !== null) {
+            return InvitedAccountState::Active;
+        }
+
+        return $this->findInactiveEpisciencesAccount($uids) !== null
+            ? InvitedAccountState::Inactive
+            : InvitedAccountState::InactiveElsewhere;
+    }
+
+    /**
+     * The accounts table is shared with other applications: only an account created in Episciences gets an
+     * activation link from here (as with the "lost password" page).
+     *
+     * @param int[] $uids
+     */
+    private function findInactiveEpisciencesAccount(array $uids): ?int
+    {
+        foreach ($uids as $uid) {
+            if ((new Episciences_User())->hasLocalData($uid)) {
+                return $uid;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * "Send me a new activation link": only to the invited address, for an account created in Episciences and not
+     * activated yet. Nothing else of the page changes.
+     */
+    private function sendActivationLink(Zend_Controller_Request_Http $request, string $email): void
+    {
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->addSessionExpiredMessage();
+            return;
+        }
+
+        if ($this->invitedAccountState($email) !== InvitedAccountState::Inactive) {
+            return;
+        }
+
+        $this->sendActivationEmailTo($email);
+
+        $this->_helper->FlashMessenger
+            ->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
+            ->addMessage(sprintf(
+                $this->view->translate("Un nouveau lien d'activation a été envoyé à %s. Activez votre compte, connectez-vous, puis rouvrez le lien de l'invitation."),
+                $email
+            ));
+    }
+
+    /**
+     * Sends a new activation link to the account created in Episciences with this address.
+     */
+    protected function sendActivationEmailTo(string $email): void
+    {
+        $mapper = new Ccsd_User_Models_UserMapper();
+        $email = EmailPolicy::normalize($email);
+        $uid = $this->findInactiveEpisciencesAccount($mapper->findUidsByEmail($email));
+        if ($uid === null) {
+            return;
+        }
+
+        $user = new Episciences_User();
+        $user->find($uid);
+
+        try {
+            (new AccountActivationMailer(
+                new AccountTokenRepository(),
+                fn(array $params): string => $this->view->url($params, null, true)
+            ))->send($user);
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+    }
+
+    /**
+     * Login page that comes back to the invitation.
+     *
+     * @param bool $confirmAcceptance display only: once back, the invitee is asked to confirm the acceptance
+     */
+    private function invitationLoginUrl(Episciences_User_Invitation $invitation, bool $confirmAcceptance): string
+    {
+        $params = [
+            'controller' => 'user',
+            'action' => 'login',
+            'forward-controller' => 'reviewer',
+            'forward-action' => 'invitation',
+            'id' => $invitation->getId(),
+        ];
+
+        if ($confirmAcceptance) {
+            $params[self::CONFIRM_ACCEPTANCE_PARAM] = '1';
+        }
+
+        // the invitation link secret is needed again once logged in (the account may not be the invited one)
+        foreach ([InvitationToken::URL_PARAM, 'tmp'] as $linkParam) {
+            $linkValue = $this->getRequest()->getParam($linkParam);
+            if (is_string($linkValue) && $linkValue !== '') {
+                $params[$linkParam] = $linkValue;
+            }
+        }
+
+        return $this->view->url($params);
     }
 
     /**
@@ -585,11 +723,30 @@ class ReviewerController extends PaperDefaultController
                     'EMAIL' => $tmpUser->getEmail(),
                     'LANGUEID' => $tmpUser->getLangueid(true)
                 ]);
+                $this->lockInvitedEmail($user_form);
                 $this->view->user_form = $user_form;
+
+                // an account already uses the invited address: accepting means signing in with it, not creating one
+                $this->view->invitedAccountState = $this->invitedAccountState((string) $tmpUser->getEmail());
+            }
+
+            // tells a logged-out invitee that accepting needs an account, before they choose
+            if (!Episciences_Auth::isLogged()) {
+                $this->view->loginUrl = $this->invitationLoginUrl($invitation, false);
             }
 
             // an answer is only ever read from the POST body: a GET or a URL path segment changes nothing
             $post = $request->isPost() ? $request->getPost() : [];
+
+            // the account is created valid, without an activation e-mail: receiving the invitation proves this address only
+            if ($tmpUser && $post !== []) {
+                $post['EMAIL'] = $tmpUser->getEmail();
+            }
+
+            if ($tmpUser && array_key_exists(self::SEND_ACTIVATION_PARAM, $post)) {
+                $this->sendActivationLink($request, (string) $tmpUser->getEmail());
+            }
+
             $accepted = array_key_exists('submitaccept', $post);
             $refused = array_key_exists('submitrefuse', $post);
 

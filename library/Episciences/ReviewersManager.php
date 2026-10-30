@@ -74,7 +74,13 @@ class Episciences_ReviewersManager
             'decorators' => array('ViewHelper')
         )));
         Episciences_Csrf_Helper::addSessionTokenElement($form);
-        $form->setDecorators(array(array('ViewScript', array('viewScript' => 'reviewer/invitation_part2.phtml', 'name' => 'Détails du compte'))));
+        // the view script lays the form out; the styles and scripts of its fields (e.g. the "+" of the multi-value
+        // fields) are still added by the Ccsd_Form decorators
+        $form->setDecorators([
+            ['ViewScript', ['viewScript' => 'reviewer/invitation_part2.phtml', 'name' => 'Détails du compte']],
+            'FormCss',
+            'FormJavascript',
+        ]);
 
         return $form;
     }
