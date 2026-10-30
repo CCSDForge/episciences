@@ -375,7 +375,7 @@ class Episciences_PapersManager
 
         $select = $db->select()
             ->from(['a' => T_ASSIGNMENTS], $columns)
-            ->join(['b' => self::getAssignedPapersForSelectedRoleQuery($uid, $roleId)], 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', [])
+            ->join(['b' => self::getAssignedPapersForSelectedRoleQuery($uid, $roleId)], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper');
 
         if (is_array($roleId)) {
@@ -420,7 +420,8 @@ class Episciences_PapersManager
     }
 
     /**
-     * get assigned papers docids for each selected editor
+     * The latest assignment of each selected user, for each role and each paper (highest ID: two assignments can have the
+     * same date). Not the latest assignment of the paper: an editor assigned before another one is still an editor of it.
      * @param array $uid
      * @param string | string[] $roleId
      * @return Zend_Db_Select
@@ -429,7 +430,7 @@ class Episciences_PapersManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
-            ->from(T_ASSIGNMENTS, ['ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper');
 
         if (is_array($roleId)) {
@@ -444,7 +445,7 @@ class Episciences_PapersManager
             $select->where('UID IN (?)', $uid);
         }
 
-        $select->group('ITEMID');
+        $select->group(['ITEMID', 'UID', 'ROLEID']);
         return $select;
     }
 
