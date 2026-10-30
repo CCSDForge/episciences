@@ -1444,14 +1444,15 @@ class PaperDefaultController extends DefaultController
                     $reviewer->findWithCAS($oAssignment->getUid());
                 }
 
-                $oInvitation = Episciences_User_InvitationsManager::findById($oAssignment->getInvitation_id());
+                // findById() returns false when the invitation does not exist
+                $oInvitation = Episciences_User_InvitationsManager::findById($oAssignment->getInvitation_id()) ?: null;
 
                 // cancel the invitation, not only the assignment, as when a reviewer is removed
                 Episciences_User_AssignmentsManager::cancelReviewerAssignment($oAssignment, $oInvitation);
 
                 $logOptions = [
                     'aid' => $oAssignment->getId(),
-                    'invitation_id' => $oInvitation->getId(),
+                    'invitation_id' => $oInvitation?->getId(),
                     'tmp_user' => $oAssignment->isTmp_user(),
                     'uid' => $oAssignment->getUid(),
                     'user' => $reviewer->toArray(),

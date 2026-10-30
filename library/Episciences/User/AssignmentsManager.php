@@ -142,7 +142,8 @@ class Episciences_User_AssignmentsManager
             'item' => Episciences_User_Assignment::ITEM_PAPER,
             'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
             'status' => Episciences_User_Assignment::STATUS_CANCELLED,
-            'tmp_user' => $assignment->isTmp_user()
+            'tmp_user' => $assignment->isTmp_user(),
+            'rvid' => $assignment->getRvid()
         ];
 
         /** @var Episciences_User_Assignment $cancelledAssignment */

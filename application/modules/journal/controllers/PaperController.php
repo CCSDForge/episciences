@@ -4251,8 +4251,9 @@ class PaperController extends PaperDefaultController
         }
 
         // get invitation
-        /** @var Episciences_User_Invitation $invitation */
-        $invitation = Episciences_User_InvitationsManager::findById($assignment->getInvitation_id());
+        // findById() returns false when the invitation does not exist
+        /** @var Episciences_User_Invitation|null $invitation */
+        $invitation = Episciences_User_InvitationsManager::findById($assignment->getInvitation_id()) ?: null;
 
         if ($reviewingStatus !== Episciences_Reviewer_Reviewing::STATUS_COMPLETE) { // On garde les relectures déjà terminées
 
@@ -4265,7 +4266,7 @@ class PaperController extends PaperDefaultController
                 Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT,
                 null,
                 ['aid' => $nAssignment->getId(),
-                    'invitation_id' => $invitation->getId(),
+                    'invitation_id' => $invitation?->getId(),
                     'tmp_user' => $nAssignment->isTmp_user(),
                     'uid' => $nAssignment->getUid(),
                     'user' => $reviewer->toArray()

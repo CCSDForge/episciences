@@ -15,6 +15,7 @@ use Zend_Db_Table_Abstract;
 /**
  * Episciences_User_AssignmentsManager::cancelReviewerAssignment() inserts a cancelled invitation row (same AID) and a
  * cancelled assignment row referring to it; a reviewer assigned without invitation only gets the cancelled assignment.
+ * The cancelled assignment keeps the journal of the original one, whatever the current journal context.
  * Rows are inserted in a transaction that is rolled back after each test.
  *
  * @covers Episciences_User_AssignmentsManager::cancelReviewerAssignment
@@ -41,10 +42,10 @@ final class Episciences_User_AssignmentsManager_CancelReviewerAssignmentTest ext
         $this->db->rollBack();
     }
 
-    private function insertPendingAssignment(): int
+    private function insertPendingAssignment(int $rvid = RVID): int
     {
         $this->db->insert(T_ASSIGNMENTS, [
-            'RVID' => RVID,
+            'RVID' => $rvid,
             'ITEMID' => self::DOCID,
             'ITEM' => Episciences_User_Assignment::ITEM_PAPER,
             'UID' => self::UID,
@@ -128,5 +129,15 @@ final class Episciences_User_AssignmentsManager_CancelReviewerAssignmentTest ext
         $this->assertSame(Episciences_User_Assignment::STATUS_CANCELLED, $row['STATUS']);
         $this->assertNull($row['INVITATION_ID']);
         $this->assertSame(self::UID, (int)$row['UID']);
+    }
+
+    public function testKeepsTheJournalOfTheOriginalAssignment(): void
+    {
+        $otherRvid = RVID + 1;
+        $aid = $this->insertPendingAssignment($otherRvid);
+
+        $cancelled = Episciences_User_AssignmentsManager::cancelReviewerAssignment($this->findAssignment($aid));
+
+        $this->assertSame($otherRvid, (int)$this->fetchAssignmentRow($cancelled->getId())['RVID']);
     }
 }
