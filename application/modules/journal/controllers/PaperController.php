@@ -2461,11 +2461,9 @@ class PaperController extends PaperDefaultController
             $filesParams['files'] = $enrichment['files'];
         }
 
-        $response = Episciences_Repositories::callHook('hookFilesProcessing', $filesParams);
-        Episciences_Repositories::callHook(
-            'hookLinkedDataProcessing',
-            array_merge($hookParams, ['response' => $response])
-        );
+        Episciences_Repositories::callHook('hookFilesProcessing', $filesParams);
+        // No 'response': the files hook does not return the repository record, the hook loads it itself
+        Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
 
         $this->processCoverLetterAndDD($newPaper, $post);
     }

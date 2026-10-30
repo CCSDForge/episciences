@@ -68,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#1413](https://github.com/CCSDForge/episciences/issues/1413): New version of a Zenodo or BAOBAB paper: the linked data (related identifiers) of the record are stored again, as for an initial submission; the linked data hook was given the result of the files hook instead of the repository record, and found no related identifiers in it.
 - Year-month dates (e.g. `2024-06`) were rejected on the 29th, 30th or 31st of the month for the months without that day: the missing day was taken from the current date.
 - [#1403](https://github.com/CCSDForge/episciences/pull/1403): Inviting a reviewer: the number of invitations of each user counts each invitation once; an answer or a cancellation was counted as another invitation.
 - [#1402](https://github.com/CCSDForge/episciences/pull/1402): Accepting a paper cancels the reviewer invitations without answer as removing a reviewer does: the invitation itself is now cancelled, not only the assignment, so that it is no longer seen as pending, then expired (e.g. by the statistics of the API).
