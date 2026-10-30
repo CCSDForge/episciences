@@ -18,6 +18,17 @@ require_once APPLICATION_PATH . '/modules/common/controllers/UserDefaultControll
  */
 final class UserDefaultControllerLoginReturnTest extends TestCase
 {
+    // the test requests write the query string and the posted form to $_GET and $_POST
+    protected function setUp(): void
+    {
+        $_GET = $_POST = [];
+    }
+
+    protected function tearDown(): void
+    {
+        $_GET = $_POST = [];
+    }
+
     /**
      * @param array<string, mixed> $route
      * @param array<string, mixed> $query
