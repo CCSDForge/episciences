@@ -134,6 +134,28 @@ final class Episciences_Submit_ForceAddingDatasetsTest extends TestCase
         self::assertSame(0, $inserted);
     }
 
+    public function testHttpDoiUrlIsStoredAsABareDoiWhateverTheCase(): void
+    {
+        $this->stubDoiResolver('');
+
+        $inserted = Episciences_Submit::processDatasets($this->paper(), [['http://DOI.ORG/10.1234/upper']]);
+
+        self::assertSame(1, $inserted);
+        self::assertSame(Episciences_Paper_Dataset::DOI_CODE, Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, '10.1234/upper')?->getLink());
+    }
+
+    public function testUrlOfAnotherHostIsNotTakenForADoi(): void
+    {
+        $client = $this->createMock(DoiApiClient::class);
+        $client->expects(self::never())->method('fetchCsl');
+        Episciences_DoiTools::setClient($client);
+
+        Episciences_Submit::processDatasets($this->paper(), [['https://dx-doi.org/10.1234/elsewhere']]);
+
+        self::assertNull(Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, '10.1234/elsewhere'));
+        self::assertNotSame(Episciences_Paper_Dataset::DOI_CODE, Episciences_Paper_DatasetsManager::findByValue((int)$this->docId, 'https://dx-doi.org/10.1234/elsewhere')?->getLink());
+    }
+
     private function stubDoiResolver(string $csl): void
     {
         $client = $this->createMock(DoiApiClient::class);

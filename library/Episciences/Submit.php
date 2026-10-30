@@ -2910,9 +2910,11 @@ class Episciences_Submit
                 $typeLd = Episciences_Tools::checkValueType($value);
 
 
-                if ($typeLd === Episciences_Paper_Dataset::DOI_CODE || Episciences_Tools::isDoiWithUrl($value)) {
+                $doi = Episciences_DoiTools::cleanDoi($value);
+
+                if (Episciences_Tools::isDoi($doi)) {
                     // A doi.org URL is stored as a bare DOI, like any other DOI
-                    $value = (string)preg_replace('~^(https?://)?(dx\.)?doi\.org/~i', '', $value);
+                    $value = $doi;
                     $typeLd = Episciences_Paper_Dataset::DOI_CODE;
 
                     if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {

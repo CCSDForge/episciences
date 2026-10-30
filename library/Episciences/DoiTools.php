@@ -93,13 +93,14 @@ class Episciences_DoiTools
     }
 
     /**
-     * Strip the doi.org or dx.doi.org URL prefix from a DOI string.
+     * Strip the doi.org or dx.doi.org URL prefix from a DOI string, with or
+     * without an http(s) scheme, whatever the case.
      *
      * Returns an empty string if $doi is empty. Returns $doi unchanged if it
      * does not start with a known doi.org prefix.
      */
     public static function cleanDoi(string $doi = ''): string
     {
-        return ($doi !== '') ? str_replace(['https://doi.org/', 'https://dx.doi.org/'], '', $doi) : '';
+        return (string) preg_replace('~^(https?://)?(dx\.)?doi\.org/~i', '', $doi);
     }
 }
