@@ -448,7 +448,7 @@ class ReviewerController extends PaperDefaultController
             ActivationLinkOutcome::Sent => [
                 Ccsd_View_Helper_Message::MSG_SUCCESS,
                 sprintf(
-                    $this->view->translate("Un nouveau lien d'activation a été envoyé à %s. Activez votre compte, connectez-vous, puis rouvrez le lien de l'invitation."),
+                    $this->view->translate("Un lien d'activation a été envoyé à %s : choisissez votre mot de passe pour activer votre compte, connectez-vous, puis rouvrez le lien de l'invitation."),
                     $email
                 ),
             ],
@@ -471,7 +471,8 @@ class ReviewerController extends PaperDefaultController
 
     /**
      * Sends a new activation link to the account not activated yet that uses this address. The link goes to the
-     * address of the account, which is the invited one: receiving the invitation proves this address.
+     * address of the account, which is the invited one: receiving the invitation proves this address. The account
+     * may have been created by someone else with this address: the password is chosen again to activate it.
      */
     protected function sendActivationEmailTo(string $email): ActivationLinkOutcome
     {
@@ -482,7 +483,7 @@ class ReviewerController extends PaperDefaultController
             }
 
             $tokens = new AccountTokenRepository();
-            if ($tokens->issuedWithin($uid, TokenPurpose::ACCOUNT_ACTIVATION, self::ACTIVATION_RESEND_DELAY)) {
+            if ($tokens->issuedWithin($uid, TokenPurpose::ACCOUNT_SETUP, self::ACTIVATION_RESEND_DELAY)) {
                 return ActivationLinkOutcome::AlreadySent;
             }
 
@@ -493,7 +494,7 @@ class ReviewerController extends PaperDefaultController
             $isSent = (new AccountActivationMailer(
                 $tokens,
                 fn(array $params): string => $this->view->url($params, null, true)
-            ))->send($user);
+            ))->sendWithPasswordChoice($user);
         } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
             return ActivationLinkOutcome::Failed;

@@ -1022,6 +1022,9 @@ return array(
     // Password reset
     'Pour des raisons de sécurité, le changement de mot de passe invalide vos sessions et vous devrez vous connecter à nouveau.' => 'For security reasons, changing the password will invalidate your sessions and you will have to log in again.',
     "Changement de votre mot de passe" => 'Password reset',
+    "Choisissez le mot de passe de votre compte pour l'activer." => 'Choose the password of your account to activate it.',
+    "Activer mon compte" => 'Activate my account',
+    "Votre compte est activé : vous pouvez vous connecter avec ce mot de passe." => 'Your account is activated: you can sign in with this password.',
     "Le jeton que vous avez fourni n'existe pas ou n'est plus valide" => "This token doesn't exist or is not valid",
     "Vous pouvez en demander un nouveau grâce au lien ci-dessous" => 'You can ask a new one with the following link',
     "Réinitialiser mon mot de passe" => "Reset my password",
@@ -1766,7 +1769,7 @@ return array(
     "(nouvel onglet)" => "(new tab)",
     "Un compte a déjà été créé avec l'adresse à laquelle cette invitation a été envoyée, mais il n'est pas encore activé. Pour accepter, activez-le avec le lien reçu par e-mail, connectez-vous, puis rouvrez le lien de l'invitation." => "An account has already been created with the address this invitation was sent to, but it is not activated yet. To accept, activate it with the link received by e-mail, sign in, then open the invitation link again.",
     "M'envoyer un nouveau lien d'activation" => "Send me a new activation link",
-    "Un nouveau lien d'activation a été envoyé à %s. Activez votre compte, connectez-vous, puis rouvrez le lien de l'invitation." => "A new activation link has been sent to %s. Activate your account, sign in, then open the invitation link again.",
+    "Un lien d'activation a été envoyé à %s : choisissez votre mot de passe pour activer votre compte, connectez-vous, puis rouvrez le lien de l'invitation." => "An activation link has been sent to %s: choose your password to activate your account, sign in, then open the invitation link again.",
     "Le lien d'activation n'a pas pu être envoyé. Merci de réessayer dans quelques minutes." => "The activation link could not be sent. Please try again in a few minutes.",
     "Refuser ne demande pas de compte." => "Declining does not require an account.",
     "Voulez-vous nous suggérer quelqu'un susceptible de vouloir le faire ?" => "Do you want to suggest someone that might be interested by this task?",

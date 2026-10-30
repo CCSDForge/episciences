@@ -84,12 +84,15 @@ async function signIn(page, username) {
 }
 
 /**
- * Creates an account as another application sharing the accounts would: no Episciences profile.
+ * Creates an account not activated, as another application sharing the accounts would: no Episciences profile.
  * @param {string} username
  * @param {string} email
+ * @param {string} password
  */
-function createExternalAccount(username, email) {
-    runPhp(`scripts/console.php app:e2e-external-account --username=${username} --email=${email} --inactive`);
+function createExternalAccount(username, email, password) {
+    runPhp(
+        `scripts/console.php app:e2e-external-account --username=${username} --email=${email} --password=${password} --inactive`
+    );
 }
 
 test.describe('Reviewer invitation answer', () => {
@@ -335,8 +338,9 @@ test.describe('Reviewer invitation answer', () => {
             invitationPath = await receivedInvitationPath(mailpit, docid, invitedEmail);
         });
 
-        // Created after the invitation, in another application: not activated, no Episciences profile
-        createExternalAccount(username, invitedEmail);
+        // Created after the invitation, in another application, maybe by someone else: not activated, no Episciences
+        // profile, with a password the invitee does not know
+        createExternalAccount(username, invitedEmail, `Someone-else-${suffix}`);
 
         const context = await newLoggedOutContext(browser, baseURL);
         const page = await context.newPage();
@@ -347,22 +351,26 @@ test.describe('Reviewer invitation answer', () => {
                 await expect(page.locator('#accept-button')).toHaveCount(0);
 
                 await page.getByRole('button', { name: 'Send me a new activation link' }).click();
-                await expect(page.getByText(`A new activation link has been sent to ${invitedEmail}`)).toBeVisible();
+                await expect(page.getByText(`An activation link has been sent to ${invitedEmail}`)).toBeVisible();
 
                 // The page was displayed again with a GET: refreshing it does not ask for another link
                 await page.reload();
-                await expect(page.getByText('A new activation link has been sent')).toHaveCount(0);
+                await expect(page.getByText('An activation link has been sent')).toHaveCount(0);
                 await expect(page.getByText('An activation link was already sent')).toHaveCount(0);
             });
 
-            await test.step('the invitee activates the account with the link received', async () => {
+            await test.step('the invitee activates the account by choosing its password', async () => {
                 const email = await mailpit.waitForEmail({ to: invitedEmail, subjectContains: ['Registration validation'] });
-                const activationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/user/activate/'));
+                const activationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/user/resetpassword/'));
                 expect(activationUrl).toBeTruthy();
 
                 const url = new URL(activationUrl);
                 await page.goto(url.pathname.replace(/^\//, '') + url.search);
-                await expect(page.getByText('Your account is activated.').first()).toBeVisible();
+                await expect(page.getByRole('heading', { name: 'Account activation' })).toBeVisible();
+                await page.locator('input[name="PASSWORD"]').fill(E2E_PASSWORD);
+                await page.locator('input[name="PASSWORD_VERIFY"]').fill(E2E_PASSWORD);
+                await page.getByRole('button', { name: 'Activate my account' }).click();
+                await expect(page.getByText('Your account is activated: you can sign in with this password.')).toBeVisible();
             });
 
             await test.step('accepting goes through signing in, then back to the invitation to confirm', async () => {

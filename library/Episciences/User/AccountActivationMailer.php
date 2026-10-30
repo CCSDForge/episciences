@@ -13,7 +13,8 @@ use Episciences_User;
 use Zend_Exception;
 
 /**
- * Sends an account activation link (a new token each time) to the e-mail address of the account.
+ * Sends an account activation link (a new token each time) to the e-mail address of the account, with the account
+ * registration e-mail.
  */
 final class AccountActivationMailer
 {
@@ -29,16 +30,38 @@ final class AccountActivationMailer
     }
 
     /**
+     * Activation link of a self-registered account
+     *
      * @return bool false when the e-mail could not be sent
      * @throws \Zend_Db_Exception when the token cannot be saved
      */
     public function send(Episciences_User $user): bool
     {
-        $token = $this->tokens->issue((int)$user->getUid(), (string)$user->getEmail(), TokenPurpose::ACCOUNT_ACTIVATION);
+        return $this->sendLink($user, TokenPurpose::ACCOUNT_ACTIVATION, 'activate');
+    }
+
+    /**
+     * Activation link that asks to choose the password first: the account may have been created by someone else with
+     * this address, whose password must not work once the account is active
+     *
+     * @return bool false when the e-mail could not be sent
+     * @throws \Zend_Db_Exception when the token cannot be saved
+     */
+    public function sendWithPasswordChoice(Episciences_User $user): bool
+    {
+        return $this->sendLink($user, TokenPurpose::ACCOUNT_SETUP, 'resetpassword');
+    }
+
+    /**
+     * @throws \Zend_Db_Exception when the token cannot be saved
+     */
+    private function sendLink(Episciences_User $user, TokenPurpose $purpose, string $action): bool
+    {
+        $token = $this->tokens->issue((int)$user->getUid(), (string)$user->getEmail(), $purpose);
 
         $tokenUrl = APPLICATION_URL . ($this->urlBuilder)([
                 'controller' => 'user',
-                'action' => 'activate',
+                'action' => $action,
                 'token' => $token,
             ]);
 
