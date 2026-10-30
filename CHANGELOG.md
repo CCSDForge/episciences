@@ -68,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#1404](https://github.com/CCSDForge/episciences/pull/1404): Reviewer invitations: the latest answer of an invitation is the latest row saved, not the row with the latest date, so that an answer saved in the same second as the invitation is no longer ignored (reviewers of a paper, pending temporary reviewers, reminders before the reviewing deadline).
 - [#1403](https://github.com/CCSDForge/episciences/pull/1403): Inviting a reviewer: the number of invitations of each user counts each invitation once; an answer or a cancellation was counted as another invitation.
 - [#1402](https://github.com/CCSDForge/episciences/pull/1402): Accepting a paper cancels the reviewer invitations without answer as removing a reviewer does: the invitation itself is now cancelled, not only the assignment, so that it is no longer seen as pending, then expired (e.g. by the statistics of the API).
 - [#1385](https://github.com/CCSDForge/episciences/pull/1385): Temporary version: a file whose upload failed is no longer silently dropped; nothing is recorded and the author is asked to attach the files again. Failed uploads are now always displayed in the file upload widget. Answering without any file is still possible.

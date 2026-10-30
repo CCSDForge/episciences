@@ -1328,10 +1328,11 @@ class Episciences_Mail_Reminder
             return $recipients;
         }
 
+        // the latest row of each invitation (highest ID: two rows can have the same date)
         $subquery = $db->select()
             ->from(
                 T_USER_INVITATIONS,
-                array('AID', 'max_date' => new Zend_Db_Expr('MAX(SENDING_DATE)')))
+                array('ID' => new Zend_Db_Expr('MAX(ID)')))
             ->group('AID');
 
         // Left Join Subquery
@@ -1354,7 +1355,7 @@ class Episciences_Mail_Reminder
                 ))
             ->joinInner(
                 array('ui2' => $subquery),
-                'ui1.AID = ui2.AID AND ui2.max_date = ui1.SENDING_DATE',
+                'ui1.ID = ui2.ID',
                 array())
             ->joinInner(
                 array('ua' => T_ASSIGNMENTS),
