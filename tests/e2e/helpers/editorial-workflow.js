@@ -111,10 +111,10 @@ async function inviteKnownReviewer(page, docid, username) {
  * @param {number} docid
  * @param {Object} reviewer
  * @param {string} reviewer.email no account may use it
- * @param {string} reviewer.firstname
  * @param {string} reviewer.lastname no account may have it either, or the homonyms are listed instead
+ *   (the form has no first name field: Episciences_PapersManager::getTmpReviewerForm())
  */
-async function inviteNewReviewer(page, docid, { email, firstname, lastname }) {
+async function inviteNewReviewer(page, docid, { email, lastname }) {
     await openPaperManagement(page, docid);
     await page.locator(`#invite_reviewer_${docid}`).click();
     await expect(page).toHaveURL(/administratepaper\/invitereviewer/);
@@ -122,7 +122,6 @@ async function inviteNewReviewer(page, docid, { email, firstname, lastname }) {
     await page.locator('#new_user_button').click();
     // Typing the address looks for the accounts using it: the button waits for the answer
     await page.locator('#email').fill(email);
-    await page.locator('#firstname').fill(firstname);
     await page.locator('#lastname').fill(lastname);
     await page.locator('#next').click();
     await expect(page.locator('#step-2')).toBeVisible();
