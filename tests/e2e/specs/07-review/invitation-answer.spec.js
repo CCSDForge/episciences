@@ -3,6 +3,17 @@ const { E2E_PASSWORD } = require('../../helpers/login');
 const { submitArxivPaper, inviteKnownReviewer } = require('../../helpers/editorial-workflow');
 
 const REVIEWER_EMAIL = 'e2e_reviewer@example.org';
+const SESSION_EXPIRED = 'Your session has expired or the page has been open for too long';
+
+/**
+ * Replaces the request token of a form, as an expired session would make it: the server refuses it.
+ * @param {import('@playwright/test').Locator} form
+ */
+async function expireRequestToken(form) {
+    await form.locator('input[name="csrf_token"]').evaluate(input => {
+        input.value = 'expired';
+    });
+}
 
 /**
  * Invites the E2E reviewer and returns the path of the invitation link (with its link token).
@@ -64,6 +75,22 @@ test.describe('Reviewer invitation answer', () => {
             await expect(reviewerPage.locator('#submitaccept')).toBeVisible();
         });
 
+        await test.step('an acceptance posted together with a refusal is not stored', async () => {
+            await reviewerPage.goto(invitationPath);
+            const acceptForm = reviewerPage.locator('form', { has: reviewerPage.locator('#submitaccept') });
+            const csrfToken = await acceptForm.locator('input[name="csrf_token"]').inputValue();
+
+            const response = await reviewerPage.request.post(invitationPath, {
+                form: { submitaccept: '', submitrefuse: '', csrf_token: csrfToken },
+                maxRedirects: 0,
+            });
+            // Neither answer is stored: no redirection, the invitation can still be answered
+            expect(response.status()).toBe(200);
+
+            await reviewerPage.goto(invitationPath);
+            await expect(reviewerPage.locator('#submitaccept')).toBeVisible();
+        });
+
         await test.step('a reviewer who accepts while logged out confirms once logged in', async () => {
             const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true });
             await context.addCookies([
@@ -84,6 +111,17 @@ test.describe('Reviewer invitation answer', () => {
                 await expect(page).toHaveURL(/reviewer\/invitation/);
                 await expect(page.getByText('You are now signed in: please confirm your acceptance below.')).toBeVisible();
 
+                // The invitee changes their mind: an invalid refusal (reason too long) reopens the refusal form,
+                // without asking to confirm the acceptance
+                await page.locator('#refuse-button').click();
+                await page.locator('#refuse_form textarea[name="comment"]').fill('x'.repeat(5001));
+                await page.locator('#refuse_form [name="submitrefuse"]').click();
+                await expect(page).toHaveURL(/reviewer\/invitation/);
+                await expect(page.locator('#refuse_form')).toBeVisible();
+                await expect(page.getByText('You are now signed in: please confirm your acceptance below.')).toHaveCount(0);
+
+                // Back to the acceptance
+                await page.locator('#refuse_form [name="cancelaccept"]').click();
                 await page.locator('#submitaccept').click();
                 await expect(page).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
                 await expect(page.getByText('Your answer has been saved.').first()).toBeVisible();
@@ -102,10 +140,25 @@ test.describe('Reviewer invitation answer', () => {
             invitationPath = await inviteReviewer({ adminPage, mailpit }, docid);
         });
 
-        await test.step('the reviewer declines, with a reason', async () => {
+        await test.step('a refusal sent with an expired session keeps what was typed', async () => {
             await reviewerPage.goto(invitationPath);
             await reviewerPage.locator('#refuse-button').click();
-            await reviewerPage.locator('#refuse_form textarea[name="comment"]').fill('E2E: not my field.');
+            const refuseForm = reviewerPage.locator('#refuse_form');
+            await refuseForm.locator('[name="suggestreviewer"]').fill('Jane Doe');
+            await refuseForm.locator('textarea[name="comment"]').fill('E2E: not my field.');
+            await expireRequestToken(refuseForm);
+            await refuseForm.locator('[name="submitrefuse"]').click();
+
+            // Nothing is stored: the refusal form is open again, as it was typed
+            await expect(reviewerPage).toHaveURL(/reviewer\/invitation/);
+            await expect(reviewerPage.getByText(SESSION_EXPIRED).first()).toBeVisible();
+            await expect(refuseForm).toBeVisible();
+            await expect(refuseForm.locator('[name="suggestreviewer"]')).toHaveValue('Jane Doe');
+            await expect(refuseForm.locator('textarea[name="comment"]')).toHaveValue('E2E: not my field.');
+        });
+
+        await test.step('the reviewer declines, sending the same refusal again', async () => {
+            // The form displayed again carries the current token: sending it as it is stores the refusal
             await reviewerPage.locator('#refuse_form [name="submitrefuse"]').click();
 
             // A stored refusal leaves the invitation page for the home page
