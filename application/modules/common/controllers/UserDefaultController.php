@@ -1518,17 +1518,26 @@ class UserDefaultController extends Zend_Controller_Action
         // On submission the token comes back in the form
         $token = $request->isPost() ? $request->getPost('token') : $request->getParam('token');
 
-        if ($this->findPasswordToken($token) === null) {
+        $accountToken = $this->findPasswordToken($token);
+
+        if ($accountToken === null) {
             $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_FAILURE;
             $this->render('resetpassword');
             return;
         }
 
+        // the page reads as an activation when the password chosen activates the account (see resetPasswordWithToken())
+        $activatesAccount = $this->activatesAccount($accountToken);
+        $this->view->activatesAccount = $activatesAccount;
+
         $form = new Ccsd_User_Form_Accountresetpassword();
         $form->setActions(true)->createSubmitButton('submit', [
-            'label' => 'Changer le mot de passe',
+            'label' => $activatesAccount ? 'Activer mon compte' : 'Changer le mot de passe',
             'class' => 'btn btn-primary'
         ]);
+        if ($activatesAccount) {
+            $form->getElement('PASSWORD')?->setLabel('Mot de passe');
+        }
         $form->setDefault('token', $token);
 
         if ($request->isPost() && $form->isValid($request->getPost())) {
@@ -1542,6 +1551,24 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         $this->view->form = $form;
+    }
+
+    /**
+     * Whether the password chosen with this link also activates the account: a setup link of an account not
+     * activated yet
+     */
+    protected function activatesAccount(AccountToken $accountToken): bool
+    {
+        if ($accountToken->purpose !== TokenPurpose::ACCOUNT_SETUP) {
+            return false;
+        }
+
+        try {
+            return !$this->getUserMapper()->isActive($accountToken->uid);
+        } catch (Zend_Db_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return false;
+        }
     }
 
     /**
@@ -1644,7 +1671,37 @@ class UserDefaultController extends Zend_Controller_Action
             return false;
         }
 
-        $this->revokeLinksOfUpdatedAccount($accountToken->uid, ...self::PASSWORD_TOKEN_PURPOSES);
+        if ($accountToken->purpose !== TokenPurpose::ACCOUNT_SETUP) {
+            $this->revokeLinksOfUpdatedAccount($accountToken->uid, ...self::PASSWORD_TOKEN_PURPOSES);
+            return true;
+        }
+
+        // A setup link proves the address: the password chosen with it also activates an account not activated yet
+        // (e.g. from a review invitation, whoever created the account). The password is written first, so that a
+        // password set by someone else never works on the activated account.
+        if (!$this->activateAccountOfChosenPassword($accountToken->uid)) {
+            $tokenRepository->restore($token, $accountToken);
+            return false;
+        }
+
+        $this->revokeLinksOfUpdatedAccount($accountToken->uid, TokenPurpose::ACCOUNT_ACTIVATION, ...self::PASSWORD_TOKEN_PURPOSES);
+
+        return true;
+    }
+
+    /**
+     * @return bool false when the account could not be activated: the setup link must keep working
+     */
+    private function activateAccountOfChosenPassword(int $uid): bool
+    {
+        try {
+            if (!$this->getUserMapper()->isActive($uid)) {
+                $this->getUserMapper()->activateAccountByUid($uid);
+            }
+        } catch (Zend_Db_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return false;
+        }
 
         return true;
     }

@@ -351,6 +351,128 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         self::assertFalse($this->controller->resetPassword($token, self::PASSWORD), 'a password link works only once');
     }
 
+    public function testSetupLinkActivatesTheAccountOnceThePasswordIsWritten(): void
+    {
+        $token = $this->issue(TokenPurpose::ACCOUNT_SETUP);
+        $calls = [];
+        $this->userMapper->method('isActive')->willReturn(false);
+        $this->userMapper->method('savePassword')->willReturnCallback(static function () use (&$calls): int {
+            $calls[] = 'password';
+            return 1;
+        });
+        $this->userMapper->expects(self::once())->method('activateAccountByUid')->with(self::UID)
+            ->willReturnCallback(static function () use (&$calls): void {
+                $calls[] = 'activation';
+            });
+
+        self::assertTrue($this->controller->resetPassword($token, self::PASSWORD));
+        self::assertSame(['password', 'activation'], $calls, 'a password set by whoever created the account never works on the active account');
+    }
+
+    public function testSetupLinkOfAnActiveAccountOnlySetsThePassword(): void
+    {
+        $token = $this->issue(TokenPurpose::ACCOUNT_SETUP);
+        $this->userMapper->method('isActive')->willReturn(true);
+        $this->userMapper->method('savePassword')->willReturn(1);
+        $this->userMapper->expects(self::never())->method('activateAccountByUid');
+
+        self::assertTrue($this->controller->resetPassword($token, self::PASSWORD));
+    }
+
+    public function testLostPasswordLinkNeverActivatesAnAccount(): void
+    {
+        $token = $this->issue(TokenPurpose::PASSWORD_RESET);
+        $this->userMapper->method('isActive')->willReturn(false);
+        $this->userMapper->method('savePassword')->willReturn(1);
+        $this->userMapper->expects(self::never())->method('activateAccountByUid');
+
+        self::assertTrue($this->controller->resetPassword($token, self::PASSWORD));
+    }
+
+    public function testSetupLinkStillWorksWhenTheAccountCouldNotBeActivated(): void
+    {
+        $token = $this->issue(TokenPurpose::ACCOUNT_SETUP);
+        $this->userMapper->method('isActive')->willReturn(false);
+        $this->userMapper->method('savePassword')->willReturn(1);
+        $this->userMapper->method('activateAccountByUid')->willThrowException(new Zend_Db_Adapter_Exception('database unavailable'));
+
+        self::assertFalse($this->withoutWarnings(fn(): bool => $this->controller->resetPassword($token, self::PASSWORD)));
+        self::assertNotNull($this->tokens->find($token, TokenPurpose::ACCOUNT_SETUP), 'the link must work again once the database is back');
+    }
+
+    public function testAccountActivatedWithASetupLinkLosesItsActivationLinks(): void
+    {
+        $activation = $this->issue(TokenPurpose::ACCOUNT_ACTIVATION);
+        $setup = $this->issue(TokenPurpose::ACCOUNT_SETUP);
+        $this->userMapper->method('isActive')->willReturn(false);
+        $this->userMapper->method('savePassword')->willReturn(1);
+
+        self::assertTrue($this->controller->resetPassword($setup, self::PASSWORD));
+
+        self::assertNull($this->tokens->find($activation, TokenPurpose::ACCOUNT_ACTIVATION));
+    }
+
+    /**
+     * @return iterable<string, array{TokenPurpose, bool, bool}>
+     */
+    public static function passwordPageProvider(): iterable
+    {
+        yield 'setup link of an account not activated' => [TokenPurpose::ACCOUNT_SETUP, false, true];
+        yield 'setup link of an active account' => [TokenPurpose::ACCOUNT_SETUP, true, false];
+        yield 'lost password link' => [TokenPurpose::PASSWORD_RESET, false, false];
+    }
+
+    /**
+     * @dataProvider passwordPageProvider
+     */
+    public function testPasswordPageReadsAsAnActivationOnlyWhenItActivatesTheAccount(TokenPurpose $purpose, bool $active, bool $expected): void
+    {
+        $token = $this->findPasswordTokenOf($this->issue($purpose));
+        $this->userMapper->method('isActive')->willReturn($active);
+
+        self::assertSame($expected, $this->controller->activates($token));
+    }
+
+    private function findPasswordTokenOf(string $token): \Episciences\User\Token\AccountToken
+    {
+        $accountToken = $this->controller->findPassword($token);
+        self::assertNotNull($accountToken);
+
+        return $accountToken;
+    }
+
+    /**
+     * @param array<string, mixed> $vars
+     */
+    private function renderPasswordPage(array $vars): string
+    {
+        $view = new Zend_View();
+        $view->setScriptPath(APPLICATION_PATH . '/modules/common/views/scripts/');
+        $view->assign($vars);
+
+        return $view->render('user/resetpassword.phtml');
+    }
+
+    public function testActivationPageSaysTheAccountIsActivatedWithThePasswordChosen(): void
+    {
+        $html = $this->renderPasswordPage(['activatesAccount' => true]);
+        self::assertStringContainsString('Activation de votre compte', $html);
+        self::assertStringContainsString("Choisissez le mot de passe de votre compte pour l'activer.", $html);
+
+        $done = $this->renderPasswordPage(['activatesAccount' => true, 'resultMessage' => Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_SUCCESS]);
+        self::assertStringContainsString('Votre compte est activé : vous pouvez vous connecter avec ce mot de passe.', $done);
+        self::assertStringNotContainsString('Choisissez le mot de passe', $done);
+    }
+
+    public function testPasswordPageOfALostPasswordIsUnchanged(): void
+    {
+        $html = $this->renderPasswordPage(['activatesAccount' => false, 'resultMessage' => Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_SUCCESS]);
+
+        self::assertStringContainsString('Changement de votre mot de passe', $html);
+        self::assertStringContainsString('Votre mot de passe a bien été changé', $html);
+        self::assertStringNotContainsString('Activation de votre compte', $html);
+    }
+
     public function testActivationTokenCannotSetAPassword(): void
     {
         $token = $this->issue(TokenPurpose::ACCOUNT_ACTIVATION);
@@ -702,6 +824,11 @@ final class AccountTokenTestController extends \UserDefaultController
     public function findPassword(mixed $token): ?\Episciences\User\Token\AccountToken
     {
         return $this->findPasswordToken($token);
+    }
+
+    public function activates(\Episciences\User\Token\AccountToken $accountToken): bool
+    {
+        return $this->activatesAccount($accountToken);
     }
 
     public function resetPassword(mixed $token, string $password): bool
