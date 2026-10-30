@@ -9,6 +9,7 @@ use Episciences\User\AccountActivationMailer;
 use Episciences\User\AccountMutationPolicy;
 use Episciences\User\EmailPolicy;
 use Episciences\User\ImpersonationPolicy;
+use Episciences\User\ProfileCompletionReturn;
 use Episciences\User\SuLogger;
 use Episciences\User\Token\AccountToken;
 use Episciences\User\Token\AccountTokenRepository;
@@ -387,6 +388,27 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * Parameters of the login URL meant for the page to return to: the URL path and query only, never the
+     * posted credentials, nor the routing and CAS ones
+     *
+     * @return array<string, mixed>
+     */
+    protected function forwardedUrlParams(): array
+    {
+        $params = array_merge($this->getRequest()->getQuery(), $this->getRequest()->getUserParams());
+        unset(
+            $params['forward-controller'],
+            $params['forward-action'],
+            $params['controller'],
+            $params['action'],
+            $params['module'],
+            $params['ticket']
+        );
+
+        return array_filter($params, static fn($value): bool => is_scalar($value));
+    }
+
+    /**
      *   Login utilisateur
      *   Après login redirige :
      *   - sur la page de modification de compte si pas de champs Application Episciences
@@ -517,7 +539,18 @@ class UserDefaultController extends Zend_Controller_Action
                 if ($localUser->getHasAccountData() === false) {
                     $action = $this->getRequest()->getParam('forward-action', 'edit');
                     $controller = $this->getRequest()->getParam('forward-controller', 'user');
-                    $this->redirect($controller . '/' . $action);
+
+                    if ($this->getRequest()->getParam('forward-controller') === null) {
+                        $this->redirect($controller . '/' . $action);
+                        return;
+                    }
+
+                    // the parameters of the return page are kept (e.g. the invitation id and its link token)
+                    $this->redirect($this->view->url(
+                        ['controller' => $controller, 'action' => $action] + $this->forwardedUrlParams(),
+                        null,
+                        true
+                    ));
                     return;
                 }
 
@@ -1113,7 +1146,14 @@ class UserDefaultController extends Zend_Controller_Action
 
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Les modifications sont sauvegardées.');
 
-                if ($isRoot && Episciences_Auth::getUid() !== $user->getUid()) {
+                // a profile completed on the way to another page (e.g. a review invitation) goes back to it
+                $returnUri = $localUserDefaults === [] && Episciences_Auth::getUid() === $user->getUid()
+                    ? ProfileCompletionReturn::take()
+                    : null;
+
+                if ($returnUri !== null) {
+                    $this->_helper->redirector->gotoUrl($returnUri, ['prependBase' => false]);
+                } elseif ($isRoot && Episciences_Auth::getUid() !== $user->getUid()) {
                     $this->_helper->redirector('list', 'user');
                 } else {
                     $this->_helper->redirector('dashboard', 'user');
