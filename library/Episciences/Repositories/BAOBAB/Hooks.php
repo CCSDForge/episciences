@@ -307,7 +307,10 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      */
     public static function fetchRecord(string $identifier, bool $fresh = false): ?array
     {
-        if (!$fresh && self::$lastRecord !== null && self::$lastRecord[0] === $identifier) {
+        if ($fresh) {
+            // A failed reload must not leave the previous record behind
+            self::$lastRecord = null;
+        } elseif (self::$lastRecord !== null && self::$lastRecord[0] === $identifier) {
             return self::$lastRecord[1];
         }
 

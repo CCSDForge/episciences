@@ -871,6 +871,15 @@ XML;
         self::assertNull(Episciences_Repositories_BAOBAB_Hooks::fetchRecord('ark:/50962/kept', true));
     }
 
+    public function testFetchRecordDropsTheKeptRecordWhenAFreshReloadFails(): void
+    {
+        $this->keepRecord('ark:/50962/kept', ['id' => 'kept']);
+
+        Episciences_Repositories_BAOBAB_Hooks::fetchRecord('ark:/50962/kept', true);
+
+        self::assertNull(Episciences_Repositories_BAOBAB_Hooks::fetchRecord('ark:/50962/kept'));
+    }
+
     public function testHookApiRecordsFetchesTheRecordAgainByDefault(): void
     {
         $this->keepRecord('ark:/50962/kept', ['id' => 'kept']);
