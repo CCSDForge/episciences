@@ -15,6 +15,7 @@ use Psr\Http\Message\RequestInterface;
 use StatsController;
 use unit\modules\ControllerTestCase;
 use unit\modules\support\ApiStubStatsController;
+use unit\modules\support\DispatchResult;
 use Zend_Registry;
 use Zend_Session_Namespace;
 
@@ -41,6 +42,8 @@ final class StatsControllerIndexActionTest extends ControllerTestCase
     private array $apiRequests = [];
 
     private bool $papersAvailable = true;
+
+    private bool $dashboardAvailable = true;
 
     public static function setUpBeforeClass(): void
     {
@@ -84,6 +87,10 @@ final class StatsControllerIndexActionTest extends ControllerTestCase
         }
 
         if (str_contains($path, self::DASHBOARD_PATH)) {
+            if (!$this->dashboardAvailable) {
+                return new Response(503);
+            }
+
             if (!isset($this->query($request)[StatsController::WITH_PAPERS_PARAM])) {
                 return new Response(200, [], json_encode(self::DASHBOARD, JSON_THROW_ON_ERROR));
             }
@@ -134,9 +141,24 @@ final class StatsControllerIndexActionTest extends ControllerTestCase
     /**
      * @param array<string, mixed> $query
      */
-    private function displayStatistics(array $query = []): void
+    private function displayStatistics(array $query = []): DispatchResult
     {
-        $this->dispatch(ApiStubStatsController::class, 'index', $this->getRequest($query));
+        return $this->dispatch(ApiStubStatsController::class, 'index', $this->getRequest($query));
+    }
+
+    public function testTheStatisticsCannotBeRetrieved_ServiceUnavailable(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+        $this->dashboardAvailable = false;
+
+        self::assertSame(503, $this->displayStatistics()->statusCode());
+    }
+
+    public function testAYearWithoutStatistics_NotFound(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+
+        self::assertSame(404, $this->displayStatistics(['year' => '1990'])->statusCode());
     }
 
     public function testAnEditorGetsTheStatisticsWithoutToken(): void

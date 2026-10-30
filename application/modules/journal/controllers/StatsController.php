@@ -1172,7 +1172,7 @@ class StatsController extends Zend_Controller_Action
      */
     private function renderError(int $yearQuery): void
     {
-        Episciences_Tools::header('HTTP/1.1 404 Not Found');
+        $this->getResponse()?->setHttpResponseCode(404);
         // plain text: the message is escaped by the view
         $this->view->message = $this->view->translate("Vous essayez de consulter les indicateurs statistiques pour l'année") . ' ' . $yearQuery;
         $this->view->description = "Aucune information n'est disponible pour cette page pour le moment.";
@@ -1186,7 +1186,7 @@ class StatsController extends Zend_Controller_Action
      */
     private function renderUnavailable(string $description): void
     {
-        Episciences_Tools::header('HTTP/1.1 503 Service Unavailable');
+        $this->getResponse()?->setHttpResponseCode(503);
         $this->view->message = 'Les indicateurs statistiques sont momentanément indisponibles.';
         $this->view->description = $description;
         $this->renderScript('error/error.phtml');
