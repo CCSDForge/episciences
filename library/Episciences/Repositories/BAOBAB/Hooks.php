@@ -45,9 +45,9 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     public const ARK_PATTERN = '#^(?:https?://[^/]+/)?(ark:/?\d+/[^?\#\s]+)#';
 
     /**
-     * Last record fetched by fetchRecord(): hookApiRecords() always fetches it
-     * again, then the licence lookup that follows in the same process
-     * (PapersManager::updateRecordData()) reuses it.
+     * Last record fetched by fetchRecord(): hookApiRecords() fetches it again,
+     * then the hooks run without a response and the licence lookup that follow
+     * in the same process (PapersManager::updateRecordData()) reuse it.
      * A single entry, so a batch over many records does not grow it.
      *
      * @var array{0: string, 1: array<string, mixed>}|null [record id, REST JSON]
@@ -56,10 +56,11 @@ class Episciences_Repositories_BAOBAB_Hooks implements
 
     /**
      * @param array<string, mixed> $hookParams
+     * @param bool $freshRecord false to reuse the record kept from the previous fetch
      * @return array<string, mixed>
      * @throws Ccsd_Error
      */
-    public static function hookApiRecords(array $hookParams): array
+    public static function hookApiRecords(array $hookParams, bool $freshRecord = true): array
     {
         if (!isset($hookParams[Episciences_Repositories_Common::META_IDENTIFIER])) {
             return [];
@@ -68,7 +69,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         $identifier = (string)$hookParams[Episciences_Repositories_Common::META_IDENTIFIER];
 
         try {
-            $json = self::fetchRecord($identifier, true);
+            $json = self::fetchRecord($identifier, $freshRecord);
         } catch (GuzzleException $e) {
             throw new Ccsd_Error($e->getMessage(), (int)$e->getCode());
         }
@@ -335,7 +336,12 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      */
     private static function checkResponse(array $hookParams): array
     {
-        return Episciences_Repositories_Common::resolveResponse($hookParams, [self::class, 'hookApiRecords']);
+        // A hook run without a response follows hookApiRecords() in the same
+        // process (PapersManager::updateRecordData()): reuse its record
+        return Episciences_Repositories_Common::resolveResponse(
+            $hookParams,
+            static fn(array $params): array => self::hookApiRecords($params, false)
+        );
     }
 
     /**

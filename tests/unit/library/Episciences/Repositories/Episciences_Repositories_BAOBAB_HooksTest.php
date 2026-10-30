@@ -870,4 +870,12 @@ XML;
 
         self::assertNull(Episciences_Repositories_BAOBAB_Hooks::fetchRecord('ark:/50962/kept', true));
     }
+
+    public function testHookApiRecordsFetchesTheRecordAgainByDefault(): void
+    {
+        $this->keepRecord('ark:/50962/kept', ['id' => 'kept']);
+
+        $this->expectException(\Ccsd_Error::class);
+        Episciences_Repositories_BAOBAB_Hooks::hookApiRecords([Episciences_Repositories_Common::META_IDENTIFIER => 'ark:/50962/kept']);
+    }
 }
