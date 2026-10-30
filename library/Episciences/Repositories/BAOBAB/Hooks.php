@@ -43,15 +43,14 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     public const RECORD_ID_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9._-]*$/';
     public const ROR_ID_PATTERN = '/^0[a-hj-km-np-tv-z0-9]{6}[0-9]{2}$/';
     public const ARK_PATTERN = '#^(?:https?://[^/]+/)?(ark:/?\d+/[^?\#\s]+)#';
-    // Seconds; long enough to cover a submission, short enough for a long-running script not to reuse a stale record
-    public const RECORD_CACHE_TTL = 60;
 
     /**
-     * Last record fetched by fetchRecord(): the submission fetches it in
-     * hookApiRecords(), then Paper::save() needs it again for the licence.
+     * Last record fetched by fetchRecord(): hookApiRecords() always fetches it
+     * again, then the licence lookup that follows in the same process
+     * (PapersManager::updateRecordData()) reuses it.
      * A single entry, so a batch over many records does not grow it.
      *
-     * @var array{0: string, 1: array<string, mixed>, 2: int}|null [record id, REST JSON, monotonic fetch time in nanoseconds (hrtime)]
+     * @var array{0: string, 1: array<string, mixed>}|null [record id, REST JSON]
      */
     private static ?array $lastRecord = null;
 
@@ -69,7 +68,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         $identifier = (string)$hookParams[Episciences_Repositories_Common::META_IDENTIFIER];
 
         try {
-            $json = self::fetchRecord($identifier);
+            $json = self::fetchRecord($identifier, true);
         } catch (GuzzleException $e) {
             throw new Ccsd_Error($e->getMessage(), (int)$e->getCode());
         }
@@ -301,16 +300,13 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      * (e.g. an ARK left unresolved by hookCleanIdentifiers()) or the record does
      * not exist.
      *
+     * @param bool $fresh true to ignore the record kept from the previous call
      * @return array<string, mixed>|null
      * @throws GuzzleException
      */
-    public static function fetchRecord(string $identifier): ?array
+    public static function fetchRecord(string $identifier, bool $fresh = false): ?array
     {
-        if (
-            self::$lastRecord !== null
-            && self::$lastRecord[0] === $identifier
-            && hrtime(true) - self::$lastRecord[2] < self::RECORD_CACHE_TTL * 1_000_000_000
-        ) {
+        if (!$fresh && self::$lastRecord !== null && self::$lastRecord[0] === $identifier) {
             return self::$lastRecord[1];
         }
 
@@ -327,7 +323,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
             return null;
         }
 
-        self::$lastRecord = [$identifier, $json, hrtime(true)];
+        self::$lastRecord = [$identifier, $json];
 
         return $json;
     }

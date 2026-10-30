@@ -835,4 +835,39 @@ XML;
             'empty' => [''],
         ];
     }
+
+    // =========================================================================
+    // fetchRecord() — the kept record is reused unless a fresh one is asked for
+    // =========================================================================
+
+    /**
+     * The tests keep an identifier that is not a record id, so a call that
+     * ignores the kept record returns null without reaching the API.
+     *
+     * @param array<string, mixed> $json
+     */
+    private function keepRecord(string $identifier, array $json): void
+    {
+        $property = new \ReflectionProperty(Episciences_Repositories_BAOBAB_Hooks::class, 'lastRecord');
+        $property->setValue(null, [$identifier, $json]);
+    }
+
+    protected function tearDown(): void
+    {
+        (new \ReflectionProperty(Episciences_Repositories_BAOBAB_Hooks::class, 'lastRecord'))->setValue(null, null);
+    }
+
+    public function testFetchRecordReusesTheKeptRecord(): void
+    {
+        $this->keepRecord('ark:/50962/kept', ['id' => 'kept']);
+
+        self::assertSame(['id' => 'kept'], Episciences_Repositories_BAOBAB_Hooks::fetchRecord('ark:/50962/kept'));
+    }
+
+    public function testFetchRecordIgnoresTheKeptRecordWhenFreshIsAsked(): void
+    {
+        $this->keepRecord('ark:/50962/kept', ['id' => 'kept']);
+
+        self::assertNull(Episciences_Repositories_BAOBAB_Hooks::fetchRecord('ark:/50962/kept', true));
+    }
 }
