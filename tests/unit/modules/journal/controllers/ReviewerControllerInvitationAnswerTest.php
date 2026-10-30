@@ -75,14 +75,22 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
             /** @var list<string> addresses an activation link was sent to */
             public array $activationSentTo = [];
 
+            /** false: a link was sent a moment ago, the new one is refused */
+            public bool $activationSendAllowed = true;
+
             protected function invitedAccountState(string $email): InvitedAccountState
             {
                 return $this->invitedAccount;
             }
 
-            protected function sendActivationEmailTo(string $email): void
+            protected function sendActivationEmailTo(string $email): bool
             {
+                if (!$this->activationSendAllowed) {
+                    return false;
+                }
                 $this->activationSentTo[] = $email;
+
+                return true;
             }
         };
         $this->controller->view = new Zend_View();
@@ -107,7 +115,7 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
      */
     private function clearFlashMessages(): void
     {
-        foreach ([Ccsd_View_Helper_Message::MSG_ERROR, Ccsd_View_Helper_Message::MSG_SUCCESS] as $namespace) {
+        foreach ([Ccsd_View_Helper_Message::MSG_ERROR, Ccsd_View_Helper_Message::MSG_SUCCESS, Ccsd_View_Helper_Message::MSG_INFO] as $namespace) {
             $this->flashMessenger()->setNamespace($namespace)->clearCurrentMessages();
         }
     }
@@ -474,6 +482,18 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
         self::assertSame(['invited@example.org'], $this->controller->activationSentTo);
         self::assertSame([], $this->controller->saved, 'nothing is answered');
         self::assertCount(1, $this->flashMessenger()->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->getCurrentMessages());
+    }
+
+    public function testActivationLinkSentAMomentAgoIsNotSentAgain(): void
+    {
+        $this->controller->invitedAccount = InvitedAccountState::Inactive;
+        $this->controller->activationSendAllowed = false;
+
+        $this->answer($this->postRequest(['sendactivation' => ''], true), $this->tmpUser());
+
+        self::assertSame([], $this->controller->activationSentTo);
+        self::assertSame([], $this->flashMessenger()->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->getCurrentMessages());
+        self::assertCount(1, $this->flashMessenger()->setNamespace(Ccsd_View_Helper_Message::MSG_INFO)->getCurrentMessages(), 'the invitee is told to check their mailbox');
     }
 
     public function testNoActivationLinkWithoutTheRequestToken(): void

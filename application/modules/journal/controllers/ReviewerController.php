@@ -6,6 +6,7 @@ use Episciences\Security\AccessLog;
 use Episciences\User\AccountActivationMailer;
 use Episciences\User\EmailPolicy;
 use Episciences\User\Token\AccountTokenRepository;
+use Episciences\User\Token\TokenPurpose;
 use Episciences\User\UserNotFoundException;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
@@ -13,13 +14,18 @@ require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultControl
 class ReviewerController extends PaperDefaultController
 {
     /**
-     * Fields of the account form accepted when creating an account from an invitation
-     */
-    /**
      * Posted by the "send me a new activation link" button
      */
     private const SEND_ACTIVATION_PARAM = 'sendactivation';
 
+    /**
+     * Seconds before another activation link can be sent from the invitation page
+     */
+    private const ACTIVATION_RESEND_DELAY = 300;
+
+    /**
+     * Fields of the account form accepted when creating an account from an invitation
+     */
     private const ACCOUNT_CREATION_FIELDS = [
         'USERNAME', 'PASSWORD', 'FIRSTNAME', 'LASTNAME', 'EMAIL', 'SCREEN_NAME', 'ORCID',
         'AFFILIATIONS', 'SOCIAL_MEDIAS', 'WEB_SITES', 'BIOGRAPHY', 'LANGUEID',
@@ -458,7 +464,16 @@ class ReviewerController extends PaperDefaultController
             return;
         }
 
-        $this->sendActivationEmailTo($email);
+        if (!$this->sendActivationEmailTo($email)) {
+            $this->_helper->FlashMessenger
+                ->setNamespace(Ccsd_View_Helper_Message::MSG_INFO)
+                ->addMessage(sprintf(
+                    $this->view->translate("Un lien d'activation a déjà été envoyé à %s il y a moins de %d minutes. Vérifiez votre messagerie, y compris les courriers indésirables, avant d'en demander un autre."),
+                    $email,
+                    intdiv(self::ACTIVATION_RESEND_DELAY, 60)
+                ));
+            return;
+        }
 
         $this->_helper->FlashMessenger
             ->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
@@ -470,14 +485,21 @@ class ReviewerController extends PaperDefaultController
 
     /**
      * Sends a new activation link to the account created in Episciences with this address.
+     *
+     * @return bool false when a link was already sent less than ACTIVATION_RESEND_DELAY ago: nothing is sent
      */
-    protected function sendActivationEmailTo(string $email): void
+    protected function sendActivationEmailTo(string $email): bool
     {
         $mapper = new Ccsd_User_Models_UserMapper();
         $email = EmailPolicy::normalize($email);
         $uid = $this->findInactiveEpisciencesAccount($mapper->findUidsByEmail($email));
         if ($uid === null) {
-            return;
+            return true;
+        }
+
+        $tokens = new AccountTokenRepository();
+        if ($tokens->issuedWithin($uid, TokenPurpose::ACCOUNT_ACTIVATION, self::ACTIVATION_RESEND_DELAY)) {
+            return false;
         }
 
         $user = new Episciences_User();
@@ -485,12 +507,14 @@ class ReviewerController extends PaperDefaultController
 
         try {
             (new AccountActivationMailer(
-                new AccountTokenRepository(),
+                $tokens,
                 fn(array $params): string => $this->view->url($params, null, true)
             ))->send($user);
         } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
         }
+
+        return true;
     }
 
     /**
