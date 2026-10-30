@@ -403,19 +403,11 @@ class UserDefaultController extends Zend_Controller_Action
     {
         $localUser = new Episciences_User();
 
-        // Determine adapter type from configuration, default to CAS
-        $adapterType = defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS';
-
-        // Special case for LemonLDAP (uses custom class outside Factory)
-        if ($adapterType === 'LemonLDAP') {
-            $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
-        } else {
-            // Use Factory for standard adapters (CAS, MYSQL)
-            $adapter = AdapterFactory::getTypedAdapter($adapterType);
-        }
+        $adapter = $this->loginAdapter();
 
         $adapter->setIdentityStructure($localUser);
-        $adapter->setServiceURL($this->_request->getParams());
+        // CAS adapters: the URL the CAS server sends the user back to
+        $adapter->setServiceURL($this->loginReturnParams($this->_request));
 
         // Call pre_auth to handle form display or credential storage
         // Returns false if form was displayed (stops execution), true or null to continue
@@ -561,15 +553,34 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
-     * Parameters carried over to the page displayed after logging in: those of the URL only
-     * (route, then query string, as getParam() reads them). The posted login form is never
-     * carried over.
+     * Authentication adapter of the configuration, CAS by default.
+     */
+    protected function loginAdapter(): \Ccsd\Auth\Adapter\Mysql|Ccsd_Auth_Adapter_CasAbstract
+    {
+        $adapterType = defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS';
+
+        // Special case for LemonLDAP (uses custom class outside Factory)
+        if ($adapterType === 'LemonLDAP') {
+            return new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
+        }
+
+        // Use Factory for standard adapters (CAS, MYSQL)
+        return AdapterFactory::getTypedAdapter($adapterType);
+    }
+
+    /**
+     * Parameters carried over to the page displayed after logging in, and to the CAS server: those
+     * of the URL only (route, then query string, as getParam() reads them). The posted login form is
+     * never carried over, nor the CAS ticket, already used once back from the CAS server.
      *
      * @return array<string, mixed>
      */
     private function loginReturnParams(Zend_Controller_Request_Http $request): array
     {
-        return array_merge($request->getQuery(), $request->getUserParams());
+        $params = array_merge($request->getQuery(), $request->getUserParams());
+        unset($params['ticket']);
+
+        return $params;
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\modules\common\controllers;
 
+use Ccsd_Auth_Adapter_CasAbstract;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 use UserDefaultController;
@@ -13,20 +14,25 @@ use Zend_Controller_Response_HttpTestCase;
 require_once APPLICATION_PATH . '/modules/common/controllers/UserDefaultController.php';
 
 /**
- * Page displayed after logging in: only the parameters of the URL are carried over to it,
- * never the fields of the posted login form.
+ * Page displayed after logging in, and URL the CAS server sends the user back to: only the
+ * parameters of the URL are carried over, never the fields of the posted login form nor the CAS ticket.
  */
 final class UserDefaultControllerLoginReturnTest extends TestCase
 {
     // the test requests write the query string and the posted form to $_GET and $_POST
+    /** @var array<string, mixed> */
+    private array $previousServer;
+
     protected function setUp(): void
     {
         $_GET = $_POST = [];
+        $this->previousServer = $_SERVER;
     }
 
     protected function tearDown(): void
     {
         $_GET = $_POST = [];
+        $_SERVER = $this->previousServer;
     }
 
     /**
@@ -79,5 +85,62 @@ final class UserDefaultControllerLoginReturnTest extends TestCase
         $params = self::returnParams(['id' => '1'], ['id' => '2']);
 
         self::assertSame('1', $params['id']);
+    }
+
+    /**
+     * Back from the CAS server, the ticket has been used: it is not carried over
+     */
+    public function testCasTicketIsNotCarriedOver(): void
+    {
+        $params = self::returnParams(['forward-controller' => 'paper', 'forward-action' => 'view'], ['ticket' => 'ST-1']);
+
+        self::assertArrayNotHasKey('ticket', $params);
+        self::assertSame('paper', $params['forward-controller']);
+    }
+
+    public function testCasServiceUrlOnlyCarriesTheUrlParameters(): void
+    {
+        $_SERVER['SERVER_NAME'] = 'journal.example.org';
+        $_SERVER['SERVER_PORT'] = '443';
+
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod('POST')
+            ->setQuery(['ticket' => 'ST-1'])
+            ->setPost(['username' => 'jdoe', 'password' => 'secret'])
+            ->setParams(['controller' => 'user', 'action' => 'login', 'forward-controller' => 'paper', 'forward-action' => 'view', 'id' => '1']);
+
+        // a CAS adapter that stops before contacting the CAS server
+        $adapter = new class extends Ccsd_Auth_Adapter_CasAbstract {
+            protected function setLogger(): void
+            {
+            }
+
+            protected function setCasOptions(): self
+            {
+                return $this;
+            }
+
+            public function pre_auth($controller): bool
+            {
+                return false;
+            }
+        };
+
+        $controller = new class ($request, new Zend_Controller_Response_HttpTestCase()) extends UserDefaultController {
+            public Ccsd_Auth_Adapter_CasAbstract $adapter;
+
+            protected function loginAdapter(): \Ccsd\Auth\Adapter\Mysql|Ccsd_Auth_Adapter_CasAbstract
+            {
+                return $this->adapter;
+            }
+        };
+        $controller->adapter = $adapter;
+
+        $controller->loginAction();
+
+        self::assertSame(
+            SERVER_PROTOCOL . '://journal.example.org/user/login/forward-controller/paper/forward-action/view/id/1',
+            $adapter->getServiceURL()
+        );
     }
 }
