@@ -265,7 +265,8 @@ test.describe('Reviewer invitation answer', () => {
                 await expect(accountForm.locator('#EMAIL')).toHaveValue(invitedEmail);
                 await expect(accountForm.locator('#EMAIL')).toHaveAttribute('readonly', /.*/);
 
-                await accountForm.locator('[name="cancel-user"]').click();
+                // the button the page script closes the form with (its name loses its hyphen in Zend_Form)
+                await accountForm.locator('[data-answer-cancel]').click();
                 await expect(accountForm).toBeHidden();
                 await expect(acceptButton).toBeFocused();
             });
