@@ -7,6 +7,7 @@ namespace unit\modules\journal\controllers;
 use Ccsd_View_Helper_Message;
 use Episciences\Reviewer\InvitationToken;
 use Episciences\Reviewer\InvitedAccountState;
+use Episciences\User\ActivationLinkOutcome;
 use Episciences_Acl;
 use Episciences_Paper;
 use Episciences_User_Assignment;
@@ -75,22 +76,21 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
             /** @var list<string> addresses an activation link was sent to */
             public array $activationSentTo = [];
 
-            /** false: a link was sent a moment ago, the new one is refused */
-            public bool $activationSendAllowed = true;
+            /** what sending the activation link gives */
+            public ActivationLinkOutcome $activationOutcome = ActivationLinkOutcome::Sent;
 
             protected function invitedAccountState(string $email): InvitedAccountState
             {
                 return $this->invitedAccount;
             }
 
-            protected function sendActivationEmailTo(string $email): bool
+            protected function sendActivationEmailTo(string $email): ActivationLinkOutcome
             {
-                if (!$this->activationSendAllowed) {
-                    return false;
+                if ($this->activationOutcome === ActivationLinkOutcome::Sent) {
+                    $this->activationSentTo[] = $email;
                 }
-                $this->activationSentTo[] = $email;
 
-                return true;
+                return $this->activationOutcome;
             }
         };
         $this->controller->view = new Zend_View();
@@ -473,34 +473,85 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
         self::assertSame(InvitedAccountState::Inactive, $this->controller->view->invitedAccountState);
     }
 
+    /**
+     * Asks for a new activation link: the page is displayed again with a GET
+     *
+     * @param array<string, mixed> $post
+     * @return string the URL the request was redirected to
+     */
+    private function askForActivationLink(array $post, bool $withRequestToken = true): string
+    {
+        $tmpUser = $this->tmpUser();
+        $stopped = false;
+        try {
+            $this->answerWithRoutes($this->postRequest($post, $withRequestToken, [InvitationToken::URL_PARAM => 'link-token']), $tmpUser);
+        } catch (ResponseSent) {
+            $stopped = true;
+        }
+
+        self::assertTrue($stopped, 'the request ends with a redirection');
+        self::assertSame([], $this->controller->saved, 'nothing is answered');
+
+        return (string)(new DispatchResult($this->response, '', $stopped))->redirectUrl();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function messages(string $namespace): array
+    {
+        return $this->flashMessenger()->setNamespace($namespace)->getCurrentMessages();
+    }
+
     public function testNewActivationLinkIsSentToTheInvitedAddress(): void
     {
         $this->controller->invitedAccount = InvitedAccountState::Inactive;
 
-        $this->answer($this->postRequest(['sendactivation' => '', 'EMAIL' => 'other@example.org'], true), $this->tmpUser());
+        $this->askForActivationLink(['sendactivation' => '', 'EMAIL' => 'other@example.org']);
 
         self::assertSame(['invited@example.org'], $this->controller->activationSentTo);
-        self::assertSame([], $this->controller->saved, 'nothing is answered');
-        self::assertCount(1, $this->flashMessenger()->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->getCurrentMessages());
+        self::assertCount(1, $this->messages(Ccsd_View_Helper_Message::MSG_SUCCESS));
+    }
+
+    public function testActivationRequestIsFollowedByTheInvitationPage(): void
+    {
+        $this->controller->invitedAccount = InvitedAccountState::Inactive;
+
+        $url = $this->askForActivationLink(['sendactivation' => '']);
+
+        // refreshing the page displayed after it does not send the request again
+        self::assertStringContainsString('/reviewer/invitation/id/' . self::INVITATION_ID, $url);
+        self::assertStringContainsString('/' . InvitationToken::URL_PARAM . '/link-token', $url, 'the invitation stays open without signing in');
     }
 
     public function testActivationLinkSentAMomentAgoIsNotSentAgain(): void
     {
         $this->controller->invitedAccount = InvitedAccountState::Inactive;
-        $this->controller->activationSendAllowed = false;
+        $this->controller->activationOutcome = ActivationLinkOutcome::AlreadySent;
 
-        $this->answer($this->postRequest(['sendactivation' => ''], true), $this->tmpUser());
+        $this->askForActivationLink(['sendactivation' => '']);
 
         self::assertSame([], $this->controller->activationSentTo);
-        self::assertSame([], $this->flashMessenger()->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->getCurrentMessages());
-        self::assertCount(1, $this->flashMessenger()->setNamespace(Ccsd_View_Helper_Message::MSG_INFO)->getCurrentMessages(), 'the invitee is told to check their mailbox');
+        self::assertSame([], $this->messages(Ccsd_View_Helper_Message::MSG_SUCCESS));
+        self::assertCount(1, $this->messages(Ccsd_View_Helper_Message::MSG_INFO), 'the invitee is told to check their mailbox');
+    }
+
+    public function testActivationLinkThatCouldNotBeSentIsNotReportedAsSent(): void
+    {
+        $this->controller->invitedAccount = InvitedAccountState::Inactive;
+        $this->controller->activationOutcome = ActivationLinkOutcome::Failed;
+
+        $this->askForActivationLink(['sendactivation' => '']);
+
+        self::assertSame([], $this->messages(Ccsd_View_Helper_Message::MSG_SUCCESS));
+        self::assertSame(["Le lien d'activation n'a pas pu être envoyé. Merci de réessayer dans quelques minutes."], $this->errorMessages());
     }
 
     public function testNoActivationLinkWithoutTheRequestToken(): void
     {
         $this->controller->invitedAccount = InvitedAccountState::Inactive;
 
-        $this->answer($this->postRequest(['sendactivation' => '']), $this->tmpUser());
+        $this->askForActivationLink(['sendactivation' => ''], false);
 
         self::assertSame([], $this->controller->activationSentTo);
         self::assertSame([self::SESSION_EXPIRED], $this->errorMessages());
@@ -514,18 +565,17 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
         return [
             'no account' => [InvitedAccountState::None],
             'active account' => [InvitedAccountState::Active],
-            'account of another application' => [InvitedAccountState::InactiveElsewhere],
         ];
     }
 
     /**
      * @dataProvider accountWithoutActivationLinkProvider
      */
-    public function testActivationLinkIsOnlySentForAnEpisciencesAccountNotActivated(InvitedAccountState $state): void
+    public function testActivationLinkIsOnlySentForAnAccountNotActivated(InvitedAccountState $state): void
     {
         $this->controller->invitedAccount = $state;
 
-        $this->answer($this->postRequest(['sendactivation' => ''], true), $this->tmpUser());
+        $this->askForActivationLink(['sendactivation' => '']);
 
         self::assertSame([], $this->controller->activationSentTo);
     }
@@ -610,7 +660,7 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
     /**
      * Runs the answer step with the default route assembled from scratch, as the login URL needs it.
      */
-    private function answerWithRoutes(Zend_Controller_Request_HttpTestCase $request): void
+    private function answerWithRoutes(Zend_Controller_Request_HttpTestCase $request, ?Episciences_User_Tmp $tmpUser = null): void
     {
         $router = Zend_Controller_Front::getInstance()->getRouter();
         if (!$router->hasRoute('default')) {
@@ -623,7 +673,7 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
         $previousRoute = $currentRoute->getValue($router);
         $currentRoute->setValue($router, null);
         try {
-            $this->answer($request);
+            $this->answer($request, $tmpUser);
         } finally {
             $currentRoute->setValue($router, $previousRoute);
         }
@@ -638,6 +688,51 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
         self::assertStringContainsString('/forward-controller/reviewer/forward-action/invitation/id/' . self::INVITATION_ID, $url);
         self::assertStringContainsString('/' . InvitationToken::URL_PARAM . '/link-token', $url, 'the link secret is kept: the account may not be the invited one');
         self::assertStringNotContainsString('confirm-acceptance', $url, 'signing in does not prepare an acceptance');
+    }
+
+    public function testLoginLinkDoesNotCarryParametersOfTheCurrentPage(): void
+    {
+        // the page was reached on the way back from a former login, then the session expired
+        $this->answerWithRoutes($this->getRequest([], [InvitationToken::URL_PARAM => 'link-token', 'confirm-acceptance' => '1']));
+
+        $url = (string) $this->controller->view->loginUrl;
+        self::assertStringNotContainsString('confirm-acceptance', $url, 'signing in does not prepare an acceptance');
+        self::assertStringContainsString('/' . InvitationToken::URL_PARAM . '/link-token', $url);
+    }
+
+    public function testAcceptingWithTheActiveAccountOfTheInvitedAddressIsConfirmedOnceBack(): void
+    {
+        $this->controller->invitedAccount = InvitedAccountState::Active;
+
+        $this->answerWithRoutes($this->getRequest([], [InvitationToken::URL_PARAM => 'link-token']), $this->tmpUser());
+
+        $url = (string) $this->controller->view->acceptLoginUrl;
+        self::assertStringContainsString('/forward-controller/reviewer/forward-action/invitation/id/' . self::INVITATION_ID, $url);
+        self::assertStringContainsString('/confirm-acceptance/1', $url);
+        self::assertStringNotContainsString('confirm-acceptance', (string) $this->controller->view->loginUrl);
+    }
+
+    /**
+     * @return array<string, array{InvitedAccountState}>
+     */
+    public static function accountNotSignedInWithProvider(): array
+    {
+        return [
+            'no account' => [InvitedAccountState::None],
+            'account not activated' => [InvitedAccountState::Inactive],
+        ];
+    }
+
+    /**
+     * @dataProvider accountNotSignedInWithProvider
+     */
+    public function testNoAcceptanceThroughTheLoginPageWithoutAnActiveAccount(InvitedAccountState $state): void
+    {
+        $this->controller->invitedAccount = $state;
+
+        $this->answerWithRoutes($this->getRequest([], [InvitationToken::URL_PARAM => 'link-token']), $this->tmpUser());
+
+        self::assertNull($this->controller->view->acceptLoginUrl);
     }
 
     public function testLoggedInInviteeGetsNoLoginLink(): void

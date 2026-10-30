@@ -15,17 +15,9 @@ enum InvitedAccountState: string
     /** an active account: the reviewer signs in with it */
     case Active = 'active';
 
-    /** created in Episciences, not activated: a new activation link can be sent */
-    case Inactive = 'inactive';
-
-    /** created in another application sharing the accounts, not activated */
-    case InactiveElsewhere = 'inactive-elsewhere';
-
     /**
-     * The account is activated first: nothing can be accepted from the invitation page yet
+     * not activated, whatever the application it was created in (the accounts are shared): it is activated first,
+     * with a new activation link sent to the invited address if needed
      */
-    public function needsActivation(): bool
-    {
-        return $this === self::Inactive || $this === self::InactiveElsewhere;
-    }
+    case Inactive = 'inactive';
 }

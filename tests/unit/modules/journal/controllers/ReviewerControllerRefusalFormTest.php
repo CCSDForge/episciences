@@ -164,7 +164,8 @@ final class ReviewerControllerRefusalFormTest extends TestCase
         ?string $userForm = null,
         bool $invalidUserForm = false,
         ?string $loginUrl = null,
-        ?InvitedAccountState $invitedAccount = null
+        ?InvitedAccountState $invitedAccount = null,
+        ?string $acceptLoginUrl = null
     ): string
     {
         $invitation = $this->createMock(\Episciences_User_Invitation::class);
@@ -182,6 +183,7 @@ final class ReviewerControllerRefusalFormTest extends TestCase
         $view->confirmAcceptance = $confirmAcceptance;
         $view->loginUrl = $loginUrl;
         $view->invitedAccountState = $invitedAccount;
+        $view->acceptLoginUrl = $acceptLoginUrl;
 
         return $view->render('reviewer/invitation_response_form.phtml');
     }
@@ -362,13 +364,22 @@ final class ReviewerControllerRefusalFormTest extends TestCase
 
     public function testInviteeWhoseAddressHasAnActiveAccountAcceptsBySigningIn(): void
     {
-        $html = $this->responseForm(false, false, '<form id="accept_form"></form>', false, '/user/login/id/1', InvitedAccountState::Active);
+        $html = $this->responseForm(
+            false,
+            false,
+            '<form id="accept_form"></form>',
+            false,
+            '/user/login/id/1',
+            InvitedAccountState::Active,
+            '/user/login/id/1/confirm-acceptance/1'
+        );
 
+        // once back from the login page, the invitee is asked to confirm the acceptance
         self::assertStringContainsString(
-            'Un compte existe déjà pour l\'adresse à laquelle cette invitation a été envoyée. Pour accepter, <a class="alert-link" href="/user/login/id/1">connectez-vous</a>',
+            'Un compte existe déjà pour l\'adresse à laquelle cette invitation a été envoyée. Pour accepter, <a class="alert-link" href="/user/login/id/1/confirm-acceptance/1">connectez-vous</a>',
             $html
         );
-        self::assertStringContainsString('<a id="accept-button" class="btn btn-success" href="/user/login/id/1">J\'accepte de relire cet article</a>', $html);
+        self::assertStringContainsString('<a id="accept-button" class="btn btn-success" href="/user/login/id/1/confirm-acceptance/1">J\'accepte de relire cet article</a>', $html);
         self::assertStringNotContainsString('id="accept_form"', $html, 'no account to create');
         self::assertStringNotContainsString('sendactivation', $html);
     }
@@ -388,14 +399,6 @@ final class ReviewerControllerRefusalFormTest extends TestCase
         self::assertStringContainsString('id="refuse-button"', $html, 'declining stays possible');
     }
 
-    public function testInviteeWhoseAccountOfAnotherApplicationIsNotActivatedGetsNoActivationLink(): void
-    {
-        $html = $this->responseForm(false, false, '<form id="accept_form"></form>', false, '/user/login/id/1', InvitedAccountState::InactiveElsewhere);
-
-        self::assertStringContainsString('mais il n\'est pas encore activé', $html);
-        self::assertStringNotContainsString('sendactivation', $html);
-        self::assertStringNotContainsString('id="accept-button"', $html);
-    }
 
     public function testNoAccountNoticeOnceLoggedIn(): void
     {

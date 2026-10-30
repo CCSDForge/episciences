@@ -29,9 +29,10 @@ final class AccountActivationMailer
     }
 
     /**
+     * @return bool false when the e-mail could not be sent
      * @throws \Zend_Db_Exception when the token cannot be saved
      */
-    public function send(Episciences_User $user): void
+    public function send(Episciences_User $user): bool
     {
         $token = $this->tokens->issue((int)$user->getUid(), (string)$user->getEmail(), TokenPurpose::ACCOUNT_ACTIVATION);
 
@@ -50,9 +51,10 @@ final class AccountActivationMailer
         ];
 
         try {
-            Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION, $tags);
+            return Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION, $tags);
         } catch (Zend_Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
+            return false;
         }
     }
 }
