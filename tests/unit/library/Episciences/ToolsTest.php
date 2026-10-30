@@ -1520,6 +1520,7 @@ class ToolsTest extends TestCase
             '10.10/',                                 // Invalid DOI format
             'not-a-doi',                              // Random string
             'https://doi.org/',                       // Missing DOI
+            'https://dx-doi.org/10.1000/182',         // Look-alike host
         ];
 
         foreach ($invalidDoiUrls as $doi) {
