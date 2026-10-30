@@ -1767,6 +1767,7 @@ return array(
     "Un compte a déjà été créé avec l'adresse à laquelle cette invitation a été envoyée, mais il n'est pas encore activé. Pour accepter, activez-le avec le lien reçu par e-mail, connectez-vous, puis rouvrez le lien de l'invitation." => "An account has already been created with the address this invitation was sent to, but it is not activated yet. To accept, activate it with the link received by e-mail, sign in, then open the invitation link again.",
     "M'envoyer un nouveau lien d'activation" => "Send me a new activation link",
     "Un nouveau lien d'activation a été envoyé à %s. Activez votre compte, connectez-vous, puis rouvrez le lien de l'invitation." => "A new activation link has been sent to %s. Activate your account, sign in, then open the invitation link again.",
+    "Le lien d'activation n'a pas pu être envoyé. Merci de réessayer dans quelques minutes." => "The activation link could not be sent. Please try again in a few minutes.",
     "Refuser ne demande pas de compte." => "Declining does not require an account.",
     "Voulez-vous nous suggérer quelqu'un susceptible de vouloir le faire ?" => "Do you want to suggest someone that might be interested by this task?",
     "Suggérer un autre relecteur (facultatif)" => "Suggest another reviewer (optional)",
