@@ -560,13 +560,8 @@ class UserDefaultController extends Zend_Controller_Action
                     // action existe
                     if (null !== $this->_request->getParam('forward-action')) {
 
-                        // Récupération des paramètres supplémentaires (et suppression de ceux dont on a plus besoin)
-                        $params = $this->_request->getParams();
-                        unset ($params['forward-controller'],
-                            $params['forward-action'],
-                            $params['controller'],
-                            $params['action'],
-                            $params['module']);
+                        // parameters of the return page only
+                        $params = $this->forwardedUrlParams();
 
                         $params['controller'] = $this->_request->getParam('forward-controller');
                         $params['action'] = $this->_request->getParam('forward-action');
