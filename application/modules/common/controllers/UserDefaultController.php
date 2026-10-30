@@ -403,19 +403,11 @@ class UserDefaultController extends Zend_Controller_Action
     {
         $localUser = new Episciences_User();
 
-        // Determine adapter type from configuration, default to CAS
-        $adapterType = defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS';
-
-        // Special case for LemonLDAP (uses custom class outside Factory)
-        if ($adapterType === 'LemonLDAP') {
-            $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
-        } else {
-            // Use Factory for standard adapters (CAS, MYSQL)
-            $adapter = AdapterFactory::getTypedAdapter($adapterType);
-        }
+        $adapter = $this->loginAdapter();
 
         $adapter->setIdentityStructure($localUser);
-        $adapter->setServiceURL($this->_request->getParams());
+        // CAS adapters: the URL the CAS server sends the user back to
+        $adapter->setServiceURL($this->loginReturnParams($this->_request));
 
         // Call pre_auth to handle form display or credential storage
         // Returns false if form was displayed (stops execution), true or null to continue
@@ -435,10 +427,10 @@ class UserDefaultController extends Zend_Controller_Action
                 AccessLog::denied(AccessLog::LOGIN_FAILED, '', [
                     'result_code' => $result->getCode(),
                     'adapter' => get_class($adapter),
-                    // Read as the MySQL adapter does (route, then query, then body); the other adapters
+                    // Read as the MySQL adapter does (posted login form only); the other adapters
                     // (CAS) check the credentials on their own server, never with this parameter
                     'username' => $adapter instanceof \Ccsd\Auth\Adapter\Mysql
-                        ? $this->knownUsername($this->getRequest()->getParam('username'))
+                        ? $this->knownUsername($this->getRequest()->getPost('username'))
                         : null,
                 ]);
                 // For MySQL adapter, redisplay login form with error message
@@ -527,7 +519,7 @@ class UserDefaultController extends Zend_Controller_Action
                     if (null !== $this->_request->getParam('forward-action')) {
 
                         // Récupération des paramètres supplémentaires (et suppression de ceux dont on a plus besoin)
-                        $params = $this->_request->getParams();
+                        $params = $this->loginReturnParams($this->_request);
                         unset ($params['forward-controller'],
                             $params['forward-action'],
                             $params['controller'],
@@ -558,6 +550,37 @@ class UserDefaultController extends Zend_Controller_Action
                     'action' => 'dashboard'
                 ], null, true));
         }
+    }
+
+    /**
+     * Authentication adapter of the configuration, CAS by default.
+     */
+    protected function loginAdapter(): \Ccsd\Auth\Adapter\Mysql|Ccsd_Auth_Adapter_CasAbstract
+    {
+        $adapterType = defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS';
+
+        // Special case for LemonLDAP (uses custom class outside Factory)
+        if ($adapterType === 'LemonLDAP') {
+            return new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
+        }
+
+        // Use Factory for standard adapters (CAS, MYSQL)
+        return AdapterFactory::getTypedAdapter($adapterType);
+    }
+
+    /**
+     * Parameters carried over to the page displayed after logging in, and to the CAS server: those
+     * of the URL only (route, then query string, as getParam() reads them). The posted login form is
+     * never carried over, nor the CAS ticket, already used once back from the CAS server.
+     *
+     * @return array<string, mixed>
+     */
+    private function loginReturnParams(Zend_Controller_Request_Http $request): array
+    {
+        $params = array_merge($request->getQuery(), $request->getUserParams());
+        unset($params['ticket']);
+
+        return $params;
     }
 
     /**

@@ -6,7 +6,12 @@ use Ccsd\Auth\Adapter\Mysql;
 use Ccsd_User_Models_User;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use ReflectionProperty;
 use Zend_Auth_Exception;
+use Zend_Controller_Action;
+use Zend_Controller_Request_HttpTestCase;
+use Zend_Controller_Response_HttpTestCase;
+use Zend_View;
 
 /**
  * Unit tests for Ccsd\Auth\Adapter\Mysql
@@ -24,6 +29,13 @@ class Ccsd_Auth_Adapter_MysqlTest extends TestCase
     protected function setUp(): void
     {
         $this->adapter = new Mysql();
+        // the test requests write the query string and the posted form to $_GET and $_POST
+        $_GET = $_POST = [];
+    }
+
+    protected function tearDown(): void
+    {
+        $_GET = $_POST = [];
     }
 
     // ------------------------------------------------------------------
@@ -86,6 +98,83 @@ class Ccsd_Auth_Adapter_MysqlTest extends TestCase
     {
         $result = $this->adapter->setServiceURL(['foo' => 'bar']);
         $this->assertSame($this->adapter, $result);
+    }
+
+    // ------------------------------------------------------------------
+    // pre_auth: credentials from the posted login form only
+    // ------------------------------------------------------------------
+
+    /**
+     * Controller whose login form rendering is only recorded.
+     */
+    private static function loginController(Zend_Controller_Request_HttpTestCase $request): Zend_Controller_Action
+    {
+        $controller = new class ($request, new Zend_Controller_Response_HttpTestCase()) extends Zend_Controller_Action {
+            public ?string $renderedScript = null;
+
+            public function renderScript($script, $name = null): void
+            {
+                $this->renderedScript = $script;
+            }
+        };
+        $controller->view = new class extends Zend_View {
+            public function url(): string
+            {
+                return '/user/login';
+            }
+        };
+
+        return $controller;
+    }
+
+    private function username(): ?string
+    {
+        return (new ReflectionProperty(Mysql::class, '_username'))->getValue($this->adapter);
+    }
+
+    public function testPreAuthReadsThePostedLoginForm(): void
+    {
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod('POST')->setPost(['username' => 'jdoe', 'password' => 'S3cur3P@ssw0rd!']);
+
+        $this->assertTrue($this->adapter->pre_auth(self::loginController($request)));
+        $this->assertSame('jdoe', $this->username());
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function credentialsOutsideThePostedForm(): iterable
+    {
+        yield 'route parameters' => ['GET', 'route'];
+        yield 'query string' => ['GET', 'query'];
+        yield 'query string of a post' => ['POST', 'query'];
+    }
+
+    /**
+     * @dataProvider credentialsOutsideThePostedForm
+     */
+    public function testPreAuthDisplaysTheFormForCredentialsOutsideThePostedForm(string $method, string $source): void
+    {
+        $credentials = ['username' => 'jdoe', 'password' => 'S3cur3P@ssw0rd!'];
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod($method);
+        $source === 'route' ? $request->setParams($credentials) : $request->setQuery($credentials);
+        $controller = self::loginController($request);
+
+        $this->assertFalse($this->adapter->pre_auth($controller));
+        $this->assertSame('user/login.phtml', $controller->renderedScript);
+        $this->assertNull($this->username());
+    }
+
+    public function testPreAuthDisplaysTheFormForNonStringCredentials(): void
+    {
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod('POST')->setPost(['username' => ['jdoe'], 'password' => 'S3cur3P@ssw0rd!']);
+        $controller = self::loginController($request);
+
+        $this->assertFalse($this->adapter->pre_auth($controller));
+        $this->assertSame('user/login.phtml', $controller->renderedScript);
     }
 
     // ------------------------------------------------------------------
