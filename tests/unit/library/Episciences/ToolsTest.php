@@ -2191,6 +2191,10 @@ class ToolsTest extends TestCase
         // Y-m format (year-month only)
         $this->assertTrue(Episciences_Tools::isValidDate('2024-01', 'Y-m'));
         $this->assertTrue(Episciences_Tools::isValidDate('2024-12', 'Y-m'));
+        // Months shorter than 31 days: the missing day is not taken from the current date
+        $this->assertTrue(Episciences_Tools::isValidDate('2023-02', 'Y-m'));
+        $this->assertTrue(Episciences_Tools::isValidDate('2024-02', 'Y-m'));
+        $this->assertTrue(Episciences_Tools::isValidDate('2024-04', 'Y-m'));
 
         // Y format (year only)
         $this->assertTrue(Episciences_Tools::isValidDate('2024', 'Y'));
@@ -2347,6 +2351,7 @@ class ToolsTest extends TestCase
         $this->assertSame('2024-01-01', Episciences_Tools::getValidSQLDate('2024-01'));
         $this->assertSame('2024-12-01', Episciences_Tools::getValidSQLDate('2024-12'));
         $this->assertSame('2024-06-01', Episciences_Tools::getValidSQLDate('2024-06'));
+        $this->assertSame('2023-02-01', Episciences_Tools::getValidSQLDate('2023-02'));
     }
 
     public function testGetValidSQLDate_WithYearOnly_AddsMonthAndDay(): void
