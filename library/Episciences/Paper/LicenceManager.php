@@ -142,8 +142,8 @@ class Episciences_Paper_LicenceManager
     /**
      * BAOBAB (InvenioRDM) exposes the licence in its REST JSON; no DataCite DOI
      * exists to query the DataCite API with, unlike Zenodo. Not rate limited:
-     * the call runs inside Paper::save(), right after the submission fetched
-     * the same record, which fetchRecord() then returns without a new request.
+     * in PapersManager::updateRecordData(), the record was just fetched in the
+     * same process, which fetchRecord() then returns without a new request.
      *
      * @param string $identifier the InvenioRDM record id
      * @return string
