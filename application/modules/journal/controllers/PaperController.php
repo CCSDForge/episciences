@@ -2467,14 +2467,27 @@ class PaperController extends PaperDefaultController
             ? array_merge($hookParams, ['files' => $enrichment['files']])
             : $hookParams;
 
-        Episciences_Repositories::callHook('hookFilesProcessing', $filesParams);
+        // The new version is already saved: a repository failure must not stop the rest of the processing
+        try {
+            Episciences_Repositories::callHook('hookFilesProcessing', $filesParams);
+        } catch (Exception $e) {
+            trigger_error($e->getMessage());
+        }
 
         // No 'response': the files hook does not return the repository record, the hook loads it itself
         try {
             Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
         } catch (Exception $e) {
-            // The new version is already saved: a repository failure must not stop the rest of the processing
             trigger_error($e->getMessage());
+        }
+
+        // Same condition as Episciences_Submit::processRepositoryHooks() for an initial submission (HAL datasets / SWHID)
+        $repoId = (int)$newPaper->getRepoid();
+        if (
+            !Episciences_Repositories::handlesOwnEnrichment($repoId) &&
+            Episciences_Repositories::getApiUrl($repoId) !== ''
+        ) {
+            Episciences_Submit::datasetsProcessing($newPaper);
         }
     }
 

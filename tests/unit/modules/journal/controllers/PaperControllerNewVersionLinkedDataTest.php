@@ -25,6 +25,9 @@ use unit\modules\ControllerTestCase;
 final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
 {
     private const REPO_ID = 9998;
+    /** Fake HAL-like repository (the label contains "HAL"), without hooks, with an API that refuses connections */
+    private const HAL_REPO_ID = 9997;
+    private const HAL_API_URL = 'http://127.0.0.1:1';
     private const DOCID = 1234;
     private const IDENTIFIER = '42';
 
@@ -51,10 +54,15 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
                 Episciences_Repositories::REPO_LABEL => 'New Version Spy',
                 Episciences_Repositories::REPO_TYPE => Episciences_Repositories::TYPE_PAPERS_REPOSITORY,
             ],
+            self::HAL_REPO_ID => [
+                Episciences_Repositories::REPO_LABEL => 'HAL Spy',
+                Episciences_Repositories::REPO_TYPE => Episciences_Repositories::TYPE_PAPERS_REPOSITORY,
+                Episciences_Repositories::REPO_API_URL => self::HAL_API_URL,
+            ],
         ]);
 
         Episciences_Repositories_NewVersionSpy_Hooks::$calls = [];
-        Episciences_Repositories_NewVersionSpy_Hooks::$linkedDataException = null;
+        Episciences_Repositories_NewVersionSpy_Hooks::$exceptions = [];
     }
 
     protected function tearDown(): void
@@ -64,7 +72,7 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
         $repositories->setValue(null, $this->previousRepositories);
 
         Episciences_Repositories_NewVersionSpy_Hooks::$calls = [];
-        Episciences_Repositories_NewVersionSpy_Hooks::$linkedDataException = null;
+        Episciences_Repositories_NewVersionSpy_Hooks::$exceptions = [];
     }
 
     public function testLinkedDataHookLoadsTheRecordItself(): void
@@ -95,8 +103,46 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
 
     public function testLinkedDataFetchFailureDoesNotStopTheSave(): void
     {
-        Episciences_Repositories_NewVersionSpy_Hooks::$linkedDataException = new Ccsd_Error('repository unavailable');
+        Episciences_Repositories_NewVersionSpy_Hooks::$exceptions['hookLinkedDataProcessing'] = new Ccsd_Error('linked data unavailable');
 
+        $notices = $this->collectNotices(fn() => $this->processRepositoryHooks([]));
+
+        self::assertArrayHasKey('hookFilesProcessing', Episciences_Repositories_NewVersionSpy_Hooks::$calls);
+        self::assertArrayHasKey('hookLinkedDataProcessing', Episciences_Repositories_NewVersionSpy_Hooks::$calls);
+        self::assertSame(['linked data unavailable'], $notices, 'the failure is reported, not thrown');
+    }
+
+    public function testFilesFetchFailureDoesNotSkipTheLinkedData(): void
+    {
+        Episciences_Repositories_NewVersionSpy_Hooks::$exceptions['hookFilesProcessing'] = new Ccsd_Error('files unavailable');
+
+        $notices = $this->collectNotices(fn() => $this->processRepositoryHooks([]));
+
+        self::assertArrayHasKey('hookLinkedDataProcessing', Episciences_Repositories_NewVersionSpy_Hooks::$calls, 'the linked data hook still runs');
+        self::assertSame(['files unavailable'], $notices, 'the failure is reported, not thrown');
+    }
+
+    public function testHalNewVersionQueriesTheDatasets(): void
+    {
+        // datasetsProcessing() reports the refused connection: it did query the HAL API
+        $notices = $this->collectNotices(fn() => $this->processRepositoryHooks([], self::HAL_REPO_ID));
+
+        self::assertCount(1, $notices);
+        self::assertStringContainsString('127.0.0.1', $notices[0]);
+    }
+
+    public function testRepositoryWithoutApiDoesNotQueryTheDatasets(): void
+    {
+        $notices = $this->collectNotices(fn() => $this->processRepositoryHooks([]));
+
+        self::assertSame([], $notices);
+    }
+
+    /**
+     * @return list<string> messages of the errors triggered by $run
+     */
+    private function collectNotices(callable $run): array
+    {
         $notices = [];
         set_error_handler(static function (int $errno, string $errstr) use (&$notices): bool {
             $notices[] = $errstr;
@@ -104,25 +150,24 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
         });
 
         try {
-            $this->processRepositoryHooks([]);
+            $run();
         } finally {
             restore_error_handler();
         }
 
-        self::assertArrayHasKey('hookFilesProcessing', Episciences_Repositories_NewVersionSpy_Hooks::$calls);
-        self::assertArrayHasKey('hookLinkedDataProcessing', Episciences_Repositories_NewVersionSpy_Hooks::$calls);
-        self::assertSame(['repository unavailable'], $notices, 'the failure is reported, not thrown');
+        return $notices;
     }
 
     /**
      * @param array<string, mixed> $enrichment
      */
-    private function processRepositoryHooks(array $enrichment): void
+    private function processRepositoryHooks(array $enrichment, int $repoId = self::REPO_ID): void
     {
         $newPaper = new Episciences_Paper([
             'docid' => self::DOCID,
             'paperid' => self::DOCID,
-            'repoid' => self::REPO_ID,
+            'repoid' => $repoId,
+            'version' => 2,
             'identifier' => self::IDENTIFIER,
             'rvid' => RVID,
         ]);
