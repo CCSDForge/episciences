@@ -328,7 +328,7 @@ class Episciences_Paper_File
             $result = $db->query($sql);
             $affectedRows = $result->rowCount();
         } catch (Exception $e) {
-            trigger_error($e->getMessage(), E_USER_ERROR);
+            trigger_error($e->getMessage(), E_USER_WARNING);
         }
 
         return $affectedRows;
