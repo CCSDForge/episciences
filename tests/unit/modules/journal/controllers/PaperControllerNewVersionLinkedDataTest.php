@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Ccsd_Error;
 use Episciences_Paper;
 use Episciences_Repositories;
 use Episciences_Repositories_NewVersionSpy_Hooks;
@@ -14,17 +15,18 @@ use ReflectionProperty;
 use unit\modules\ControllerTestCase;
 
 /**
- * Repository hooks run when a new version is saved (PaperController::processEnrichmentAndFiles()).
+ * Repository hooks run when a new version is saved (PaperController::processRepositoryHooks()).
  *
  * An earlier version passed the result of hookFilesProcessing as 'response' to
  * hookLinkedDataProcessing. That result is not the repository record, so the linked data hook
- * read no related identifiers and the new version of a Zenodo or BAOBAB paper got no linked data.
+ * read no related identifiers and the new version of a Zenodo paper got no linked data (BAOBAB
+ * related identifiers also come with the submitted enrichment, stored by enrichmentProcess()).
  */
 final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
 {
     private const REPO_ID = 9998;
     private const DOCID = 1234;
-    private const IDENTIFIER = '10.5281/zenodo.42';
+    private const IDENTIFIER = '42';
 
     private PaperController $controller;
 
@@ -52,6 +54,7 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
         ]);
 
         Episciences_Repositories_NewVersionSpy_Hooks::$calls = [];
+        Episciences_Repositories_NewVersionSpy_Hooks::$linkedDataException = null;
     }
 
     protected function tearDown(): void
@@ -61,27 +64,27 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
         $repositories->setValue(null, $this->previousRepositories);
 
         Episciences_Repositories_NewVersionSpy_Hooks::$calls = [];
+        Episciences_Repositories_NewVersionSpy_Hooks::$linkedDataException = null;
     }
 
     public function testLinkedDataHookLoadsTheRecordItself(): void
     {
-        $this->processEnrichmentAndFiles([]);
+        $this->processRepositoryHooks([]);
 
         $linkedDataParams = Episciences_Repositories_NewVersionSpy_Hooks::$calls['hookLinkedDataProcessing'] ?? null;
 
         self::assertNotNull($linkedDataParams, 'the linked data hook runs');
         self::assertArrayNotHasKey('response', $linkedDataParams, 'the files hook result is not passed as the repository record');
-        self::assertSame(
-            ['repoId' => self::REPO_ID, 'identifier' => self::IDENTIFIER, 'docId' => self::DOCID],
-            $linkedDataParams
-        );
+        self::assertSame(self::REPO_ID, $linkedDataParams['repoId']);
+        self::assertSame(self::IDENTIFIER, $linkedDataParams['identifier']);
+        self::assertSame(self::DOCID, $linkedDataParams['docId']);
     }
 
     public function testFilesHookStillGetsTheEnrichmentFiles(): void
     {
         $files = [['key' => 'article.pdf']];
 
-        $this->processEnrichmentAndFiles(['h_enrichment' => json_encode(['files' => $files], JSON_THROW_ON_ERROR)]);
+        $this->processRepositoryHooks(['files' => $files]);
 
         $filesParams = Episciences_Repositories_NewVersionSpy_Hooks::$calls['hookFilesProcessing'] ?? null;
 
@@ -90,10 +93,31 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
         self::assertArrayNotHasKey('files', Episciences_Repositories_NewVersionSpy_Hooks::$calls['hookLinkedDataProcessing']);
     }
 
+    public function testLinkedDataFetchFailureDoesNotStopTheSave(): void
+    {
+        Episciences_Repositories_NewVersionSpy_Hooks::$linkedDataException = new Ccsd_Error('repository unavailable');
+
+        $notices = [];
+        set_error_handler(static function (int $errno, string $errstr) use (&$notices): bool {
+            $notices[] = $errstr;
+            return true;
+        });
+
+        try {
+            $this->processRepositoryHooks([]);
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertArrayHasKey('hookFilesProcessing', Episciences_Repositories_NewVersionSpy_Hooks::$calls);
+        self::assertArrayHasKey('hookLinkedDataProcessing', Episciences_Repositories_NewVersionSpy_Hooks::$calls);
+        self::assertSame(['repository unavailable'], $notices, 'the failure is reported, not thrown');
+    }
+
     /**
-     * @param array<string, mixed> $post
+     * @param array<string, mixed> $enrichment
      */
-    private function processEnrichmentAndFiles(array $post): void
+    private function processRepositoryHooks(array $enrichment): void
     {
         $newPaper = new Episciences_Paper([
             'docid' => self::DOCID,
@@ -103,8 +127,8 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
             'rvid' => RVID,
         ]);
 
-        $method = new ReflectionMethod(PaperController::class, 'processEnrichmentAndFiles');
+        $method = new ReflectionMethod(PaperController::class, 'processRepositoryHooks');
         $method->setAccessible(true);
-        $method->invoke($this->controller, $newPaper, $post);
+        $method->invoke($this->controller, $newPaper, $enrichment);
     }
 }

@@ -2438,16 +2438,8 @@ class PaperController extends PaperDefaultController
 
     private function processEnrichmentAndFiles(Episciences_Paper $newPaper, array $post): void
     {
-        $isEnrichment = !empty($post['h_enrichment']);
-
-        $hookParams = [
-            'repoId' => $newPaper->getRepoid(),
-            'identifier' => $newPaper->getIdentifier(),
-            'docId' => $newPaper->getDocid(),
-        ];
-
         $enrichment = [];
-        if ($isEnrichment) {
+        if (!empty($post['h_enrichment'])) {
             try {
                 $enrichment = json_decode($post['h_enrichment'], true, 512, JSON_THROW_ON_ERROR);
                 Episciences_Submit::enrichmentProcess($newPaper, $enrichment);
@@ -2456,16 +2448,34 @@ class PaperController extends PaperDefaultController
             }
         }
 
-        $filesParams = $hookParams;
-        if ($isEnrichment && isset($enrichment['files'])) {
-            $filesParams['files'] = $enrichment['files'];
-        }
+        $this->processRepositoryHooks($newPaper, $enrichment);
+        $this->processCoverLetterAndDD($newPaper, $post);
+    }
+
+    /**
+     * @param array<string, mixed> $enrichment decoded h_enrichment
+     */
+    private function processRepositoryHooks(Episciences_Paper $newPaper, array $enrichment): void
+    {
+        $hookParams = [
+            'repoId' => $newPaper->getRepoid(),
+            'identifier' => $newPaper->getIdentifier(),
+            'docId' => $newPaper->getDocid(),
+        ];
+
+        $filesParams = isset($enrichment['files'])
+            ? array_merge($hookParams, ['files' => $enrichment['files']])
+            : $hookParams;
 
         Episciences_Repositories::callHook('hookFilesProcessing', $filesParams);
-        // No 'response': the files hook does not return the repository record, the hook loads it itself
-        Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
 
-        $this->processCoverLetterAndDD($newPaper, $post);
+        // No 'response': the files hook does not return the repository record, the hook loads it itself
+        try {
+            Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
+        } catch (Exception $e) {
+            // The new version is already saved: a repository failure must not stop the rest of the processing
+            trigger_error($e->getMessage());
+        }
     }
 
     /**

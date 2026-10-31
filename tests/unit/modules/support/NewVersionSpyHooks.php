@@ -13,6 +13,9 @@ final class Episciences_Repositories_NewVersionSpy_Hooks
     /** @var array<string, array<string, mixed>> */
     public static array $calls = [];
 
+    /** Thrown by hookLinkedDataProcessing when set, as a repository fetch failure would be. */
+    public static ?Exception $linkedDataException = null;
+
     /**
      * Mirrors Zenodo / BAOBAB: returns its own parameters, not the repository record.
      *
@@ -33,6 +36,10 @@ final class Episciences_Repositories_NewVersionSpy_Hooks
     public static function hookLinkedDataProcessing(array $hookParams): array
     {
         self::$calls[__FUNCTION__] = $hookParams;
+
+        if (self::$linkedDataException !== null) {
+            throw self::$linkedDataException;
+        }
 
         return [];
     }
