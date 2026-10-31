@@ -2439,10 +2439,14 @@ class PaperController extends PaperDefaultController
     private function processEnrichmentAndFiles(Episciences_Paper $newPaper, array $post): void
     {
         $enrichment = [];
-        if (!empty($post['h_enrichment'])) {
+        if (!empty($post[Episciences_Submit::ENRICHMENT_ELEMENT_NAME])) {
             try {
-                $enrichment = json_decode($post['h_enrichment'], true, 512, JSON_THROW_ON_ERROR);
-                Episciences_Submit::enrichmentProcess($newPaper, $enrichment);
+                $decoded = json_decode($post[Episciences_Submit::ENRICHMENT_ELEMENT_NAME], true, 512, JSON_THROW_ON_ERROR);
+                // Valid JSON can still be a scalar: enrichmentProcess() requires an array
+                if (is_array($decoded)) {
+                    $enrichment = $decoded;
+                    Episciences_Submit::enrichmentProcess($newPaper, $enrichment);
+                }
             } catch (Exception $e) {
                 trigger_error($e->getMessage());
             }

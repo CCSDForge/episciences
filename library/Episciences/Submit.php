@@ -18,10 +18,14 @@ class Episciences_Submit
     public const COVER_LETTER_FILE_ELEMENT_NAME = 'file_comment_author';
     public const COVER_LETTER_COMMENT_ELEMENT_NAME = 'author_comment';
     public const DD_FILE_ELEMENT_NAME = 'file_data_descriptor';
+    /** Hidden field holding the repository enrichment (JSON object), filled by public/js/submit/functions.js */
+    public const ENRICHMENT_ELEMENT_NAME = 'h_enrichment';
     public const DD_PREVIOUS_VERSION_STR = 'previous_dataset_version_number';
     protected $_db = null;
     public const POSTED_VOLUME_KEY = 'volumes';
     public const POSTED_SECTION_KEY = 'sections';
+    public const HAL_API_TIMEOUT = 10;
+    public const HAL_API_CONNECT_TIMEOUT = 5;
 
     /**
      * Validate cover letter file requirement.
@@ -154,7 +158,7 @@ class Episciences_Submit
         $form->addElement($xml);
         $group[] = 'xml';
 
-        $form->addElement('hidden', 'h_enrichment',
+        $form->addElement('hidden', self::ENRICHMENT_ELEMENT_NAME,
             ['decorators' => [
                 'ViewHelper',
             ]]);
@@ -699,7 +703,7 @@ class Episciences_Submit
             $form->addElement($xml);
             $group[] = 'xml';
     
-            $form->addElement('hidden', 'h_enrichment',
+            $form->addElement('hidden', self::ENRICHMENT_ELEMENT_NAME,
                 ['decorators' => [
                     'ViewHelper',
                 ]]);
@@ -1519,12 +1523,16 @@ class Episciences_Submit
 
     private function parseEnrichment(array $data): array
     {
-        if (!isset($data['h_enrichment']) || $data['h_enrichment'] === '') {
+        if (!isset($data[self::ENRICHMENT_ELEMENT_NAME]) || $data[self::ENRICHMENT_ELEMENT_NAME] === '') {
             return [];
         }
 
         try {
-            $enrichment = json_decode($data['h_enrichment'], true, 512, JSON_THROW_ON_ERROR);
+            $enrichment = json_decode($data[self::ENRICHMENT_ELEMENT_NAME], true, 512, JSON_THROW_ON_ERROR);
+            // Valid JSON can still be a scalar
+            if (!is_array($enrichment)) {
+                return [];
+            }
             if (isset($enrichment['type']) && $enrichment['type'] === Episciences_Paper::TEXT_TYPE_TITLE) {
                 $enrichment['type'] = Episciences_Paper::DEFAULT_TYPE_TITLE;
             }
@@ -1731,8 +1739,18 @@ class Episciences_Submit
             ? array_merge($hookParams, ['files' => $enrichment['files']])
             : $hookParams;
 
-        Episciences_Repositories::callHook('hookFilesProcessing', $filesHookParams);
-        Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
+        // The paper is already saved and notified: a repository failure must not stop the rest of the processing
+        try {
+            Episciences_Repositories::callHook('hookFilesProcessing', $filesHookParams);
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+
+        try {
+            Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
 
         if (
             !Episciences_Repositories::handlesOwnEnrichment($paper->getRepoid()) &&
@@ -2516,24 +2534,29 @@ class Episciences_Submit
     }
 
     /**
-     * Update paper datasets
+     * Update paper datasets from the HAL search API
      * @param Episciences_Paper $paper
+     * @param Client|null $client HTTP client (injected by the tests)
      * @return int
      */
-    public static function datasetsProcessing(Episciences_Paper $paper): int
+    public static function datasetsProcessing(Episciences_Paper $paper, ?Client $client = null): int
     {
-        $cHeaders = [
-            'headers' => ['Content-type' => 'application/json']
-        ];
-
         try {
 
             if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
-                $client = new Client($cHeaders);
-                $url = Episciences_Repositories::getApiUrl($paper->getRepoid()) . '/search/?indent=true&q=halId_s:' . $paper->getIdentifier() . '&fl=swhidId_s,researchData_s&version_i:' . $paper->getversion();
+                $client ??= new Client([
+                    'headers' => ['Content-type' => 'application/json'],
+                    'timeout' => self::HAL_API_TIMEOUT,
+                    'connect_timeout' => self::HAL_API_CONNECT_TIMEOUT,
+                ]);
+                // No version filter: the HAL search index only holds the latest version of a document
+                $url = Episciences_Repositories::getApiUrl($paper->getRepoid())
+                    . '/search/?indent=true&q=halId_s:' . urlencode((string)$paper->getIdentifier())
+                    . '&fl=swhidId_s,researchData_s';
                 $response = $client->get($url);
                 $result = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
-                $allDatasets = $result['response']['docs'][array_key_first($result['response']['docs'])] ?? [];
+                $docs = $result['response']['docs'] ?? [];
+                $allDatasets = $docs[array_key_first($docs)] ?? [];
                 return self::processDatasets($paper, $allDatasets);
             }
 

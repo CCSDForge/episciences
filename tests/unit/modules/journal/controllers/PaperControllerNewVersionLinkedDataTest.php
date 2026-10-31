@@ -8,6 +8,7 @@ use Ccsd_Error;
 use Episciences_Paper;
 use Episciences_Repositories;
 use Episciences_Repositories_NewVersionSpy_Hooks;
+use Episciences_Submit;
 use PaperController;
 use ReflectionClass;
 use ReflectionMethod;
@@ -136,6 +137,27 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
         $notices = $this->collectNotices(fn() => $this->processRepositoryHooks([]));
 
         self::assertSame([], $notices);
+    }
+
+    public function testEnrichmentThatIsNotAnArrayIsIgnored(): void
+    {
+        $newPaper = new Episciences_Paper([
+            'docid' => self::DOCID,
+            'paperid' => self::DOCID,
+            'repoid' => self::REPO_ID,
+            'version' => 2,
+            'identifier' => self::IDENTIFIER,
+            'rvid' => RVID,
+        ]);
+
+        $method = new ReflectionMethod(PaperController::class, 'processEnrichmentAndFiles');
+        $method->setAccessible(true);
+        // Valid JSON, but a scalar: it must not reach enrichmentProcess(), typed array
+        $method->invoke($this->controller, $newPaper, [Episciences_Submit::ENRICHMENT_ELEMENT_NAME => '42']);
+
+        $filesParams = Episciences_Repositories_NewVersionSpy_Hooks::$calls['hookFilesProcessing'] ?? null;
+        self::assertNotNull($filesParams, 'the repository hooks still run');
+        self::assertArrayNotHasKey('files', $filesParams);
     }
 
     /**
