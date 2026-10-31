@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Episciences\Maintenance\ReadOnlyMode;
 use Episciences\Security\AccessLog;
+use Episciences\User\ProfileCompletionReturn;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use unit\library\Episciences\Security\SecurityLogCaptureTrait;
@@ -258,6 +259,22 @@ class Episciences_Auth_PluginTest extends TestCase
     public function testMemberWithoutLocalAccountDataIsSentToTheProfileForm(): void
     {
         self::assertSame('user/edit', $this->profileRedirectOfAMemberWithoutLocalData(false));
+    }
+
+    public function testPageAskedForIsDisplayedOnceTheProfileIsSaved(): void
+    {
+        $previous = [$_SERVER['REQUEST_METHOD'] ?? null, $_SERVER['REQUEST_URI'] ?? null, $_SESSION ?? null, Zend_Session::$_unitTestEnabled];
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/paper/view/id/5';
+        $_SESSION = [];
+        Zend_Session::$_unitTestEnabled = true;
+
+        try {
+            self::assertSame('user/edit', $this->profileRedirectOfAMemberWithoutLocalData(false));
+            self::assertSame('/paper/view/id/5', ProfileCompletionReturn::take());
+        } finally {
+            [$_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI'], $_SESSION, Zend_Session::$_unitTestEnabled] = $previous;
+        }
     }
 
     /**

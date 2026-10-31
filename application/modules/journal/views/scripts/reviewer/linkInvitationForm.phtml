@@ -1,4 +1,5 @@
 <form class="form-container" id="linkedInvitationForm" method="POST">
+    <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
     <?php
     $loggedScreenName = Episciences_Auth::getScreenName();
     $loggedEmail = Episciences_Auth::getEmail();

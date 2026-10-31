@@ -5,9 +5,11 @@ use Episciences\Altcha\ChallengeHelper;
 use Episciences\Maintenance\ReadOnlyMode;
 use Episciences\Security\AccessLog;
 use Episciences\Trait\LocaleByCookieTrait;
+use Episciences\User\AccountActivationMailer;
 use Episciences\User\AccountMutationPolicy;
 use Episciences\User\EmailPolicy;
 use Episciences\User\ImpersonationPolicy;
+use Episciences\User\ProfileCompletionReturn;
 use Episciences\User\SuLogger;
 use Episciences\User\Token\AccountToken;
 use Episciences\User\Token\AccountTokenRepository;
@@ -386,6 +388,27 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * Parameters of the login URL meant for the page to return to: the URL path and query only, never the
+     * posted credentials, nor the routing and CAS ones
+     *
+     * @return array<string, mixed>
+     */
+    protected function forwardedUrlParams(): array
+    {
+        $params = array_merge($this->getRequest()->getQuery(), $this->getRequest()->getUserParams());
+        unset(
+            $params['forward-controller'],
+            $params['forward-action'],
+            $params['controller'],
+            $params['action'],
+            $params['module'],
+            $params['ticket']
+        );
+
+        return array_filter($params, static fn($value): bool => is_scalar($value));
+    }
+
+    /**
      *   Login utilisateur
      *   Après login redirige :
      *   - sur la page de modification de compte si pas de champs Application Episciences
@@ -516,7 +539,18 @@ class UserDefaultController extends Zend_Controller_Action
                 if ($localUser->getHasAccountData() === false) {
                     $action = $this->getRequest()->getParam('forward-action', 'edit');
                     $controller = $this->getRequest()->getParam('forward-controller', 'user');
-                    $this->redirect($controller . '/' . $action);
+
+                    if ($this->getRequest()->getParam('forward-controller') === null) {
+                        $this->redirect($controller . '/' . $action);
+                        return;
+                    }
+
+                    // the parameters of the return page are kept (e.g. the invitation id and its link token)
+                    $this->redirect($this->view->url(
+                        ['controller' => $controller, 'action' => $action] + $this->forwardedUrlParams(),
+                        null,
+                        true
+                    ));
                     return;
                 }
 
@@ -526,13 +560,8 @@ class UserDefaultController extends Zend_Controller_Action
                     // action existe
                     if (null !== $this->_request->getParam('forward-action')) {
 
-                        // Récupération des paramètres supplémentaires (et suppression de ceux dont on a plus besoin)
-                        $params = $this->_request->getParams();
-                        unset ($params['forward-controller'],
-                            $params['forward-action'],
-                            $params['controller'],
-                            $params['action'],
-                            $params['module']);
+                        // parameters of the return page only
+                        $params = $this->forwardedUrlParams();
 
                         $params['controller'] = $this->_request->getParam('forward-controller');
                         $params['action'] = $this->_request->getParam('forward-action');
@@ -1112,7 +1141,14 @@ class UserDefaultController extends Zend_Controller_Action
 
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Les modifications sont sauvegardées.');
 
-                if ($isRoot && Episciences_Auth::getUid() !== $user->getUid()) {
+                // a profile completed on the way to another page (e.g. a review invitation) goes back to it
+                $returnUri = $localUserDefaults === [] && Episciences_Auth::getUid() === $user->getUid()
+                    ? ProfileCompletionReturn::take()
+                    : null;
+
+                if ($returnUri !== null) {
+                    $this->_helper->redirector->gotoUrl($returnUri, ['prependBase' => false]);
+                } elseif ($isRoot && Episciences_Auth::getUid() !== $user->getUid()) {
                     $this->_helper->redirector('list', 'user');
                 } else {
                     $this->_helper->redirector('dashboard', 'user');
@@ -1482,17 +1518,26 @@ class UserDefaultController extends Zend_Controller_Action
         // On submission the token comes back in the form
         $token = $request->isPost() ? $request->getPost('token') : $request->getParam('token');
 
-        if ($this->findPasswordToken($token) === null) {
+        $accountToken = $this->findPasswordToken($token);
+
+        if ($accountToken === null) {
             $this->view->resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_FAILURE;
             $this->render('resetpassword');
             return;
         }
 
+        // the page reads as an activation when the password chosen activates the account (see resetPasswordWithToken())
+        $activatesAccount = $this->activatesAccount($accountToken);
+        $this->view->activatesAccount = $activatesAccount;
+
         $form = new Ccsd_User_Form_Accountresetpassword();
         $form->setActions(true)->createSubmitButton('submit', [
-            'label' => 'Changer le mot de passe',
+            'label' => $activatesAccount ? 'Activer mon compte' : 'Changer le mot de passe',
             'class' => 'btn btn-primary'
         ]);
+        if ($activatesAccount) {
+            $form->getElement('PASSWORD')?->setLabel('Mot de passe');
+        }
         $form->setDefault('token', $token);
 
         if ($request->isPost() && $form->isValid($request->getPost())) {
@@ -1506,6 +1551,24 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         $this->view->form = $form;
+    }
+
+    /**
+     * Whether the password chosen with this link also activates the account: a setup link of an account not
+     * activated yet
+     */
+    protected function activatesAccount(AccountToken $accountToken): bool
+    {
+        if ($accountToken->purpose !== TokenPurpose::ACCOUNT_SETUP) {
+            return false;
+        }
+
+        try {
+            return !$this->getUserMapper()->isActive($accountToken->uid);
+        } catch (Zend_Db_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return false;
+        }
     }
 
     /**
@@ -1608,7 +1671,37 @@ class UserDefaultController extends Zend_Controller_Action
             return false;
         }
 
-        $this->revokeLinksOfUpdatedAccount($accountToken->uid, ...self::PASSWORD_TOKEN_PURPOSES);
+        if ($accountToken->purpose !== TokenPurpose::ACCOUNT_SETUP) {
+            $this->revokeLinksOfUpdatedAccount($accountToken->uid, ...self::PASSWORD_TOKEN_PURPOSES);
+            return true;
+        }
+
+        // A setup link proves the address: the password chosen with it also activates an account not activated yet
+        // (e.g. from a review invitation, whoever created the account). The password is written first, so that a
+        // password set by someone else never works on the activated account.
+        if (!$this->activateAccountOfChosenPassword($accountToken->uid)) {
+            $tokenRepository->restore($token, $accountToken);
+            return false;
+        }
+
+        $this->revokeLinksOfUpdatedAccount($accountToken->uid, TokenPurpose::ACCOUNT_ACTIVATION, ...self::PASSWORD_TOKEN_PURPOSES);
+
+        return true;
+    }
+
+    /**
+     * @return bool false when the account could not be activated: the setup link must keep working
+     */
+    private function activateAccountOfChosenPassword(int $uid): bool
+    {
+        try {
+            if (!$this->getUserMapper()->isActive($uid)) {
+                $this->getUserMapper()->activateAccountByUid($uid);
+            }
+        } catch (Zend_Db_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return false;
+        }
 
         return true;
     }
@@ -1796,26 +1889,10 @@ class UserDefaultController extends Zend_Controller_Action
      */
     protected function sendActivationEmail(Episciences_User $user): void
     {
-        $token = $this->getAccountTokenRepository()->issue((int)$user->getUid(), (string)$user->getEmail(), TokenPurpose::ACCOUNT_ACTIVATION);
-
-        $tokenUrl = APPLICATION_URL . $this->view->url([
-                'controller' => 'user',
-                'action' => 'activate',
-                'token' => $token], null, true);
-
-        $tags = [
-            // TAG_REVIEW_CODE deliberately omitted: it is not in OVERRIDABLE_TAGS,
-            // so sendMailFromReview() already sets it from the review's mail display
-            // code (Episciences_Mail's constructor runs before this array is merged).
-            Episciences_Mail_Tags::TAG_REVIEW_NAME => RVNAME,
-            Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK => $tokenUrl
-        ];
-
-        try {
-            Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION, $tags);
-        } catch (Zend_Exception $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
-        }
+        (new AccountActivationMailer(
+            $this->getAccountTokenRepository(),
+            fn(array $params): string => $this->view->url($params, null, true)
+        ))->send($user);
     }
 
     /**

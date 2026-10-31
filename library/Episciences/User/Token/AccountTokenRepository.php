@@ -77,6 +77,23 @@ class AccountTokenRepository
     }
 
     /**
+     * Whether a token of this purpose was issued to the account during the last $seconds
+     * (e.g. to avoid sending the same link again and again)
+     */
+    public function issuedWithin(int $uid, TokenPurpose $purpose, int $seconds): bool
+    {
+        $db = $this->getDb();
+        $select = $db->select()
+            ->from(self::TABLE_NAME, ['id'])
+            ->where('uid = ?', $uid)
+            ->where('purpose = ?', $purpose->value)
+            ->where('created_at > ?', $this->now()->modify(sprintf('-%d seconds', $seconds))->format(self::DATE_FORMAT))
+            ->limit(1);
+
+        return $db->fetchOne($select) !== false;
+    }
+
+    /**
      * Valid token for one of the given purposes, without consuming it
      * @param mixed $presented the token taken from the request (any type: request values are untrusted)
      */
