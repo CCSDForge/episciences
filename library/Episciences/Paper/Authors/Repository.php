@@ -132,7 +132,7 @@ class Episciences_Paper_Authors_Repository
                     }
                 }
             } catch (Exception $e) {
-                trigger_error($e->getMessage(), E_USER_ERROR);
+                trigger_error($e->getMessage(), E_USER_WARNING);
             }
         }
 
@@ -167,7 +167,7 @@ class Episciences_Paper_Authors_Repository
             }
         } catch (Zend_Db_Adapter_Exception $exception) {
             $affectedRows = 0;
-            trigger_error($exception->getMessage(), E_USER_ERROR);
+            trigger_error($exception->getMessage(), E_USER_WARNING);
         }
 
         return $affectedRows;

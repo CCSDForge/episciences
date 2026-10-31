@@ -41,11 +41,14 @@ class Episciences_Paper_DatasetsMetadataManager
                 $affectedRows = $result->rowCount();
 
             } catch (Exception $e) {
-                trigger_error($e->getMessage(), E_USER_ERROR);
+                // Not fatal: callers run after the paper is saved and must go on
+                trigger_error($e->getMessage(), E_USER_WARNING);
+                // lastInsertId() would return the id of an earlier insert
+                return 0;
             }
         }
 
-        return $db->lastInsertId();
+        return (int)$db->lastInsertId();
 
     }
     /**

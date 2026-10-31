@@ -340,7 +340,7 @@ class Episciences_Paper_DatasetsManager
             $affectedRows = $result->rowCount();
 
         } catch (Exception $e) {
-            trigger_error($e->getMessage(), E_USER_ERROR);
+            trigger_error($e->getMessage(), E_USER_WARNING);
         }
 
 
@@ -449,7 +449,7 @@ class Episciences_Paper_DatasetsManager
             $resUpdate = $db->update(T_PAPER_DATASETS, $values, $where);
         } catch (Zend_Db_Adapter_Exception $exception) {
             $resUpdate = 0;
-            trigger_error($exception->getMessage(), E_USER_ERROR);
+            trigger_error($exception->getMessage(), E_USER_WARNING);
         }
 
         return $resUpdate;
@@ -479,7 +479,7 @@ class Episciences_Paper_DatasetsManager
             $resUpdate = $db->update(T_PAPER_DATASETS, $values, $where);
         } catch (Zend_Db_Adapter_Exception $exception) {
             $resUpdate = 0;
-            trigger_error($exception->getMessage(), E_USER_ERROR);
+            trigger_error($exception->getMessage(), E_USER_WARNING);
         }
         return $resUpdate;
     }
