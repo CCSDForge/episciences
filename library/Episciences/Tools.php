@@ -806,7 +806,9 @@ class Episciences_Tools
 
     public static function isValidDate($date, $format): bool
     {
-        $d = DateTime::createFromFormat($format, $date);
+        // '!': fields missing from the format (e.g. the day in 'Y-m') are reset instead of taken from the
+        // current date, which turned 2024-06 into 2024-07-01 on the 31st and made the check fail
+        $d = DateTime::createFromFormat('!' . $format, $date);
         return $d && $d->format($format) === $date;
     }
 
