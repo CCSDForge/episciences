@@ -2,10 +2,22 @@
 
 namespace unit\library\Episciences\Repositories;
 
+use Ccsd_Error;
 use Episciences_Repositories_Common;
 use Episciences_Repositories_Dspace_Hooks;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\ServerException;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use Zend_Db_Adapter_Abstract;
+use Zend_Db_Statement_Interface;
+use Zend_Db_Table_Abstract;
 
 /**
  * Unit tests for Episciences_Repositories_Dspace_Hooks.
@@ -507,5 +519,255 @@ XML;
         self::assertIsArray($result);
         $body = $result[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'] ?? [];
         self::assertContains('Dupont, Marie', $body['creator'] ?? []);
+    }
+
+    // =========================================================================
+    // hookFilesProcessing() — record already loaded by the caller
+    // =========================================================================
+
+    /**
+     * A record already loaded (Episciences_PapersManager::updateRecordData()) is used, not requested again:
+     * the unknown repository id would fail if hookApiRecords() were called.
+     */
+    public function testHookFilesProcessingReusesTheLoadedRecord(): void
+    {
+        // A warning (undefined repository) fails the test instead of letting the request go out
+        set_error_handler(static function (int $errno, string $errstr): never {
+            throw new \ErrorException($errstr, 0, $errno);
+        });
+
+        try {
+            $result = Episciences_Repositories_Dspace_Hooks::hookFilesProcessing([
+                'docId' => 1,
+                'repoId' => -1,
+                'identifier' => '1822/79894',
+                'response' => [Episciences_Repositories_Common::ENRICHMENT => [Episciences_Repositories_Common::FILES => []]],
+            ]);
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame(0, $result['affectedRows']);
+    }
+
+    // =========================================================================
+    // hookFilesProcessing() — a file that cannot be loaded
+    // =========================================================================
+
+    /**
+     * A paper with stored files (metadata update): a partial list would delete the others, they are kept
+     */
+    public function testStoredFilesAreKeptWhenAFileCannotBeLoaded(): void
+    {
+        $queries = $this->withDatabase(storedFiles: true, run: function (): void {
+            try {
+                $this->processFiles([new Response(200, [], self::BITSTREAM_JSON), new Response(503)]);
+                self::fail('the failure is thrown');
+            } catch (Ccsd_Error $e) {
+                self::assertStringContainsString('Files not updated: ' . self::OTHER_BITSTREAM_URL, $e->getMessage());
+                self::assertStringContainsString('ServerException', $e->getMessage());
+            }
+        });
+
+        self::assertSame([], $this->writes($queries), 'nothing written: the stored files are kept');
+    }
+
+    /**
+     * A paper without stored files (initial submission): the files available are stored, the failure is reported
+     */
+    public function testAvailableFilesAreStoredWhenNoneAreAndAFileCannotBeLoaded(): void
+    {
+        $queries = $this->withDatabase(storedFiles: false, run: function (): void {
+            try {
+                $this->processFiles([new Response(200, [], self::BITSTREAM_JSON), new Response(429)]);
+                self::fail('the failure is thrown');
+            } catch (Ccsd_Error $e) {
+                self::assertStringContainsString('Files not stored: ' . self::OTHER_BITSTREAM_URL, $e->getMessage());
+            }
+        });
+
+        $writes = $this->writes($queries);
+        self::assertCount(1, $writes);
+        self::assertStringContainsString('article.pdf', $writes[0]);
+    }
+
+    /**
+     * One client for the files of the record: both requests go through the injected handler
+     */
+    public function testFilesAreStoredWhenEveryFileIsLoaded(): void
+    {
+        $queries = $this->withDatabase(storedFiles: true, run: function (): void {
+            $result = $this->processFiles([
+                new Response(200, [], self::BITSTREAM_JSON),
+                new Response(200, [], '{"name": "data.csv", "sizeBytes": 3, "type": "csv", "checkSum": {"checkSumAlgorithm": "MD5", "value": "def"}}'),
+            ]);
+            self::assertSame(1, $result['affectedRows']);
+        });
+
+        $writes = $this->writes($queries);
+        self::assertCount(1, $writes);
+        self::assertStringContainsString('article.pdf', $writes[0]);
+        self::assertStringContainsString('data.csv', $writes[0]);
+    }
+
+    private const BITSTREAM_JSON = '{"name": "article.pdf", "sizeBytes": 12, "type": "pdf", "checkSum": {"checkSumAlgorithm": "MD5", "value": "abc"}}';
+    private const OTHER_BITSTREAM_URL = 'https://repositorium.test/bitstreams/71ba5e92-bab4-4901-aa31-9c68d2560511/download';
+
+    /**
+     * @param list<Response> $responses one per file
+     * @return array<string, mixed>
+     */
+    private function processFiles(array $responses): array
+    {
+        $client = new Client(['handler' => HandlerStack::create(new MockHandler($responses))]);
+
+        // The REST API failure is logged: not displayed by the test
+        $previousLevel = error_reporting(0);
+        try {
+            return Episciences_Repositories_Dspace_Hooks::hookFilesProcessing([
+                'docId' => 1234,
+                'repoId' => 21,
+                'response' => [Episciences_Repositories_Common::ENRICHMENT => [Episciences_Repositories_Common::FILES => [
+                    ['url' => self::BITSTREAM_URL, 'mimeType' => 'application/pdf'],
+                    ['url' => self::OTHER_BITSTREAM_URL, 'mimeType' => 'text/csv'],
+                ]]],
+            ], $client);
+        } finally {
+            error_reporting($previousLevel);
+        }
+    }
+
+    /**
+     * Runs $run with a database that has (or not) files stored for the paper
+     *
+     * @return list<string> the statements sent to the database
+     */
+    private function withDatabase(bool $storedFiles, callable $run): array
+    {
+        $adapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if (!$adapter instanceof Zend_Db_Adapter_Abstract) {
+            self::markTestSkipped('No database adapter available.');
+        }
+
+        $queries = [];
+        $db = $this->getMockBuilder($adapter::class)
+            ->setConstructorArgs([$adapter->getConfig()])
+            ->onlyMethods(['query', 'fetchAssoc', 'beginTransaction', 'commit', 'rollBack'])
+            ->getMock();
+        $db->method('fetchAssoc')->willReturn([]);
+        $db->method('query')->willReturnCallback(function (mixed $sql) use (&$queries, $storedFiles): Zend_Db_Statement_Interface {
+            $queries[] = (string)$sql;
+            $statement = $this->createMock(Zend_Db_Statement_Interface::class);
+            $statement->method('fetchColumn')->willReturn($storedFiles ? '1' : false);
+            $statement->method('rowCount')->willReturn(1);
+            return $statement;
+        });
+
+        Zend_Db_Table_Abstract::setDefaultAdapter($db);
+        try {
+            $run();
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+        }
+
+        return $queries;
+    }
+
+    /**
+     * @param list<string> $queries
+     * @return list<string>
+     */
+    private function writes(array $queries): array
+    {
+        return array_values(array_filter($queries, static fn(string $sql): bool => !str_starts_with($sql, 'SELECT')));
+    }
+
+    // =========================================================================
+    // getFileInfoFromApi()
+    // =========================================================================
+
+    private const BITSTREAM_URL = 'https://repositorium.test/bitstreams/61ba5e92-bab4-4901-aa31-9c68d2560510/download';
+
+    public function testFileInfoIsTheBitstream(): void
+    {
+        $info = $this->fileInfo(new Response(200, [], '{"name": "article.pdf", "sizeBytes": 12}'));
+
+        self::assertSame(['name' => 'article.pdf', 'sizeBytes' => 12], $info);
+    }
+
+    /**
+     * A restricted (under embargo), removed or refused file is not stored, as before: the other files are.
+     * The same request would fail again: thrown, it would prevent any update of the stored files
+     *
+     * @dataProvider skippedClientErrorProvider
+     */
+    public function testClientErrorFileIsSkipped(Response $response): void
+    {
+        self::assertNull($this->fileInfo($response));
+    }
+
+    /**
+     * @return array<string, array{Response}>
+     */
+    public static function skippedClientErrorProvider(): array
+    {
+        return [
+            'bad request' => [new Response(400)],
+            'unauthorized' => [new Response(401, [], '{"status": 401}')],
+            'forbidden' => [new Response(403)],
+            'not found' => [new Response(404)],
+            'method not allowed' => [new Response(405)],
+            'gone' => [new Response(410)],
+        ];
+    }
+
+    /**
+     * A throttled or timed out request says nothing about the file: thrown, as a server error
+     */
+    public function testThrottledRequestIsThrown(): void
+    {
+        $this->expectException(ClientException::class);
+
+        $this->fileInfo(new Response(429));
+    }
+
+    /**
+     * Thrown, so that the files step fails instead of storing a partial list of files (which deletes the others)
+     */
+    public function testServerErrorIsThrown(): void
+    {
+        $this->expectException(ServerException::class);
+
+        $this->fileInfo(new Response(503));
+    }
+
+    public function testNetworkFailureIsThrown(): void
+    {
+        $this->expectException(ConnectException::class);
+
+        $this->fileInfo(new ConnectException('timeout', new Request('GET', self::BITSTREAM_URL)));
+    }
+
+    public function testUnexpectedPayloadIsThrown(): void
+    {
+        $this->expectException(Ccsd_Error::class);
+        $this->expectExceptionMessage('Unexpected bitstream response');
+
+        $this->fileInfo(new Response(200, [], 'not json'));
+    }
+
+    private function fileInfo(Response|\Throwable $response): ?array
+    {
+        $client = new Client(['handler' => HandlerStack::create(new MockHandler([$response]))]);
+        $method = new ReflectionMethod(Episciences_Repositories_Dspace_Hooks::class, 'getFileInfoFromApi');
+        $method->setAccessible(true);
+
+        // The REST API failure is logged: not displayed by the test
+        $previousLevel = error_reporting(0);
+        try {
+            return $method->invoke(null, self::BITSTREAM_URL, $client);
+        } finally {
+            error_reporting($previousLevel);
+        }
     }
 }
