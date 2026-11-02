@@ -89,7 +89,7 @@ final class StatsControllerFirstSubmissionYearTest extends TestCase
         self::assertStringContainsString('GROUP BY `PAPERID`', $sql);
         self::assertStringContainsString("SUM(REPOID = $repoId) > 0", $sql);
         self::assertStringContainsString("YEAR(MIN(SUBMISSION_DATE)) = 2024", $sql);
-        self::assertStringContainsString("MIN(SUBMISSION_DATE) > '2023-01-01'", $sql);
+        self::assertStringContainsString("MIN(SUBMISSION_DATE) >= '2023-01-01'", $sql);
         self::assertStringNotContainsString('WHERE (YEAR(SUBMISSION_DATE)', $sql);
         self::assertStringNotContainsString("AND (REPOID = $repoId)", $sql, 'the temporary version must not filter the rows');
     }
@@ -117,7 +117,7 @@ final class StatsControllerFirstSubmissionYearTest extends TestCase
         self::assertStringContainsString('GROUP BY `PAPERID`', $sql);
         self::assertStringContainsString('YEAR(FIRST_SUBMISSION_DATE)', $sql);
         self::assertStringContainsString('COUNT(*)', $sql);
-        self::assertStringContainsString("HAVING (MIN(SUBMISSION_DATE) > '2023-01-01')", $sql);
+        self::assertStringContainsString("HAVING (MIN(SUBMISSION_DATE) >= '2023-01-01')", $sql);
         self::assertStringNotContainsString("(SUBMISSION_DATE > '2023-01-01')", $sql);
     }
 }
