@@ -1115,7 +1115,7 @@ class StatsController extends Zend_Controller_Action
             $this->getHttpClient(),
             $logger ?? new NullLogger(),
             (string)EPISCIENCES_API_URL,
-            defined('EPISCIENCES_API_SECRET_KEY') ? (string)EPISCIENCES_API_SECRET_KEY : ''
+            defined('EPISCIENCES_API_STATS_DELEGATION_SECRET') ? (string)EPISCIENCES_API_STATS_DELEGATION_SECRET : ''
         );
     }
 
