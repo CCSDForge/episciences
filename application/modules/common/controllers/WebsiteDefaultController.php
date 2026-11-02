@@ -337,7 +337,8 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 }
 
                 // The class of the page stored in session decides, never the type sent by the browser
-                $isFilePage = $this->_session->website->getPage($pageid) instanceof Episciences_Website_Navigation_Page_File;
+                $currentPage = $this->_session->website->getPage($pageid);
+                $isFilePage = $currentPage instanceof Episciences_Website_Navigation_Page_File;
                 $uploadError = $isFilePage ? Episciences_Website_Navigation_Page_File::validateUpload($_FILES[$id] ?? null) : null;
 
                 if ($uploadError !== null) {
@@ -347,7 +348,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
                 // Validate permalink before setPage() to avoid file renaming on error
                 $pagePermalienError = false;
-                if ($options['type'] === 'Episciences_Website_Navigation_Page_Custom' && isset($options['permalien'])) {
+                if ($currentPage instanceof Episciences_Website_Navigation_Page_Custom && isset($options['permalien'])) {
                     $permalien = $options['permalien'];
 
                     // Check if permalien is reserved for predefined pages
@@ -363,10 +364,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
                     // Check if permalien is already used by another custom page
                     if (!$pagePermalienError) {
-                        $currentPage = $this->_session->website->getPage($pageid);
-                        $currentPermalien = ($currentPage instanceof Episciences_Website_Navigation_Page_Custom)
-                            ? $currentPage->getPermalien()
-                            : '';
+                        $currentPermalien = $currentPage->getPermalien();
 
                         // Only check if the permalien is different from the current one (changing permalien)
                         if ($permalien !== $currentPermalien) {
@@ -391,7 +389,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 }
 
                 // Predefined page titles are managed by translations, ignore any submitted labels
-                $isPredefinedPage = is_a($options['type'], Episciences_Website_Navigation_Page_Predefined::class, true);
+                $isPredefinedPage = $currentPage instanceof Episciences_Website_Navigation_Page_Predefined;
                 if ($isPredefinedPage) {
                     unset($options['labels']);
                 }
