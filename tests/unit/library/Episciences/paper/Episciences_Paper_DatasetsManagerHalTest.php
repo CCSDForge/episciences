@@ -85,6 +85,18 @@ final class Episciences_Paper_DatasetsManagerHalTest extends TestCase
         ];
     }
 
+    public function testHasHalDocumentIgnoresNonHalLinks(): void
+    {
+        Episciences_Paper_DatasetsManager::addDatasetFromSubmission(
+            (int)$this->docId,
+            Episciences_Paper_Dataset::HANDLE_CODE,
+            'hal-01234567',
+            Episciences_Paper_Dataset::HANDLE_CODE
+        );
+
+        self::assertFalse(Episciences_Paper_DatasetsManager::hasHalDocument((int)$this->docId, 'hal-01234567'));
+    }
+
     public function testHasHalDocumentOnlyLooksAtThePaper(): void
     {
         $this->linkHal('hal-01234567');

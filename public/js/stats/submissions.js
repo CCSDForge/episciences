@@ -1,79 +1,244 @@
-$(function () {
-    let context0 = $('#all-submissions-percentage');
-    let context1 = $('#submissions-by-year-chart');
-    let context2 = $('#submissions-by-repo-chart');
-    let context3 = $('#submissions-delay-chart');
+document.addEventListener('DOMContentLoaded', function () {
+    initStatsDelayMode();
 
-    let allPercentageOfSubmissionsStats = {
-        labels: seriesFromView.allSubmissionsPercentage.labels,
-        datasets: seriesFromView.allSubmissionsPercentage.datasets
-            ? seriesFromView.allSubmissionsPercentage.datasets
-            : null,
-    };
+    if (typeof statsChartsFromView === 'undefined' || !statsChartsFromView) {
+        return;
+    }
 
-    let statsByYearData = {
-        labels: yearCategoriesFromView,
-        datasets: seriesFromView.submissionsByYear.datasets
-            ? seriesFromView.submissionsByYear.datasets
-            : null,
-    };
+    const charts = statsChartsFromView;
+    const years = charts.years || [];
 
-    let statsByRepoData = {
-        labels: yearCategoriesFromView,
-        datasets: seriesFromView.submissionsByRepo.repositories.datasets
-            ? seriesFromView.submissionsByRepo.repositories.datasets
-            : null,
-    };
-
-    let submissionDelay = {
-        labels: yearCategoriesFromView,
-        datasets: seriesFromView.submissionDelay.datasets
-            ? seriesFromView.submissionDelay.datasets
-            : null,
-    };
-
-    if (
-        allPercentageOfSubmissionsStats.datasets &&
-        !isEmptyData(allPercentageOfSubmissionsStats.datasets[0].data)
-    ) {
-        createChart(
-            context0,
-            allPercentageOfSubmissionsStats,
-            seriesFromView.allSubmissionsPercentage.chartType
+    // Submissions (without the imported papers), decisions and publications by year
+    if (charts.byYear) {
+        createBarChart(
+            'submissions-by-year-chart',
+            years,
+            charts.byYear.datasets,
+            { categoryLabel: statTranslate('Année') }
         );
     }
 
-    if (
-        statsByYearData.datasets &&
-        !isEmptyData(statsByYearData.datasets[0].data)
-    ) {
-        createChart(
-            context1,
-            statsByYearData,
-            seriesFromView.submissionsByYear.chartType
+    // Submissions by repository (without the imported papers)
+    if (charts.byRepo) {
+        createBarChart(
+            'submissions-by-repo-chart',
+            years,
+            charts.byRepo.datasets,
+            {
+                stacked: charts.byRepo.stacked === true,
+                categoryLabel: statTranslate('Année'),
+            }
         );
     }
 
-    if (
-        statsByRepoData.datasets &&
-        !isEmptyData(statsByRepoData.datasets[0].data)
-    ) {
-        createChart(
-            context2,
-            statsByRepoData,
-            seriesFromView.submissionsByRepo.repositories.chartType
+    // Delays by year, in days: the mean or the median, following the selector of the delay table
+    if (charts.delays && charts.delays.years.length > 0) {
+        const showDelays = createDelayChart(
+            'submissions-delay-chart',
+            charts.delays
         );
+        showDelays(currentStatsDelayMode());
+
+        document.addEventListener(STATS_DELAY_MODE_EVENT, function (event) {
+            showDelays(event.detail.mode);
+        });
     }
 
+    // the figures of the page (CSV)
+    const figuresButton = document.querySelector('.stats-export-figures');
+
     if (
-        submissionDelay.datasets &&
-        (submissionDelay.datasets[0].data.length > 0 ||
-            submissionDelay.datasets[1].data.length > 0)
+        figuresButton &&
+        typeof statsFiguresFromView !== 'undefined' &&
+        typeof downloadCsv === 'function'
     ) {
-        createChart(
-            context3,
-            submissionDelay,
-            seriesFromView.submissionDelay.chartType
-        );
+        figuresButton.addEventListener('click', function () {
+            downloadCsv(
+                statCsvFileName([statsExportName(), statTranslate('chiffres')]),
+                [[statTranslate('Indicateur'), statTranslate('Valeur')]].concat(
+                    statsFiguresFromView
+                )
+            );
+        });
     }
 });
+
+// event sent (on the selector, it bubbles up to the document) when the delay value to display changes
+const STATS_DELAY_MODE_EVENT = 'stats:delay-mode';
+// the chosen delay value is kept from a page to another (e.g. the page of a year)
+const STATS_DELAY_MODE_STORAGE_KEY = 'episciences.stats.delayMode';
+
+/**
+ * Delay value chosen on a previous page
+ * @returns {?string} "mean", "median" or null
+ */
+function storedStatsDelayMode() {
+    try {
+        const mode = window.localStorage.getItem(STATS_DELAY_MODE_STORAGE_KEY);
+        return mode === 'mean' || mode === 'median' ? mode : null;
+    } catch (e) {
+        // storage not available (e.g. disabled by the browser)
+        return null;
+    }
+}
+
+/**
+ * Keeps the chosen delay value for the next pages
+ * @param {string} mode
+ */
+function storeStatsDelayMode(mode) {
+    try {
+        window.localStorage.setItem(STATS_DELAY_MODE_STORAGE_KEY, mode);
+    } catch (e) {
+        // storage not available: the choice is only kept on this page
+    }
+}
+
+/**
+ * Selector "moyenne" / "médiane" of the delay table: only the chosen column is shown.
+ * A client-side toggle (no page reload); the delays-by-year chart follows it (STATS_DELAY_MODE_EVENT).
+ */
+function initStatsDelayMode() {
+    document.querySelectorAll('.stat-delay-mode').forEach(function (group) {
+        const table = group.parentElement
+            ? group.parentElement.querySelector('.stat-delays')
+            : null;
+
+        if (!table) {
+            return;
+        }
+
+        // the selector only works with JavaScript
+        group.hidden = false;
+
+        // :target cells of the table, e.g. header <th> and value <td> of the chosen column
+        const selectMode = function (mode) {
+            group
+                .querySelectorAll('.stat-delay-mode-btn')
+                .forEach(function (btn) {
+                    const active = btn.getAttribute('data-delay-mode') === mode;
+                    btn.classList.toggle('active', active);
+                    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                });
+
+            table.querySelectorAll('[data-delay]').forEach(function (cell) {
+                cell.hidden = cell.getAttribute('data-delay') !== mode;
+            });
+
+            group.dispatchEvent(
+                new CustomEvent(STATS_DELAY_MODE_EVENT, {
+                    bubbles: true,
+                    detail: { mode: mode },
+                })
+            );
+        };
+
+        // the mode chosen on a previous page, otherwise the one of the button active in the page (the median by default)
+        const active = group.querySelector('.stat-delay-mode-btn.active');
+        selectMode(
+            storedStatsDelayMode() ||
+                (active && active.getAttribute('data-delay-mode') === 'mean'
+                    ? 'mean'
+                    : 'median')
+        );
+
+        group.querySelectorAll('.stat-delay-mode-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const mode = btn.getAttribute('data-delay-mode');
+                storeStatsDelayMode(mode);
+                selectMode(mode);
+            });
+        });
+    });
+}
+
+/**
+ * Delay value chosen with the selector of the delay table
+ * (without selector: the one chosen on a previous page, otherwise "median")
+ * @returns {string} "mean" or "median"
+ */
+function currentStatsDelayMode() {
+    const active = document.querySelector(
+        '.stat-delay-mode .stat-delay-mode-btn.active'
+    );
+
+    if (!active) {
+        return storedStatsDelayMode() || 'median';
+    }
+
+    return active.getAttribute('data-delay-mode') === 'mean'
+        ? 'mean'
+        : 'median';
+}
+
+/**
+ * Chart of the delays by year, which can show the mean or the median
+ * @param {string} canvasId
+ * @param {{years: string[], datasets: Array, medianDatasets: ?Array, titles: ?{mean: string, median: string}}} delays
+ * @returns {function(string): void} shows the given mode ("mean" or "median")
+ */
+function createDelayChart(canvasId, delays) {
+    let chart = null;
+
+    return function (mode) {
+        // without the median by year (older API), the chart keeps the mean
+        const shownMode =
+            mode === 'median' && Array.isArray(delays.medianDatasets)
+                ? 'median'
+                : 'mean';
+        const title = delays.titles ? delays.titles[shownMode] : null;
+        const canvas = document.getElementById(canvasId);
+
+        if (!canvas) {
+            return;
+        }
+
+        // the title of the panel and the label of the chart (also the caption of its table view)
+        if (title) {
+            canvas.setAttribute('aria-label', title);
+
+            // the text only: the panel title also holds the collapse button
+            const panel = canvas.closest('.panel');
+            const panelTitle = panel
+                ? panel.querySelector('.stat-chart-title')
+                : null;
+
+            if (panelTitle) {
+                panelTitle.textContent = title;
+            }
+        }
+
+        if (chart) {
+            chart.destroy();
+        }
+
+        chart = createBarChart(
+            canvasId,
+            delays.years,
+            shownMode === 'median' ? delays.medianDatasets : delays.datasets,
+            {
+                // a short name (the title gives the unit and the two delays); the files of the mean and of the median are not mixed up
+                exportName: statTranslate(
+                    shownMode === 'median' ? 'Délais médians' : 'Délais moyens'
+                ),
+                categoryLabel: statTranslate('Année'),
+                format: value =>
+                    value === null || value === undefined
+                        ? '–'
+                        : value +
+                          ' ' +
+                          (delays.unitLabel || statTranslate('jours')),
+            }
+        );
+    };
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        STATS_DELAY_MODE_EVENT,
+        STATS_DELAY_MODE_STORAGE_KEY,
+        initStatsDelayMode,
+        currentStatsDelayMode,
+        createDelayChart,
+    };
+}

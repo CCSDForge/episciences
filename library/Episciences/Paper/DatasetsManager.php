@@ -160,6 +160,7 @@ class Episciences_Paper_DatasetsManager
         $sql = $db->select()
             ->from(T_PAPER_DATASETS, ['id'])
             ->where('doc_id = ?', $docId)
+            ->where('name = ?', Episciences_Paper_Dataset::HAL_CODE)
             ->where('(value = ? OR value LIKE ' . $db->quote($versionedPattern) . ')', $halIdWithoutVersion)
             ->limit(1);
 
