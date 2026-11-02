@@ -1450,7 +1450,8 @@ class Episciences_Submit
 
     /**
      * @param Episciences_Paper $paper
-     * @param array $datasets
+     * @param array<string, list<array{value: string, relation?: string}>> $datasets
+     *        values per type, each with the relation type it was found with
      * @return int
      */
     public static function forceAddingDatasets(Episciences_Paper $paper, array $datasets = []): int
@@ -1469,13 +1470,13 @@ class Episciences_Submit
                 $code = Episciences_Paper_Dataset::UNDEFINED_CODE;
             }
 
-            $tmpData['relationship'] = $dataset['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
             $tmpData['code'] = $code;
             $tmpData['name'] = Episciences_Paper_Dataset::$_datasetsLabel[$code];
-            $tmpData['link'] = Episciences_Paper_Dataset::$_datasetsLink[$code];
+            $tmpData['link'] = Episciences_Paper_Dataset::$_datasetsLink[$code] ?? Episciences_Paper_Dataset::URL_CODE;
 
             foreach ($dataset as $value) {
-                $tmpData['value'] = $value;
+                $tmpData['relationship'] = $value['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+                $tmpData['value'] = $value['value'];
                 $data[] = $tmpData;
             }
         }
@@ -2938,12 +2939,6 @@ class Episciences_Submit
             */
             foreach ($datasets as $key => $value) {
 
-
-                // Skip existing Dataset
-                if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
-                    continue;
-                }
-
                 if (self::isDataCiteShapedRepo($repoId)) {
 
                     if ($key !== 'identifier') {
@@ -2953,12 +2948,27 @@ class Episciences_Submit
                     $options['relationship'] = $datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
                 }
 
+                // Skip existing Dataset
+                if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
+                    continue;
+                }
+
 
                 $value = trim($value);
                 $typeLd = Episciences_Tools::checkValueType($value);
 
 
-                if ($typeLd === Episciences_Paper_Dataset::DOI_CODE || Episciences_Tools::isDoiWithUrl($value)) {
+                $doi = Episciences_DoiTools::cleanDoi($value);
+
+                if (Episciences_Tools::isDoi($doi)) {
+                    // A doi.org URL is stored as a bare DOI, like any other DOI
+                    $value = $doi;
+                    $typeLd = Episciences_Paper_Dataset::DOI_CODE;
+
+                    if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
+                        continue;
+                    }
+
                     $result = Episciences_DoiTools::getMetadataFromDoi($value);
 
                     if (!empty($result)) {
@@ -2985,11 +2995,12 @@ class Episciences_Submit
                         $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $code, $idMetaDataLastId, $options);
 
                     } else {
-                        // forceAddingDatasets() expects an array of plain identifier
-                        // values per type (no 'relation' key, or it would itself be
-                        // iterated and inserted as a spurious dataset value): append,
-                        // don't overwrite, so failures don't lose siblings sharing $typeLd.
-                        $noProcessed[$typeLd][] = $value;
+                        // Each value carries its own relation type: append, don't
+                        // overwrite, so failures don't lose siblings sharing $typeLd.
+                        $noProcessed[$typeLd][] = [
+                            'value' => $value,
+                            'relation' => $options['relationship'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE,
+                        ];
                     }
                 } elseif ($typeLd === Episciences_Paper_Dataset::SOFTWARE_CODE) {
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
