@@ -31,6 +31,10 @@ function statPapersFormatDate(isoDate) {
     return date.toLocaleDateString(lang);
 }
 
+function statPapersIsEmpty(value) {
+    return value === null || value === undefined || value === '';
+}
+
 function statPapersCompare(a, b, key) {
     const x = a[key];
     const y = b[key];
@@ -40,11 +44,11 @@ function statPapersCompare(a, b, key) {
     }
 
     // empty values last
-    if (x === null || x === undefined || x === '') {
+    if (statPapersIsEmpty(x)) {
         return 1;
     }
 
-    if (y === null || y === undefined || y === '') {
+    if (statPapersIsEmpty(y)) {
         return -1;
     }
 
@@ -58,9 +62,6 @@ function statPapersCompare(a, b, key) {
     });
 }
 
-/**
- * Pure helper: rows filtered by the query, sorted, and the requested page
- */
 /**
  * Pure helper: rows filtered by the query and sorted (all of them: the page and the export)
  */
@@ -80,9 +81,7 @@ function statPapersFilterSort(rows, query, sortKey, sortDir) {
     filtered.sort((a, b) => {
         const result = statPapersCompare(a, b, sortKey);
         // empty values stay last whatever the direction
-        const emptyA = a[sortKey] === null || a[sortKey] === '';
-        const emptyB = b[sortKey] === null || b[sortKey] === '';
-        if (emptyA || emptyB) {
+        if (statPapersIsEmpty(a[sortKey]) || statPapersIsEmpty(b[sortKey])) {
             return result;
         }
         return sortDir === 'ascending' ? result : -result;

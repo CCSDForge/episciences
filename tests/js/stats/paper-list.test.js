@@ -144,6 +144,25 @@ describe('statPapersView', function () {
         );
     });
 
+    it('keeps the missing values last whatever the direction', function () {
+        const rows = makeRows(4).map(({ publicationDate, ...row }) =>
+            publicationDate === null ? row : { ...row, publicationDate }
+        );
+
+        ['ascending', 'descending'].forEach(direction => {
+            const view = statPapersView(
+                rows,
+                '',
+                'publicationDate',
+                direction,
+                1
+            );
+            expect(
+                view.rows.slice(-2).every(r => r.publicationDate === undefined)
+            ).toBe(true);
+        });
+    });
+
     it('keeps the page in the bounds', function () {
         const view = statPapersView(makeRows(10), '', 'docid', 'ascending', 9);
         expect(view.page).toBe(1);
