@@ -7,6 +7,8 @@ const fs = require('fs');
 const path = require('path');
 
 global.translate = jest.fn(key => key);
+// JS_PREFIX_URL is defined by the layout (path prefix of the journal on manager branches)
+global.JS_PREFIX_URL = '/';
 
 const SCRIPT_PATH = path.join(
     __dirname,

@@ -14,7 +14,7 @@ $help = sprintf(
     $startDate
 );
 ?>
-<form class="stats-history-switch" method="get" action="/stats/index">
+<form class="stats-history-switch" method="get" action="<?= $this->url(['controller' => 'stats', 'action' => 'index']) ?>">
     <?php if ($keepYear): ?>
         <input type="hidden" name="year" value="<?= (int)$this->yearQuery ?>">
     <?php endif; ?>

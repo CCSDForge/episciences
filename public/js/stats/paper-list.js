@@ -3,7 +3,7 @@
  * loaded from /stats/papers, with search, sort and pagination.
  */
 const STAT_PAPERS_PAGE_SIZE = 50;
-const STAT_PAPERS_VIEW_URL = '/administratepaper/view/id/';
+const STAT_PAPERS_VIEW_URL = JS_PREFIX_URL + 'administratepaper/view/id/';
 const STAT_PAPERS_STATUS_ICONS = {
     published: 'fa-check-circle',
     accepted: 'fa-check',

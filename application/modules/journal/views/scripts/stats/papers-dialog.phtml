@@ -17,7 +17,7 @@ $columnLabels = [
 ];
 ?>
 <dialog id="stat-papers-dialog" class="stat-papers-dialog" aria-labelledby="stat-papers-dialog-title"
-        data-url="/stats/papers"
+        data-url="<?= $this->url(['controller' => 'stats', 'action' => 'papers']) ?>"
         data-year="<?= $this->yearQuery ? (int)$this->yearQuery : '' ?>"
         data-full-history="<?= $this->fullHistory ? '1' : '' ?>"
         data-titles="<?= $this->escape(json_encode($this->paperListTitles ?? [], JSON_UNESCAPED_UNICODE)) ?>"
