@@ -951,7 +951,7 @@ class StatsController extends Zend_Controller_Action
                 ->group('PAPERID');
 
             if ($startAfterDate) {
-                $papers->having('MIN(SUBMISSION_DATE) > ?', $startAfterDate);
+                $papers->having('MIN(SUBMISSION_DATE) >= ?', $startAfterDate);
             }
 
             $select = $db->select()
@@ -997,7 +997,7 @@ class StatsController extends Zend_Controller_Action
             }
 
             if ($startAfterDate) {
-                $papers->having('MIN(SUBMISSION_DATE) > ?', $startAfterDate);
+                $papers->having('MIN(SUBMISSION_DATE) >= ?', $startAfterDate);
             }
 
             $select = $db->select()->from(['papers' => $papers], [new Zend_Db_Expr('COUNT(*)')]);
