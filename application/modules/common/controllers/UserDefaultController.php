@@ -1698,7 +1698,7 @@ class UserDefaultController extends Zend_Controller_Action
             if (!$this->getUserMapper()->isActive($uid)) {
                 $this->getUserMapper()->activateAccountByUid($uid);
             }
-        } catch (Zend_Db_Exception $e) {
+        } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
             return false;
         }

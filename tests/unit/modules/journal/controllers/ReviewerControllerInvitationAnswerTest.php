@@ -471,6 +471,58 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
         $this->answer(null, $this->tmpUser());
 
         self::assertSame(InvitedAccountState::Inactive, $this->controller->view->invitedAccountState);
+        self::assertNull($this->controller->view->user_form, 'no account form when an account already uses the invited address');
+    }
+
+    /**
+     * @return array<string, array{InvitedAccountState}>
+     */
+    public static function existingInvitedAccountStateProvider(): array
+    {
+        return [
+            'active account' => [InvitedAccountState::Active],
+            'inactive account' => [InvitedAccountState::Inactive],
+        ];
+    }
+
+    /**
+     * @dataProvider existingInvitedAccountStateProvider
+     */
+    public function testAcceptPostCannotCreateAnAccountWhenTheInvitedAddressAlreadyHasOne(InvitedAccountState $state): void
+    {
+        $this->controller->invitedAccount = $state;
+
+        $this->answer($this->postRequest([
+            'submitaccept' => '',
+            'USERNAME' => 'jdoe',
+            'PASSWORD' => 'secret123',
+            'FIRSTNAME' => 'Jane',
+            'LASTNAME' => 'Doe',
+        ], true), $this->tmpUser());
+
+        self::assertSame([], $this->controller->saved);
+        self::assertNull($this->controller->view->user_form);
+        self::assertNull($this->controller->view->invalid_form);
+    }
+
+    public function testInvalidAccountFormMarksItsInvalidFieldsForAssistiveTechnologies(): void
+    {
+        // ORCID is validated without hitting the database, whereas FIRSTNAME and LASTNAME are missing
+        $this->answer($this->postRequest([
+            'submitaccept' => '',
+            'FIRSTNAME' => '',
+            'LASTNAME' => 'Doe',
+            'ORCID' => 'not-an-orcid',
+            'LANGUEID' => 'fr',
+        ], true), $this->tmpUser());
+
+        /** @var \Zend_Form $form */
+        $form = $this->controller->view->user_form;
+        self::assertSame([], $this->controller->saved);
+        self::assertTrue($this->controller->view->invalid_form);
+        self::assertSame('true', $form->getElement('FIRSTNAME')?->getAttrib('aria-invalid'));
+        self::assertSame('true', $form->getElement('ORCID')?->getAttrib('aria-invalid'));
+        self::assertNull($form->getElement('LASTNAME')?->getAttrib('aria-invalid'));
     }
 
     /**

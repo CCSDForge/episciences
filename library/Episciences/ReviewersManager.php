@@ -159,17 +159,31 @@ class Episciences_ReviewersManager
     }
 
     /**
+     * Marks the invalid fields of a form with aria-invalid="true", so that assistive technologies and
+     * the page script (focusing the first invalid field) can locate them.
+     */
+    public static function markInvalidElements(Zend_Form $form): void
+    {
+        foreach ($form->getElements() as $element) {
+            if ($element->getMessages() !== []) {
+                $element->setAttrib('aria-invalid', 'true');
+            }
+        }
+    }
+
+    /**
      * Links the validation errors of the refusal form to their fields, for assistive technologies.
      */
     public static function describeRefusalFormErrors(Zend_Form $form): void
     {
+        self::markInvalidElements($form);
+
         foreach ($form->getElements() as $element) {
             if ($element->getMessages() === []) {
                 continue;
             }
 
             $describedBy = trim($element->getName() . '-errors ' . $element->getAttrib('aria-describedby'));
-            $element->setAttrib('aria-invalid', 'true');
             $element->setAttrib('aria-describedby', $describedBy);
         }
     }

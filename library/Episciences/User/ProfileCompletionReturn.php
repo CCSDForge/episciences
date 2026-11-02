@@ -18,7 +18,9 @@ final class ProfileCompletionReturn
     private const SESSION_KEY = 'profileCompletionReturnUri';
 
     /**
-     * Remembers the page asked for, when it can be displayed again as it is: a page, not a form sent or a script call
+     * Remembers the first page asked for, when it can be displayed again as it is: a page, not a form sent or a
+     * script call. Subsequent requests before the profile is saved do not overwrite it, unless the URI is not a
+     * local path.
      */
     public static function remember(Zend_Controller_Request_Abstract $request): void
     {
@@ -27,7 +29,15 @@ final class ProfileCompletionReturn
         }
 
         $uri = (string)$request->getRequestUri();
-        self::session()->{self::SESSION_KEY} = self::isLocalPath($uri) ? $uri : null;
+        $session = self::session();
+        if (!self::isLocalPath($uri)) {
+            $session->{self::SESSION_KEY} = null;
+            return;
+        }
+
+        if (!isset($session->{self::SESSION_KEY}) || !is_string($session->{self::SESSION_KEY})) {
+            $session->{self::SESSION_KEY} = $uri;
+        }
     }
 
     /**

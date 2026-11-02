@@ -389,12 +389,24 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         self::assertTrue($this->controller->resetPassword($token, self::PASSWORD));
     }
 
-    public function testSetupLinkStillWorksWhenTheAccountCouldNotBeActivated(): void
+    /**
+     * @return iterable<string, array{\Exception}>
+     */
+    public static function activationFailureProvider(): iterable
+    {
+        yield 'database error' => [new Zend_Db_Adapter_Exception('database unavailable')];
+        yield 'non-database error (e.g. FTP quota)' => [new \RuntimeException('FTP quota failed')];
+    }
+
+    /**
+     * @dataProvider activationFailureProvider
+     */
+    public function testSetupLinkStillWorksWhenTheAccountCouldNotBeActivated(\Exception $failure): void
     {
         $token = $this->issue(TokenPurpose::ACCOUNT_SETUP);
         $this->userMapper->method('isActive')->willReturn(false);
         $this->userMapper->method('savePassword')->willReturn(1);
-        $this->userMapper->method('activateAccountByUid')->willThrowException(new Zend_Db_Adapter_Exception('database unavailable'));
+        $this->userMapper->method('activateAccountByUid')->willThrowException($failure);
 
         self::assertFalse($this->withoutWarnings(fn(): bool => $this->controller->resetPassword($token, self::PASSWORD)));
         self::assertNotNull($this->tokens->find($token, TokenPurpose::ACCOUNT_SETUP), 'the link must work again once the database is back');

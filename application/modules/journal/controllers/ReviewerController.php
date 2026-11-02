@@ -744,22 +744,23 @@ class ReviewerController extends PaperDefaultController
             $invitedAccountState = null;
 
             if ($tmpUser) {
-
-                $this->view->jQuery()->addJavascriptFile("/js/user/affiliations.js");
-                $user_form = Episciences_ReviewersManager::acceptInvitationForm();
-                $user_form->setDefaults([
-                    'SCREEN_NAME' => '',
-                    'LASTNAME' => '',
-                    'FIRSTNAME' => '',
-                    'EMAIL' => $tmpUser->getEmail(),
-                    'LANGUEID' => $tmpUser->getLangueid(true)
-                ]);
-                $this->lockInvitedEmail($user_form);
-                $this->view->user_form = $user_form;
-
                 // an account already uses the invited address: accepting means signing in with it, not creating one
                 $invitedAccountState = $this->invitedAccountState((string) $tmpUser->getEmail());
                 $this->view->invitedAccountState = $invitedAccountState;
+
+                if ($invitedAccountState === InvitedAccountState::None) {
+                    $this->view->jQuery()->addJavascriptFile("/js/user/affiliations.js");
+                    $user_form = Episciences_ReviewersManager::acceptInvitationForm();
+                    $user_form->setDefaults([
+                        'SCREEN_NAME' => '',
+                        'LASTNAME' => '',
+                        'FIRSTNAME' => '',
+                        'EMAIL' => $tmpUser->getEmail(),
+                        'LANGUEID' => $tmpUser->getLangueid(true)
+                    ]);
+                    $this->lockInvitedEmail($user_form);
+                    $this->view->user_form = $user_form;
+                }
             }
 
             // tells a logged-out invitee that accepting needs an account, before they choose
@@ -840,7 +841,8 @@ class ReviewerController extends PaperDefaultController
                     // reopen the refusal form: it now displays its own validation errors
                     Episciences_ReviewersManager::describeRefusalFormErrors($refuse_form);
                     $this->view->invalid_refuse_form = true;
-                } else {
+                } elseif (isset($user_form)) {
+                    Episciences_ReviewersManager::markInvalidElements($user_form);
                     $this->view->invalid_form = true;
                 }
             }

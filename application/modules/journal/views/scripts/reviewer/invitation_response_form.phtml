@@ -11,20 +11,20 @@
     <?php endif; ?>
 
     <?php
-    // a form that was sent back invalid (or with a refused request token) is displayed open again
-    $openOnLoad = match (true) {
-        (bool) $this->invalid_refuse_form => 'refuse_form',
-        $this->user_form && $this->invalid_form => 'accept_form',
-        default => null,
-    };
     // reviewer without an account: an account may already use the invited address (ReviewerController::invitedAccountState())
-    $invitedAccount = $this->user_form ? ($this->invitedAccountState ?? Episciences\Reviewer\InvitedAccountState::None) : null;
+    $invitedAccount = $this->invitedAccountState ?? ($this->user_form ? Episciences\Reviewer\InvitedAccountState::None : null);
     // an active account: accepting goes through signing in with it, then confirming on the way back
     $acceptLoginUrl = $invitedAccount === Episciences\Reviewer\InvitedAccountState::Active ? $this->acceptLoginUrl : null;
     $acceptBySigningIn = (bool) $acceptLoginUrl;
     // an account not activated: it is activated first, nothing to accept on this page yet
     $accountToActivate = $invitedAccount === Episciences\Reviewer\InvitedAccountState::Inactive;
     $canCreateAccount = $invitedAccount === Episciences\Reviewer\InvitedAccountState::None;
+    // a form that was sent back invalid (or with a refused request token) is displayed open again
+    $openOnLoad = match (true) {
+        (bool) $this->invalid_refuse_form => 'refuse_form',
+        $this->user_form && $canCreateAccount && $this->invalid_form => 'accept_form',
+        default => null,
+    };
     ?>
     <div class="invitation-answer">
         <?php if ($this->loginUrl && !$this->confirmAcceptance) : ?>

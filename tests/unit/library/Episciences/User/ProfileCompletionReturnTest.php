@@ -49,6 +49,14 @@ final class ProfileCompletionReturnTest extends TestCase
         self::assertNull(ProfileCompletionReturn::take(), 'forgotten once read');
     }
 
+    public function testFirstPageAskedForIsKeptAcrossSubsequentGetRequests(): void
+    {
+        ProfileCompletionReturn::remember($this->request('GET', '/reviewer/invitation/id/12/token/abc'));
+        ProfileCompletionReturn::remember($this->request('GET', '/index/index'));
+
+        self::assertSame('/reviewer/invitation/id/12/token/abc', ProfileCompletionReturn::take());
+    }
+
     public function testNothingIsGivenBackWithoutAPageAskedFor(): void
     {
         self::assertNull(ProfileCompletionReturn::take());
