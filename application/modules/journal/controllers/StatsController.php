@@ -182,6 +182,7 @@ class StatsController extends Zend_Controller_Action
 
         $yearCategories = [];
         $dashboard = null;
+        $this->view->errorMessage = null;
 
         if ($askApi) {
             $token = $this->getDelegatedToken($logger);
@@ -361,7 +362,6 @@ class StatsController extends Zend_Controller_Action
         $this->view->charts = $charts;
         $this->view->papersWithTemporaryVersion = $this->countPapersWithTemporaryVersion($yearQuery, $startStatsAfterDate, $logger);
         $this->view->yearQuery = $yearQuery;
-        $this->view->errorMessage = null;
         $this->view->isAvailableUsersStats = $isAvailableUsersStats;
 
         // Papers of the figures (journal administrators only): kept in session, the page only gets their number

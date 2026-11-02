@@ -16,8 +16,10 @@ use StatsController;
 use unit\modules\ControllerTestCase;
 use unit\modules\support\ApiStubStatsController;
 use unit\modules\support\DispatchResult;
+use Zend_Controller_Action_HelperBroker;
 use Zend_Registry;
 use Zend_Session_Namespace;
+use Zend_View_Interface;
 
 /**
  * Requests of the statistics page to the Episciences API (StatsController::indexAction()): the papers of the figures
@@ -27,6 +29,7 @@ use Zend_Session_Namespace;
 final class StatsControllerIndexActionTest extends ControllerTestCase
 {
     private const DASHBOARD_PATH = 'journals/stats/dashboard/';
+    private const EVALUATION_PATH = 'statistics/evaluation';
     private const DASHBOARD = [
         'value' => [
             'nbSubmissions' => 2,
@@ -44,6 +47,8 @@ final class StatsControllerIndexActionTest extends ControllerTestCase
     private bool $papersAvailable = true;
 
     private bool $dashboardAvailable = true;
+
+    private bool $evaluationAvailable = true;
 
     public static function setUpBeforeClass(): void
     {
@@ -105,6 +110,10 @@ final class StatsControllerIndexActionTest extends ControllerTestCase
             return new Response(200, [], json_encode($dashboard, JSON_THROW_ON_ERROR));
         }
 
+        if (!$this->evaluationAvailable && str_contains($path, self::EVALUATION_PATH)) {
+            return new Response(503);
+        }
+
         return new Response(200, [], '[]');
     }
 
@@ -146,12 +155,41 @@ final class StatsControllerIndexActionTest extends ControllerTestCase
         return $this->dispatch(ApiStubStatsController::class, 'index', $this->getRequest($query));
     }
 
+    /**
+     * View of the last dispatched action
+     */
+    private function view(): Zend_View_Interface
+    {
+        return Zend_Controller_Action_HelperBroker::getStaticHelper('viewRenderer')->view;
+    }
+
     public function testTheStatisticsCannotBeRetrieved_ServiceUnavailable(): void
     {
         $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
         $this->dashboardAvailable = false;
 
         self::assertSame(503, $this->displayStatistics()->statusCode());
+    }
+
+    public function testTheEvaluationCannotBeRetrieved_TheErrorIsDisplayed(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+        $this->evaluationAvailable = false;
+
+        $result = $this->displayStatistics();
+
+        self::assertSame(200, $result->statusCode());
+        self::assertNotEmpty($this->view()->errorMessage);
+    }
+
+    public function testTheStatisticsAreRetrieved_NoErrorIsDisplayed(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+
+        $result = $this->displayStatistics();
+
+        self::assertSame(200, $result->statusCode());
+        self::assertNull($this->view()->errorMessage);
     }
 
     public function testAYearWithoutStatistics_NotFound(): void
