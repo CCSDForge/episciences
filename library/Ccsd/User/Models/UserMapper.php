@@ -293,6 +293,24 @@ class Ccsd_User_Models_UserMapper {
     }
 
     /**
+     * UID of the most recently created account not activated yet (VALID = 0) using the given email,
+     * whatever the application it was created in.
+     */
+    public function findMostRecentInactiveUidByEmail(string $email): ?int
+    {
+        $select = $this->getDbTable()->select()
+            ->from($this->getDbTable(), ['UID'])
+            ->where('EMAIL = ?', $email)
+            ->where('VALID = ?', 0)
+            ->order('UID DESC')
+            ->limit(1);
+
+        $row = $this->getDbTable()->fetchRow($select);
+
+        return $row ? (int)$row['UID'] : null;
+    }
+
+    /**
      * Checks whether a username already exists, regardless of the VALID flag
      * (a username is globally unique in the CAS users table).
      *

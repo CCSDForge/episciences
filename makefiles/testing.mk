@@ -9,7 +9,18 @@ JEST_CONFIG := jest.config.js
 # =============================================================================
 # Test Commands
 # =============================================================================
-.PHONY: test test-all test-php test-js test-php-unit test-php-integration test-js-unit test-js-watch test-js-coverage test-e2e test-coverage lint-php check-source-reading-tests
+.PHONY: test test-all test-php test-js test-php-unit test-php-integration test-js-unit test-js-watch test-js-coverage test-e2e test-e2e-restore test-coverage lint-php check-source-reading-tests check-yarn
+
+check-yarn:
+	@if ! command -v yarn >/dev/null 2>&1; then \
+		echo "❌ Error: 'yarn' command not found."; \
+		if command -v corepack >/dev/null 2>&1; then \
+			echo "💡 Solution: Run 'corepack enable yarn' (or 'corepack enable') to activate it."; \
+		else \
+			echo "💡 Solution: Please install Yarn or enable corepack."; \
+		fi; \
+		exit 1; \
+	fi
 
 test: test-all ## Run all tests (PHP + JavaScript)
 
@@ -42,7 +53,7 @@ test-php-unit: ## Run PHP unit tests only
 test-php-integration: ## Run PHP integration tests only
 	@$(MAKE) test-php SUITE=integration
 
-test-js: ## Run JavaScript tests (Jest)  
+test-js: check-yarn ## Run JavaScript tests (Jest)  
 	@echo "Running JavaScript tests..."
 	@if [ -f package.json ]; then \
 		yarn test; \
@@ -60,9 +71,12 @@ test-js-coverage: ## Run JavaScript tests with coverage report
 	@echo "Running JavaScript tests with coverage..."
 	@yarn test:coverage
 
-test-e2e: ## Run Playwright E2E tests (usage: make test-e2e [APP_MODE=manager] [BASE_URL=https://...])
+test-e2e: check-yarn ## Run Playwright E2E tests (usage: make test-e2e [APP_MODE=manager] [BASE_URL=https://...])
 	@echo "Running Playwright E2E tests..."
 	@$(if $(APP_MODE),APP_MODE=$(call shell_quote,$(APP_MODE))) $(if $(BASE_URL),BASE_URL=$(call shell_quote,$(BASE_URL))) yarn test:e2e
+
+test-e2e-restore: ## Restore journal settings backed up before E2E tests
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:e2e-seed --restore-settings
 
 test-coverage: ## Run all tests with coverage (where available)
 	@echo "Running tests with coverage..."
@@ -140,7 +154,7 @@ test-status: ## Show testing setup status
 	@if command -v yarn >/dev/null 2>&1; then \
 		echo "  ✅ Yarn available"; \
 	else \
-		echo "  ❌ Yarn not found"; \
+		echo "  ❌ Yarn not found (run 'corepack enable yarn' if Node.js is installed)"; \
 	fi
 	@if [ -d node_modules/jest ]; then \
 		echo "  ✅ Jest installed"; \

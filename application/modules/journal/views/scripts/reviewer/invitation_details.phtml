@@ -1,49 +1,133 @@
 <?php if (!$this->invitation) {
     return;
-} ?>
-<div class="panel panel-default collapsable">
+}
+
+/** @var Episciences_User_Invitation $invitation */
+$invitation = $this->invitation;
+$answer = $invitation->isAnswered() ? $invitation->getAnswer() : null;
+
+// a date displayed in the page language, machine-readable for assistive technologies
+$time = function (?string $date): string {
+    $timestamp = $date ? strtotime($date) : false;
+    if ($timestamp === false) {
+        return '';
+    }
+
+    return '<time datetime="' . date('Y-m-d', $timestamp) . '">' . $this->escape((string) $this->Date($date)) . '</time>';
+};
+
+// number of days from today to a date: negative once past, null without a valid date
+$daysUntil = static function (?string $date): ?int {
+    $timestamp = $date ? strtotime($date) : false;
+    if ($timestamp === false) {
+        return null;
+    }
+
+    $interval = (new DateTimeImmutable('today'))->diff(new DateTimeImmutable(date('Y-m-d', $timestamp)));
+
+    return $interval->invert ? -$interval->days : $interval->days;
+};
+
+// "(in 12 days)" after a date, in red when it comes soon
+$remaining = function (int $days, int $soonFrom): string {
+    $text = match (true) {
+        $days < 0 => $this->translate('dépassée'),
+        $days === 0 => $this->translate("aujourd'hui"),
+        $days === 1 => $this->translate('demain'),
+        default => sprintf($this->translate('dans %s jours'), $days),
+    };
+
+    return '<span class="' . ($days <= $soonFrom ? 'text-danger' : 'invitation-details-hint') . '">(' . $this->escape($text) . ')</span>';
+};
+
+$expirationDate = $invitation->getExpiration_date();
+$daysLeft = $daysUntil($expirationDate);
+$reportDaysLeft = $daysUntil($this->rating_deadline);
+
+// the answer details are stored HTML-encoded, sometimes several times (Episciences_User_InvitationAnswer::cleanDetailValue()):
+// decoded back to the typed text, then escaped once
+$detail = function (string $name) use ($answer): string {
+    $value = (string) $answer?->getDetail($name);
+    do {
+        $previous = $value;
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    } while ($value !== $previous);
+
+    return $this->escape(trim($value));
+};
+
+$isPending = $answer === null && !$invitation->hasExpired() && !$invitation->isCancelled();
+$sender = $invitation->getSender();
+?>
+<div class="panel panel-default collapsable invitation-details">
     <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate('Détails') ?></h2>
+        <h2 class="panel-title"><?= $this->translate('À propos de cette invitation') ?></h2>
     </div>
     <div class="panel-body in">
-        <?php if ($this->invitation->getSender() instanceof Episciences_User) : ?>
-            <div>
-                <?= $this->translate("Invitation envoyée par :"); ?>
-                <?= $this->invitation->getSender()->getFullname(); ?>
-            </div>
-        <?php endif; ?>
+        <ul class="invitation-details-list">
+            <li>
+                <i class="fa-regular fa-envelope fa-fw" aria-hidden="true"></i>
+                <span>
+                    <?php if ($sender instanceof Episciences_User) : ?>
+                        <?= sprintf($this->translate('Invitation envoyée par %1$s le %2$s'), '<strong>' . $this->escape($sender->getFullname()) . '</strong>', $time($invitation->getSending_date())) ?>
+                    <?php else : ?>
+                        <?= sprintf($this->translate('Invitation envoyée le %s'), $time($invitation->getSending_date())) ?>
+                    <?php endif; ?>
+                </span>
+            </li>
 
-        <div>
-            <?= $this->translate("Date d'envoi de l'invitation :"); ?>
-            <?= $this->Date($this->invitation->getSending_date()); ?>
-        </div>
-        <div>
-            <?= $this->translate("Date d'expiration de l'invitation :"); ?>
-            <?= $this->Date($this->invitation->getExpiration_date()); ?>
-        </div>
-
-        <br/>
-        <?php if ($this->rating_deadline) : ?>
-
-            <div>
-                <?= $this->translate("Relecture attendue avant le :"); ?>
-                <?= $this->Date($this->rating_deadline) ?>
-                <?php
-                ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($this->invitation->isAnswered()) : ?>
-            <div><?= $this->translate('Réponse envoyée le :') ?><?= $this->Date($this->invitation->getAnswer()->getAnswer_date()); ?></div>
-            <div><?= $this->translate('Vous avez répondu :') ?><?= ucfirst($this->invitation->getAnswer()->getAnswer()); ?></div>
-            <?php if ($this->invitation->getAnswer()->getDetail('comment')) : ?>
-                <div><?= $this->translate('Commentaire :') ?><?= $this->invitation->getAnswer()->getDetail('comment') ?></div>
-            <?php endif; ?>
-            <?php if ($this->invitation->getAnswer()->getDetail('reviewer_suggest')) : ?>
-                <div><?= $this->translate('Vous avez suggéré de proposer la relecture à :') ?><?= $this->invitation->getAnswer()->getDetail('reviewer_suggest') ?></div>
+            <?php if ($isPending && $daysLeft !== null) : ?>
+                <li>
+                    <i class="fa-regular fa-hourglass-half fa-fw" aria-hidden="true"></i>
+                    <span>
+                        <?= sprintf($this->translate('Merci de répondre avant le %s'), '<strong>' . $time($expirationDate) . '</strong>') ?>
+                        <?= $remaining($daysLeft, 3) ?>
+                    </span>
+                </li>
+            <?php elseif ($invitation->hasExpired() && $answer === null) : ?>
+                <li>
+                    <i class="fa-regular fa-hourglass fa-fw" aria-hidden="true"></i>
+                    <span><?= sprintf($this->translate('Cette invitation a expiré le %s'), $time($expirationDate)) ?></span>
+                </li>
             <?php endif; ?>
 
-        <?php endif; ?>
+            <?php if ($this->rating_deadline && ($isPending || $answer?->getAnswer() === Episciences_User_InvitationAnswer::ANSWER_YES)) : ?>
+                <li>
+                    <i class="fa-regular fa-calendar-check fa-fw" aria-hidden="true"></i>
+                    <span>
+                        <?= sprintf(
+                            $this->translate($isPending ? 'Si vous acceptez, rapport de relecture attendu avant le %s' : 'Rapport de relecture attendu avant le %s'),
+                            '<strong>' . $time($this->rating_deadline) . '</strong>'
+                        ) ?>
+                        <?= $reportDaysLeft !== null ? $remaining($reportDaysLeft, 7) : '' ?>
+                    </span>
+                </li>
+            <?php endif; ?>
 
+            <?php if ($answer !== null) : ?>
+                <?php $accepted = $answer->getAnswer() === Episciences_User_InvitationAnswer::ANSWER_YES; ?>
+                <li>
+                    <i class="fa-regular <?= $accepted ? 'fa-circle-check' : 'fa-circle-xmark' ?> fa-fw" aria-hidden="true"></i>
+                    <span><?= sprintf($this->translate($accepted ? 'Invitation acceptée le %s' : 'Invitation déclinée le %s'), $time($answer->getAnswer_date())) ?></span>
+                </li>
+                <?php $suggestedReviewer = $detail(Episciences_User_InvitationAnswer::DETAIL_SUGGEST); ?>
+                <?php $comment = $detail(Episciences_User_InvitationAnswer::DETAIL_COMMENT); ?>
+                <?php if ($suggestedReviewer !== '') : ?>
+                    <li>
+                        <i class="fa-solid fa-user-plus fa-fw" aria-hidden="true"></i>
+                        <span><?= $this->translate('Relecteur suggéré :') ?> <?= $suggestedReviewer ?></span>
+                    </li>
+                <?php endif; ?>
+                <?php if ($comment !== '') : ?>
+                    <li>
+                        <i class="fa-regular fa-comment fa-fw" aria-hidden="true"></i>
+                        <span>
+                            <?= $this->translate($accepted ? 'Commentaire :' : 'Motif du refus :') ?>
+                            <span class="invitation-details-comment"><?= $comment ?></span>
+                        </span>
+                    </li>
+                <?php endif; ?>
+            <?php endif; ?>
+        </ul>
     </div>
 </div>
