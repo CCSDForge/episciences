@@ -300,6 +300,8 @@ class PaperController extends PaperDefaultController
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
 
+        $this->view->isAllowedToAnswerRevisionRequest = static::isAllowedToAnswerRevisionRequest($paper);
+
         // reviewers comments **************************************************
         $comments = Episciences_CommentsManager::fetchReviewerAuthorCommentsByDocId($paper->getDocid());
         $this->anonymiseIfNecessaryAndFormatScreeName($comments, $paper->isOwner());
@@ -2059,6 +2061,17 @@ class PaperController extends PaperDefaultController
         $paper->loadDataDescriptors();
 
         return $paper;
+    }
+
+    /**
+     * The answer to a revision request ("Answer this request" button) is offered to the paper's contributor (owner or co-author)
+     * and to the secretaries (with the administrators and chief editors): the editors, guest editors and copy editors
+     * see the requests but do not answer them.
+     */
+    protected static function isAllowedToAnswerRevisionRequest(Episciences_Paper $paper): bool
+    {
+        return Episciences_Auth::isLogged()
+            && ($paper->isOwnerOrCoAuthor() || Episciences_Auth::isSecretary());
     }
 
     /**
@@ -4692,7 +4705,7 @@ class PaperController extends PaperDefaultController
         }
 
         $targetFile  = Episciences_Paper_FilesManager::findById($currentMasterFileId);
-        
+
         if (!$targetFile || $targetFile->getDocId() !== $paper->getDocid()) {
             $this->jsonEncodedResult($result);
             return;

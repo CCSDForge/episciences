@@ -9,7 +9,9 @@ if (!$paper->isRevisionRequested()){
 ?>
 <div>
     <?php
+    // Offered to the users allowed to answer (see PaperController::isAllowedToAnswerRevisionRequest())
     if ($controller === 'paper' &&
+            !empty($this->isAllowedToAnswerRevisionRequest) &&
             !empty($this->current_demand) &&
             !in_array($paper->getStatus(), Episciences_Paper::$_noEditableStatus, true))  :
         ?>
