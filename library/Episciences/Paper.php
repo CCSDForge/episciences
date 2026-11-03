@@ -5210,15 +5210,6 @@ class Episciences_Paper
         $this->_revisionDeadline = $revisionDeadline;
     }
 
-    /**
-     * has
-     * @return bool
-     */
-    public function isFromZenodo(): bool
-    {
-        return (($this->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID) || ($this->isTmp() && $this->getConcept_identifier()));
-    }
-
     public function isFormattingCompleted(): bool
     {
         return in_array($this->getStatus(), [self::STATUS_CE_REVIEW_FORMATTING_DEPOSED, self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED, self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION], true);

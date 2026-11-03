@@ -124,21 +124,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
 
-    // Handle isFromZSubmit flag
-    if (typeof isFromZSubmit !== 'undefined' && isFromZSubmit) {
-        const answerRequest = document.getElementById('answer-request');
-        if (answerRequest) {
-            answerRequest.click();
-        }
-
-        setTimeout(function () {
-            const newVersion = document.getElementById('new-version');
-            if (newVersion) {
-                newVersion.click();
-            }
-        }, 0.1);
-    }
-
     // Show and hide citations to avoid big listing page
     const listCitations = document.getElementById('list-citations');
     const btnHideCitations = document.getElementById('btn-hide-citations');

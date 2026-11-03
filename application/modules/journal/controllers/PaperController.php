@@ -99,8 +99,6 @@ class PaperController extends PaperDefaultController
 
         $docId = (int)$request->getParam('id');
 
-        $zIdentifier = $request->get('z-identifier');
-
         $papersManager = new Episciences_PapersManager();
 
         $paper = $papersManager::get($docId, true, RVID);
@@ -114,7 +112,6 @@ class PaperController extends PaperDefaultController
 
         $loggedUid = Episciences_Auth::getUid();
         $isSecretary = Episciences_Auth::isSecretary();
-        $isFromZSubmit = false;
 
         if ($paper->isDataSetOrSoftware()) {
             $isAllowedToAddDataDescriptor = ($paper->isOwner() || $isSecretary) && !in_array($paper->getStatus(), Episciences_Paper::$_noEditableStatus, true);
@@ -401,7 +398,7 @@ class PaperController extends PaperDefaultController
 
         // reply copy editing answer form
         if ($isAllowedToAnswerNewVersion) {
-            $copyEditingReplyForms = Episciences_CommentsManager::getCopyEditingReplyForms($copyEditingDemands, $paper, $zIdentifier);
+            $copyEditingReplyForms = Episciences_CommentsManager::getCopyEditingReplyForms($copyEditingDemands, $paper);
             $this->view->copyEditingReplyForms = $copyEditingReplyForms;
         }
 
@@ -458,30 +455,6 @@ class PaperController extends PaperDefaultController
         $getterCiting = Episciences_Paper_CitationsManager::formatCitationsForViewPaper($paper->getDocid());
         $this->view->citations = $getterCiting['template'];
         $this->view->counterCitations = $getterCiting['counterCitations'];
-
-        if ($zIdentifier && ($paper->isRevisionRequested() || $paper->isFormattingCompleted())) { // new version submitted from z-submit application
-
-            $this->view->zIdentifier = $zIdentifier;
-            $isFromZSubmit = $paper->isFromZenodo();
-        }
-
-        $this->view->isFromZSubmit = Zend_Json::encode($isFromZSubmit);
-
-        $zSubmitUrl = null;
-
-        if (!$isFromZSubmit) {
-
-            $zSubmitUrl = $this->getZSubmitUrl(null, [
-                'newVersion' => true,
-                'epi-docid' => $paper->getDocid(), 'epi-rvcode' => RVCODE,
-                'epi-cdoi' => $paper->getConcept_identifier()
-            ]);
-        }
-
-        $this->view->zSubmitUrl = $zSubmitUrl;
-        $this->view->zSubmitStatus = EPISCIENCES_Z_SUBMIT['STATUS'];
-        /** @see /config/dist-pwd.json */
-
 
         /**
          * Bibliographical References
@@ -1837,7 +1810,6 @@ class PaperController extends PaperDefaultController
     /**
      * new version form (revision request answer)
      * @throws Zend_Exception
-     * @throws Zend_Json_Exception
      */
     public function newversionAction(): void
     {
@@ -1845,7 +1817,6 @@ class PaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $id = $request->getParam('id');
-        $zIdentifier = $request->getParam('z-identifier');
 
         // fetch revision request
         $oComment = new Episciences_Comment();
@@ -1869,40 +1840,11 @@ class PaperController extends PaperDefaultController
             $options['dataType'] = $paper->getType()[Episciences_Paper::TITLE_TYPE];
         }
 
-        $isFromZSubmit = false;
-
-        if ($zIdentifier) {
-
-            $options['zIdentifier'] = $zIdentifier;
-
-            if ($paper->isRevisionRequested()) { // new version submitted from z-submit application
-                $isFromZSubmit = $paper->isFromZenodo();
-            }
-
-        }
-
         // load form
         $form = Episciences_Submit::getNewVersionForm($paper, $options);
         $form->setAction('/paper/savenewversion?docid=' . $oComment->getDocid() . self::AND_PC_ID_STR . $oComment->getPcid());
 
         $this->view->form = $form;
-
-        $this->view->isFromZSubmit = Zend_Json::encode($isFromZSubmit);
-        $this->view->zenodoRepoId = Episciences_Repositories::ZENODO_REPO_ID;
-
-        $zSubmitUrl = null;
-
-        if ($isFromZSubmit) {
-
-            $zSubmitUrl = $this->getZSubmitUrl(null, [
-                'newVersion' => true,
-                'epi-docid' => $paper->getDocid(), 'epi-rvcode' => RVCODE,
-                'epi-cdoi' => $paper->getConcept_identifier()
-            ]);
-        }
-
-        $this->view->zSubmitUrl = $zSubmitUrl;
-
     }
 
     /**

@@ -24,11 +24,6 @@ if (!$paper->isRevisionRequested()){
                     <?php
 
                     $newVersionHref = '/paper/newversion?id=' . $this->current_demand['PCID'];
-
-                    if ($this->zIdentifier) {  // from z-submission: new version submission
-                        $newVersionHref .= '&z-identifier=' . urlencode((string)$this->zIdentifier);
-                    }
-
                     ?>
                     <a id="new-version" href="<?= $this->escape($newVersionHref) ?>"
                        title="<?= $this->translate('Proposer une nouvelle version') ?>"

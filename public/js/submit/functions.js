@@ -103,11 +103,6 @@ $(function () {
         }
     });
 
-    //Submission Zenodo
-    if (isFromZSubmit) {
-        doSearching();
-    }
-
     function valid_code(data) {
         // create volume selection menu
         let volumes_options =

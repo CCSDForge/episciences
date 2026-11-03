@@ -24,22 +24,16 @@ class SubmitController extends DefaultController
         $request = $this->getRequest();
         $isPost = $request->isPost();
         $post = $isPost ? $request->getPost() : [];
-        $default = [];
-        $isFromZSubmit = false;
 
         if ($isPost && $this->isPostMaxSizeReached()) {
             $this->handlePostMaxSizeReached();
             return;
         }
 
-        if (array_key_exists('episciences_form', $post)) {
-            $this->handleZSubmit($request, $settings, $default, $isFromZSubmit);
-        }
-
         $submit = new Episciences_Submit();
-        $form = $submit::getForm($settings, $default, $isFromZSubmit);
+        $form = $submit::getForm($settings);
 
-        $this->prepareViewData($settings, $isFromZSubmit, $form);
+        $this->prepareViewData($settings, $form);
 
         if ($isPost && array_key_exists('submitPaper', $post)) {
             $this->handleSubmitPaper($request, $form, $submit, $post);
@@ -58,82 +52,6 @@ class SubmitController extends DefaultController
             ->addMessage($this->buildReachedMessage());
 
         $this->_helper->redirector('index', 'submit');
-    }
-
-    /**
-     * Handle requests coming from Z-Submit application.
-     */
-    private function handleZSubmit(
-        Zend_Controller_Request_Http $request,
-        array                        $settings,
-        array                        &$default,
-        bool                         &$isFromZSubmit
-    ): void
-    {
-        $zPost = $request->getPost()['episciences_form'] ?? null;
-
-        if (!$zPost) {
-            return;
-        }
-
-        $zConceptIdentifier = $zPost['ci'] ?? null;
-        $repoId = $zPost['repoid'] ?? null;
-
-        $cleanedIdentifier = Episciences_Repositories::callHook(
-            'hookCleanIdentifiers',
-            ['id' => $zPost['doi_show'] ?? null, 'repoId' => $repoId]
-        );
-
-        $zIdentifier = $cleanedIdentifier['identifier'] ?? null;
-
-        $isFromZSubmit = EPISCIENCES_Z_SUBMIT['STATUS']
-            && $zIdentifier
-            && $zConceptIdentifier
-            && in_array($repoId, $settings['repositories'], true);
-
-        if (!$isFromZSubmit) {
-            return;
-        }
-
-        if (!Episciences_Auth::hasRealIdentity()) {
-            $message = $this->view->translate(
-                "Vous avez été redirigé vers cette page, votre compte sur cette application ne semble pas être le bon !"
-            );
-            $this->_helper
-                ->FlashMessenger
-                ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
-                ->addMessage($message);
-        }
-
-        $paper = Episciences_PapersManager::findByIdentifier($zConceptIdentifier);
-
-        $isFirstSubmission = !$paper || (
-                $paper->getConcept_identifier() === $zConceptIdentifier
-                && in_array(
-                    $paper->getStatus(),
-                    [
-                        Episciences_Paper::STATUS_SUBMITTED,
-                        Episciences_Paper::STATUS_OK_FOR_REVIEWING,
-                        Episciences_Paper::STATUS_REFUSED,
-                    ],
-                    true
-                )
-            );
-
-        if (!$isFirstSubmission && ($paper->isRevisionRequested() || $paper->isFormattingCompleted())) {
-            $rOptions = [
-                'controller' => 'paper',
-                'action' => 'view',
-                'id' => $paper->getDocid(),
-                'z-identifier' => $zIdentifier,
-            ];
-
-            $this->redirect($this->view->url($rOptions, null, true));
-            return;
-        }
-
-        $default['repoId'] = Episciences_Repositories::ZENODO_REPO_ID;
-        $default['docId'] = $zIdentifier;
     }
 
     /**
@@ -426,7 +344,7 @@ class SubmitController extends DefaultController
     /**
      * Prepare all data needed by the view.
      */
-    private function prepareViewData(array $settings, bool $isFromZSubmit, Zend_Form $form): void
+    private function prepareViewData(array $settings, Zend_Form $form): void
     {
         $this->view->form = $form;
         $examples = [];
@@ -442,9 +360,6 @@ class SubmitController extends DefaultController
         $allowedRepositories = Episciences_Submit::getRepositoriesLabels($settings);
         $this->view->repositories = implode(', ', $allowedRepositories);
         $this->view->examples = Zend_Json::encode($examples);
-        $this->view->isFromZSubmit = $isFromZSubmit;
-        $this->view->zSubmitUrl = !$isFromZSubmit ? $this->getZSubmitUrl($allowedRepositories) : null;
-        $this->view->zenodoRepoId = Episciences_Repositories::ZENODO_REPO_ID;
     }
 
 

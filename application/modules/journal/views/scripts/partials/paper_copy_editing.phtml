@@ -47,9 +47,7 @@ $paperId = !empty($comments) ? reset($comments)['DOCID'] : null;
                             'replyForm' => $replyForms[$id] ?? null,
                             'paperStatus' => $paperStatus,
                             'linkToLatestDocId' => $linkToLatestDocId,
-                            'isAllowedToReply' => $isAllowedToReply,
-                            'isFromZSubmit' => $this->isFromZSubmit ?? false,
-                            'zSubmitUrl' => $this->zSubmitUrl ?? ''
+                            'isAllowedToReply' => $isAllowedToReply
                         ]) ?>
                     <?php endif; ?>
 

@@ -82,14 +82,13 @@ class Episciences_Submit
     /**
      * @param array $settings
      * @param array|null $defaults
-     * @param bool $isFromZSubmit
      * @return Ccsd_Form
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
 
-    public static function getForm(array $settings = [], ?array $defaults = [], bool $isFromZSubmit = false): \Ccsd_Form
+    public static function getForm(array $settings = [], ?array $defaults = []): \Ccsd_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $review = Episciences_ReviewsManager::find(RVID);
@@ -120,11 +119,6 @@ class Episciences_Submit
             'description' => $translator->translate("Saisir l'identifiant du document") . '.',
             'style' => 'width:auto; text-align:center;',
         ];
-
-        if ($isFromZSubmit) {
-            $repIdElementOptions['disabled'] = true;
-            $docIdElementOptions['disabled'] = true;
-        }
 
         // Select: repositories
         $subform->addElement('select', 'repoId', $repIdElementOptions);
@@ -606,10 +600,6 @@ class Episciences_Submit
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $defaults = self::fetchNewVersionFormDefaultValues($paper);
-
-        if (array_key_exists('zIdentifier', $settings)) {
-            $defaults['docId'] = $settings['zIdentifier'];
-        }
 
         $isNewVersionOf = array_key_exists('newVersionOf', $settings);
 
