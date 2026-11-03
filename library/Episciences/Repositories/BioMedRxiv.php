@@ -276,7 +276,6 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
         $contributors = [];
         $institutions = [];
         $license = '';
-        $citations = [];
         $kwd = [];
         $type = [];
 
@@ -289,10 +288,9 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
         }
 
         $articleMeta = $doc['front']['article-meta'] ?? [];
-        $references = $doc['back']['ref-list']['ref'] ?? [];
 
         self::articleMetaProcess($articleMeta, $license, $contributors, $institutions, $kwd);
-        self::referencesProcess($references, $citations, self::extractRawCitations($simpleXlmDoc));
+        $citations = self::referencesProcess($simpleXlmDoc);
 
         if (isset($articleMeta['article-categories']['subj-group'])) {
             self::typeProcess($articleMeta['article-categories']['subj-group'], $type);
@@ -418,111 +416,35 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
 
 
     /**
-     * Full text of each <citation>, in document order (same order as the decoded "ref" list).
-     * json_encode() reduces a <citation> starting with plain text (authors not tagged) to its
-     * direct text nodes only, losing the year, title, source, etc.: this text is used instead.
-     * @return string[]
+     * References of the JATS ref-list, as displayed by bioRxiv / medRxiv.
+     * The text of each citation is already formatted by the repository (hw:use-reference-as-is="yes"):
+     * it is kept as is rather than rebuilt from its tagged parts.
+     * @return array<int, array{raw_reference: string, doi?: string}>
      */
-    private static function extractRawCitations(SimpleXMLElement $doc): array
+    private static function referencesProcess(SimpleXMLElement $doc): array
     {
-        $rawCitations = [];
+        $citations = [];
 
-        foreach ($doc->xpath('/article/back/ref-list/ref') ?: [] as $ref) {
-            $citation = $ref->citation;
-            $text = $citation->count() > 0 ? (string)dom_import_simplexml($citation)->textContent : '';
-            $rawCitations[] = trim((string)preg_replace('/\s+/u', ' ', $text));
-        }
+        foreach ($doc->xpath('/article/back/ref-list/ref/*[self::citation or self::mixed-citation or self::element-citation]') ?: [] as $citation) {
 
-        return $rawCitations;
-    }
+            $rawReference = trim((string)preg_replace('/\s+/u', ' ', (string)dom_import_simplexml($citation)->textContent));
 
-    /**
-     * @param array $references decoded "ref" elements of the JATS ref-list
-     * @param array $citations
-     * @param string[] $rawCitations full text of each citation, @see self::extractRawCitations
-     */
-    private static function referencesProcess(array $references, array &$citations = [], array $rawCitations = []): void
-    {
-        // A ref-list with a single <ref> is decoded as that ref itself, not as a list of refs
-        if (!array_is_list($references)) {
-            $references = [$references];
-        }
-
-        foreach ($references as $index => $reference) {
-
-            $currentCitation = is_array($reference) ? ($reference['citation'] ?? []) : [];
-
-            // Citation whose authors are not tagged: decoded as a string, keep its full text
-            if (is_string($currentCitation)) {
-                $rawReference = $rawCitations[$index] ?? trim($currentCitation);
-
-                if ($rawReference !== '') {
-                    $citations[] = ['raw_reference' => $rawReference];
-                }
-
+            if ($rawReference === '') {
                 continue;
             }
 
-            if (!empty($currentCitation) && is_array($currentCitation)) {
+            $reference = ['raw_reference' => $rawReference];
 
-                $authorStr = '';
-                $title = '';
-                $page = '';
-                $stringName = $currentCitation['string-name'] ?? [];
+            $doi = trim((string)($citation->xpath('pub-id[@pub-id-type="doi"]')[0] ?? ''));
 
-                foreach ($stringName as $index => $sn) {
-
-                    if (!isset($sn['surname']) && !isset($sn['given-names'])) {
-                        continue;
-                    }
-
-                    $authorStr .= $sn['surname'] ?? '';
-
-                    if (isset($sn['given-names'])) {
-                        $authorStr .= ', ' . $sn['given-names'];
-                    }
-
-                    if ($index < count($stringName) - 1) {
-                        $authorStr .= '; ';
-                    }
-                }
-
-                if (isset($currentCitation['article-title'])) {
-                    $title = $currentCitation['article-title'];
-                } elseif (isset($currentCitation['chapter-title'])) {
-                    $title = $currentCitation['chapter-title'];
-                }
-
-
-                if (isset($currentCitation['fpage'])) {
-
-                    $page = $currentCitation['fpage'];
-
-                    if (isset($currentCitation['lpage'])) {
-                        $page .= '-' . $currentCitation['lpage'];
-                    }
-
-                }
-
-                if ($authorStr !== '') {
-                    $currentCitation['authorsStr'] = trim($authorStr);
-                }
-
-                if (!empty($title)) {
-                    $currentCitation['title'] = trim(is_array($title) ? $title[array_key_first($title)] : $title);
-                }
-
-                if ($page !== '') {
-                    $currentCitation['page'] = trim($page);
-                }
-
-                $tmp = Episciences_Repositories_Common::formatReferences($currentCitation);
-
-                if (!empty($tmp)) {
-                    $citations[] = $tmp;
-                }
+            if ($doi !== '') {
+                $reference['doi'] = $doi;
             }
+
+            $citations[] = $reference;
         }
+
+        return $citations;
     }
 
     private static function extractLicenseFromString(string $string): string
