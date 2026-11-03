@@ -2265,8 +2265,14 @@ return array(
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
-    'le total des articles concernés par le taux X' => 'The total number of articles affected by rate X',
-    'La somme du nombre total d’articles acceptés et du nombre total d’articles refusés' => 'The sum of the total number of accepted articles and the total number of rejected articles',
+    'Taux = articles concernés ÷ (articles acceptés + articles refusés) × 100' => 'Rate = articles concerned ÷ (accepted articles + refused articles) × 100',
+    "Taux d'acceptation + taux de refus = 100 %." => 'Acceptance rate + refusal rate = 100%.',
+    "Le taux de publication a la même base : il ne dépasse pas le taux d'acceptation." => 'The publication rate has the same base: it does not exceed the acceptance rate.',
+    'Ne comptent pas : les articles en attente de décision et les articles importés.' => 'Not counted: the articles awaiting a decision and the imported articles.',
+    "Par année : l'année de la décision (acceptation, refus ou publication), pas de la soumission." => 'By year: the year of the decision (acceptance, refusal or publication), not of the submission.',
+    "De la première soumission à la dernière acceptation (ou à la publication), pour chaque article non importé ; par année : l'année de l'acceptation (ou de la publication)." => 'From the first submission to the latest acceptance (or to the publication), for each article that was not imported; by year: the year of the acceptance (or of the publication).',
+    "Moyenne : somme des délais ÷ nombre d'articles ; sensible aux délais très longs." => 'Average: sum of the delays ÷ number of articles; sensitive to very long delays.',
+    'Médiane : la moitié des articles a un délai inférieur ou égal ; peu sensible aux délais très longs.' => 'Median: half of the articles have a shorter or equal delay; hardly sensitive to very long delays.',
     'Moyenne [en %s]' => 'Average [in %s]',
     'Médiane [en %s]' => 'Median [in %s]',
     'autre' => 'other',
