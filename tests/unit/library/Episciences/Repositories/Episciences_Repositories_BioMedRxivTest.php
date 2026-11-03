@@ -599,4 +599,78 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
 
         self::assertSame([], $result);
     }
+
+    // -------------------------------------------------------------------------
+    // referencesProcess() — citation whose authors are not tagged
+    // -------------------------------------------------------------------------
+
+    private const JATS_PLAIN_TEXT_CITATION = <<<XML
+<article><back><ref-list>
+<ref id="c1"><label>1.</label><citation publication-type="journal"><string-name><surname>Smith</surname><given-names>J.</given-names></string-name> (<year>2020</year>). <article-title>Tagged title</article-title>. <source>J. Test</source>.</citation></ref>
+<ref id="c2"><label>2.</label><citation publication-type="journal">Dos Santos, N. T. O., <etal>et al.</etal> (<year>2017</year>). <article-title>Plain text authors</article-title>. <source>J. Bodyw.</source>, <volume>21</volume>(<issue>1</issue>), <fpage>74</fpage>–<lpage>80</lpage>.</citation></ref>
+</ref-list></back></article>
+XML;
+
+    /**
+     * @return array{0: array, 1: string[]}
+     */
+    private static function decodeJats(string $xml): array
+    {
+        $doc = simplexml_load_string($xml);
+        $decoded = json_decode(json_encode($doc), true);
+
+        $extract = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'extractRawCitations');
+        $extract->setAccessible(true);
+
+        return [$decoded['back']['ref-list']['ref'], $extract->invoke(null, $doc)];
+    }
+
+    public function testReferencesProcessKeepsFullTextOfPlainTextCitation(): void
+    {
+        [$references, $rawCitations] = self::decodeJats(self::JATS_PLAIN_TEXT_CITATION);
+
+        // Precondition: json_encode() turns the untagged citation into a truncated string
+        self::assertIsString($references[1]['citation']);
+
+        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
+        $method->setAccessible(true);
+        $citations = [];
+        $method->invokeArgs(null, [$references, &$citations, $rawCitations]);
+
+        self::assertCount(2, $citations);
+        self::assertStringContainsString('Tagged title', $citations[0]['raw_reference']);
+        self::assertSame(
+            'Dos Santos, N. T. O., et al. (2017). Plain text authors. J. Bodyw., 21(1), 74–80.',
+            $citations[1]['raw_reference']
+        );
+    }
+
+    public function testReferencesProcessPlainTextCitationWithoutRawCitations(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
+        $method->setAccessible(true);
+        $citations = [];
+        $method->invokeArgs(null, [[['citation' => ' Some text. ']], &$citations]);
+
+        self::assertSame([['raw_reference' => 'Some text.']], $citations);
+    }
+
+    public function testReferencesProcessSingleRef(): void
+    {
+        $xml = '<article><back><ref-list><ref id="c1"><citation><string-name><surname>Smith</surname>'
+            . '<given-names>J.</given-names></string-name> <article-title>Only one</article-title></citation></ref>'
+            . '</ref-list></back></article>';
+        [$references, $rawCitations] = self::decodeJats($xml);
+
+        // Precondition: a single <ref> is decoded as the ref itself, not a list
+        self::assertArrayHasKey('citation', $references);
+
+        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
+        $method->setAccessible(true);
+        $citations = [];
+        $method->invokeArgs(null, [$references, &$citations, $rawCitations]);
+
+        self::assertCount(1, $citations);
+        self::assertStringContainsString('Only one', $citations[0]['raw_reference']);
+    }
 }

@@ -298,9 +298,8 @@ abstract class Ccsd_Website_Navigation
         $modele_regex = "/^page-/";
         $pageCodeToRemove = preg_replace($modele_regex, "", $pageCodeToRemove);
         try {
-            if (Episciences_Website_Navigation_Page_Predefined::isPredefinedPage($pageCodeToRemove)) {
-                Episciences_Page_Manager::delete($pageCodeToRemove, RVCODE);
-            }
+            // Supprimer l'entrée de table pages (predefined ou custom)
+            Episciences_Page_Manager::delete($pageCodeToRemove, RVCODE);
         } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
         }

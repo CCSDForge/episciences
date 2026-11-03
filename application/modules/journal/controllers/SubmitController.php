@@ -400,10 +400,19 @@ class SubmitController extends DefaultController
             return;
         }
 
-        $this->_helper
-            ->FlashMessenger
-            ->setNamespace('success')
-            ->addMessage($message);
+        if (!empty($result[Episciences_Submit::RESULT_POST_SAVE_FAILURE])) {
+            // Saved, but a step of the processing that follows the save failed (files, linked data, authors, enrichment):
+            // the warning alone, it also says that the paper is saved
+            $this->_helper
+                ->FlashMessenger
+                ->setNamespace(Ccsd_View_Helper_Message::MSG_WARNING)
+                ->addMessage($this->view->translate(Episciences_Submit::POST_SAVE_FAILURE_MESSAGE));
+        } else {
+            $this->_helper
+                ->FlashMessenger
+                ->setNamespace('success')
+                ->addMessage($message);
+        }
 
         $docId = $result['docId'] ?? null;
 

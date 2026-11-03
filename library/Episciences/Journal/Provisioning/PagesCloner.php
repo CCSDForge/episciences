@@ -14,10 +14,11 @@ use Zend_Db_Table_Abstract;
  * data/<rvcode>/pages/, read by the legacy ZF1-rendered front end) from a template journal to
  * a new one.
  *
- * Episciences_Page_Manager has no bulk enumeration method (only findByCodeAndPageCode()), so
- * this reads the source rows directly. title/content/visibility are passed to Episciences_Page's
- * setters with $serialize = false: the source row already holds the serialized JSON string
- * Episciences_Page itself would produce, so re-serializing it would double-encode it. The
+ * This reads the source rows directly. title/content/visibility are passed to Episciences_Page's
+ * setters with $serialize = false: the source row already holds the serialized string
+ * Episciences_Page itself would produce (JSON for title/content, the comma-separated `visibility_set`
+ * for the visibility), so re-serializing it would double-encode it. The legacy JSON `visibility`
+ * column is not read: Episciences_Page_Manager::add() rebuilds it from `visibility_set`. The
  * $serialize flag is also what keeps setContent() from running its HTML-to-Markdown conversion —
  * that conversion only triggers when given an array (raw form input), never a string.
  */
@@ -30,7 +31,9 @@ final class PagesCloner
     public function clone(string $fromCode, string $toCode, int $uid): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from('pages')->where('code = ?', $fromCode);
+        $select = $db->select()
+            ->from('pages', ['page_code', 'title', 'content', 'visibility' => 'visibility_set'])
+            ->where('code = ?', $fromCode);
         $sourceRows = $db->fetchAll($select);
 
         $cloned = 0;

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Episciences\Paper\WriteFailure;
 
 class Episciences_Paper_Authors_Repository
 {
@@ -101,6 +102,19 @@ class Episciences_Paper_Authors_Repository
      */
     public static function insert(array $authors): int
     {
+        return WriteFailure::reportAsWarning(__METHOD__, static fn(): int => self::insertOrFail($authors));
+    }
+
+    /**
+     * Same as insert(), but a database failure is thrown: the processing that follows the save of a paper
+     * reports it (Episciences_Submit::processSavedPaper())
+     *
+     * @param array<int, array<string, mixed>|Episciences_Paper_Authors> $authors array of Episciences_Paper_Authors instances or associative arrays
+     * @return int number of affected rows
+     * @throws Zend_Db_Exception
+     */
+    public static function insertOrFail(array $authors): int
+    {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $quotedValues = [];
         $affectedRows = 0;
@@ -115,24 +129,20 @@ class Episciences_Paper_Authors_Repository
         $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_AUTHORS) . ' (`authors`,`paperId`) VALUES ';
 
         if ($quotedValues !== []) {
-            try {
-                /** @var Zend_Db_Statement_Interface $result */
-                $result = $db->query($sql . implode(', ', $quotedValues));
-                $affectedRows = $result->rowCount();
-                // Invalidate cache for inserted papers
-                $cachePool = self::getCachePool();
-                foreach ($authors as $authorData) {
-                    if ($authorData instanceof Episciences_Paper_Authors) {
-                        $pId = $authorData->getPaperId();
-                    } else {
-                        $pId = $authorData['paperId'] ?? $authorData['paperid'] ?? null;
-                    }
-                    if ($pId !== null) {
-                        $cachePool->deleteItem('authors_paper_' . $pId);
-                    }
+            /** @var Zend_Db_Statement_Interface $result */
+            $result = $db->query($sql . implode(', ', $quotedValues));
+            $affectedRows = $result->rowCount();
+            // Invalidate cache for inserted papers
+            $cachePool = self::getCachePool();
+            foreach ($authors as $authorData) {
+                if ($authorData instanceof Episciences_Paper_Authors) {
+                    $pId = $authorData->getPaperId();
+                } else {
+                    $pId = $authorData['paperId'] ?? $authorData['paperid'] ?? null;
                 }
-            } catch (Exception $e) {
-                trigger_error($e->getMessage(), E_USER_ERROR);
+                if ($pId !== null) {
+                    $cachePool->deleteItem('authors_paper_' . $pId);
+                }
             }
         }
 
@@ -142,7 +152,11 @@ class Episciences_Paper_Authors_Repository
     /**
      * Update an existing author record
      *
+     * A database failure is thrown, not returned as 0: an interactive caller would read 0 as "nothing changed".
+     * The callers that run after the save of a paper catch it (Episciences_Submit).
+     *
      * @return int number of affected rows
+     * @throws Zend_Db_Exception
      */
     public static function update(Episciences_Paper_Authors $authorEntity): int
     {
@@ -159,15 +173,10 @@ class Episciences_Paper_Authors_Repository
             'authors' => $authorEntity->getAuthors()
         ];
 
-        try {
-            $affectedRows = $db->update(T_PAPER_AUTHORS, $values, $where);
-            $pId = $authorEntity->getPaperId();
-            if ($pId !== null) {
-                self::getCachePool()->deleteItem('authors_paper_' . $pId);
-            }
-        } catch (Zend_Db_Adapter_Exception $exception) {
-            $affectedRows = 0;
-            trigger_error($exception->getMessage(), E_USER_ERROR);
+        $affectedRows = $db->update(T_PAPER_AUTHORS, $values, $where);
+        $pId = $authorEntity->getPaperId();
+        if ($pId !== null) {
+            self::getCachePool()->deleteItem('authors_paper_' . $pId);
         }
 
         return $affectedRows;
@@ -202,13 +211,30 @@ class Episciences_Paper_Authors_Repository
      */
     public static function insertFromPaper(Episciences_Paper $paper): int
     {
+        return WriteFailure::reportAsWarning(
+            __METHOD__,
+            static fn(): int => self::insertFromPaperOrFail($paper),
+            0,
+            Zend_Db_Exception::class
+        );
+    }
+
+    /**
+     * Same as insertFromPaper(), but a database failure is thrown: the processing that follows the save of a paper
+     * reports it (Episciences_Submit::processSavedPaper())
+     *
+     * @return int number of inserted rows
+     * @throws Zend_Db_Exception
+     */
+    public static function insertFromPaperOrFail(Episciences_Paper $paper): int
+    {
         $paperId = $paper->getPaperid();
 
         if (self::getAuthorByPaperId($paperId) !== []) {
             return 0;
         }
 
-        return self::insert([
+        return self::insertOrFail([
             [
                 'authors' => json_encode(self::buildFromPaper($paper), self::JSON_ENCODE_FLAGS),
                 'paperId' => $paperId
@@ -272,11 +298,29 @@ class Episciences_Paper_Authors_Repository
      */
     public static function verifyExistOrInsert(int $docId, int $paperId): void
     {
+        WriteFailure::reportAsWarning(
+            __METHOD__,
+            static fn(): int => self::verifyExistOrInsertOrFail($docId, $paperId),
+            0,
+            Zend_Db_Exception::class
+        );
+    }
+
+    /**
+     * Same as verifyExistOrInsert(), but a database failure is thrown: the update of the record of a paper
+     * reports it (Episciences_PapersManager::updateRecordData())
+     *
+     * @return int number of inserted rows
+     * @throws Zend_Db_Exception
+     */
+    public static function verifyExistOrInsertOrFail(int $docId, int $paperId): int
+    {
         if (self::getAuthorByPaperId($paperId) !== []) {
-            return;
+            return 0;
         }
 
         $paper = Episciences_PapersManager::get($docId, false);
-        self::insertFromPaper($paper);
+
+        return $paper instanceof Episciences_Paper ? self::insertFromPaperOrFail($paper) : 0;
     }
 }

@@ -106,3 +106,20 @@ button.edit-metadata {
   cursor: not-allowed !important;
   opacity: 0.7;
 }
+
+// Volume list: keep the table header visible below the fixed navbar.
+// .table-responsive sets overflow-x: auto, which makes it the sticky container
+// instead of the viewport, so release it on screens wide enough to fit the table.
+// No child combinator: DataTables wraps the table in its own divs.
+@media (min-width: 768px) {
+  .table-responsive:has(#volumes) {
+    overflow-x: visible;
+  }
+}
+
+#volumes thead th {
+  position: sticky;
+  top: $navbar-fixed-height;
+  z-index: 1;
+  background: $white;
+}
