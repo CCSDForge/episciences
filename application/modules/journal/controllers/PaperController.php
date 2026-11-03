@@ -252,6 +252,9 @@ class PaperController extends PaperDefaultController
 
         $this->view->isAllowedToSeeNoPublicDetails = $isAllowedToSeeNoPublicDetails;
 
+        // Computed once: for a non-owner, each call queries the co-authors
+        $isOwnerOrCoAuthor = $paper->isOwnerOrCoAuthor();
+
 
         $isAllowedToAnswerNewVersion =
             Episciences_Auth::isLogged() &&
@@ -262,7 +265,7 @@ class PaperController extends PaperDefaultController
 
         // Same rule as the temporary version form and its save (see isAllowedToWriteTemporaryVersion())
         $this->view->isAllowedToWriteTemporaryVersion = Episciences_Auth::isLogged() &&
-            DocumentFilePolicy::isTemporaryVersionFileWritable($paper->isOwnerOrCoAuthor(), $isConflictDetected, $commonTest);
+            DocumentFilePolicy::isTemporaryVersionFileWritable($isOwnerOrCoAuthor, $isConflictDetected, $commonTest);
 
 
         // paper password bloc
@@ -300,7 +303,7 @@ class PaperController extends PaperDefaultController
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
 
-        $this->view->isAllowedToAnswerRevisionRequest = static::isAllowedToAnswerRevisionRequest($paper);
+        $this->view->isAllowedToAnswerRevisionRequest = static::isAllowedToAnswerRevisionRequest($isOwnerOrCoAuthor);
 
         // reviewers comments **************************************************
         $comments = Episciences_CommentsManager::fetchReviewerAuthorCommentsByDocId($paper->getDocid());
@@ -393,7 +396,7 @@ class PaperController extends PaperDefaultController
 
         // Copy-editing is between the author and the editorial staff: reviewers do not see it (see DocumentFilePolicy)
         $isAllowedToSeeCopyEditing = Episciences_Auth::isLogged() &&
-            ($paper->isOwnerOrCoAuthor() || (!$isConflictDetected && $commonTest));
+            ($isOwnerOrCoAuthor || (!$isConflictDetected && $commonTest));
 
         $copyEditingDemands = $isAllowedToSeeCopyEditing ?
             Episciences_CommentsManager::getList($paper->getDocid(), $copyEditingSettings) :
@@ -2068,10 +2071,10 @@ class PaperController extends PaperDefaultController
      * and to the secretaries (with the administrators and chief editors): the editors, guest editors and copy editors
      * see the requests but do not answer them.
      */
-    protected static function isAllowedToAnswerRevisionRequest(Episciences_Paper $paper): bool
+    protected static function isAllowedToAnswerRevisionRequest(bool $isOwnerOrCoAuthor): bool
     {
         return Episciences_Auth::isLogged()
-            && ($paper->isOwnerOrCoAuthor() || Episciences_Auth::isSecretary());
+            && ($isOwnerOrCoAuthor || Episciences_Auth::isSecretary());
     }
 
     /**
