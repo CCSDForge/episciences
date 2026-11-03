@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences_Acl;
+use Episciences_User;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Zend_Auth;
@@ -60,7 +62,9 @@ final class AdministratelinkeddataControllerTest extends TestCase
 
     private function logIn(): void
     {
-        Zend_Auth::getInstance()->getStorage()->write((object)['UID' => 12345, 'ROLES' => []]);
+        $user = new Episciences_User(['UID' => 12345]);
+        $user->setRoles([RVID => [Episciences_Acl::ROLE_MEMBER]]);
+        Zend_Auth::getInstance()->getStorage()->write($user);
     }
 
     /**
@@ -79,11 +83,13 @@ final class AdministratelinkeddataControllerTest extends TestCase
             }
         );
 
-        $statement = $this->createMock(Zend_Db_Statement_Interface::class);
-        $statement->method('fetch')->willReturn($paperRow);
         $this->adapter->method('query')->willReturnCallback(
-            function ($sql) use ($statement) {
+            function ($sql) use ($paperRow) {
                 $this->queries[] = $sql instanceof Zend_Db_Select ? $sql->assemble() : (string)$sql;
+
+                // One row per query, so that fetch() loops end
+                $statement = $this->createMock(Zend_Db_Statement_Interface::class);
+                $statement->method('fetch')->willReturnOnConsecutiveCalls($paperRow, false);
 
                 return $statement;
             }
@@ -106,7 +112,7 @@ final class AdministratelinkeddataControllerTest extends TestCase
         $level = ob_get_level();
         ob_start();
         try {
-            $returned = $controller->$action();
+            $controller->$action();
         } finally {
             $output = '';
             while (ob_get_level() > $level) {
@@ -114,8 +120,7 @@ final class AdministratelinkeddataControllerTest extends TestCase
             }
         }
 
-        // setnewinfoldAction() returns its answer instead of printing it
-        return $output . (is_string($returned) ? $returned : '');
+        return $output;
     }
 
     private function assertNothingWasWritten(): void
@@ -201,5 +206,66 @@ final class AdministratelinkeddataControllerTest extends TestCase
             self::assertDoesNotMatchRegularExpression('/DOCID = 5\b/', $sql);
             self::assertMatchesRegularExpression('/RVID = ' . RVID . '\b/', $sql);
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function paperOwnedByTheLoggedInUser(int $status): array
+    {
+        return ['DOCID' => 77, 'PAPERID' => 77, 'RVID' => RVID, 'UID' => 12345, 'STATUS' => $status];
+    }
+
+    /**
+     * @return array<string, array{int}>
+     */
+    public static function unpublishedStatusProvider(): array
+    {
+        return [
+            'submitted' => [\Episciences_Paper::STATUS_SUBMITTED],
+            'accepted' => [\Episciences_Paper::STATUS_ACCEPTED],
+        ];
+    }
+
+    /**
+     * @dataProvider unpublishedStatusProvider
+     */
+    public function testOwnerCanUpdateTheRelationshipOfAnUnpublishedPaper(int $status): void
+    {
+        $this->logIn();
+        $this->adapter->expects(self::once())->method('update')->willReturn(0);
+        $this->stubDatabase(['id' => 9, 'doc_id' => 77, 'code' => 'x', 'value' => 'v', 'name' => 'n'], $this->paperOwnedByTheLoggedInUser($status));
+
+        $this->dispatch('setnewinfoldAction', ['ldId' => '9', 'valueLd' => 'v', 'typeld' => 'software', 'relationship' => 'cites']);
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @dataProvider validWriteActionsProvider
+     */
+    public function testOwnerCannotChangeTheLinkedDataOfAPublishedPaper(string $action, array $post): void
+    {
+        $this->logIn();
+        $this->assertNothingWasWritten();
+        $this->stubDatabase(
+            ['id' => 9, 'doc_id' => 77, 'code' => 'x', 'value' => 'v', 'name' => 'n'],
+            $this->paperOwnedByTheLoggedInUser(\Episciences_Paper::STATUS_PUBLISHED)
+        );
+
+        self::assertSame(self::DENIED, $this->dispatch($action, $post));
+    }
+
+    /**
+     * Requests that would be written if the user were allowed (the added value is a valid SWHID).
+     *
+     * @return array<string, array{string, array<string, mixed>}>
+     */
+    public static function validWriteActionsProvider(): array
+    {
+        return [
+            'add' => ['addldAction', ['docId' => '77', 'typeld' => 'software', 'valueld' => 'swh:1:dir:d198bc9d7a6bcf6db04f476d29314f157507d505', 'relationship' => 'isSupplementedBy']],
+            'remove' => ['removeldAction', ['id' => '9']],
+            'update' => ['setnewinfoldAction', ['ldId' => '9', 'valueLd' => 'v', 'typeld' => 'software', 'relationship' => 'cites']],
+        ];
     }
 }

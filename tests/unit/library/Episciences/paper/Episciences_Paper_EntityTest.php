@@ -195,6 +195,29 @@ final class Episciences_Paper_EntityTest extends TestCase
         self::assertSame('hal-123', $this->paper->getIdentifier());
     }
 
+    public function testGetIdentifierStripsRefusedSuffixWhateverTheStatus(): void
+    {
+        // A previous version of a refused paper submitted again is renamed too
+        $this->paper->setIdentifier('hal-123-REFUSED');
+        $this->paper->setStatus(Episciences_Paper::STATUS_OBSOLETE);
+        self::assertSame('hal-123', $this->paper->getIdentifier());
+    }
+
+    public function testGetIdentifierOnlyStripsTheTrailingSuffix(): void
+    {
+        $this->paper->setIdentifier('hal-REFUSED-123');
+        $this->paper->setStatus(Episciences_Paper::STATUS_REFUSED);
+        self::assertSame('hal-REFUSED-123', $this->paper->getIdentifier());
+    }
+
+    public function testGetStoredIdentifierKeepsRefusedSuffix(): void
+    {
+        $this->paper->setIdentifier('hal-123-REFUSED');
+        $this->paper->setStatus(Episciences_Paper::STATUS_REFUSED);
+        self::assertSame('hal-123', $this->paper->getIdentifier());
+        self::assertSame('hal-123-REFUSED', $this->paper->getStoredIdentifier());
+    }
+
     public function testGetIdentifierUnchangedWhenPublished(): void
     {
         $this->paper->setIdentifier('hal-456');

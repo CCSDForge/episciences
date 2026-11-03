@@ -249,7 +249,8 @@ class Episciences_User_AssignmentsManager
                 /** @var Episciences_User $coAuthor */
                 /** @var Episciences_Paper $newPaper */
                 $assignment = new Episciences_User_Assignment();
-                $assignment->setRvid(RVID);
+                // Not the RVID constant: it is not defined in CLI (COAR Notify inbox)
+                $assignment->setRvid($newPaper->getRvid());
                 $assignment->setItemid($newPaper->getDocid());
                 $assignment->setItem('paper');
                 $assignment->setUid($coAuthor->getUid());

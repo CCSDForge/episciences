@@ -19,20 +19,56 @@ final class PublicViewsOutputEscapingTest extends TestCase
 
     private const ESCAPED_PAYLOAD = '&lt;img src=x onerror=alert(1)&gt;';
 
+    private mixed $previousTranslate = null;
+
+    private bool $localeRegistered = false;
+
+    private bool $defaultRouteAdded = false;
+
     protected function setUp(): void
     {
         if (!defined('ABSTRACT_MAX_LENGTH')) {
             define('ABSTRACT_MAX_LENGTH', 300);
         }
 
+        $this->previousTranslate = \Zend_Registry::isRegistered('Zend_Translate') ? \Zend_Registry::get('Zend_Translate') : null;
         $translate = new \Zend_Translate(['adapter' => 'array', 'content' => ['x' => 'x'], 'locale' => 'fr']);
         \Zend_Registry::set('Zend_Translate', $translate);
+
+        // Read by the Date helper of the publication date
+        if (!\Zend_Registry::isRegistered('Zend_Locale')) {
+            \Zend_Registry::set('Zend_Locale', new \Zend_Locale('fr'));
+            $this->localeRegistered = true;
+        }
+
+        // The author links are built with the url() helper, which needs the default route
+        $router = \Zend_Controller_Front::getInstance()->getRouter();
+        if (!$router->hasRoute('default')) {
+            $router->addDefaultRoutes();
+            $this->defaultRouteAdded = true;
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->defaultRouteAdded) {
+            \Zend_Controller_Front::getInstance()->getRouter()->removeRoute('default');
+        }
+        if ($this->localeRegistered) {
+            \Zend_Registry::getInstance()->offsetUnset('Zend_Locale');
+        }
+        if ($this->previousTranslate !== null) {
+            \Zend_Registry::set('Zend_Translate', $this->previousTranslate);
+        } else {
+            \Zend_Registry::getInstance()->offsetUnset('Zend_Translate');
+        }
     }
 
     private function view(): Zend_View
     {
         $view = new Zend_View();
         $view->setScriptPath(APPLICATION_PATH . self::SCRIPTS);
+        $view->addHelperPath(dirname(APPLICATION_PATH) . '/library/Episciences/View/Helper', 'Episciences_View_Helper_');
 
         return $view;
     }
@@ -54,6 +90,8 @@ final class PublicViewsOutputEscapingTest extends TestCase
             $locale . '_volume_title_t' => self::PAYLOAD . ' volume',
             'volume_id_i' => 3,
             'section_id_i' => 4,
+            // Always indexed for a published paper
+            'publication_date_tdate' => '2026-01-15T00:00:00Z',
         ];
     }
 

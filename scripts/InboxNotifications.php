@@ -479,6 +479,8 @@ class InboxNotifications extends AbstractScript
             ],
             'rvid' => $journal->getRvid(),
             'isEpiNotify' => true,
+            // Debug mode: nothing is written, the refused paper keeps its identifier
+            'isDryRun' => $this->isDebug(),
         ];
 
         try {
@@ -504,11 +506,13 @@ class InboxNotifications extends AbstractScript
             $this->logger->warning($uResult['message']);
         }
 
+        $isRefused = $context->getStatus() === Episciences_Paper::STATUS_REFUSED;
+
         if ($this->isDebug()) {
             return false;
         }
 
-        if ($context->getStatus() === Episciences_Paper::STATUS_REFUSED) {
+        if ($isRefused) {
             return $this->handleRefusedPaperReplacement($paper, $context, $journal, $data);
         }
 
@@ -530,13 +534,20 @@ class InboxNotifications extends AbstractScript
         // Same paper id: the submission date is shared by all the versions of a paper
         $paper->setSubmission_date($context->getSubmission_date());
 
-        $isAdded = $this->getFirstSubmissionResult($paper, $journal, $data, [
-            'canBeReplaced' => true,
-            'logDetails' => [
-                'oldStatus' => Episciences_Paper::STATUS_REFUSED,
-                'oldDocId' => $context->getDocid(),
-            ],
-        ]);
+        try {
+            $isAdded = $this->getFirstSubmissionResult($paper, $journal, $data, [
+                'canBeReplaced' => true,
+                'logDetails' => [
+                    'oldStatus' => Episciences_Paper::STATUS_REFUSED,
+                    'oldDocId' => $context->getDocid(),
+                ],
+            ]);
+        } finally {
+            // The new submission has not been saved: the refused paper keeps its identifier
+            if (!$paper->getDocid()) {
+                $context->restoreRefusedIdentifier();
+            }
+        }
 
         if (!$isAdded) {
             $this->logger->critical(sprintf(
@@ -1409,7 +1420,12 @@ class InboxNotifications extends AbstractScript
         $enrichment = $additionalPaperData[Episciences_Repositories_Common::ENRICHMENT] ?? [];
 
         if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
-            Episciences_Submit::datasetsProcessing($paper);
+            try {
+                Episciences_Submit::datasetsProcessing($paper);
+            } catch (Throwable $e) {
+                // The linked data that could be stored are: the authors and the enrichment are still stored
+                $this->logger->error(sprintf('Linked data error for paper %s: %s', $paper->getIdentifier(), $e->getMessage()));
+            }
         }
 
         if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {

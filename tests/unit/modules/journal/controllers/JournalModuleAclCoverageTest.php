@@ -244,6 +244,5 @@ final class JournalModuleAclCoverageTest extends TestCase
         yield 'section-editorsform' => ['section-editorsform'];
         yield 'grid-sortcriterion' => ['grid-sortcriterion'];
         yield 'review-editorsassignation' => ['review-editorsassignation'];
-        yield 'administratelinkeddata-setnewinfold' => ['administratelinkeddata-setnewinfold'];
     }
 }

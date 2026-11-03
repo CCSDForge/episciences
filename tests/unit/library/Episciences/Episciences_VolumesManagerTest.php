@@ -303,4 +303,9 @@ class Episciences_VolumesManagerTest extends TestCase
 
         $this->assertStringContainsString('st.RVID = ' . RVID, $sql);
     }
+
+    public function testMaxStringLengthVolNumIsTwenty(): void
+    {
+        $this->assertSame(20, Episciences_VolumesManager::MAX_STRING_LENGTH_VOL_NUM);
+    }
 }

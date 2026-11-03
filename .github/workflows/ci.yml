@@ -54,14 +54,17 @@ jobs:
       - name: Check PHP dependencies security (Composer Audit)
         run: composer audit --abandoned=ignore
 
+      - name: No new test reading the application source
+        run: php .github/scripts/check-source-reading-tests.php
+
       - name: Static Analysis (PHPStan)
         run: vendor/bin/phpstan analyse --memory-limit=1G --error-format=github
         continue-on-error: true
 
-      - name: Setup Node.js 20.x
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20.x
+          node-version-file: .nvmrc
           cache: 'yarn'
 
       - name: Install JavaScript dependencies
@@ -78,10 +81,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         
-      - name: Setup Node.js 20.x
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20.x
+          node-version-file: .nvmrc
           cache: 'yarn'
           
       - name: Install JavaScript dependencies

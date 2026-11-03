@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Episciences\Log;
 
+use Monolog\Formatter\FormatterInterface;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\StreamHandler;
@@ -16,25 +17,30 @@ final class LoggerFactory
     public const FILE_PERMISSION = 0664;
 
     /**
-     * Rotating file logger: one file per day, unlimited retention.
-     * Used by the application bootstrap, the CAS adapters and the COAR Notify classes.
+     * Rotating file logger: one file per day.
+     * Used by the application bootstrap, the CAS adapters, the COAR Notify classes and the security access log.
+     *
+     * @param int $maxFiles number of daily files kept, 0 for unlimited retention
+     * @param FormatterInterface|null $formatter defaults to a single line text formatter
      */
     public static function rotating(
         string $channel,
         ?string $file = null,
-        Level $level = Level::Debug
+        Level $level = Level::Debug,
+        int $maxFiles = 0,
+        ?FormatterInterface $formatter = null
     ): Logger
     {
         $logger = new Logger($channel);
 
         $handler = new RotatingFileHandler(
             $file ?? self::logPath() . $channel . '.log',
-            0,
+            $maxFiles,
             $level,
             true,
             self::FILE_PERMISSION
         );
-        $handler->setFormatter(new LineFormatter(null, null, false, true));
+        $handler->setFormatter($formatter ?? new LineFormatter(null, null, false, true));
         $logger->pushHandler($handler);
 
         return $logger;

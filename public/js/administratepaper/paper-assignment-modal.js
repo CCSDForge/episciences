@@ -129,6 +129,9 @@ function _post(url, params) {
             // ZF1 uses isXmlHttpRequest() to identify AJAX calls; without this
             // header the router/auth layer may return a redirect or 404.
             'X-Requested-With': 'XMLHttpRequest',
+            // Checked by the actions that write (e.g. savesection)
+            'X-CSRF-Token':
+                document.querySelector('meta[name="csrf-token"]')?.content || '',
         },
         body: params.toString(),
     }).then(function (resp) {

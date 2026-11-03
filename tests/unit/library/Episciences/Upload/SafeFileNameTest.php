@@ -45,4 +45,40 @@ final class SafeFileNameTest extends TestCase
         self::assertTrue(SafeFileName::isBare('my file (2).pdf'));
         self::assertTrue(SafeFileName::isBare('.hidden'));
     }
+
+    /**
+     * @return array<string, array{mixed, bool}>
+     */
+    public static function unsafeProvider(): array
+    {
+        return [
+            'parent directory' => ['../other/file.pdf', true],
+            'sub directory' => ['sub/file.pdf', true],
+            'backslash' => ['..\\file.pdf', true],
+            'double dot' => ['..', true],
+            'null byte' => ["file.pdf\0", true],
+            'plain name' => ['file.pdf', false],
+            'empty, broken request' => ['', false],
+            'dot left by an empty name and extension' => ['.', false],
+            'not a string' => [['../a.pdf'], false],
+            'null' => [null, false],
+        ];
+    }
+
+    /**
+     * @dataProvider unsafeProvider
+     */
+    public function testIsUnsafeOnlyFlagsAttemptsToReachAnotherDirectory(mixed $name, bool $expected): void
+    {
+        self::assertSame($expected, SafeFileName::isUnsafe($name));
+    }
+
+    public function testHasControlCharacter(): void
+    {
+        self::assertTrue(SafeFileName::hasControlCharacter("file\0.pdf"));
+        self::assertTrue(SafeFileName::hasControlCharacter("file\n.pdf"));
+        self::assertTrue(SafeFileName::hasControlCharacter("\x1f"));
+        self::assertFalse(SafeFileName::hasControlCharacter('my file (2).pdf'));
+        self::assertFalse(SafeFileName::hasControlCharacter(''));
+    }
 }

@@ -4,75 +4,85 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
-use PHPUnit\Framework\TestCase;
+use Episciences_Review;
+use Episciences_Submit;
+use ReflectionMethod;
+use SubmitController;
+use unit\modules\ControllerTestCase;
+use Zend_Controller_Response_HttpTestCase;
+use Zend_Form;
+use Zend_Form_Element_Text;
 
 /**
- * Regression tests for SubmitController.
- *
- * Strategy: source-code pattern analysis (static analysis via PHP string inspection).
- * No database or HTTP dispatch needed — tests are fast and run without side effects.
- *
+ * SubmitController::handleCoverLetterValidation(): the cover letter file required by the journal.
  */
-final class SubmitControllerTest extends TestCase
+final class SubmitControllerTest extends ControllerTestCase
 {
-    private string $source;
+    /** @var array<mixed> */
+    private array $previousFiles;
+
+    public static function setUpBeforeClass(): void
+    {
+        self::loadController('journal', 'SubmitController');
+    }
 
     protected function setUp(): void
     {
-        $this->source = (string)file_get_contents(
-            APPLICATION_PATH . '/modules/journal/controllers/SubmitController.php'
-        );
+        $this->previousFiles = $_FILES;
+        $_FILES = [];
     }
 
-    // -----------------------------------------------------------------------
-    // Helper: extract a method body from the source by its name
-    // -----------------------------------------------------------------------
-
-    private function extractMethod(string $methodName): string
+    protected function tearDown(): void
     {
-        $start = strpos($this->source, 'function ' . $methodName);
-        self::assertNotFalse($start, "Method $methodName not found in SubmitController");
-
-        $end = strpos($this->source, 'function ', $start + strlen('function ' . $methodName));
-        if ($end === false) {
-            return substr($this->source, $start);
-        }
-
-        return substr($this->source, $start, $end - $start);
+        $_FILES = $this->previousFiles;
     }
-
-    // -----------------------------------------------------------------------
-    // Bug (fixed): missing-file error attached to the wrong form element
-    // -----------------------------------------------------------------------
 
     /**
-     * handleCoverLetterValidation() reports "cover letter file is required" when
-     * Episciences_Submit::validateCoverLetterRequirement() rejects the submission.
-     * That error is about the missing *file*, so it must be attached to
-     * COVER_LETTER_FILE_ELEMENT_NAME. The original code attached it to
-     * COVER_LETTER_COMMENT_ELEMENT_NAME (the always-optional comment textarea)
-     * instead, so the message rendered next to the wrong field and the actual
-     * required file input showed no inline error.
+     * The missing-file error belongs to the file element, not to the optional comment textarea.
      */
-    public function testHandleCoverLetterValidationAttachesErrorToFileElement(): void
+    public function testMissingRequiredCoverLetterIsReportedOnTheFileElement(): void
     {
-        $method = $this->extractMethod('handleCoverLetterValidation');
+        $this->givenJournal([Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT => Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED]);
+        $form = self::submissionForm();
 
-        self::assertStringContainsString(
-            'Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME',
-            $method,
-            'handleCoverLetterValidation() must attach the missing-file error to the file element'
-        );
+        self::assertFalse($this->handleCoverLetterValidation($form));
+        self::assertNotEmpty($form->getElement(Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME)->getMessages());
+        self::assertSame([], $form->getElement(Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME)->getMessages());
     }
 
-    public function testHandleCoverLetterValidationDoesNotAttachErrorToCommentElement(): void
+    public function testAttachedRequiredCoverLetterIsAccepted(): void
     {
-        $method = $this->extractMethod('handleCoverLetterValidation');
+        $this->givenJournal([Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT => Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED]);
+        $_FILES[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME] = ['name' => 'letter.pdf'];
+        $form = self::submissionForm();
 
-        self::assertStringNotContainsString(
-            'Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME',
-            $method,
-            'handleCoverLetterValidation() must not attach the missing-file error to the comment element'
-        );
+        self::assertTrue($this->handleCoverLetterValidation($form));
+        self::assertSame([], $form->getMessages());
+    }
+
+    public function testOptionalCoverLetterMayBeMissing(): void
+    {
+        $this->givenJournal([Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT => Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL]);
+        $form = self::submissionForm();
+
+        self::assertTrue($this->handleCoverLetterValidation($form));
+        self::assertSame([], $form->getMessages());
+    }
+
+    private function handleCoverLetterValidation(Zend_Form $form): bool
+    {
+        $controller = new SubmitController($this->postRequest(), new Zend_Controller_Response_HttpTestCase());
+
+        return (new ReflectionMethod(SubmitController::class, 'handleCoverLetterValidation'))
+            ->invoke($controller, $form, []);
+    }
+
+    private static function submissionForm(): Zend_Form
+    {
+        $form = new Zend_Form();
+        $form->addElement(new Zend_Form_Element_Text(Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME));
+        $form->addElement(new Zend_Form_Element_Text(Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME));
+
+        return $form;
     }
 }

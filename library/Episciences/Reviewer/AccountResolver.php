@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Episciences\User\EmailAlreadyInUseException;
 use Episciences\User\EmailPolicy;
+use Episciences\User\Token\AccountTokenRepository;
+use Episciences\User\Token\TokenPurpose;
 
 /**
  * Resolves (looks up or creates) a real CAS reviewer account from an invitation
@@ -412,13 +414,7 @@ class Episciences_Reviewer_AccountResolver
      */
     public static function sendNewAccountPasswordEmail(Episciences_Reviewer $user): void
     {
-        $userToken = new Ccsd_User_Models_UserTokens([
-            'UID'   => $user->getUid(),
-            'EMAIL' => $user->getEmail(),
-            'USAGE' => 'PASSWORD',
-        ]);
-        $userToken->generateUserToken();
-        (new Ccsd_User_Models_UserTokensMapper())->save($userToken);
+        $token = (new AccountTokenRepository())->issue((int)$user->getUid(), (string)$user->getEmail(), TokenPurpose::ACCOUNT_SETUP);
 
         $locale = $user->getLangueid(true);
 
@@ -431,7 +427,7 @@ class Episciences_Reviewer_AccountResolver
             'controller' => 'user',
             'action'     => 'resetpassword',
             'lang'       => $locale,
-            'token'      => $userToken->getToken(),
+            'token'      => $token,
         ], null, true);
 
         $mail = new Episciences_Mail();

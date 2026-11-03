@@ -17,7 +17,7 @@
         ?>
 
 
-        <article class="post">
+        <article class="post" id="news-<?php echo (int)$news['NEWSID']; ?>">
             <header>
                 <h2><?php echo $this->escape($this->translate($news['TITLE'])); ?></h2>
             </header>

@@ -1,0 +1,188 @@
+name: End-to-End Tests (Playwright)
+
+on:
+  pull_request:
+    branches: [ staging, main ]
+  workflow_dispatch:
+
+jobs:
+  playwright-e2e:
+    name: Playwright E2E Tests
+    runs-on: ubuntu-latest
+
+    env:
+      PWD_PATH: ${{ github.workspace }}/tests/config
+      # Absolute URLs built by the application use https?://<rvcode>.episciences.org (DOMAIN
+      # constant): the journal is served under that name, resolved to the runner in /etc/hosts
+      BASE_URL: http://dev.episciences.org/
+      MAILPIT_URL: http://127.0.0.1:8025/
+      # PHP runs on the runner itself, not in the docker-compose container
+      E2E_PHP_EXEC: php
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: 1025
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_episciences
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 1025:1025
+          - 8025:8025
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, xsl, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, zip, curl
+          tools: composer:v2
+
+      - name: Install PHP dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      # The public pages listing papers query Solr. The index stays empty: the suite does not run the
+      # indexing worker. ICU fields of the configset need the analysis-extras module.
+      - name: Start Solr
+        run: |
+          docker run --detach --name solr --publish 127.0.0.1:8983:8983 \
+            --env SOLR_MODULES=analysis-extras \
+            --volume "$PWD/src/solr/episciences:/opt/episciences-configset:ro" \
+            solr:9.9 solr-precreate episciences /opt/episciences-configset
+
+      - name: Wait for MySQL
+        run: |
+          while ! mysqladmin ping -h"127.0.0.1" -P3306 --silent; do
+            sleep 1
+          done
+
+      - name: Setup test database & config
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences;"
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences_auth;"
+          # The development dataset: the dev journal with its repositories, settings and mail templates
+          mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < src/mysql/docker/episciences/dev-episciences.sql
+          mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences_auth < tests/fixtures/schema-cas.sql
+          php .github/scripts/setup-test-config.php
+          # Public pages of the journal
+          cp tests/fixtures/e2e-navigation.json data/dev/config/navigation.json
+
+      - name: Use the MySQL authentication adapter and the Solr container
+        # The E2E accounts only exist in the local authentication database
+        run: |
+          php -r '
+            $path = getenv("PWD_PATH") . "/pwd.json";
+            $config = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+            $config["EPISCIENCES"]["AUTH_ADAPTER_NAME"] = "MYSQL";
+            foreach (["INDEXING", "SEARCH"] as $use) {
+              $config["ENDPOINTS"][$use . "_HOST"] = "127.0.0.1";
+              $config["ENDPOINTS"][$use . "_PORT"] = 8983;
+              $config["ENDPOINTS"][$use . "_PATH"] = "/solr";
+            }
+            $config["ENDPOINTS"]["CORENAME"] = "episciences";
+            file_put_contents($path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+          '
+
+      - name: Create the Messenger queue tables
+        # The development dataset leaves them to the queue command, as on every environment
+        run: |
+          php scripts/console.php episciences:queue --transport=solr_index --setup
+          php scripts/console.php episciences:queue --transport=next_revalidation --setup
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: 'yarn'
+
+      - name: Install JS dependencies & Build assets
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Lint E2E tests
+        run: yarn lint:e2e
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright Browsers
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      # The cache holds the browsers only, not the system libraries they need
+      - name: Install Playwright System Dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Start Web Server
+        run: |
+          echo "127.0.0.1 dev.episciences.org" | sudo tee -a /etc/hosts
+          # Lets PHP listen on port 80 without running as root
+          sudo setcap cap_net_bind_service=+ep "$(readlink -f "$(command -v php)")"
+          # Upload limits of the php-fpm container (src/php-fpm/upload.ini): with the default 2M, the
+          # submission form raises a notice before its redirect
+          nohup php -d upload_max_filesize=16M -d post_max_size=32M \
+            -S 127.0.0.1:80 -t public .github/scripts/e2e-router.php > /tmp/php-server.log 2>&1 &
+          sleep 2
+          curl --fail --silent --show-error --output /dev/null http://dev.episciences.org/user/login
+        env:
+          # The development environment does not require HTTPS for the session cookie
+          APPLICATION_ENV: development
+          RVCODE: dev
+
+      # Indexes published papers in Solr, as the worker-solr-index service of docker-compose.yml: the
+      # volume pages list the indexed papers
+      - name: Start Solr Indexing Worker
+        run: |
+          nohup php scripts/console.php episciences:worker --transport=solr_index --time-limit=3600 \
+            --memory-limit=512M > /tmp/solr-worker.log 2>&1 &
+        env:
+          APPLICATION_ENV: development
+          RVCODE: dev
+
+      - name: Wait for Solr
+        run: |
+          curl --retry 30 --retry-delay 2 --retry-all-errors --fail --silent --show-error --output /dev/null \
+            'http://127.0.0.1:8983/solr/episciences/select?q=*:*&rows=0'
+
+      # The global setup seeds the E2E accounts and cleans the journal (tests/e2e/global-setup.js)
+      - name: Run Playwright Tests
+        run: yarn test:e2e
+        env:
+          CI: true
+
+      - name: Show web server and application logs
+        if: failure()
+        run: |
+          tail -n 200 /tmp/php-server.log
+          echo '--- Solr indexing worker'
+          tail -n 50 /tmp/solr-worker.log
+          echo '--- Application logs'
+          find tmp/test-logs -type f -exec tail -n 50 {} +
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

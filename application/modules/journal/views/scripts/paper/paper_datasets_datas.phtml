@@ -15,7 +15,7 @@ $keepOnlySourceUsed = [];
     </div>
     <div class="panel-body in">
         <?php $sourceHtmlIdSuffix = 1; ?>
-        <?php $isAllowedToManageRelations = Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner();
+        <?php $isAllowedToManageRelations = Episciences_Auth::isAllowedToManagePaper() || (!$paper->isPublished() && $paper->isOwner());
         foreach ($datasets as $nameRelationship => $datasetsArrayByRelationship) : ?>
             <?php if ($nameRelationship !== null) {
                 echo "<span class='label label-default'>" . $this->escape($this->translate(lcfirst($nameRelationship))) . "</span>";

@@ -24,6 +24,10 @@
 - `make phpstan [TARGET=path] [LEVEL=X]` - PHPStan static analysis (level 0-9)
 - `make rector [TARGET=path] [DRY_RUN=1]` - Rector refactoring
 - `yarn format` - Format JS with Prettier
+- `make check-source-reading-tests` - Refuse new tests that read the application source
+- Tests must run the code (call the method, dispatch the action, render the view), never read
+  the source (`file_get_contents()` on code, `extractMethod()`, `getStartLine()`).
+  Controller actions: extend `tests/unit/modules/ControllerTestCase.php`. Details: `tests/README.md`
 
 ## Code
 - Write comments, documentation in English

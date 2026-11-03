@@ -7,60 +7,22 @@ namespace unit\modules\journal\controllers;
 use Episciences_SectionsManager;
 use Episciences_VolumesAndSectionsManager;
 use Episciences_VolumesManager;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
-use Zend_Controller_Request_HttpTestCase;
-use Zend_Controller_Response_HttpTestCase;
-use Zend_Db_Adapter_Abstract;
-use Zend_Db_Select;
-use Zend_Db_Table_Abstract;
+use unit\modules\ControllerTestCase;
+use unit\modules\support\DispatchResult;
 
 /**
  * Journal scoping of volumes and sections.
  *
  * Volume and section ids come from request parameters, and several journals share the same
  * tables: a lookup, a deletion or a re-ordering must never reach an item of another journal.
- * The database adapter is a partial mock: queries are built for real and captured, nothing is
- * executed.
+ * Queries are built for real and recorded, nothing is executed.
  */
-final class JournalScopeGuardTest extends TestCase
+final class JournalScopeGuardTest extends ControllerTestCase
 {
-    private Zend_Db_Adapter_Abstract $previousAdapter;
-
-    /** @var MockObject&Zend_Db_Adapter_Abstract */
-    private $adapter;
-
-    /** @var list<string> SQL of the SELECT statements sent to the adapter */
-    private array $selects = [];
-
-    private ?Zend_Controller_Response_HttpTestCase $response = null;
-
     protected function setUp(): void
     {
-        $this->previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        $this->adapter = $this->getMockBuilder($this->previousAdapter::class)
-            ->setConstructorArgs([$this->previousAdapter->getConfig()])
-            ->onlyMethods(['fetchRow', 'fetchCol', 'update', 'delete', 'insert'])
-            ->getMock();
-        Zend_Db_Table_Abstract::setDefaultAdapter($this->adapter);
-
-        require_once APPLICATION_PATH . '/modules/journal/controllers/VolumeController.php';
-        require_once APPLICATION_PATH . '/modules/journal/controllers/SectionController.php';
-    }
-
-    protected function tearDown(): void
-    {
-        Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
-    }
-
-    private function captureSelects(string $method, mixed $result): void
-    {
-        $this->adapter->method($method)->willReturnCallback(function ($select) use ($result) {
-            $this->selects[] = $select instanceof Zend_Db_Select ? $select->assemble() : (string)$select;
-
-            return $result;
-        });
+        self::loadController('journal', 'VolumeController');
+        self::loadController('journal', 'SectionController');
     }
 
     // ------------------------------------------------------------------
@@ -69,23 +31,19 @@ final class JournalScopeGuardTest extends TestCase
 
     public function testVolumeLookupIsRestrictedToTheJournal(): void
     {
-        $this->captureSelects('fetchRow', false);
-
         self::assertFalse(Episciences_VolumesManager::find(7, 3));
 
-        self::assertCount(1, $this->selects);
-        self::assertStringContainsString('VID = 7', $this->selects[0]);
-        self::assertMatchesRegularExpression('/\bRVID = 3\b/', $this->selects[0]);
+        self::assertCount(1, $this->db->selects());
+        self::assertStringContainsString('VID = 7', $this->db->selects()[0]);
+        self::assertMatchesRegularExpression('/\bRVID = 3\b/', $this->db->selects()[0]);
     }
 
     public function testSectionLookupIsRestrictedToTheJournal(): void
     {
-        $this->captureSelects('fetchRow', false);
-
         self::assertFalse(Episciences_SectionsManager::find(7, 3));
 
-        self::assertCount(1, $this->selects);
-        self::assertMatchesRegularExpression('/\bRVID = 3\b/', $this->selects[0]);
+        self::assertCount(1, $this->db->selects());
+        self::assertMatchesRegularExpression('/\bRVID = 3\b/', $this->db->selects()[0]);
     }
 
     /**
@@ -107,25 +65,17 @@ final class JournalScopeGuardTest extends TestCase
      */
     public function testSortOnlyUpdatesItemsOfTheCurrentJournal(string $colId, string $prefix, string $table): void
     {
-        $this->adapter->method('fetchCol')->willReturn(['1', '2', '3']);
-        $updates = [];
-        $this->adapter->method('update')->willReturnCallback(
-            static function ($t, $data, $where) use (&$updates) {
-                $updates[] = [$t, $data, $where];
-
-                return 1;
-            }
-        );
+        $this->db->respondTo('/./', [['ID' => '1'], ['ID' => '2'], ['ID' => '3']]);
 
         ob_start(); // sort() echoes the number of sorted items for the AJAX caller
         Episciences_VolumesAndSectionsManager::sort(['sorted' => [$prefix . '99', $prefix . '1']], $colId);
         ob_end_clean();
 
         // Two explicit updates (the unknown id 99 is still posted) and the two items left over
-        self::assertCount(4, $updates);
-        foreach ($updates as [$t, , $where]) {
-            self::assertSame($table, $t);
-            self::assertSame(RVID, $where['RVID = ?'] ?? null, 'every update must carry the journal id');
+        self::assertCount(4, $this->db->updates());
+        foreach ($this->db->updates() as $update) {
+            self::assertSame($table, $update['table']);
+            self::assertSame(RVID, $update['where']['RVID = ?'] ?? null, 'every update must carry the journal id');
         }
     }
 
@@ -134,111 +84,83 @@ final class JournalScopeGuardTest extends TestCase
     // ------------------------------------------------------------------
 
     /**
-     * @param class-string $class
+     * Run $action with $post, along with the valid request token unless $withToken is false: the
+     * scope checks come after the token one.
+     *
+     * @param class-string<\Zend_Controller_Action> $class
      * @param array<string, mixed> $post
-     * @param array<string, string> $headers
      */
-    private function dispatchAction(string $class, string $action, array $post, bool $withToken = true, array $headers = []): string
+    private function dispatchAction(string $class, string $action, array $post, bool $withToken = true): DispatchResult
     {
-        // The scope checks come after the form token one: send a valid token
-        \Zend_Session::$_unitTestEnabled = true;
-        $session = new \Zend_Session_Namespace(SESSION_NAMESPACE);
-        $session->csrfToken = 'scope-guard-token';
-        if ($withToken) {
-            $post['csrf_token'] = 'scope-guard-token';
-        }
+        return $this->dispatch($class, $action, $this->postRequest($post, $withToken));
+    }
 
-        // The test request keeps what an earlier one posted
-        $_POST = [];
-
-        $request = new Zend_Controller_Request_HttpTestCase();
-        $request->setMethod('POST')->setPost($post);
-        foreach ($headers as $name => $value) {
-            $request->setHeader($name, $value);
-        }
-        $this->response = new Zend_Controller_Response_HttpTestCase();
-
-        $controller = new $class($request, $this->response);
-
-        ob_start();
-        try {
-            $controller->$action();
-        } finally {
-            $output = (string)ob_get_clean();
-        }
-
-        return $output;
+    private function assertNothingWritten(): void
+    {
+        self::assertSame([], $this->db->inserts());
+        self::assertSame([], $this->db->updates());
+        self::assertSame([], $this->db->deletes());
     }
 
     public function testVolumeOfAnotherJournalIsNotDeleted(): void
     {
-        $this->captureSelects('fetchRow', false);
-        $this->adapter->expects(self::never())->method('delete');
-        $this->adapter->expects(self::never())->method('update');
-
-        $output = $this->dispatchAction(\VolumeController::class, 'deleteAction', ['params' => ['id' => '7']]);
+        $output = $this->dispatchAction(\VolumeController::class, 'delete', ['params' => ['id' => '7']])->output;
 
         self::assertSame('', $output, 'a refused deletion answers false');
-        self::assertCount(1, $this->selects, 'only the scoped lookup may reach the database');
-        self::assertMatchesRegularExpression('/\bRVID = ' . RVID . '\b/', $this->selects[0]);
+        $this->assertNothingWritten();
+        self::assertCount(1, $this->db->selects(), 'only the scoped lookup may reach the database');
+        self::assertMatchesRegularExpression('/\bRVID = ' . RVID . '\b/', $this->db->selects()[0]);
     }
 
     public function testSectionOfAnotherJournalIsNotDeleted(): void
     {
-        $this->captureSelects('fetchRow', false);
-        $this->adapter->expects(self::never())->method('delete');
-        $this->adapter->expects(self::never())->method('update');
-
         $output = $this->dispatchAction(
             \SectionController::class,
-            'deleteAction',
+            'delete',
             ['ajax' => '1', 'params' => ['id' => '7']]
-        );
+        )->output;
 
         self::assertSame('', $output);
-        self::assertCount(1, $this->selects);
-        self::assertMatchesRegularExpression('/\bRVID = ' . RVID . '\b/', $this->selects[0]);
+        $this->assertNothingWritten();
+        self::assertCount(1, $this->db->selects());
+        self::assertMatchesRegularExpression('/\bRVID = ' . RVID . '\b/', $this->db->selects()[0]);
     }
 
     /**
-     * @return array<string, array{class-string, string, string}>
+     * @return array<string, array{class-string<\Zend_Controller_Action>, string, string}>
      */
     public static function editorsActionsProvider(): array
     {
         return [
-            'volume editors form' => [\VolumeController::class, 'editorsformAction', 'vid'],
-            'volume display editors' => [\VolumeController::class, 'displayeditorsAction', 'vid'],
-            'volume save editors' => [\VolumeController::class, 'saveeditorsAction', 'vid'],
-            'section editors form' => [\SectionController::class, 'editorsformAction', 'sid'],
-            'section display editors' => [\SectionController::class, 'displayeditorsAction', 'sid'],
-            'section save editors' => [\SectionController::class, 'saveeditorsAction', 'sid'],
+            'volume editors form' => [\VolumeController::class, 'editorsform', 'vid'],
+            'volume display editors' => [\VolumeController::class, 'displayeditors', 'vid'],
+            'volume save editors' => [\VolumeController::class, 'saveeditors', 'vid'],
+            'section editors form' => [\SectionController::class, 'editorsform', 'sid'],
+            'section display editors' => [\SectionController::class, 'displayeditors', 'sid'],
+            'section save editors' => [\SectionController::class, 'saveeditors', 'sid'],
         ];
     }
 
     /**
      * An item of another journal must give an empty answer and no write, never its editors.
      *
-     * @param class-string $class
+     * @param class-string<\Zend_Controller_Action> $class
      * @dataProvider editorsActionsProvider
      */
     public function testEditorsActionsRefuseAnItemOfAnotherJournal(string $class, string $action, string $key): void
     {
-        $this->captureSelects('fetchRow', false);
-        $this->adapter->expects(self::never())->method('delete');
-        $this->adapter->expects(self::never())->method('insert');
-        $this->adapter->expects(self::never())->method('update');
-
-        $output = $this->dispatchAction($class, $action, [$key => '7', 'editors' => ['1']]);
+        $output = $this->dispatchAction($class, $action, [$key => '7', 'editors' => ['1']])->output;
 
         self::assertSame('', $output);
-        self::assertNotEmpty($this->selects);
-        foreach ($this->selects as $sql) {
+        $this->assertNothingWritten();
+        self::assertNotEmpty($this->db->selects());
+        foreach ($this->db->selects() as $sql) {
             self::assertMatchesRegularExpression('/\bRVID = ' . RVID . '\b/', $sql);
         }
     }
 
     /**
-     * @return array<string, array{class-string, string, array<string, mixed>, string}>
+     * @return array<string, array{class-string<\Zend_Controller_Action>, string, array<string, mixed>, string}>
      */
     public static function writeActionsProvider(): array
     {
@@ -246,35 +168,33 @@ final class JournalScopeGuardTest extends TestCase
         $expired = 'Votre session a expiré, veuillez réessayer.';
 
         return [
-            'volume delete' => [\VolumeController::class, 'deleteAction', ['params' => ['id' => '7']], $expired],
-            'section delete' => [\SectionController::class, 'deleteAction', ['ajax' => '1', 'params' => ['id' => '7']], $expired],
-            'volume save editors' => [\VolumeController::class, 'saveeditorsAction', ['vid' => '7', 'editors' => ['1']], ''],
-            'section save editors' => [\SectionController::class, 'saveeditorsAction', ['sid' => '7', 'editors' => ['1']], ''],
+            'volume delete' => [\VolumeController::class, 'delete', ['params' => ['id' => '7']], $expired],
+            'section delete' => [\SectionController::class, 'delete', ['ajax' => '1', 'params' => ['id' => '7']], $expired],
+            'volume save editors' => [\VolumeController::class, 'saveeditors', ['vid' => '7', 'editors' => ['1']], ''],
+            'section save editors' => [\SectionController::class, 'saveeditors', ['sid' => '7', 'editors' => ['1']], ''],
         ];
     }
 
     /**
      * Without the form token nothing is looked up, written or deleted.
      *
-     * @param class-string $class
+     * @param class-string<\Zend_Controller_Action> $class
      * @param array<string, mixed> $post
      * @dataProvider writeActionsProvider
      */
     public function testWriteActionsRefuseARequestWithoutToken(string $class, string $action, array $post, string $expectedOutput): void
     {
-        $this->captureSelects('fetchRow', ['VID' => 7, 'SID' => 7, 'RVID' => RVID]);
-        $this->adapter->expects(self::never())->method('delete');
-        $this->adapter->expects(self::never())->method('insert');
-        $this->adapter->expects(self::never())->method('update');
+        $this->db->respondTo('/./', [['VID' => 7, 'SID' => 7, 'RVID' => RVID]]);
 
-        $output = $this->dispatchAction($class, $action, $post, false);
+        $output = $this->dispatchAction($class, $action, $post, false)->output;
 
         self::assertSame($expectedOutput, $output);
-        self::assertSame([], $this->selects);
+        self::assertSame([], $this->db->queries());
+        $this->assertNothingWritten();
     }
 
     /**
-     * @return array<string, array{class-string}>
+     * @return array<string, array{class-string<\Zend_Controller_Action>}>
      */
     public static function sortActionsProvider(): array
     {
@@ -287,23 +207,73 @@ final class JournalScopeGuardTest extends TestCase
     /**
      * A re-ordering without the form token is refused with a 403, nothing is updated.
      *
-     * @param class-string $class
+     * @param class-string<\Zend_Controller_Action> $class
      * @dataProvider sortActionsProvider
      */
     public function testSortActionsRefuseARequestWithoutToken(string $class): void
     {
-        $this->adapter->expects(self::never())->method('fetchCol');
-        $this->adapter->expects(self::never())->method('update');
+        $result = $this->dispatch($class, 'sort', $this->xhrPostRequest(['sorted' => ['item_1', 'item_2']]));
 
-        $output = $this->dispatchAction(
-            $class,
-            'sortAction',
-            ['sorted' => ['item_1', 'item_2']],
-            false,
-            ['X-Requested-With' => 'XMLHttpRequest']
+        self::assertSame('', $result->output);
+        self::assertSame(403, $result->statusCode());
+        self::assertSame([], $this->db->queries());
+        self::assertSame([], $this->db->updates());
+    }
+
+    // ------------------------------------------------------------------
+    // Controllers: the page of an item of another journal is not shown
+    // ------------------------------------------------------------------
+
+    /**
+     * @return array<string, array{class-string<\Zend_Controller_Action>, string, string}>
+     */
+    public static function viewActionsProvider(): array
+    {
+        return [
+            'volume' => [\VolumeController::class, T_VOLUMES, '/browse/volumes'],
+            'section' => [\SectionController::class, T_SECTIONS, '/browse/section'],
+        ];
+    }
+
+    /**
+     * Item 7 belongs to another journal: it is only found by a lookup that is not restricted to
+     * the current one.
+     */
+    private function givenItemOfAnotherJournal(string $table): void
+    {
+        $this->db->respondTo(
+            '/FROM `' . $table . '` WHERE \((VID|SID) = \'?7\'?\)/',
+            static fn(string $sql): array => preg_match('/\bRVID = ' . RVID . '\b/', $sql)
+                ? []
+                : [['VID' => 7, 'SID' => 7, 'RVID' => RVID + 1, 'POSITION' => 1]]
         );
+    }
 
-        self::assertSame('', $output);
-        self::assertSame(403, $this->response?->getHttpResponseCode());
+    /**
+     * @param class-string<\Zend_Controller_Action> $class
+     * @dataProvider viewActionsProvider
+     */
+    public function testJsonViewOfAnItemOfAnotherJournalIsEmpty(string $class, string $table, string $listUrl): void
+    {
+        $this->givenItemOfAnotherJournal($table);
+        $request = $this->getRequest([], ['id' => '7']);
+        $request->setHeader('Accept', 'application/json');
+
+        $result = $this->dispatch($class, 'view', $request);
+
+        self::assertSame('[]', $result->body());
+    }
+
+    /**
+     * @param class-string<\Zend_Controller_Action> $class
+     * @dataProvider viewActionsProvider
+     */
+    public function testPageOfAnItemOfAnotherJournalRedirectsToTheList(string $class, string $table, string $listUrl): void
+    {
+        $this->givenItemOfAnotherJournal($table);
+
+        $result = $this->dispatch($class, 'view', $this->getRequest([], ['id' => '7']));
+
+        self::assertSame($listUrl, $result->redirectUrl());
     }
 }

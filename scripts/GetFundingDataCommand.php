@@ -157,7 +157,7 @@ class GetFundingDataCommand extends Command
 
             // Process HAL funding
             if ((int) $value['REPOID'] === (int) Episciences_Repositories::HAL_REPO_ID && !empty(trim($value['IDENTIFIER']))) {
-                $trimIdentifier = trim($value['IDENTIFIER']);
+                $trimIdentifier = Episciences_Paper::stripRefusedSuffix(trim($value['IDENTIFIER']));
                 $version        = (int) $value['VERSION']; // cast: function expects int, DB returns string
 
                 if (!$dryRun) {

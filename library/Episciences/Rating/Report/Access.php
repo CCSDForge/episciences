@@ -48,7 +48,6 @@ class Episciences_Rating_Report_Access
      * @param int|null $uid The user ID (null if not logged in)
      * @param Episciences_Review $review The review with loaded settings
      * @param bool $isSecretary Whether the user is a secretary
-     * @param bool $isGuestEditor Whether the user is a guest editor
      * @param bool $isEditor Whether the user is an editor (global role)
      * @param bool $isCopyEditor Whether the user is a copy editor (global role)
      * @param bool $isReportsVisibleToAuthor Whether reports are visible to the paper author
@@ -62,7 +61,6 @@ class Episciences_Rating_Report_Access
         ?int $uid,
         Episciences_Review $review,
         bool $isSecretary,
-        bool $isGuestEditor,
         bool $isEditor,
         bool $isCopyEditor,
         bool $isReportsVisibleToAuthor,
@@ -79,7 +77,6 @@ class Episciences_Rating_Report_Access
             $uid,
             $review,
             $isSecretary,
-            $isGuestEditor,
             $isEditor,
             $isCopyEditor
         );
@@ -119,7 +116,8 @@ class Episciences_Rating_Report_Access
      * 1. Report author (reviewer who authored or on-behalf) — takes priority even
      *    when the same user also holds an editorial role, so authors always keep
      *    full access to their own report, including drafts (WIP).
-     * 2. Editorial staff (secretary, editor, copy editor, guest editor)
+     * 2. Editorial staff (secretary, editor, copy editor, or editor / guest editor /
+     *    copy editor assigned to the paper)
      * 3. Paper author (depositor)
      *
      * Returns null for unauthenticated users or users with no recognized role.
@@ -129,7 +127,6 @@ class Episciences_Rating_Report_Access
      * @param int|null $uid The user ID (null if not logged in)
      * @param Episciences_Review $review The review with loaded settings
      * @param bool $isSecretary Whether the user is a secretary
-     * @param bool $isGuestEditor Whether the user is a guest editor
      * @param bool $isEditor Whether the user is an editor (global role)
      * @param bool $isCopyEditor Whether the user is a copy editor (global role)
      * @return string|null One of the ROLE_* constants, or null if no role applies
@@ -140,7 +137,6 @@ class Episciences_Rating_Report_Access
         ?int $uid,
         Episciences_Review $review,
         bool $isSecretary,
-        bool $isGuestEditor,
         bool $isEditor,
         bool $isCopyEditor
     ): ?string {
@@ -154,7 +150,7 @@ class Episciences_Rating_Report_Access
         }
 
         // Check editorial staff
-        if (self::isEditorialStaff($paper, $uid, $review, $isSecretary, $isGuestEditor, $isEditor, $isCopyEditor)) {
+        if (self::isEditorialStaff($paper, $uid, $review, $isSecretary, $isEditor, $isCopyEditor)) {
             return self::ROLE_EDITORIAL_STAFF;
         }
 
@@ -229,7 +225,6 @@ class Episciences_Rating_Report_Access
      * @param int|null $uid The user ID
      * @param Episciences_Review $review The review with loaded settings
      * @param bool $isSecretary Whether the user is a secretary
-     * @param bool $isGuestEditor Whether the user is a guest editor
      * @param bool $isEditor Whether the user is an editor (global role)
      * @param bool $isCopyEditor Whether the user is a copy editor (global role)
      * @return bool True if the user is editorial staff
@@ -239,17 +234,11 @@ class Episciences_Rating_Report_Access
         ?int $uid,
         Episciences_Review $review,
         bool $isSecretary,
-        bool $isGuestEditor,
         bool $isEditor,
         bool $isCopyEditor
     ): bool {
         // Secretary always has access
         if ($isSecretary) {
-            return true;
-        }
-
-        // Guest editor (global, not paper-specific)
-        if ($isGuestEditor) {
             return true;
         }
 
@@ -266,6 +255,8 @@ class Episciences_Rating_Report_Access
         }
 
         // Paper-specific assignments (always allowed regardless of encapsulation).
+        // Guest editors only get access this way: their role is global, but they act on
+        // the papers they are assigned to only.
         // Assignments are checked on the latest version too: editors and copy editors
         // are unassigned from a version when a new one is submitted.
         if ($uid !== null && $uid !== 0) {

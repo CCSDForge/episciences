@@ -7,11 +7,20 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
 
     const SOLR_DEFAULT_BOOLEAN_OPERATOR = 'AND';
     const SOLR_DEFAULT_SORT_TYPE = 'score desc';
+    private const PUBLICATION_YEAR_FIELD = 'publication_date_year_fs';
+    // Solr int fields are signed 32-bit integers: larger values fail with "Invalid Number"
+    private const SOLR_MAX_INT = 2147483647;
     /**
      *
      * @var Query object
      */
     private $_query;
+
+    /**
+     * Solr fields accepted as user filters; null means no restriction
+     * @var string[]|null
+     */
+    private ?array $allowedFilterFields = null;
 
     /**
      *
@@ -285,6 +294,66 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
     }
 
     /**
+     * @param string[]|null $allowedFilterFields Solr fields accepted as user filters; null disables the check
+     * @return $this
+     */
+    public function setAllowedFilterFields(?array $allowedFilterFields): self
+    {
+        $this->allowedFilterFields = $allowedFilterFields;
+        return $this;
+    }
+
+    /**
+     * @return string[]|null
+     */
+    public function getAllowedFilterFields(): ?array
+    {
+        return $this->allowedFilterFields;
+    }
+
+    /**
+     * Solr fields used by the facet links (the "searchMapping" of each facet)
+     *
+     * @param mixed $facetsConfig content of solr.es.facets.json, false when the file is missing
+     * @return string[]|null null when there is no facets configuration
+     */
+    public static function getFilterFieldsFromFacetsConfig($facetsConfig): ?array
+    {
+        if (!is_array($facetsConfig)) {
+            return null;
+        }
+
+        return array_values(array_filter(
+            array_column($facetsConfig, 'searchMapping'),
+            static fn($field): bool => is_string($field) && $field !== ''
+        ));
+    }
+
+    /**
+     * Keep only the integer terms of a numeric filter such as "2021 OR 2012"
+     * ("+" is accepted as a separator for doubly encoded URLs)
+     *
+     * @return string|null the cleaned filter, null if no valid term remains
+     */
+    public static function sanitizeNumericFilterValue(string $filterValue): ?string
+    {
+        $terms = preg_split('/[\s+]+OR[\s+]+/', trim($filterValue, " \"+")) ?: [];
+        $terms = array_values(array_filter(array_map('trim', $terms), static function (string $term): bool {
+            return $term !== ''
+                && ctype_digit($term)
+                && strlen(ltrim($term, '0')) <= strlen((string)self::SOLR_MAX_INT)
+                && (int)$term <= self::SOLR_MAX_INT;
+        }));
+
+        return $terms === [] ? null : implode(' OR ', array_unique($terms));
+    }
+
+    private static function isNumericFilterField(string $solrFieldName): bool
+    {
+        return $solrFieldName === self::PUBLICATION_YEAR_FIELD || str_ends_with($solrFieldName, '_i');
+    }
+
+    /**
      * Filtres de recherche : mise en place des filtres utilisateur
      * correspondance entre le nom du champ
      * passé dans l'URL et son nom dans l'index solr
@@ -320,9 +389,23 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
 
         foreach ($searchParams as $solrFieldName => $filterValue) {
 
-            $filterParams [$solrFieldName] = explode(' OR ', $searchParams [$solrFieldName]);
+            // Array parameters (?field[]=...) are not valid filters
+            if (!is_scalar($filterValue)) {
+                continue;
+            }
 
-            $filterValue = $this->getRawSearchParamsbyKey($solrFieldName);
+            // Unknown fields would make Solr fail with "undefined field"
+            if ($this->allowedFilterFields !== null && !in_array($solrFieldName, $this->allowedFilterFields, true)) {
+                continue;
+            }
+
+            $filterValue = (string)$filterValue;
+            $filterParams [$solrFieldName] = explode(' OR ', $filterValue);
+
+            // Non-numeric values on numeric fields would make Solr fail with "Invalid Number"
+            if (self::isNumericFilterField((string)$solrFieldName)) {
+                $filterValue = self::sanitizeNumericFilterValue($filterValue);
+            }
 
             if ($filterValue != null) {
 
@@ -346,7 +429,7 @@ class Ccsd_Search_Solr_Search extends Ccsd_Search_Solr
                         return '"' . $helper->escapeTerm($v) . '"';
                     }, $filterValueArray);
                     $filterValue = implode(" OR ", $filterValueArray);
-                } elseif ($solrFieldName !== 'publication_date_year_fs') {
+                } elseif (!self::isNumericFilterField((string)$solrFieldName)) {
                     $filterValue = $helper->escapeTerm($filterValue);
                 }
 

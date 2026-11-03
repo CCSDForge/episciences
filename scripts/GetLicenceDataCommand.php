@@ -81,7 +81,7 @@ class GetLicenceDataCommand extends Command
         $cache = new FilesystemAdapter('enrichmentLicences', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
 
         foreach ($rows as $value) {
-            $identifier = $value['IDENTIFIER'];
+            $identifier = Episciences_Paper::stripRefusedSuffix((string) $value['IDENTIFIER']);
             $repoId     = (int) $value['REPOID'];
             $docId      = (int) $value['DOCID'];
             $version    = (float) $value['VERSION'];

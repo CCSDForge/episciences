@@ -12,6 +12,7 @@
     "USER_AGENT": "Episciences - contact@example.org",
     "API_URL": "https://api-dev.episciences.org/api/",
     "API_SECRET_KEY": "four random common words",
+    "API_STATS_DELEGATION_SECRET": "",
     "USE_NEW_FRONT" : true,
     "Z_SUBMIT": {
       "URL": "https://deprecated.example.org",
@@ -147,5 +148,11 @@
     "API_URL": "https://api.scholexplorer.openaire.eu/v3/Links",
     "CLIENT_ID": "",
     "CLIENT_SECRET": ""
+  },
+  "REVIEWER_INVITATION": {
+    "HMAC_SECRET": "four random common words"
+  },
+  "UPLOADED_FILE": {
+    "HMAC_SECRET": "four other random words"
   }
 }

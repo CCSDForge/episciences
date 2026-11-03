@@ -493,20 +493,20 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
 
     public function testParseEnrichmentWithEmptyHEnrichment(): void
     {
-        $result = $this->invoke('parseEnrichment', [['h_enrichment' => '']], false);
+        $result = $this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => '']], false);
         self::assertSame([], $result);
     }
 
     public function testParseEnrichmentWithValidJson(): void
     {
         $enrichment = ['authors' => ['Alice', 'Bob'], 'keywords' => ['PHP']];
-        $result = $this->invoke('parseEnrichment', [['h_enrichment' => json_encode($enrichment)]], false);
+        $result = $this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode($enrichment)]], false);
         self::assertSame($enrichment, $result);
     }
 
     public function testParseEnrichmentConvertsTextTypeToDefault(): void
     {
-        $data = ['h_enrichment' => json_encode(['type' => Episciences_Paper::TEXT_TYPE_TITLE])];
+        $data = [Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode(['type' => Episciences_Paper::TEXT_TYPE_TITLE])];
         $result = $this->invoke('parseEnrichment', [$data], false);
         self::assertSame(Episciences_Paper::DEFAULT_TYPE_TITLE, $result['type']);
     }
@@ -514,15 +514,47 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
     public function testParseEnrichmentWithInvalidJsonReturnsEmpty(): void
     {
         // trigger_error() inside catch block emits E_USER_NOTICE — suppress it
-        $result = @$this->invoke('parseEnrichment', [['h_enrichment' => 'not-valid-json']], false);
+        $result = @$this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => 'not-valid-json']], false);
         self::assertSame([], $result);
     }
 
     public function testParseEnrichmentPreservesOtherTypes(): void
     {
-        $data = ['h_enrichment' => json_encode(['type' => 'article'])];
+        $data = [Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode(['type' => 'article'])];
         $result = $this->invoke('parseEnrichment', [$data], false);
         self::assertSame('article', $result['type']);
+    }
+
+    public function testParseEnrichmentIgnoresAScalar(): void
+    {
+        // Valid JSON, but not an object: the method returns an array
+        $result = $this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => '42']], false);
+        self::assertSame([], $result);
+    }
+
+    /**
+     * @return iterable<string, array{mixed}>
+     */
+    public static function submittedFilesProvider(): iterable
+    {
+        yield 'file records' => [[['key' => 'article.pdf', 'size' => 12, 'links' => ['self' => 'https://example.test/a.pdf']]]];
+        yield 'a string' => ['article.pdf'];
+        yield 'a list of strings' => [['article.pdf']];
+        yield 'a record and a string' => [[['key' => 'article.pdf'], 'x']];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('submittedFilesProvider')]
+    public function testParseEnrichmentLeavesTheFilesToTheFilesHooks(mixed $files): void
+    {
+        // The files hooks load the files from the repository
+        $data = [Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode(['files' => $files, 'type' => 'article'])];
+
+        self::assertSame(['type' => 'article'], Episciences_Submit::parseEnrichment($data));
+    }
+
+    public function testParseEnrichmentIgnoresANonStringValue(): void
+    {
+        self::assertSame([], Episciences_Submit::parseEnrichment([Episciences_Submit::ENRICHMENT_ELEMENT_NAME => ['files' => []]]));
     }
 
     // =========================================================================
@@ -809,5 +841,34 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $recipients = [7 => 'uid7', 8 => 'uid8'];
 
         self::assertSame($recipients, $this->invoke('removeConflictingRecipients', [$recipients, []]));
+    }
+
+    public function testFilterConflictRecipientsKeepsEveryoneWhenConflictsAreDisabled(): void
+    {
+        $previous = \Zend_Registry::isRegistered('reviewSettings') ? \Zend_Registry::get('reviewSettings') : null;
+        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '0']);
+
+        try {
+            $recipients = [2 => 'editor', 3 => 'secretary'];
+            $paper = $this->createMock(Episciences_Paper::class);
+            // Conflict declarations are not even read
+            $paper->expects($this->never())->method('getPaperid');
+
+            self::assertSame($recipients, Episciences_Submit::filterConflictRecipients($recipients, $paper));
+        } finally {
+            \Zend_Registry::set('reviewSettings', $previous);
+        }
+    }
+
+    public function testNewPaperKeepsTheNotificationFallbackEvenWithAssignedEditors(): void
+    {
+        self::assertFalse(Episciences_Submit::isStrictNotification(false, [2 => 'editor']));
+        self::assertFalse(Episciences_Submit::isStrictNotification(false, []));
+    }
+
+    public function testUpdatedPaperOnlyNotifiesTheCheckedRolesWhenItHasEditors(): void
+    {
+        self::assertTrue(Episciences_Submit::isStrictNotification(true, [2 => 'editor']));
+        self::assertFalse(Episciences_Submit::isStrictNotification(true, []));
     }
 }

@@ -187,7 +187,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,
             $review,
             true,  // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false  // isCopyEditor
         );
@@ -195,24 +194,82 @@ class AccessTest extends TestCase
         self::assertSame(Episciences_Rating_Report_Access::ROLE_EDITORIAL_STAFF, $result);
     }
 
-    public function testResolveRoleReturnsEditorialStaffForGuestEditor(): void
+    /**
+     * A guest editor (no editor or copy editor role) is editorial staff on the papers
+     * they are assigned to only, encapsulation or not.
+     *
+     * @dataProvider guestEditorAssignmentProvider
+     */
+    public function testGuestEditorIsEditorialStaffOnlyWhenAssigned(bool $isAssigned, bool $isEncapsulated, ?string $expected): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('isAssignedEditorOrCopyEditor')->with(self::UID_UNRELATED)->willReturn($isAssigned);
+        $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);
+
         $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(self::UID_REPORT_AUTHOR);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+
         $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturnMap([
+            [Episciences_Review::SETTING_ENCAPSULATE_EDITORS, $isEncapsulated],
+            [Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS, $isEncapsulated],
+        ]);
 
         $result = Episciences_Rating_Report_Access::resolveRole(
             $paper,
             $report,
-            self::UID_PAPER_AUTHOR,
+            self::UID_UNRELATED,
             $review,
             false, // isSecretary
-            true,  // isGuestEditor
             false, // isEditor
             false  // isCopyEditor
         );
 
-        self::assertSame(Episciences_Rating_Report_Access::ROLE_EDITORIAL_STAFF, $result);
+        self::assertSame($expected, $result);
+    }
+
+    /**
+     * @return array<string, array{0: bool, 1: bool, 2: string|null}>
+     */
+    public static function guestEditorAssignmentProvider(): array
+    {
+        return [
+            'assigned, encapsulated' => [true, true, Episciences_Rating_Report_Access::ROLE_EDITORIAL_STAFF],
+            'assigned, not encapsulated' => [true, false, Episciences_Rating_Report_Access::ROLE_EDITORIAL_STAFF],
+            'not assigned, encapsulated' => [false, true, null],
+            'not assigned, not encapsulated' => [false, false, null],
+        ];
+    }
+
+    /**
+     * Without assignment nor editorial role, no access.
+     */
+    public function testUnassignedGuestEditorCannotDownloadAttachment(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
+        $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);
+
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(self::UID_REPORT_AUTHOR);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getStatus')->willReturn(Episciences_Rating_Report::STATUS_COMPLETED);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
+
+        self::assertFalse(Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'report.pdf',
+            self::UID_UNRELATED,
+            $review,
+            false, // isSecretary
+            false, // isEditor
+            false, // isCopyEditor
+            true   // isReportsVisibleToAuthor
+        ));
     }
 
     // -------------------------------------------------------------------------
@@ -241,7 +298,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             true,  // isEditor - global editor role
             false  // isCopyEditor
         );
@@ -274,7 +330,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,  // different from paper author
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             true,  // isEditor - global editor role
             false  // isCopyEditor
         );
@@ -306,7 +361,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             true,  // isEditor - global editor role
             false  // isCopyEditor
         );
@@ -336,7 +390,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor - NOT global editor
             false  // isCopyEditor
         );
@@ -370,7 +423,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             true   // isCopyEditor - global role, encapsulated
         );
@@ -404,7 +456,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             true   // isCopyEditor - global copy editor role
         );
@@ -437,7 +488,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             true   // isCopyEditor - global copy editor role
         );
@@ -467,7 +517,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             true   // isCopyEditor - global copy editor role
         );
@@ -501,7 +550,6 @@ class AccessTest extends TestCase
             self::UID_INVALID_ZERO,  // uid = 0 should be rejected even if it matches report uid
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false  // isCopyEditor
         );
@@ -532,7 +580,6 @@ class AccessTest extends TestCase
             self::UID_REPORT_AUTHOR,  // uid matches report author
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false  // isCopyEditor
         );
@@ -558,7 +605,6 @@ class AccessTest extends TestCase
             self::UID_ONBEHALF,  // uid matches onbehalf_uid
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false  // isCopyEditor
         );
@@ -585,7 +631,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,  // uid matches paper author
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false  // isCopyEditor
         );
@@ -609,7 +654,6 @@ class AccessTest extends TestCase
             null,  // not logged in
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false  // isCopyEditor
         );
@@ -637,7 +681,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,  // is both paper author and report author
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false  // isCopyEditor
         );
@@ -666,7 +709,6 @@ class AccessTest extends TestCase
             self::UID_REPORT_AUTHOR,  // is both secretary and report author
             $review,
             true,  // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false  // isCopyEditor
         );
@@ -708,7 +750,6 @@ class AccessTest extends TestCase
             null,  // anonymous user
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
             false  // isReportsVisibleToAuthor
@@ -750,7 +791,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,  // uid matches paper author
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
             true   // isReportsVisibleToAuthor
@@ -788,7 +828,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,  // uid matches paper author
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
             true   // isReportsVisibleToAuthor
@@ -826,7 +865,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,  // uid matches paper author
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
             true   // isReportsVisibleToAuthor
@@ -866,7 +904,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,  // uid matches paper author
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
             false  // isReportsVisibleToAuthor = false
@@ -908,7 +945,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,  // uid matches paper author
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
             true   // isReportsVisibleToAuthor
@@ -946,7 +982,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,  // uid matches paper author
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
             true   // isReportsVisibleToAuthor
@@ -980,7 +1015,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,  // secretary, different from paper author
             $review,
             true,  // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
             false  // isReportsVisibleToAuthor
@@ -1013,7 +1047,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,  // secretary, different from paper author
             $review,
             true,  // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
             false  // isReportsVisibleToAuthor
@@ -1047,7 +1080,6 @@ class AccessTest extends TestCase
             self::UID_REPORT_AUTHOR,  // uid matches report author
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
             false  // isReportsVisibleToAuthor
@@ -1084,7 +1116,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             true,  // isEditor
             false, // isCopyEditor
             false, // isReportsVisibleToAuthor
@@ -1118,7 +1149,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,
             $review,
             true,  // isSecretary
-            false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
             false, // isReportsVisibleToAuthor
@@ -1152,7 +1182,6 @@ class AccessTest extends TestCase
             self::UID_PAPER_AUTHOR,
             $review,
             false, // isSecretary
-            false, // isGuestEditor
             true,  // isEditor
             false, // isCopyEditor
             false, // isReportsVisibleToAuthor

@@ -659,15 +659,16 @@ class Episciences_Review
             return;
         }
 
-        if ($forceReload) {
-            $this->_settings = [];
-        }
+        // settings set in memory (setSetting(), setOptions()) win over the stored ones, unless reloading
+        $inMemorySettings = $forceReload ? [] : $this->_settings;
+        $this->_settings = [];
 
         // review configuration
         $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from(T_REVIEW_SETTINGS)->where('RVID = ?', $this->_rvid);
 
         $rows = Zend_Db_Table_Abstract::getDefaultAdapter()->fetchAll($select);
         $this->applySettingsFromRows($rows);
+        $this->_settings = array_replace($this->_settings, $inMemorySettings);
     }
 
     /**
@@ -697,12 +698,20 @@ class Episciences_Review
 
     /**
      * fetch review chief editors
-     * @return array
+     * As editors, they can be tagged (Episciences_Editor::TAG_CHIEF_EDITOR) when assigned automatically to a paper,
+     * so that the paper history shows why they were assigned
+     * @return Episciences_Editor[] indexed by UID
      * @throws Zend_Db_Statement_Exception
      */
     public static function getChiefEditors(): array
     {
-        return self::getUsers(Episciences_Acl::ROLE_CHIEF_EDITOR);
+        $chiefEditors = [];
+
+        foreach (self::getUsers(Episciences_Acl::ROLE_CHIEF_EDITOR) as $uid => $user) {
+            $chiefEditors[$uid] = new Episciences_Editor($user->toArray());
+        }
+
+        return $chiefEditors;
     }
 
     /**
@@ -1971,8 +1980,16 @@ class Episciences_Review
             'maxsizelignt' => '10',
             'description' => "Il est possible de renseigner une date de début de statistiques au format: AAAA-MM-JJ",
             'decorators' => $checkboxDecorators,
-            'pattern' => '(\d{4})-(0?[1-9]|1[0-2])-(0?[1-9]|[12]\d|30|31)',
-            'validators' => [new Zend_Validate_Date('Y-m-d')]
+            'pattern' => '\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])',
+            // Zend_Filter_StringTrim would cast a posted array to "Array" (with a PHP warning): only trim strings
+            'filters' => [new Zend_Filter_Callback(static fn($value) => is_string($value) ? trim($value) : $value)],
+            // Strict YYYY-MM-DD check (Zend_Validate_Date is lenient), as expected by the API statistics filter.
+            // Non-string input (e.g. a posted array) is rejected here: DateTime::createFromFormat() would throw a TypeError,
+            // which Zend_Validate_Callback does not catch
+            'validators' => [
+                (new Zend_Validate_Callback(static fn($value): bool => is_string($value) && Episciences_Tools::isValidSQLDate($value)))
+                    ->setMessage("'%value%' does not appear to be a valid date", Zend_Validate_Callback::INVALID_VALUE)
+            ]
         ]);
 
         return $form;
@@ -2549,11 +2566,16 @@ class Episciences_Review
     }
 
     /**
-     * get review settings
+     * get review settings, loaded from the database when not loaded yet
+     * (settings set in memory, by setSetting() or setOptions(), are not replaced by the stored ones)
      * @return array
      */
     public function getSettings(): array
     {
+        if (!$this->_settingsLoaded) {
+            $this->loadSettings();
+        }
+
         return $this->_settings;
     }
 

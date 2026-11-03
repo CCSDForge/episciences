@@ -9,6 +9,8 @@ require_once "JournalScript.php";
 
 class setNumVol extends JournalScript
 {
+    private bool $_dryRun = false;
+
     public function __construct()
     {
         parent::__construct();

@@ -7,19 +7,17 @@ test.describe('Cookie Consent Banner (GDPR)', () => {
         // Locate cookie banner container
         const cookieBanner = page.locator('.cc-window, [aria-label="cookieconsent"], .cc-banner');
 
-        // Check if banner is displayed on first visit
-        const isBannerVisible = await cookieBanner.isVisible().catch(() => false);
+        // The banner is displayed on first visit
+        await expect(cookieBanner.first()).toBeVisible();
 
-        if (isBannerVisible) {
-            // Locate the dismiss / close button
-            const dismissButton = cookieBanner.locator('.cc-dismiss, .cc-btn, button, a:has-text("Close")').first();
-            await expect(dismissButton).toBeVisible();
+        // Locate the dismiss / close button
+        const dismissButton = cookieBanner.locator('.cc-dismiss, .cc-btn, button, a:has-text("Close")').first();
+        await expect(dismissButton).toBeVisible();
 
-            // Click to dismiss
-            await dismissButton.click();
+        // Click to dismiss
+        await dismissButton.click();
 
-            // Verify banner is hidden or dismissed
-            await expect(cookieBanner).not.toBeVisible();
-        }
+        // Verify banner is hidden or dismissed
+        await expect(cookieBanner.first()).toBeHidden();
     });
 });

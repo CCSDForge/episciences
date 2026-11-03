@@ -11,6 +11,7 @@
     "SECRET_KEY": "YourSecretAuthKey",
     "API_URL": "https://host:8000/api/",
     "API_SECRET_KEY": "YourSecretAuthKey",
+    "API_STATS_DELEGATION_SECRET": "",
     "USER_AGENT": "yourUserAgent",
     "Z_SUBMIT": {
       "URL": "https://zsubmit-env.domain.org",
@@ -89,6 +90,14 @@
   },
   "REVIEWER_INVITATION": {
     "HMAC_SECRET": ""
+  },
+  "UPLOADED_FILE": {
+    "HMAC_SECRET": ""
+  },
+  "USER_TOKEN": {
+    "PASSWORD_RESET_TTL": 3600,
+    "ACCOUNT_ACTIVATION_TTL": 604800,
+    "ACCOUNT_SETUP_TTL": 1209600
   },
   "ENDPOINTS": {
     "INDEXING_HOST": "solr-hostname-for-indexing.example.com",

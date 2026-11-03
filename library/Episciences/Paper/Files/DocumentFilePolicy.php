@@ -131,6 +131,24 @@ final class DocumentFilePolicy
     }
 
     /**
+     * Upload and removal of the files of an answer to a copy-editing request, before the answer is saved: the
+     * author and co-authors, and the editorial staff of the paper unless they are in conflict of interest.
+     * Copy-editing files are not for the reviewers (see isAllowed()).
+     *
+     * @param bool $isOwnerOrCoAuthor the user is the owner or a co-author of the paper
+     * @param bool $hasConflict the user is in conflict of interest with the paper (declared or not answered yet)
+     * @param bool $isEditorialStaff the user handles the paper for the journal (see class description)
+     */
+    public static function isCopyEditingFileWritable(
+        bool $isOwnerOrCoAuthor,
+        bool $hasConflict,
+        bool $isEditorialStaff
+    ): bool
+    {
+        return $isOwnerOrCoAuthor || ($isEditorialStaff && !$hasConflict);
+    }
+
+    /**
      * @param int[] $commentTypes
      */
     private static function isShownToAuthor(string $folder, array $commentTypes): bool

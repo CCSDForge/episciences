@@ -10,11 +10,52 @@ class Episciences_PapersManager
 
     public const NONE_FILTER = '0';
     public const WITH_FILTER = '-1';
+
+    /**
+     * Tables holding the rows of one paper version (table => DOCID column), purged by deletePaper().
+     * In deletion order: a table referencing another one comes first.
+     */
+    public const VERSION_TABLES = [
+        T_PAPER_COMMENTS => 'DOCID',
+        T_MAIL_LOG => 'DOCID',
+        T_PAPER_VISITS => 'DOCID',
+        VISITS_TEMP => 'DOCID',
+        T_LOGS => 'DOCID',
+        T_REVIEWER_REPORTS => 'DOCID',
+        T_PAPER_SETTINGS => 'DOCID',
+        T_ALIAS => 'DOCID',
+        // paper_citations references PAPERS
+        T_PAPER_CITATIONS => 'docid',
+        T_PAPERS => 'DOCID',
+        T_VOLUME_PAPER => 'DOCID',
+        T_PAPER_LICENCES => 'docid',
+        T_PAPER_LICENSE_CODE => 'docid',
+        // data_descriptor references files
+        T_PAPER_DATA_DESCRIPTOR => 'docid',
+        T_FILES => 'docid',
+        T_PAPER_FILES => 'doc_id',
+        T_PAPER_DATASETS => 'doc_id',
+        T_PAPER_CLASSIFICATIONS => 'docid',
+    ];
+
+    /**
+     * Tables holding the rows shared by every version of a paper (table => PAPERID column),
+     * purged with the last remaining version only.
+     */
+    public const PAPER_TABLES = [
+        T_VOLUME_PAPER_POSITION => 'PAPERID',
+        T_PAPER_PROJECTS => 'paperid',
+        T_PAPER_CONFLICTS => 'paper_id',
+        T_PAPER_AUTHORS => 'paperid',
+        T_DOI_QUEUE => 'paperid',
+    ];
     // "suggestion" filter value matching any known decision suggestion type
     public const ANY_SUGGESTION_FILTER = 'any';
     // Only the paper management lists offer the decision-suggestion filter
     public const SUGGESTION_FILTER_CONTROLLER = 'administratepaper';
     public const ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE = 'acceptedAskAuthorsFinalVersion';
+    // updateRecordData() updated the record, but one of its steps failed
+    public const RECORD_UPDATE_FAILURE_MESSAGE = "La mise à jour des métadonnées de cet article est incomplète : une partie de ses données (fichiers, données liées, auteurs ou enrichissements) n'a pas pu être enregistrée. Veuillez réessayer plus tard.";
 
     /**
      * @return array
@@ -2437,83 +2478,168 @@ class Episciences_PapersManager
     }
 
     /**
-     * delete a paper from datbase, and all associated files
+     * Delete a paper version from the database, with its files.
      * @param $docid
-     * @return bool
+     * @return bool false when the paper does not exist or the deletion failed
      */
     public static function delete($docid): bool
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $paper = Episciences_PapersManager::get($docid, false);
+        $paper = self::get($docid, false);
 
-        // get() returns false when the paper does not exist: bail out before purging
-        // anything rather than crashing on $paper->getPaperid() after 8 tables are gone.
         if (!$paper instanceof Episciences_Paper) {
             return false;
         }
+
+        try {
+            self::deletePaper($paper);
+        } catch (Throwable $e) {
+            trigger_error(sprintf('Failed to delete paper #%s: %s', $docid, $e->getMessage()));
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Delete a paper version: every row belonging to it (VERSION_TABLES, assignments), the rows shared
+     * by every version (PAPER_TABLES) with the last version only, then its files.
+     * @throws Throwable when the database purge fails: it is rolled back, nothing is deleted
+     */
+    public static function deletePaper(Episciences_Paper $paper): void
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $docId = (int)$paper->getDocid();
+        $paperId = (int)$paper->getPaperid();
+
         // Capture rvcode before deletion for Next.js cache revalidation
         $rvcode = null;
         $journal = Episciences_ReviewsManager::find($paper->getRvid());
         if ($journal !== false) {
             $rvcode = $journal->getCode();
         }
+
         // Purge every table atomically: a failure mid-way must not leave the paper
         // half-deleted with dangling rows in the remaining tables.
         $db->beginTransaction();
         try {
+            $datasetsMetaIds = $db->fetchCol(
+                $db->select()
+                    ->distinct()
+                    ->from(T_PAPER_DATASETS, ['id_paper_datasets_meta'])
+                    ->where('doc_id = ?', $docId)
+                    ->where('id_paper_datasets_meta IS NOT NULL')
+            );
 
+            foreach (self::VERSION_TABLES as $table => $column) {
+                $db->delete($table, ["$column = ?" => $docId]);
+            }
+            self::deleteOrphanDatasetsMeta($db, $datasetsMetaIds);
+            self::deleteAssignments($db, $docId);
 
-        // delete from database
-            Episciences_CommentsManager::deleteByDocid($docid);
-            Episciences_Mail_LogManager::deleteByDocid($docid);
-
-            $db->delete(T_PAPER_VISITS, ['DOCID = ?' => $docid]);
-            $db->delete(VISITS_TEMP, ['DOCID = ?' => $docid]);
-            $db->delete(T_LOGS, ['DOCID = ?' => $docid]);
-            $db->delete(T_REVIEWER_REPORTS, ['DOCID = ?' => $docid]);
-            $db->delete(T_PAPER_SETTINGS, ['DOCID = ?' => $docid]);
-            $db->delete(T_ALIAS, ['DOCID = ?' => $docid]);
-            $db->delete(T_PAPERS, ['DOCID = ?' => $docid]);
-            $db->delete(T_VOLUME_PAPER, ['DOCID = ?' => $docid]);
-            $db->delete(T_PAPER_LICENCES, ['docid = ?' => $docid]);
-            $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
-            $db->delete(T_PAPER_PROJECTS, ['paperid = ?' => $paper->getPaperid()]);
+            if (!self::hasOtherVersions($db, $paperId)) {
+                foreach (self::PAPER_TABLES as $table => $column) {
+                    $db->delete($table, ["$column = ?" => $paperId]);
+                }
+            }
 
             $db->commit();
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $db->rollBack();
-            trigger_error(sprintf('Failed to delete paper #%s: %s', $docid, $e->getMessage()));
-            return false;
+            throw $e;
         }
+
+        Episciences_CommentsManager::getCachePool()->clear();
 
         // Filesystem and index cleanup happen only after the DB purge is committed
         // (they cannot participate in the transaction).
-        if (defined('RVCODE') && defined('REVIEW_FILES_PATH') && $docid) {
-            Episciences_Tools::deleteDir(self::buildDocumentPath($docid));
+        if (defined('RVCODE') && defined('REVIEW_FILES_PATH')) {
+            Episciences_Tools::deleteDir(self::buildDocumentPath($docId));
         }
 
         // remove from index
         try {
-            SolrIndexing::enqueueDelete((int)$docid);
+            SolrIndexing::enqueueDelete($docId);
         } catch (Exception $e) {
             Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
         }
 
-        // TODO: delete user assignments
-        // TODO: delete user invitations
-        // TODO: delete user invitation answers
         // TODO: if published paper, update HAL metadata
 
         // Enqueue Next.js cache revalidation for deleted article
         if ($rvcode !== null) {
             \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
-                "article-{$docid}",
+                "article-{$docId}",
                 "articles-{$rvcode}",
             ]);
         }
+    }
 
-        return true;
+    /**
+     * Delete the dataset metadata no dataset refers to anymore.
+     * @param array<int|string> $metaIds metadata of the deleted datasets
+     */
+    private static function deleteOrphanDatasetsMeta(Zend_Db_Adapter_Abstract $db, array $metaIds): void
+    {
+        if ($metaIds === []) {
+            return;
+        }
 
+        $stillUsed = $db->select()
+            ->from(T_PAPER_DATASETS, ['id_paper_datasets_meta'])
+            ->where('id_paper_datasets_meta IS NOT NULL');
+
+        $db->delete(T_PAPER_DATASETS_META, ['id IN (?)' => $metaIds, "id NOT IN ($stillUsed)"]);
+    }
+
+    /**
+     * Delete the assignments of a paper version (reviewers, editors, copy editors...),
+     * with the invitations hanging off them and their answers,
+     * and the temporary reviewers (without an account) no other assignment refers to.
+     */
+    private static function deleteAssignments(Zend_Db_Adapter_Abstract $db, int $docId): void
+    {
+        $assignments = $db->fetchAll(
+            $db->select()
+                ->from(T_ASSIGNMENTS, ['ID', 'UID', 'TMP_USER'])
+                ->where('ITEM = ?', Episciences_User_Assignment::ITEM_PAPER)
+                ->where('ITEMID = ?', $docId)
+        );
+
+        if ($assignments === []) {
+            return;
+        }
+
+        $assignmentIds = array_column($assignments, 'ID');
+        $tmpUserIds = array_unique(array_column(
+            array_filter($assignments, static fn(array $assignment): bool => (int)$assignment['TMP_USER'] === 1),
+            'UID'
+        ));
+
+        $invitationIds = $db->fetchCol(
+            $db->select()->from(T_USER_INVITATIONS, ['ID'])->where('AID IN (?)', $assignmentIds)
+        );
+
+        if ($invitationIds !== []) {
+            $db->delete(T_USER_INVITATION_ANSWER_DETAIL, ['ID IN (?)' => $invitationIds]);
+            $db->delete(T_USER_INVITATION_ANSWER, ['ID IN (?)' => $invitationIds]);
+            $db->delete(T_USER_INVITATIONS, ['ID IN (?)' => $invitationIds]);
+        }
+        $db->delete(T_ASSIGNMENTS, ['ID IN (?)' => $assignmentIds]);
+
+        if ($tmpUserIds !== []) {
+            $stillAssigned = $db->select()->from(T_ASSIGNMENTS, ['UID'])->where('TMP_USER = 1');
+            $db->delete(T_TMP_USER, ['ID IN (?)' => $tmpUserIds, "ID NOT IN ($stillAssigned)"]);
+        }
+    }
+
+    /**
+     * Whether another version of the paper is still in the database (to be called once the deleted version is gone).
+     */
+    private static function hasOtherVersions(Zend_Db_Adapter_Abstract $db, int $paperId): bool
+    {
+        return (bool)$db->fetchOne(
+            $db->select()->from(T_PAPERS, [new Zend_Db_Expr('1')])->where('PAPERID = ?', $paperId)->limit(1)
+        );
     }
 
     /**
@@ -3112,15 +3238,50 @@ class Episciences_PapersManager
     }
 
     /**
+     * Number of versions of a paper in its journal that renameIdentifier() would rename (dry run)
+     *
+     * @param string $identifier
+     * @param int $paperId
+     * @param int $rvId
+     * @return int 0 without a paper or a journal, or on error
+     */
+    public static function countIdentifier(string $identifier, int $paperId, int $rvId): int
+    {
+        if ($paperId <= 0 || $rvId <= 0) {
+            return 0;
+        }
+
+        try {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $select = $db->select()
+                ->from(T_PAPERS, [new Zend_Db_Expr('COUNT(*)')])
+                ->where('IDENTIFIER = ?', $identifier)
+                ->where('PAPERID = ?', $paperId)
+                ->where('RVID = ?', $rvId);
+            return (int)$db->fetchOne($select);
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Updates a paper from its repository: its record and version, then its files, linked data, enrichment,
+     * authors, licence and HAL / OpenAIRE data.
+     * Once the record is loaded, each step runs on its own: a failure is reported as a warning
+     * (Episciences_Submit::runPostSaveStep()) and does not stop the following steps, nor the update of the record.
+     *
      * @param Episciences_Paper $paper
-     * @return int
+     * @param list<string>|null $failedSteps receives the names of the steps that failed
+     * @param-out list<string> $failedSteps
+     * @return int number of affected rows
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
-     * @throws Exception
+     * @throws Exception the record could not be loaded from the repository, or not saved
      */
 
-    public static function updateRecordData(Episciences_Paper $paper): int
+    public static function updateRecordData(Episciences_Paper $paper, ?array &$failedSteps = null): int
     {
+        $failedSteps = [];
         $docId = $paper->getDocId();
 
         if (!$docId) {
@@ -3134,21 +3295,24 @@ class Episciences_PapersManager
             return 0;
         }
 
-        $affectedRows = 0;
-
         $context = self::initializeContext($params);
         $recordData = self::fetchRecordData($context); // as well as updating the version from the original archive
-        [$record, $enrichment] = [$recordData['record'], $recordData['enrichment']];
+        $record = self::cleanRecord($recordData['record'], $context['repoId']);
+        $enrichment = $recordData['enrichment'];
+        // The record already loaded, if any: the files and the linked data hooks do not load it again
+        $response = $recordData['response'] ?? [];
 
-        $record = self::cleanRecord($record, $context['repoId']);
-        [$record, $enrichment, $affectedRows] = self::processFilesHook($record, $context, $enrichment, $affectedRows);
-
-        $affectedRows += self::processLinkedDataOrDatasets($paper, $context, $affectedRows);
-        $affectedRows += Episciences_Submit::enrichmentProcess($paper, $enrichment);
-        Episciences_Paper_AuthorsManager::verifyExistOrInsert($context['docId'], $context['paperId']);
-
-        $affectedRows = self::processLicence($context, $affectedRows);
-        $affectedRows = self::processHalOpenAireData($context, $affectedRows);
+        $affectedRows = Episciences_Submit::runPostSaveSteps($paper, [
+            'hookFilesProcessing' => static fn(): int => self::updateRecordDataProcessFilesHook($context, $enrichment, $response),
+            'linkedData' => static fn(): int => self::processLinkedDataOrDatasets($paper, $context, $response),
+            'enrichmentProcess' => static fn(): int => Episciences_Submit::storeEnrichmentOrFail($paper, $enrichment),
+            'verifyExistOrInsertAuthors' => static fn(): int => Episciences_Paper_Authors_Repository::verifyExistOrInsertOrFail(
+                $context['docId'], $context['paperId']
+            ),
+            'licence' => static fn(): int => self::processLicence($context, 0),
+            'halData' => static fn(): int => self::processHalData($context),
+            'openAireData' => static fn(): int => self::processOpenAireData($context),
+        ], $failedSteps);
 
         $affectedRows += $db?->update(T_PAPERS, ['RECORD' => $record, 'VERSION' => $context['version']], ['DOCID = ?' => $context['docId']]);
         return $affectedRows;
@@ -3158,7 +3322,7 @@ class Episciences_PapersManager
     {
         return [
             'docId' => $params['DOCID'],
-            'identifier' => str_replace('-REFUSED', '', $params['IDENTIFIER']),
+            'identifier' => Episciences_Paper::stripRefusedSuffix((string)$params['IDENTIFIER']),
             'repoId' => (int)$params['REPOID'],
             'version' => (float)$params['VERSION'],
             'paperId' => (int)$params['PAPERID'],
@@ -3198,7 +3362,8 @@ class Episciences_PapersManager
                 $context['version'] = (float)$hookedVersion['version'];
             }
 
-            return ['record' => $response['record'], 'enrichment' => $response['enrichment'] ?? []];
+            // The files hook reuses the loaded record instead of requesting it again
+            return ['record' => $response['record'], 'enrichment' => $response['enrichment'] ?? [], 'response' => $response];
         }
 
         $baseUrl = Episciences_Repositories::getBaseUrl($context['repoId']);
@@ -3245,43 +3410,33 @@ class Episciences_PapersManager
     }
 
     /**
-     * @param string $record
-     * @param array $context
-     * @param array $enrichment
-     * @param int $affectedRows
-     * @return array
-     */
-
-    private static function processFilesHook(
-        string $record, array $context, array $enrichment, int $affectedRows
-    ): array
-    {
-        return self::updateRecordDataProcessFilesHook(
-            $record, $context['docId'], $context['repoId'], $context['identifier'], $enrichment, $affectedRows
-        );
-    }
-
-    /**
      * @param Episciences_Paper $paper
-     * @param array $context
-     * @param int $affectedRows
-     * @return int
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $response repository record already loaded by fetchRecordData(), if any
+     * @return int number of rows affected by this step
+     * @throws Exception the linked data could not be loaded or stored
      */
 
     private static function processLinkedDataOrDatasets(
-        Episciences_Paper $paper, array $context, int $affectedRows
+        Episciences_Paper $paper, array $context, array $response = []
     ): int
     {
         if (Episciences_Repositories::handlesOwnEnrichment((int)$context['repoId'])) {
-            $hookData = Episciences_Repositories::callHook('hookLinkedDataProcessing', [
+            $hookParams = [
                 'repoId' => $context['repoId'],
                 'identifier' => $context['identifier'],
                 'docId' => $context['docId']
-            ]);
-            return $affectedRows + ($hookData['affectedRows'] ?? 0);
+            ];
+
+            if ($response !== []) {
+                $hookParams['response'] = $response;
+            }
+
+            $hookData = Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
+            return (int)($hookData['affectedRows'] ?? 0);
         }
 
-        return $affectedRows + Episciences_Submit::datasetsProcessing($paper);
+        return Episciences_Submit::datasetsProcessing($paper);
     }
 
     /**
@@ -3298,26 +3453,32 @@ class Episciences_PapersManager
     }
 
     /**
-     * @param array $context
-     * @param int $affectedRows
-     * @return int
+     * HAL papers: authors from the HAL TEI and HAL funding
+     *
+     * @param array<string, mixed> $context
+     * @return int number of rows affected by this step
      */
 
-    private static function processHalOpenAireData(array $context, int $affectedRows): int
+    private static function processHalData(array $context): int
     {
-        $strRepoId = (string)$context['repoId'];
-
-        if ($strRepoId === Episciences_Repositories::HAL_REPO_ID) {
-            try {
-                $affectedRows = self::updateRecordDataHal(
-                    $context['paperId'], $context['identifier'], $context['version'], $affectedRows
-                );
-            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
-            }
+        if ((string)$context['repoId'] !== Episciences_Repositories::HAL_REPO_ID) {
+            return 0;
         }
 
-        $isEligibleRepo = in_array($strRepoId, [
+        // Not caught: the step reports an unexpected payload or a cache failure
+        return self::updateRecordDataHal($context['paperId'], $context['identifier'], $context['version'], 0);
+    }
+
+    /**
+     * Published papers with a DOI: ORCID and funding from OpenAIRE
+     *
+     * @param array<string, mixed> $context
+     * @return int number of rows affected by this step
+     */
+
+    private static function processOpenAireData(array $context): int
+    {
+        $isEligibleRepo = in_array((string)$context['repoId'], [
             Episciences_Repositories::ARXIV_REPO_ID,
             Episciences_Repositories::ZENODO_REPO_ID,
             Episciences_Repositories::HAL_REPO_ID,
@@ -3325,20 +3486,12 @@ class Episciences_PapersManager
             Episciences_Repositories::MED_RXIV_ID,
         ], true);
 
-        if (!empty($context['doi']) &&
-            $context['status'] === Episciences_Paper::STATUS_PUBLISHED &&
-            $isEligibleRepo
-        ) {
-            try {
-                $affectedRows = self::updateRecordDataCallOpenAireTools(
-                    $context['doi'], $context['paperId'], $affectedRows
-                );
-            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
-            }
+        if (empty($context['doi']) || $context['status'] !== Episciences_Paper::STATUS_PUBLISHED || !$isEligibleRepo) {
+            return 0;
         }
 
-        return $affectedRows;
+        // Not caught: the step reports an unexpected payload or a cache failure
+        return self::updateRecordDataCallOpenAireTools($context['doi'], $context['paperId'], 0);
     }
 
     /**
@@ -3640,6 +3793,20 @@ class Episciences_PapersManager
         $form = self::getModalPaperStatusCommonForm($default, 'acceptedAskAuthorValidation', $formId);
         $form->setAction($formAction);
         return $form;
+    }
+
+    /**
+     * Move every version of a paper, in its journal, to a section
+     * @param int $paperId
+     * @param int $rvId
+     * @param int $sid 0 = no section
+     * @return int the number of updated rows
+     */
+    public static function updateSection(int $paperId, int $rvId, int $sid): int
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        return $db->update(T_PAPERS, ['SID' => $sid], ['PAPERID = ?' => $paperId, 'RVID = ?' => $rvId]);
     }
 
     /**
@@ -4769,54 +4936,45 @@ class Episciences_PapersManager
     }
 
     /**
-     * @param $record1
-     * @param mixed $docId
-     * @param mixed $repoId
-     * @param array|string $identifier
-     * @param mixed $enrichment
-     * @param mixed $affectedRows
-     * @return array
+     * @param array<string, mixed> $context see initializeContext()
+     * @param array<string, mixed> $enrichment enrichment of the record loaded from the repository
+     * @param array<string, mixed> $response repository record already loaded by fetchRecordData(), if any
+     * @return int number of rows affected by this step
+     * @throws Exception the files could not be loaded or stored
      */
-    private static function updateRecordDataProcessFilesHook($record1, mixed $docId, mixed $repoId, array|string $identifier, mixed $enrichment, mixed $affectedRows): array
+    private static function updateRecordDataProcessFilesHook(array $context, array $enrichment, array $response = []): int
     {
-        $record = $record1;
+        // version: the Dataverse hook requests the record of this version when it has to load it
+        $hookParams = [
+            'repoId' => $context['repoId'],
+            'identifier' => $context['identifier'],
+            'docId' => $context['docId'],
+            'version' => $context['version']
+        ];
 
-        $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId];
-
-        // add all files
-        $hookFiles = Episciences_Repositories::callHook(
-            'hookFilesProcessing',
-            (isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams
-        );
-
-        if (isset($hookFiles['affectedRows'])) {
-            $affectedRows += $hookFiles['affectedRows'];
-
+        if ($response !== []) {
+            $hookParams['response'] = $response;
         }
-        return array($record, $enrichment, $affectedRows);
+
+        // The files of the record loaded from the repository
+        if (isset($enrichment['files'])) {
+            $hookParams['files'] = $enrichment['files'];
+        }
+
+        $hookFiles = Episciences_Repositories::callHook('hookFilesProcessing', $hookParams);
+
+        return (int)($hookFiles['affectedRows'] ?? 0);
     }
 
     /**
-     * @param mixed $repoId
-     * @param string $identifier
-     * @param float $version
-     * @param mixed $docId
-     * @param int $affectedRows
-     * @return int
+     * Not caught: the licence step of updateRecordData() reports a failure (database, unexpected payload)
+     *
+     * @throws GuzzleException|JsonException|\Psr\Cache\InvalidArgumentException|Zend_Db_Exception
      */
     private static function updateRecordDataProcessLicence(mixed $repoId, string $identifier, float $version, mixed $docId, int $affectedRows): int
     {
-        try {
-            $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
-            try {
-                $affectedRows += Episciences_Paper_LicenceManager::insertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
-            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
-            }
-        } catch (GuzzleException|\Psr\Cache\InvalidArgumentException $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
-        }
-        return $affectedRows;
+        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
+        return $affectedRows + Episciences_Paper_LicenceManager::insertLicenceFromApiByRepoIdOrFail((string)$repoId, $callArrayResp, (int)$docId, $identifier);
     }
 
     /**

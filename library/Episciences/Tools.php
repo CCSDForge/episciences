@@ -596,11 +596,12 @@ class Episciences_Tools
      * retourne un nouveau nom de fichier si le nom fourni existe déjà dans le répertoire donné en paramètre
      * @param $dir
      * @param $filename
+     * @param string[] $reservedNames names to avoid as well, e.g. files already moved out of the directory
      * @return string|null (NULL en cas d'erreur)
      */
-    public static function filenameRotate($dir, $filename)
+    public static function filenameRotate($dir, $filename, array $reservedNames = [])
     {
-        while (is_file($dir . $filename)) {
+        while (is_file($dir . $filename) || in_array($filename, $reservedNames, true)) {
             // Always inject/increment a counter. The previous pattern produced an empty
             // replacement for a name without a trailing "_N" and no extension (e.g. "foo"),
             // leaving the filename unchanged and spinning forever.
@@ -805,7 +806,9 @@ class Episciences_Tools
 
     public static function isValidDate($date, $format): bool
     {
-        $d = DateTime::createFromFormat($format, $date);
+        // '!': fields missing from the format (e.g. the day in 'Y-m') are reset instead of taken from the
+        // current date, which turned 2024-06 into 2024-07-01 on the 31st and made the check fail
+        $d = DateTime::createFromFormat('!' . $format, $date);
         return $d && $d->format($format) === $date;
     }
 
@@ -1398,8 +1401,8 @@ class Episciences_Tools
             trigger_error($e->getMessage());
         }
 
+        // Answering a revision request with a tmp version may be done without any file
         if (empty($result)) {
-            trigger_error('No file(s) attached to the tmp version (docId = ' . $paper->getDocid() . "): the upload of the file(s) failed when responding to a revision request !");
             return $text;
         }
 
@@ -1926,6 +1929,19 @@ class Episciences_Tools
         return array_values(array_filter($names, static fn($name) => self::resolveAttachmentPath($baseDir, $name) !== null));
     }
 
+    /**
+     * Return the attachment names that do not resolve inside the attachments directory
+     * (see resolveAttachmentPath()), e.g. an empty name or a file whose upload failed.
+     *
+     * @param string $baseDir attachments directory
+     * @param array<mixed> $names names submitted by the client
+     * @return array<mixed> rejected names
+     */
+    public static function rejectedAttachmentNames(string $baseDir, array $names): array
+    {
+        return array_values(array_filter($names, static fn($name) => self::resolveAttachmentPath($baseDir, $name) === null));
+    }
+
     public static function startsWithNumber(string $string): bool
     {
         return $string !== '' && ctype_digit($string[0]);
@@ -2057,7 +2073,7 @@ class Episciences_Tools
      */
     public static function isDoiWithUrl(string $strDoi): bool
     {
-        $pattern = '~^((https?://)?(dx.)?doi\.org/)?10.\d{4,9}/[-._;()\/:A-Z0-9]+$~i';
+        $pattern = '~^((https?://)?(dx\.)?doi\.org/)?10.\d{4,9}/[-._;()\/:A-Z0-9]+$~i';
         return (bool)preg_match($pattern, $strDoi);
     }
 
