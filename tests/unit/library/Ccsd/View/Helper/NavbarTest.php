@@ -50,6 +50,16 @@ final class NavbarTest extends TestCase
         self::assertStringNotContainsString('user/logout"', $html);
     }
 
+    public function testLoginFormSendsThePageToReturnToInTheUrl(): void
+    {
+        $html = $this->render(['isLogged' => false]);
+
+        // the login action reads the page to return to from the URL only, never from a posted body
+        self::assertMatchesRegularExpression('#<form[^>]*id="form-login"[^>]*method="get"#', $html);
+        self::assertStringContainsString('name="forward-controller" value="paper"', $html);
+        self::assertStringContainsString('name="forward-action" value="view"', $html);
+    }
+
     public function testVisitorGetsNoLoginFormWithoutAccountActions(): void
     {
         $html = $this->render(['isLogged' => false, 'accountActions' => false]);

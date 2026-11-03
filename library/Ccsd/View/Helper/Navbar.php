@@ -206,7 +206,8 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                             <?php endif; ?>
 
                             &nbsp;
-                            <form class="form-inline navbar-form pull-right" style="margin-top: 8px; margin-right: 8px;" action="<?= $this->view->url(['controller' => 'user', 'action' => 'login']) ?>" id="form-login" method="post">
+                            <?php // GET: the login action only reads the page to return to from the URL ?>
+                            <form class="form-inline navbar-form pull-right" style="margin-top: 8px; margin-right: 8px;" action="<?= $this->view->url(['controller' => 'user', 'action' => 'login']) ?>" id="form-login" method="get">
                                 <input type="hidden" name="forward-controller" value="<?php echo $request->getControllerName(); ?>"/>
                                 <input type="hidden" name="forward-action" value="<?php echo $request->getActionName(); ?>"/>
                                 <?php
