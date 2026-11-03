@@ -4127,29 +4127,6 @@ class Episciences_PapersManager
 
     }
 
-    /**
-     * fetch a paper
-     * @param $identifier
-     * @return Episciences_Paper|null
-     * @throws Zend_Db_Statement_Exception
-     */
-    public static function findByIdentifier($identifier): ?Episciences_Paper
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        $select = $db->select()
-            ->distinct()
-            ->from(['papers' => T_PAPERS])
-            ->where('identifier = ?', $identifier)
-            ->order('DOCID DESC')
-            ->order('WHEN DESC');
-
-        $data = $select->query()->fetch();
-
-        return !$data ? null : new Episciences_Paper($data);
-
-    }
-
     public static function getDocIdsInConflitByUid($uid): array
     {
 

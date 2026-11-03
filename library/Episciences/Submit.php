@@ -81,15 +81,13 @@ class Episciences_Submit
 
     /**
      * @param array $settings
-     * @param array|null $defaults
-     * @param bool $isFromZSubmit
      * @return Ccsd_Form
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
 
-    public static function getForm(array $settings = [], ?array $defaults = [], bool $isFromZSubmit = false): \Ccsd_Form
+    public static function getForm(array $settings = []): \Ccsd_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $review = Episciences_ReviewsManager::find(RVID);
@@ -121,11 +119,6 @@ class Episciences_Submit
             'style' => 'width:auto; text-align:center;',
         ];
 
-        if ($isFromZSubmit) {
-            $repIdElementOptions['disabled'] = true;
-            $docIdElementOptions['disabled'] = true;
-        }
-
         // Select: repositories
         $subform->addElement('select', 'repoId', $repIdElementOptions);
 
@@ -134,19 +127,13 @@ class Episciences_Submit
         // Champ texte : identifiant du document
         $subform->addElement('text', 'docId', $docIdElementOptions);
 
-        $isRequiredVersionField = !isset($defaults['repoId']) || Episciences_Repositories::isVersionRequired((int)$defaults['repoId']);
-
         // Champ texte : version du document
-
-        if ($isRequiredVersionField) {
-            $subform->addElement('text', 'version', [
-                'label' => 'Version',
-                'required' => false,
-                'description' => $translator->translate("Saisir la version du document (nombre uniquement)."),
-                'value' => '',
-                'style' => 'width:17%;']);
-
-        }
+        $subform->addElement('text', 'version', [
+            'label' => 'Version',
+            'required' => false,
+            'description' => $translator->translate("Saisir la version du document (nombre uniquement)."),
+            'value' => '',
+            'style' => 'width:17%;']);
 
         // Bouton : Rechercher
         $subform->addElement('button', 'getPaper', [
@@ -463,11 +450,6 @@ class Episciences_Submit
         self::addSubmitDocGroup($form, $group);
 
 
-        if ($defaults) {
-            $form->setDefaults($defaults);
-        }
-
-
         return $form;
     }
 
@@ -606,10 +588,6 @@ class Episciences_Submit
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $defaults = self::fetchNewVersionFormDefaultValues($paper);
-
-        if (array_key_exists('zIdentifier', $settings)) {
-            $defaults['docId'] = $settings['zIdentifier'];
-        }
 
         $isNewVersionOf = array_key_exists('newVersionOf', $settings);
 

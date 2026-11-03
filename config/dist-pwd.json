@@ -13,10 +13,6 @@
     "API_SECRET_KEY": "YourSecretAuthKey",
     "API_STATS_DELEGATION_SECRET": "",
     "USER_AGENT": "yourUserAgent",
-    "Z_SUBMIT": {
-      "URL": "https://zsubmit-env.domain.org",
-      "STATUS": 0
-    },
     "BIBLIOREF": {
       "URL":"https://epiextract-env.domain.org",
       "ENABLE" : false,

@@ -1,18 +1,3 @@
-<?php
-$zSubmitStatus = (boolean)EPISCIENCES_Z_SUBMIT['STATUS'];
-$zSubmitUrl = EPISCIENCES_Z_SUBMIT['URL'];
-
-$isFromZSubmitJson = Zend_Json::encode($this->isFromZSubmit);
-
-try {
-    $zSubmitUrl .= '/' . Episciences_Tools::getLocale();
-} catch (Zend_Exception $e) {
-    trigger_error($e->getMessage());
-}
-
-$zSubmitUrl .= '/deposit?epi-rvcode=' . RVCODE;
-
-?>
 <!-- Guideline -->
 <div id="stats" class="panel panel-default collapsable">
     <div class="panel-heading">
@@ -39,13 +24,8 @@ $zSubmitUrl .= '/deposit?epi-rvcode=' . RVCODE;
 <?php $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js'); ?>
 <?php $this->jQuery()->addJavascriptFile('/js/submit/identifier.js'); ?>
 <?php $this->jQuery()->addJavascriptFile('/js/submit/index.js'); ?>
-<?php $this->jQuery()->addJavascriptFile('/js/submit/insertZSubmitElement.js'); ?>
 
 <script>
     let examples = <?= $this->examples ?>;
     let isRequiredVersion = true;
-    let isFromZSubmit = <?= $isFromZSubmitJson ?>;
-    let zSubmitUrl = '<?= $this->zSubmitUrl ?>';
-    let zenodoRepoId = '<?= $this->zenodoRepoId ?>';
-    let zSubmitStatus = <?= json_encode($zSubmitStatus)?> ;
 </script>

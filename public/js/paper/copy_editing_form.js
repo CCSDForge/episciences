@@ -86,8 +86,4 @@ $(function () {
             deleteAllAttachedFiles();
         }
     });
-
-    if (isFromZSubmit) {
-        $('.auto-clickable').click();
-    }
 });

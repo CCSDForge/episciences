@@ -51,14 +51,12 @@ $isDisabled = in_array($paperStatus, Episciences_Paper::$_noEditableStatus, true
 // Configure button based on comment type
 $replyBtnClass = 'btn-default';
 $btnTitle = '';
-$autoClickable = '';
 
 if ($isFinalVersionRequest) {
     // TYPE 17/18/21: Submit final version
     $replyBtnMsg = 'Soumettre la version finale';
     $replyBtnClass = 'btn-primary';
     $btnTitle = "Soumettre la version finale de l'archive ouverte";
-    $autoClickable = 'auto-clickable'; // Auto-click for Z-Submit workflow
 
 } elseif ($commentType === Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST) {
     // TYPE 20: Add source files
@@ -88,7 +86,7 @@ $disabled = $isDisabled ? 'disabled' : '';
 
     <!-- Reply button -->
     <button id="replyFormBtn_<?= $pcId ?>"
-            class="btn <?= $replyBtnClass ?> btn-sm replyButton <?= $autoClickable ?>"
+            class="btn <?= $replyBtnClass ?> btn-sm replyButton"
             <?= $disabled ?>
             <?= $tooltip ?>>
         <i class="fa-solid fa-upload" aria-hidden="true"></i>
@@ -100,10 +98,7 @@ $disabled = $isDisabled ? 'disabled' : '';
         <?php if ($isFinalVersionRequest): ?>
             <!-- Final version request: use special form partial -->
             <?= $this->partial('paper/new_version_show_result.phtml', [
-                'form' => $replyForm,
-                'isFromZSubmit' => $this->isFromZSubmit ?? false,
-                'zenodoRepoId' => Episciences_Repositories::ZENODO_REPO_ID,
-                'zSubmitUrl' => $this->zSubmitUrl ?? ''
+                'form' => $replyForm
             ]) ?>
         <?php else: ?>
             <!-- Standard form (upload sources, formatted version, or generic reply) -->

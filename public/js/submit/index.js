@@ -49,15 +49,6 @@ $(document).ready(function () {
                 } else {
                     $versionBloc.show();
                 }
-
-                if ($searchDocRepoId.val() === zenodoRepoId) {
-                    if (zSubmitStatus) {
-                        // to be enabled : @ see /config/dist-pwd.json
-                        insertZSubmitElement(zSubmitUrl);
-                    }
-                } else {
-                    $('#z-submit-element').remove();
-                }
             } else {
                 $versionBloc.show();
             }

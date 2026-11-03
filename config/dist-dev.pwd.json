@@ -14,10 +14,6 @@
     "API_SECRET_KEY": "four random common words",
     "API_STATS_DELEGATION_SECRET": "",
     "USE_NEW_FRONT" : true,
-    "Z_SUBMIT": {
-      "URL": "https://deprecated.example.org",
-      "STATUS": 0
-    },
     "AUTH_ADAPTER_NAME": "MYSQL",
     "BIBLIOREF": {
       "URL":"https://citations-dev.episciences.org",

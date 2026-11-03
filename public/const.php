@@ -346,7 +346,6 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('EPISCIENCES_API_SECRET_KEY', '');
         define('EPISCIENCES_API_STATS_DELEGATION_SECRET', '');
         define('EPISCIENCES_UID', 0);
-        define('EPISCIENCES_Z_SUBMIT', 0);
         define('EPISCIENCES_USER_AGENT', '');
         define('EPISCIENCES_SUPPORT', '');
         define('EPISCIENCES_MAIL_PATH', '');
