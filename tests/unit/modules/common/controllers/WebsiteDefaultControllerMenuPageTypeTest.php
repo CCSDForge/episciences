@@ -62,6 +62,7 @@ final class WebsiteDefaultControllerMenuPageTypeTest extends TestCase
     protected function tearDown(): void
     {
         Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
+        \Episciences_ReviewsManager::clearCache();
     }
 
     /**
@@ -98,7 +99,8 @@ final class WebsiteDefaultControllerMenuPageTypeTest extends TestCase
              */
             public function __call(string $name, array $arguments): mixed
             {
-                return null;
+                // The page types are grouped by menuAction() on manager branches, which needs an array
+                return $name === 'getPageTypes' ? [] : null;
             }
         };
 
@@ -112,6 +114,13 @@ final class WebsiteDefaultControllerMenuPageTypeTest extends TestCase
         $sessionProperty = new \ReflectionProperty(WebsiteDefaultController::class, '_session');
         $sessionProperty->setAccessible(true);
         $sessionProperty->setValue($controller, (object)['website' => $website]);
+
+        // menuAction() groups the page types according to the journal (manager branches): resolve it without the database
+        $review = new \Episciences_Review();
+        $review->setCode(RVCODE);
+        $cacheProperty = new \ReflectionProperty(\Episciences_ReviewsManager::class, '_cache');
+        $cacheProperty->setAccessible(true);
+        $cacheProperty->setValue(null, array_merge($cacheProperty->getValue(), ['rvcode_' . RVCODE => $review]));
 
         $controller->menuAction();
 
