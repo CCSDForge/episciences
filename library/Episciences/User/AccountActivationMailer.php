@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Episciences\User;
 
+use Episciences\Trait\UrlBuilder;
 use Episciences\User\Token\AccountTokenRepository;
 use Episciences\User\Token\TokenPurpose;
 use Episciences_Mail_Send;
@@ -18,6 +19,8 @@ use Zend_Exception;
  */
 final class AccountActivationMailer
 {
+    use UrlBuilder;
+
     /** @var callable(array<string, string>): string */
     private $urlBuilder;
 
@@ -59,7 +62,8 @@ final class AccountActivationMailer
     {
         $token = $this->tokens->issue((int)$user->getUid(), (string)$user->getEmail(), $purpose);
 
-        $tokenUrl = APPLICATION_URL . ($this->urlBuilder)([
+        // the url() helper already gives the journal prefix: only the origin is added
+        $tokenUrl = self::buildBaseUrl() . ($this->urlBuilder)([
                 'controller' => 'user',
                 'action' => $action,
                 'token' => $token,
