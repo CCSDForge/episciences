@@ -419,13 +419,15 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
      * References of the JATS ref-list, as displayed by bioRxiv / medRxiv.
      * The text of each citation is already formatted by the repository (hw:use-reference-as-is="yes"):
      * it is kept as is rather than rebuilt from its tagged parts.
+     * <element-citation> holds tagged fields without punctuation: its text would run the fields together.
+     * It is not used by bioRxiv / medRxiv and is ignored.
      * @return array<int, array{raw_reference: string, doi?: string}>
      */
     private static function referencesProcess(SimpleXMLElement $doc): array
     {
         $citations = [];
 
-        foreach ($doc->xpath('/article/back/ref-list/ref/*[self::citation or self::mixed-citation or self::element-citation]') ?: [] as $citation) {
+        foreach ($doc->xpath('/article/back/ref-list/ref/*[self::citation or self::mixed-citation]') ?: [] as $citation) {
 
             $rawReference = trim((string)preg_replace('/\s+/u', ' ', (string)dom_import_simplexml($citation)->textContent));
 

@@ -495,4 +495,19 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
 
         self::assertSame([['raw_reference' => 'Doe J. Title. 123']], $citations);
     }
+
+    /**
+     * <element-citation> has no punctuation between its fields: its text would read "SmithJ2020Title".
+     */
+    public function testReferencesProcessIgnoresElementCitation(): void
+    {
+        $citations = self::processReferences(
+            '<ref id="c1"><element-citation><person-group><string-name><surname>Smith</surname>'
+            . '<given-names>J</given-names></string-name></person-group><year>2020</year>'
+            . '<article-title>Title</article-title></element-citation></ref>'
+            . '<ref id="c2"><citation>Doe J (2021) Kept.</citation></ref>'
+        );
+
+        self::assertSame([['raw_reference' => 'Doe J (2021) Kept.']], $citations);
+    }
 }
