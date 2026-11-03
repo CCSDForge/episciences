@@ -120,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Remove the legacy `scripts/DeletePaper.php` script (replaced by the `papers:delete` console command), which reported a deletion as successful even when it had failed.
-- Remove the abandoned Z-Submit integration: the "Submit in Zenodo" link on the submission form, the submissions and new versions handed over by the Z-Submit application (`episciences_form` POST, `z-identifier` parameter) and the `EPISCIENCES.Z_SUBMIT` key of `pwd.json`, which can be deleted from deployed configurations.
+- [#1425](https://github.com/CCSDForge/episciences/pull/1425): Remove the abandoned Z-Submit integration: the "Submit in Zenodo" link on the submission form, the submissions and new versions handed over by the Z-Submit application (`episciences_form` POST, `z-identifier` parameter) and the `EPISCIENCES.Z_SUBMIT` key of `pwd.json`, which can be deleted from deployed configurations. The now unused `Episciences_Paper::isFormattingCompleted()` and `Episciences_PapersManager::findByIdentifier()` are removed too.
 
 ## v1.0.58.1 - 2026-10-29
 

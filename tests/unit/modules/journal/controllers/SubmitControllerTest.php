@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
-use Episciences_Repositories;
 use Episciences_Review;
 use Episciences_Submit;
 use ReflectionMethod;
@@ -13,11 +12,9 @@ use unit\modules\ControllerTestCase;
 use Zend_Controller_Response_HttpTestCase;
 use Zend_Form;
 use Zend_Form_Element_Text;
-use Zend_Registry;
 
 /**
- * SubmitController: the submission form, and the cover letter file required by the journal
- * (handleCoverLetterValidation()).
+ * SubmitController::handleCoverLetterValidation(): the cover letter file required by the journal.
  */
 final class SubmitControllerTest extends ControllerTestCase
 {
@@ -70,38 +67,6 @@ final class SubmitControllerTest extends ControllerTestCase
 
         self::assertTrue($this->handleCoverLetterValidation($form));
         self::assertSame([], $form->getMessages());
-    }
-
-    /**
-     * A POST shaped like the former Z-Submit hand-over ("episciences_form") is ignored:
-     * the repository and the identifier are neither pre-filled nor locked.
-     */
-    public function testFormerZSubmitHandOverDoesNotPrefillTheForm(): void
-    {
-        $this->givenJournal();
-        $this->logInAs(['member']);
-        Zend_Registry::set('reviewSettings', ['repositories' => [Episciences_Repositories::ZENODO_REPO_ID]]);
-        $request = $this->postRequest(['episciences_form' => [
-            'ci' => '10.5281/zenodo.100',
-            'repoid' => Episciences_Repositories::ZENODO_REPO_ID,
-            'doi_show' => '10.5281/zenodo.101',
-        ]]);
-
-        $controller = new SubmitController($request, new Zend_Controller_Response_HttpTestCase());
-        $controller->indexAction();
-
-        /** @var Zend_Form $form */
-        $form = $controller->view->form;
-        $searchDoc = $form->getSubForm('search_doc');
-        self::assertNotNull($searchDoc);
-
-        foreach (['repoId', 'docId'] as $name) {
-            $element = $searchDoc->getElement($name);
-            self::assertNotNull($element, $name);
-            self::assertEmpty($element->getAttrib('disabled'), $name . ' is not locked');
-        }
-
-        self::assertEmpty($searchDoc->getElement('docId')->getValue(), 'the identifier is not pre-filled');
     }
 
     private function handleCoverLetterValidation(Zend_Form $form): bool
