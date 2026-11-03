@@ -83,6 +83,20 @@ final class UserDefaultControllerLoginServiceUrlTest extends ControllerTestCase
         );
     }
 
+    public function testPageToReturnToSentInTheQueryIsCarriedOver(): void
+    {
+        // as sent by the login form of the navbar
+        $request = $this->getRequest(
+            ['forward-controller' => 'paper', 'forward-action' => 'view', 'id' => '1'],
+            ['controller' => 'user', 'action' => 'login']
+        );
+
+        self::assertSame(
+            SERVER_PROTOCOL . '://journal.example.org/user/login/forward-controller/paper/forward-action/view/id/1',
+            $this->serviceUrl($request)
+        );
+    }
+
     public function testCasTicketGivenAsRouteParameterIsNotCarriedOver(): void
     {
         $request = $this->getRequest([], ['forward-controller' => 'paper', 'forward-action' => 'view', 'ticket' => 'ST-1-abc', 'id' => '1']);
