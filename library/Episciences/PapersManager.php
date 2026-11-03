@@ -1174,8 +1174,9 @@ class Episciences_PapersManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         //recuperation des relecteurs classiques
+        // the latest assignment of each reviewer (highest ID: an answer can be saved in the same second as the invitation)
         $subquery = $db->select()
-            ->from(['z' => T_ASSIGNMENTS], ['z.UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(['z' => T_ASSIGNMENTS], ['latest_id' => new Zend_Db_Expr('MAX(z.ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('ROLEID = ?', 'reviewer')
@@ -1190,7 +1191,7 @@ class Episciences_PapersManager
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinLeft(['u' => T_USERS], 'a.UID = u.UID', ['LANGUEID', 'SCREEN_NAME'])
             //->joinUsing(T_USERS, 'UID', array('LANGUEID', 'SCREEN_NAME'))
-            ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subquery], 'a.ID = b.latest_id', [])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('TMP_USER = ?', 0)
