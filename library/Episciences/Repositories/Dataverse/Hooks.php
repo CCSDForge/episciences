@@ -22,6 +22,19 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
         $docId = $hookParams['docId'];
         $repoId = $hookParams['repoId'];
 
+        if (empty($files)) {
+            // Loaded from the repository;
+            // a record the caller already loaded (Episciences_PapersManager::updateRecordData()) is not loaded again
+            $response = !empty($hookParams['response']) && is_array($hookParams['response'])
+                ? $hookParams['response']
+                : self::hookApiRecords($hookParams);
+            if (isset($response['error'])) {
+                throw new Ccsd_Error((string)$response['error']);
+            }
+            $files = $response[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::FILES] ?? [];
+            $hookParams['response'] = $response;
+        }
+
         $files = array_map(static function ($file) use ($docId, $repoId) {
             $file['doc_id'] = $docId;
             $file['source'] = $repoId;

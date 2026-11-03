@@ -63,24 +63,19 @@ class Episciences_Paper_FilesManager
 
 
     /**
+     * Not caught here: the files hooks that call it report the failure (Episciences_Submit::processRepositoryHooks()),
+     * otherwise a paper left without files would look processed
+     *
      * @param array $files
      * @return int
+     * @throws InvalidArgumentException|RuntimeException the files could not be stored (rolled back)
      */
-
     public static function insert(array $files): int
     {
-
         $affectedRows = 0;
 
-        try {
-            $result = self::syncFiles($files);
-
-            foreach ($result as $count) {
-                $affectedRows += $count;
-            }
-
-        } catch (Exception $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
+        foreach (self::syncFiles($files) as $count) {
+            $affectedRows += $count;
         }
 
         return $affectedRows;
@@ -264,9 +259,16 @@ class Episciences_Paper_FilesManager
             $db->commit();
             return $results;
 
-        } catch (Exception $e) {
-            $db->rollBack();
-            throw new RuntimeException('Files synchronization error [rollback]:' . $e->getMessage());
+        } catch (Throwable $e) {
+            // Throwable: a file of an unexpected shape fails with a TypeError (Episciences_Paper_File typed setters);
+            // without the rollback, the transaction would stay open and swallow every later write of the request
+            try {
+                $db->rollBack();
+            } catch (Throwable $rollbackError) {
+                // No transaction left when commit() itself failed: keep the original error
+                trigger_error('Files synchronization rollback failed: ' . $rollbackError->getMessage(), E_USER_WARNING);
+            }
+            throw new RuntimeException('Files synchronization error [rollback]:' . $e->getMessage(), 0, $e);
         }
     }
 
