@@ -273,7 +273,7 @@ class Episciences_Auth_PluginTest extends TestCase
         Zend_Session::$_unitTestEnabled = true;
 
         try {
-            self::assertSame('user/edit', $this->profileRedirectOfAMemberWithoutLocalData(false));
+            self::assertSame((defined('PREFIX_URL') ? PREFIX_URL : '/') . 'user/edit', $this->profileRedirectOfAMemberWithoutLocalData(false));
             self::assertSame('/paper/view/id/5', ProfileCompletionReturn::take());
         } finally {
             [$_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI'], $_SESSION, Zend_Session::$_unitTestEnabled] = $previous;

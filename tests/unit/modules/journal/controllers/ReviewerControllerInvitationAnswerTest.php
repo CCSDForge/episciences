@@ -572,8 +572,8 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
         $url = $this->askForActivationLink(['sendactivation' => '']);
 
         // refreshing the page displayed after it does not send the request again
-        self::assertStringContainsString('/reviewer/invitation/id/' . self::INVITATION_ID, $url);
-        self::assertStringContainsString('/' . InvitationToken::URL_PARAM . '/link-token', $url, 'the invitation stays open without signing in');
+        self::assertStringContainsString('/reviewer/invitation?id=' . self::INVITATION_ID, $url);
+        self::assertStringContainsString('&' . InvitationToken::URL_PARAM . '=link-token', $url, 'the invitation stays open without signing in');
     }
 
     public function testActivationLinkSentAMomentAgoIsNotSentAgain(): void
@@ -699,10 +699,10 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
 
         $url = (string)(new DispatchResult($this->response, '', $stopped))->redirectUrl();
         self::assertTrue($stopped, 'the redirection ends the request');
-        self::assertStringContainsString('/user/login/', $url);
+        self::assertStringContainsString('/user/login?', $url);
         self::assertStringNotContainsString('is-accepted', $url);
-        self::assertStringContainsString('/confirm-acceptance/1', $url);
-        self::assertStringContainsString('/' . InvitationToken::URL_PARAM . '/link-token', $url);
+        self::assertStringContainsString('&confirm-acceptance=1', $url);
+        self::assertStringContainsString('&' . InvitationToken::URL_PARAM . '=link-token', $url);
     }
 
     // -------------------------------------------------------------------------
@@ -736,9 +736,9 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
         $this->answerWithRoutes($this->getRequest([], [InvitationToken::URL_PARAM => 'link-token']));
 
         $url = (string) $this->controller->view->loginUrl;
-        self::assertStringContainsString('/user/login/', $url);
-        self::assertStringContainsString('/forward-controller/reviewer/forward-action/invitation/id/' . self::INVITATION_ID, $url);
-        self::assertStringContainsString('/' . InvitationToken::URL_PARAM . '/link-token', $url, 'the link secret is kept: the account may not be the invited one');
+        self::assertStringContainsString('/user/login?', $url);
+        self::assertStringContainsString('forward-controller=reviewer&forward-action=invitation&id=' . self::INVITATION_ID, $url);
+        self::assertStringContainsString('&' . InvitationToken::URL_PARAM . '=link-token', $url, 'the link secret is kept: the account may not be the invited one');
         self::assertStringNotContainsString('confirm-acceptance', $url, 'signing in does not prepare an acceptance');
     }
 
@@ -749,7 +749,7 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
 
         $url = (string) $this->controller->view->loginUrl;
         self::assertStringNotContainsString('confirm-acceptance', $url, 'signing in does not prepare an acceptance');
-        self::assertStringContainsString('/' . InvitationToken::URL_PARAM . '/link-token', $url);
+        self::assertStringContainsString('&' . InvitationToken::URL_PARAM . '=link-token', $url);
     }
 
     public function testAcceptingWithTheActiveAccountOfTheInvitedAddressIsConfirmedOnceBack(): void
@@ -759,8 +759,8 @@ final class ReviewerControllerInvitationAnswerTest extends ControllerTestCase
         $this->answerWithRoutes($this->getRequest([], [InvitationToken::URL_PARAM => 'link-token']), $this->tmpUser());
 
         $url = (string) $this->controller->view->acceptLoginUrl;
-        self::assertStringContainsString('/forward-controller/reviewer/forward-action/invitation/id/' . self::INVITATION_ID, $url);
-        self::assertStringContainsString('/confirm-acceptance/1', $url);
+        self::assertStringContainsString('forward-controller=reviewer&forward-action=invitation&id=' . self::INVITATION_ID, $url);
+        self::assertStringContainsString('&confirm-acceptance=1', $url);
         self::assertStringNotContainsString('confirm-acceptance', (string) $this->controller->view->loginUrl);
     }
 
