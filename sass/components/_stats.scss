@@ -353,6 +353,15 @@
   .stat-formula {
     margin: 0 0 6px;
     font-size: 1.2rem;
+
+    p {
+      margin: 0 0 2px;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
   }
 
   .stat-note {

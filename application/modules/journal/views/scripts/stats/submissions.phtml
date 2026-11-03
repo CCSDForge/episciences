@@ -4,8 +4,14 @@ $acceptedNoYetPublishedTooltipInfo = "Cela inclut les versions acceptées (mise 
 $acceptedTooltipInfo = "Cela inclut les articles qui ont déjà été publiés";
 $refusedTooltipInfo = "La revue peut rejeter plusieurs fois le même article. Dans ce cas, un seul rejet est comptabilisé par article.";
 $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
-$baseMessage = "La somme du nombre total d’articles acceptés et du nombre total d’articles refusés";
-$rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :'), $this->translate("le total des articles concernés par le taux X"), $this->translate(' :'), $this->translate($baseMessage));
+// how the rates are computed by the API: X / (accepted + refused) x 100, X being the accepted, refused or published articles
+$rateFormula = 'Taux = articles concernés ÷ (articles acceptés + articles refusés) × 100';
+$rateNotes = [
+        "Taux d'acceptation + taux de refus = 100 %.",
+        "Le taux de publication a la même base : il ne dépasse pas le taux d'acceptation.",
+        'Ne comptent pas : les articles en attente de décision et les articles importés.',
+        "Par année : l'année de la décision (acceptation, refus ou publication), pas de la soumission.",
+];
 
 ?>
 <div class="panel panel-default collapsable">
@@ -174,7 +180,14 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                         <div class="rate">
 
                             <h3 class="stat-section-title"><?= $this->translate('Taux') ?></h3>
-                            <p class="help-block stat-formula"><?= $this->translate($rateFormulaInfo) ?></p>
+                            <div class="help-block stat-formula">
+                                <p><?= $this->escape($this->translate($rateFormula)) ?></p>
+                                <ul>
+                                    <?php foreach ($rateNotes as $rateNote): ?>
+                                        <li><?= $this->escape($this->translate($rateNote)) ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
 
                             <?php // rates: meters, read at a glance and comparable (instead of a two-slice doughnut) ?>
                             <ul class="list-unstyled stat-meters">
