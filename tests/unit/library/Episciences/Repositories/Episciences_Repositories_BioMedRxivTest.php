@@ -16,9 +16,9 @@ use ReflectionMethod;
  * Bugs documented/fixed:
  *   B1 — hookApiRecords(): array_key_first(null) crash when 'messages' key absent.
  *          Fixed: $response['messages'][array_key_first($response['messages'] ?? [])] ?? []
- *   B2 — referencesProcess(): off-by-one — count($sn) always 1 (or number of keys
- *          in current author element), so '; ' was appended after the last author too.
- *          Fixed: count($sn) → count($stringName).
+ *   B2 — referencesProcess(): references are no longer rebuilt from their tagged parts
+ *          (authors, title, pages, ...), which lost or broke data: the formatted text of
+ *          each citation is kept as is, with its DOI.
  *   B3 — extractLicenseFromString(): explode(', ', $string)[1] crashes with undefined
  *          offset when string has no ', '. Fixed: guard with isset($parts[1]) check.
  *   B4 — ORCID regex '#^http(s*)://orcid.org/#' matches 'httpssss://orcid.org/'.
@@ -75,72 +75,6 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
     {
         $result = Episciences_Repositories_BioMedRxiv::hookIsIdentifierCommonToAllVersions();
         self::assertSame(['result' => false], $result);
-    }
-
-    // =========================================================================
-    // Bug B2 — referencesProcess: no trailing '; ' after last author
-    // =========================================================================
-
-    /**
-     * Before the fix, count($sn) counted the keys of the current author element
-     * (e.g. ['surname' => 'Smith', 'given-names' => 'John'] → count = 2, always >= 1),
-     * so '; ' was appended after every author including the last one.
-     * After the fix, count($stringName) counts the total number of authors, and
-     * the condition $index < count($stringName) - 1 correctly skips the separator
-     * on the last iteration.
-     */
-    public function testReferencesProcessNoTrailingSeparator(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        // Two-author reference: separator should appear only between them.
-        $references = [
-            [
-                'citation' => [
-                    'string-name' => [
-                        ['surname' => 'Smith', 'given-names' => 'John'],
-                        ['surname' => 'Doe', 'given-names' => 'Jane'],
-                    ],
-                ],
-            ],
-        ];
-
-        // referencesProcess takes $citations by reference — use invokeArgs with a reference.
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations]);
-
-        // The authorsStr must not end with '; '.
-        // Use substr check since assertStringNotEndsWith is not available in PHPUnit 9.5.
-        if (!empty($citations)) {
-            $authorsStr = $citations[0]['authorsStr'] ?? '';
-            self::assertNotSame('; ', substr($authorsStr, -2),
-                'authorsStr must not have a trailing "; " after the last author');
-        } else {
-            // No citations produced — formatReferences filtered them out; that is
-            // acceptable but we still verify the separator logic directly.
-            $authorStr = '';
-            $stringName = [
-                ['surname' => 'Smith', 'given-names' => 'John'],
-                ['surname' => 'Doe',   'given-names' => 'Jane'],
-            ];
-            foreach ($stringName as $index => $sn) {
-                if (!isset($sn['surname']) && !isset($sn['given-names'])) {
-                    continue;
-                }
-                $authorStr .= $sn['surname'] ?? '';
-                if (isset($sn['given-names'])) {
-                    $authorStr .= ', ' . $sn['given-names'];
-                }
-                // Fixed condition: $index < count($stringName) - 1
-                if ($index < count($stringName) - 1) {
-                    $authorStr .= '; ';
-                }
-            }
-            self::assertNotSame('; ', substr($authorStr, -2),
-                'Last author must not be followed by "; "');
-            self::assertStringContainsString('; ', $authorStr); // separator exists between authors
-        }
     }
 
     // =========================================================================
@@ -353,137 +287,6 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
     }
 
     // =========================================================================
-    // referencesProcess() — single author (no separator), page range
-    // =========================================================================
-
-    /**
-     * Single author: no '; ' separator must appear at all.
-     */
-    public function testReferencesProcessSingleAuthorNoSeparator(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        $references = [[
-            'citation' => [
-                'string-name' => [
-                    ['surname' => 'Solo', 'given-names' => 'Han'],
-                ],
-            ],
-        ]];
-
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations]);
-
-        if (!empty($citations)) {
-            $raw = $citations[0]['raw_reference'] ?? '';
-            self::assertStringNotContainsString('; ', $raw);
-        } else {
-            // formatReferences returned [] — verify the author string directly
-            $authorStr = '';
-            $sn = [['surname' => 'Solo', 'given-names' => 'Han']];
-            foreach ($sn as $index => $author) {
-                $authorStr .= $author['surname'];
-                if (isset($author['given-names'])) {
-                    $authorStr .= ', ' . $author['given-names'];
-                }
-                if ($index < count($sn) - 1) {
-                    $authorStr .= '; ';
-                }
-            }
-            self::assertStringNotContainsString('; ', $authorStr);
-        }
-    }
-
-    /**
-     * fpage and lpage are concatenated as "fpage-lpage" in the citation.
-     */
-    public function testReferencesProcessPageRange(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        $references = [[
-            'citation' => [
-                'article-title' => 'Title',
-                'fpage'         => '10',
-                'lpage'         => '20',
-                'string-name'   => [],
-            ],
-        ]];
-
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations]);
-
-        if (!empty($citations)) {
-            self::assertStringContainsString('10-20', $citations[0]['raw_reference']);
-        }
-        // If formatReferences returned [] (missing required fields), still pass — page logic is correct.
-    }
-
-    /**
-     * When the citation has only fpage (no lpage), the page is just fpage.
-     */
-    public function testReferencesProcessFpageOnly(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        $references = [[
-            'citation' => [
-                'article-title' => 'Title',
-                'fpage'         => '42',
-                'string-name'   => [],
-            ],
-        ]];
-
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations]);
-
-        if (!empty($citations)) {
-            self::assertStringContainsString('42', $citations[0]['raw_reference']);
-            self::assertStringNotContainsString('42-', $citations[0]['raw_reference']);
-        }
-    }
-
-    /**
-     * chapter-title is used as title when article-title is absent.
-     */
-    public function testReferencesProcessChapterTitleFallback(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        $references = [[
-            'citation' => [
-                'chapter-title' => 'Chapter One',
-                'string-name'   => [],
-            ],
-        ]];
-
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations]);
-
-        if (!empty($citations)) {
-            self::assertStringContainsString('Chapter One', $citations[0]['raw_reference']);
-        }
-    }
-
-    /**
-     * Empty references array produces no citations.
-     */
-    public function testReferencesProcessEmpty(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        $citations = [];
-        $method->invokeArgs(null, [[], &$citations]);
-
-        self::assertSame([], $citations);
-    }
-
-    // =========================================================================
     // typeProcess() edge cases
     // =========================================================================
 
@@ -600,77 +403,111 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
         self::assertSame([], $result);
     }
 
-    // -------------------------------------------------------------------------
-    // referencesProcess() — citation whose authors are not tagged
-    // -------------------------------------------------------------------------
-
-    private const JATS_PLAIN_TEXT_CITATION = <<<XML
-<article><back><ref-list>
-<ref id="c1"><label>1.</label><citation publication-type="journal"><string-name><surname>Smith</surname><given-names>J.</given-names></string-name> (<year>2020</year>). <article-title>Tagged title</article-title>. <source>J. Test</source>.</citation></ref>
-<ref id="c2"><label>2.</label><citation publication-type="journal">Dos Santos, N. T. O., <etal>et al.</etal> (<year>2017</year>). <article-title>Plain text authors</article-title>. <source>J. Bodyw.</source>, <volume>21</volume>(<issue>1</issue>), <fpage>74</fpage>–<lpage>80</lpage>.</citation></ref>
-</ref-list></back></article>
-XML;
+    // =========================================================================
+    // referencesProcess(): formatted text of each citation, with its DOI
+    // =========================================================================
 
     /**
-     * @return array{0: array, 1: string[]}
+     * @return array<int, array{raw_reference: string, doi?: string}>
      */
-    private static function decodeJats(string $xml): array
+    private static function processReferences(string $refList): array
     {
-        $doc = simplexml_load_string($xml);
-        $decoded = json_decode(json_encode($doc), true);
-
-        $extract = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'extractRawCitations');
-        $extract->setAccessible(true);
-
-        return [$decoded['back']['ref-list']['ref'], $extract->invoke(null, $doc)];
-    }
-
-    public function testReferencesProcessKeepsFullTextOfPlainTextCitation(): void
-    {
-        [$references, $rawCitations] = self::decodeJats(self::JATS_PLAIN_TEXT_CITATION);
-
-        // Precondition: json_encode() turns the untagged citation into a truncated string
-        self::assertIsString($references[1]['citation']);
-
         $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
         $method->setAccessible(true);
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations, $rawCitations]);
 
-        self::assertCount(2, $citations);
-        self::assertStringContainsString('Tagged title', $citations[0]['raw_reference']);
+        $xml = '<article xmlns:hw="org.highwire.hpp"><back><ref-list>' . $refList . '</ref-list></back></article>';
+
+        return $method->invoke(null, simplexml_load_string($xml));
+    }
+
+    public function testReferencesProcessKeepsFormattedTextAndDoi(): void
+    {
+        $citations = self::processReferences(
+            '<ref id="c1"><label>1.</label><citation publication-type="journal">'
+            . '<string-name><surname>Altman</surname>, <given-names>D. G.</given-names></string-name>, &amp; '
+            . '<string-name><surname>Royston</surname>, <given-names>P</given-names></string-name>. (<year>2006</year>). '
+            . '<article-title>The cost of dichotomising continuous variables</article-title>. <source>BMJ</source>, '
+            . '<volume>332</volume>(<issue>7549</issue>), <fpage>1080</fpage>. '
+            . '<pub-id pub-id-type="doi">10.1136/bmj.332.7549.1080</pub-id></citation></ref>'
+        );
+
+        self::assertSame([[
+            'raw_reference' => 'Altman, D. G., & Royston, P. (2006). The cost of dichotomising continuous variables. BMJ, 332(7549), 1080. 10.1136/bmj.332.7549.1080',
+            'doi' => '10.1136/bmj.332.7549.1080',
+        ]], $citations);
+    }
+
+    /**
+     * Authors not tagged: the citation starts with plain text (made the submission fail).
+     */
+    public function testReferencesProcessPlainTextAuthors(): void
+    {
+        $citations = self::processReferences(
+            '<ref id="c19"><label>19.</label><citation publication-type="journal">Dos Santos, N. T. O., '
+            . '<etal>et al.</etal> (<year>2017</year>). <article-title>Plain text authors</article-title>. '
+            . '<source>J. Bodyw.</source>, <volume>21</volume>(<issue>1</issue>), <fpage>74</fpage>–<lpage>80</lpage>.</citation></ref>'
+        );
+
         self::assertSame(
-            'Dos Santos, N. T. O., et al. (2017). Plain text authors. J. Bodyw., 21(1), 74–80.',
-            $citations[1]['raw_reference']
+            [['raw_reference' => 'Dos Santos, N. T. O., et al. (2017). Plain text authors. J. Bodyw., 21(1), 74–80.']],
+            $citations
         );
     }
 
-    public function testReferencesProcessPlainTextCitationWithoutRawCitations(): void
+    /**
+     * Title made of several inline elements (made the submission fail), single author, untagged collaboration.
+     */
+    public function testReferencesProcessInlineMarkupAndSingleAuthor(): void
     {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-        $citations = [];
-        $method->invokeArgs(null, [[['citation' => ' Some text. ']], &$citations]);
+        $citations = self::processReferences(
+            '<ref id="c1"><citation><string-name><surname>Smith</surname> <given-names>J</given-names></string-name> '
+            . '(<year>2020</year>) <article-title><italic>E. coli</italic> and <italic>B. subtilis</italic> growth</article-title>. '
+            . '<source><italic>Nature</italic></source></citation></ref>'
+            . '<ref id="c2"><citation><collab>The Consortium</collab> (<year>2021</year>) <article-title>Report</article-title></citation></ref>'
+        );
 
-        self::assertSame([['raw_reference' => 'Some text.']], $citations);
+        self::assertSame([
+            ['raw_reference' => 'Smith J (2020) E. coli and B. subtilis growth. Nature'],
+            ['raw_reference' => 'The Consortium (2021) Report'],
+        ], $citations);
     }
 
-    public function testReferencesProcessSingleRef(): void
+    public function testReferencesProcessWhitespaceIsNormalized(): void
     {
-        $xml = '<article><back><ref-list><ref id="c1"><citation><string-name><surname>Smith</surname>'
-            . '<given-names>J.</given-names></string-name> <article-title>Only one</article-title></citation></ref>'
-            . '</ref-list></back></article>';
-        [$references, $rawCitations] = self::decodeJats($xml);
+        $citations = self::processReferences(
+            "<ref id=\"c1\"><citation>\n  <string-name><surname>Doe</surname>\n  <given-names>J</given-names></string-name>\n  Title\n</citation></ref>"
+        );
 
-        // Precondition: a single <ref> is decoded as the ref itself, not a list
-        self::assertArrayHasKey('citation', $references);
+        self::assertSame([['raw_reference' => 'Doe J Title']], $citations);
+    }
 
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations, $rawCitations]);
+    public function testReferencesProcessSkipsEmptyCitations(): void
+    {
+        self::assertSame([], self::processReferences('<ref id="c1"><label>1.</label><citation> </citation></ref>'));
+        self::assertSame([], self::processReferences(''));
+    }
 
-        self::assertCount(1, $citations);
-        self::assertStringContainsString('Only one', $citations[0]['raw_reference']);
+    public function testReferencesProcessMixedCitation(): void
+    {
+        $citations = self::processReferences(
+            '<ref id="c1"><mixed-citation>Doe J. Title. <pub-id pub-id-type="pmid">123</pub-id></mixed-citation></ref>'
+        );
+
+        self::assertSame([['raw_reference' => 'Doe J. Title. 123']], $citations);
+    }
+
+    /**
+     * <element-citation> has no punctuation between its fields: its text would read "SmithJ2020Title".
+     */
+    public function testReferencesProcessIgnoresElementCitation(): void
+    {
+        $citations = self::processReferences(
+            '<ref id="c1"><element-citation><person-group><string-name><surname>Smith</surname>'
+            . '<given-names>J</given-names></string-name></person-group><year>2020</year>'
+            . '<article-title>Title</article-title></element-citation></ref>'
+            . '<ref id="c2"><citation>Doe J (2021) Kept.</citation></ref>'
+        );
+
+        self::assertSame([['raw_reference' => 'Doe J (2021) Kept.']], $citations);
     }
 }
