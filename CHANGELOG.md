@@ -79,6 +79,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Statistics page: a "Mean | Median" selector chooses the delay shown by the delay table and by the delays-by-year chart, without reloading the page; the median is shown by default and the choice is kept from a page to another. The chart gives the number of articles of each delay, explains that an article is counted the year of its acceptance or publication, uses the unit of the delays given by the API, and its CSV file is named after the value shown. Without JavaScript, the selector is hidden and the table shows both values. The median by year requires the matching Episciences API version; otherwise the chart keeps showing the mean.
 - [#1391](https://github.com/CCSDForge/episciences/pull/1391): Statistics page: the CSV files are named in the language of the page after the indicator, as shown: the title of the chart, the title of the list of papers (e.g. `statistics-dev-all-accepted-articles.csv`), instead of an internal name (`nbaccepted`, `submissions-by-year`). The list of the "articles" tile is titled "Articles" instead of "Submissions".
 - [#1420](https://github.com/CCSDForge/episciences/pull/1420): Remove duplicate average rating display block from the review reports loop.
+- [#1042](https://github.com/CCSDForge/episciences/issues/1042) refactor: replace JSON visibility columns with enum/set types
+- Custom pages: visibility (Public/Member/Custom) is now correctly saved to database and restored after reload.
+- Custom pages: role checkboxes now display correctly when selecting "Custom" visibility.
+- Custom pages: changing permalien now updates existing entry instead of creating duplicate (preserves ID).
+- Custom pages: permalien field now displays list of reserved codes that cannot be used.
+- Custom pages: validation prevents using predefined page codes (about, credits, editorial-board, etc.) as permalien.
+- Custom pages: delete button now correctly removes entry from database.
+- Custom pages: validation prevents using a permalien already in use by another custom page.
+- Predefined pages: title field is now read-only (disabled) in the menu editor.
+- Predefined pages: visibility selection is now disabled (always public).
 
 ### Fixed
 
