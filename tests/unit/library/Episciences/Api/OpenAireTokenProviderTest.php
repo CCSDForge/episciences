@@ -8,6 +8,8 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -17,6 +19,8 @@ use Symfony\Component\Cache\Adapter\ArrayAdapter;
  */
 class OpenAireTokenProviderTest extends TestCase
 {
+    private const AUTH_URL = 'https://aai.example.org/token';
+
     private function makeGuzzle(array $responses, array &$history = []): Client
     {
         $handlerStack = HandlerStack::create(new MockHandler($responses));
@@ -28,14 +32,16 @@ class OpenAireTokenProviderTest extends TestCase
         Client $client,
         ?ArrayAdapter $cache = null,
         ?string $clientId = 'client-id',
-        ?string $clientSecret = 'client-secret'
+        ?string $clientSecret = 'client-secret',
+        ?string $authUrl = self::AUTH_URL
     ): OpenAireTokenProvider {
         return new OpenAireTokenProvider(
             $client,
             $cache ?? new ArrayAdapter(),
             new NullLogger(),
             $clientId,
-            $clientSecret
+            $clientSecret,
+            $authUrl
         );
     }
 
@@ -59,6 +65,39 @@ class OpenAireTokenProviderTest extends TestCase
     {
         $provider = $this->makeProvider($this->makeGuzzle([]), null, 'id', '');
         $this->assertFalse($provider->isConfigured());
+    }
+
+    public function testIsConfigured_MissingAuthUrl_ReturnsFalse(): void
+    {
+        $provider = $this->makeProvider($this->makeGuzzle([]), null, 'id', 'secret', null);
+        $this->assertFalse($provider->isConfigured());
+    }
+
+    public function testIsConfigured_EmptyAuthUrl_ReturnsFalse(): void
+    {
+        $provider = $this->makeProvider($this->makeGuzzle([]), null, 'id', 'secret', '');
+        $this->assertFalse($provider->isConfigured());
+    }
+
+    public function testConstructor_CredentialsWithoutAuthUrl_LogsWarning(): void
+    {
+        $handler = new TestHandler();
+        new OpenAireTokenProvider($this->makeGuzzle([]), new ArrayAdapter(), new Logger('test', [$handler]), 'id', 'secret');
+        $this->assertTrue($handler->hasWarningRecords());
+    }
+
+    public function testConstructor_FullyConfigured_LogsNoWarning(): void
+    {
+        $handler = new TestHandler();
+        new OpenAireTokenProvider($this->makeGuzzle([]), new ArrayAdapter(), new Logger('test', [$handler]), 'id', 'secret', self::AUTH_URL);
+        $this->assertFalse($handler->hasWarningRecords());
+    }
+
+    public function testGetAccessToken_MissingAuthUrl_ReturnsNullWithoutHttpCall(): void
+    {
+        // Empty MockHandler queue: any HTTP call would throw an "empty queue" error.
+        $provider = $this->makeProvider($this->makeGuzzle([]), null, 'id', 'secret', null);
+        $this->assertNull($provider->getAccessToken());
     }
 
     public function testIsConfigured_NullCredentials_ReturnsFalse(): void
@@ -128,18 +167,6 @@ class OpenAireTokenProviderTest extends TestCase
         $this->assertSame('client_credentials', $formParams['grant_type']);
         $this->assertSame('my-id', $formParams['client_id']);
         $this->assertSame('my-secret', $formParams['client_secret']);
-    }
-
-    public function testGetAccessToken_DefaultAuthUrl_UsedWhenNoneProvided(): void
-    {
-        $body     = json_encode(['access_token' => 'tok', 'expires_in' => 3600]);
-        $history  = [];
-        $client   = $this->makeGuzzle([new Response(200, [], $body)], $history);
-        $provider = new OpenAireTokenProvider($client, new ArrayAdapter(), new NullLogger(), 'id', 'secret');
-
-        $provider->getAccessToken();
-
-        $this->assertSame('https://aai.openaire.eu/oidc/token', (string) $history[0]['request']->getUri());
     }
 
     public function testGetAccessToken_CustomAuthUrl_IsUsed(): void

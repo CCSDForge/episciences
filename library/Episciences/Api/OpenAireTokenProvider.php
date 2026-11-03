@@ -13,8 +13,12 @@ use Psr\Log\LoggerInterface;
 /**
  * OAuth 2.0 Client Credentials token provider for the OpenAIRE AAI (aai.openaire.eu).
  *
- * Gracefully degrades: if no client ID/secret is configured, isConfigured() returns
- * false and getAccessToken() returns null, letting callers fall back to the
+ * The token endpoint URL comes from configuration only (OPENAIRE_AUTH_URL /
+ * SCHOLEXPLORER_AUTH_URL in pwd.json): there is no hardcoded default, so that an
+ * endpoint change is made in a single place.
+ *
+ * Gracefully degrades: if the client ID, client secret or token endpoint URL is not
+ * configured, isConfigured() returns false and getAccessToken() returns null, letting callers fall back to the
  * unauthenticated (rate-limited) mode instead of failing.
  *
  * Cache namespace: openAireAuthToken (key: 'openaire_access_token')
@@ -22,7 +26,6 @@ use Psr\Log\LoggerInterface;
 class OpenAireTokenProvider
 {
     private const CACHE_KEY = 'openaire_access_token';
-    private const DEFAULT_AUTH_URL = 'https://aai.openaire.eu/oidc/token';
     private const SAFETY_MARGIN_SECONDS = 120; // renew 2 minutes before actual expiry
     private const MIN_TTL_SECONDS = 60;
     private const JSON_MAX_DEPTH = 512;
@@ -47,15 +50,19 @@ class OpenAireTokenProvider
         $this->logger       = $logger;
         $this->clientId     = $clientId ?? '';
         $this->clientSecret = $clientSecret ?? '';
-        $this->authUrl      = ($authUrl !== null && $authUrl !== '') ? $authUrl : self::DEFAULT_AUTH_URL;
+        $this->authUrl      = $authUrl ?? '';
+
+        if ($this->clientId !== '' && $this->clientSecret !== '' && $this->authUrl === '') {
+            $this->logger->warning('OpenAIRE client credentials are configured but the AAI token endpoint URL (AUTH_URL) is missing: falling back to unauthenticated mode');
+        }
     }
 
     /**
-     * True when both a client ID and a client secret are configured.
+     * True when the client ID, the client secret and the token endpoint URL are configured.
      */
     public function isConfigured(): bool
     {
-        return $this->clientId !== '' && $this->clientSecret !== '';
+        return $this->clientId !== '' && $this->clientSecret !== '' && $this->authUrl !== '';
     }
 
     /**

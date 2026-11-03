@@ -487,7 +487,7 @@ class ScholexplorerApiClient extends AbstractApiClient
         if ($tokenProvider === null) {
             $clientId     = self::resolveConfigConstant('SCHOLEXPLORER_CLIENT_ID', 'OPENAIRE_CLIENT_ID');
             $clientSecret = self::resolveConfigConstant('SCHOLEXPLORER_CLIENT_SECRET', 'OPENAIRE_CLIENT_SECRET');
-            $authUrl      = self::resolveConfigConstant('SCHOLEXPLORER_AUTH_URL', 'OPENAIRE_AUTH_URL', 'https://aai.openaire.eu/oidc/token');
+            $authUrl      = self::resolveConfigConstant('SCHOLEXPLORER_AUTH_URL', 'OPENAIRE_AUTH_URL');
 
             $tokenProvider = new OpenAireTokenProvider(
                 new Client(),
