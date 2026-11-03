@@ -29,6 +29,15 @@ class OpenAireTokenProvider
     private const SAFETY_MARGIN_SECONDS = 120; // renew 2 minutes before actual expiry
     private const MIN_TTL_SECONDS = 60;
     private const JSON_MAX_DEPTH = 512;
+    public const DEFAULT_AUTH_URL_CONFIG_KEY = 'OPENAIRE.AUTH_URL';
+
+    /**
+     * Config keys already reported as missing in this process: the factories build a
+     * provider per call (e.g. once per paper in batch commands), the warning is logged once.
+     *
+     * @var array<string, true>
+     */
+    private static array $missingAuthUrlWarned = [];
 
     private Client $client;
     private CacheItemPoolInterface $cache;
@@ -37,23 +46,29 @@ class OpenAireTokenProvider
     private string $clientSecret;
     private string $authUrl;
 
+    /**
+     * @param string $authUrlConfigKey pwd.json key(s) holding the token endpoint URL, named in the
+     *                                 warning logged when it is missing
+     */
     public function __construct(
         Client $client,
         CacheItemPoolInterface $cache,
         LoggerInterface $logger,
         ?string $clientId = null,
         ?string $clientSecret = null,
-        ?string $authUrl = null
+        ?string $authUrl = null,
+        string $authUrlConfigKey = self::DEFAULT_AUTH_URL_CONFIG_KEY
     ) {
         $this->client       = $client;
         $this->cache        = $cache;
         $this->logger       = $logger;
         $this->clientId     = $clientId ?? '';
         $this->clientSecret = $clientSecret ?? '';
-        $this->authUrl      = $authUrl ?? '';
+        // A blank value (hand-edited pwd.json) counts as missing rather than failing later inside Guzzle.
+        $this->authUrl      = trim($authUrl ?? '');
 
         if ($this->clientId !== '' && $this->clientSecret !== '' && $this->authUrl === '') {
-            $this->logger->warning('OpenAIRE client credentials are configured but the AAI token endpoint URL (AUTH_URL) is missing: falling back to unauthenticated mode');
+            $this->warnMissingAuthUrl($authUrlConfigKey);
         }
     }
 
@@ -96,6 +111,19 @@ class OpenAireTokenProvider
     public function clearTokenCache(): void
     {
         $this->cache->deleteItem(self::CACHE_KEY);
+    }
+
+    private function warnMissingAuthUrl(string $authUrlConfigKey): void
+    {
+        if (isset(self::$missingAuthUrlWarned[$authUrlConfigKey])) {
+            return;
+        }
+        self::$missingAuthUrlWarned[$authUrlConfigKey] = true;
+
+        $this->logger->warning(sprintf(
+            'OpenAIRE AAI client credentials are configured but the token endpoint URL (%s in pwd.json) is missing: falling back to unauthenticated mode',
+            $authUrlConfigKey
+        ));
     }
 
     /**
