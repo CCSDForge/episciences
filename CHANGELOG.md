@@ -70,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- OpenAIRE AAI: the token endpoint moved to `https://aai.openaire.eu/auth/realms/openaire/protocol/openid-connect/token` (the former `https://aai.openaire.eu/oidc/token` now answers HTTP 410). The URL is now read from configuration only (`OPENAIRE.AUTH_URL`, `SCHOLEXPLORER.AUTH_URL` in `pwd.json`): there is no default in the code anymore, and when the client ID and secret are set without `AUTH_URL`, a warning is logged and the clients run unauthenticated. Update `AUTH_URL` in `pwd.json` on every server.
 - Statistics page: the charts are redesigned. The imported articles are no longer drawn in the charts by year (a note gives their number), the series by year no longer overlap (submissions, accepted, refused, published), the rates are shown as gauges instead of a doughnut, and each chart can be read as a table ("View the data").
 - Statistics page: the figures (articles, published, accepted, refused, other statuses, evaluations) are shown as tiles, each with its value, its context and the link to its papers.
 - Statistics page: clearer layout (introduction, year navigation, panels, section titles, delays in days, users total); the charts of a single year are no wider than their bars need.
