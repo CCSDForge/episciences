@@ -3,6 +3,8 @@
         <input type="hidden" name="<?php echo htmlspecialchars((string)$this->csrfToken['name'], ENT_QUOTES, 'UTF-8'); ?>"
                value="<?php echo htmlspecialchars((string)$this->csrfToken['value'], ENT_QUOTES, 'UTF-8'); ?>">
     <?php endif; ?>
+    <?php // Scrollable roles list, so the buttons below always stay within the viewport ?>
+    <div class="roles-form-list" style="overflow-y: auto; overflow-x: hidden;">
     <?php
     $rolesElement = $this->form->getElement('roles_' . $this->uid);
     $options = $rolesElement->getMultiOptions();
@@ -44,6 +46,7 @@
             <?php endif; ?>
         </div>
     <?php endforeach; ?>
+    </div>
 
     <?php echo $this->form->getElement('updateUserRoles'); ?>
     <?php echo $this->form->getElement('cancel'); ?>

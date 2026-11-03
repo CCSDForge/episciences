@@ -35,6 +35,14 @@ function seedAndReset() {
 }
 
 /**
+ * Restores the journal settings backed up before E2E runs.
+ * @returns {string}
+ */
+function restoreSettings() {
+    return runPhp('scripts/console.php app:e2e-seed --restore-settings');
+}
+
+/**
  * The application queues emails on disk; a cron sends them. Tests flush the queue themselves so that
  * the emails reach Mailpit without waiting for the cron.
  * @returns {string}
@@ -43,4 +51,4 @@ function flushMailQueue() {
     return runPhp('scripts/send_mails.php');
 }
 
-module.exports = { runPhp, seedAndReset, flushMailQueue };
+module.exports = { runPhp, seedAndReset, restoreSettings, flushMailQueue };

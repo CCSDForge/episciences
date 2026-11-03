@@ -129,4 +129,59 @@ describe('updateMetaData', () => {
         loadScript(fakeLocation);
         expect(global.message).not.toHaveBeenCalled();
     });
+
+    test('reloads and displays the warning when some data could not be stored', async () => {
+        respondWith(
+            200,
+            JSON.stringify({
+                affectedRows: 1,
+                warning: true,
+                message: 'Mis à jour, en partie',
+            })
+        );
+        const { updateMetaData } = loadScript(fakeLocation);
+
+        await updateMetaData(document.getElementById('update'), 12);
+
+        expect(reloadMock).toHaveBeenCalled();
+
+        loadScript(fakeLocation);
+        expect(global.message).toHaveBeenCalledWith(
+            'Mis à jour, en partie',
+            'alert-warning'
+        );
+
+        // The level does not outlive its message
+        global.message.mockClear();
+        respondWith(
+            200,
+            JSON.stringify({ affectedRows: 1, message: 'Mis à jour' })
+        );
+        await updateMetaData(document.getElementById('update'), 12);
+        loadScript(fakeLocation);
+        expect(global.message).toHaveBeenCalledWith(
+            'Mis à jour',
+            'alert-success'
+        );
+    });
+
+    test('displays the warning without reloading when nothing changed', async () => {
+        respondWith(
+            200,
+            JSON.stringify({
+                affectedRows: 0,
+                warning: true,
+                message: 'Échec partiel',
+            })
+        );
+        const { updateMetaData } = loadScript(fakeLocation);
+
+        await updateMetaData(document.getElementById('update'), 12);
+
+        expect(global.message).toHaveBeenCalledWith(
+            'Échec partiel',
+            'alert-warning'
+        );
+        expect(reloadMock).not.toHaveBeenCalled();
+    });
 });

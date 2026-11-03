@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Paper\WriteFailure;
+
 class Episciences_Paper_DatasetsManager
 {
 
@@ -234,6 +236,40 @@ class Episciences_Paper_DatasetsManager
         array  $options = []
     ): int
     {
+        return self::insert([self::buildFromSubmission($docId, $name, $value, $code, $metaTextId, $options)]);
+    }
+
+    /**
+     * Same as addDatasetFromSubmission(), but a database failure is thrown: the processing that follows
+     * the save of a paper reports it (Episciences_Submit::processDatasets())
+     *
+     * @param array<string, mixed> $options
+     * @throws Zend_Db_Exception
+     */
+    public static function addDatasetFromSubmissionOrFail(
+        int     $docId,
+        string  $name,
+        string  $value,
+        string  $code,
+        ?int    $metaTextId = null,
+        array   $options = []
+    ): int
+    {
+        return self::insertOrFail([self::buildFromSubmission($docId, $name, $value, $code, $metaTextId, $options)]);
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private static function buildFromSubmission(
+        int     $docId,
+        string  $name,
+        string  $value,
+        string  $code,
+        ?int    $metaTextId,
+        array   $options
+    ): Episciences_Paper_Dataset
+    {
         $dataset = new Episciences_Paper_Dataset();
         $dataset->setDocId($docId);
         $dataset->setCode($code);
@@ -279,7 +315,7 @@ class Episciences_Paper_DatasetsManager
         if ($metaTextId !== null) {
             $dataset->setIdPaperDatasetsMeta($metaTextId);
         }
-        return self::insert([$dataset]);
+        return $dataset;
     }
 
     /**
@@ -287,6 +323,19 @@ class Episciences_Paper_DatasetsManager
      * @return int
      */
     public static function insert(array $datasets = []): int
+    {
+        return WriteFailure::reportAsWarning(__METHOD__, static fn(): int => self::insertOrFail($datasets));
+    }
+
+    /**
+     * Same as insert(), but a database failure is thrown: the processing that follows the save of a paper
+     * reports it (Episciences_Submit::processDatasets())
+     *
+     * @param array<int, Episciences_Paper_Dataset|array<string, mixed>> $datasets
+     * @return int number of inserted rows
+     * @throws Zend_Db_Exception
+     */
+    public static function insertOrFail(array $datasets = []): int
     {
         $affectedRows = 0;
 
@@ -332,19 +381,10 @@ class Episciences_Paper_DatasetsManager
         $sql .= $db->quoteIdentifier(T_PAPER_DATASETS);
         $sql .= ' (`doc_id`, `code`, `name`, `value`, `link`, `source_id`, `relationship`, `id_paper_datasets_meta`) VALUES ';
 
-        try {
-            //Prepares and executes an SQL
-            /** @var Zend_Db_Statement_Interface $result */
-            $result = $db->query($sql . implode(', ', $values));
+        /** @var Zend_Db_Statement_Interface $result */
+        $result = $db->query($sql . implode(', ', $values));
 
-            $affectedRows = $result->rowCount();
-
-        } catch (Exception $e) {
-            trigger_error($e->getMessage(), E_USER_ERROR);
-        }
-
-
-        return $affectedRows;
+        return $result->rowCount();
 
     }
 
@@ -447,40 +487,12 @@ class Episciences_Paper_DatasetsManager
         ];
         try {
             $resUpdate = $db->update(T_PAPER_DATASETS, $values, $where);
-        } catch (Zend_Db_Adapter_Exception $exception) {
+        } catch (Zend_Db_Exception $exception) {
+            // Zend_Db_Exception: a failing statement throws Zend_Db_Statement_Exception, not Zend_Db_Adapter_Exception
             $resUpdate = 0;
-            trigger_error($exception->getMessage(), E_USER_ERROR);
+            trigger_error(__METHOD__ . ': ' . $exception->getMessage(), E_USER_WARNING);
         }
 
-        return $resUpdate;
-    }
-
-    /**
-     * @param Episciences_Paper_Dataset $dataset
-     * @return int
-     */
-    public static function update(Episciences_Paper_Dataset $dataset): int
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $where['id = ?'] = $dataset->getId();
-
-        $values = [
-            'docId' => $dataset->getDocId(),
-            'code' => $dataset->getCode(),
-            'name' => $dataset->getName(),
-            'value' => $dataset->getValue(),
-            'link' => $dataset->getLink(),
-            'sourceId' => $dataset->getSourceId(),
-            'relationship' => $dataset->getRelationship(),
-            'id_paper_datasets_meta' => $dataset->getIdPaperDatasetsMeta()
-        ];
-
-        try {
-            $resUpdate = $db->update(T_PAPER_DATASETS, $values, $where);
-        } catch (Zend_Db_Adapter_Exception $exception) {
-            $resUpdate = 0;
-            trigger_error($exception->getMessage(), E_USER_ERROR);
-        }
         return $resUpdate;
     }
 
