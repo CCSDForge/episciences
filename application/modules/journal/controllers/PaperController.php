@@ -1005,11 +1005,15 @@ class PaperController extends PaperDefaultController
             $newAuthorInfos = new Episciences_Paper_Authors();
             $newAuthorInfos->setAuthors(json_encode($arrayAuthorDb, JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
             $newAuthorInfos->setPaperId($paperId);
-            $updateAuthor = Episciences_Paper_AuthorsManager::update($newAuthorInfos);
-            if ($updateAuthor > 0) {
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage('Vos modifications ont bien été prises en compte');
-            } else {
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage('Informations déjà prises en compte');
+            try {
+                $updateAuthor = Episciences_Paper_AuthorsManager::update($newAuthorInfos);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage(
+                    $updateAuthor > 0 ? 'Vos modifications ont bien été prises en compte' : 'Informations déjà prises en compte'
+                );
+            } catch (Zend_Db_Exception $e) {
+                // Not "already taken into account": the change is not saved
+                trigger_error(sprintf('ORCID update failed for paperid %s: %s', $paperId, $e->getMessage()), E_USER_WARNING);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Les modifications n'ont pas pu être enregistrées.");
             }
 
         } else {
@@ -1111,8 +1115,13 @@ class PaperController extends PaperDefaultController
         $newAuthorInfos = new Episciences_Paper_Authors();
         $newAuthorInfos->setAuthors(json_encode($jsonAuthorDecoded, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
         $newAuthorInfos->setPaperId($paperId);
-        Episciences_Paper_AuthorsManager::update($newAuthorInfos);
-        $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
+        try {
+            Episciences_Paper_AuthorsManager::update($newAuthorInfos);
+            $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
+        } catch (Zend_Db_Exception $e) {
+            trigger_error(sprintf('Affiliations update failed for paperid %s: %s', $paperId, $e->getMessage()), E_USER_WARNING);
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Les modifications n'ont pas pu être enregistrées.");
+        }
 
 
         try {
@@ -2390,7 +2399,7 @@ class PaperController extends PaperDefaultController
             $newPaper->saveOtherVolumes();
         }
 
-        $this->processEnrichmentAndFiles($newPaper, $post);
+        $repositoryProcessed = $this->processEnrichmentAndFiles($newPaper, $post);
         $answerComment = $this->createAnswerComment($paper, $newPaper, $post, $requestComment);
         $this->handleCopyEditingFiles($answerComment, $paper);
 
@@ -2419,67 +2428,37 @@ class PaperController extends PaperDefaultController
             ? $this->url(['controller' => 'paper', 'action' => 'submitted'])
             : self::buildAdminPaperUrl($newPaper->getDocid());
 
-        $this->redirectWithSuccess(
-            "La nouvelle version de votre article a bien été enregistrée.",
-            $redirectUrl
-        );
+        if ($repositoryProcessed) {
+            $this->redirectWithSuccess(
+                "La nouvelle version de votre article a bien été enregistrée.",
+                $redirectUrl
+            );
+            return;
+        }
+
+        // The warning alone: it also says that the new version is saved.
+        // "Contact the journal" is for the author: the journal staff are told to update the metadata instead
+        $this->_helper->FlashMessenger
+            ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)
+            ->addMessage($this->view->translate(
+                $paper->isOwner() ? Episciences_Submit::POST_SAVE_FAILURE_MESSAGE : Episciences_Submit::POST_SAVE_FAILURE_MESSAGE_STAFF
+            ));
+        $this->_helper->redirector->gotoUrl($redirectUrl);
     }
 
     //Post-save sub-helpers
 
-    private function processEnrichmentAndFiles(Episciences_Paper $newPaper, array $post): void
-    {
-        $enrichment = [];
-        if (!empty($post['h_enrichment'])) {
-            try {
-                $enrichment = json_decode($post['h_enrichment'], true, 512, JSON_THROW_ON_ERROR);
-                Episciences_Submit::enrichmentProcess($newPaper, $enrichment);
-            } catch (Exception $e) {
-                trigger_error($e->getMessage());
-            }
-        }
-
-        $this->processRepositoryHooks($newPaper, $enrichment);
-        $this->processCoverLetterAndDD($newPaper, $post);
-    }
-
     /**
-     * @param array<string, mixed> $enrichment decoded h_enrichment
+     * @param array<string, mixed> $post
+     * @return bool false when a step of the processing of the new version failed (files, linked data, authors, enrichment)
      */
-    private function processRepositoryHooks(Episciences_Paper $newPaper, array $enrichment): void
+    private function processEnrichmentAndFiles(Episciences_Paper $newPaper, array $post): bool
     {
-        $hookParams = [
-            'repoId' => $newPaper->getRepoid(),
-            'identifier' => $newPaper->getIdentifier(),
-            'docId' => $newPaper->getDocid(),
-        ];
+        // Same decoding and processing as an initial submission
+        $repositoryProcessed = Episciences_Submit::processSavedPaper($newPaper, Episciences_Submit::parseEnrichment($post));
+        $this->processCoverLetterAndDD($newPaper, $post);
 
-        $filesParams = isset($enrichment['files'])
-            ? array_merge($hookParams, ['files' => $enrichment['files']])
-            : $hookParams;
-
-        // The new version is already saved: a repository failure must not stop the rest of the processing
-        try {
-            Episciences_Repositories::callHook('hookFilesProcessing', $filesParams);
-        } catch (Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
-        // No 'response': the files hook does not return the repository record, the hook loads it itself
-        try {
-            Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
-        } catch (Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
-        // Same condition as Episciences_Submit::processRepositoryHooks() for an initial submission (HAL datasets / SWHID)
-        $repoId = (int)$newPaper->getRepoid();
-        if (
-            !Episciences_Repositories::handlesOwnEnrichment($repoId) &&
-            Episciences_Repositories::getApiUrl($repoId) !== ''
-        ) {
-            Episciences_Submit::datasetsProcessing($newPaper);
-        }
+        return $repositoryProcessed;
     }
 
     /**
@@ -4337,9 +4316,13 @@ class PaperController extends PaperDefaultController
                     return;
                 }
 
-                $result = Episciences_PapersManager::updateRecordData($paper);
+                $result = Episciences_PapersManager::updateRecordData($paper, $failedSteps);
 
-                if ($result !== 0) {
+                if ($failedSteps !== []) {
+                    // The record is updated, but not all of its data: told, to try again
+                    $message = Episciences_PapersManager::RECORD_UPDATE_FAILURE_MESSAGE;
+                    $jsonResult['warning'] = true;
+                } elseif ($result !== 0) {
                     $message = "Les métadonnées de cet article ont bien été mises à jour.";
                 } else {
                     $message = 'Les métadonnées de cet article sont à jour.';

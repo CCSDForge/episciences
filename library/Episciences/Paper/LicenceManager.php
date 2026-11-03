@@ -7,6 +7,7 @@ use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Episciences\Paper\WriteFailure;
 
 class Episciences_Paper_LicenceManager
 {
@@ -219,9 +220,31 @@ class Episciences_Paper_LicenceManager
     }
 
     /**
+     * A database failure is reported as a warning (see insert())
+     *
      * @throws JsonException|InvalidArgumentExceptionAlias
      */
     public static function insertLicenceFromApiByRepoId(string $repoId, string $callArrayResp, int $docId, string $identifier): int
+    {
+        return self::storeLicenceFromApi($repoId, $callArrayResp, $docId, $identifier, false);
+    }
+
+    /**
+     * Same as insertLicenceFromApiByRepoId(), but a database failure is thrown:
+     * the update of the metadata of a paper reports it (Episciences_PapersManager::updateRecordData())
+     *
+     * @throws JsonException|InvalidArgumentExceptionAlias|Zend_Db_Exception
+     */
+    public static function insertLicenceFromApiByRepoIdOrFail(string $repoId, string $callArrayResp, int $docId, string $identifier): int
+    {
+        return self::storeLicenceFromApi($repoId, $callArrayResp, $docId, $identifier, true);
+    }
+
+    /**
+     * @param bool $orFail true: a database failure is thrown, false: reported as a warning
+     * @throws JsonException|InvalidArgumentExceptionAlias|Zend_Db_Exception
+     */
+    private static function storeLicenceFromApi(string $repoId, string $callArrayResp, int $docId, string $identifier, bool $orFail): int
     {
         if (empty($callArrayResp)) {
             return 0;
@@ -240,13 +263,14 @@ class Episciences_Paper_LicenceManager
 
         self::cacheLicenceData($identifier, $licenceData['cacheData']);
 
-        $paperLicenseResult = self::insert([
+        $licences = [
                 [
                         'licence' => $licenceData['licence'],
                         'docid' => $docId,
                         'sourceId' => $licenceData['sourceId']
                 ]
-        ]);
+        ];
+        $paperLicenseResult = $orFail ? self::insertOrFail($licences) : self::insert($licences);
 
         // Insert also into "paper_license_code" if the license code has an SPDX equivalent
         // A failure here must not abort the paper submission: the paper row is already saved
@@ -353,12 +377,26 @@ class Episciences_Paper_LicenceManager
     }
 
     /**
+     * A database failure is reported as a warning (with the method), not thrown
+     *
      * @param array|Episciences_Paper_Licence $licences
      * @param bool $force : overwrite the previous license
      * @return int
      */
 
     public static function insert(array|Episciences_Paper_Licence $licences, bool $force = true): int
+    {
+        return WriteFailure::reportAsWarning(__METHOD__, static fn(): int => self::insertOrFail($licences, $force));
+    }
+
+    /**
+     * Same as insert(), but a database failure is thrown
+     *
+     * @param array|Episciences_Paper_Licence $licences
+     * @param bool $force : overwrite the previous license
+     * @throws Zend_Db_Exception
+     */
+    public static function insertOrFail(array|Episciences_Paper_Licence $licences, bool $force = true): int
     {
         if (!$force) {
             return 0;
@@ -388,18 +426,14 @@ class Episciences_Paper_LicenceManager
         }
 
         if (!empty($values)) {
-            try {
-                $sql = sprintf(
-                        'INSERT INTO %s (`licence`,`docid`,`source_id`,`uid`) VALUES %s AS new_row ON DUPLICATE KEY UPDATE `licence`=new_row.licence, `uid`=new_row.uid ',
-                        $db->quoteIdentifier(T_PAPER_LICENCES),
-                        implode(', ', $values)
-                );
+            $sql = sprintf(
+                    'INSERT INTO %s (`licence`,`docid`,`source_id`,`uid`) VALUES %s AS new_row ON DUPLICATE KEY UPDATE `licence`=new_row.licence, `uid`=new_row.uid ',
+                    $db->quoteIdentifier(T_PAPER_LICENCES),
+                    implode(', ', $values)
+            );
 
-                $result = $db->query($sql);
-                $affectedRows = $result->rowCount();
-            } catch (Exception $e) {
-                trigger_error($e->getMessage(), E_USER_ERROR);
-            }
+            $result = $db->query($sql);
+            $affectedRows = $result->rowCount();
         }
 
         return $affectedRows;

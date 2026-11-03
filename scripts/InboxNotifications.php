@@ -1423,7 +1423,12 @@ class InboxNotifications extends AbstractScript
         $enrichment = $additionalPaperData[Episciences_Repositories_Common::ENRICHMENT] ?? [];
 
         if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
-            Episciences_Submit::datasetsProcessing($paper);
+            try {
+                Episciences_Submit::datasetsProcessing($paper);
+            } catch (Throwable $e) {
+                // The linked data that could be stored are: the authors and the enrichment are still stored
+                $this->logger->error(sprintf('Linked data error for paper %s: %s', $paper->getIdentifier(), $e->getMessage()));
+            }
         }
 
         if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {

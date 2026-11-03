@@ -287,6 +287,101 @@ final class Episciences_ReviewersManagerTest extends TestCase
         ]));
     }
 
+    public function testRefuseInvitationFormIsNamedByTheHeadingOfItsPanel(): void
+    {
+        $form = $this->renderedRefuseForm($this->buildRefuseForm())->query('//form')->item(0);
+
+        self::assertSame(Episciences_ReviewersManager::REFUSE_FORM_TITLE_ID, $form?->getAttribute('aria-labelledby'));
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function refusalFieldProvider(): array
+    {
+        return [
+            'suggested reviewer' => ['suggestreviewer', '255'],
+            'refusal reason' => ['comment', '5000'],
+        ];
+    }
+
+    /**
+     * @dataProvider refusalFieldProvider
+     */
+    public function testRefuseInvitationFieldIsLimitedAndDescribedByItsHelpText(string $name, string $maxLength): void
+    {
+        $xpath = $this->renderedRefuseForm($this->buildRefuseForm());
+        $field = $xpath->query(sprintf('//*[@name="%s"]', $name))->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $field);
+        self::assertSame($maxLength, $field->getAttribute('maxlength'), 'the browser stops at the limit the server validates');
+        self::assertSame($name . '-description', $field->getAttribute('aria-describedby'));
+        self::assertSame(1, $xpath->query(sprintf('//p[@id="%s-description"][@class="help-block"]', $name))->length);
+        self::assertFalse($field->hasAttribute('placeholder'), 'the help text replaces the low-contrast placeholder');
+        self::assertFalse($field->hasAttribute('style'), 'the width comes from the stylesheet');
+        self::assertFalse($field->hasAttribute('aria-invalid'));
+    }
+
+    public function testRefuseInvitationFormConfirmIsThePrimaryActionAndCancelTheSecondary(): void
+    {
+        $xpath = $this->renderedRefuseForm($this->buildRefuseForm());
+
+        $confirm = $xpath->query('//div[@class="form-actions text-center"]/button[@name="submitrefuse"]')->item(0);
+        $cancel = $xpath->query('//div[@class="form-actions text-center"]/button[@name="cancelaccept"]')->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $confirm);
+        self::assertSame('submit', $confirm->getAttribute('type'));
+        self::assertSame('btn btn-primary', $confirm->getAttribute('class'), 'the action of this step, not shown as a danger');
+        self::assertInstanceOf(\DOMElement::class, $cancel);
+        self::assertSame('button', $cancel->getAttribute('type'));
+        self::assertSame('btn btn-default', $cancel->getAttribute('class'));
+        self::assertTrue($cancel->hasAttribute('data-answer-cancel'));
+        self::assertFalse($cancel->hasAttribute('onclick'));
+    }
+
+    public function testRefusalFormErrorsAreLinkedToTheInvalidFieldOnly(): void
+    {
+        $form = $this->buildRefuseForm();
+        self::assertFalse($form->isValid(['suggestreviewer' => 'Jane Doe', 'comment' => str_repeat('a', 5001)]));
+
+        Episciences_ReviewersManager::describeRefusalFormErrors($form);
+        $xpath = $this->renderedRefuseForm($form);
+
+        $comment = $xpath->query('//textarea[@name="comment"]')->item(0);
+        self::assertInstanceOf(\DOMElement::class, $comment);
+        self::assertSame('true', $comment->getAttribute('aria-invalid'));
+        self::assertSame('comment-errors comment-description', $comment->getAttribute('aria-describedby'));
+        $errors = $xpath->query('//ul[@id="comment-errors"]');
+        self::assertSame(1, $errors->length, 'the error list the field refers to');
+        self::assertSame(
+            'Ce texte ne doit pas dépasser 5000 caractères.',
+            trim((string) $errors->item(0)?->textContent),
+            'the message does not repeat the value: a screen reader would read it out in full'
+        );
+
+        $suggested = $xpath->query('//input[@name="suggestreviewer"]')->item(0);
+        self::assertInstanceOf(\DOMElement::class, $suggested);
+        self::assertFalse($suggested->hasAttribute('aria-invalid'));
+        self::assertSame('suggestreviewer-description', $suggested->getAttribute('aria-describedby'));
+    }
+
+    private function renderedRefuseForm(\Zend_Form $form): \DOMXPath
+    {
+        $form->setView(new \Zend_View());
+        $html = $form->render();
+
+        $document = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+        try {
+            $document->loadHTML('<?xml encoding="utf-8"?>' . $html);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+
+        return new \DOMXPath($document);
+    }
+
     private function buildRefuseForm(): \Zend_Form
     {
         $hadTranslate = \Zend_Registry::isRegistered('Zend_Translate');

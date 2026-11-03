@@ -4453,6 +4453,9 @@ class Episciences_Paper
                     if (isset($result['docId'])) {
                         $update['docId'] = $result['docId'];
                     }
+                    if (!empty($result[Episciences_Submit::RESULT_POST_SAVE_FAILURE])) {
+                        $update[Episciences_Submit::RESULT_POST_SAVE_FAILURE] = true;
+                    }
                 }
             } else {
                 $message .= ' : ';

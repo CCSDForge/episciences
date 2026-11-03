@@ -292,7 +292,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
         $references = $doc['back']['ref-list']['ref'] ?? [];
 
         self::articleMetaProcess($articleMeta, $license, $contributors, $institutions, $kwd);
-        self::referencesProcess($references, $citations);
+        self::referencesProcess($references, $citations, self::extractRawCitations($simpleXlmDoc));
 
         if (isset($articleMeta['article-categories']['subj-group'])) {
             self::typeProcess($articleMeta['article-categories']['subj-group'], $type);
@@ -417,14 +417,53 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
     }
 
 
-    private static function referencesProcess(array $references, array &$citations = []): void
+    /**
+     * Full text of each <citation>, in document order (same order as the decoded "ref" list).
+     * json_encode() reduces a <citation> starting with plain text (authors not tagged) to its
+     * direct text nodes only, losing the year, title, source, etc.: this text is used instead.
+     * @return string[]
+     */
+    private static function extractRawCitations(SimpleXMLElement $doc): array
     {
+        $rawCitations = [];
 
-        foreach ($references as $reference) {
+        foreach ($doc->xpath('/article/back/ref-list/ref') ?: [] as $ref) {
+            $citation = $ref->citation;
+            $text = $citation->count() > 0 ? (string)dom_import_simplexml($citation)->textContent : '';
+            $rawCitations[] = trim((string)preg_replace('/\s+/u', ' ', $text));
+        }
 
-            $currentCitation = $reference['citation'] ?? [];
+        return $rawCitations;
+    }
 
-            if (!empty($currentCitation)) {
+    /**
+     * @param array $references decoded "ref" elements of the JATS ref-list
+     * @param array $citations
+     * @param string[] $rawCitations full text of each citation, @see self::extractRawCitations
+     */
+    private static function referencesProcess(array $references, array &$citations = [], array $rawCitations = []): void
+    {
+        // A ref-list with a single <ref> is decoded as that ref itself, not as a list of refs
+        if (!array_is_list($references)) {
+            $references = [$references];
+        }
+
+        foreach ($references as $index => $reference) {
+
+            $currentCitation = is_array($reference) ? ($reference['citation'] ?? []) : [];
+
+            // Citation whose authors are not tagged: decoded as a string, keep its full text
+            if (is_string($currentCitation)) {
+                $rawReference = $rawCitations[$index] ?? trim($currentCitation);
+
+                if ($rawReference !== '') {
+                    $citations[] = ['raw_reference' => $rawReference];
+                }
+
+                continue;
+            }
+
+            if (!empty($currentCitation) && is_array($currentCitation)) {
 
                 $authorStr = '';
                 $title = '';

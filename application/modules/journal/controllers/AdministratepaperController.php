@@ -5208,7 +5208,22 @@ class AdministratepaperController extends PaperDefaultController
                     $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
                 }
                 $result['version'] = $latestPostedVersion;
-                $result['isDataRecordUpdated'] = Episciences_PapersManager::updateRecordData($paper) > 0;
+                $failedSteps = [];
+
+                try {
+                    $result['isDataRecordUpdated'] = Episciences_PapersManager::updateRecordData($paper, $failedSteps) > 0;
+                } catch (Throwable $e) {
+                    // The new version is saved: its record could not be loaded or saved, which is told, not an error page
+                    trigger_error(
+                        sprintf('Record update failed for docid %s: %s: %s', $paper->getDocid(), $e::class, $e->getMessage()),
+                        E_USER_WARNING
+                    );
+                    $failedSteps[] = 'record';
+                }
+
+                if ($failedSteps !== []) {
+                    $result['warning'] = $this->view->translate(Episciences_Submit::POST_SAVE_FAILURE_MESSAGE_STAFF);
+                }
             }
 
         }

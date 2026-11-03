@@ -180,6 +180,26 @@ final class AccountTokenRepositoryTest extends TestCase
         self::assertNotNull($this->repository->find($otherAccount, TokenPurpose::PASSWORD_RESET));
     }
 
+    public function testIssuedWithinTellsWhetherATokenWasIssuedRecently(): void
+    {
+        self::assertFalse($this->repository->issuedWithin(self::UID, TokenPurpose::ACCOUNT_ACTIVATION, 300), 'nothing issued yet');
+
+        $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::ACCOUNT_ACTIVATION);
+        $this->elapse(299);
+        self::assertTrue($this->repository->issuedWithin(self::UID, TokenPurpose::ACCOUNT_ACTIVATION, 300));
+
+        $this->elapse(1);
+        self::assertFalse($this->repository->issuedWithin(self::UID, TokenPurpose::ACCOUNT_ACTIVATION, 300), 'the delay is over');
+    }
+
+    public function testIssuedWithinOnlyLooksAtTheGivenAccountAndPurpose(): void
+    {
+        $this->repository->issue(self::UID, self::EMAIL, TokenPurpose::PASSWORD_RESET);
+        $this->repository->issue(self::OTHER_UID, self::EMAIL, TokenPurpose::ACCOUNT_ACTIVATION);
+
+        self::assertFalse($this->repository->issuedWithin(self::UID, TokenPurpose::ACCOUNT_ACTIVATION, 300));
+    }
+
     public function testIssuingKeepsOnlyTheLatestTokenWhenOlderOnesAreLeft(): void
     {
         // State left by a concurrent request that inserted its token before this one

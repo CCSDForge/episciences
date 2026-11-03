@@ -1125,6 +1125,10 @@ function getVersionEditingForm(button, docId) {
                 $(button).popover('destroy');
 
                 if (result.version > 0) {
+                    if (result.warning) {
+                        // Saved, but some of its data could not be stored: told before the page changes
+                        alert(result.warning);
+                    }
                     if (result.isDataRecordUpdated) {
                         location.reload();
                     } else {
