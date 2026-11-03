@@ -167,6 +167,17 @@ class Episciences_Website_Navigation_Page_Predefined extends Episciences_Website
     }
 
 
+    /**
+     * Predefined pages are always public: the roles of a submitted form or of navigation.json are ignored
+     *
+     * @param array<string> $privileges
+     */
+    public function setAcl($privileges)
+    {
+        parent::setAcl([]);
+    }
+
+
     /** @param array<string, mixed> $options */
     public function setOptions($options = []): void
     {

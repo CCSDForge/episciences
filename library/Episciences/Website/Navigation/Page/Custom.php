@@ -353,11 +353,14 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
 
                 if ($page->getId() > 0) {
                     $visibility = $page->getVisibility(true); // deserialize to array
+                    $legacyAcl = $this->getAcl(); // from navigation.json via parent::load()
 
-                    // pages table is the source of truth for custom pages
-                    // Always override ACL from parent::load() (navigation.json)
+                    // A restricted pages row overrides the ACL of navigation.json
                     if (!empty($visibility) && $visibility !== ['public']) {
                         $this->setAcl($visibility);
+                    } elseif (!empty($legacyAcl)) {
+                        // pages row not yet reconciled with the menu: keep the restriction
+                        $this->setAcl($legacyAcl);
                     } else {
                         // Explicitly set to public (clears any ACL from navigation.json)
                         $this->setAcl([]);

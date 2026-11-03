@@ -103,15 +103,45 @@ final class Episciences_Website_Navigation_Page_CustomTest extends TestCase
         self::assertSame(['editor', 'secretary'], $page->getAcl());
     }
 
-    public function testLoadOfAPublicPreloadedPageClearsTheRoles(): void
+    public function testLoadOfAPublicPreloadedPageLeavesThePageOpen(): void
     {
         $this->installPagesTable([]);
         $page = self::customPage(['permalien' => self::FIRST, 'preloadedPage' => self::storedPage('public')]);
-        $page->setAcl(['editor']);
 
         $page->load();
 
         self::assertSame([], $page->getAcl());
+        self::assertSame([], $this->pagesWrites);
+    }
+
+    /**
+     * Legacy menu saves kept the roles in navigation.json only and left the pages row public
+     */
+    /**
+     * The next save of the menu records these roles in the pages table; loading writes nothing
+     */
+    public function testLoadKeepsTheRolesOfTheMenuWhenThePagesRowIsPublic(): void
+    {
+        $this->installPagesTable([self::pagesRow(3, (string)RVCODE, self::FIRST, 'public')]);
+        $page = self::customPage(['permalien' => self::FIRST]);
+        $page->setAcl(['editor', 'secretary']);
+
+        $page->load();
+
+        self::assertSame(['editor', 'secretary'], $page->getAcl());
+        self::assertSame([], $this->pagesWrites);
+    }
+
+    public function testRestrictedPagesRowOverridesTheRolesOfTheMenu(): void
+    {
+        $this->installPagesTable([self::pagesRow(3, (string)RVCODE, self::FIRST, 'secretary')]);
+        $page = self::customPage(['permalien' => self::FIRST]);
+        $page->setAcl(['editor']);
+
+        $page->load();
+
+        self::assertSame(['secretary'], $page->getAcl());
+        self::assertSame([], $this->pagesWrites);
     }
 
     public function testLoadWithoutPreloadedPageReadsThePagesTable(): void
