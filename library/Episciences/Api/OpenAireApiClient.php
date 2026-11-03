@@ -239,7 +239,7 @@ class OpenAireApiClient extends AbstractApiClient
      *
      * Constants APPLICATION_PATH and EPISCIENCES_LOG_PATH must be defined by the bootstrap.
      * The token provider falls back to unauthenticated mode when OPENAIRE_CLIENT_ID /
-     * OPENAIRE_CLIENT_SECRET are not configured.
+     * OPENAIRE_CLIENT_SECRET / OPENAIRE_AUTH_URL are not configured.
      */
     public static function create(): self
     {

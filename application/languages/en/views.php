@@ -915,9 +915,9 @@ return array(
     "Envoyer un message aux rédacteurs" => 'Send a message to the assigned editors',
     "Répondre à l'auteur" => 'Reply to the author',
     "Échanges avec l'auteur/autrice" => "Exchanges with the author",
-    "Visible par l'auteur/autrice" => "Visible to the author",
+    "Visible pour l'auteur/autrice" => "Visible to the author",
     "Échanges avec les rédacteurs" => "Exchanges with the editors",
-    "Visible par les rédacteurs assignés" => "Visible to assigned editors",
+    "Visible pour les rédacteurs assignés" => "Visible to assigned editors",
     "Rédacteurs assignés" => 'Assigned editors',
     "Utilisez ce formulaire pour envoyer un message aux rédacteurs assignés à votre article." => 'Use this form to send a message to the editors assigned to your article.',
     "Utilisez ce formulaire pour envoyer un message à l'auteur de cet article." => 'Use this form to send a message to the author of this article.',
@@ -1601,7 +1601,7 @@ return array(
     'La nouvelle version de votre article a bien été enregistrée.' => "Your new version has been saved.",
     "Le document n'a pas été trouvé ou n'a pas pu être chargé." => "The document could not be found, or could not be loaded.",
     "Lettre d'accompagnement" => 'Cover letter',
-    'Visible par : ' => 'Visible by: ',
+    'Visible pour : ' => 'Visible to: ',
     "Progression : " => "Progression:",
     "Dernière modification" => "Last modified",
 
@@ -1898,7 +1898,7 @@ return array(
     "Réservée aux membres" => "Members only",
     "Personnalisée" => "Custom",
 
-    "Lien permanent" => "Permanent link",
+    "Permalien" => "Permalink",
 
     "Afficher les volumes vides" => "Show empty volumes",
     'Ce volume ne contient pas encore de documents.' => 'This volume does not yet contain any documents.',
@@ -2280,8 +2280,14 @@ return array(
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
-    'le total des articles concernés par le taux X' => 'The total number of articles affected by rate X',
-    'La somme du nombre total d’articles acceptés et du nombre total d’articles refusés' => 'The sum of the total number of accepted articles and the total number of rejected articles',
+    'Taux = articles concernés ÷ (articles acceptés + articles refusés) × 100' => 'Rate = articles concerned ÷ (accepted articles + refused articles) × 100',
+    "Taux d'acceptation + taux de refus = 100 %." => 'Acceptance rate + refusal rate = 100%.',
+    "Le taux de publication a la même base : il ne dépasse pas le taux d'acceptation." => 'The publication rate has the same base: it does not exceed the acceptance rate.',
+    'Ne comptent pas : les articles en attente de décision et les articles importés.' => 'Not counted: the articles awaiting a decision and the imported articles.',
+    "Par année : l'année de la décision (acceptation, refus ou publication), pas de la soumission." => 'By year: the year of the decision (acceptance, refusal or publication), not of the submission.',
+    "De la première soumission à la dernière acceptation (ou à la publication), pour chaque article non importé ; par année : l'année de l'acceptation (ou de la publication)." => 'From the first submission to the latest acceptance (or to the publication), for each article that was not imported; by year: the year of the acceptance (or of the publication).',
+    "Moyenne : somme des délais ÷ nombre d'articles ; sensible aux délais très longs." => 'Average: sum of the delays ÷ number of articles; sensitive to very long delays.',
+    'Médiane : la moitié des articles a un délai inférieur ou égal ; peu sensible aux délais très longs.' => 'Median: half of the articles have a shorter or equal delay; hardly sensitive to very long delays.',
     'Moyenne [en %s]' => 'Average [in %s]',
     'Médiane [en %s]' => 'Median [in %s]',
     'autre' => 'other',
@@ -2823,4 +2829,10 @@ return array(
     "Votre réponse n'a pas été enregistrée : le téléversement d'au moins un fichier joint a échoué." => "Your answer has not been saved: the upload of at least one attached file failed.",
     "Veuillez joindre à nouveau vos fichiers et recommencer." => "Please attach your files again and try again.",
     "Le fichier n'a pas pu être enregistré. Veuillez réessayer." => "The file could not be saved. Please try again.",
+
+    // Website pages
+    "Le permalien '%s' est réservé aux pages prédéfinies. Veuillez choisir un autre permalien." => "The permalink '%s' is reserved for predefined pages. Please choose a different permalink.",
+    "Le permalien '%s' est déjà utilisé par une autre page. Veuillez choisir un autre permalien." => "The permalink '%s' is already used by another page. Please choose a different permalink.",
+    "Codes réservés (non utilisables) :" => "Reserved codes (cannot be used):",
+    "Le titre des pages prédéfinies ne peut pas être modifié" => "The title of predefined pages cannot be modified",
 );

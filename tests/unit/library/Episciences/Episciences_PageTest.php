@@ -162,22 +162,37 @@ class Episciences_PageTest extends TestCase
         self::assertSame('public', $this->page->getVisibility());
     }
 
-    public function testSetVisibilityArraySerializesToJson(): void
+    /**
+     * Visibility is stored as the value of the `visibility_set` SET column: comma-separated roles
+     */
+    public function testSetVisibilityArraySerializesToCommaSeparatedRoles(): void
     {
-        $this->page->setVisibility(['en' => 'public', 'fr' => 'public']);
-        $raw = $this->page->getVisibility(false);
-        self::assertIsString($raw);
-        $decoded = json_decode($raw, true);
-        self::assertSame('public', $decoded['en']);
+        $this->page->setVisibility(['editor', 'chief_editor']);
+        self::assertSame('editor,chief_editor', $this->page->getVisibility());
     }
 
-    public function testGetVisibilityDeserializesJsonString(): void
+    public function testSetVisibilityEmptyArrayIsPublic(): void
     {
-        $json = json_encode(['en' => 'private'], JSON_UNESCAPED_UNICODE);
-        $this->page->setVisibility($json, false);
-        $result = $this->page->getVisibility(true);
-        self::assertIsArray($result);
-        self::assertSame('private', $result['en']);
+        $this->page->setVisibility([]);
+        self::assertSame('public', $this->page->getVisibility());
+    }
+
+    public function testGetVisibilityDeserializesCommaSeparatedRoles(): void
+    {
+        $this->page->setVisibility('editor,chief_editor', false);
+        self::assertSame(['editor', 'chief_editor'], $this->page->getVisibility(true));
+    }
+
+    public function testGetVisibilityDeserializesEmptyValueAsPublic(): void
+    {
+        $this->page->setVisibility('', false);
+        self::assertSame(['public'], $this->page->getVisibility(true));
+    }
+
+    public function testVisibilityRoundTrip(): void
+    {
+        $this->page->setVisibility(['member']);
+        self::assertSame(['member'], $this->page->getVisibility(true));
     }
 
     // =========================================================================

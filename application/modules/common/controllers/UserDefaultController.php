@@ -391,6 +391,20 @@ class UserDefaultController extends Episciences_Controller_Action
     }
 
     /**
+     * Parameters of the login URL: the URL path and query only (route first, as getParam() reads them), never
+     * the posted credentials, nor the CAS ticket, already used once back from the CAS server
+     *
+     * @return array<string, mixed>
+     */
+    private function loginUrlParams(): array
+    {
+        $params = array_merge($this->getRequest()->getQuery(), $this->getRequest()->getUserParams());
+        unset($params['ticket']);
+
+        return array_filter($params, static fn($value): bool => is_scalar($value));
+    }
+
+    /**
      * Parameters of the login URL meant for the page to return to: the URL path and query only, never the
      * posted credentials, nor the routing and CAS ones
      *
@@ -398,18 +412,33 @@ class UserDefaultController extends Episciences_Controller_Action
      */
     protected function forwardedUrlParams(): array
     {
-        $params = array_merge($this->getRequest()->getQuery(), $this->getRequest()->getUserParams());
+        $params = $this->loginUrlParams();
         unset(
             $params['forward-controller'],
             $params['forward-action'],
             $params['controller'],
             $params['action'],
             $params['module'],
-            $params['ticket'],
             $params[PREFIX_ROUTE]
         );
 
-        return array_filter($params, static fn($value): bool => is_scalar($value));
+        return $params;
+    }
+
+    /**
+     * Authentication adapter of the configuration, CAS by default
+     */
+    protected function loginAdapter(): \Ccsd\Auth\Adapter\Mysql|Ccsd_Auth_Adapter_CasAbstract
+    {
+        $adapterType = defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS';
+
+        // Special case for LemonLDAP (uses custom class outside Factory)
+        if ($adapterType === 'LemonLDAP') {
+            return new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
+        }
+
+        // Use Factory for standard adapters (CAS, MYSQL)
+        return AdapterFactory::getTypedAdapter($adapterType);
     }
 
     /**
@@ -430,19 +459,11 @@ class UserDefaultController extends Episciences_Controller_Action
     {
         $localUser = new Episciences_User();
 
-        // Determine adapter type from configuration, default to CAS
-        $adapterType = defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS';
-
-        // Special case for LemonLDAP (uses custom class outside Factory)
-        if ($adapterType === 'LemonLDAP') {
-            $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
-        } else {
-            // Use Factory for standard adapters (CAS, MYSQL)
-            $adapter = AdapterFactory::getTypedAdapter($adapterType);
-        }
+        $adapter = $this->loginAdapter();
 
         $adapter->setIdentityStructure($localUser);
-        $adapter->setServiceURL($this->_request->getParams());
+        // CAS adapters: the URL the CAS server sends the user back to
+        $adapter->setServiceURL($this->loginUrlParams());
 
         // Call pre_auth to handle form display or credential storage
         // Returns false if form was displayed (stops execution), true or null to continue
@@ -462,10 +483,10 @@ class UserDefaultController extends Episciences_Controller_Action
                 AccessLog::denied(AccessLog::LOGIN_FAILED, '', [
                     'result_code' => $result->getCode(),
                     'adapter' => get_class($adapter),
-                    // Read as the MySQL adapter does (route, then query, then body); the other adapters
+                    // Read as the MySQL adapter does (posted login form only); the other adapters
                     // (CAS) check the credentials on their own server, never with this parameter
                     'username' => $adapter instanceof \Ccsd\Auth\Adapter\Mysql
-                        ? $this->knownUsername($this->getRequest()->getParam('username'))
+                        ? $this->knownUsername($this->getRequest()->getPost('username'))
                         : null,
                 ]);
                 // For MySQL adapter, redisplay login form with error message
