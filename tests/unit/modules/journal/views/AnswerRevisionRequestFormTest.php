@@ -102,6 +102,45 @@ final class AnswerRevisionRequestFormTest extends TestCase
         self::assertStringNotContainsString('/paper/tmpversion', $this->render(true, false));
     }
 
+    /**
+     * Rendered as paper/view.phtml does, through the partial helper: the partial only sees the variables of its model.
+     */
+    private function renderThroughPartialHelper(bool $doNotDisplayContactChoice): string
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('isRevisionRequested')->willReturn(true);
+        $paper->method('getStatus')->willReturn(Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION);
+        $paper->method('isOwner')->willReturn(true);
+
+        $view = new Zend_View();
+        $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/');
+
+        return $view->partial('partials/answer_revision_request_form.phtml', [
+            'paper' => $paper,
+            'review' => $this->createMock(Episciences_Review::class),
+            'current_demand' => ['PCID' => self::PCID],
+            'doNotDisplayContactChoice' => $doNotDisplayContactChoice,
+            'isAllowedToAnswerRevisionRequest' => true,
+        ]);
+    }
+
+    public function testContactWithoutNewVersionIsOfferedToTheOwner(): void
+    {
+        self::assertStringContainsString(
+            'href="/paper/contactrequest?id=' . self::PCID . '"',
+            $this->renderThroughPartialHelper(false)
+        );
+    }
+
+    public function testContactWithoutNewVersionIsNotOfferedWhenTheFinalVersionIsAwaited(): void
+    {
+        $html = $this->renderThroughPartialHelper(true);
+
+        self::assertStringNotContainsString('/paper/contactrequest', $html);
+        // The other answers stay offered
+        self::assertStringContainsString('href="/paper/answerrequest?id=' . self::PCID . '"', $html);
+    }
+
     public function testAnswersAreNotOfferedToTheUsersNotAllowedToAnswer(): void
     {
         // e.g. an editor or a copy editor assigned to the paper
