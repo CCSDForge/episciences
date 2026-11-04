@@ -270,6 +270,32 @@ describe('Statistics papers window', function () {
         expect(hidden.textContent).toContain('2');
     });
 
+    it('loads before the layout defines the path prefix, uses it on the links', async function () {
+        // the script is loaded in <head>, the layout defines JS_PREFIX_URL at the end of <body>
+        delete global.JS_PREFIX_URL;
+        try {
+            expect(() =>
+                new Function('module', script)(undefined)
+            ).not.toThrow();
+
+            global.JS_PREFIX_URL = '/journal/';
+            mockFetch({
+                nbAccepted: {
+                    body: { total: 1, hidden: 0, rows: makeRows(1) },
+                },
+            });
+            document.querySelector('[data-figure="nbAccepted"]').click();
+            await flush();
+
+            const link = document.querySelector('#stat-papers-dialog tbody a');
+            expect(link.getAttribute('href')).toBe(
+                '/journal/administratepaper/view/id/1'
+            );
+        } finally {
+            global.JS_PREFIX_URL = '/';
+        }
+    });
+
     it('accepted papers: submission, acceptance and publication dates', async function () {
         const rows = makeRows(1);
         rows[0].submissionDate = '2025-01-15';

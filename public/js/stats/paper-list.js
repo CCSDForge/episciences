@@ -3,7 +3,12 @@
  * loaded from /stats/papers, with search, sort and pagination.
  */
 const STAT_PAPERS_PAGE_SIZE = 50;
-const STAT_PAPERS_VIEW_URL = JS_PREFIX_URL + 'administratepaper/view/id/';
+// Resolved on use: this file is loaded in <head>, before the layout defines JS_PREFIX_URL
+function statPapersViewUrl(docId) {
+    return (
+        JS_PREFIX_URL + 'administratepaper/view/id/' + encodeURIComponent(docId)
+    );
+}
 const STAT_PAPERS_STATUS_ICONS = {
     published: 'fa-check-circle',
     accepted: 'fa-check',
@@ -174,7 +179,7 @@ function initStatPapers() {
 
         const idCell = document.createElement('td');
         const link = document.createElement('a');
-        link.href = STAT_PAPERS_VIEW_URL + encodeURIComponent(row.docid);
+        link.href = statPapersViewUrl(row.docid);
         link.target = '_blank';
         link.rel = 'noopener';
         link.textContent = row.docid;
