@@ -1309,24 +1309,15 @@ class Episciences_Mail_Reminder
     }
 
     /**
-     * @param $debug
-     * @param $date
-     * @param $filters
-     * @return array
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
+     * The reviewers whose latest invitation row is accepted and whose report is not completed, before the reviewing
+     * deadline of the reminder
+     * @param string $date SQL expression of the reference date (quoted date or CURDATE())
+     * @param array $filters paper statuses to ignore
+     * @return Zend_Db_Select
      */
-
-    private function getBeforeReviewingDeadlineRecipients($debug, $date, $filters): array
+    private function getBeforeReviewingDeadlineQuery(string $date, array $filters): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $recipients = [];
-        $review = Episciences_ReviewsManager::find($this->getRvid());
-
-        $deadline_interval = $this->getDeadline();
-        if (!$deadline_interval) {
-            return $recipients;
-        }
 
         // the latest row of each invitation (highest ID: two rows can have the same date)
         $subquery = $db->select()
@@ -1380,6 +1371,31 @@ class Episciences_Mail_Reminder
         } else {
             $sql->where(new Zend_Db_Expr('DATE_SUB(DEADLINE, INTERVAL ' . $this->getDelay() . " DAY) = $date"));
         }
+
+        return $sql;
+    }
+
+    /**
+     * @param $debug
+     * @param $date
+     * @param $filters
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+
+    private function getBeforeReviewingDeadlineRecipients($debug, $date, $filters): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $recipients = [];
+        $review = Episciences_ReviewsManager::find($this->getRvid());
+
+        $deadline_interval = $this->getDeadline();
+        if (!$deadline_interval) {
+            return $recipients;
+        }
+
+        $sql = $this->getBeforeReviewingDeadlineQuery($date, $filters);
 
         if ($debug) {
             echo Episciences_Tools::$bashColors['light_blue'] . $sql . Episciences_Tools::$bashColors['default'] . PHP_EOL;
