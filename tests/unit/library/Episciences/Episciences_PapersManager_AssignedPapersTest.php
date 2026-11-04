@@ -25,6 +25,7 @@ final class Episciences_PapersManager_AssignedPapersTest extends TestCase
     private const FIRST_EDITOR = 999402;
     private const SECOND_EDITOR = 999403;
     private const THIRD_EDITOR = 999404;
+    private const REVIEWER = 999405;
 
     private Zend_Db_Adapter_Abstract $db;
 
@@ -47,14 +48,15 @@ final class Episciences_PapersManager_AssignedPapersTest extends TestCase
         int $uid,
         string $status,
         string $date,
-        string $roleId = Episciences_User_Assignment::ROLE_EDITOR
+        string $roleId = Episciences_User_Assignment::ROLE_EDITOR,
+        bool $isTmpUser = false
     ): void {
         $this->db->insert(T_ASSIGNMENTS, [
             'RVID' => RVID,
             'ITEMID' => self::DOCID,
             'ITEM' => Episciences_User_Assignment::ITEM_PAPER,
             'UID' => $uid,
-            'TMP_USER' => 0,
+            'TMP_USER' => (int)$isTmpUser,
             'ROLEID' => $roleId,
             'STATUS' => $status,
             'WHEN' => $date,
@@ -147,5 +149,39 @@ final class Episciences_PapersManager_AssignedPapersTest extends TestCase
             [self::FIRST_EDITOR],
             $this->searchedUsers([Episciences_User_Assignment::ROLE_EDITOR, Episciences_User_Assignment::ROLE_REVIEWER])
         );
+    }
+
+    public function testAReviewerIsStillFoundAfterTheRemovalOfATemporaryReviewerWithTheSameId(): void
+    {
+        $this->insertAssignment(
+            self::REVIEWER,
+            Episciences_User_Assignment::STATUS_ACTIVE,
+            '2024-01-01 10:00:00',
+            Episciences_User_Assignment::ROLE_REVIEWER
+        );
+        // the ID of a temporary user is not a UID: it can be the UID of another account
+        $this->insertAssignment(
+            self::REVIEWER,
+            Episciences_User_Assignment::STATUS_INACTIVE,
+            '2024-02-01 10:00:00',
+            Episciences_User_Assignment::ROLE_REVIEWER,
+            true
+        );
+
+        $this->assertCount(1, $this->assignedPapers([self::REVIEWER], Episciences_User_Assignment::ROLE_REVIEWER));
+    }
+
+    public function testATemporaryReviewerIsNotTakenForTheAccountWithTheSameId(): void
+    {
+        $this->insertAssignment(
+            self::REVIEWER,
+            Episciences_User_Assignment::STATUS_ACTIVE,
+            '2024-01-01 10:00:00',
+            Episciences_User_Assignment::ROLE_REVIEWER,
+            true
+        );
+
+        $this->assertSame([], $this->assignedPapers([self::REVIEWER], Episciences_User_Assignment::ROLE_REVIEWER));
+        $this->assertSame([], $this->searchedUsers(Episciences_User_Assignment::ROLE_REVIEWER));
     }
 }

@@ -424,6 +424,7 @@ class Episciences_PapersManager
     /**
      * The latest assignment of each selected user, for each role and each paper (highest ID: two assignments can have the
      * same date). Not the latest assignment of the paper: an editor assigned before another one is still an editor of it.
+     * Temporary users are left out; fetchLastPaperAssignmentForSelectedRoleQuery() only keeps the rows found here.
      * @param array $uid
      * @param string | string[] $roleId
      * @return Zend_Db_Select
@@ -446,6 +447,10 @@ class Episciences_PapersManager
         if (!empty($uid)) {
             $select->where('UID IN (?)', $uid);
         }
+
+        // Accounts only (the selected users and the search by name are accounts): the UID of a temporary user is the ID
+        // of its T_TMP_USER row, which can be the UID of an account.
+        $select->where('TMP_USER = ?', 0);
 
         $select->group(['ITEMID', 'UID', 'ROLEID']);
         return $select;
