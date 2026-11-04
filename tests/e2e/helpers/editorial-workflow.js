@@ -98,9 +98,11 @@ async function applyDecision(page, docid, decision) {
  */
 async function submitInvitation(page, docid) {
     await expect(page.locator('#step-2')).toBeVisible();
-    await page.waitForFunction(
-        () => window.tinymce?.get('body')?.getContent().includes('%%INVITATION_URL%%') ?? false
-    );
+    // getContent() throws until the editor is initialised, which would end the wait
+    await page.waitForFunction(() => {
+        const editor = window.tinymce?.get('body');
+        return Boolean(editor?.initialized) && editor.getContent().includes('%%INVITATION_URL%%');
+    });
     await page.locator('#submit-invitation').click();
     await page.waitForURL(new RegExp(`administratepaper/view\\?id=${docid}`));
 }
