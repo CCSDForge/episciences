@@ -1,0 +1,54 @@
+// Reviewer invitation answer (reviewer/invitation_response_form.phtml)
+.invitation-answer {
+  // decline form: full width on small screens, a readable width on large ones
+  // (the account form keeps its own layout)
+  #refuse_form .form-control {
+    max-width: 40em;
+  }
+
+  // the site-wide help text color is too light to read (WCAG 1.4.3)
+  .help-block {
+    color: $dark-grey;
+  }
+
+  // "send me a new activation link", under the account notice
+  .invitation-answer-activation {
+    margin-top: 0.75em;
+  }
+
+  // the buttons stack on small screens: keep them apart
+  .form-actions .btn {
+    margin: 4px;
+  }
+}
+
+// Invitation details (reviewer/invitation_details.phtml)
+.invitation-details-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    gap: 0.6em;
+    align-items: baseline;
+    margin-bottom: 0.6em;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .fa-fw {
+    color: $dark-grey;
+  }
+}
+
+.invitation-details-hint {
+  color: $dark-grey;
+}
+
+// keeps the line breaks of the reviewer's text
+.invitation-details-comment {
+  white-space: pre-line;
+}

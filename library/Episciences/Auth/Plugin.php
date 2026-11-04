@@ -2,6 +2,7 @@
 
 use Episciences\Maintenance\ReadOnlyMode;
 use Episciences\Security\AccessLog;
+use Episciences\User\ProfileCompletionReturn;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 
@@ -46,7 +47,8 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
                 // The user is allowed to access the resource, we check if their account is completed on Episciences
                 $epiUser = new Episciences_User();
                 if (!$epiUser->hasLocalData(Episciences_Auth::getUid())) {
-                    // The account must be completed
+                    // The account must be completed, then the page asked for is displayed
+                    ProfileCompletionReturn::remember($request);
                     $redirector = Zend_Controller_Action_HelperBroker::getStaticHelper('redirector');
                     $redirector->gotoUrl('user/edit');
                 }

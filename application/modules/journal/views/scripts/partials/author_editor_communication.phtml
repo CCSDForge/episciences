@@ -40,9 +40,9 @@ if ($canAuthorContactEditors && $canViewPanel) :
                 <?php endif; ?>
                 <span class="label label-warning" style="font-size: 0.6em; vertical-align: middle; margin-left: 0.5em;">
                     <?php if ($isAuthor): ?>
-                        <?php echo $this->translate("Visible par les rédacteurs assignés"); ?>
+                        <?php echo $this->translate("Visible pour les rédacteurs assignés"); ?>
                     <?php else: ?>
-                        <?php echo $this->translate("Visible par l'auteur/autrice"); ?>
+                        <?php echo $this->translate("Visible pour l'auteur/autrice"); ?>
                     <?php endif; ?>
                 </span>
             </h2>
@@ -86,15 +86,15 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                 trigger_error("Invalid comment TYPE in parent PCID: " . ($parentComment['PCID'] ?? 'unknown'), E_USER_WARNING);
                                 continue;
                             }
-                            
+
                             // Only display root messages here (no REPLY_TO_INFO means it's a root message)
                             // Replies are now in $parentComment['replies']
                             $isRootMessage = empty($parentComment['REPLY_TO_INFO']);
-                            
+
                             if (!$isRootMessage) {
                                 continue; // Skip - replies are displayed under their root message
                             }
-                            
+
                             // Root message: determine who can reply based on message type
                             $actions = '';
                             $escapedParentId = $this->escape((int)$parentId);
@@ -128,7 +128,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                 $displayComment['UID'] = Episciences_Auth::ANONYMOUS_UID;
                             }
                             ?>
-                            
+
                             <!-- Root message with all replies (flattened) under it -->
                             <div class="author-message-wrapper root-message">
                                 <?= $this->partial('partials/timeline_item.phtml', [
@@ -137,7 +137,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                     'isAuthor' => $isAuthor,
                                     'authorReplyForms' => $this->authorReplyForms ?? []
                                 ]) ?>
-                                
+
                                 <?php // Display reply form for root message - editor replying to author ?>
                                 <?php if ($isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId])) : ?>
                                     <div class="reply-form-container" id="reply-form-<?php echo $this->escape((int)$parentId); ?>" style="display: none;">
@@ -152,7 +152,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                         <?php echo $this->authorReplyForms[$parentId]; ?>
                                     </div>
                                 <?php endif; ?>
-                                
+
                                 <?php // Display all replies (flattened) under root message in a thread ?>
                                 <?php if (!empty($parentComment['replies'])) : ?>
                                     <div class="timeline-thread">
@@ -167,7 +167,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
 
                                             // Prepare display reply with anonymization if needed
                                             $displayReply = $reply;
-                                            
+
                                             // Anonymize editor name in REPLY_TO_INFO if setting is disabled and viewer is not an editor
                                             // Only anonymize if the parent message was from an editor (TYPE_EDITOR_TO_AUTHOR)
                                             if (isset($reply['REPLY_TO_INFO']) && !empty($reply['REPLY_TO_INFO'])) {
@@ -183,7 +183,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                                     }
                                                 }
                                             }
-                                            
+
                                             // Anonymize editor name in the message itself if needed
                                             if (!$discloseEditorNames && !$isEditor &&
                                                 isset($reply['TYPE']) && (int)$reply['TYPE'] === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR &&
@@ -193,7 +193,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                                 $displayReply['AVATAR_NAME'] = 'System Episciences';
                                                 $displayReply['UID'] = Episciences_Auth::ANONYMOUS_UID;
                                             }
-                                            
+
                                             // Determine reply button based on message direction
                                             // TYPE_AUTHOR_TO_EDITOR = message FROM author, so editors can reply
                                             // TYPE_EDITOR_TO_AUTHOR = message FROM editor, so authors can reply
@@ -222,7 +222,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                                     'isAuthor' => $isAuthor,
                                                     'authorReplyForms' => $this->authorReplyForms ?? []
                                                 ]) ?>
-                                                
+
                                                 <?php // Display reply form for reply ?>
                                                 <?php if ((int)$reply['TYPE'] === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR && $isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$replyId])) : ?>
                                                     <div class="reply-form-container" id="reply-form-<?php echo $this->escape((int)$replyId); ?>" style="display: none;">
