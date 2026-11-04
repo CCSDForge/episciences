@@ -162,6 +162,28 @@ $rateNotes = [
                         </ul>
                         </li>
 
+                        <?php // accepted papers waiting for publication: next to the statuses, before the derived figures (rates, delays) ?>
+                        <?php if ($this->acceptedNotYetPublished) : ?>
+
+                            <h3 class="stat-section-title"><?= $this->translate('En cours de publication') ?></h3>
+
+                            <ul class="list-unstyled stat-tiles">
+                            <?= $this->partial('stats/stat-item.phtml', [
+                                    'itemLabel' => [
+                                            'articles acceptés',
+                                            'clarification' => 'non encore publiés'
+                                    ],
+                                    'itemValue' => $this->acceptedNotYetPublished,
+                                    'help' => [
+                                            'message' => $acceptedNoYetPublishedTooltipInfo,
+                                            'isTooltip' => true
+                                    ],
+                                    'paperList' => $this->paperLists[StatsController::NB_ACCEPTED_NOT_YET_PUBLISHED] ?? null
+                            ]) ?>
+                            </ul>
+
+                        <?php endif; ?>
+
                         <?php if ($isYear) : ?>
 
                             <h3 class="stat-section-title"><?= $this->translate('Soumis la même année') ?></h3>
@@ -220,27 +242,6 @@ $rateNotes = [
                         </div>
 
                         <?= $this->render('stats/submission-delay.phtml') ?>
-
-                        <?php if ($this->acceptedNotYetPublished) : ?>
-
-                            <h3 class="stat-section-title"><?= $this->translate('En cours de publication') ?></h3>
-
-                            <ul class="list-unstyled stat-tiles">
-                            <?= $this->partial('stats/stat-item.phtml', [
-                                    'itemLabel' => [
-                                            'articles acceptés',
-                                            'clarification' => 'non encore publiés'
-                                    ],
-                                    'itemValue' => $this->acceptedNotYetPublished,
-                                    'help' => [
-                                            'message' => $acceptedNoYetPublishedTooltipInfo,
-                                            'isTooltip' => true
-                                    ],
-                                    'paperList' => $this->paperLists[StatsController::NB_ACCEPTED_NOT_YET_PUBLISHED] ?? null
-                            ]) ?>
-                            </ul>
-
-                        <?php endif; ?>
 
                     </ul>
                 </div>
