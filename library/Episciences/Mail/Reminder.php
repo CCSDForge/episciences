@@ -1466,8 +1466,10 @@ class Episciences_Mail_Reminder
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         // inner join (last assignments: highest ID, two assignments can have the same date)
+        // restricted to the journal of the reminder, like the outer query (RVID is part of the grouping)
         $innerSQ = $db->select()
             ->from(T_ASSIGNMENTS, array('LAST_ID' => new Zend_Db_Expr('MAX(ID)')))
+            ->where('RVID = ?', $this->getRvid())
             ->where('ROLEID = ?', 'reviewer')
             ->group('RVID')
             ->group('ITEMID')
