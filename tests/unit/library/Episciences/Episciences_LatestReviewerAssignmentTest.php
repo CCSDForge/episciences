@@ -77,14 +77,14 @@ final class Episciences_LatestReviewerAssignmentTest extends TestCase
         }
     }
 
-    private function insertAssignment(int $docId, int $uid, string $status, string $when = self::DATE): void
+    private function insertAssignment(int $docId, int $uid, string $status, string $when = self::DATE, bool $isTmpUser = false): void
     {
         $this->db->insert(T_ASSIGNMENTS, [
             'RVID' => RVID,
             'ITEMID' => $docId,
             'ITEM' => 'paper',
             'UID' => $uid,
-            'TMP_USER' => 0,
+            'TMP_USER' => (int)$isTmpUser,
             'ROLEID' => 'reviewer',
             'STATUS' => $status,
             'WHEN' => $when,
@@ -165,6 +165,25 @@ final class Episciences_LatestReviewerAssignmentTest extends TestCase
     {
         $this->insertReviewers();
 
+        $this->assertSame([self::ACCEPTED_UID], $this->afterReviewingDeadlineReminderUids());
+    }
+
+    public function testATemporaryReviewerWithTheSameIdDoesNotHideAnActiveReviewerFromTheReminder(): void
+    {
+        // a temporary reviewer id is not a UID: both can be equal on the same paper
+        $this->insertReviewer(self::ACCEPTED_UID, [Episciences_User_Assignment::STATUS_ACTIVE]);
+        $this->insertAssignment(self::DOCID, self::ACCEPTED_UID, Episciences_User_Assignment::STATUS_PENDING, self::DATE, true);
+
+        $this->assertSame([self::ACCEPTED_UID], $this->afterReviewingDeadlineReminderUids());
+    }
+
+    /**
+     * The reviewers of the after-deadline reminder of the current journal, on the reviewing deadline
+     *
+     * @return int[]
+     */
+    private function afterReviewingDeadlineReminderUids(): array
+    {
         // the constructor sets the locale of the reminder (see Episciences_Mail_ReminderTest)
         if (!Zend_Registry::isRegistered('Zend_Locale')) {
             Zend_Registry::set('Zend_Locale', new Zend_Locale('en'));
@@ -184,6 +203,6 @@ final class Episciences_LatestReviewerAssignmentTest extends TestCase
         $query = new ReflectionMethod(Episciences_Mail_Reminder::class, 'getAfterReviewingDeadlineQuery');
         $rows = $this->db->fetchAll($query->invoke($reminder, $this->db->quote(self::DEADLINE)));
 
-        $this->assertSame([self::ACCEPTED_UID], array_map('intval', array_column($rows, 'UID')));
+        return array_map('intval', array_column($rows, 'UID'));
     }
 }

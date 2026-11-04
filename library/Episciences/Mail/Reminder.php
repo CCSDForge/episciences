@@ -1484,10 +1484,12 @@ class Episciences_Mail_Reminder
 
         // inner join (last assignments: highest ID, two assignments can have the same date)
         // restricted to the journal of the reminder, like the outer query (RVID is part of the grouping)
+        // and to the reviewers with an account: a temporary reviewer id is not a UID, both can be equal
         $innerSQ = $db->select()
             ->from(T_ASSIGNMENTS, array('LAST_ID' => new Zend_Db_Expr('MAX(ID)')))
             ->where('RVID = ?', $this->getRvid())
             ->where('ROLEID = ?', 'reviewer')
+            ->where('TMP_USER = ?', 0)
             ->group('RVID')
             ->group('ITEMID')
             ->group('ITEM')
@@ -1521,6 +1523,7 @@ class Episciences_Mail_Reminder
             )
             ->where('ROLEID = ?', 'reviewer')
             ->where('ua1.RVID = ?', $this->getRvid())
+            ->where('ua1.TMP_USER = ?', 0)
             ->where('ua1.STATUS = ?', 'active')
             ->where('RATING_STATUS = ' . Episciences_Rating_Report::STATUS_PENDING . ' OR RATING_STATUS = ' . Episciences_Rating_Report::STATUS_WIP)
             ->where("DEADLINE <= $date");
