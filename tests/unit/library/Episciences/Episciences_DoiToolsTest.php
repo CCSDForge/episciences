@@ -9,6 +9,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Cache\Adapter\NullAdapter;
@@ -90,6 +91,36 @@ class Episciences_DoiToolsTest extends TestCase
     public function testCleanDoi_DxDoiOrgPrefix_StripsPrefix(): void
     {
         $this->assertSame('10.1234/abc', Episciences_DoiTools::cleanDoi('https://dx.doi.org/10.1234/abc'));
+    }
+
+    #[DataProvider('otherDoiOrgPrefixProvider')]
+    public function testCleanDoi_OtherDoiOrgPrefix_StripsPrefix(string $doi): void
+    {
+        $this->assertSame('10.1234/abc', Episciences_DoiTools::cleanDoi($doi));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function otherDoiOrgPrefixProvider(): array
+    {
+        return [
+            'http' => ['http://doi.org/10.1234/abc'],
+            'http dx' => ['http://dx.doi.org/10.1234/abc'],
+            'upper case' => ['HTTPS://DOI.ORG/10.1234/abc'],
+            'no scheme' => ['doi.org/10.1234/abc'],
+            'no scheme dx' => ['dx.doi.org/10.1234/abc'],
+        ];
+    }
+
+    public function testCleanDoi_OtherHost_ReturnsUnchanged(): void
+    {
+        $this->assertSame('https://dx-doi.org/10.1234/abc', Episciences_DoiTools::cleanDoi('https://dx-doi.org/10.1234/abc'));
+    }
+
+    public function testCleanDoi_PrefixInsideTheValue_ReturnsUnchanged(): void
+    {
+        $this->assertSame('see https://doi.org/10.1234/abc', Episciences_DoiTools::cleanDoi('see https://doi.org/10.1234/abc'));
     }
 
     public function testCleanDoi_NoPrefix_ReturnsUnchanged(): void

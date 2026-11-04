@@ -213,7 +213,8 @@ class Episciences_Acl extends Ccsd_Acl
         self::ROLE_SECRETARY => [
             'administratepaper-suggeststatus' => self::NOT_CONFIGURABLE_RESOURCE,
             'administratepaper-saverefusedmonitoring' => self::NOT_CONFIGURABLE_RESOURCE,
-            'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE
+            'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE,
+            'stats-papers' => self::CONFIGURABLE_RESOURCE
         ],
 
         self::ROLE_WEBMASTER => [

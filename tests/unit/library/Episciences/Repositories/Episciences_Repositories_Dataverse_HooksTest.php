@@ -419,4 +419,49 @@ final class Episciences_Repositories_Dataverse_HooksTest extends TestCase
             "hookFilesProcessing() must guard against missing 'files' key with ?? []."
         );
     }
+
+    // =========================================================================
+    // hookFilesProcessing() — record already loaded by the caller
+    // =========================================================================
+
+    /**
+     * A record already loaded (Episciences_PapersManager::updateRecordData()) is used, not requested again:
+     * the unknown repository id would fail (undefined key / TypeError) if hookApiRecords() were called.
+     */
+    public function testHookFilesProcessingReusesTheLoadedRecord(): void
+    {
+        // A warning (undefined repository) fails the test instead of letting the request go out
+        set_error_handler(static function (int $errno, string $errstr): never {
+            throw new \ErrorException($errstr, 0, $errno);
+        });
+
+        try {
+            $result = Episciences_Repositories_Dataverse_Hooks::hookFilesProcessing([
+                'docId' => 1,
+                'repoId' => -1,
+                'identifier' => 'doi:10.1234/ABC',
+                'response' => [Episciences_Repositories_Common::ENRICHMENT => [Episciences_Repositories_Common::FILES => []]],
+            ]);
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame(0, $result['affectedRows']);
+    }
+
+    /**
+     * The loaded record carries the repository error: it is thrown, as when the hook loads the record itself.
+     */
+    public function testHookFilesProcessingThrowsTheErrorOfTheLoadedRecord(): void
+    {
+        $this->expectException(\Ccsd_Error::class);
+        $this->expectExceptionMessage('record unavailable');
+
+        Episciences_Repositories_Dataverse_Hooks::hookFilesProcessing([
+            'docId' => 1,
+            'repoId' => -1,
+            'identifier' => 'doi:10.1234/ABC',
+            'response' => ['error' => 'record unavailable'],
+        ]);
+    }
 }
