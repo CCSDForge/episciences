@@ -476,13 +476,14 @@ class Episciences_PapersManager
     private static function allPapersAssignedToRole(string $roleId = 'editor'): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        // the latest assignment of each user to each paper (highest ID: two assignments can have the same date)
+        // the latest assignment of each user to each paper (highest ID: two assignments can have the same date);
+        // a temporary user's ID can be equal to a user's UID: TMP_USER keeps them apart
         $subQuery = $db->select()
             ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', $roleId)
             ->where('RVID = ?', RVID)
-            ->group(['ITEMID', 'UID']);
+            ->group(['ITEMID', 'UID', 'TMP_USER']);
 
         return $db->select()
             ->distinct()
