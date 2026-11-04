@@ -379,7 +379,7 @@ class Episciences_PapersManager
 
         $select = $db->select()
             ->from(['a' => T_ASSIGNMENTS], $columns)
-            ->join(['b' => self::getAssignedPapersForSelectedRoleQuery($uid, $roleId)], 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', [])
+            ->join(['b' => self::getAssignedPapersForSelectedRoleQuery($uid, $roleId)], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper');
 
         if (is_array($roleId)) {
@@ -424,7 +424,9 @@ class Episciences_PapersManager
     }
 
     /**
-     * get assigned papers docids for each selected editor
+     * The latest assignment of each selected user, for each role and each paper (highest ID: two assignments can have the
+     * same date). Not the latest assignment of the paper: an editor assigned before another one is still an editor of it.
+     * Temporary users are left out; fetchLastPaperAssignmentForSelectedRoleQuery() only keeps the rows found here.
      * @param array $uid
      * @param string | string[] $roleId
      * @return Zend_Db_Select
@@ -433,7 +435,7 @@ class Episciences_PapersManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
-            ->from(T_ASSIGNMENTS, ['ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper');
 
         if (is_array($roleId)) {
@@ -448,7 +450,11 @@ class Episciences_PapersManager
             $select->where('UID IN (?)', $uid);
         }
 
-        $select->group('ITEMID');
+        // Accounts only (the selected users and the search by name are accounts): the UID of a temporary user is the ID
+        // of its T_TMP_USER row, which can be the UID of an account.
+        $select->where('TMP_USER = ?', 0);
+
+        $select->group(['ITEMID', 'UID', 'ROLEID']);
         return $select;
     }
 
@@ -478,17 +484,19 @@ class Episciences_PapersManager
     private static function allPapersAssignedToRole(string $roleId = 'editor'): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        // the latest assignment of each user to each paper (highest ID: two assignments can have the same date);
+        // a temporary user's ID can be equal to a user's UID: TMP_USER keeps them apart
         $subQuery = $db->select()
-            ->from(T_ASSIGNMENTS, ['ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', $roleId)
             ->where('RVID = ?', RVID)
-            ->group(['ITEMID', 'UID']);
+            ->group(['ITEMID', 'UID', 'TMP_USER']);
 
         return $db->select()
             ->distinct()
             ->from(['a' => T_ASSIGNMENTS], ['DOCID' => 'ITEMID'])
-            ->join(['b' => $subQuery], 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', [])
+            ->join(['b' => $subQuery], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', $roleId)
             ->where('RVID = ?', RVID)
@@ -1108,12 +1116,13 @@ class Episciences_PapersManager
     {
         $db = Zend_Db_Table::getDefaultAdapter();
 
-        $subMaxDate = $db?->select()
+        // the latest row of each invitation: an answer or a cancellation inserts a row with the same AID, possibly
+        // in the same second as the previous one, so the latest row is the one with the highest ID, not the latest date
+        $subLatest = $db?->select()
             ->from(
                 T_USER_INVITATIONS,
                 [
-                    'AID',
-                    'max_date' => 'MAX(SENDING_DATE)'
+                    'latest_id' => new Zend_Db_Expr('MAX(ID)')
                 ]
             )
             ->group('AID');
@@ -1124,8 +1133,8 @@ class Episciences_PapersManager
                 ['ID', 'AID', 'STATUS', 'SENDING_DATE', 'SENDER_UID', 'EXPIRATION_DATE']
             )
             ->join(
-                ['t2' => $subMaxDate],
-                't1.AID = t2.AID AND t1.SENDING_DATE = t2.max_date',
+                ['t2' => $subLatest],
+                't1.ID = t2.latest_id',
                 []
             );
 
@@ -1177,8 +1186,9 @@ class Episciences_PapersManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         //recuperation des relecteurs classiques
+        // the latest assignment of each reviewer (highest ID: two assignments can have the same date)
         $subquery = $db->select()
-            ->from(['z' => T_ASSIGNMENTS], ['z.UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(['z' => T_ASSIGNMENTS], ['z.UID', 'LAST_ID' => new Zend_Db_Expr('MAX(z.ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('ROLEID = ?', 'reviewer')
@@ -1193,7 +1203,7 @@ class Episciences_PapersManager
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinLeft(['u' => T_USERS], 'a.UID = u.UID', ['LANGUEID', 'SCREEN_NAME'])
             //->joinUsing(T_USERS, 'UID', array('LANGUEID', 'SCREEN_NAME'))
-            ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subquery], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('TMP_USER = ?', 0)
@@ -1203,13 +1213,14 @@ class Episciences_PapersManager
 
         //recuperation des relecteurs qui n'ont pas encore de compte
         if ($status === Episciences_User_Assignment::STATUS_PENDING || (is_array($status) && in_array(Episciences_User_Assignment::STATUS_PENDING, $status, true))) {
+            // the latest row of each invitation (highest ID: two rows can have the same date)
             $subquery2 = $db->select()
-                ->from(T_USER_INVITATIONS, ['AID', 'latest' => 'MAX(SENDING_DATE)'])
+                ->from(T_USER_INVITATIONS, ['latest_id' => new Zend_Db_Expr('MAX(ID)')])
                 ->group('AID');
 
             $subquery1 = $db->select()
                 ->from(['answer' => $subquery2], ['i.AID'])
-                ->joinInner(['i' => T_USER_INVITATIONS], 'i.AID = answer.AID AND i.SENDING_DATE = answer.latest', [])
+                ->joinInner(['i' => T_USER_INVITATIONS], 'i.ID = answer.latest_id', [])
                 ->where('STATUS = ?', 'pending');
 
             $select = $db->select()
@@ -1595,8 +1606,9 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        // the latest assignment of each user (highest ID: two assignments can have the same date)
         $subQuery = $db->select()
-            ->from(T_ASSIGNMENTS, ['UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('ROLEID = ?', $role)
@@ -1605,7 +1617,7 @@ class Episciences_PapersManager
         return $db->select()
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinUsing(T_USERS, 'UID', ['LANGUEID', 'SCREEN_NAME'])
-            ->join(['b' => $subQuery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subQuery], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('STATUS != ?', Episciences_User_Assignment::STATUS_INACTIVE)

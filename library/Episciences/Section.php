@@ -218,8 +218,9 @@ class Episciences_Section
      */
     public function loadEditors($active = true)
     {
+        // the latest assignment of each editor (highest ID: two assignments can have the same date)
         $subquery = $this->_db->select()
-            ->from(T_ASSIGNMENTS, ['UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', Episciences_User_Assignment::ITEM_SECTION)
             ->where('ITEMID = ?', $this->getSid())
             ->where('ROLEID = ?', Episciences_User_Assignment::ROLE_EDITOR)
@@ -228,7 +229,7 @@ class Episciences_Section
         $select = $this->_db->select()
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinUsing(T_USERS, 'UID', ['LANGUEID', 'SCREEN_NAME'])
-            ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subquery], 'a.ID = b.LAST_ID', [])
             ->join(['ur' => T_USER_ROLES], 'ur.UID = a.UID')
             ->where('ur.ROLEID IN (?)', [Episciences_Acl::ROLE_GUEST_EDITOR, Episciences_Acl::ROLE_EDITOR, Episciences_Acl::ROLE_CHIEF_EDITOR])
             ->where('ur.RVID = ?', $this->getRvid() ?: (defined('RVID') ? RVID : 0));

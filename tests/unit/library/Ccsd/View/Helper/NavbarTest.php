@@ -18,8 +18,18 @@ final class NavbarTest extends TestCase
 {
     private ?Zend_Controller_Request_Abstract $previousRequest = null;
 
+    /** @var array<string, mixed> */
+    private array $previousGet = [];
+
+    /** @var array<string, mixed> */
+    private array $previousPost = [];
+
     protected function setUp(): void
     {
+        // the request reads and writes the query and posted fields in the superglobals
+        $this->previousGet = $_GET;
+        $this->previousPost = $_POST;
+
         $front = Zend_Controller_Front::getInstance();
         $this->previousRequest = $front->getRequest();
 
@@ -36,6 +46,9 @@ final class NavbarTest extends TestCase
 
     protected function tearDown(): void
     {
+        $_GET = $this->previousGet;
+        $_POST = $this->previousPost;
+
         // Restore the request only: resetting the front controller would drop the router other tests rely on
         $property = new \ReflectionProperty(Zend_Controller_Front::class, '_request');
         $property->setAccessible(true);
@@ -58,6 +71,33 @@ final class NavbarTest extends TestCase
         self::assertMatchesRegularExpression('#<form[^>]*id="form-login"[^>]*method="get"#', $html);
         self::assertStringContainsString('name="forward-controller" value="paper"', $html);
         self::assertStringContainsString('name="forward-action" value="view"', $html);
+    }
+
+    public function testLoginFormSendsThePageToReturnToInTheUrl(): void
+    {
+        $html = $this->render(['isLogged' => false]);
+
+        // the login action reads the page to return to from the URL only, never from a posted body
+        self::assertMatchesRegularExpression('#<form[^>]*id="form-login"[^>]*method="get"#', $html);
+        self::assertStringContainsString('name="forward-controller" value="paper"', $html);
+        self::assertStringContainsString('name="forward-action" value="view"', $html);
+    }
+
+    public function testLoginFormOnlyCarriesTheUrlParametersOfThePage(): void
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = Zend_Controller_Front::getInstance()->getRequest();
+        $request->setParam('id', '1');
+        $request->setQuery('page', '2');
+        $request->setPost(['EMAIL' => 'jdoe@example.org', 'PASSWORD' => 'MyS3cret-password']);
+
+        $html = $this->render(['isLogged' => false]);
+
+        self::assertStringContainsString('name="id" value="1"', $html);
+        self::assertStringContainsString('name="page" value="2"', $html);
+        self::assertStringNotContainsString('name="EMAIL"', $html);
+        self::assertStringNotContainsString('name="PASSWORD"', $html);
+        self::assertStringNotContainsString('MyS3cret-password', $html);
     }
 
     public function testVisitorGetsNoLoginFormWithoutAccountActions(): void

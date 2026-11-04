@@ -211,7 +211,8 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                                 <input type="hidden" name="forward-controller" value="<?php echo $request->getControllerName(); ?>"/>
                                 <input type="hidden" name="forward-action" value="<?php echo $request->getActionName(); ?>"/>
                                 <?php
-                                $forwardParams = $request->getParams();
+                                // URL parameters of the current page only (route first), never its posted fields
+                                $forwardParams = array_merge($request->getQuery(), $request->getUserParams());
                                 unset($forwardParams['controller'], $forwardParams['action'], $forwardParams['module'], $forwardParams['submit'], $forwardParams['submit_advanced']);
 
                                 foreach ($forwardParams as $name => $value) {
