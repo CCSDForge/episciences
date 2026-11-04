@@ -54,6 +54,8 @@ class Episciences_PapersManager
     // Only the paper management lists offer the decision-suggestion filter
     public const SUGGESTION_FILTER_CONTROLLER = 'administratepaper';
     public const ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE = 'acceptedAskAuthorsFinalVersion';
+    // updateRecordData() updated the record, but one of its steps failed
+    public const RECORD_UPDATE_FAILURE_MESSAGE = "La mise à jour des métadonnées de cet article est incomplète : une partie de ses données (fichiers, données liées, auteurs ou enrichissements) n'a pas pu être enregistrée. Veuillez réessayer plus tard.";
 
     /**
      * @return array
@@ -3264,15 +3266,23 @@ class Episciences_PapersManager
     }
 
     /**
+     * Updates a paper from its repository: its record and version, then its files, linked data, enrichment,
+     * authors, licence and HAL / OpenAIRE data.
+     * Once the record is loaded, each step runs on its own: a failure is reported as a warning
+     * (Episciences_Submit::runPostSaveStep()) and does not stop the following steps, nor the update of the record.
+     *
      * @param Episciences_Paper $paper
-     * @return int
+     * @param list<string>|null $failedSteps receives the names of the steps that failed
+     * @param-out list<string> $failedSteps
+     * @return int number of affected rows
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
-     * @throws Exception
+     * @throws Exception the record could not be loaded from the repository, or not saved
      */
 
-    public static function updateRecordData(Episciences_Paper $paper): int
+    public static function updateRecordData(Episciences_Paper $paper, ?array &$failedSteps = null): int
     {
+        $failedSteps = [];
         $docId = $paper->getDocId();
 
         if (!$docId) {
@@ -3286,21 +3296,24 @@ class Episciences_PapersManager
             return 0;
         }
 
-        $affectedRows = 0;
-
         $context = self::initializeContext($params);
         $recordData = self::fetchRecordData($context); // as well as updating the version from the original archive
-        [$record, $enrichment] = [$recordData['record'], $recordData['enrichment']];
+        $record = self::cleanRecord($recordData['record'], $context['repoId']);
+        $enrichment = $recordData['enrichment'];
+        // The record already loaded, if any: the files and the linked data hooks do not load it again
+        $response = $recordData['response'] ?? [];
 
-        $record = self::cleanRecord($record, $context['repoId']);
-        [$record, $enrichment, $affectedRows] = self::processFilesHook($record, $context, $enrichment, $affectedRows);
-
-        $affectedRows += self::processLinkedDataOrDatasets($paper, $context, $affectedRows);
-        $affectedRows += Episciences_Submit::enrichmentProcess($paper, $enrichment);
-        Episciences_Paper_AuthorsManager::verifyExistOrInsert($context['docId'], $context['paperId']);
-
-        $affectedRows = self::processLicence($context, $affectedRows);
-        $affectedRows = self::processHalOpenAireData($context, $affectedRows);
+        $affectedRows = Episciences_Submit::runPostSaveSteps($paper, [
+            'hookFilesProcessing' => static fn(): int => self::updateRecordDataProcessFilesHook($context, $enrichment, $response),
+            'linkedData' => static fn(): int => self::processLinkedDataOrDatasets($paper, $context, $response),
+            'enrichmentProcess' => static fn(): int => Episciences_Submit::storeEnrichmentOrFail($paper, $enrichment),
+            'verifyExistOrInsertAuthors' => static fn(): int => Episciences_Paper_Authors_Repository::verifyExistOrInsertOrFail(
+                $context['docId'], $context['paperId']
+            ),
+            'licence' => static fn(): int => self::processLicence($context, 0),
+            'halData' => static fn(): int => self::processHalData($context),
+            'openAireData' => static fn(): int => self::processOpenAireData($context),
+        ], $failedSteps);
 
         $affectedRows += $db?->update(T_PAPERS, ['RECORD' => $record, 'VERSION' => $context['version']], ['DOCID = ?' => $context['docId']]);
         return $affectedRows;
@@ -3350,7 +3363,8 @@ class Episciences_PapersManager
                 $context['version'] = (float)$hookedVersion['version'];
             }
 
-            return ['record' => $response['record'], 'enrichment' => $response['enrichment'] ?? []];
+            // The files hook reuses the loaded record instead of requesting it again
+            return ['record' => $response['record'], 'enrichment' => $response['enrichment'] ?? [], 'response' => $response];
         }
 
         $baseUrl = Episciences_Repositories::getBaseUrl($context['repoId']);
@@ -3397,43 +3411,33 @@ class Episciences_PapersManager
     }
 
     /**
-     * @param string $record
-     * @param array $context
-     * @param array $enrichment
-     * @param int $affectedRows
-     * @return array
-     */
-
-    private static function processFilesHook(
-        string $record, array $context, array $enrichment, int $affectedRows
-    ): array
-    {
-        return self::updateRecordDataProcessFilesHook(
-            $record, $context['docId'], $context['repoId'], $context['identifier'], $enrichment, $affectedRows
-        );
-    }
-
-    /**
      * @param Episciences_Paper $paper
-     * @param array $context
-     * @param int $affectedRows
-     * @return int
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $response repository record already loaded by fetchRecordData(), if any
+     * @return int number of rows affected by this step
+     * @throws Exception the linked data could not be loaded or stored
      */
 
     private static function processLinkedDataOrDatasets(
-        Episciences_Paper $paper, array $context, int $affectedRows
+        Episciences_Paper $paper, array $context, array $response = []
     ): int
     {
         if (Episciences_Repositories::handlesOwnEnrichment((int)$context['repoId'])) {
-            $hookData = Episciences_Repositories::callHook('hookLinkedDataProcessing', [
+            $hookParams = [
                 'repoId' => $context['repoId'],
                 'identifier' => $context['identifier'],
                 'docId' => $context['docId']
-            ]);
-            return $affectedRows + ($hookData['affectedRows'] ?? 0);
+            ];
+
+            if ($response !== []) {
+                $hookParams['response'] = $response;
+            }
+
+            $hookData = Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
+            return (int)($hookData['affectedRows'] ?? 0);
         }
 
-        return $affectedRows + Episciences_Submit::datasetsProcessing($paper);
+        return Episciences_Submit::datasetsProcessing($paper);
     }
 
     /**
@@ -3450,26 +3454,32 @@ class Episciences_PapersManager
     }
 
     /**
-     * @param array $context
-     * @param int $affectedRows
-     * @return int
+     * HAL papers: authors from the HAL TEI and HAL funding
+     *
+     * @param array<string, mixed> $context
+     * @return int number of rows affected by this step
      */
 
-    private static function processHalOpenAireData(array $context, int $affectedRows): int
+    private static function processHalData(array $context): int
     {
-        $strRepoId = (string)$context['repoId'];
-
-        if ($strRepoId === Episciences_Repositories::HAL_REPO_ID) {
-            try {
-                $affectedRows = self::updateRecordDataHal(
-                    $context['paperId'], $context['identifier'], $context['version'], $affectedRows
-                );
-            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
-            }
+        if ((string)$context['repoId'] !== Episciences_Repositories::HAL_REPO_ID) {
+            return 0;
         }
 
-        $isEligibleRepo = in_array($strRepoId, [
+        // Not caught: the step reports an unexpected payload or a cache failure
+        return self::updateRecordDataHal($context['paperId'], $context['identifier'], $context['version'], 0);
+    }
+
+    /**
+     * Published papers with a DOI: ORCID and funding from OpenAIRE
+     *
+     * @param array<string, mixed> $context
+     * @return int number of rows affected by this step
+     */
+
+    private static function processOpenAireData(array $context): int
+    {
+        $isEligibleRepo = in_array((string)$context['repoId'], [
             Episciences_Repositories::ARXIV_REPO_ID,
             Episciences_Repositories::ZENODO_REPO_ID,
             Episciences_Repositories::HAL_REPO_ID,
@@ -3477,20 +3487,12 @@ class Episciences_PapersManager
             Episciences_Repositories::MED_RXIV_ID,
         ], true);
 
-        if (!empty($context['doi']) &&
-            $context['status'] === Episciences_Paper::STATUS_PUBLISHED &&
-            $isEligibleRepo
-        ) {
-            try {
-                $affectedRows = self::updateRecordDataCallOpenAireTools(
-                    $context['doi'], $context['paperId'], $affectedRows
-                );
-            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
-            }
+        if (empty($context['doi']) || $context['status'] !== Episciences_Paper::STATUS_PUBLISHED || !$isEligibleRepo) {
+            return 0;
         }
 
-        return $affectedRows;
+        // Not caught: the step reports an unexpected payload or a cache failure
+        return self::updateRecordDataCallOpenAireTools($context['doi'], $context['paperId'], 0);
     }
 
     /**
@@ -4935,54 +4937,45 @@ class Episciences_PapersManager
     }
 
     /**
-     * @param $record1
-     * @param mixed $docId
-     * @param mixed $repoId
-     * @param array|string $identifier
-     * @param mixed $enrichment
-     * @param mixed $affectedRows
-     * @return array
+     * @param array<string, mixed> $context see initializeContext()
+     * @param array<string, mixed> $enrichment enrichment of the record loaded from the repository
+     * @param array<string, mixed> $response repository record already loaded by fetchRecordData(), if any
+     * @return int number of rows affected by this step
+     * @throws Exception the files could not be loaded or stored
      */
-    private static function updateRecordDataProcessFilesHook($record1, mixed $docId, mixed $repoId, array|string $identifier, mixed $enrichment, mixed $affectedRows): array
+    private static function updateRecordDataProcessFilesHook(array $context, array $enrichment, array $response = []): int
     {
-        $record = $record1;
+        // version: the Dataverse hook requests the record of this version when it has to load it
+        $hookParams = [
+            'repoId' => $context['repoId'],
+            'identifier' => $context['identifier'],
+            'docId' => $context['docId'],
+            'version' => $context['version']
+        ];
 
-        $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId];
-
-        // add all files
-        $hookFiles = Episciences_Repositories::callHook(
-            'hookFilesProcessing',
-            (isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams
-        );
-
-        if (isset($hookFiles['affectedRows'])) {
-            $affectedRows += $hookFiles['affectedRows'];
-
+        if ($response !== []) {
+            $hookParams['response'] = $response;
         }
-        return array($record, $enrichment, $affectedRows);
+
+        // The files of the record loaded from the repository
+        if (isset($enrichment['files'])) {
+            $hookParams['files'] = $enrichment['files'];
+        }
+
+        $hookFiles = Episciences_Repositories::callHook('hookFilesProcessing', $hookParams);
+
+        return (int)($hookFiles['affectedRows'] ?? 0);
     }
 
     /**
-     * @param mixed $repoId
-     * @param string $identifier
-     * @param float $version
-     * @param mixed $docId
-     * @param int $affectedRows
-     * @return int
+     * Not caught: the licence step of updateRecordData() reports a failure (database, unexpected payload)
+     *
+     * @throws GuzzleException|JsonException|\Psr\Cache\InvalidArgumentException|Zend_Db_Exception
      */
     private static function updateRecordDataProcessLicence(mixed $repoId, string $identifier, float $version, mixed $docId, int $affectedRows): int
     {
-        try {
-            $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
-            try {
-                $affectedRows += Episciences_Paper_LicenceManager::insertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
-            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
-            }
-        } catch (GuzzleException|\Psr\Cache\InvalidArgumentException $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
-        }
-        return $affectedRows;
+        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
+        return $affectedRows + Episciences_Paper_LicenceManager::insertLicenceFromApiByRepoIdOrFail((string)$repoId, $callArrayResp, (int)$docId, $identifier);
     }
 
     /**

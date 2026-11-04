@@ -33,7 +33,8 @@ class E2ESeedCommand extends Command
         $this
             ->addOption('rvcode', null, InputOption::VALUE_OPTIONAL, 'Journal code for roles', 'dev')
             ->addOption('password', 'p', InputOption::VALUE_OPTIONAL, 'Fixed password for all generated users', 'password123')
-            ->addOption('reset', null, InputOption::VALUE_NONE, 'Also remove the papers, volumes and sections left by previous E2E runs');
+            ->addOption('reset', null, InputOption::VALUE_NONE, 'Also remove the papers, volumes and sections left by previous E2E runs')
+            ->addOption('restore-settings', null, InputOption::VALUE_NONE, 'Restore journal settings backed up before E2E runs');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -67,6 +68,12 @@ class E2ESeedCommand extends Command
         Zend_Registry::set('Zend_Locale', new Zend_Locale('en'));
 
         $rvid = defined('RVID') ? RVID : 1;
+
+        if ($input->getOption('restore-settings')) {
+            $restored = $this->restoreJournalSettings($rvid);
+            $io->success(sprintf('Restored %d journal setting(s) for journal %s (RVID %d).', $restored, $rvcode, $rvid));
+            return Command::SUCCESS;
+        }
         $ccsdUserMapper = new Ccsd_User_Models_UserMapper();
 
         $testUsers = [
@@ -168,24 +175,93 @@ class E2ESeedCommand extends Command
         return Command::SUCCESS;
     }
 
+    private const SETTING_BACKUP_PREFIX = '_e2e_backup_';
+
     /**
-     * Applies the journal settings the suite relies on, on every run.
+     * @return array<string, string>
+     */
+    private function getRequiredSettings(): array
+    {
+        return [
+            // A paper needs a completed review before it can be accepted, published or sent back for revision
+            Episciences_Review::SETTING_REQUIRED_REVIEWERS => '1',
+            // Author editor choice must not be mandatory during E2E submissions
+            Episciences_Review::SETTING_CAN_PICK_EDITOR => '',
+            // Section choice is optional (1) so submissions without section do not get blocked
+            Episciences_Review::SETTING_CAN_PICK_SECTION => '1',
+        ];
+    }
+
+    /**
+     * Backs up initial settings and applies the ones the suite relies on.
      */
     private function applyJournalSettings(int $rvid): void
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $settings = [
-            // A paper needs a completed review before it can be accepted, published or sent back for revision
-            Episciences_Review::SETTING_REQUIRED_REVIEWERS => '1',
-        ];
+        $requiredSettings = $this->getRequiredSettings();
 
-        foreach ($settings as $setting => $value) {
+        // Backup current setting values if not already backed up
+        foreach (array_keys($requiredSettings) as $setting) {
+            $backupKey = self::SETTING_BACKUP_PREFIX . $setting;
+            $hasBackup = (bool)$db->fetchOne(
+                'SELECT 1 FROM ' . T_REVIEW_SETTINGS . ' WHERE RVID = ? AND SETTING = ?',
+                [$rvid, $backupKey]
+            );
+
+            if (!$hasBackup) {
+                $currentValue = $db->fetchOne(
+                    'SELECT VALUE FROM ' . T_REVIEW_SETTINGS . ' WHERE RVID = ? AND SETTING = ?',
+                    [$rvid, $setting]
+                );
+                if ($currentValue !== false) {
+                    $db->insert(T_REVIEW_SETTINGS, [
+                        'RVID' => $rvid,
+                        'SETTING' => $backupKey,
+                        'VALUE' => $currentValue,
+                    ]);
+                }
+            }
+        }
+
+        foreach ($requiredSettings as $setting => $value) {
             $db->query(
                 'INSERT INTO ' . T_REVIEW_SETTINGS . ' (RVID, SETTING, VALUE) VALUES (?, ?, ?) AS new_row'
                 . ' ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE',
                 [$rvid, $setting, $value]
             );
         }
+    }
+
+    /**
+     * Restores journal settings from the backup created by applyJournalSettings().
+     */
+    private function restoreJournalSettings(int $rvid): int
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $prefix = self::SETTING_BACKUP_PREFIX;
+        $select = $db->select()
+            ->from(T_REVIEW_SETTINGS, ['SETTING', 'VALUE'])
+            ->where('RVID = ?', $rvid)
+            ->where('SETTING LIKE ?', $prefix . '%');
+
+        $backups = $db->fetchAll($select);
+        $restoredCount = 0;
+
+        foreach ($backups as $row) {
+            $originalSetting = substr($row['SETTING'], strlen($prefix));
+            $db->query(
+                'INSERT INTO ' . T_REVIEW_SETTINGS . ' (RVID, SETTING, VALUE) VALUES (?, ?, ?) AS new_row'
+                . ' ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE',
+                [$rvid, $originalSetting, $row['VALUE']]
+            );
+            $db->delete(T_REVIEW_SETTINGS, [
+                'RVID = ?' => $rvid,
+                'SETTING = ?' => $row['SETTING'],
+            ]);
+            $restoredCount++;
+        }
+
+        return $restoredCount;
     }
 
     /**

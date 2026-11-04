@@ -461,7 +461,20 @@ class UpdatePapersDocumentCommand extends Command
         }
 
         try {
-            $affected = \Episciences_PapersManager::updateRecordData($paper);
+            $failedSteps = [];
+            $affected = \Episciences_PapersManager::updateRecordData($paper, $failedSteps);
+
+            if ($failedSteps !== []) {
+                // Each failure is in the PHP error log, with the step and the exception
+                $logger->error(sprintf(
+                    '[DOCID %d] RECORD refreshed (%d row(s) affected), failed steps: %s',
+                    $docId,
+                    $affected,
+                    implode(', ', $failedSteps)
+                ));
+                return;
+            }
+
             $logger->info(sprintf('[DOCID %d] RECORD refreshed (%d row(s) affected).', $docId, $affected));
         } catch (\Exception $e) {
             $logger->error(sprintf('[DOCID %d] updateRecordData failed: %s', $docId, $e->getMessage()));
