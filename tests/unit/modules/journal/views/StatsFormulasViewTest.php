@@ -97,6 +97,25 @@ final class StatsFormulasViewTest extends TestCase
         self::assertStringContainsString('Médiane : la moitié des articles a un délai inférieur ou égal', $html);
     }
 
+    /**
+     * The API counts the refusals by submission: a refused paper submitted again is a new submission.
+     */
+    public function testTheRefusalsAreCountedBySubmission(): void
+    {
+        $this->useLanguage('fr');
+
+        foreach ([null, 2025] as $year) {
+            $html = $this->renderDecisions($year);
+
+            self::assertStringContainsString('Un seul rejet est comptabilisé par soumission. Un article refusé puis soumis à nouveau compte comme une nouvelle soumission.', $html);
+            self::assertStringNotContainsString('un seul rejet est comptabilisé par article', $html);
+        }
+
+        $this->useLanguage('en');
+
+        self::assertStringContainsString('Only one rejection is counted per submission. An article refused, then submitted again, counts as a new submission.', $this->renderDecisions(null));
+    }
+
     public function testTheExplanationsAreTranslatedInEnglish(): void
     {
         $this->useLanguage('en');

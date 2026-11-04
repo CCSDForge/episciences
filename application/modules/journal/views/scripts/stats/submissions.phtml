@@ -2,7 +2,8 @@
 $isYear = isset($this->year);
 $acceptedNoYetPublishedTooltipInfo = "Cela inclut les versions acceptées (mise en forme ou non)";
 $acceptedTooltipInfo = "Cela inclut les articles qui ont déjà été publiés";
-$refusedTooltipInfo = "La revue peut rejeter plusieurs fois le même article. Dans ce cas, un seul rejet est comptabilisé par article.";
+// counted by submission by the API: a refused paper that the journal accepts to receive again is a new submission
+$refusedTooltipInfo = "Un seul rejet est comptabilisé par soumission. Un article refusé puis soumis à nouveau compte comme une nouvelle soumission.";
 $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
 // how the rates are computed by the API: X / (accepted + refused) x 100, X being the accepted, refused or published articles
 $rateFormula = 'Taux = articles concernés ÷ (articles acceptés + articles refusés) × 100';
