@@ -377,7 +377,7 @@ class Episciences_PapersManager
 
         $select = $db->select()
             ->from(['a' => T_ASSIGNMENTS], $columns)
-            ->join(['b' => self::getAssignedPapersForSelectedRoleQuery($uid, $roleId)], 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', [])
+            ->join(['b' => self::getAssignedPapersForSelectedRoleQuery($uid, $roleId)], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper');
 
         if (is_array($roleId)) {
@@ -422,7 +422,9 @@ class Episciences_PapersManager
     }
 
     /**
-     * get assigned papers docids for each selected editor
+     * The latest assignment of each selected user, for each role and each paper (highest ID: two assignments can have the
+     * same date). Not the latest assignment of the paper: an editor assigned before another one is still an editor of it.
+     * Temporary users are left out; fetchLastPaperAssignmentForSelectedRoleQuery() only keeps the rows found here.
      * @param array $uid
      * @param string | string[] $roleId
      * @return Zend_Db_Select
@@ -431,7 +433,7 @@ class Episciences_PapersManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
-            ->from(T_ASSIGNMENTS, ['ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper');
 
         if (is_array($roleId)) {
@@ -446,7 +448,11 @@ class Episciences_PapersManager
             $select->where('UID IN (?)', $uid);
         }
 
-        $select->group('ITEMID');
+        // Accounts only (the selected users and the search by name are accounts): the UID of a temporary user is the ID
+        // of its T_TMP_USER row, which can be the UID of an account.
+        $select->where('TMP_USER = ?', 0);
+
+        $select->group(['ITEMID', 'UID', 'ROLEID']);
         return $select;
     }
 
