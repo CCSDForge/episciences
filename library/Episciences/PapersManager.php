@@ -476,17 +476,19 @@ class Episciences_PapersManager
     private static function allPapersAssignedToRole(string $roleId = 'editor'): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        // the latest assignment of each user to each paper (highest ID: two assignments can have the same date);
+        // a temporary user's ID can be equal to a user's UID: TMP_USER keeps them apart
         $subQuery = $db->select()
-            ->from(T_ASSIGNMENTS, ['ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', $roleId)
             ->where('RVID = ?', RVID)
-            ->group(['ITEMID', 'UID']);
+            ->group(['ITEMID', 'UID', 'TMP_USER']);
 
         return $db->select()
             ->distinct()
             ->from(['a' => T_ASSIGNMENTS], ['DOCID' => 'ITEMID'])
-            ->join(['b' => $subQuery], 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', [])
+            ->join(['b' => $subQuery], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', $roleId)
             ->where('RVID = ?', RVID)
@@ -1596,8 +1598,9 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        // the latest assignment of each user (highest ID: two assignments can have the same date)
         $subQuery = $db->select()
-            ->from(T_ASSIGNMENTS, ['UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('ROLEID = ?', $role)
@@ -1606,7 +1609,7 @@ class Episciences_PapersManager
         return $db->select()
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinUsing(T_USERS, 'UID', ['LANGUEID', 'SCREEN_NAME'])
-            ->join(['b' => $subQuery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subQuery], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('STATUS != ?', Episciences_User_Assignment::STATUS_INACTIVE)
