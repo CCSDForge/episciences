@@ -227,6 +227,47 @@ final class FundingReferenceFactoryTest extends TestCase
         self::assertSame('10.3030/101079608', $references[0]->grantDoi);
     }
 
+    public function testWithFunderKeepsOnlyFundingsNamingTheirFunder(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([
+            ['funderName' => 'European Commission', 'code' => '1'],
+            ['projectTitle' => 'Project without funder'],
+            ['fundingStatement' => 'Some regional programme'],
+            ['funderName' => 'Unknown Regional Funder'],
+        ]);
+
+        $withFunder = FundingReferenceFactory::withFunder($references);
+
+        self::assertSame(['European Commission', 'Unknown Regional Funder'], array_map(
+            static fn(FundingReference $reference): ?string => $reference->funderName,
+            $withFunder
+        ));
+        self::assertSame([0, 1], array_keys($withFunder), 'reindexed list');
+    }
+
+    public function testCitationFunderSource(): void
+    {
+        self::assertSame(
+            'citation_funder=European Commission; citation_grant_number=101017452;',
+            (new FundingReference(funderName: 'European Commission', awardNumber: '101017452'))->toCitationFunderSource()
+        );
+        self::assertSame(
+            'citation_funder=Unknown Regional Funder;',
+            (new FundingReference(funderName: 'Unknown Regional Funder'))->toCitationFunderSource()
+        );
+        self::assertNull((new FundingReference(awardNumber: 'X-1'))->toCitationFunderSource());
+    }
+
+    public function testDataverseUrlMustBeASafeHttpUrl(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'projectTitle' => 'Dataverse project',
+            'url' => 'https://example.org/a"onmouseover="x',
+        ]]);
+
+        self::assertNull($references[0]->awardUri);
+    }
+
     public function testToArrayShape(): void
     {
         $reference = new FundingReference(funderName: 'European Commission', awardNumber: '1');

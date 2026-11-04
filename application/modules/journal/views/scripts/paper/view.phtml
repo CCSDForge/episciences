@@ -62,16 +62,8 @@ if ($paper->isPublished()) {
                 }
                 break;
             case "fundings":
-                if (!empty($citationMeta)) {
-                    foreach ($citationMeta as $project) {
-                        if (isset($project['funderName']) && $project['funderName'] !== Episciences_Paper_ProjectsManager::UNIDENTIFIED) {
-                            $strFunding = "citation_funder=" . $project['funderName'] . ";";
-                            if ($project['code'] !== Episciences_Paper_ProjectsManager::UNIDENTIFIED) {
-                                $strFunding .= " citation_grant_number=" . $project['code'] . ";";
-                            }
-                            $this->headMeta()->appendName('citation_funder_source', $strFunding);
-                        }
-                    }
+                foreach ($citationMeta as $funderSource) {
+                    $this->headMeta()->appendName('citation_funder_source', $funderSource);
                 }
                 break;
             default :

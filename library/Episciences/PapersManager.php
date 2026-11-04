@@ -4349,7 +4349,11 @@ class Episciences_PapersManager
                 'language' => $language,
                 'article_type' => "Research Article",
                 'keywords' => $allKeywords,
-                'fundings' => Episciences_Paper_ProjectsManager::getProjectWithDuplicateRemoved($paper->getPaperid()),
+                // contents of the citation_funder_source meta tags, one per funding naming its funder
+                'fundings' => array_map(
+                    static fn(\Episciences\Paper\Funding\FundingReference $reference): string => (string)$reference->toCitationFunderSource(),
+                    \Episciences\Paper\Funding\FundingReferenceFactory::withFunder($paper->getFundingReferences())
+                ),
 //                'abstract' => $abstract,
 
             ],

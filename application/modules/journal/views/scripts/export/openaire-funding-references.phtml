@@ -7,7 +7,7 @@
  */
 $fundingReferences = $this->fundingReferences ?? [];
 // OpenAIRE allows a single fundingReferences element, and every fundingReference needs a funderName
-$openaireFundings = array_filter($fundingReferences, static fn($reference) => $reference->hasFunder());
+$openaireFundings = \Episciences\Paper\Funding\FundingReferenceFactory::withFunder($fundingReferences);
 ?>
 <?php if (!empty($openaireFundings)): ?>
     <oaire:fundingReferences>

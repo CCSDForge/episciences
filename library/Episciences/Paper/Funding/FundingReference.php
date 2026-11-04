@@ -87,6 +87,26 @@ final class FundingReference
     }
 
     /**
+     * Content of the citation_funder_source meta tag of the paper page,
+     * e.g. "citation_funder=European Commission; citation_grant_number=101017452;".
+     * Null when the funder is unknown.
+     */
+    public function toCitationFunderSource(): ?string
+    {
+        if ($this->funderName === null) {
+            return null;
+        }
+
+        $content = 'citation_funder=' . $this->funderName . ';';
+
+        if ($this->awardNumber !== null) {
+            $content .= ' citation_grant_number=' . $this->awardNumber . ';';
+        }
+
+        return $content;
+    }
+
+    /**
      * Public representation, exposed in PAPERS.DOCUMENT under database.current.fundings.
      *
      * @return array{

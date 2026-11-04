@@ -7,7 +7,7 @@
  */
 $fundingReferences = $this->fundingReferences ?? [];
 // Crossref requires a funder name in every fundgroup; an identifier must be nested in its funder_name
-$crossrefFundings = array_filter($fundingReferences, static fn($reference) => $reference->hasFunder());
+$crossrefFundings = \Episciences\Paper\Funding\FundingReferenceFactory::withFunder($fundingReferences);
 ?>
 <?php if (!empty($crossrefFundings)): ?>
     <program name="fundref" xmlns="http://www.crossref.org/fundref.xsd">

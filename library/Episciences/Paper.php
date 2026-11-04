@@ -5784,11 +5784,7 @@ class Episciences_Paper
     {
         $fundGroups = [];
 
-        foreach ($fundingReferences as $reference) {
-            if (!$reference->hasFunder()) {
-                continue;
-            }
-
+        foreach (FundingReferenceFactory::withFunder($fundingReferences) as $reference) {
             $assertions = [['@name' => 'funder_name', '#' => $reference->funderName]];
 
             if ($reference->awardNumber !== null) {

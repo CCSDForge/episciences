@@ -17,7 +17,8 @@ namespace Episciences\Paper\Funding;
  */
 final class FundingReferenceFactory
 {
-    private const UNKNOWN_VALUES = ['', 'unidentified', 'null'];
+    /** Values standing for "unknown": the placeholder written by the enrichment, plus empty ones */
+    private const UNKNOWN_VALUES = ['', \Episciences_Paper_Projects_EnrichmentService::UNIDENTIFIED, 'null'];
 
     /** ANR grant codes, e.g. ANR-22-CE45-0024, ANR-11-IDEX-0004-02 */
     private const ANR_CODE = 'ANR-\d{2}-[A-Z0-9]+(?:-[A-Z0-9]+){1,3}';
@@ -76,6 +77,18 @@ final class FundingReferenceFactory
         }
 
         return array_values($merged);
+    }
+
+    /**
+     * Fundings that name their funder: the only ones Crossref (fundref) and OpenAIRE (fundingReference)
+     * accept, and the only ones the citation meta tags describe.
+     *
+     * @param list<FundingReference> $references
+     * @return list<FundingReference>
+     */
+    public static function withFunder(array $references): array
+    {
+        return array_values(array_filter($references, static fn(FundingReference $reference): bool => $reference->hasFunder()));
     }
 
     /**
@@ -209,7 +222,7 @@ final class FundingReferenceFactory
         }
 
         $url = self::clean($stored['url'] ?? null);
-        if ($url !== null && preg_match('#^https?://#i', $url)) {
+        if ($url !== null && \Episciences_Tools::isHttpUrl($url)) {
             return $url;
         }
 
