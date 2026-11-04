@@ -29,13 +29,30 @@ final class Episciences_LatestReviewerAssignmentTest extends TestCase
     private const DOCID = 999201;
     private const ACCEPTED_UID = 999202;
     private const REMOVED_UID = 999203;
+    private const OUT_OF_ORDER_UID = 999204;
+    private const OTHER_DOCID = 999205;
     private const DATE = '2024-01-01 10:00:00';
     private const DEADLINE = '2024-01-10';
 
+    private const REGISTRY_KEYS = ['Zend_Locale', 'languages', 'Zend_Translate'];
+
     private Zend_Db_Adapter_Abstract $db;
+
+    /**
+     * Registry entries present before the test (the other ones are removed after the test)
+     * @var array<string, mixed>
+     */
+    private array $savedRegistry = [];
 
     protected function setUp(): void
     {
+        $this->savedRegistry = [];
+        foreach (self::REGISTRY_KEYS as $key) {
+            if (Zend_Registry::isRegistered($key)) {
+                $this->savedRegistry[$key] = Zend_Registry::get($key);
+            }
+        }
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         if (!$db instanceof Zend_Db_Adapter_Abstract) {
             self::markTestSkipped('No database adapter available.');
@@ -46,7 +63,33 @@ final class Episciences_LatestReviewerAssignmentTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->db->rollBack();
+        if (isset($this->db)) {
+            $this->db->rollBack();
+        }
+
+        $registry = Zend_Registry::getInstance();
+        foreach (self::REGISTRY_KEYS as $key) {
+            if (array_key_exists($key, $this->savedRegistry)) {
+                Zend_Registry::set($key, $this->savedRegistry[$key]);
+            } elseif ($registry->offsetExists($key)) {
+                $registry->offsetUnset($key);
+            }
+        }
+    }
+
+    private function insertAssignment(int $docId, int $uid, string $status, string $when = self::DATE): void
+    {
+        $this->db->insert(T_ASSIGNMENTS, [
+            'RVID' => RVID,
+            'ITEMID' => $docId,
+            'ITEM' => 'paper',
+            'UID' => $uid,
+            'TMP_USER' => 0,
+            'ROLEID' => 'reviewer',
+            'STATUS' => $status,
+            'WHEN' => $when,
+            'DEADLINE' => self::DEADLINE . ' 00:00:00',
+        ]);
     }
 
     /**
@@ -57,17 +100,7 @@ final class Episciences_LatestReviewerAssignmentTest extends TestCase
     private function insertReviewer(int $uid, array $statuses, int $reportStatus = Episciences_Rating_Report::STATUS_PENDING): void
     {
         foreach ($statuses as $status) {
-            $this->db->insert(T_ASSIGNMENTS, [
-                'RVID' => RVID,
-                'ITEMID' => self::DOCID,
-                'ITEM' => 'paper',
-                'UID' => $uid,
-                'TMP_USER' => 0,
-                'ROLEID' => 'reviewer',
-                'STATUS' => $status,
-                'WHEN' => self::DATE,
-                'DEADLINE' => self::DEADLINE . ' 00:00:00',
-            ]);
+            $this->insertAssignment(self::DOCID, $uid, $status);
         }
 
         $this->db->insert(T_REVIEWER_REPORTS, [
@@ -104,6 +137,28 @@ final class Episciences_LatestReviewerAssignmentTest extends TestCase
             self::REMOVED_UID => Episciences_User_Assignment::STATUS_INACTIVE,
         ], $statuses);
         $this->assertSame([self::ACCEPTED_UID], array_keys(Episciences_PapersManager::getReviewers(self::DOCID)));
+    }
+
+    public function testTheLatestAssignmentIsTheOneWithTheHighestIdEvenIfItsDateIsOlder(): void
+    {
+        // removed, then accepted again with an older date: the ID order and the date order differ
+        $this->insertAssignment(self::DOCID, self::OUT_OF_ORDER_UID, Episciences_User_Assignment::STATUS_INACTIVE, '2024-01-01 10:00:01');
+        $this->insertAssignment(self::DOCID, self::OUT_OF_ORDER_UID, Episciences_User_Assignment::STATUS_ACTIVE, '2024-01-01 10:00:00');
+        // a later assignment of the same reviewer to another paper does not hide the assignment to this paper
+        $this->insertAssignment(self::OTHER_DOCID, self::OUT_OF_ORDER_UID, Episciences_User_Assignment::STATUS_INACTIVE, '2024-01-01 10:00:02');
+
+        $reviewers = Episciences_PapersManager::getReviewers(self::DOCID, [
+            Episciences_User_Assignment::STATUS_PENDING,
+            Episciences_User_Assignment::STATUS_ACTIVE,
+            Episciences_User_Assignment::STATUS_INACTIVE,
+        ]);
+
+        $this->assertSame(
+            [self::OUT_OF_ORDER_UID => Episciences_User_Assignment::STATUS_ACTIVE],
+            array_map(static fn($reviewer) => $reviewer->getStatus(), $reviewers)
+        );
+        $this->assertSame([self::OUT_OF_ORDER_UID], array_keys(Episciences_PapersManager::getReviewers(self::DOCID)));
+        $this->assertSame([], Episciences_PapersManager::getReviewers(self::OTHER_DOCID));
     }
 
     public function testTheReminderAfterTheReviewingDeadlineOnlyConcernsTheActiveReviewers(): void
