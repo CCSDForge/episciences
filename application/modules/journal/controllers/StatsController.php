@@ -333,11 +333,16 @@ class StatsController extends Zend_Controller_Action
         $this->view->chart3Title = !$yearQuery ?
             $this->view->translate('Répartition des soumissions par année et par archive') :
             $this->view->translate('Répartition des soumissions par archive');
+        // imported papers of every year: on the page of a year, the API only counts the imported papers of that year
+        $importedByYearAndRepo = $this->getImportedByYearAndRepo($startStatsAfterDate, $logger);
         $charts = self::buildChartsData(
             $details,
             $yearCategories,
-            $this->getImportedByYearAndRepo($startStatsAfterDate, $logger),
-            array_map(fn(string $label) => $this->view->translate($label), self::CHART_LABELS)
+            $importedByYearAndRepo,
+            array_map(
+                fn(string $label) => $this->view->translate($label),
+                self::chartLabels((int)$totalImported > 0 || $importedByYearAndRepo !== [])
+            )
         );
 
         // titles of the delays chart, following the selector "moyenne" / "médiane" of the delay table
@@ -577,6 +582,22 @@ class StatsController extends Zend_Controller_Action
                 'medianDatasets' => $hasMedian ? $delayDatasets(self::SUBMISSION_ACCEPTANCE_MEDIAN_DELAY, self::SUBMISSION_PUBLICATION_MEDIAN_DELAY) : null,
             ],
         ];
+    }
+
+    /**
+     * Series of the charts (to be translated): the submissions only mention the imports when the journal has imported papers
+     * @param bool $hasImportedPapers
+     * @return array<string, string>
+     */
+    public static function chartLabels(bool $hasImportedPapers): array
+    {
+        $labels = self::CHART_LABELS;
+
+        if (!$hasImportedPapers) {
+            $labels['submitted'] = 'Soumissions';
+        }
+
+        return $labels;
     }
 
     /**
