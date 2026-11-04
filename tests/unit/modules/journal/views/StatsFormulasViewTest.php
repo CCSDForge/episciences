@@ -113,4 +113,45 @@ final class StatsFormulasViewTest extends TestCase
         self::assertStringContainsString('Average: sum of the delays ÷ number of articles', $delays);
         self::assertStringContainsString('Median: half of the articles have a shorter or equal delay', $delays);
     }
+
+    private function renderDecisions(?int $year): string
+    {
+        $view = $this->view();
+        $view->chart1Title = 'Soumissions';
+        $view->year = $year;
+        $view->allAcceptations = 12;
+        $view->allRefusals = 8;
+
+        return $view->render('stats/submissions.phtml');
+    }
+
+    public function testByYearTheAcceptedAndRefusedArticlesIncludeThoseSubmittedBefore(): void
+    {
+        $this->useLanguage('fr');
+
+        $html = $this->renderDecisions(2025);
+
+        self::assertStringContainsString('Cela inclut les articles qui ont été soumis antérieurement et acceptés cette année.', $html);
+        self::assertStringContainsString('Cela inclut les articles qui ont été soumis antérieurement et refusés cette année.', $html);
+    }
+
+    public function testWithoutYearTheAcceptedArticlesDoNotMentionTheYear(): void
+    {
+        $this->useLanguage('fr');
+
+        $html = $this->renderDecisions(null);
+
+        self::assertStringContainsString('Cela inclut les articles qui ont déjà été publiés', $html);
+        self::assertStringNotContainsString('acceptés cette année', $html);
+    }
+
+    public function testByYearTheAcceptedArticlesAreExplainedInEnglish(): void
+    {
+        $this->useLanguage('en');
+
+        $html = $this->renderDecisions(2025);
+
+        self::assertStringContainsString('This includes articles that were previously submitted and accepted this year.', $html);
+        self::assertStringContainsString('This includes articles that have already been published', $html);
+    }
 }

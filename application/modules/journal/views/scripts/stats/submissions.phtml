@@ -88,6 +88,14 @@ $rateNotes = [
 
                         <?php if ($this->allAcceptations) : ?>
 
+                            <?php if ($isYear):
+                                // by year, the API counts the decisions taken in the year, as for the refused articles
+                                $acceptedTooltipInfo = $this->translate("Cela inclut les articles qui ont été soumis antérieurement et acceptés cette année.")
+                                        . ' ' .
+                                        $this->translate($acceptedTooltipInfo);
+                                ?>
+                            <?php endif; ?>
+
                             <?= $this->partial('stats/stat-item.phtml', [
                                     'itemLabel' => 'articles acceptés',
                                     'itemValue' => $this->allAcceptations,
