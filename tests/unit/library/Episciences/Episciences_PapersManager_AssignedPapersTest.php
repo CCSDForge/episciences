@@ -43,40 +43,47 @@ final class Episciences_PapersManager_AssignedPapersTest extends TestCase
         $this->db->rollBack();
     }
 
-    private function insertAssignment(int $uid, string $status, string $date): void
-    {
+    private function insertAssignment(
+        int $uid,
+        string $status,
+        string $date,
+        string $roleId = Episciences_User_Assignment::ROLE_EDITOR
+    ): void {
         $this->db->insert(T_ASSIGNMENTS, [
             'RVID' => RVID,
             'ITEMID' => self::DOCID,
             'ITEM' => Episciences_User_Assignment::ITEM_PAPER,
             'UID' => $uid,
             'TMP_USER' => 0,
-            'ROLEID' => Episciences_User_Assignment::ROLE_EDITOR,
+            'ROLEID' => $roleId,
             'STATUS' => $status,
             'WHEN' => $date,
         ]);
     }
 
     /**
+     * @param int[] $uid
+     * @param string|string[] $roleId
      * @return array<int, array<string, mixed>> the rows of the paper
      */
-    private function assignedPapers(array $uid): array
+    private function assignedPapers(array $uid, $roleId = Episciences_User_Assignment::ROLE_EDITOR): array
     {
         $query = new ReflectionMethod(Episciences_PapersManager::class, 'fetchLastPaperAssignmentForSelectedRoleQuery');
-        $rows = $this->db->fetchAll($query->invoke(null, $uid, Episciences_User_Assignment::ROLE_EDITOR));
+        $rows = $this->db->fetchAll($query->invoke(null, $uid, $roleId));
 
         return array_values(array_filter($rows, static fn(array $row): bool => (int)$row['DOCID'] === self::DOCID));
     }
 
     /**
-     * @return int[] the editors of the paper found by the search
+     * @param string|string[] $roleId
+     * @return int[] the users of the paper found by the search
      */
-    private function searchedEditors(): array
+    private function searchedUsers($roleId = Episciences_User_Assignment::ROLE_EDITOR): array
     {
-        $editors = array_map('intval', array_column($this->assignedPapers([]), 'UID_ROLE'));
-        sort($editors);
+        $users = array_map('intval', array_column($this->assignedPapers([], $roleId), 'UID_ROLE'));
+        sort($users);
 
-        return $editors;
+        return $users;
     }
 
     private function insertEditorAssignedFirstThenAnotherOneRemoved(): void
@@ -100,7 +107,7 @@ final class Episciences_PapersManager_AssignedPapersTest extends TestCase
         $this->insertEditorAssignedFirstThenAnotherOneRemoved();
         $this->insertAssignment(self::THIRD_EDITOR, Episciences_User_Assignment::STATUS_ACTIVE, '2024-04-01 10:00:00');
 
-        $this->assertSame([self::FIRST_EDITOR, self::THIRD_EDITOR], $this->searchedEditors());
+        $this->assertSame([self::FIRST_EDITOR, self::THIRD_EDITOR], $this->searchedUsers());
     }
 
     public function testTheEditorsAssignedTogetherAreAllFound(): void
@@ -108,7 +115,7 @@ final class Episciences_PapersManager_AssignedPapersTest extends TestCase
         $this->insertAssignment(self::FIRST_EDITOR, Episciences_User_Assignment::STATUS_ACTIVE, '2024-01-01 10:00:00');
         $this->insertAssignment(self::SECOND_EDITOR, Episciences_User_Assignment::STATUS_ACTIVE, '2024-01-01 10:00:00');
 
-        $this->assertSame([self::FIRST_EDITOR, self::SECOND_EDITOR], $this->searchedEditors());
+        $this->assertSame([self::FIRST_EDITOR, self::SECOND_EDITOR], $this->searchedUsers());
     }
 
     public function testAnEditorUnassignedInTheSameSecondIsNotFound(): void
@@ -116,6 +123,29 @@ final class Episciences_PapersManager_AssignedPapersTest extends TestCase
         $this->insertAssignment(self::FIRST_EDITOR, Episciences_User_Assignment::STATUS_ACTIVE, '2024-01-01 10:00:00');
         $this->insertAssignment(self::FIRST_EDITOR, Episciences_User_Assignment::STATUS_INACTIVE, '2024-01-01 10:00:00');
 
-        $this->assertSame([], $this->searchedEditors());
+        $this->assertSame([], $this->searchedUsers());
+    }
+
+    public function testAnEditorRemovedAsReviewerIsStillFoundAsEditor(): void
+    {
+        $this->insertAssignment(self::FIRST_EDITOR, Episciences_User_Assignment::STATUS_ACTIVE, '2024-01-01 10:00:00');
+        $this->insertAssignment(
+            self::FIRST_EDITOR,
+            Episciences_User_Assignment::STATUS_ACTIVE,
+            '2024-02-01 10:00:00',
+            Episciences_User_Assignment::ROLE_REVIEWER
+        );
+        $this->insertAssignment(
+            self::FIRST_EDITOR,
+            Episciences_User_Assignment::STATUS_INACTIVE,
+            '2024-03-01 10:00:00',
+            Episciences_User_Assignment::ROLE_REVIEWER
+        );
+
+        // the roles searched by name
+        $this->assertSame(
+            [self::FIRST_EDITOR],
+            $this->searchedUsers([Episciences_User_Assignment::ROLE_EDITOR, Episciences_User_Assignment::ROLE_REVIEWER])
+        );
     }
 }
