@@ -94,7 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#1404](https://github.com/CCSDForge/episciences/pull/1404): Reviewer invitations: the latest answer of an invitation is the latest row saved, not the row with the latest date, so that an answer saved in the same second as the invitation is no longer ignored (reviewers of a paper, pending temporary reviewers, reminders before the reviewing deadline). Likewise, the status of a reviewer of a paper is the one of their latest assignment row, not of the row with the latest date.
+- [#1404](https://github.com/CCSDForge/episciences/pull/1404): Reviewer invitations: the latest answer of an invitation is the latest row saved, not the row with the latest date, so that an answer saved in the same second as the invitation is no longer ignored (reviewers of a paper, pending temporary reviewers, reminders before the reviewing deadline).
 - [#1411](https://github.com/CCSDForge/episciences/pull/1411): Logging in: the return address sent to the CAS server only keeps the parameters of the login address, as the page displayed after logging in already does. The local authentication only reads the posted login form.
 - Paper page, revision request: the "Contact the editors" answer (without a new version) is no longer offered while the final version is awaited, as intended; the paper page passed this rule to the answer form under a wrong name, so it was always offered (`paper/view.phtml`).
 - bioRxiv / medRxiv submission: the submission no longer fails when a reference of the preprint is plain text (authors not tagged); its full text is kept. A preprint with a single reference no longer loses it (`Episciences_Repositories_BioMedRxiv::referencesProcess()`).

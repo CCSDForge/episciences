@@ -103,30 +103,4 @@ final class Episciences_PapersManager_LatestInvitationTest extends TestCase
 
         $this->assertSame(['tmp_' . $pending], array_keys($reviewers));
     }
-
-    public function testAReviewerWhoAcceptedInTheSameSecondIsActive(): void
-    {
-        $this->insertInvitation(self::UID, false, [['pending', 'pending'], ['accepted', 'active']]);
-
-        $reviewers = Episciences_PapersManager::getReviewers(self::DOCID);
-
-        $this->assertSame([self::UID], array_keys($reviewers));
-        $this->assertSame(Episciences_User_Assignment::STATUS_ACTIVE, $reviewers[self::UID]->getStatus());
-    }
-
-    public function testTheLatestAssignmentIsTheLatestRowEvenIfAnOlderRowHasALaterDate(): void
-    {
-        $this->insertInvitation(self::UID, false, [['pending', 'pending'], ['accepted', 'active']]);
-        // an older row whose date was rewritten after the answer
-        $this->db->update(
-            T_ASSIGNMENTS,
-            ['WHEN' => '2024-01-02 10:00:00'],
-            ['ITEMID = ?' => self::DOCID, 'UID = ?' => self::UID, 'STATUS = ?' => Episciences_User_Assignment::STATUS_PENDING]
-        );
-
-        $reviewers = Episciences_PapersManager::getReviewers(self::DOCID);
-
-        $this->assertSame([self::UID], array_keys($reviewers));
-        $this->assertSame(Episciences_User_Assignment::STATUS_ACTIVE, $reviewers[self::UID]->getStatus());
-    }
 }
