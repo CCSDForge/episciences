@@ -4,6 +4,9 @@
 
 # Testing Configuration
 PHPUNIT_CONFIG := phpunit.xml
+# PHPUnit uses the test databases when their configuration exists (make test-config), config/pwd.json otherwise
+TEST_CONFIG_DIR := tests/config
+PHPUNIT_PWD_PATH = $(if $(wildcard $(TEST_CONFIG_DIR)/pwd.json),-e PWD_PATH=$(CNTR_APP_DIR)/$(TEST_CONFIG_DIR))
 JEST_CONFIG := jest.config.js
 
 # =============================================================================
@@ -37,9 +40,10 @@ test-php: ## Run PHP tests (PHPUnit, usage: make test-php [SUITE=unit|integratio
 	@echo "Running PHP tests..."
 	@if [ -f $(PHPUNIT_CONFIG) ]; then \
 		echo "Using PHPUnit configuration: $(PHPUNIT_CONFIG)"; \
+		echo "Using database configuration: $(if $(PHPUNIT_PWD_PATH),$(TEST_CONFIG_DIR)/pwd.json (test databases),config/pwd.json (run make test-db-reset test-config to use the test databases))"; \
 		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/build && \
 		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod 777 $(CNTR_APP_DIR)/build; \
-		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=off -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit --no-coverage $(if $(SUITE),--testsuite $(SUITE)) $(if $(FILTER),--filter $(FILTER)); \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=off $(PHPUNIT_PWD_PATH) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit --no-coverage $(if $(SUITE),--testsuite $(SUITE)) $(if $(FILTER),--filter $(FILTER)); \
 	else \
 		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP tests"; \
 	fi
@@ -83,7 +87,7 @@ test-coverage: ## Run all tests with coverage (where available)
 	@echo "================================"
 	@echo "PHP Tests:"
 	@if [ -f $(PHPUNIT_CONFIG) ]; then \
-		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=coverage -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit || true; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=coverage $(PHPUNIT_PWD_PATH) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit || true; \
 	else \
 		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP coverage"; \
 	fi
@@ -111,6 +115,32 @@ test-setup-php: ## Setup PHP test environment
 		echo "✅ PHPUnit configuration found"; \
 	fi
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) composer install --dev
+
+# PHPUnit test databases, recreated from the CI fixtures (.github/workflows/ci.yml, "Setup test database")
+TEST_DB_CNTR := episciences-db-episciences
+TEST_DB_HOST := db-episciences
+TEST_DB_NAME := test_episciences
+TEST_DB_AUTH_NAME := test_episciences_auth
+TEST_SQL_SCHEMA := tests/fixtures/schema-episciences.sql
+TEST_SQL_SEED := tests/fixtures/seed.sql
+TEST_SQL_AUTH := tests/fixtures/schema-cas.sql
+# The root password is read inside the container, never on the host command line
+TEST_MYSQL = $(DOCKER) exec -i $(TEST_DB_CNTR) sh -c 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" exec mysql -h 127.0.0.1 -u root "$$@"' mysql
+
+.PHONY: test-db-reset test-config
+
+test-db-reset: ## Recreate the PHPUnit test databases from tests/fixtures, as the CI does (run it after a change of tests/fixtures/*.sql)
+	@case "$(TEST_DB_NAME)/$(TEST_DB_AUTH_NAME)" in test_*/test_*) ;; *) echo "❌ Refusing: the test database names must start with test_"; exit 1;; esac
+	@until $(DOCKER) exec $(TEST_DB_CNTR) mysqladmin ping -h localhost --silent; do echo "Waiting for $(TEST_DB_CNTR)..."; sleep 2; done
+	@echo "Recreating $(TEST_DB_NAME) and $(TEST_DB_AUTH_NAME)..."
+	@$(TEST_MYSQL) -e "DROP DATABASE IF EXISTS \`$(TEST_DB_NAME)\`; CREATE DATABASE \`$(TEST_DB_NAME)\`; DROP DATABASE IF EXISTS \`$(TEST_DB_AUTH_NAME)\`; CREATE DATABASE \`$(TEST_DB_AUTH_NAME)\`;"
+	@$(TEST_MYSQL) $(TEST_DB_NAME) < $(TEST_SQL_SCHEMA)
+	@$(TEST_MYSQL) $(TEST_DB_NAME) < $(TEST_SQL_SEED)
+	@$(TEST_MYSQL) $(TEST_DB_AUTH_NAME) < $(TEST_SQL_AUTH)
+	@echo "✅ Test databases recreated from tests/fixtures: $$($(TEST_MYSQL) -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$(TEST_DB_NAME)'") tables in $(TEST_DB_NAME)"
+
+test-config: ## Generate the test configuration (tests/config, data/default, data/dev) pointing to the test databases; existing files are kept
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e DB_HOST=$(TEST_DB_HOST) -e DB_NAME=$(TEST_DB_NAME) -e DB_AUTH_NAME=$(TEST_DB_AUTH_NAME) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php .github/scripts/setup-test-config.php
 
 test-setup-js: ## Setup JavaScript test environment
 	@echo "Setting up JavaScript test environment..."

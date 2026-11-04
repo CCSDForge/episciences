@@ -6,6 +6,9 @@
 ## Quick start
 
 ```bash
+# Once, then after each change of tests/fixtures/*.sql: create the test databases and their configuration
+make test-db-reset test-config
+
 # Run all tests (PHP + JavaScript)
 make test
 
@@ -28,6 +31,27 @@ make test-js
 # End-to-end tests (Playwright), see tests/e2e/README.md
 yarn test:e2e
 ```
+
+## Test databases
+
+The PHP tests run against two dedicated databases on the `episciences-db-episciences` container,
+`test_episciences` and `test_episciences_auth`, built from `tests/fixtures/` as in the CI
+(`.github/workflows/ci.yml`, "Setup test database"):
+
+| Command | Effect |
+|---|---|
+| `make test-db-reset` | Drops and recreates both databases from `schema-episciences.sql`, `seed.sql` and `schema-cas.sql`. Refuses database names not starting with `test_`. |
+| `make test-config` | Runs `.github/scripts/setup-test-config.php`: writes `tests/config/pwd.json`, `tests/config/env-test.php` (`RVCODE=dev`), `data/default` and `data/dev`, all git-ignored. Existing files are kept. |
+
+When `tests/config/pwd.json` exists, `make test-php` and `make test-coverage` pass
+`PWD_PATH=tests/config` to PHPUnit, so the tests use the test databases; otherwise they use
+`config/pwd.json` (the development databases), as before. The command prints which one is used.
+
+Run `make test-db-reset` again after any change of `tests/fixtures/*.sql`, or when a test fails
+with `Table 'test_episciences.…' doesn't exist` (or an unknown column) while the CI passes: the
+CI recreates its database on each run, nothing does it locally. The test databases are shared by
+every checkout and worktree using the same Docker stack: do not reset them while tests are running
+elsewhere.
 
 ## PHP tests (PHPUnit)
 

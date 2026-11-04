@@ -68,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1163](https://github.com/CCSDForge/episciences/pull/1163): Display bibliographic references count in `papers:update-document` with `-vv`.
 - [#1214](https://github.com/CCSDForge/episciences/pull/1214) Add volume editors to CrossRef XML export. When a paper belongs to a volume with assigned editors, their names and ORCID identifiers are now included in the `<journal_issue><contributors>` block.
 - [#1392](https://github.com/CCSDForge/episciences/pull/1392): Statistics page: the journal administrators can view the invitations ("Reviews requested": date of sending, answer) and the reports ("Reviews received": date of validation) counted by the evaluation figures, one row by invitation or by report, without the reviewers, with the CSV export of the lists of papers. The reviews of the papers with a declared conflict of interest are not listed, only counted. Requires the matching Episciences API version (`withPapers` on the evaluation statistics).
+- Tests: `make test-db-reset` recreates the local PHPUnit test databases from `tests/fixtures/` as the CI does, and `make test-config` generates their configuration; `make test-php` and `make test-coverage` use the test databases when `tests/config/pwd.json` exists.
 
 ### Changed
 
