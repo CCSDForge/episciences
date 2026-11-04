@@ -30,6 +30,7 @@ use Zend_Db_Table_Abstract;
  * @covers Episciences_PapersManager::getCopyEditors
  * @covers Episciences_User_AssignmentsManager::getList
  * @covers Episciences_Reviewer::fetchPaperReviewerAssignmentsQuery
+ * @covers Episciences_Reviewer::loadAssignments
  * @covers Episciences_User::disableAssignmentsForRemovedRoles
  * @covers Episciences_User::deleteLocalData
  * @covers Episciences_VolumesManager::fetchVolumeEditorRows
@@ -358,5 +359,38 @@ final class Episciences_LatestAssignmentTest extends TestCase
         $docIds = array_map('intval', $this->db->fetchCol($query->invoke(null, $reviewer)));
 
         $this->assertContains(self::DOCID, $docIds);
+    }
+
+    /**
+     * A reviewer with an account accepted, then a temporary reviewer with the same id was invited to the same paper
+     */
+    private function insertTemporaryReviewerWithTheSameId(): void
+    {
+        $reviewer = Episciences_User_Assignment::ROLE_REVIEWER;
+        $this->insertAssignments($reviewer, [Episciences_User_Assignment::STATUS_ACTIVE]);
+        $this->insertAssignments($reviewer, [Episciences_User_Assignment::STATUS_PENDING], self::UID, Episciences_User_Assignment::ITEM_PAPER, self::DOCID, RVID, 1);
+    }
+
+    public function testATemporaryReviewerDoesNotHideThePapersOfAReviewerWithTheSameId(): void
+    {
+        $this->insertTemporaryReviewerWithTheSameId();
+
+        $reviewer = new Episciences_Reviewer();
+        $reviewer->setUid(self::UID);
+        $query = new ReflectionMethod(Episciences_Reviewer::class, 'fetchPaperReviewerAssignmentsQuery');
+
+        $this->assertSame([Episciences_User_Assignment::STATUS_ACTIVE], array_column($this->db->fetchAll($query->invoke($reviewer)), 'STATUS'));
+    }
+
+    public function testATemporaryReviewerDoesNotHideTheAssignmentsOfAReviewerWithTheSameId(): void
+    {
+        $this->insertTemporaryReviewerWithTheSameId();
+
+        $reviewer = new Episciences_Reviewer();
+        $reviewer->setUid(self::UID);
+        $reviewer->loadAssignments();
+        $statuses = array_map(static fn(Episciences_User_Assignment $assignment): string => $assignment->getStatus(), $reviewer->getAssignments());
+
+        $this->assertSame([self::DOCID => Episciences_User_Assignment::STATUS_ACTIVE], $statuses);
     }
 }
