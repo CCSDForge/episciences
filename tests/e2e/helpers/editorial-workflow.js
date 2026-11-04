@@ -89,6 +89,25 @@ async function applyDecision(page, docid, decision) {
 }
 
 /**
+ * Sends the invitation e-mail shown at step 2 of the invitation page.
+ * The page fills the message once its TinyMCE editor is initialised, after step 2 is shown:
+ * submitting before fails the form validation (empty message, no %%INVITATION_URL%% tag)
+ * and the page stays on the form.
+ * @param {import('@playwright/test').Page} page editorial page
+ * @param {number} docid
+ */
+async function submitInvitation(page, docid) {
+    await expect(page.locator('#step-2')).toBeVisible();
+    // getContent() throws until the editor is initialised, which would end the wait
+    await page.waitForFunction(() => {
+        const editor = window.tinymce?.get('body');
+        return Boolean(editor?.initialized) && editor.getContent().includes('%%INVITATION_URL%%');
+    });
+    await page.locator('#submit-invitation').click();
+    await page.waitForURL(new RegExp(`administratepaper/view\\?id=${docid}`));
+}
+
+/**
  * Invites a reviewer already known to the journal.
  * @param {import('@playwright/test').Page} page editorial page
  * @param {number} docid
@@ -100,9 +119,7 @@ async function inviteKnownReviewer(page, docid, username) {
     await expect(page).toHaveURL(/administratepaper\/invitereviewer/);
 
     await page.locator('#known-reviewers tbody tr', { hasText: username }).click();
-    await expect(page.locator('#step-2')).toBeVisible();
-    await page.locator('#submit-invitation').click();
-    await page.waitForURL(new RegExp(`administratepaper/view\\?id=${docid}`));
+    await submitInvitation(page, docid);
 }
 
 /**
@@ -124,10 +141,7 @@ async function inviteNewReviewer(page, docid, { email, lastname }) {
     await page.locator('#email').fill(email);
     await page.locator('#lastname').fill(lastname);
     await page.locator('#next').click();
-    await expect(page.locator('#step-2')).toBeVisible();
-
-    await page.locator('#submit-invitation').click();
-    await page.waitForURL(new RegExp(`administratepaper/view\\?id=${docid}`));
+    await submitInvitation(page, docid);
 }
 
 /**
