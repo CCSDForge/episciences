@@ -97,6 +97,25 @@ final class StatsFormulasViewTest extends TestCase
         self::assertStringContainsString('Médiane : la moitié des articles a un délai inférieur ou égal', $html);
     }
 
+    /**
+     * The API counts the refusals by submission: a refused paper submitted again is a new submission.
+     */
+    public function testTheRefusalsAreCountedBySubmission(): void
+    {
+        $this->useLanguage('fr');
+
+        foreach ([null, 2025] as $year) {
+            $html = $this->renderDecisions($year);
+
+            self::assertStringContainsString('Un seul rejet est comptabilisé par soumission. Un article refusé puis soumis à nouveau compte comme une nouvelle soumission.', $html);
+            self::assertStringNotContainsString('un seul rejet est comptabilisé par article', $html);
+        }
+
+        $this->useLanguage('en');
+
+        self::assertStringContainsString('Only one rejection is counted per submission. An article refused, then submitted again, counts as a new submission.', $this->renderDecisions(null));
+    }
+
     public function testTheExplanationsAreTranslatedInEnglish(): void
     {
         $this->useLanguage('en');
@@ -112,5 +131,46 @@ final class StatsFormulasViewTest extends TestCase
         self::assertStringContainsString('From the first submission to the latest acceptance', $delays);
         self::assertStringContainsString('Average: sum of the delays ÷ number of articles', $delays);
         self::assertStringContainsString('Median: half of the articles have a shorter or equal delay', $delays);
+    }
+
+    private function renderDecisions(?int $year): string
+    {
+        $view = $this->view();
+        $view->chart1Title = 'Soumissions';
+        $view->year = $year;
+        $view->allAcceptations = 12;
+        $view->allRefusals = 8;
+
+        return $view->render('stats/submissions.phtml');
+    }
+
+    public function testByYearTheAcceptedAndRefusedArticlesIncludeThoseSubmittedBefore(): void
+    {
+        $this->useLanguage('fr');
+
+        $html = $this->renderDecisions(2025);
+
+        self::assertStringContainsString('Cela inclut les articles qui ont été soumis antérieurement et acceptés cette année.', $html);
+        self::assertStringContainsString('Cela inclut les articles qui ont été soumis antérieurement et refusés cette année.', $html);
+    }
+
+    public function testWithoutYearTheAcceptedArticlesDoNotMentionTheYear(): void
+    {
+        $this->useLanguage('fr');
+
+        $html = $this->renderDecisions(null);
+
+        self::assertStringContainsString('Cela inclut les articles qui ont déjà été publiés', $html);
+        self::assertStringNotContainsString('acceptés cette année', $html);
+    }
+
+    public function testByYearTheAcceptedArticlesAreExplainedInEnglish(): void
+    {
+        $this->useLanguage('en');
+
+        $html = $this->renderDecisions(2025);
+
+        self::assertStringContainsString('This includes articles that were previously submitted and accepted this year.', $html);
+        self::assertStringContainsString('This includes articles that have already been published', $html);
     }
 }

@@ -2382,6 +2382,7 @@ return array(
     "Cela inclut seulement les articles soumis cette année." => "This includes only articles submitted this year.",
     "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were previously submitted and published this year.",
     "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and rejected this year.",
+    "Cela inclut les articles qui ont été soumis antérieurement et acceptés cette année." => "This includes articles that were previously submitted and accepted this year.",
     "Cela inclut les autres statuts." => "This includes other status.",
     "Cela inclut les articles qui ont été soumis antérieurement" => 'This includes articles that were previously submitted',
     "articles acceptés (soumis la même année)" => "accepted articles (submitted in the same year)",
@@ -2424,7 +2425,7 @@ return array(
     'délai soumission-acceptation' => 'Submission-acceptance time',
     'délai soumission-publication' => 'Submission-publication time',
     'Cela inclut les articles qui ont déjà été publiés' => 'This includes articles that have already been published',
-    'La revue peut rejeter plusieurs fois le même article. Dans ce cas, un seul rejet est comptabilisé par article.' => 'The journal may reject the same article several times. In this case, only one rejection is counted per article.',
+    'Un seul rejet est comptabilisé par soumission. Un article refusé puis soumis à nouveau compte comme une nouvelle soumission.' => 'Only one rejection is counted per submission. An article refused, then submitted again, counts as a new submission.',
     // datasets
     'administratelinkeddata-addld' => 'Add a related work',
     'administratelinkeddata-removeld' => 'Remove a related work',
