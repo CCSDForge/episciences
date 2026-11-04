@@ -1,0 +1,120 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Episciences\Paper\Funding;
+
+/**
+ * One normalized funding of a paper, whatever its source (OpenAIRE Graph, HAL, Dataverse, ...).
+ *
+ * Every property is null when unknown: the "unidentified" placeholder stored in
+ * paper_projects never reaches this object. Shared by the Crossref and OpenAIRE
+ * exports and by the DOCUMENT JSON, so the three always describe the same fundings.
+ */
+final class FundingReference
+{
+    public function __construct(
+        public readonly ?string $funderName = null,
+        public readonly ?string $funderCrossrefId = null,
+        public readonly ?string $funderRor = null,
+        public readonly ?string $fundingStream = null,
+        public readonly ?string $awardNumber = null,
+        public readonly ?string $awardTitle = null,
+        public readonly ?string $awardAcronym = null,
+        public readonly ?string $awardUri = null,
+        public readonly ?string $grantDoi = null,
+        public readonly ?string $callId = null,
+        public readonly ?string $openaireProjectId = null,
+        public readonly ?string $statement = null,
+    ) {
+    }
+
+    /**
+     * Crossref (fundref) and OpenAIRE (fundingReference) both require the funder name.
+     */
+    public function hasFunder(): bool
+    {
+        return $this->funderName !== null;
+    }
+
+    /**
+     * A free-text funding acknowledgement that could not be turned into a funder or an award.
+     */
+    public function isStatementOnly(): bool
+    {
+        return $this->statement !== null
+            && $this->funderName === null
+            && $this->awardNumber === null
+            && $this->awardTitle === null;
+    }
+
+    /**
+     * Key identifying the same funding coming from several sources.
+     * Null when there is not enough information to tell two fundings apart.
+     */
+    public function mergeKey(): ?string
+    {
+        if ($this->awardNumber !== null) {
+            return 'award:' . mb_strtolower($this->funderCrossrefId ?? $this->funderName ?? '') . '|' . mb_strtolower($this->awardNumber);
+        }
+
+        if ($this->grantDoi !== null) {
+            return 'doi:' . mb_strtolower($this->grantDoi);
+        }
+
+        return null;
+    }
+
+    /**
+     * Merge two descriptions of the same funding: values already known win, missing ones are filled.
+     */
+    public function mergeWith(self $other): self
+    {
+        return new self(
+            $this->funderName ?? $other->funderName,
+            $this->funderCrossrefId ?? $other->funderCrossrefId,
+            $this->funderRor ?? $other->funderRor,
+            $this->fundingStream ?? $other->fundingStream,
+            $this->awardNumber ?? $other->awardNumber,
+            $this->awardTitle ?? $other->awardTitle,
+            $this->awardAcronym ?? $other->awardAcronym,
+            $this->awardUri ?? $other->awardUri,
+            $this->grantDoi ?? $other->grantDoi,
+            $this->callId ?? $other->callId,
+            $this->openaireProjectId ?? $other->openaireProjectId,
+            $this->statement ?? $other->statement,
+        );
+    }
+
+    /**
+     * Public representation, exposed in PAPERS.DOCUMENT under database.current.fundings.
+     *
+     * @return array{
+     *     funder: array{name: ?string, crossref_funder_id: ?string, ror: ?string},
+     *     funding_stream: ?string,
+     *     award: array{number: ?string, title: ?string, acronym: ?string, uri: ?string, grant_doi: ?string, call_id: ?string, openaire_id: ?string},
+     *     statement: ?string
+     * }
+     */
+    public function toArray(): array
+    {
+        return [
+            'funder' => [
+                'name' => $this->funderName,
+                'crossref_funder_id' => $this->funderCrossrefId,
+                'ror' => $this->funderRor,
+            ],
+            'funding_stream' => $this->fundingStream,
+            'award' => [
+                'number' => $this->awardNumber,
+                'title' => $this->awardTitle,
+                'acronym' => $this->awardAcronym,
+                'uri' => $this->awardUri,
+                'grant_doi' => $this->grantDoi,
+                'call_id' => $this->callId,
+                'openaire_id' => $this->openaireProjectId,
+            ],
+            'statement' => $this->statement,
+        ];
+    }
+}

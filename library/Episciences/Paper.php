@@ -4,6 +4,8 @@ use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\Export;
+use Episciences\Paper\Funding\FundingReference;
+use Episciences\Paper\Funding\FundingReferenceFactory;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\Paper\Spdx\LicenseCodeManager;
@@ -1407,7 +1409,8 @@ class Episciences_Paper
         }
 
         $xmlToArray = $this->processDatasetsToJson($xmlToArray);
-        $this->processProjects($xmlToArray);
+        $fundingReferences = $this->getFundingReferences();
+        $this->processProjects($xmlToArray, $fundingReferences);
         $sPreviousVersions = $this->getPreviousVersionsToJson($journal);
 
         if ($this->getDocid()) {
@@ -1507,6 +1510,9 @@ class Episciences_Paper
                     'graphical_abstract_alt' => $this->getStoredCurrentStringToJson('graphical_abstract_alt'),
                     'graphical_abstract_license' => $this->getStoredCurrentStringToJson('graphical_abstract_license'),
                     'metrics' => Episciences_Paper_Visits::getPaperMetricsByPaperId($this->getPaperid()),
+                    'fundings' => $fundingReferences !== []
+                        ? array_map(static fn(FundingReference $reference): array => $reference->toArray(), $fundingReferences)
+                        : null,
 
                 ],
                 'latest_version_item_number' => (int)$this->getLatestVersionId(),
@@ -5274,6 +5280,18 @@ class Episciences_Paper
     }
 
     /**
+     * Fundings of the paper, normalized and merged across sources (OpenAIRE, HAL, ...),
+     * with funder identifiers when the funder is known.
+     *
+     * @return list<FundingReference>
+     * @throws JsonException
+     */
+    public function getFundingReferences(): array
+    {
+        return FundingReferenceFactory::fromStoredList($this->getFundings());
+    }
+
+    /**
      * @return array [Episciences_Paper_Dataset]
      */
 
@@ -5716,28 +5734,78 @@ class Episciences_Paper
         return null;
     }
 
-    private function processProjects(array &$data): void
+    /**
+     * Rebuild the "fundref" program decoded from the Crossref export, adding the project titles
+     * Crossref has no room for, so that each title stays in the fundgroup of its own funding.
+     *
+     * The decoded shape is kept (one fundgroup: an object, several: a list) for the clients
+     * still reading it; the complete data is exposed under database.current.fundings.
+     *
+     * @param list<FundingReference> $fundingReferences
+     */
+    private function processProjects(array &$data, array $fundingReferences): void
     {
-        $projectsInfo = Episciences_Paper_ProjectsManager::getProjectsByPaperId($this->getPaperid());
-        foreach ($projectsInfo as $pInfo) {
-            if (isset($pInfo['funding'])) {
-                try {
-                    $pInfoToArray = json_decode($pInfo['funding'], true, 512, JSON_THROW_ON_ERROR);
-                    foreach ($pInfoToArray as $index => $values) {
-                        if (isset($data[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][$index])) {
-                            $currentProgram = &$data[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][$index];
-                            if (isset($currentProgram['@name'], $values['projectTitle']) && $currentProgram['@name'] === 'fundref') {
-                                $currentProgram['assertion']['assertion'][] = ['@name' => 'project_title', '#' => $values['projectTitle']];
-                            }
-                        }
+        $body = Episciences_Paper_XmlExportManager::BODY_KEY;
 
-                    }
-                } catch (JsonException $e) {
-                    trigger_error($e->getMessage());
-                }
-            }
+        if (isset($data[$body][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'])) {
+            $programs = &$data[$body][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'];
+        } elseif (isset($data[$body][Episciences_Paper_XmlExportManager::CONFERENCE_KEY][Episciences_Paper_XmlExportManager::CONFERENCE_PAPER_KEY]['program'])) {
+            $programs = &$data[$body][Episciences_Paper_XmlExportManager::CONFERENCE_KEY][Episciences_Paper_XmlExportManager::CONFERENCE_PAPER_KEY]['program'];
+        } else {
+            return;
         }
 
+        if (!is_array($programs)) {
+            return;
+        }
+
+        $fundref = self::buildFundrefProgramToJson($fundingReferences);
+
+        if (($programs['@name'] ?? null) === 'fundref') {
+            $programs = $fundref;
+            return;
+        }
+
+        foreach ($programs as $index => $program) {
+            if (is_array($program) && ($program['@name'] ?? null) === 'fundref') {
+                $programs[$index] = $fundref;
+                return;
+            }
+        }
+    }
+
+    /**
+     * Same fundgroups as the Crossref export (fundings with a funder), each with its project title.
+     *
+     * @param list<FundingReference> $fundingReferences
+     * @return array<string, mixed>
+     */
+    private static function buildFundrefProgramToJson(array $fundingReferences): array
+    {
+        $fundGroups = [];
+
+        foreach ($fundingReferences as $reference) {
+            if (!$reference->hasFunder()) {
+                continue;
+            }
+
+            $assertions = [['@name' => 'funder_name', '#' => $reference->funderName]];
+
+            if ($reference->awardNumber !== null) {
+                $assertions[] = ['@name' => 'award_number', '#' => $reference->awardNumber];
+            }
+
+            if ($reference->awardTitle !== null) {
+                $assertions[] = ['@name' => 'project_title', '#' => $reference->awardTitle];
+            }
+
+            $fundGroups[] = ['@name' => 'fundgroup', 'assertion' => $assertions];
+        }
+
+        return [
+            '@name' => 'fundref',
+            'assertion' => count($fundGroups) === 1 ? $fundGroups[0] : $fundGroups,
+        ];
     }
 
 

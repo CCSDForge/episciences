@@ -1,0 +1,34 @@
+<?php
+/**
+ * OpenAIRE Literature Guidelines v4 fundingReferences.
+ *
+ * @var Zend_View $this
+ * @var list<\Episciences\Paper\Funding\FundingReference> $fundingReferences
+ */
+$fundingReferences = $this->fundingReferences ?? [];
+// OpenAIRE allows a single fundingReferences element, and every fundingReference needs a funderName
+$openaireFundings = array_filter($fundingReferences, static fn($reference) => $reference->hasFunder());
+?>
+<?php if (!empty($openaireFundings)): ?>
+    <oaire:fundingReferences>
+        <?php foreach ($openaireFundings as $fundingReference) : ?>
+            <oaire:fundingReference>
+                <oaire:funderName><?= $this->escape($fundingReference->funderName) ?></oaire:funderName>
+                <?php if ($fundingReference->funderCrossrefId !== null) : ?>
+                    <oaire:funderIdentifier funderIdentifierType="Crossref Funder ID"><?= $this->escape($fundingReference->funderCrossrefId) ?></oaire:funderIdentifier>
+                <?php elseif ($fundingReference->funderRor !== null) : ?>
+                    <oaire:funderIdentifier funderIdentifierType="ROR"><?= $this->escape($fundingReference->funderRor) ?></oaire:funderIdentifier>
+                <?php endif; ?>
+                <?php if ($fundingReference->fundingStream !== null) : ?>
+                    <oaire:fundingStream><?= $this->escape($fundingReference->fundingStream) ?></oaire:fundingStream>
+                <?php endif; ?>
+                <?php if ($fundingReference->awardNumber !== null) : ?>
+                    <oaire:awardNumber<?php if ($fundingReference->awardUri !== null) : ?> awardURI="<?= $this->escape($fundingReference->awardUri) ?>"<?php endif; ?>><?= $this->escape($fundingReference->awardNumber) ?></oaire:awardNumber>
+                <?php endif; ?>
+                <?php if ($fundingReference->awardTitle !== null) : ?>
+                    <oaire:awardTitle><?= $this->escape($fundingReference->awardTitle) ?></oaire:awardTitle>
+                <?php endif; ?>
+            </oaire:fundingReference>
+        <?php endforeach; ?>
+    </oaire:fundingReferences>
+<?php endif; ?>

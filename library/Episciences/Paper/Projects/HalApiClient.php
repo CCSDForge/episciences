@@ -13,8 +13,8 @@ class Episciences_Paper_Projects_HalApiClient
 {
     private const HAL_API_BASE       = 'https://api.archives-ouvertes.fr';
     private const EU_PROJECT_FIELDS  = 'projectTitle:title_s,acronym:acronym_s,code:reference_s,callId:callId_s,projectFinancing:financing_s';
-    private const ANR_PROJECT_FIELDS = 'projectTitle:title_s,acronym:acronym_s,code:reference_s';
-    private const ID_FIELDS          = 'europeanProjectId_i,anrProjectId_i';
+    private const ANR_PROJECT_FIELDS = 'projectTitle:title_s,acronym:acronym_s,code:reference_s,fundingStream:callTitle_s';
+    private const ID_FIELDS          = 'europeanProjectId_i,anrProjectId_i,funding_s';
 
     /**
      * Fetch European and ANR project IDs for a HAL document.

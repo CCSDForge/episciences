@@ -211,4 +211,52 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
         self::assertSame('Existing Project', $result[0]['projectTitle']);
         self::assertSame('New Project', $result[1]['projectTitle']);
     }
+
+    public function testFormatFundingOAForDBv3KeepsOpenAireIdAndGrantDoi(): void
+    {
+        $fileFound = [
+            [
+                'id'      => 'corda__h2020::2f32bdaa3c76066bd8267f3ac90ba898',
+                'code'    => '101017452',
+                'acronym' => 'OpenAIRE Nexus',
+                'title'   => 'OpenAIRE-Nexus Scholarly Communication Services for EOSC users',
+                'funder'  => 'European Commission',
+                'pids'    => [['scheme' => 'ark', 'value' => 'x'], ['scheme' => 'doi', 'value' => '10.3030/101017452']],
+            ],
+        ];
+
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, []);
+
+        self::assertSame('corda__h2020::2f32bdaa3c76066bd8267f3ac90ba898', $result[0]['openaireId']);
+        self::assertSame('10.3030/101017452', $result[0]['grantDoi']);
+    }
+
+    public function testFormatFundingOAForDBv3WithoutPidsHasNoGrantDoi(): void
+    {
+        $fileFound = [['id' => 'anr_________::abc', 'title' => 'T', 'pids' => null]];
+
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, []);
+
+        self::assertArrayNotHasKey('grantDoi', $result[0]);
+        self::assertSame('anr_________::abc', $result[0]['openaireId']);
+    }
+
+    // -------------------------------------------------------------------------
+    // resolveHalProjectIds() — free-text funding (funding_s)
+    // -------------------------------------------------------------------------
+
+    public function testResolveHalProjectIdsKeepsFreeTextFundingsInTheCallersShape(): void
+    {
+        $halDocs = [[
+            'funding_s' => ['Défi Clé CeBBOc program of Occitanie Region', '  ', 'ANR-22-CPJ1-0090-0'],
+        ]];
+
+        $result = Episciences_Paper_Projects_EnrichmentService::resolveHalProjectIds($halDocs, 'hal-05738053', []);
+
+        // callers keep the first entry of each element ($globalPreJson[0])
+        self::assertSame([
+            [['fundingStatement' => 'Défi Clé CeBBOc program of Occitanie Region']],
+            [['fundingStatement' => 'ANR-22-CPJ1-0090-0']],
+        ], $result);
+    }
 }

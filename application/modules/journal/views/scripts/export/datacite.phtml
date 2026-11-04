@@ -29,7 +29,7 @@
     $journalUrl = $journal->getUrl();
     $enrichmentAuthors = $paper->getAuthors();
     $enrichmentLicence = $paper->getLicence();
-    $enrichmentFundings = $paper->getFundings();
+    $fundingReferences = $paper->getFundingReferences();
     $enrichmentLinkedData = $paper->getLinkedData();
 
     $authorizedRelationType = [
@@ -107,28 +107,7 @@
         ?>
     </datacite:creators>
 
-    <?php if (!empty($enrichmentFundings)): ?>
-        <?php foreach ($enrichmentFundings as $fundingInfo) { ?>
-            <?php if ((is_array($fundingInfo) && array_key_exists(Export::FUNDER_NAME, $fundingInfo))): ?>
-                <?php if ($fundingInfo[Export::FUNDER_NAME] !== "unidentified" || $fundingInfo['code'] !== "unidentified" || $fundingInfo['projectTitle'] !== "unidentified") : ?>
-                    <oaire:fundingReferences>
-                        <oaire:fundingReference>
-                            <?php if ($fundingInfo[Export::FUNDER_NAME] !== "unidentified") : ?>
-                                <oaire:funderName><?= $this->escape($fundingInfo[Export::FUNDER_NAME]) ?></oaire:funderName>
-                            <?php endif; ?>
-                            <?php if ($fundingInfo['code'] !== "unidentified") : ?>
-                                <oaire:awardNumber><?= $this->escape($fundingInfo['code']) ?></oaire:awardNumber>
-                            <?php endif; ?>
-                            <?php if (isset($fundingInfo['projectTitle']) && $fundingInfo['projectTitle'] !== "unidentified") : ?>
-                                <oaire:awardTitle><?= $this->escape($fundingInfo['projectTitle']) ?></oaire:awardTitle>
-                            <?php endif; ?>
-                        </oaire:fundingReference>
-                    </oaire:fundingReferences>
-                <?php endif; ?>
-            <?php endif; ?>
-
-        <?php } ?>
-    <?php endif; ?>
+    <?= $this->partial('openaire-funding-references.phtml', ['fundingReferences' => $fundingReferences]) ?>
 
     <datacite:titles>
         <?php

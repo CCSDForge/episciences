@@ -136,6 +136,28 @@ class Episciences_Paper_Projects_EnrichmentService
                     );
                 }
             }
+
+            $accumulator = self::appendHalFundingStatements($halValue, $accumulator);
+        }
+        return $accumulator;
+    }
+
+    /**
+     * Free-text fundings typed by the HAL depositor (funding_s), outside the ANR/EU project referentials.
+     * Each one is wrapped like a referential response (a list of one entry), the shape the callers expect.
+     *
+     * @param array<string, mixed> $halDoc
+     * @param array<int, mixed> $accumulator
+     * @return array<int, mixed>
+     */
+    private static function appendHalFundingStatements(array $halDoc, array $accumulator): array
+    {
+        foreach ((array) ($halDoc['funding_s'] ?? []) as $statement) {
+            if (!is_string($statement) || trim($statement) === '') {
+                continue;
+            }
+            self::logInfo('Free-text funding found on HAL: ' . $statement);
+            $accumulator[] = [['fundingStatement' => trim($statement)]];
         }
         return $accumulator;
     }
@@ -169,7 +191,7 @@ class Episciences_Paper_Projects_EnrichmentService
     }
 
     /**
-     * Map a single v3 project entry ({title, acronym, code, funder}) to the DB funding structure.
+     * Map a single v3 project entry ({id, title, acronym, code, funder, pids}) to the DB funding structure.
      * 'funder' may be a scalar name (current REST serialization) or a Data Model object
      * ({name, shortName, jurisdiction, fundingStream}); both are supported.
      *
@@ -194,7 +216,38 @@ class Episciences_Paper_Projects_EnrichmentService
             $fundingArray['funderName'] = $funder['name'];
         }
 
+        // the identifier prefix tells the funder and the funding stream (e.g. "corda__h2020::...")
+        if (is_string($entry['id'] ?? null) && $entry['id'] !== '') {
+            $fundingArray['openaireId'] = $entry['id'];
+        }
+
+        $grantDoi = self::extractGrantDoi($entry['pids'] ?? null);
+        if ($grantDoi !== null) {
+            $fundingArray['grantDoi'] = $grantDoi;
+        }
+
         return $fundingArray;
+    }
+
+    /**
+     * Grant DOI of a v3 project entry, from its pids ([{scheme: "doi", value: "10.3030/101017452"}]).
+     */
+    private static function extractGrantDoi(mixed $pids): ?string
+    {
+        if (!is_array($pids)) {
+            return null;
+        }
+        foreach ($pids as $pid) {
+            if (
+                is_array($pid)
+                && strtolower((string) ($pid['scheme'] ?? '')) === 'doi'
+                && is_string($pid['value'] ?? null)
+                && $pid['value'] !== ''
+            ) {
+                return $pid['value'];
+            }
+        }
+        return null;
     }
 
     /**

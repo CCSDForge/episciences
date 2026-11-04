@@ -1,0 +1,23 @@
+<?php
+/**
+ * Crossref "fundref" program (schema 5.3.1: funder_name, funder_identifier, award_number).
+ *
+ * @var Zend_View $this
+ * @var list<\Episciences\Paper\Funding\FundingReference> $fundingReferences
+ */
+$fundingReferences = $this->fundingReferences ?? [];
+// Crossref requires a funder name in every fundgroup; an identifier must be nested in its funder_name
+$crossrefFundings = array_filter($fundingReferences, static fn($reference) => $reference->hasFunder());
+?>
+<?php if (!empty($crossrefFundings)): ?>
+    <program name="fundref" xmlns="http://www.crossref.org/fundref.xsd">
+        <?php foreach ($crossrefFundings as $fundingReference) : ?>
+            <assertion name="fundgroup">
+                <assertion name="funder_name"><?= $this->escape($fundingReference->funderName) ?><?php if ($fundingReference->funderCrossrefId !== null) : ?><assertion name="funder_identifier"><?= $this->escape($fundingReference->funderCrossrefId) ?></assertion><?php endif; ?></assertion>
+                <?php if ($fundingReference->awardNumber !== null) : ?>
+                    <assertion name="award_number"><?= $this->escape($fundingReference->awardNumber) ?></assertion>
+                <?php endif; ?>
+            </assertion>
+        <?php endforeach; ?>
+    </program>
+<?php endif; ?>

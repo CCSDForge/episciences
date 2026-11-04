@@ -1,0 +1,249 @@
+<?php
+
+declare(strict_types=1);
+
+namespace unit\library\Episciences\Paper\Funding;
+
+use Episciences\Paper\Funding\FundingReference;
+use Episciences\Paper\Funding\FundingReferenceFactory;
+use PHPUnit\Framework\TestCase;
+
+final class FundingReferenceFactoryTest extends TestCase
+{
+    public function testOpenAireEntryGetsIdentifiersStreamAndGrantDoi(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'projectTitle' => 'OpenAIRE-Nexus Scholarly Communication Services for EOSC users',
+            'acronym' => 'OpenAIRE Nexus',
+            'code' => '101017452',
+            'funderName' => 'European Commission',
+            'openaireId' => 'corda__h2020::2f32bdaa3c76066bd8267f3ac90ba898',
+            'grantDoi' => '10.3030/101017452',
+        ]]);
+
+        self::assertCount(1, $references);
+        $reference = $references[0];
+        self::assertSame('European Commission', $reference->funderName);
+        self::assertSame('https://doi.org/10.13039/501100000780', $reference->funderCrossrefId);
+        self::assertSame('https://ror.org/00k4n6c32', $reference->funderRor);
+        self::assertSame('Horizon 2020 Framework Programme', $reference->fundingStream);
+        self::assertSame('101017452', $reference->awardNumber);
+        self::assertSame('OpenAIRE-Nexus Scholarly Communication Services for EOSC users', $reference->awardTitle);
+        self::assertSame('OpenAIRE Nexus', $reference->awardAcronym);
+        self::assertSame('10.3030/101017452', $reference->grantDoi);
+        self::assertSame('https://doi.org/10.3030/101017452', $reference->awardUri);
+    }
+
+    public function testHalEuropeanEntryGetsStreamFromFinancingAndCordisUri(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'projectTitle' => 'Multisensory-Based Spatial Sound',
+            'acronym' => 'MULTISSOUND',
+            'funderName' => 'European Commission',
+            'code' => '659114',
+            'callId' => 'H2020-MSCA-IF-2014',
+            'projectFinancing' => 'H2020',
+        ]]);
+
+        self::assertSame('Horizon 2020 Framework Programme', $references[0]->fundingStream);
+        self::assertSame('H2020-MSCA-IF-2014', $references[0]->callId);
+        self::assertSame('https://cordis.europa.eu/project/id/659114', $references[0]->awardUri);
+    }
+
+    public function testNoCordisUriWhenTheFrameworkProgrammeIsUnknown(): void
+    {
+        // a source may file a non-CORDIS award under the European Commission
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'European Commission',
+            'code' => '10066667',
+        ]]);
+
+        self::assertNull($references[0]->fundingStream);
+        self::assertNull($references[0]->awardUri);
+    }
+
+    public function testFinancingIsNotAStreamForAnotherFunder(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'Some Funder',
+            'code' => '42',
+            'projectFinancing' => 'H2020',
+        ]]);
+
+        self::assertNull($references[0]->fundingStream);
+        self::assertNull($references[0]->awardUri);
+        self::assertNull($references[0]->funderCrossrefId);
+    }
+
+    public function testUnidentifiedPlaceholdersBecomeNull(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'projectTitle' => 'unidentified',
+            'acronym' => 'unidentified',
+            'funderName' => 'French National Research Agency (ANR)',
+            'code' => 'ANR-22-CE45-0024',
+            'fundingStream' => 'unidentified',
+        ]]);
+
+        $reference = $references[0];
+        self::assertNull($reference->awardTitle);
+        self::assertNull($reference->awardAcronym);
+        self::assertNull($reference->fundingStream);
+        self::assertSame('https://doi.org/10.13039/501100001665', $reference->funderCrossrefId);
+    }
+
+    public function testEntryWithNothingKnownIsDropped(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([
+            ['projectTitle' => 'unidentified', 'funderName' => 'unidentified', 'code' => 'unidentified'],
+            'not an array',
+        ]);
+
+        self::assertSame([], $references);
+    }
+
+    public function testAnrCodeWithoutFunderNameIsAttributedToAnr(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'unidentified',
+            'code' => 'ANR-11-IDEX-0004-02',
+        ]]);
+
+        self::assertSame('French National Research Agency (ANR)', $references[0]->funderName);
+        self::assertSame('https://ror.org/00rbzpz17', $references[0]->funderRor);
+    }
+
+    public function testFunderNameFromOpenAirePrefixWhenMissing(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'projectTitle' => 'A project',
+            'openaireId' => 'anr_________::0001f07df68762a26a20dbcf2019af4c',
+        ]]);
+
+        self::assertSame('French National Research Agency (ANR)', $references[0]->funderName);
+    }
+
+    public function testSameAwardFromTwoSourcesIsMergedAndCompleted(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([
+            // HAL
+            [
+                'projectTitle' => 'Modélisation ENERgétique',
+                'acronym' => 'ENERGENCE',
+                'funderName' => 'French National Research Agency (ANR)',
+                'code' => 'ANR-22-CE45-0024',
+                'fundingStream' => 'Appel à projets générique 2022',
+            ],
+            // OpenAIRE, other funder label for the same funder
+            [
+                'projectTitle' => 'Energetic modelling',
+                'funderName' => 'Agence Nationale de la Recherche',
+                'code' => 'ANR-22-CE45-0024',
+                'openaireId' => 'anr_________::abc',
+            ],
+        ]);
+
+        self::assertCount(1, $references);
+        self::assertSame('Modélisation ENERgétique', $references[0]->awardTitle, 'first source wins');
+        self::assertSame('Appel à projets générique 2022', $references[0]->fundingStream);
+        self::assertSame('anr_________::abc', $references[0]->openaireProjectId, 'missing values are filled');
+    }
+
+    public function testFreeTextStatementWithAnrCodeOnly(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([['fundingStatement' => 'ANR-22-CPJ1-0090-0']]);
+
+        self::assertCount(1, $references);
+        self::assertSame('ANR-22-CPJ1-0090-0', $references[0]->awardNumber);
+        self::assertSame('French National Research Agency (ANR)', $references[0]->funderName);
+        self::assertNull($references[0]->statement, 'the statement is nothing more than the code');
+    }
+
+    public function testFreeTextStatementWithoutCodeIsKeptAsStatement(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([
+            ['fundingStatement' => 'Défi Clé CeBBOc program of Occitanie Region'],
+        ]);
+
+        self::assertCount(1, $references);
+        self::assertTrue($references[0]->isStatementOnly());
+        self::assertFalse($references[0]->hasFunder());
+        self::assertSame('Défi Clé CeBBOc program of Occitanie Region', $references[0]->statement);
+    }
+
+    public function testFreeTextStatementQuotingAnrCodesGivesAwardsAndStatement(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([
+            ['fundingStatement' => 'Funded by ANR-19-CE23-0001 and anr-20-ce40-0002.'],
+        ]);
+
+        self::assertCount(3, $references);
+        self::assertSame('ANR-19-CE23-0001', $references[0]->awardNumber);
+        self::assertSame('ANR-20-CE40-0002', $references[1]->awardNumber);
+        self::assertTrue($references[2]->isStatementOnly());
+    }
+
+    public function testStatementCodeMergesWithStructuredAward(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([
+            ['funderName' => 'French National Research Agency (ANR)', 'code' => 'ANR-22-CE45-0024', 'projectTitle' => 'ENERGENCE'],
+            ['fundingStatement' => 'ANR-22-CE45-0024'],
+        ]);
+
+        self::assertCount(1, $references);
+        self::assertSame('ENERGENCE', $references[0]->awardTitle);
+    }
+
+    public function testDataverseUrlIsTheAwardUri(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'projectTitle' => 'Dataverse project',
+            'funderName' => 'unidentified',
+            'code' => 'unidentified',
+            'url' => 'https://example.org/project',
+        ]]);
+
+        self::assertSame('https://example.org/project', $references[0]->awardUri);
+    }
+
+    public function testNonHttpUrlIsIgnored(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'projectTitle' => 'Dataverse project',
+            'url' => 'javascript:alert(1)',
+        ]]);
+
+        self::assertNull($references[0]->awardUri);
+    }
+
+    public function testGrantDoiUrlIsNormalized(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'European Commission',
+            'code' => '101079608',
+            'grantDoi' => 'https://doi.org/10.3030/101079608',
+        ]]);
+
+        self::assertSame('10.3030/101079608', $references[0]->grantDoi);
+    }
+
+    public function testToArrayShape(): void
+    {
+        $reference = new FundingReference(funderName: 'European Commission', awardNumber: '1');
+
+        self::assertSame([
+            'funder' => ['name' => 'European Commission', 'crossref_funder_id' => null, 'ror' => null],
+            'funding_stream' => null,
+            'award' => [
+                'number' => '1',
+                'title' => null,
+                'acronym' => null,
+                'uri' => null,
+                'grant_doi' => null,
+                'call_id' => null,
+                'openaire_id' => null,
+            ],
+            'statement' => null,
+        ], $reference->toArray());
+    }
+}

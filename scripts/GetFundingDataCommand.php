@@ -22,6 +22,9 @@ use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 #[AsCommand(name: 'enrichment:funding', description: 'Enrich funding data from OpenAIRE Research Graph and HAL')]
 class GetFundingDataCommand extends Command
 {
+    /** Episciences_Paper::get() cache entries of the exports carrying fundings */
+    private const FUNDING_EXPORT_CACHE_METHODS = ['getCrossref', 'getOpenaire', 'getDatacite'];
+
     protected function configure(): void
     {
         $this
@@ -107,6 +110,7 @@ class GetFundingDataCommand extends Command
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
             $docId   = (int) $value['DOCID'];
+            $fundingRowsChanged = 0;
 
             // Process OpenAIRE funding for papers with DOI (all rows are already STATUS_PUBLISHED)
             if (!empty($value['DOI'])) {
@@ -141,7 +145,7 @@ class GetFundingDataCommand extends Command
                                 $paperId,
                                 (int) Episciences_Repositories::GRAPH_OPENAIRE_ID
                             );
-                            Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA(
+                            $fundingRowsChanged += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA(
                                 $globalfundingArray,
                                 $rowInDBGraph,
                                 $paperId
@@ -180,7 +184,7 @@ class GetFundingDataCommand extends Command
                                 $mergeArrayANREU[] = $globalPreJson[0];
                             }
                             $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, (int) Episciences_Repositories::HAL_REPO_ID);
-                            Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
+                            $fundingRowsChanged += Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
                         }
                     } catch (JsonException $e) {
                         $logger->error("JSON decode error for paper {$paperId} (HAL funding): " . $e->getMessage());
@@ -188,6 +192,10 @@ class GetFundingDataCommand extends Command
                         $logger->error("HAL funding error for paper {$paperId}: " . $e->getMessage());
                     }
                 }
+            }
+
+            if (!$dryRun && $fundingRowsChanged > 0) {
+                $this->refreshFundingConsumers($paperId, $docId, $logger);
             }
 
             if (!$dryRun) {
@@ -208,6 +216,27 @@ class GetFundingDataCommand extends Command
         $logger->info('Funding enrichment completed');
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Fundings are read by PAPERS.DOCUMENT (stored) and by the Crossref / OpenAIRE exports (cached):
+     * refresh the first and drop the cached exports, so the new fundings show up everywhere.
+     */
+    private function refreshFundingConsumers(int $paperId, int $docId, Logger $logger): void
+    {
+        try {
+            if (!Episciences_PapersManager::updateJsonDocumentData($docId)) {
+                $logger->error("DOCUMENT update failed for paper {$paperId} (docid {$docId}) after funding change");
+            }
+        } catch (\Throwable $e) {
+            $logger->error("DOCUMENT update failed for paper {$paperId} (docid {$docId}): " . get_class($e) . ': ' . $e->getMessage());
+        }
+
+        $metadataCache = new FilesystemAdapter(Episciences_Paper::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
+        $metadataCache->deleteItems(array_map(
+            static fn(string $method): string => $paperId . '-' . $method,
+            self::FUNDING_EXPORT_CACHE_METHODS
+        ));
     }
 
     private function bootstrap(): void
@@ -241,5 +270,9 @@ class GetFundingDataCommand extends Command
 
         Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
         Zend_Registry::set('Zend_Locale', new Zend_Locale('en'));
+
+        // Paper::toJson() (DOCUMENT refresh) needs a translator for the status labels;
+        // Episciences_Translation_Plugin::preDispatch() never runs in this command.
+        Zend_Registry::set('Zend_Translate', \Episciences\Translation\TranslatorFactory::create(PATH_TRANSLATION, null, 'auto'));
     }
 }
