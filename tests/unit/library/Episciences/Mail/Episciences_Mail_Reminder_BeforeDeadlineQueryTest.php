@@ -134,29 +134,77 @@ final class Episciences_Mail_Reminder_BeforeDeadlineQueryTest extends TestCase
     }
 
     /**
-     * @return int[] the UIDs returned by the query, on the deadline day (no delay, no repetition)
+     * @param string $date reference date of the reminder (default: the deadline day)
+     * @param int $delay days before the deadline
+     * @param int $repetition days between two reminders (0: a single reminder)
+     * @return int[] the UIDs returned by the query
      */
-    private function fetchRecipientUids(): array
+    private function fetchRecipientUids(string $date = self::DEADLINE, int $delay = 0, int $repetition = 0): array
     {
         $reminder = new Episciences_Mail_Reminder();
         $reminder->setRvid(RVID);
-        $reminder->setDelay(0);
-        $reminder->setRepetition(0);
+        $reminder->setDelay($delay);
+        $reminder->setRepetition($repetition);
 
         $query = new ReflectionMethod(Episciences_Mail_Reminder::class, 'getBeforeReviewingDeadlineQuery');
-        $sql = $query->invoke($reminder, $this->db->quote(self::DEADLINE), [Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper::STATUS_REFUSED]);
+        $sql = $query->invoke($reminder, $this->db->quote($date), [Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper::STATUS_REFUSED]);
 
         return array_map('intval', array_column($this->db->fetchAll($sql), 'UID'));
     }
 
-    public function testAReviewerWhoAcceptedTheInvitationIsReminded(): void
+    private function insertAcceptedInvitation(): void
     {
         $this->insertInvitation([
             [Episciences_User_Invitation::STATUS_PENDING, Episciences_User_Assignment::STATUS_PENDING],
             [Episciences_User_Invitation::STATUS_ACCEPTED, Episciences_User_Assignment::STATUS_ACTIVE],
         ]);
+    }
+
+    public function testAReviewerWhoAcceptedTheInvitationIsReminded(): void
+    {
+        $this->insertAcceptedInvitation();
 
         $this->assertSame([self::UID], $this->fetchRecipientUids());
+    }
+
+    /**
+     * Deadline on 2024-01-10, first reminder 7 days before (2024-01-03), then every 3 days until the deadline
+     *
+     * @return array<string, array{0: string, 1: bool}> (reference date, reminded)
+     */
+    public static function repeatedReminderDates(): array
+    {
+        return [
+            'before the first reminder, at a multiple of the repetition' => ['2023-12-31', false],
+            'the day before the first reminder' => ['2024-01-02', false],
+            'first reminder' => ['2024-01-03', true],
+            'between two reminders' => ['2024-01-04', false],
+            'second reminder' => ['2024-01-06', true],
+            'third reminder' => ['2024-01-09', true],
+            'deadline day, not a reminder day' => ['2024-01-10', false],
+            'after the deadline, at a multiple of the repetition' => ['2024-01-12', false],
+        ];
+    }
+
+    /**
+     * @dataProvider repeatedReminderDates
+     */
+    public function testARepeatedReminderIsSentEveryRepetitionDaysFromTheDelayUntilTheDeadline(string $date, bool $reminded): void
+    {
+        $this->insertAcceptedInvitation();
+
+        $this->assertSame($reminded ? [self::UID] : [], $this->fetchRecipientUids($date, 7, 3));
+    }
+
+    public function testARepeatedReminderIsNotSentToAReviewerRemovedInTheSameSecondAsTheAcceptance(): void
+    {
+        $this->insertInvitation([
+            [Episciences_User_Invitation::STATUS_PENDING, Episciences_User_Assignment::STATUS_PENDING],
+            [Episciences_User_Invitation::STATUS_ACCEPTED, Episciences_User_Assignment::STATUS_ACTIVE],
+            [Episciences_User_Invitation::STATUS_CANCELLED, Episciences_User_Assignment::STATUS_CANCELLED],
+        ]);
+
+        $this->assertSame([], $this->fetchRecipientUids('2024-01-03', 7, 3));
     }
 
     public function testAReviewerRemovedInTheSameSecondAsTheAcceptanceIsNotReminded(): void
