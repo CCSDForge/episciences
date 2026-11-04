@@ -41,8 +41,9 @@ class Episciences_User_AssignmentsManager
         if (!$cacheItem->isHit()) {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+            // the latest assignment to each item (highest ID: two assignments can have the same date)
             $subquery = $db->select()
-                ->from(T_ASSIGNMENTS, array('ITEMID', 'MAX(`WHEN`) AS WHEN'))
+                ->from(T_ASSIGNMENTS, array('LAST_ID' => new Zend_Db_Expr('MAX(ID)')))
                 ->group('ITEMID');
 
             $select = $db->select()
@@ -64,7 +65,7 @@ class Episciences_User_AssignmentsManager
             }
 
             if ($fetchLastOnly) {
-                $select->join(array('b' => $subquery), 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', array());
+                $select->join(array('b' => $subquery), 'a.ID = b.LAST_ID', array());
             }
 
             $result = array();

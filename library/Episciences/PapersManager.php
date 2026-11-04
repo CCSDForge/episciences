@@ -482,17 +482,19 @@ class Episciences_PapersManager
     private static function allPapersAssignedToRole(string $roleId = 'editor'): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        // the latest assignment of each user to each paper (highest ID: two assignments can have the same date);
+        // a temporary user's ID can be equal to a user's UID: TMP_USER keeps them apart
         $subQuery = $db->select()
-            ->from(T_ASSIGNMENTS, ['ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', $roleId)
             ->where('RVID = ?', RVID)
-            ->group(['ITEMID', 'UID']);
+            ->group(['ITEMID', 'UID', 'TMP_USER']);
 
         return $db->select()
             ->distinct()
             ->from(['a' => T_ASSIGNMENTS], ['DOCID' => 'ITEMID'])
-            ->join(['b' => $subQuery], 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', [])
+            ->join(['b' => $subQuery], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', $roleId)
             ->where('RVID = ?', RVID)
@@ -1182,8 +1184,9 @@ class Episciences_PapersManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         //recuperation des relecteurs classiques
+        // the latest assignment of each reviewer (highest ID: two assignments can have the same date)
         $subquery = $db->select()
-            ->from(['z' => T_ASSIGNMENTS], ['z.UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(['z' => T_ASSIGNMENTS], ['z.UID', 'LAST_ID' => new Zend_Db_Expr('MAX(z.ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('ROLEID = ?', 'reviewer')
@@ -1198,7 +1201,7 @@ class Episciences_PapersManager
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinLeft(['u' => T_USERS], 'a.UID = u.UID', ['LANGUEID', 'SCREEN_NAME'])
             //->joinUsing(T_USERS, 'UID', array('LANGUEID', 'SCREEN_NAME'))
-            ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subquery], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('TMP_USER = ?', 0)
@@ -1601,8 +1604,9 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        // the latest assignment of each user (highest ID: two assignments can have the same date)
         $subQuery = $db->select()
-            ->from(T_ASSIGNMENTS, ['UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('ROLEID = ?', $role)
@@ -1611,7 +1615,7 @@ class Episciences_PapersManager
         return $db->select()
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinUsing(T_USERS, 'UID', ['LANGUEID', 'SCREEN_NAME'])
-            ->join(['b' => $subQuery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subQuery], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('STATUS != ?', Episciences_User_Assignment::STATUS_INACTIVE)
