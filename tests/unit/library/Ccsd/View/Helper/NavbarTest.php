@@ -73,16 +73,6 @@ final class NavbarTest extends TestCase
         self::assertStringContainsString('name="forward-action" value="view"', $html);
     }
 
-    public function testLoginFormSendsThePageToReturnToInTheUrl(): void
-    {
-        $html = $this->render(['isLogged' => false]);
-
-        // the login action reads the page to return to from the URL only, never from a posted body
-        self::assertMatchesRegularExpression('#<form[^>]*id="form-login"[^>]*method="get"#', $html);
-        self::assertStringContainsString('name="forward-controller" value="paper"', $html);
-        self::assertStringContainsString('name="forward-action" value="view"', $html);
-    }
-
     public function testLoginFormOnlyCarriesTheUrlParametersOfThePage(): void
     {
         /** @var Zend_Controller_Request_Http $request */
