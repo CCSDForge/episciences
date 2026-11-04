@@ -41,7 +41,6 @@ final class FundingExportPartialsTest extends TestCase
                 'acronym' => 'ENERGENCE',
                 'funderName' => 'French National Research Agency (ANR)',
                 'code' => 'ANR-22-CE45-0024',
-                'fundingStream' => 'AAPG2022',
             ],
             [
                 'projectTitle' => 'OpenAIRE-Nexus',

@@ -11,88 +11,6 @@ use PHPUnit\Framework\TestCase;
 final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
 {
     // -------------------------------------------------------------------------
-    // formatEuHalResp()
-    // -------------------------------------------------------------------------
-
-    public function testFormatEuHalRespFillsMissingKeysWithUnidentified(): void
-    {
-        $resp = [
-            'response' => [
-                'docs' => [
-                    [
-                        'projectTitle' => 'My EU Project',
-                        'acronym'      => 'MEP',
-                        // code, callId, projectFinancing are missing → should be UNIDENTIFIED
-                        // funderName is missing → should be 'European Commission'
-                    ],
-                ],
-            ],
-        ];
-
-        $result = Episciences_Paper_Projects_EnrichmentService::formatEuHalResp($resp);
-
-        self::assertCount(1, $result);
-        self::assertSame('My EU Project', $result[0]['projectTitle']);
-        self::assertSame('MEP', $result[0]['acronym']);
-        self::assertSame('European Commission', $result[0]['funderName']);
-        self::assertSame(Episciences_Paper_Projects_EnrichmentService::UNIDENTIFIED, $result[0]['code']);
-        self::assertSame(Episciences_Paper_Projects_EnrichmentService::UNIDENTIFIED, $result[0]['callId']);
-        self::assertSame(Episciences_Paper_Projects_EnrichmentService::UNIDENTIFIED, $result[0]['projectFinancing']);
-        // 6 keys total
-        self::assertCount(6, $result[0]);
-    }
-
-    public function testFormatEuHalRespReturnsEmptyArrayWhenNoDocs(): void
-    {
-        $result = Episciences_Paper_Projects_EnrichmentService::formatEuHalResp([
-            'response' => ['docs' => []],
-        ]);
-        self::assertSame([], $result);
-    }
-
-    public function testFormatEuHalRespReturnsEmptyArrayOnEmptyInput(): void
-    {
-        $result = Episciences_Paper_Projects_EnrichmentService::formatEuHalResp([]);
-        self::assertSame([], $result);
-    }
-
-    // -------------------------------------------------------------------------
-    // formatAnrHalResp()
-    // -------------------------------------------------------------------------
-
-    public function testFormatAnrHalRespFillsMissingKeysWithUnidentified(): void
-    {
-        $resp = [
-            'response' => [
-                'docs' => [
-                    [
-                        'projectTitle' => 'ANR Research Project',
-                        // acronym, code, funderName missing
-                    ],
-                ],
-            ],
-        ];
-
-        $result = Episciences_Paper_Projects_EnrichmentService::formatAnrHalResp($resp);
-
-        self::assertCount(1, $result);
-        self::assertSame('ANR Research Project', $result[0]['projectTitle']);
-        self::assertSame('French National Research Agency (ANR)', $result[0]['funderName']);
-        self::assertSame(Episciences_Paper_Projects_EnrichmentService::UNIDENTIFIED, $result[0]['acronym']);
-        self::assertSame(Episciences_Paper_Projects_EnrichmentService::UNIDENTIFIED, $result[0]['code']);
-        // 4 keys total
-        self::assertCount(4, $result[0]);
-    }
-
-    public function testFormatAnrHalRespReturnsEmptyArrayWhenNoDocs(): void
-    {
-        $result = Episciences_Paper_Projects_EnrichmentService::formatAnrHalResp([
-            'response' => ['docs' => []],
-        ]);
-        self::assertSame([], $result);
-    }
-
-    // -------------------------------------------------------------------------
     // formatFundingOAForDB() — OpenAire Graph v3 direct project entries
     // -------------------------------------------------------------------------
 
@@ -239,24 +157,5 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
 
         self::assertArrayNotHasKey('grantDoi', $result[0]);
         self::assertSame('anr_________::abc', $result[0]['openaireId']);
-    }
-
-    // -------------------------------------------------------------------------
-    // resolveHalProjectIds() — free-text funding (funding_s)
-    // -------------------------------------------------------------------------
-
-    public function testResolveHalProjectIdsKeepsFreeTextFundingsInTheCallersShape(): void
-    {
-        $halDocs = [[
-            'funding_s' => ['Défi Clé CeBBOc program of Occitanie Region', '  ', 'ANR-22-CPJ1-0090-0'],
-        ]];
-
-        $result = Episciences_Paper_Projects_EnrichmentService::resolveHalProjectIds($halDocs, 'hal-05738053', []);
-
-        // callers keep the first entry of each element ($globalPreJson[0])
-        self::assertSame([
-            [['fundingStatement' => 'Défi Clé CeBBOc program of Occitanie Region']],
-            [['fundingStatement' => 'ANR-22-CPJ1-0090-0']],
-        ], $result);
     }
 }

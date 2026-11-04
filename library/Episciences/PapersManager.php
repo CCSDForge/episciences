@@ -4864,21 +4864,8 @@ class Episciences_PapersManager
     private static function updateRecordDataHal(int $paperId, array|string $identifier, float $version, int $affectedRows): int
     {
         $affectedRows += Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB(Episciences_Repositories::HAL_REPO_ID, $paperId, $identifier, $version);
-        //FUNDING
-        $arrayIdEuAnr = Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($identifier, $version);
-        $decodeHalIdsResp = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
-        $globalArrayJson = [];
-        if (!empty($decodeHalIdsResp['response']['docs'])) {
-            $globalArrayJson = Episciences_Paper_ProjectsManager::FormatFundingANREuToArray($decodeHalIdsResp['response']['docs'], $identifier, $globalArrayJson);
-        }
-        $mergeArrayANREU = [];
-        if (!empty($globalArrayJson)) {
-            foreach ($globalArrayJson as $globalPreJson) {
-                $mergeArrayANREU[] = $globalPreJson[0];
-            }
-            $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::HAL_REPO_ID);
-            $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
-        }
+        //FUNDING, from the TEI the author enrichment above has just fetched and cached
+        $affectedRows += Episciences_Paper_ProjectsManager::enrichHalFundingFromTei($paperId, (string) $identifier, (int) $version);
         return $affectedRows;
     }
 

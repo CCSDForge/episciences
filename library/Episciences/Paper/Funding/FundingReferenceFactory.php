@@ -10,7 +10,6 @@ namespace Episciences\Paper\Funding;
  * Stored keys (all optional, any value may be the "unidentified" placeholder):
  *  - projectTitle, acronym, funderName, code: every source
  *  - callId, projectFinancing: HAL European projects
- *  - fundingStream: HAL ANR projects (call title)
  *  - openaireId, grantDoi: OpenAIRE Graph projects
  *  - url: Dataverse projects
  *  - fundingStatement: HAL free-text funding (funding_s)
@@ -183,11 +182,6 @@ final class FundingReferenceFactory
      */
     private static function resolveFundingStream(array $stored, ?string $funderKey, ?string $openaireId): ?string
     {
-        $stream = self::clean($stored['fundingStream'] ?? null);
-        if ($stream !== null) {
-            return $stream;
-        }
-
         $prefix = FunderRegistry::openairePrefix($openaireId);
         if ($prefix !== null && isset(self::OPENAIRE_PREFIX_STREAMS[$prefix])) {
             return self::OPENAIRE_PREFIX_STREAMS[$prefix];

@@ -82,7 +82,7 @@ final class FundingReferenceFactoryTest extends TestCase
             'acronym' => 'unidentified',
             'funderName' => 'French National Research Agency (ANR)',
             'code' => 'ANR-22-CE45-0024',
-            'fundingStream' => 'unidentified',
+            'projectFinancing' => 'unidentified',
         ]]);
 
         $reference = $references[0];
@@ -132,7 +132,6 @@ final class FundingReferenceFactoryTest extends TestCase
                 'acronym' => 'ENERGENCE',
                 'funderName' => 'French National Research Agency (ANR)',
                 'code' => 'ANR-22-CE45-0024',
-                'fundingStream' => 'Appel à projets générique 2022',
             ],
             // OpenAIRE, other funder label for the same funder
             [
@@ -145,7 +144,7 @@ final class FundingReferenceFactoryTest extends TestCase
 
         self::assertCount(1, $references);
         self::assertSame('Modélisation ENERgétique', $references[0]->awardTitle, 'first source wins');
-        self::assertSame('Appel à projets générique 2022', $references[0]->fundingStream);
+        self::assertSame('ENERGENCE', $references[0]->awardAcronym);
         self::assertSame('anr_________::abc', $references[0]->openaireProjectId, 'missing values are filled');
     }
 

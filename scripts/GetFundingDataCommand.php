@@ -166,26 +166,7 @@ class GetFundingDataCommand extends Command
 
                 if (!$dryRun) {
                     try {
-                        $arrayIdEuAnr    = Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($trimIdentifier, $version);
-                        $decodeHalResp   = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
-                        $globalArrayJson = [];
-
-                        if (!empty($decodeHalResp['response']['docs'])) {
-                            $globalArrayJson = Episciences_Paper_ProjectsManager::FormatFundingANREuToArray(
-                                $decodeHalResp['response']['docs'],
-                                $trimIdentifier,
-                                $globalArrayJson
-                            );
-                        }
-
-                        if (!empty($globalArrayJson)) {
-                            $mergeArrayANREU = [];
-                            foreach ($globalArrayJson as $globalPreJson) {
-                                $mergeArrayANREU[] = $globalPreJson[0];
-                            }
-                            $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, (int) Episciences_Repositories::HAL_REPO_ID);
-                            $fundingRowsChanged += Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
-                        }
+                        $fundingRowsChanged += Episciences_Paper_ProjectsManager::enrichHalFundingFromTei($paperId, $trimIdentifier, $version);
                     } catch (JsonException $e) {
                         $logger->error("JSON decode error for paper {$paperId} (HAL funding): " . $e->getMessage());
                     } catch (\Throwable $e) {
