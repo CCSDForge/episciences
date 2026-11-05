@@ -1407,6 +1407,16 @@ class PaperController extends PaperDefaultController
             return;
         }
 
+        // revision request detail: it must be one of the paper's
+        $requestId = $request->getQuery('pcid');
+        $requestComment = new Episciences_Comment;
+        $requestComment->find($requestId);
+
+        if (!self::isRequestOfPaper($requestComment, $paper)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         $paper->loadOtherVolumes();
         $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
 
@@ -1423,10 +1433,6 @@ class PaperController extends PaperDefaultController
         $reviewers = $paper->getReviewers(null, true);
         $editors = $paper->getEditors(true, true);
         $coAuthors = $paper->getCoAuthors();
-        // revision request detail
-        $requestId = $request->getQuery('pcid');
-        $requestComment = new Episciences_Comment;
-        $requestComment->find($requestId);
 
         $isAlreadyAccepted = $requestComment->getOption('isAlreadyAccepted');
         $reassignReviewers = $requestComment->getOption('reassign_reviewers');

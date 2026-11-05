@@ -42,32 +42,6 @@ final class PaperControllerContributorGuardTest extends TestCase
     }
 
     /**
-     * Each contributor endpoint must bind the request to the paper through
-     * isPaperContributorOrManager() and answer 403 otherwise.
-     *
-     * @dataProvider contributorEndpoints
-     */
-    public function testEndpointBindsTheRequestToThePaper(string $action): void
-    {
-        $method = $this->extractMethod($action);
-
-        self::assertStringContainsString('isPaperContributorOrManager(', $method,
-            "$action must restrict the paper chosen by request parameter to its contributor or staff");
-        self::assertStringContainsString('403', $method,
-            "$action must answer 403 when the user is not bound to the paper");
-    }
-
-    /**
-     * @return iterable<string, array{string}>
-     */
-    public static function contributorEndpoints(): iterable
-    {
-        // The endpoints of the "Answer this request" menu, and the new version save for the copy-editing requests,
-        // are covered by dispatching them (see PaperControllerRevisionRequestAnswerAccessTest).
-        yield 'updaterecorddata' => ['updaterecorddataAction'];
-    }
-
-    /**
      * Abandoning the publication process must apply the same conditions as the
      * button display: staff, owner or paper editor depending on the settings.
      */

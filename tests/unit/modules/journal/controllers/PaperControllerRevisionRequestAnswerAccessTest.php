@@ -191,6 +191,7 @@ final class PaperControllerRevisionRequestAnswerAccessTest extends ControllerTes
     {
         yield 'answer save' => ['saveanswer'];
         yield 'new version save' => ['savenewversion'];
+        yield 'temporary version save' => ['savetmpversion'];
     }
 
     /**
