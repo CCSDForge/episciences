@@ -361,10 +361,11 @@ class AdministratemailController extends Zend_Controller_Action
 
         $isTokenRefused = $isSendRequest && !Episciences_Csrf_Helper::validateRequestToken($request);
 
-        $postedDocId = isset($post['docid']) && is_numeric($post['docid']) ? (int)$post['docid'] : 0;
-        $sendScope = $isSendRequest && !$isTokenRefused && $postedDocId > 0 ? $this->recipientScope($db, $postedDocId) : null;
+        // Read once: the paper loaded for the mail is the one checked here. Null: no paper; false: malformed
+        $postedDocId = self::postedDocId($post);
+        $sendScope = $isSendRequest && !$isTokenRefused && is_int($postedDocId) ? $this->recipientScope($db, $postedDocId) : null;
         // A mail about a paper is written into its history: only for a paper the user may access
-        $isPaperRefused = $isSendRequest && !$isTokenRefused && $postedDocId > 0 && $sendScope === null;
+        $isPaperRefused = $isSendRequest && !$isTokenRefused && $postedDocId !== null && $sendScope === null;
 
         if ($isTokenRefused || $isPaperRefused) {
             $reason = $isTokenRefused ? 'Votre session a expiré, veuillez réessayer.' : "Vous n'avez pas accès à cet article.";
@@ -391,7 +392,8 @@ class AdministratemailController extends Zend_Controller_Action
                 $form->setDefaults($post);
             }
 
-            $result = $this->sendMail($post, $checkedRecipients);
+            // Not refused: the posted paper, if any, is accessible ($sendScope is not null)
+            $result = $this->sendMail($post, $checkedRecipients, is_int($postedDocId) ? $postedDocId : null);
 
             if ($result) {
                 $this->_helper->layout->disableLayout();
@@ -428,10 +430,11 @@ class AdministratemailController extends Zend_Controller_Action
      * send a mail (process mailing form)
      * TODO: move this outside of the controller ?
      * @param array $post
+     * @param ?int $docId paper of the mail, already checked as accessible to the sender
      * @return string|void
      * @throws Exception
      */
-    private function sendMail(array $post, array $checkedRecipients)
+    private function sendMail(array $post, array $checkedRecipients, ?int $docId)
     {
         $paper = null;
 
@@ -472,9 +475,9 @@ class AdministratemailController extends Zend_Controller_Action
             return;
         }
 
-        if (isset($post['docid'])) {
+        if ($docId !== null) {
             /** @var Episciences_Paper|false $paper */
-            $paper = Episciences_PapersManager::get((int)$post['docid']);
+            $paper = Episciences_PapersManager::get($docId);
         }
 
         $mail = $this->buildMail($post, $checkedRecipients['recipients'], $paper ?: null);
@@ -740,6 +743,21 @@ class AdministratemailController extends Zend_Controller_Action
             (bool)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED),
             $papers
         );
+    }
+
+    /**
+     * Paper of the posted mail: null when none, false when the value is not a positive integer
+     * @param array<string, mixed> $post
+     */
+    private static function postedDocId(array $post): int|false|null
+    {
+        $value = $post['docid'] ?? null;
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return is_string($value) && preg_match('/^[1-9]\d{0,18}$/', $value) === 1 ? (int)$value : false;
     }
 
     /**

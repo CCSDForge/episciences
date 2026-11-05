@@ -142,4 +142,42 @@ final class AdministratemailControllerSendTest extends ControllerTestCase
         self::assertSame(42, $recipient['uid'] ?? null);
         self::assertSame('sam@example.org', $recipient['mail'] ?? null);
     }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function malformedDocIds(): array
+    {
+        return [
+            'trailing text' => ['12abc'],
+            'decimal' => ['12.5'],
+            'exponent' => ['1e3'],
+            'leading space' => [' 12'],
+            'zero' => ['0'],
+            'negative' => ['-12'],
+        ];
+    }
+
+    /**
+     * @dataProvider malformedDocIds
+     */
+    public function testMalformedPaperIsRefusedWithoutLoadingAnyPaper(string $docId): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+        $this->givenJournal();
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->xhrPostRequest(self::modalPost([
+                'docid' => $docId,
+                'hidden_to' => (string)json_encode([['key' => 'a', 'value' => 'someone@example.org', 'uid' => null]]),
+            ]), true)
+        );
+
+        self::assertSame(403, $result->statusCode());
+        self::assertStringContainsString("Vous n'avez pas accès à cet article.", $result->body());
+        self::assertStringNotContainsString('PAPERS', implode("\n", $this->db->selects()), 'no paper is loaded for a malformed id');
+        self::assertSame([], $this->db->inserts(), 'nothing is sent nor logged');
+    }
 }
