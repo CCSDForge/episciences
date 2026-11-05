@@ -7,6 +7,7 @@ namespace unit\modules\journal\controllers;
 use Episciences_Acl;
 use Episciences_CommentsManager;
 use Episciences_Paper;
+use Episciences_Paper_Conflict;
 use Episciences_Review;
 use Episciences_User_AssignmentsManager;
 use PaperController;
@@ -163,6 +164,170 @@ final class PaperControllerRevisionRequestAnswerAccessTest extends ControllerTes
     }
 
     /**
+     * The new version save picks its rule from the type of the request: a request of another paper cannot be used
+     * to get the rule of the copy-editing requests (open to the editors) on a paper waiting for a revision.
+     */
+    public function testCopyEditingRequestOfAnotherPaperDoesNotOpenTheNewVersionSave(): void
+    {
+        $this->givenJournal();
+        $this->givenRevisionRequest(
+            Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION,
+            Episciences_CommentsManager::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST,
+            RVID,
+            self::DOCID + 1
+        );
+        $this->logInAs([Episciences_Acl::ROLE_MEMBER, Episciences_Acl::ROLE_EDITOR]);
+
+        $result = $this->dispatch(PaperController::class, 'savenewversion', $this->answerRequest('POST'));
+
+        self::assertSame(403, $result->response->getHttpResponseCode());
+        self::assertSame([], $this->db->inserts(), 'nothing is recorded');
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function saveEndpoints(): iterable
+    {
+        yield 'answer save' => ['saveanswer'];
+        yield 'new version save' => ['savenewversion'];
+    }
+
+    /**
+     * Even for a user allowed to answer the paper's requests, the answer is not attached to a request of another
+     * paper.
+     *
+     * @dataProvider saveEndpoints
+     */
+    public function testRequestOfAnotherPaperIsRefused(string $action): void
+    {
+        $this->givenJournal();
+        $this->givenRevisionRequest(
+            Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION,
+            Episciences_CommentsManager::TYPE_REVISION_REQUEST,
+            RVID,
+            self::DOCID + 1
+        );
+        $this->logInAs([Episciences_Acl::ROLE_MEMBER, Episciences_Acl::ROLE_AUTHOR], self::OWNER_UID);
+
+        $result = $this->dispatch(PaperController::class, $action, $this->answerRequest('POST'));
+
+        self::assertSame(403, $result->response->getHttpResponseCode());
+        self::assertSame([], $this->db->inserts(), 'nothing is recorded');
+        self::assertSame([], $this->db->updates(), 'nothing is recorded');
+    }
+
+    /**
+     * An unknown paper is refused, not an error.
+     */
+    public function testNewVersionSaveOfAnUnknownPaperIsRefused(): void
+    {
+        $this->givenJournal();
+        $this->logInAs([Episciences_Acl::ROLE_MEMBER, Episciences_Acl::ROLE_SECRETARY]);
+
+        $result = $this->dispatch(PaperController::class, 'savenewversion', $this->answerRequest('POST'));
+
+        self::assertSame(403, $result->response->getHttpResponseCode());
+        self::assertSame([], $this->db->inserts(), 'nothing is recorded');
+    }
+
+    /**
+     * @return iterable<string, array{string, string|null}> role, answer to the conflict of interest
+     */
+    public static function staffInConflictOfInterest(): iterable
+    {
+        $yes = Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
+
+        yield 'secretary, conflict declared' => [Episciences_Acl::ROLE_SECRETARY, $yes];
+        // Until the secretary answers, the conflict of interest is presumed
+        yield 'secretary, not answered yet' => [Episciences_Acl::ROLE_SECRETARY, null];
+        yield 'chief editor, conflict declared' => [Episciences_Acl::ROLE_CHIEF_EDITOR, $yes];
+        yield 'administrator, conflict declared' => [Episciences_Acl::ROLE_ADMIN, $yes];
+    }
+
+    /**
+     * @return iterable<string, array{string, string, string, string|null}>
+     */
+    public static function staffInConflictOfInterestOnEndpoints(): iterable
+    {
+        foreach (self::answerEndpoints() as $endpoint => [$action, $method]) {
+            foreach (self::staffInConflictOfInterest() as $case => [$role, $answer]) {
+                yield "$case, $endpoint" => [$action, $method, $role, $answer];
+            }
+        }
+    }
+
+    /**
+     * With the conflicts of interest enabled, a secretary in conflict on the paper does not see the button: the
+     * endpoints refuse them too.
+     *
+     * @dataProvider staffInConflictOfInterestOnEndpoints
+     */
+    public function testSecretaryInConflictOfInterestIsRefused(string $action, string $method, string $role, ?string $answer): void
+    {
+        $this->givenJournal([Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '1']);
+        $this->givenConflictAnswer($answer);
+        $this->givenRevisionRequest();
+        $this->logInAs([Episciences_Acl::ROLE_MEMBER, $role]);
+
+        $result = $this->dispatch(PaperController::class, $action, $this->answerRequest($method));
+
+        self::assertSame(403, $result->response->getHttpResponseCode());
+        self::assertSame([], $this->db->inserts(), 'nothing is recorded');
+        self::assertSame([], $this->db->updates(), 'nothing is recorded');
+    }
+
+    /**
+     * Once they answered there is no conflict, the secretary answers the request.
+     */
+    public function testSecretaryWithoutConflictOfInterestIsAllowed(): void
+    {
+        $this->givenJournal([Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '1']);
+        $this->givenConflictAnswer(Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']);
+        $this->givenRevisionRequest();
+        $this->logInAs([Episciences_Acl::ROLE_MEMBER, Episciences_Acl::ROLE_SECRETARY]);
+
+        $result = $this->dispatch(PaperController::class, 'answerrequest', $this->answerRequest('GET'));
+
+        self::assertSame(200, $result->response->getHttpResponseCode());
+    }
+
+    /**
+     * The rule of the copy-editing requests is limited to the papers of the current journal too.
+     */
+    public function testCopyEditingFinalVersionOfAPaperOfAnotherJournalIsRefused(): void
+    {
+        $this->givenJournal();
+        $this->givenRevisionRequest(
+            Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
+            Episciences_CommentsManager::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST,
+            RVID + 1
+        );
+        $this->logInAs([Episciences_Acl::ROLE_MEMBER, Episciences_Acl::ROLE_AUTHOR], self::OWNER_UID);
+
+        $result = $this->dispatch(PaperController::class, 'savenewversion', $this->answerRequest('POST'));
+
+        self::assertSame(403, $result->response->getHttpResponseCode());
+        self::assertSame([], $this->db->inserts(), 'nothing is recorded');
+    }
+
+    /**
+     * The answer UID gave to the conflict of interest on the paper (none when $answer is null).
+     */
+    private function givenConflictAnswer(?string $answer): void
+    {
+        $this->db->respondTo('/FROM `' . preg_quote(T_PAPER_CONFLICTS, '/') . '`/', $answer === null ? [] : [[
+            'cid' => 1,
+            'paper_id' => self::DOCID,
+            'by' => self::UID,
+            'answer' => $answer,
+            'message' => null,
+            'date' => '2026-01-01 00:00:00',
+            'SCREEN_NAME' => 'Staff',
+        ]]);
+    }
+
+    /**
      * @return iterable<string, array{list<string>, int, string|null, bool}> roles, uid, role assigned on the paper, allowed
      */
     public static function copyEditingFinalVersionAuthors(): iterable
@@ -306,19 +471,21 @@ final class PaperControllerRevisionRequestAnswerAccessTest extends ControllerTes
     }
 
     /**
-     * A paper of $rvid owned by OWNER_UID, in $status, with the request PCID of type $type.
+     * A paper of $rvid owned by OWNER_UID, in $status, with the request PCID of type $type (on the paper
+     * $requestDocid: DOCID by default).
      */
     private function givenRevisionRequest(
         int $status = Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION,
         int $type = Episciences_CommentsManager::TYPE_REVISION_REQUEST,
-        int $rvid = RVID
+        int $rvid = RVID,
+        int $requestDocid = self::DOCID
     ): void
     {
         $this->db->respondTo('/FROM `' . preg_quote(T_PAPER_COMMENTS, '/') . '`/', [[
             'PCID' => self::PCID,
             'PARENTID' => null,
             'TYPE' => $type,
-            'DOCID' => self::DOCID,
+            'DOCID' => $requestDocid,
             'UID' => 2222,
             'SCREEN_NAME' => 'Requester',
             'MESSAGE' => 'Please revise',

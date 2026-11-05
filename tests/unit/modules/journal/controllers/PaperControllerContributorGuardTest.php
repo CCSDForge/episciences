@@ -62,50 +62,9 @@ final class PaperControllerContributorGuardTest extends TestCase
      */
     public static function contributorEndpoints(): iterable
     {
-        // The other endpoints of the "Answer this request" menu apply the rule of the button instead
-        // (see PaperControllerRevisionRequestAnswerAccessTest); the new version save keeps this rule for the
-        // copy-editing requests for the final version.
-        yield 'savenewversion'   => ['savenewversionAction'];
+        // The endpoints of the "Answer this request" menu, and the new version save for the copy-editing requests,
+        // are covered by dispatching them (see PaperControllerRevisionRequestAnswerAccessTest).
         yield 'updaterecorddata' => ['updaterecorddataAction'];
-    }
-
-    /**
-     * The binding helper must check the journal and the accepted profiles
-     * (contributor of the paper, or user allowed to manage papers).
-     */
-    public function testContributorBindingCoversJournalAndProfiles(): void
-    {
-        $method = $this->extractMethod('isPaperContributorOrManager');
-
-        self::assertStringContainsString('getRvid() === RVID', $method,
-            'the binding must be limited to the current journal');
-        self::assertStringContainsString('isOwnerOrCoAuthor()', $method,
-            'the binding must accept the contributor (owner or co-author)');
-        self::assertStringContainsString('Episciences_Auth::isAllowedToManagePaper()', $method,
-            'the binding must accept the users allowed to manage papers');
-    }
-
-    /**
-     * The temporary version form and its save also apply the rule of the files the version is uploaded with
-     * (see PaperControllerTemporaryVersionAccessTest for the rule itself).
-     *
-     * @dataProvider temporaryVersionEndpoints
-     */
-    public function testTemporaryVersionEndpointAppliesTheFileRule(string $action): void
-    {
-        $method = $this->extractMethod($action);
-
-        self::assertStringContainsString('isAllowedToWriteTemporaryVersion(', $method,
-            "$action must only accept the users allowed to upload the files of the temporary version");
-    }
-
-    /**
-     * @return iterable<string, array{string}>
-     */
-    public static function temporaryVersionEndpoints(): iterable
-    {
-        yield 'tmpversion'     => ['tmpversionAction'];
-        yield 'savetmpversion' => ['savetmpversionAction'];
     }
 
     /**
