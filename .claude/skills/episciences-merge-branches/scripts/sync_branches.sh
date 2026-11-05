@@ -35,8 +35,16 @@ for b in "${branches[@]}"; do
         status=1
         continue
     fi
+    # --ff-only also succeeds when the local branch is ahead of origin: check
+    # for local-only commits afterwards, they would be propagated unnoticed.
     if git merge -q --ff-only "origin/${b}" 2>/dev/null; then
-        echo "[OK] ${b} at $(git rev-parse --short HEAD)"
+        if [[ -n "$(git rev-list "origin/${b}..${b}")" ]]; then
+            echo "[KO] ${b}: ahead of origin/${b}; local-only commits:"
+            git log --oneline "origin/${b}..${b}"
+            status=1
+        else
+            echo "[OK] ${b} at $(git rev-parse --short HEAD)"
+        fi
     else
         echo "[KO] ${b}: cannot fast-forward to origin/${b}; local-only commits:"
         git log --oneline "origin/${b}..${b}"
