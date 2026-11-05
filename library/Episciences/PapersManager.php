@@ -2,7 +2,6 @@
 
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Psr\Log\LogLevel;
 
 class Episciences_PapersManager
@@ -3279,19 +3278,22 @@ class Episciences_PapersManager
     /**
      * Updates a paper from its repository: its record and version, then its files, linked data, enrichment,
      * authors, licence and HAL / OpenAIRE data.
+     * When anything changed, PAPERS.DOCUMENT is rebuilt (step "jsonDocument").
      * Once the record is loaded, each step runs on its own: a failure is reported as a warning
      * (Episciences_Submit::runPostSaveStep()) and does not stop the following steps, nor the update of the record.
      *
      * @param Episciences_Paper $paper
      * @param list<string>|null $failedSteps receives the names of the steps that failed
      * @param-out list<string> $failedSteps
+     * @param bool $refreshHalTei HAL papers: read the TEI from HAL again instead of the cached one,
+     *                            so that metadata edited on HAL without a new version (fundings, affiliations) are seen
      * @return int number of affected rows
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Exception the record could not be loaded from the repository, or not saved
      */
 
-    public static function updateRecordData(Episciences_Paper $paper, ?array &$failedSteps = null): int
+    public static function updateRecordData(Episciences_Paper $paper, ?array &$failedSteps = null, bool $refreshHalTei = false): int
     {
         $failedSteps = [];
         $docId = $paper->getDocId();
@@ -3309,6 +3311,11 @@ class Episciences_PapersManager
 
         $context = self::initializeContext($params);
         $recordData = self::fetchRecordData($context); // as well as updating the version from the original archive
+
+        if ($refreshHalTei && (string)$context['repoId'] === Episciences_Repositories::HAL_REPO_ID) {
+            // before the licence, authors and funding steps, which all read the TEI of this version
+            Episciences_Hal_TeiCacheManager::delete($context['identifier'], (int)$context['version']);
+        }
         $record = self::cleanRecord($recordData['record'], $context['repoId']);
         $enrichment = $recordData['enrichment'];
         // The record already loaded, if any: the files and the linked data hooks do not load it again
@@ -3327,7 +3334,34 @@ class Episciences_PapersManager
         ], $failedSteps);
 
         $affectedRows += $db?->update(T_PAPERS, ['RECORD' => $record, 'VERSION' => $context['version']], ['DOCID = ?' => $context['docId']]);
+
+        if ($affectedRows > 0) {
+            self::refreshJsonDocumentAfterRecordUpdate((int)$context['docId'], $failedSteps);
+        }
+
         return $affectedRows;
+    }
+
+    /**
+     * PAPERS.DOCUMENT is built from the record and from its satellite tables (authors, fundings, licence, ...)
+     * that updateRecordData() has just written: rebuild it, so that the API does not keep serving the former data.
+     * A failure is reported like the other steps: the record itself is updated.
+     *
+     * @param list<string> $failedSteps
+     * @param-out list<string> $failedSteps
+     */
+    private static function refreshJsonDocumentAfterRecordUpdate(int $docId, array &$failedSteps): void
+    {
+        try {
+            $refreshed = self::updateJsonDocumentData($docId);
+        } catch (Throwable $e) {
+            trigger_error(sprintf('DOCUMENT refresh failed for docid %d: %s: %s', $docId, $e::class, $e->getMessage()), E_USER_WARNING);
+            $refreshed = false;
+        }
+
+        if (!$refreshed) {
+            $failedSteps[] = 'jsonDocument';
+        }
     }
 
     private static function initializeContext(array $params): array
@@ -4845,8 +4879,7 @@ class Episciences_PapersManager
 
         // invalidate the getJsonV2 metadata cache entry (up to CACHE_EXPIRE_METADATA_PUBLISHED = 31 days)
         // so callers going through Episciences_Paper::get('json', 2) don't keep serving the stale DOCUMENT
-        (new FilesystemAdapter(Episciences_Paper::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA))
-            ->deleteItem($paper->getPaperid() . '-getJsonV2');
+        Episciences_Paper::deleteMetadataCache((int)$paper->getPaperid(), 'getJsonV2');
 
         return true;
     }

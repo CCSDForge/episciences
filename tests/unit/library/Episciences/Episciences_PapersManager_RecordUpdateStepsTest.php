@@ -180,6 +180,19 @@ final class Episciences_PapersManager_RecordUpdateStepsTest extends TestCase
         ]);
     }
 
+    public function testDocumentThatCannotBeRebuiltIsReportedAsAFailedStep(): void
+    {
+        // no paper with this docid: PAPERS.DOCUMENT cannot be rebuilt
+        $failedSteps = ['licence'];
+        $args = [999999999, &$failedSteps];
+
+        $reflection = new ReflectionMethod(Episciences_PapersManager::class, 'refreshJsonDocumentAfterRecordUpdate');
+        $reflection->setAccessible(true);
+        $reflection->invokeArgs(null, $args);
+
+        self::assertSame(['licence', 'jsonDocument'], $failedSteps);
+    }
+
     private function invoke(string $method, mixed ...$args): mixed
     {
         $reflection = new ReflectionMethod(Episciences_PapersManager::class, $method);
