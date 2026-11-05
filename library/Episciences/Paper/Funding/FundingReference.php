@@ -26,6 +26,8 @@ final class FundingReference
         public readonly ?string $callId = null,
         public readonly ?string $openaireProjectId = null,
         public readonly ?string $statement = null,
+        /** FunderRegistry key of a well-known funder (e.g. "ANR", "EC", "ERC") */
+        public readonly ?string $funderKey = null,
     ) {
     }
 
@@ -55,7 +57,9 @@ final class FundingReference
     public function mergeKey(): ?string
     {
         if ($this->awardNumber !== null) {
-            return 'award:' . mb_strtolower($this->funderCrossrefId ?? $this->funderName ?? '') . '|' . mb_strtolower($this->awardNumber);
+            $funder = $this->funderKey !== null ? FunderRegistry::family($this->funderKey) : ($this->funderName ?? '');
+
+            return 'award:' . mb_strtolower($funder) . '|' . mb_strtolower($this->awardNumber);
         }
 
         if ($this->grantDoi !== null) {
@@ -67,22 +71,27 @@ final class FundingReference
 
     /**
      * Merge two descriptions of the same funding: values already known win, missing ones are filled.
+     * The more specific funder wins (ERC over the European Commission it belongs to).
      */
     public function mergeWith(self $other): self
     {
+        $funder = FunderRegistry::isPartOf($other->funderKey, $this->funderKey) ? $other : $this;
+        $fallback = $funder === $this ? $other : $this;
+
         return new self(
-            $this->funderName ?? $other->funderName,
-            $this->funderCrossrefId ?? $other->funderCrossrefId,
-            $this->funderRor ?? $other->funderRor,
-            $this->fundingStream ?? $other->fundingStream,
-            $this->awardNumber ?? $other->awardNumber,
-            $this->awardTitle ?? $other->awardTitle,
-            $this->awardAcronym ?? $other->awardAcronym,
-            $this->awardUri ?? $other->awardUri,
-            $this->grantDoi ?? $other->grantDoi,
-            $this->callId ?? $other->callId,
-            $this->openaireProjectId ?? $other->openaireProjectId,
-            $this->statement ?? $other->statement,
+            funderName: $funder->funderName ?? $fallback->funderName,
+            funderCrossrefId: $funder->funderCrossrefId ?? $fallback->funderCrossrefId,
+            funderRor: $funder->funderRor ?? $fallback->funderRor,
+            fundingStream: $this->fundingStream ?? $other->fundingStream,
+            awardNumber: $this->awardNumber ?? $other->awardNumber,
+            awardTitle: $this->awardTitle ?? $other->awardTitle,
+            awardAcronym: $this->awardAcronym ?? $other->awardAcronym,
+            awardUri: $this->awardUri ?? $other->awardUri,
+            grantDoi: $this->grantDoi ?? $other->grantDoi,
+            callId: $this->callId ?? $other->callId,
+            openaireProjectId: $this->openaireProjectId ?? $other->openaireProjectId,
+            statement: $this->statement ?? $other->statement,
+            funderKey: $funder->funderKey ?? $fallback->funderKey,
         );
     }
 

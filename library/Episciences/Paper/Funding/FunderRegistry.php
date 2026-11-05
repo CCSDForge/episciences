@@ -154,6 +154,12 @@ final class FunderRegistry
         ],
     ];
 
+    /**
+     * Funders that are part of another one: the European Research Council belongs to the
+     * European Commission, which some sources (OpenAIRE, HAL) name for ERC grants.
+     */
+    private const PARENT_FUNDERS = ['ERC' => 'EC'];
+
     /** @var array<string, string>|null normalized name => funder key */
     private static ?array $nameIndex = null;
 
@@ -176,6 +182,22 @@ final class FunderRegistry
         }
 
         return self::nameIndex()[self::normalizeName($funderName)] ?? null;
+    }
+
+    /**
+     * The funder a funder belongs to, or the funder itself: same family, same funding.
+     */
+    public static function family(string $key): string
+    {
+        return self::PARENT_FUNDERS[$key] ?? $key;
+    }
+
+    /**
+     * Whether $key is a more specific funder within $parentKey (e.g. ERC within EC).
+     */
+    public static function isPartOf(?string $key, ?string $parentKey): bool
+    {
+        return $key !== null && $parentKey !== null && (self::PARENT_FUNDERS[$key] ?? null) === $parentKey;
     }
 
     /**

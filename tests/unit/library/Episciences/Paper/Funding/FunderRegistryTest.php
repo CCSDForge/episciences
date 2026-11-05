@@ -49,6 +49,16 @@ final class FunderRegistryTest extends TestCase
         self::assertNull(FunderRegistry::displayName('NOPE'));
     }
 
+    public function testFamily(): void
+    {
+        self::assertSame('EC', FunderRegistry::family('ERC'));
+        self::assertSame('EC', FunderRegistry::family('EC'));
+        self::assertSame('ANR', FunderRegistry::family('ANR'));
+        self::assertTrue(FunderRegistry::isPartOf('ERC', 'EC'));
+        self::assertFalse(FunderRegistry::isPartOf('EC', 'ERC'));
+        self::assertFalse(FunderRegistry::isPartOf(null, 'EC'));
+    }
+
     public function testOpenairePrefix(): void
     {
         self::assertSame('corda_____he', FunderRegistry::openairePrefix('corda_____he::fad6e19d7ead030721d4ead45194cafc'));

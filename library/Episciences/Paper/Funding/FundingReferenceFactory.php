@@ -33,6 +33,9 @@ final class FundingReferenceFactory
         'Sixth Framework Programme',
         'Fifth Framework Programme',
         'Fourth Framework Programme',
+        'Third Framework Programme',
+        'Second Framework Programme',
+        'First Framework Programme',
     ];
 
     /** European Commission funding streams, from the OpenAIRE project identifier prefix */
@@ -50,6 +53,20 @@ final class FundingReferenceFactory
         '/^(?:EC:)?FP6\b/i' => 'Sixth Framework Programme',
         '/^(?:EC:)?FP5\b/i' => 'Fifth Framework Programme',
         '/^(?:EC:)?FP4\b/i' => 'Fourth Framework Programme',
+        '/^(?:EC:)?FP3\b/i' => 'Third Framework Programme',
+        '/^(?:EC:)?FP2\b/i' => 'Second Framework Programme',
+        '/^(?:EC:)?FP1\b/i' => 'First Framework Programme',
+    ];
+
+    /** ERC grants in the HAL "financing" value: "ERC-2014-STG" (call year) or "EC:FP7:ERC" */
+    private const HAL_ERC_CALL_PATTERN = '/^ERC-(\d{4})\b/i';
+    private const HAL_ERC_FP7_PATTERN = '/^(?:EC:)?FP7:ERC\b/i';
+
+    /** First ERC call year of each framework programme, latest first */
+    private const ERC_CALL_YEAR_STREAMS = [
+        2021 => 'Horizon Europe Framework Programme',
+        2014 => 'Horizon 2020 Framework Programme',
+        2007 => 'Seventh Framework Programme',
     ];
 
     /**
@@ -126,6 +143,12 @@ final class FundingReferenceFactory
             $funderKey = 'ANR';
         }
 
+        // HAL files ERC grants under the European Commission; the financing value tells them apart
+        if ($funderKey === 'EC' && self::isErcFinancing(self::clean($stored['projectFinancing'] ?? null))) {
+            $funderKey = 'ERC';
+            $funderName = FunderRegistry::displayName('ERC');
+        }
+
         if ($funderName === null && $funderKey !== null) {
             $funderName = FunderRegistry::displayName($funderKey);
         }
@@ -146,6 +169,7 @@ final class FundingReferenceFactory
             callId: self::clean($stored['callId'] ?? null),
             openaireProjectId: $openaireId,
             statement: self::clean($stored['fundingStatement'] ?? null),
+            funderKey: $funderKey,
         );
 
         return self::isEmpty($reference) ? null : $reference;
@@ -165,6 +189,7 @@ final class FundingReferenceFactory
                 funderCrossrefId: FunderRegistry::crossrefFunderId('ANR'),
                 funderRor: FunderRegistry::ror('ANR'),
                 awardNumber: $anrCode,
+                funderKey: 'ANR',
             );
         }
 
@@ -188,8 +213,12 @@ final class FundingReferenceFactory
         }
 
         $financing = self::clean($stored['projectFinancing'] ?? null);
-        if ($financing === null || $funderKey !== 'EC') {
+        if ($financing === null || $funderKey === null || FunderRegistry::family($funderKey) !== 'EC') {
             return null;
+        }
+
+        if (preg_match(self::HAL_ERC_CALL_PATTERN, $financing, $matches)) {
+            return self::ercCallYearStream((int)$matches[1]);
         }
 
         foreach (self::HAL_FINANCING_STREAMS as $pattern => $streamName) {
@@ -221,7 +250,8 @@ final class FundingReferenceFactory
         }
 
         if (
-            $funderKey === 'EC'
+            $funderKey !== null
+            && FunderRegistry::family($funderKey) === 'EC'
             && in_array($fundingStream, self::EC_FRAMEWORK_PROGRAMMES, true)
             && $awardNumber !== null
             && ctype_digit($awardNumber)
@@ -244,6 +274,23 @@ final class FundingReferenceFactory
         }
 
         return true;
+    }
+
+    private static function isErcFinancing(?string $financing): bool
+    {
+        return $financing !== null
+            && (preg_match(self::HAL_ERC_CALL_PATTERN, $financing) === 1 || preg_match(self::HAL_ERC_FP7_PATTERN, $financing) === 1);
+    }
+
+    private static function ercCallYearStream(int $year): ?string
+    {
+        foreach (self::ERC_CALL_YEAR_STREAMS as $firstYear => $streamName) {
+            if ($year >= $firstYear) {
+                return $streamName;
+            }
+        }
+
+        return null;
     }
 
     private static function isAnrCode(string $code): bool

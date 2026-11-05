@@ -62,6 +62,81 @@ final class FundingReferenceFactoryTest extends TestCase
         self::assertNull($references[0]->awardUri);
     }
 
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function ercFinancingProvider(): array
+    {
+        return [
+            'FP7 call' => ['ERC-2010-StG_20091028', 'Seventh Framework Programme'],
+            'H2020 call' => ['ERC-2014-STG', 'Horizon 2020 Framework Programme'],
+            'last H2020 call' => ['ERC-2020-COG', 'Horizon 2020 Framework Programme'],
+            'Horizon Europe call' => ['ERC-2021-STG', 'Horizon Europe Framework Programme'],
+            'FP7 ERC specific programme' => ['EC:FP7:ERC', 'Seventh Framework Programme'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('ercFinancingProvider')]
+    public function testHalErcGrantIsAttributedToTheErc(string $financing, string $expectedStream): void
+    {
+        // as read from the HAL TEI: <idno type="program">ERC-2014-STG</idno>, filed under the European Commission
+        $references = FundingReferenceFactory::fromStoredList([[
+            'projectTitle' => 'High precision isotopic measurements',
+            'acronym' => 'PRISTINE',
+            'funderName' => 'European Commission',
+            'code' => '637503',
+            'callId' => $financing,
+            'projectFinancing' => $financing,
+        ]]);
+
+        $reference = $references[0];
+        self::assertSame('European Research Council', $reference->funderName);
+        self::assertSame('https://doi.org/10.13039/501100000781', $reference->funderCrossrefId);
+        self::assertSame('https://ror.org/0472cxd90', $reference->funderRor);
+        self::assertSame($expectedStream, $reference->fundingStream);
+        self::assertSame('https://cordis.europa.eu/project/id/637503', $reference->awardUri);
+    }
+
+    public function testSameErcGrantFromOpenAireAndHalIsMergedUnderTheErc(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([
+            // OpenAIRE names the European Commission for ERC grants
+            [
+                'projectTitle' => 'PRISTINE project',
+                'funderName' => 'European Commission',
+                'code' => '637503',
+                'openaireId' => 'corda__h2020::abc',
+                'grantDoi' => '10.3030/637503',
+            ],
+            // HAL TEI
+            [
+                'acronym' => 'PRISTINE',
+                'funderName' => 'European Commission',
+                'code' => '637503',
+                'projectFinancing' => 'ERC-2014-STG',
+            ],
+        ]);
+
+        self::assertCount(1, $references);
+        self::assertSame('European Research Council', $references[0]->funderName, 'the more specific funder wins');
+        self::assertSame('https://doi.org/10.13039/501100000781', $references[0]->funderCrossrefId);
+        self::assertSame('10.3030/637503', $references[0]->grantDoi);
+        self::assertSame('PRISTINE', $references[0]->awardAcronym);
+        self::assertSame('Horizon 2020 Framework Programme', $references[0]->fundingStream);
+    }
+
+    public function testEarlyFrameworkProgrammes(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'European Commission',
+            'code' => '12345',
+            'projectFinancing' => 'FP3-HCM',
+        ]]);
+
+        self::assertSame('Third Framework Programme', $references[0]->fundingStream);
+        self::assertSame('European Commission', $references[0]->funderName, 'not an ERC grant');
+    }
+
     public function testFinancingIsNotAStreamForAnotherFunder(): void
     {
         $references = FundingReferenceFactory::fromStoredList([[
