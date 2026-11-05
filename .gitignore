@@ -9,7 +9,14 @@
 /sass/.sass-cache/
 /sass/components/.sass-cache/
 /.php_cs.cache/
-/.claude/
+# Claude Code: only the shared project skills are versioned
+!/.claude/
+/.claude/*
+!/.claude/skills/
+/.claude/skills/*
+!/.claude/skills/episciences-merge-branches/
+/.claude/skills/**/.claude/
+__pycache__/
 
 # Test coverage reports
 /coverage/
