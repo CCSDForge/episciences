@@ -264,4 +264,66 @@ final class RecipientSearchServiceTest extends TestCase
         self::assertStringContainsString("a.STATUS IN ('active', 'pending')", $query);
         self::assertStringContainsString('PAPERID = 5', $query);
     }
+
+    public function testVisibleUserHasTheVisibilityOfTheSearch(): void
+    {
+        $scope = new RecipientScope(RecipientScope::STAFF_AND_PAPERS, [7]);
+        $rows = [['UID' => '42', 'FIRSTNAME' => 'S', 'LASTNAME' => 'Staff', 'EMAIL' => 's@example.org', 'ROLES' => 'editor']];
+
+        $user = $this->service([$rows])->findVisible(self::RVID, $scope, 42);
+
+        self::assertSame(42, $user['uid'] ?? null);
+        $sql = $this->lastQuery();
+        self::assertStringContainsString('u.UID = 42', $sql);
+        self::assertStringContainsString("ROLEID IN ('chief_editor', 'secretary', 'editor', 'guest_editor', 'copyeditor', 'webmaster')", $sql);
+        self::assertStringContainsString('PAPERID IN (7)', $sql);
+    }
+
+    public function testUserOutsideTheScopeIsNotVisible(): void
+    {
+        self::assertNull($this->service([[]])->findVisible(self::RVID, self::allUsers(), 42));
+        self::assertStringContainsString('u.UID IN (SELECT `USER_ROLES`.`UID` FROM `USER_ROLES` WHERE (RVID = 3))', $this->lastQuery());
+    }
+
+    public function testVisibleUserGivesTheRoleInThePaperOfTheMail(): void
+    {
+        $rows = [['UID' => '11', 'FIRSTNAME' => 'R', 'LASTNAME' => 'Reviewer', 'ROLES' => 'reviewer']];
+        $assignments = [['UID' => '11', 'ROLEID' => 'reviewer', 'STATUS' => 'active']];
+
+        $user = $this->service([$assignments, $rows], [[]])->findVisible(self::RVID, self::allUsers(5), 11);
+
+        self::assertSame('reviewer', $user['paperRole'] ?? null);
+    }
+
+    public function testInvalidUidIsNeverVisible(): void
+    {
+        self::assertNull($this->service()->findVisible(self::RVID, self::allUsers(), 0));
+        self::assertSame([], $this->queries);
+    }
+
+    public function testTemporaryReviewerIsFoundOnlyAmongTheInvitationsOfThePaper(): void
+    {
+        $rows = [['EMAIL' => 'invited@example.org', 'FIRSTNAME' => 'Ivy', 'LASTNAME' => 'Invited']];
+
+        $reviewer = $this->service([$rows])->findVisibleTmpReviewer(self::RVID, self::allUsers(5), 77);
+
+        self::assertSame(
+            ['uid' => null, 'fullname' => 'Ivy Invited', 'username' => '', 'mail' => 'invited@example.org', 'roles' => [], 'group' => 'paper', 'paperRole' => 'reviewer'],
+            $reviewer
+        );
+        $sql = $this->lastQuery();
+        self::assertStringContainsString('t.ID = 77', $sql);
+        self::assertStringContainsString('PAPERID = 5', $sql);
+        self::assertStringContainsString('TMP_USER = 1', $sql);
+        self::assertNull($this->service([[]])->findVisibleTmpReviewer(self::RVID, self::allUsers(5), 78));
+    }
+
+    public function testTemporaryReviewerNeedsAPaperWhoseReviewersTheCallerMayKnow(): void
+    {
+        $withoutReviewers = new RecipientScope(RecipientScope::STAFF_AND_PAPERS, [5], 5, false);
+
+        self::assertNull($this->service()->findVisibleTmpReviewer(self::RVID, self::allUsers(), 77));
+        self::assertNull($this->service()->findVisibleTmpReviewer(self::RVID, $withoutReviewers, 77));
+        self::assertSame([], $this->queries);
+    }
 }

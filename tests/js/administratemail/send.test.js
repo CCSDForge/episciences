@@ -25,7 +25,19 @@ function installJQuery() {
         const api = {
             ready: callback => callback(),
             val: () => (elements[0] ? elements[0].value : undefined),
-            prop: name => (elements[0] ? elements[0][name] : undefined),
+            prop(name, value) {
+                if (value === undefined) {
+                    return elements[0] ? elements[0][name] : undefined;
+                }
+                elements.forEach(element => {
+                    element[name] = value;
+                });
+                return api;
+            },
+            trigger(type) {
+                elements.forEach(element => trigger(element, type));
+                return api;
+            },
             on(events, handler) {
                 events.split(' ').forEach(event => {
                     const [type, ...ns] = event.split('.');
@@ -154,6 +166,46 @@ describe('administratemail/send.js in the modal of the paper page', () => {
             'alert-success'
         );
         expect(global.refreshPaperHistory).toHaveBeenCalledWith('12');
+    });
+
+    test('a sent mail without a readable message of the server still shows a toast', () => {
+        loadScript();
+
+        document
+            .getElementById('send_form')
+            .dispatchEvent(
+                new CustomEvent('ep:mail-sent', { detail: { message: '' } })
+            );
+
+        expect(global.message).toHaveBeenCalledWith(
+            'Votre e-mail a bien été envoyé.',
+            'alert-success'
+        );
+    });
+
+    test('"send me a copy" is unchecked when the copy cannot be added', () => {
+        document
+            .getElementById('send_form')
+            .insertAdjacentHTML(
+                'beforeend',
+                '<input type="checkbox" id="copy">'
+            );
+        window.sender = { uid: 5, fullname: 'Me', mail: 'me@example.org' };
+        // Refused: limit of recipients reached
+        global.addRecipient = jest.fn(() => '');
+        loadScript();
+        const copy = document.getElementById('copy');
+
+        copy.checked = true;
+        $('#copy').trigger('click');
+
+        expect(global.addRecipient).toHaveBeenCalledWith(
+            'bcc',
+            window.sender,
+            'known'
+        );
+        expect(copy.checked).toBe(false);
+        delete window.sender;
     });
 
     test('the editor of the closed modal is removed, so that the next opening creates a new one', () => {

@@ -109,6 +109,61 @@ final class RecipientSearchService implements RecipientDirectory
     }
 
     /**
+     * One account, if the scope lets the caller find it (same visibility as search()), with its role in the
+     * paper of the mail.
+     *
+     * @return ?array{uid: int, fullname: string, username: string, mail: string, roles: list<string>, group: string, paperRole: ?string}
+     */
+    public function findVisible(int $rvid, RecipientScope $scope, int $uid): ?array
+    {
+        if ($uid <= 0) {
+            return null;
+        }
+
+        $participants = $this->contextParticipants($rvid, $scope);
+        $select = $this->baseQuery($rvid, array_keys($participants))
+            ->where($this->visibilityCondition($rvid, $scope, array_keys($participants)))
+            ->where('u.UID = ?', $uid)
+            ->limit(1);
+
+        return $this->toSuggestions($this->db->fetchAll($select), $participants)[0] ?? null;
+    }
+
+    /**
+     * A user invited without an account (temporary user), only as a current reviewer of the paper of the mail, and
+     * only if the caller may know the reviewers.
+     *
+     * @return ?array{uid: null, fullname: string, username: string, mail: string, roles: list<string>, group: string, paperRole: string}
+     */
+    public function findVisibleTmpReviewer(int $rvid, RecipientScope $scope, int $temporaryUserId): ?array
+    {
+        if ($temporaryUserId <= 0 || $scope->contextPaperId === null || !$scope->withContextReviewers) {
+            return null;
+        }
+
+        $select = $this->temporaryReviewersQuery($rvid, $scope->contextPaperId)
+            ->columns(['FIRSTNAME', 'LASTNAME'], 't')
+            ->where('t.ID = ?', $temporaryUserId)
+            ->limit(1);
+        $row = $this->db->fetchAll($select)[0] ?? null;
+
+        if (!is_array($row)) {
+            return null;
+        }
+
+        // Not an account: no UID (the id of a temporary user may be the UID of another account)
+        return [
+            'uid' => null,
+            'fullname' => trim((string)($row['FIRSTNAME'] ?? '') . ' ' . (string)($row['LASTNAME'] ?? '')),
+            'username' => '',
+            'mail' => (string)($row['EMAIL'] ?? ''),
+            'roles' => [],
+            'group' => RecipientSuggestions::GROUP_PAPER,
+            'paperRole' => Episciences_Acl::ROLE_REVIEWER,
+        ];
+    }
+
+    /**
      * Accounts of the journal matching the given addresses (case-insensitive). An address shared by
      * several accounts is ambiguous and is not resolved.
      *
@@ -227,21 +282,30 @@ final class RecipientSearchService implements RecipientDirectory
         return $roles;
     }
 
+    /**
+     * @return list<string> lower-cased emails
+     */
     public function temporaryReviewerEmails(int $rvid, int $paperId): array
+    {
+        return array_values(array_unique(array_map(
+            static fn(mixed $email): string => mb_strtolower(trim((string)$email)),
+            $this->db->fetchCol($this->temporaryReviewersQuery($rvid, $paperId))
+        )));
+    }
+
+    /**
+     * Users invited without an account whose review of the paper is pending or active (their email)
+     */
+    private function temporaryReviewersQuery(int $rvid, int $paperId): Zend_Db_Select
     {
         $latest = self::latestPaperAssignmentsQuery($this->db, $rvid, [Episciences_Acl::ROLE_REVIEWER], true)
             ->where('ITEMID IN ?', $this->db->select()->from(T_PAPERS, ['DOCID'])->where('PAPERID = ?', $paperId));
 
-        $select = $this->db->select()
+        return $this->db->select()
             ->from(['a' => T_ASSIGNMENTS], [])
             ->join(['l' => $latest], 'a.ID = l.LAST_ID', [])
             ->join(['t' => T_TMP_USER], 't.ID = a.UID', ['EMAIL'])
             ->where('a.STATUS IN (?)', [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING]);
-
-        return array_values(array_unique(array_map(
-            static fn(mixed $email): string => mb_strtolower(trim((string)$email)),
-            $this->db->fetchCol($select)
-        )));
     }
 
     /**

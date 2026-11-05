@@ -20,7 +20,10 @@ $(document).ready(function () {
         }
         window.__epContactsForm = sendForm;
         if ($('#copy').prop('checked')) {
-            addRecipient('bcc', window.sender, 'known');
+            // Refused (limit of recipients reached): the box must not claim a copy is sent
+            if (!addRecipient('bcc', window.sender, 'known')) {
+                $('#copy').prop('checked', false);
+            }
         } else {
             const tag = sendForm
                 ? sendForm.querySelector(
@@ -70,7 +73,11 @@ $(document).ready(function () {
             sendForm.addEventListener('ep:mail-sent', event => {
                 isSent = true;
                 $('#modal-box').modal('hide');
-                message(event.detail.message, 'alert-success');
+                message(
+                    event.detail.message ||
+                        translate('Votre e-mail a bien été envoyé.'),
+                    'alert-success'
+                );
             });
         }
     }

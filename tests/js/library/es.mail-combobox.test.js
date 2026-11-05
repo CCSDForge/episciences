@@ -524,6 +524,19 @@ describe('es.mail-combobox', () => {
             );
         });
 
+        test('a new search leaves no option active', async () => {
+            const { input, combobox } = await opened();
+            key(input, 'ArrowDown');
+            key(input, 'ArrowDown');
+
+            await searchFor(input, 'ala');
+
+            expect(input.hasAttribute('aria-activedescendant')).toBe(false);
+            expect(
+                combobox.listbox.querySelector('[aria-selected="true"]')
+            ).toBeNull();
+        });
+
         test('Home and End go to the first and last options', async () => {
             const { input, combobox } = await opened();
             const options =

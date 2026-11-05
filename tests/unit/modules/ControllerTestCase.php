@@ -283,7 +283,7 @@ abstract class ControllerTestCase extends TestCase
             $output = (string)ob_get_clean();
         }
 
-        return new DispatchResult($response, $output, $stopped);
+        return new DispatchResult($response, $output, $stopped, $controller->view);
     }
 
     /**

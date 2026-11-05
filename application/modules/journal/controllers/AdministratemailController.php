@@ -5,6 +5,7 @@ use Episciences\Mail\AuthPaperAccessProvider;
 use Episciences\Mail\RecipientAccessDenied;
 use Episciences\Mail\RecipientAccessPolicy;
 use Episciences\Mail\RecipientListValidator;
+use Episciences\Mail\RecipientScope;
 use Episciences\Mail\RecipientSearchAudit;
 use Episciences\Mail\RecipientSearchService;
 use Episciences\Mail\RecipientSuggestions;
@@ -333,6 +334,14 @@ class AdministratemailController extends Zend_Controller_Action
         // Git #61
         $docId = (int)$request->get('paper');
 
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $scope = $docId > 0 ? $this->recipientScope($db, $docId) : null;
+
+        if ($docId > 0 && $scope === null) {
+            // The form lists the participants of its paper: it is only about a paper the user may access
+            $docId = 0;
+        }
+
         if ($ajax) {
 
             $this->_helper->layout->disableLayout();
@@ -352,9 +361,15 @@ class AdministratemailController extends Zend_Controller_Action
 
         $isTokenRefused = $isSendRequest && !Episciences_Csrf_Helper::validateRequestToken($request);
 
-        if ($isTokenRefused) {
+        $postedDocId = isset($post['docid']) && is_numeric($post['docid']) ? (int)$post['docid'] : 0;
+        $sendScope = $isSendRequest && !$isTokenRefused && $postedDocId > 0 ? $this->recipientScope($db, $postedDocId) : null;
+        // A mail about a paper is written into its history: only for a paper the user may access
+        $isPaperRefused = $isSendRequest && !$isTokenRefused && $postedDocId > 0 && $sendScope === null;
+
+        if ($isTokenRefused || $isPaperRefused) {
+            $reason = $isTokenRefused ? 'Votre session a expiré, veuillez réessayer.' : "Vous n'avez pas accès à cet article.";
             $message = '<p><strong>' . $this->view->translate("Votre message n'a pas pu être envoyé :") . '</strong></p>'
-                . '<div>' . $this->view->translate('Votre session a expiré, veuillez réessayer.') . '</div>';
+                . '<div>' . $this->view->translate($reason) . '</div>';
 
             if (isset($post['in_modal'])) {
                 // Not a success status: the modal keeps the text typed by the user
@@ -366,11 +381,11 @@ class AdministratemailController extends Zend_Controller_Action
             }
 
             // Nothing is sent, and the form is not filled with the refused request:
-            // its values may come from another site
+            // its values may come from another site, or be about a paper the user may not access
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         } elseif ($isSendRequest) {
 
-            $checkedRecipients = $this->checkRecipients($post);
+            $checkedRecipients = $this->checkRecipients($db, $post, $sendScope);
 
             if ($checkedRecipients['isDetectedErrors']) {
                 $form->setDefaults($post);
@@ -387,35 +402,16 @@ class AdministratemailController extends Zend_Controller_Action
 
         } else {
 
-            $uid = $request->getParam('recipient');
+            $recipientId = $request->getParam('recipient');
+            $js_recipient = is_numeric($recipientId) && (int)$recipientId > 0
+                ? $this->prefilledRecipient($db, $scope ?? $this->recipientScope($db, null), (int)$recipientId, (bool)$request->getParam('tmp'), $docId)
+                : null;
 
-            if ($uid && is_numeric($uid)) {
-                if (!$request->getParam('tmp')) {
-                    $user = new Episciences_User;
-                    if ($user->findWithCAS($uid)) {
-                        $js_recipient = RecipientSuggestions::fromUser($user);
-                    }
-                } else {
-                    $user = new Episciences_User_Tmp;
-                    if (!empty($user->find($uid))) {
-                        $user->generateScreen_name();
-                        // Not an account: no UID (the id of a temporary user may be the UID of another account)
-                        $js_recipient = [
-                            'uid' => null,
-                            'fullname' => (string)$user->getScreenName(),
-                            'username' => '',
-                            'mail' => (string)$user->getEmail(),
-                        ];
-                    }
-                }
-                if (isset($js_recipient) && $js_recipient['uid'] !== null && $docId > 0) {
-                    $js_recipient['paperRole'] = $this->paperRoleOf((int)$js_recipient['uid'], $docId);
-                }
-                if (isset($js_recipient)) {
-                    $this->view->js_recipient = RecipientSuggestions::toScriptJson($js_recipient);
-                }
-                if ($ajax && isset($js_recipient)) {
-                    $form->setDefaults(['to' => $user->getScreenName() . ' <' . $user->getEmail() . '>']);
+            if ($js_recipient !== null) {
+                $this->view->js_recipient = RecipientSuggestions::toScriptJson($js_recipient);
+
+                if ($ajax) {
+                    $form->setDefaults(['to' => $js_recipient['fullname'] . ' <' . $js_recipient['mail'] . '>']);
                 }
             }
 
@@ -747,22 +743,40 @@ class AdministratemailController extends Zend_Controller_Action
     }
 
     /**
-     * Role of a user in the paper of the mail (author, reviewer...), null if none, or if the logged user may not
-     * know it (same rules as the recipients search)
+     * What the logged user may know of the recipients, about a paper or not; null if refused (no recipients search
+     * for their roles, or a paper they may not access)
      */
-    private function paperRoleOf(int $uid, int $docId): ?string
+    private function recipientScope(Zend_Db_Adapter_Abstract $db, ?int $docId): ?RecipientScope
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
         try {
-            $scope = $this->recipientAccessPolicy($db)->scope($docId);
+            return $this->recipientAccessPolicy($db)->scope($docId);
         } catch (RecipientAccessDenied) {
             return null;
         }
+    }
 
-        return $scope->contextPaperId === null
-            ? null
-            : ((new RecipientSearchService($db))->paperRoles((int)RVID, $scope->contextPaperId, $scope->withContextReviewers)[$uid] ?? null);
+    /**
+     * Recipient given in the URL of the form ("Contact" links): only a user the recipients search would find
+     *
+     * @return ?array{uid: ?int, fullname: string, username: string, mail: string, roles: list<string>, group: string, paperRole: ?string}
+     */
+    private function prefilledRecipient(Zend_Db_Adapter_Abstract $db, ?RecipientScope $scope, int $id, bool $isTemporaryUser, int $docId): ?array
+    {
+        $service = new RecipientSearchService($db);
+        $recipient = null;
+
+        if ($scope !== null) {
+            $recipient = $isTemporaryUser
+                ? $service->findVisibleTmpReviewer((int)RVID, $scope, $id)
+                : $service->findVisible((int)RVID, $scope, $id);
+        }
+
+        if ($recipient === null) {
+            // The form stays empty, without telling whether the account exists
+            AccessLog::denied(AccessLog::HTTP_FORBIDDEN, 'mail_recipient_prefill', ['uid' => $id, 'tmp' => $isTemporaryUser, 'docid' => $docId]);
+        }
+
+        return $recipient;
     }
 
     /**
@@ -1010,25 +1024,14 @@ class AdministratemailController extends Zend_Controller_Action
     /**
      * Recipients of the mailing form, checked (structure, addresses, number, journal accounts, anonymity)
      * @param array<string, mixed> $post
+     * @param ?RecipientScope $scope what the sender may know of the recipients (see recipientScope())
      * @param bool $strict [default true: the main recipient ($to) is required ]
      * @return array{recipients: array{to: list<array{key: string, value: string, uid: ?int}>, cc: list<array{key: string, value: string, uid: ?int}>, bcc: list<array{key: string, value: string, uid: ?int}>}, errors: list<array{message: string, argument: string|int|null}>, isDetectedErrors: bool}
      */
-    private function checkRecipients(array $post, bool $strict = true): array
+    private function checkRecipients(Zend_Db_Adapter_Abstract $db, array $post, ?RecipientScope $scope, bool $strict = true): array
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $docId = isset($post['docid']) && is_numeric($post['docid']) ? (int)$post['docid'] : 0;
-
-        $paperId = null;
-
-        if ($docId > 0) {
-            try {
-                $scope = $this->recipientAccessPolicy($db)->scope($docId);
-                // The anonymity check tells who the reviewers of the paper are: only for the users allowed to know them
-                $paperId = $scope->withContextReviewers ? $scope->contextPaperId : null;
-            } catch (RecipientAccessDenied) {
-                $paperId = null;
-            }
-        }
+        // The anonymity check tells who the reviewers of the paper are: only for the users allowed to know them
+        $paperId = $scope !== null && $scope->withContextReviewers ? $scope->contextPaperId : null;
 
         return (new RecipientListValidator(new RecipientSearchService($db), (int)RVID))->validate($post, $strict, $paperId);
     }

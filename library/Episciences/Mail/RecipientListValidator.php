@@ -226,8 +226,13 @@ final class RecipientListValidator
             $hasReviewer = $hasReviewer || $role === Episciences_Acl::ROLE_REVIEWER;
         }
 
-        if (!$hasAuthor || $hasReviewer) {
-            return $hasReviewer;
+        if (!$hasAuthor) {
+            // No author: the reviewers may be visible to each other and to the editors
+            return false;
+        }
+
+        if ($hasReviewer) {
+            return true;
         }
 
         // Reviewers invited without an account are only known by their address

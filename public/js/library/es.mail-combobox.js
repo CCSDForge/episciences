@@ -425,6 +425,8 @@
         function renderSections(sections) {
             listbox.replaceChildren();
             activeIndex = -1;
+            // The options are rebuilt with the same ids: none of them is active yet
+            input.removeAttribute('aria-activedescendant');
             results = [];
 
             sections.forEach(section => {

@@ -70,7 +70,7 @@ final class AdministratemailControllerSendTest extends ControllerTestCase
         self::assertStringContainsString('Trop de destinataires (100 au maximum).', $result->body());
     }
 
-    public function testReviewersOfAPaperTheSenderCannotManageAreNotLookedUp(): void
+    public function testMailAboutAPaperTheSenderCannotManageIsRefused(): void
     {
         $this->logInAs([Episciences_Acl::ROLE_COPY_EDITOR]);
         $this->givenJournal();
@@ -82,15 +82,64 @@ final class AdministratemailControllerSendTest extends ControllerTestCase
             'send',
             $this->xhrPostRequest(self::modalPost([
                 'docid' => '12',
-                'subject' => '',
-                'content' => '',
                 'hidden_to' => (string)json_encode([['key' => 'a', 'value' => 'author@example.org', 'uid' => null]]),
                 'hidden_cc' => (string)json_encode([['key' => 'b', 'value' => 'candidate@example.org', 'uid' => null]]),
             ]), true)
         );
 
-        self::assertSame(422, $result->statusCode());
-        self::assertStringContainsString('Corps du message vide.', $result->body());
+        // Not sent: it would be written into the history of the paper
+        self::assertSame(403, $result->statusCode());
+        self::assertStringContainsString("Vous n'avez pas accès à cet article.", $result->body());
         self::assertStringNotContainsString("'reviewer'", implode("\n", $this->db->selects()), 'the answer must not depend on the reviewers of the paper');
+    }
+
+    public function testRecipientOutsideTheSearchScopeIsNotPrefilled(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_COPY_EDITOR]);
+        $this->givenJournal();
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->getRequest([], ['recipient' => '42'])
+        );
+
+        self::assertNull($result->view->js_recipient ?? null);
+        $lookup = implode("\n", array_filter($this->db->selects(), static fn(string $sql): bool => str_contains($sql, 'u.UID = 42')));
+        self::assertStringContainsString("ROLEID IN ('chief_editor', 'secretary', 'editor', 'guest_editor', 'copyeditor', 'webmaster')", $lookup, 'the account is looked up within the staff only');
+    }
+
+    public function testUserInvitedWithoutAccountIsOnlyPrefilledAsAReviewerOfThePaper(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+        $this->givenJournal();
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->getRequest([], ['recipient' => '42', 'tmp' => '1'])
+        );
+
+        self::assertNull($result->view->js_recipient ?? null);
+        self::assertStringNotContainsString('USER_TMP', implode("\n", $this->db->selects()), 'no paper: the invitation is not looked up');
+    }
+
+    public function testRecipientFoundByTheSearchIsPrefilled(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+        $this->givenJournal();
+        $this->db->respondTo('/u\.UID = 42/', [
+            ['UID' => 42, 'FIRSTNAME' => 'Sam', 'LASTNAME' => 'Staff', 'USERNAME' => 'sstaff', 'EMAIL' => 'sam@example.org', 'ROLES' => 'editor'],
+        ]);
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->getRequest([], ['recipient' => '42'])
+        );
+
+        $recipient = json_decode((string)($result->view->js_recipient ?? 'null'), true);
+        self::assertSame(42, $recipient['uid'] ?? null);
+        self::assertSame('sam@example.org', $recipient['mail'] ?? null);
     }
 }

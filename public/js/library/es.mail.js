@@ -895,6 +895,9 @@ function updateModalButton(step) {
     }
 }
 
+/** Longest server text shown as is, when it is not a message of the application */
+const EP_SERVER_MESSAGE_MAX_LENGTH = 200;
+
 /**
  * Message of the server (HTML built by AdministratemailController::sendMail()) as text:
  * its title and its lines, never inserted as HTML
@@ -906,14 +909,23 @@ function epServerMessage(html) {
         String(html || ''),
         'text/html'
     );
+    const title = doc.body.querySelector('p');
+    if (!title) {
+        // A short message (success), or a page not built by the application (proxy error...): never shown
+        // whole, the caller falls back to its own message
+        doc.body
+            .querySelectorAll('script, style, noscript, template')
+            .forEach(el => el.remove());
+        const text = doc.body.textContent.replace(/\s+/g, ' ').trim();
+        return {
+            title: text.length <= EP_SERVER_MESSAGE_MAX_LENGTH ? text : '',
+            lines: [],
+        };
+    }
     const lines = Array.from(doc.body.querySelectorAll('div'))
         .map(div => div.textContent.trim())
         .filter(Boolean);
-    const title = doc.body.querySelector('p');
-    return {
-        title: (title ? title.textContent : doc.body.textContent).trim(),
-        lines,
-    };
+    return { title: title.textContent.trim(), lines };
 }
 
 /** Error shown above the mail form of the modal, which stays filled */

@@ -203,6 +203,16 @@ final class RecipientListValidatorTest extends TestCase
         self::assertFalse($result['isDetectedErrors']);
     }
 
+    public function testReviewerWithoutAuthorIsAllowed(): void
+    {
+        $result = self::validator()->validate([
+            'hidden_to' => self::json([['key' => 'b', 'value' => 'reviewer@example.org']]),
+            'hidden_cc' => self::json([['key' => 'c', 'value' => 'editor@example.org']]),
+        ], true, self::PAPERID);
+
+        self::assertFalse($result['isDetectedErrors']);
+    }
+
     public function testReviewerInvitedWithoutAccountIsFoundByAddress(): void
     {
         $result = self::validator()->validate([

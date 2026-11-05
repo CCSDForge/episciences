@@ -418,6 +418,38 @@ describe('es.mail recipients list', () => {
             );
         });
 
+        test('a page not built by the application is never shown whole', () => {
+            const form = sendForm();
+            mail.epSendModalMail(form);
+
+            request.fail({
+                responseText:
+                    '<html><head><style>body{color:red}</style></head><body>' +
+                    '<script>var tracking = 1;</script>' +
+                    '<div>' +
+                    'Bad gateway. '.repeat(30) +
+                    '</div></body></html>',
+            });
+
+            const alert = form.querySelector('.ep-send-error');
+            expect(alert.querySelector('strong').textContent).toBe(
+                "Votre message n'a pas pu être envoyé :"
+            );
+            expect(alert.querySelector('li')).toBeNull();
+            expect(alert.textContent).not.toContain('tracking');
+        });
+
+        test('a short error without a message of the application is shown as is', () => {
+            const form = sendForm();
+            mail.epSendModalMail(form);
+
+            request.fail({ responseText: 'Service unavailable' });
+
+            expect(
+                form.querySelector('.ep-send-error strong').textContent
+            ).toBe('Service unavailable');
+        });
+
         test('a sent mail is announced by the form, with the message of the server', () => {
             const form = sendForm();
             const listener = jest.fn();
