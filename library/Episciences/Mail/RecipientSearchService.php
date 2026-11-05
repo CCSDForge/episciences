@@ -227,19 +227,38 @@ final class RecipientSearchService implements RecipientDirectory
         return $roles;
     }
 
+    public function temporaryReviewerEmails(int $rvid, int $paperId): array
+    {
+        $latest = self::latestPaperAssignmentsQuery($this->db, $rvid, [Episciences_Acl::ROLE_REVIEWER], true)
+            ->where('ITEMID IN ?', $this->db->select()->from(T_PAPERS, ['DOCID'])->where('PAPERID = ?', $paperId));
+
+        $select = $this->db->select()
+            ->from(['a' => T_ASSIGNMENTS], [])
+            ->join(['l' => $latest], 'a.ID = l.LAST_ID', [])
+            ->join(['t' => T_TMP_USER], 't.ID = a.UID', ['EMAIL'])
+            ->where('a.STATUS IN (?)', [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING]);
+
+        return array_values(array_unique(array_map(
+            static fn(mixed $email): string => mb_strtolower(trim((string)$email)),
+            $this->db->fetchCol($select)
+        )));
+    }
+
     /**
-     * IDs of the latest paper assignment of each (document, user, role), accounts only: assignments are never
-     * updated, a new row is added instead, so the latest one tells the current status.
+     * IDs of the latest paper assignment of each (document, user, role): assignments are never updated, a new row
+     * is added instead, so the latest one tells the current status.
      *
      * @param list<string> $roles
+     * @param bool $temporaryUsers false: accounts only; true: users invited without an account only (their ID is
+     *                             not a UID)
      */
-    public static function latestPaperAssignmentsQuery(Zend_Db_Adapter_Abstract $db, int $rvid, array $roles): Zend_Db_Select
+    public static function latestPaperAssignmentsQuery(Zend_Db_Adapter_Abstract $db, int $rvid, array $roles, bool $temporaryUsers = false): Zend_Db_Select
     {
         return $db->select()
             ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('RVID = ?', $rvid)
             ->where('ITEM = ?', Episciences_User_Assignment::ITEM_PAPER)
-            ->where('TMP_USER = ?', 0)
+            ->where('TMP_USER = ?', $temporaryUsers ? 1 : 0)
             ->where('ROLEID IN (?)', $roles)
             ->group(['ITEMID', 'UID', 'ROLEID']);
     }

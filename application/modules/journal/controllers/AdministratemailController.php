@@ -450,7 +450,7 @@ class AdministratemailController extends Zend_Controller_Action
 
         if (!empty($errors) || $isEmptyMail) {
 
-            Episciences_Tools::deleteDir(Episciences_Tools::getAttachmentsPath());
+            // The attachments are kept: the form is sent again once corrected, with the same attachments
 
             $message = '<p><strong>' . $selfView->translate("Votre message n'a pas pu être envoyé :") . '</strong></p>';
 
@@ -715,8 +715,18 @@ class AdministratemailController extends Zend_Controller_Action
             ->setBody(json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG));
     }
 
+    /**
+     * @throws RecipientAccessDenied
+     */
     private function recipientAccessPolicy(Zend_Db_Adapter_Abstract $db): RecipientAccessPolicy
     {
+        $roles = self::strictRoles();
+
+        // Refused before anything is loaded
+        if (array_intersect(RecipientAccessPolicy::ALLOWED_ROLES, $roles) === []) {
+            throw new RecipientAccessDenied('Recipients search is not allowed for this user');
+        }
+
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
 
@@ -728,7 +738,7 @@ class AdministratemailController extends Zend_Controller_Action
         );
 
         return new RecipientAccessPolicy(
-            self::strictRoles(),
+            $roles,
             (bool)$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS),
             (bool)$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS),
             (bool)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED),
@@ -1008,7 +1018,17 @@ class AdministratemailController extends Zend_Controller_Action
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $docId = isset($post['docid']) && is_numeric($post['docid']) ? (int)$post['docid'] : 0;
 
-        $paperId = $docId > 0 ? AuthPaperAccessProvider::paperIdOf($db, (int)RVID, $docId) : null;
+        $paperId = null;
+
+        if ($docId > 0) {
+            try {
+                $scope = $this->recipientAccessPolicy($db)->scope($docId);
+                // The anonymity check tells who the reviewers of the paper are: only for the users allowed to know them
+                $paperId = $scope->withContextReviewers ? $scope->contextPaperId : null;
+            } catch (RecipientAccessDenied) {
+                $paperId = null;
+            }
+        }
 
         return (new RecipientListValidator(new RecipientSearchService($db), (int)RVID))->validate($post, $strict, $paperId);
     }

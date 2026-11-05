@@ -25,4 +25,11 @@ interface RecipientDirectory
      * @return array<int, string> UID => role in the paper (author, coauthor, editor, copyeditor, reviewer)
      */
     public function paperRoles(int $rvid, int $paperId, bool $withReviewers): array;
+
+    /**
+     * Reviewers of a paper invited without an account (temporary users), while their invitation or assignment
+     * is current: they have no UID in the journal, only an address
+     * @return list<string> lower-cased emails
+     */
+    public function temporaryReviewerEmails(int $rvid, int $paperId): array;
 }

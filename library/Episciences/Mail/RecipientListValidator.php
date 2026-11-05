@@ -218,14 +218,28 @@ final class RecipientListValidator
         $paperRoles = $this->directory->paperRoles($this->rvid, $paperId, true);
         $hasAuthor = false;
         $hasReviewer = false;
+        $visible = array_merge($recipients['to'], $recipients['cc']);
 
-        foreach (array_merge($recipients['to'], $recipients['cc']) as $recipient) {
+        foreach ($visible as $recipient) {
             $role = $recipient['uid'] !== null ? ($paperRoles[$recipient['uid']] ?? null) : null;
             $hasAuthor = $hasAuthor || in_array($role, self::AUTHOR_ROLES, true);
             $hasReviewer = $hasReviewer || $role === Episciences_Acl::ROLE_REVIEWER;
         }
 
-        return $hasAuthor && $hasReviewer;
+        if (!$hasAuthor || $hasReviewer) {
+            return $hasReviewer;
+        }
+
+        // Reviewers invited without an account are only known by their address
+        $temporaryReviewers = $this->directory->temporaryReviewerEmails($this->rvid, $paperId);
+
+        foreach ($visible as $recipient) {
+            if (in_array(self::emailOf($recipient['value']), $temporaryReviewers, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

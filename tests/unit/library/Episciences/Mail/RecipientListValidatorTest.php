@@ -49,6 +49,11 @@ final class RecipientListValidatorTest extends TestCase
             {
                 return $this->paperRoles;
             }
+
+            public function temporaryReviewerEmails(int $rvid, int $paperId): array
+            {
+                return ['invited@example.org'];
+            }
         };
 
         return new RecipientListValidator($directory, self::RVID);
@@ -194,6 +199,26 @@ final class RecipientListValidatorTest extends TestCase
             'hidden_to' => self::json([['key' => 'a', 'value' => 'author@example.org']]),
             'hidden_cc' => self::json([['key' => 'b', 'value' => 'reviewer@example.org']]),
         ]);
+
+        self::assertFalse($result['isDetectedErrors']);
+    }
+
+    public function testReviewerInvitedWithoutAccountIsFoundByAddress(): void
+    {
+        $result = self::validator()->validate([
+            'hidden_to' => self::json([['key' => 'a', 'value' => 'author@example.org']]),
+            'hidden_cc' => self::json([['key' => 'b', 'value' => 'Invited Reviewer <INVITED@example.org>']]),
+        ], true, self::PAPERID);
+
+        self::assertSame([RecipientListValidator::ERROR_ANONYMITY], self::messages($result));
+    }
+
+    public function testReviewerInvitedWithoutAccountAloneIsAllowed(): void
+    {
+        $result = self::validator()->validate([
+            'hidden_to' => self::json([['key' => 'b', 'value' => 'invited@example.org']]),
+            'hidden_cc' => self::json([['key' => 'c', 'value' => 'editor@example.org']]),
+        ], true, self::PAPERID);
 
         self::assertFalse($result['isDetectedErrors']);
     }

@@ -250,4 +250,18 @@ final class RecipientSearchServiceTest extends TestCase
         self::assertSame([], $this->service()->resolveEmails(self::RVID, ['', '  ']));
         self::assertSame([], $this->queries);
     }
+
+    public function testTemporaryReviewerEmailsAreTheCurrentInvitationsWithoutAccount(): void
+    {
+        $emails = $this->service([], [['Invited@Example.org ', 'invited@example.org', 'other@example.org']])
+            ->temporaryReviewerEmails(self::RVID, 5);
+
+        self::assertSame(['invited@example.org', 'other@example.org'], $emails);
+        $query = $this->lastQuery();
+        self::assertStringContainsString('TMP_USER = 1', $query);
+        self::assertStringContainsString("ROLEID IN ('reviewer')", $query);
+        self::assertStringContainsString('t.ID = a.UID', $query);
+        self::assertStringContainsString("a.STATUS IN ('active', 'pending')", $query);
+        self::assertStringContainsString('PAPERID = 5', $query);
+    }
 }

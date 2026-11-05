@@ -59,6 +59,10 @@ $(document).ready(function () {
                 ) {
                     refreshPaperHistory($jsDocId);
                 }
+                // #modal-box is shared with the other modals of the page: they must not run these handlers
+                $('#modal-box')
+                    .off('hide.bs.modal.epSendMail')
+                    .off('hidden.bs.modal.epSendMail');
             });
 
         // Sent: the modal closes without asking, the confirmation is a toast
@@ -97,12 +101,13 @@ $(document).ready(function () {
     $('#modal-box')
         .off('hide.bs.modal.epSendMail')
         .on('hide.bs.modal.epSendMail', function () {
-            if (isSent) {
+            // Another content may be shown in the shared modal: only the mail form asks for a confirmation
+            if (isSent || sendForm === null || !sendForm.isConnected) {
                 return;
             }
-            let editorContent = tinyMCE.activeEditor.getContent();
+            const editor = tinyMCE.activeEditor;
+            const editorContent = editor ? editor.getContent() : '';
             const hasRecipients =
-                sendForm !== null &&
                 sendForm.querySelector(
                     '.recipient-tags[data-recipient-target="cc"] .recipient-tag, .recipient-tags[data-recipient-target="bcc"] .recipient-tag'
                 ) !== null;

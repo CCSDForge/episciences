@@ -69,4 +69,28 @@ final class AdministratemailControllerSendTest extends ControllerTestCase
         self::assertSame(422, $result->statusCode());
         self::assertStringContainsString('Trop de destinataires (100 au maximum).', $result->body());
     }
+
+    public function testReviewersOfAPaperTheSenderCannotManageAreNotLookedUp(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_COPY_EDITOR]);
+        $this->givenJournal();
+        // The document belongs to the journal, but cannot be loaded for the sender: no access to the paper
+        $this->db->respondTo('/SELECT `PAPERS`\.`PAPERID` FROM `PAPERS` WHERE \(DOCID = 12\)/', [['PAPERID' => 90]]);
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->xhrPostRequest(self::modalPost([
+                'docid' => '12',
+                'subject' => '',
+                'content' => '',
+                'hidden_to' => (string)json_encode([['key' => 'a', 'value' => 'author@example.org', 'uid' => null]]),
+                'hidden_cc' => (string)json_encode([['key' => 'b', 'value' => 'candidate@example.org', 'uid' => null]]),
+            ]), true)
+        );
+
+        self::assertSame(422, $result->statusCode());
+        self::assertStringContainsString('Corps du message vide.', $result->body());
+        self::assertStringNotContainsString("'reviewer'", implode("\n", $this->db->selects()), 'the answer must not depend on the reviewers of the paper');
+    }
 }

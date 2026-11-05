@@ -185,4 +185,30 @@ describe('administratemail/send.js in the modal of the paper page', () => {
 
         expect(global.confirm).toHaveBeenCalledTimes(1);
     });
+
+    test('once closed, the mail handlers do not run for another content of the shared modal', () => {
+        global.confirm = jest.fn(() => true);
+        loadScript();
+        $('#modal-box').modal('hide');
+        expect(global.confirm).toHaveBeenCalledTimes(1);
+
+        // Another modal of the page, without any editor
+        document.getElementById('modal-box').innerHTML =
+            '<form id="other"></form>';
+        global.tinyMCE.activeEditor = null;
+        editor.remove.mockClear();
+
+        expect(() => $('#modal-box').modal('hide')).not.toThrow();
+        expect(global.confirm).toHaveBeenCalledTimes(1);
+        expect(editor.remove).not.toHaveBeenCalled();
+    });
+
+    test('a mail form removed from the page does not ask for a confirmation', () => {
+        loadScript();
+        document.getElementById('send_form').remove();
+        global.tinyMCE.activeEditor = null;
+
+        expect(() => $('#modal-box').modal('hide')).not.toThrow();
+        expect(global.confirm).not.toHaveBeenCalled();
+    });
 });
