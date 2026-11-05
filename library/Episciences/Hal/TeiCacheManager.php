@@ -1,6 +1,7 @@
 <?php
 
 use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -19,12 +20,32 @@ class Episciences_Hal_TeiCacheManager
 
     private static ?CacheItemPoolInterface $cachePool = null;
 
+    private static ?ClientInterface $httpClient = null;
+
     /**
-     * Replace the cache pool (tests); null restores the filesystem cache
+     * Cache keys of the TEI that HAL failed to return in this process (request or CLI run):
+     * a failed TEI is not cached, so the next process tries again, but the licence, author and
+     * funding enrichments of the same paper do not each wait for HAL once more.
+     *
+     * @var array<string, true>
+     */
+    private static array $unavailable = [];
+
+    /**
+     * Replace the cache pool (tests); null restores the filesystem cache. Forgets the failed fetches.
      */
     public static function setCachePool(?CacheItemPoolInterface $cachePool): void
     {
         self::$cachePool = $cachePool;
+        self::$unavailable = [];
+    }
+
+    /**
+     * Replace the HTTP client (tests); null restores a default Guzzle client
+     */
+    public static function setHttpClient(?ClientInterface $httpClient): void
+    {
+        self::$httpClient = $httpClient;
     }
 
     /**
@@ -32,9 +53,10 @@ class Episciences_Hal_TeiCacheManager
      *
      * @param string $identifier HAL document identifier
      * @param int $version HAL document version (0 = latest)
-     * An empty response (failed HAL call) is not cached, so that the next call tries again.
+     * An empty response (failed HAL call) is not cached, so that the next process tries again;
+     * within this process, the failed TEI is not requested again.
      *
-     * @return bool true if fetched from API, false if already cached
+     * @return bool true if fetched from HAL and cached, false if already cached or unavailable
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public static function fetchAndCache(string $identifier, int $version = 0): bool
@@ -44,16 +66,21 @@ class Episciences_Hal_TeiCacheManager
         $cacheItem = $cache->getItem($cacheKey);
         $cacheItem->expiresAfter(self::ONE_MONTH);
 
-        if (!$cacheItem->isHit()) {
-            $teiXml = self::fetchFromApi($identifier, $version);
-            if (trim($teiXml) !== '') {
-                $cacheItem->set($teiXml);
-                $cache->save($cacheItem);
-            }
-            return true;
+        if ($cacheItem->isHit() || isset(self::$unavailable[$cacheKey])) {
+            return false;
         }
 
-        return false;
+        $teiXml = self::fetchFromApi($identifier, $version);
+
+        if (trim($teiXml) === '') {
+            self::$unavailable[$cacheKey] = true;
+            return false;
+        }
+
+        $cacheItem->set($teiXml);
+        $cache->save($cacheItem);
+
+        return true;
     }
 
     /**
@@ -65,7 +92,9 @@ class Episciences_Hal_TeiCacheManager
      */
     public static function delete(string $identifier, int $version = 0): void
     {
-        self::createCacheAdapter()->deleteItem(self::buildCacheKey($identifier, $version));
+        $cacheKey = self::buildCacheKey($identifier, $version);
+        unset(self::$unavailable[$cacheKey]);
+        self::createCacheAdapter()->deleteItem($cacheKey);
     }
 
     /**
@@ -126,12 +155,12 @@ class Episciences_Hal_TeiCacheManager
      */
     private static function fetchFromApi(string $identifier, int $version): string
     {
-        $client = new GuzzleClient();
+        $client = self::$httpClient ?? new GuzzleClient();
         $url = self::buildApiUrl($identifier, $version);
         $timeout = (PHP_SAPI === 'cli') ? self::TIMEOUT_CLI : self::TIMEOUT_WEB;
 
         try {
-            return $client->get($url, [
+            return $client->request('GET', $url, [
                 'headers' => [
                     'User-Agent' => self::HAL_USER_AGENT,
                     'Content-Type' => 'application/json',
