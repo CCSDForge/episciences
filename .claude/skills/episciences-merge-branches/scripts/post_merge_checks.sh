@@ -76,7 +76,9 @@ methods="$(python3 "${dir}/check_methods.py" "$before" "$target" "$source" 2>&1)
 methods_rc=$?
 echo "$methods"
 notes="$(printf '%s\n' "$methods" | grep -c '^\[unused\]' || true)"
-if [[ $methods_rc -ne 0 ]]; then
+if [[ $methods_rc -eq 2 ]]; then
+    record methods KO "check_methods.py did not run (git error, see the output above)"
+elif [[ $methods_rc -ne 0 ]]; then
     record methods KO "$(printf '%s\n' "$methods" | grep '^Issues:')"
 elif [[ "$notes" != "0" ]]; then
     record methods REVIEW "Issues: 0, ${notes} [unused] note(s)"
@@ -122,9 +124,9 @@ else
     echo "######## phpunit"
     baseline="${cache}/phpunit-failures-$(git rev-parse "$before").txt"
     after="$(bash "${dir}/phpunit_failures.sh" | tail -1)"
-    status=$?
+    phpunit_rc=$?
     summary="$(cat "${cache}/phpunit-summary-$(git rev-parse HEAD).txt" 2>/dev/null)"
-    if [[ $status -ne 0 ]]; then
+    if [[ $phpunit_rc -ne 0 ]]; then
         record phpunit KO "the suite did not run (see the output above)"
     elif [[ ! -f "$baseline" ]]; then
         record phpunit REVIEW "${summary}; no baseline for ${before}: compare by hand"

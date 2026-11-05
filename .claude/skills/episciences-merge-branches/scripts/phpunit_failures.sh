@@ -28,6 +28,16 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
     exit 1
 fi
 
+# The container tests the checkout it mounts, which may be another clone or
+# worktree: the result would then be cached under the wrong commit.
+toplevel="$(git rev-parse --show-toplevel)"
+mounted="$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/var/www/htdocs"}}{{.Source}}{{end}}{{end}}' "$container")"
+if [[ -z "$mounted" || "$(realpath -m "$mounted")" != "$(realpath -m "$toplevel")" ]]; then
+    echo "${container} mounts '${mounted:-nothing}' on /var/www/htdocs, not this checkout (${toplevel})." >&2
+    echo "Run the script from the mounted checkout, or set CONTAINER." >&2
+    exit 1
+fi
+
 sha="$(git rev-parse HEAD)"
 failures="${dir}/phpunit-failures-${sha}.txt"
 summary="${dir}/phpunit-summary-${sha}.txt"
@@ -41,8 +51,14 @@ else
         echo "PHPUnit printed no summary (bootstrap error?): nothing cached." >&2
         exit 1
     fi
-    # Numbers ("1) ") shift from one run to another: drop them so lists can be compared
-    printf '%s\n' "$output" | grep -E '^[0-9]+\) ' | sed -E 's/^[0-9]+\) //' | sort -u > "$failures" || true
+    # Only the "There was/were N error(s)/failure(s):" sections: risky tests,
+    # warnings and deprecations are numbered too, and would hide a test that
+    # starts failing. Numbers ("1) ") shift from one run to another: drop them
+    # so lists can be compared.
+    printf '%s\n' "$output" \
+        | awk '/^There (was|were) [0-9]+ / { keep = ($0 ~ / (errors?|failures?):$/); next }
+               keep && /^[0-9]+\) / { sub(/^[0-9]+\) /, ""); print }' \
+        | sort -u > "$failures" || true
     printf '%s\n' "$output" | grep -E '^(OK|Tests:)' | tail -1 > "$summary" || true
 fi
 

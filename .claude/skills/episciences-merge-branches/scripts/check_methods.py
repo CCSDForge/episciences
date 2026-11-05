@@ -45,7 +45,8 @@ Calls are matched by method name only: string literals are ignored, but a
 method of a vendor/PHP class sharing a name with a project method can still
 produce a false positive (typically [removed]).
 Read-only: it never modifies anything. Exit code 1 if an issue is reported
-(notes do not change the exit code).
+(notes do not change the exit code), 2 if a git command fails (unknown
+revision...): nothing was checked.
 """
 
 import re
@@ -70,7 +71,15 @@ STRING_RE = re.compile(r"'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"")
 
 
 def git(*args):
-    return subprocess.run(["git", *args], capture_output=True, text=True).stdout
+    """stdout of a git command; exits on failure, so that an unknown revision
+    never reads as "no issue". `git grep` without a match (exit code 1) is not
+    a failure."""
+    result = subprocess.run(["git", *args], capture_output=True, text=True)
+    if result.returncode == 0 or (args[0] == "grep" and result.returncode == 1 and not result.stderr):
+        return result.stdout
+    print(f"git {' '.join(args)} failed (exit code {result.returncode}):\n{result.stderr.strip()}",
+          file=sys.stderr)
+    sys.exit(2)
 
 
 def strip_strings(code):
@@ -217,13 +226,14 @@ def main():
         for _, op, name in calls(code):
             if name in reported or name not in source_defs or name not in target_defs:
                 continue
-            for spath, _, sparams in source_defs[name]:
+            for spath, smods, sparams in source_defs[name]:
                 same = [d for d in target_defs[name] if d[0] == spath]
                 via_trait = [d for d in target_defs[name] if d[0] in trait_files and d[0] != spath]
                 for tpath, tmods, tparams in (same or via_trait):
-                    # self::x() / static::x() towards a static target method is written
-                    # against the target API: not a divergence.
-                    if op == "::" and "static" in tmods:
+                    # A static call towards a method that is static on the target but
+                    # not on the source is written against the target API: not a
+                    # divergence. Static on both sides, the signatures are compared.
+                    if op == "::" and "static" in tmods and "static" not in smods:
                         continue
                     if None not in (sparams, tparams) and sparams != tparams:
                         reported.add(name)

@@ -76,10 +76,13 @@ Another pitfall: `$this->_helper->url($action, $controller)` (`Zend_Controller_A
 
 ### 0. Prerequisites
 
-The scripts run from the repository root, with `bash` or `python3` (they are mode 644):
+The scripts run from the repository root, with `bash` or `python3` (they are mode 644).
+
+First copy them out of the working tree: a target branch that does not track this skill yet removes them when it is checked out. Every later command uses this copy, written `<scripts>` below (`post_merge_checks.sh` finds its neighbours next to itself):
 
 ```bash
-bash <this-skill-dir>/scripts/sync_branches.sh   # note the starting branch, to return to at the end
+mkdir -p tmp/merge-branches/scripts && cp <this-skill-dir>/scripts/* tmp/merge-branches/scripts/   # <scripts> = tmp/merge-branches/scripts
+bash <scripts>/sync_branches.sh   # note the starting branch, to return to at the end
 ```
 
 The script:
@@ -95,10 +98,10 @@ Establish a **test baseline** on each sensitive target before merging, so that p
 
 ```bash
 git checkout <target>
-bash <this-skill-dir>/scripts/phpunit_failures.sh
+bash <scripts>/phpunit_failures.sh
 ```
 
-The `episciences-php-fpm` container mounts the repository: it tests the branch currently checked out. The script runs the full suite (`--no-coverage`) as `www-data`, like `make test-php` (as `root`, files created by the tests become unreadable for later runs, and file-permission tests wrongly pass), and stores the list of failing tests, without their number, in `phpunit-failures-<sha>.txt`. The file goes to `$TMPDIR` if the variable is exported, otherwise to `tmp/merge-branches/` (ignored by git). The cache is keyed by commit: if the target has not moved since a previous run, the result is reused without rerunning the suite (`--force` to rerun it). If PHPUnit prints no summary (bootstrap error, missing dependency: run `composer install` in the container after switching branches), the script exits with an error without caching anything, and `post_merge_checks.sh` marks `phpunit` as KO. `post_merge_checks.sh` (step g) then compares against this baseline for the "before" SHA.
+The `episciences-php-fpm` container mounts the repository: it tests the branch currently checked out. The script stops if the container mounts another checkout (another clone, a worktree): run it from the mounted one, or set `CONTAINER`. The script runs the full suite (`--no-coverage`) as `www-data`, like `make test-php` (as `root`, files created by the tests become unreadable for later runs, and file-permission tests wrongly pass), and stores the list of failing tests, without their number, in `phpunit-failures-<sha>.txt`. The file goes to `$TMPDIR` if the variable is exported, otherwise to `tmp/merge-branches/` (ignored by git). The cache is keyed by commit: if the target has not moved since a previous run, the result is reused without rerunning the suite (`--force` to rerun it). If PHPUnit prints no summary (bootstrap error, missing dependency: run `composer install` in the container after switching branches), the script exits with an error without caching anything, and `post_merge_checks.sh` marks `phpunit` as KO. `post_merge_checks.sh` (step g) then compares against this baseline for the "before" SHA.
 
 **Shell.** Do not assume which interactive shell runs the commands: write commands that behave the same in any of them.
 - Always delimit a variable followed by `:`: `"${b}:path"`, never `"$b:path"` (some shells read `:l`, `:h`… as modifiers).
@@ -123,7 +126,7 @@ The second command spots **parallel PRs**: the same feature ported separately to
 **b. Sensitive merges only (2 and 3): audit URLs before merging**
 
 ```bash
-bash <this-skill-dir>/scripts/audit_urls.sh <target> <source>   # run from the repository root
+bash <scripts>/audit_urls.sh <target> <source>   # run from the repository root
 ```
 
 The script only lists lines **added** by the source since the merge base. It flags hardcoded absolute URLs in PHP, PHTML and JS, `APPLICATION_URL . url()`, `->getUrl() . '/controller…'` (journal subdomain followed by an internal path), `$review->getUrl()` passed as an argument or assigned to a variable (the path is appended later, e.g. in `Reminder::buildInvitationUrl()`), `sprintf('/%s/%s', …)`, `$_SERVER['SERVER_NAME']`, `redirector()` / `gotoSimple()` without `[PREFIX_ROUTE => RVCODE]`, direct use of `Zend_Controller_Action_Helper_Url`, plus routing or infra files touched. It changes nothing. It is a pattern-based net: a call spread over several lines can produce a false positive, and an unusual URL construction can slip through. So check every flagged line, and stay alert while resolving conflicts.
@@ -195,7 +198,7 @@ A hardcoded URL coming from the source breaks the target's path-based routing, e
    ```bash
    php -l <modified .php/.phtml files>
    node --check <modified .js files>
-   bash <this-skill-dir>/scripts/audit_urls.sh <before-sha> <target>   # must only list the discarded false positives
+   bash <scripts>/audit_urls.sh <before-sha> <target>   # must only list the discarded false positives
    docker exec -u www-data -w /var/www/htdocs episciences-php-fpm php .github/scripts/check-hardcoded-internal-urls.php   # blocking: must pass (make check-hardcoded-urls)
    ```
    Run the audit after committing the fix (step 4): it then covers everything the merge and the fix brought into the target since the "before" SHA noted in step c. `post_merge_checks.sh` (end of step g) reruns these two checks along with the others.
@@ -215,7 +218,7 @@ Hardcoded URLs **already present** on the target before the merge are out of sco
 Run the check after the merge and the possible `fix(urls)` commit, from the repository root:
 
 ```bash
-python3 <this-skill-dir>/scripts/check_methods.py <before-sha> <target> <source>
+python3 <scripts>/check_methods.py <before-sha> <target> <source>
 ```
 
 For every PHP/PHTML line added to the target, the script flags:
@@ -237,7 +240,7 @@ Finally, run the tests: `php -l` and `check_methods.py` do not see behaviour dif
 **Grouped checks.** Once the merge and any corrective commits are done, run all the checks of steps f and g at once, with the target checked out:
 
 ```bash
-bash <this-skill-dir>/scripts/post_merge_checks.sh <before-sha> <target> <source>
+bash <scripts>/post_merge_checks.sh <before-sha> <target> <source>
 ```
 
 | Line | What is checked | KO if |
@@ -274,10 +277,14 @@ The ban on reset in step 0 protects the user's work. It does not apply to undoin
 git rev-parse --short origin/<b>       # must equal the "before" SHA noted in step c
 git log --oneline <before-sha>..<b>    # must only contain your commits (merge, fix(urls), fix(merge), test) and those brought by the source
 git status --porcelain --untracked-files=no   # must be empty
-git checkout <b> && git reset --hard <before-sha>
+git checkout <b>
+git diff -z --name-only --diff-filter=A <b> <before-sha> | xargs -0 -r ls -d 2>/dev/null   # must be empty
+git reset --hard <before-sha>
 ```
 
-If a branch has already been pushed, do not reset: suggest a `git revert -m 1 <merge>` and ask. Remind the user that the removed commits remain recoverable for a while through `git reflog`, and that `rerere` has kept the resolutions for next time.
+The `ls` line lists the paths that the merge deleted and that an untracked or ignored file now occupies: `reset --hard` would overwrite them without any possible recovery. If it prints anything, stop and ask the user.
+
+If a branch has already been pushed, do not reset: suggest reverting, newest first, every commit you added after the merge (`fix(urls)`, `fix(merge)`, `test`), then the merge itself (`git revert -m 1 <merge>`), and ask. Reverting the merge alone would leave these corrective commits on the branch, with code that depends on the reverted merge. Remind the user that the removed commits remain recoverable for a while through `git reflog`, and that `rerere` has kept the resolutions for next time.
 
 ## Summary to present
 
