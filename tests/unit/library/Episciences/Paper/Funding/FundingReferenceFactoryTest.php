@@ -454,4 +454,71 @@ final class FundingReferenceFactoryTest extends TestCase
 
         self::assertSame($expected, $references[0]->grantDoi);
     }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function halFinancingStreamProvider(): array
+    {
+        return [
+            'H2020 code' => ['H2020', 'Horizon 2020 Framework Programme'],
+            'Horizon 2020 spelled out' => ['Horizon 2020', 'Horizon 2020 Framework Programme'],
+            'Horizon 2020 with a programme' => ['HORIZON 2020 - MSCA', 'Horizon 2020 Framework Programme'],
+            'Horizon2020 in one word' => ['Horizon2020', 'Horizon 2020 Framework Programme'],
+            'Horizon Europe' => ['HORIZON EUROPE', 'Horizon Europe Framework Programme'],
+            'Horizon Europe call' => ['HORIZON-MSCA-2021-PF-01', 'Horizon Europe Framework Programme'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('halFinancingStreamProvider')]
+    public function testHalFinancingValueGivesTheFrameworkProgramme(string $financing, string $expectedStream): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'European Commission',
+            'code' => '101017452',
+            'projectFinancing' => $financing,
+        ]]);
+
+        self::assertSame($expectedStream, $references[0]->fundingStream);
+    }
+
+    public function testFunderNamedWithinTheOpenAirePrefixFunderIsKept(): void
+    {
+        // ERC belongs to the European Commission, whose prefix OpenAIRE gives to ERC grants
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'European Research Council',
+            'code' => '682291',
+            'openaireId' => 'corda__h2020::abc',
+        ]]);
+
+        self::assertSame('European Research Council', $references[0]->funderName);
+        self::assertSame('https://doi.org/10.13039/501100000781', $references[0]->funderCrossrefId);
+        self::assertSame('https://ror.org/0472cxd90', $references[0]->funderRor);
+        self::assertSame('Horizon 2020 Framework Programme', $references[0]->fundingStream);
+    }
+
+    public function testFunderNameContradictingTheOpenAirePrefixIsReplacedByTheRegistryName(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'National Science Foundation',
+            'code' => '101017452',
+            'openaireId' => 'corda__h2020::abc',
+        ]]);
+
+        self::assertSame('European Commission', $references[0]->funderName);
+        self::assertSame('https://doi.org/10.13039/501100000780', $references[0]->funderCrossrefId);
+        self::assertSame('https://ror.org/00k4n6c32', $references[0]->funderRor);
+    }
+
+    public function testUnknownFunderNameIsKeptWithTheOpenAirePrefixFunder(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'Agence Nationale de la Recherche - programme Investissements',
+            'code' => 'ANR-10-LABX-0023',
+            'openaireId' => 'anr_________::abc',
+        ]]);
+
+        self::assertSame('Agence Nationale de la Recherche - programme Investissements', $references[0]->funderName);
+        self::assertSame('https://doi.org/10.13039/501100001665', $references[0]->funderCrossrefId);
+    }
 }

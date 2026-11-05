@@ -45,10 +45,13 @@ final class FundingReferenceFactory
         'corda_____he' => 'Horizon Europe Framework Programme',
     ];
 
-    /** European Commission funding streams, from the HAL "financing" value (e.g. "H2020-MSCA-IF-2014", "EC:FP7:ERC") */
+    /**
+     * European Commission funding streams, from the HAL "financing" value (e.g. "H2020-MSCA-IF-2014", "EC:FP7:ERC").
+     * "Horizon 2020" is matched before the bare "Horizon" of Horizon Europe.
+     */
     private const HAL_FINANCING_STREAMS = [
+        '/^(?:H2020|HORIZON[\s-]*2020)\b/i' => 'Horizon 2020 Framework Programme',
         '/^HORIZON\b/i' => 'Horizon Europe Framework Programme',
-        '/^H2020\b/i' => 'Horizon 2020 Framework Programme',
         '/^(?:EC:)?FP7\b/i' => 'Seventh Framework Programme',
         '/^(?:EC:)?FP6\b/i' => 'Sixth Framework Programme',
         '/^(?:EC:)?FP5\b/i' => 'Fifth Framework Programme',
@@ -142,7 +145,7 @@ final class FundingReferenceFactory
         $awardNumber = self::clean($stored['code'] ?? null);
         $openaireId = self::clean($stored['openaireId'] ?? null);
 
-        $funderKey = FunderRegistry::findKey($funderName, $openaireId);
+        [$funderKey, $funderName] = self::resolveFunder($funderName, $openaireId);
 
         // an ANR code identifies its funder, even when the source did not name it
         if ($funderKey === null && $funderName === null && $awardNumber !== null && self::isAnrCode($awardNumber)) {
@@ -179,6 +182,30 @@ final class FundingReferenceFactory
         );
 
         return self::isEmpty($reference) ? null : $reference;
+    }
+
+    /**
+     * Funder key and name, kept consistent with each other: the OpenAIRE project identifier prefix
+     * gives the funder, unless the source names a funder belonging to it (ERC within EC), which is
+     * more specific. A source name contradicting the prefix is replaced by the registry name, so that
+     * the exported name and identifiers always describe the same funder.
+     *
+     * @return array{?string, ?string} [funder key, funder name]
+     */
+    private static function resolveFunder(?string $funderName, ?string $openaireId): array
+    {
+        $nameKey = $funderName !== null ? FunderRegistry::findKey($funderName) : null;
+        $prefixKey = $openaireId !== null ? FunderRegistry::findKey(null, $openaireId) : null;
+
+        if ($prefixKey === null || $nameKey === null || $nameKey === $prefixKey) {
+            return [$prefixKey ?? $nameKey, $funderName];
+        }
+
+        if (FunderRegistry::isPartOf($nameKey, $prefixKey)) {
+            return [$nameKey, $funderName];
+        }
+
+        return [$prefixKey, FunderRegistry::displayName($prefixKey)];
     }
 
     /**
