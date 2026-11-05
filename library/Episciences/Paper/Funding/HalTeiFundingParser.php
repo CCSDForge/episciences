@@ -39,12 +39,8 @@ final class HalTeiFundingParser
         $projectsById = self::indexProjects($xpath);
         $fundings = [];
 
-        foreach ($xpath->query('//tei:biblFull/tei:titleStmt/tei:funder') ?: [] as $funder) {
-            if (!$funder instanceof DOMElement) {
-                continue;
-            }
-
-            $ref = ltrim(trim($funder->getAttribute('ref')), '#');
+        foreach (self::funders($xpath) as $funder) {
+            $ref = self::reference($funder);
 
             if ($ref !== '') {
                 if (isset($projectsById[$ref])) {
@@ -60,6 +56,57 @@ final class HalTeiFundingParser
         }
 
         return $fundings;
+    }
+
+    /**
+     * References of <funder ref="#..."/> that point to no project parse() can read (project missing
+     * from <listOrg type="projects">, of an unknown type or without xml:id): parse() leaves them out,
+     * so its result is then not the complete list of the document fundings.
+     *
+     * @return list<string>
+     */
+    public static function unresolvedReferences(string $tei): array
+    {
+        $xpath = self::loadXpath($tei);
+        if ($xpath === null) {
+            return [];
+        }
+
+        $projectsById = self::indexProjects($xpath);
+        $unresolved = [];
+
+        foreach (self::funders($xpath) as $funder) {
+            $ref = self::reference($funder);
+            if ($ref !== '' && !isset($projectsById[$ref])) {
+                $unresolved[] = $ref;
+            }
+        }
+
+        return $unresolved;
+    }
+
+    /**
+     * @return list<DOMElement> the <funder> elements of the document, in document order
+     */
+    private static function funders(DOMXPath $xpath): array
+    {
+        $funders = [];
+
+        foreach ($xpath->query('//tei:biblFull/tei:titleStmt/tei:funder') ?: [] as $funder) {
+            if ($funder instanceof DOMElement) {
+                $funders[] = $funder;
+            }
+        }
+
+        return $funders;
+    }
+
+    /**
+     * xml:id of the project a <funder> points to, '' for a free-text funding
+     */
+    private static function reference(DOMElement $funder): string
+    {
+        return ltrim(trim($funder->getAttribute('ref')), '#');
     }
 
     /**

@@ -66,6 +66,16 @@ final class Episciences_Hal_TeiCacheManagerTest extends TestCase
         self::assertSame('<TEI>cached</TEI>', Episciences_Hal_TeiCacheManager::fetchAndGet(self::IDENTIFIER));
     }
 
+    public function testEmptyTeiCachedBeforeFailuresStoppedBeingCachedIsFetchedAgain(): void
+    {
+        $this->seed('');
+        $handler = $this->halResponds(new Response(200, [], '<TEI>fetched</TEI>'));
+
+        self::assertSame('', Episciences_Hal_TeiCacheManager::getFromCache(self::IDENTIFIER));
+        self::assertSame('<TEI>fetched</TEI>', Episciences_Hal_TeiCacheManager::fetchAndGet(self::IDENTIFIER));
+        self::assertCount(0, $handler, 'HAL called');
+    }
+
     public function testFetchedTeiIsCached(): void
     {
         $this->halResponds(new Response(200, [], '<TEI>fetched</TEI>'));

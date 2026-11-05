@@ -3,12 +3,19 @@
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_Hal_TeiCacheManager
 {
     public const ONE_MONTH = 3600 * 24 * 31;
+
+    /**
+     * Lifetime of a cached TEI: HAL metadata (fundings, affiliations, licence) can be edited without
+     * a new document version, so a cached TEI must not hide such an edit for long
+     */
+    public const CACHE_TTL = 3600 * 24;
 
     private const CACHE_NAMESPACE = 'halTei';
     private const CACHE_KEY_PREFIX = 'hal-tei-';
@@ -64,9 +71,9 @@ class Episciences_Hal_TeiCacheManager
         $cacheKey = self::buildCacheKey($identifier, $version);
         $cache = self::createCacheAdapter();
         $cacheItem = $cache->getItem($cacheKey);
-        $cacheItem->expiresAfter(self::ONE_MONTH);
+        $cacheItem->expiresAfter(self::CACHE_TTL);
 
-        if ($cacheItem->isHit() || isset(self::$unavailable[$cacheKey])) {
+        if (self::holdsTei($cacheItem) || isset(self::$unavailable[$cacheKey])) {
             return false;
         }
 
@@ -111,11 +118,22 @@ class Episciences_Hal_TeiCacheManager
         $cache = self::createCacheAdapter();
         $cacheItem = $cache->getItem($cacheKey);
 
+        return self::holdsTei($cacheItem) ? $cacheItem->get() : '';
+    }
+
+    /**
+     * Whether the cache item holds a TEI. Before failed fetches stopped being cached, an empty
+     * response was stored like a TEI: such an entry is a miss, so that HAL is asked again.
+     */
+    private static function holdsTei(CacheItemInterface $cacheItem): bool
+    {
         if (!$cacheItem->isHit()) {
-            return '';
+            return false;
         }
 
-        return $cacheItem->get();
+        $tei = $cacheItem->get();
+
+        return is_string($tei) && trim($tei) !== '';
     }
 
     /**
@@ -134,7 +152,7 @@ class Episciences_Hal_TeiCacheManager
 
     private static function createCacheAdapter(): CacheItemPoolInterface
     {
-        return self::$cachePool ?? new FilesystemAdapter(self::CACHE_NAMESPACE, self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+        return self::$cachePool ?? new FilesystemAdapter(self::CACHE_NAMESPACE, self::CACHE_TTL, dirname(APPLICATION_PATH) . '/cache/');
     }
 
     private static function buildCacheKey(string $identifier, int $version): string

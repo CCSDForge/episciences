@@ -87,13 +87,34 @@ final class FundingReference
             awardNumber: $this->awardNumber ?? $other->awardNumber,
             awardTitle: $this->awardTitle ?? $other->awardTitle,
             awardAcronym: $this->awardAcronym ?? $other->awardAcronym,
-            awardUri: $this->awardUri ?? $other->awardUri,
+            awardUri: self::preferredAwardUri($this->grantDoi ?? $other->grantDoi, $this->awardUri, $other->awardUri),
             grantDoi: $this->grantDoi ?? $other->grantDoi,
             callId: $this->callId ?? $other->callId,
             openaireProjectId: $this->openaireProjectId ?? $other->openaireProjectId,
             statement: $this->statement ?? $other->statement,
             funderKey: $funder->funderKey ?? $fallback->funderKey,
         );
+    }
+
+    /**
+     * Landing page of the merged award, by the same priority as a single source
+     * (FundingReferenceFactory): grant DOI first, then the URL given by a source, then the CORDIS page.
+     */
+    private static function preferredAwardUri(?string $grantDoi, ?string ...$awardUris): ?string
+    {
+        if ($grantDoi !== null) {
+            return FundingReferenceFactory::DOI_URL_PREFIX . $grantDoi;
+        }
+
+        $known = array_values(array_filter($awardUris, static fn(?string $uri): bool => $uri !== null));
+
+        foreach ($known as $uri) {
+            if (!str_starts_with($uri, FundingReferenceFactory::CORDIS_PROJECT_URL)) {
+                return $uri;
+            }
+        }
+
+        return $known[0] ?? null;
     }
 
     /**

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 /**
  * DB read/write layer for the paper_projects table.
- * No HTTP, no HTML, no cache — single responsibility.
+ * No HTTP, no HTML. Caches its own reads of paper_projects; a write also drops the cached
+ * exports of the paper carrying fundings (Episciences_Paper::deleteMetadataCache()).
  */
 class Episciences_Paper_Projects_Repository
 {
@@ -215,11 +215,7 @@ class Episciences_Paper_Projects_Repository
      */
     public static function invalidateFundingExportCaches(int $paperId): void
     {
-        (new FilesystemAdapter(Episciences_Paper::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA))
-            ->deleteItems(array_map(
-                static fn(string $method): string => $paperId . '-' . $method,
-                self::FUNDING_EXPORT_CACHE_METHODS
-            ));
+        Episciences_Paper::deleteMetadataCache($paperId, ...self::FUNDING_EXPORT_CACHE_METHODS);
     }
 
     private static function paperCacheKey(int $paperId): string

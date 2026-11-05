@@ -163,11 +163,12 @@ class GetFundingDataCommand extends Command
                 $trimIdentifier = Episciences_Paper::stripRefusedSuffix(trim($value['IDENTIFIER']));
                 $version        = (int) $value['VERSION']; // cast: function expects int, DB returns string
 
-                if ($noCache) {
-                    Episciences_Hal_TeiCacheManager::delete($trimIdentifier, $version);
-                }
-
                 if (!$dryRun) {
+                    // dropped only when the TEI is read again: the author and licence enrichments share it
+                    if ($noCache) {
+                        Episciences_Hal_TeiCacheManager::delete($trimIdentifier, $version);
+                    }
+
                     try {
                         $fundingRowsChanged += Episciences_Paper_ProjectsManager::enrichHalFundingFromTei($paperId, $trimIdentifier, $version);
                     } catch (JsonException $e) {

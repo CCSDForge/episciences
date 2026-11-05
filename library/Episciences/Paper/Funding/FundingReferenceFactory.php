@@ -23,8 +23,8 @@ final class FundingReferenceFactory
     private const ANR_CODE = 'ANR-\d{2}-[A-Z0-9]+(?:-[A-Z0-9]+){1,3}';
     private const ANR_CODE_PATTERN = '/\b' . self::ANR_CODE . '\b/i';
 
-    private const CORDIS_PROJECT_URL = 'https://cordis.europa.eu/project/id/';
-    private const DOI_URL_PREFIX = 'https://doi.org/';
+    public const CORDIS_PROJECT_URL = 'https://cordis.europa.eu/project/id/';
+    public const DOI_URL_PREFIX = 'https://doi.org/';
 
     private const EC_FRAMEWORK_PROGRAMMES = [
         'Horizon Europe Framework Programme',

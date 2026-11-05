@@ -223,6 +223,59 @@ final class FundingReferenceFactoryTest extends TestCase
         self::assertSame('anr_________::abc', $references[0]->openaireProjectId, 'missing values are filled');
     }
 
+    /**
+     * @return array<string, array{bool}>
+     */
+    public static function sourceOrderProvider(): array
+    {
+        return ['HAL row first' => [true], 'OpenAIRE row first' => [false]];
+    }
+
+    /**
+     * @dataProvider sourceOrderProvider
+     */
+    public function testMergedAwardPointsToTheGrantDoiWhateverTheSourceOrder(bool $halFirst): void
+    {
+        $hal = [
+            'funderName' => 'European Commission',
+            'code' => '101017452',
+            'projectFinancing' => 'H2020',
+        ];
+        $openAire = [
+            'funderName' => 'European Commission',
+            'code' => '101017452',
+            'grantDoi' => '10.3030/101017452',
+        ];
+
+        $references = FundingReferenceFactory::fromStoredList($halFirst ? [$hal, $openAire] : [$openAire, $hal]);
+
+        self::assertCount(1, $references);
+        self::assertSame('10.3030/101017452', $references[0]->grantDoi);
+        self::assertSame('https://doi.org/10.3030/101017452', $references[0]->awardUri, 'the grant DOI wins over the CORDIS page');
+    }
+
+    /**
+     * @dataProvider sourceOrderProvider
+     */
+    public function testMergedAwardPrefersTheSourceUrlToTheCordisPage(bool $halFirst): void
+    {
+        $hal = [
+            'funderName' => 'European Commission',
+            'code' => '101017452',
+            'projectFinancing' => 'H2020',
+        ];
+        $dataverse = [
+            'funderName' => 'European Commission',
+            'code' => '101017452',
+            'url' => 'https://example.org/project',
+        ];
+
+        $references = FundingReferenceFactory::fromStoredList($halFirst ? [$hal, $dataverse] : [$dataverse, $hal]);
+
+        self::assertCount(1, $references);
+        self::assertSame('https://example.org/project', $references[0]->awardUri);
+    }
+
     public function testFreeTextStatementWithAnrCodeOnly(): void
     {
         $references = FundingReferenceFactory::fromStoredList([['fundingStatement' => 'ANR-22-CPJ1-0090-0']]);

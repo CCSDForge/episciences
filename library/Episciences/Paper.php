@@ -503,7 +503,7 @@ class Episciences_Paper
     private $_licence;
     /** @var Episciences_Paper_Projects $_fundings */
     private $_fundings;
-    /** @var list<FundingReference>|null normalized fundings, valid while $_fundingReferencesSource is unchanged */
+    /** @var list<FundingReference>|null normalized fundings, valid while the paper_projects rows ($_fundingReferencesSource) are unchanged */
     private ?array $_fundingReferences = null;
     private ?array $_fundingReferencesSource = null;
     /** @var Episciences_Paper_Dataset $_linkedData */
@@ -1177,9 +1177,8 @@ class Episciences_Paper
             return false;
         }
 
-        $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
-        $cacheName = $this->getPaperid() . '-' . $method;
-        $metadataCache = $cache->getItem($cacheName);
+        $cache = self::createMetadataCache();
+        $metadataCache = $cache->getItem(self::metadataCacheKey((int)$this->getPaperid(), $method));
 
         if ($this->isPublished()) {
             $expireAfterSec = self::CACHE_EXPIRE_METADATA_PUBLISHED;
@@ -1204,6 +1203,29 @@ class Episciences_Paper
         return $getOutput;
 
 
+    }
+
+    /**
+     * Drop cached metadata of a paper (see get()), so that the next call builds them again
+     *
+     * @param string ...$methods methods whose output is cached, e.g. "getCrossref", "getJsonV2"
+     */
+    public static function deleteMetadataCache(int $paperId, string ...$methods): void
+    {
+        self::createMetadataCache()->deleteItems(array_map(
+            static fn(string $method): string => self::metadataCacheKey($paperId, $method),
+            $methods
+        ));
+    }
+
+    private static function createMetadataCache(): FilesystemAdapter
+    {
+        return new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
+    }
+
+    private static function metadataCacheKey(int $paperId, string $method): string
+    {
+        return $paperId . '-' . $method;
     }
 
     /**
@@ -3684,9 +3706,8 @@ class Episciences_Paper
      */
     public function getOaiHeader(): string
     {
-        $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
-        $cacheName = $this->getPaperid() . '-' . __FUNCTION__;
-        $oaiHeaderItem = $cache->getItem($cacheName);
+        $cache = self::createMetadataCache();
+        $oaiHeaderItem = $cache->getItem(self::metadataCacheKey((int)$this->getPaperid(), __FUNCTION__));
         $oaiHeaderItem->expiresAfter(self::CACHE_EXPIRE_OAI_HEADER);
 
         if (!$oaiHeaderItem->isHit()) {
@@ -5291,13 +5312,13 @@ class Episciences_Paper
      */
     public function getFundingReferences(): array
     {
-        // the stored fundings are read again (cheap, cached by the repository) to notice a change;
-        // their normalization, needed by several exports of the same paper, is done once
-        $fundings = $this->getFundings();
+        // the stored rows are read again (cached by the repository, not decoded) to notice a change;
+        // their decoding and normalization, needed by several exports of the same paper, are done once
+        $rows = $this->getPaperid() ? Episciences_Paper_ProjectsManager::getProjectsByPaperId((int)$this->getPaperid()) : [];
 
-        if ($this->_fundingReferences === null || $this->_fundingReferencesSource !== $fundings) {
-            $this->_fundingReferences = FundingReferenceFactory::fromStoredList($fundings);
-            $this->_fundingReferencesSource = $fundings;
+        if ($this->_fundingReferences === null || $this->_fundingReferencesSource !== $rows) {
+            $this->_fundingReferences = FundingReferenceFactory::fromStoredList($this->getFundings());
+            $this->_fundingReferencesSource = $rows;
         }
 
         return $this->_fundingReferences;

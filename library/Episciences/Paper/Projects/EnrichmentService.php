@@ -96,6 +96,19 @@ class Episciences_Paper_Projects_EnrichmentService
             return 0;
         }
 
+        $unresolved = HalTeiFundingParser::unresolvedReferences($tei);
+
+        if ($unresolved !== []) {
+            // the fundings read would be incomplete: keep the stored ones rather than lose some
+            self::logWarning(sprintf(
+                'HAL TEI for %s (version %d) refers to unknown project(s) %s: HAL fundings not updated',
+                $identifier,
+                $version,
+                implode(', ', $unresolved)
+            ));
+            return 0;
+        }
+
         $fundings = HalTeiFundingParser::parse($tei);
 
         if ($fundings === [] && !HalTeiFundingParser::hasDocument($tei)) {

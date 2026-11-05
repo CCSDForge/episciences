@@ -114,6 +114,30 @@ XML;
         self::assertSame(['101017452', 'ANR-10-LABX-0023'], $codes);
     }
 
+    public function testUnresolvedReferencesAreTheFunderRefsParseLeavesOut(): void
+    {
+        $tei = self::tei(
+            '<funder ref="#projanr-1"/><funder ref="#projanr-404"/><funder ref="#projeurop-9"/><funder>Free text</funder>',
+            '<listOrg type="projects">
+               <org type="anrProject" xml:id="projanr-1"><idno type="anr">ANR-10-LABX-0023</idno></org>
+               <org type="otherProject" xml:id="projeurop-9"><idno type="number">1</idno></org>
+             </listOrg>'
+        );
+
+        self::assertSame(['projanr-404', 'projeurop-9'], HalTeiFundingParser::unresolvedReferences($tei));
+    }
+
+    public function testNoUnresolvedReferenceWhenEveryRefIsAKnownProject(): void
+    {
+        $tei = self::tei(
+            '<funder ref="#projanr-1"/><funder>Free text</funder>',
+            '<listOrg type="projects"><org type="anrProject" xml:id="projanr-1"><idno type="anr">ANR-10-LABX-0023</idno></org></listOrg>'
+        );
+
+        self::assertSame([], HalTeiFundingParser::unresolvedReferences($tei));
+        self::assertSame([], HalTeiFundingParser::unresolvedReferences(''));
+    }
+
     public function testMissingValuesAreLeftOut(): void
     {
         $tei = self::tei(

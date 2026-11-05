@@ -252,6 +252,22 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
         self::assertSame(0, Episciences_Paper_Projects_EnrichmentService::enrichHalFundingFromTei(self::PAPER_ID, self::HAL_ID, 0));
     }
 
+    public function testHalRowIsKeptWhenAFunderRefersToAnUnknownProject(): void
+    {
+        // the project is missing from listOrg: the fundings read would be incomplete
+        $adapter = $this->givenHalTeiAndRow(
+            self::halTei('<biblFull><titleStmt><title>A paper</title><funder ref="#projanr-404"/></titleStmt></biblFull>'),
+            [1 => ['funding' => '{"0":{"fundingStatement":"Kept funding"}}']]
+        );
+
+        $adapter->expects(self::never())->method('delete');
+        $adapter->expects(self::never())->method('update');
+        $adapter->expects(self::never())->method('query');
+        $this->expectOutputRegex('/refers to unknown project\(s\) projanr-404: HAL fundings not updated/');
+
+        self::assertSame(0, Episciences_Paper_Projects_EnrichmentService::enrichHalFundingFromTei(self::PAPER_ID, self::HAL_ID, 0));
+    }
+
     public function testHalRowIsKeptWhenTheTeiHoldsNoDocument(): void
     {
         // an empty search result says nothing about the fundings of the document
