@@ -20,6 +20,13 @@ fi
 target="$1"
 source="$2"
 
+# Internal controller paths, shared by the PHP and JS patterns
+controllers="administrate[a-z]*|paper|user|volume|section|review|file|export|submit|page|mailing|coi|doi|stats|browse|search|website"
+# Full URL of an episciences.org host followed by an internal path: it skips
+# the journal prefix just like a root-relative one. Documentation and portal
+# pages (doc., www.) do not use these paths and stay out of scope.
+absolute_internal="https?://[a-z0-9.-]*episciences\\.org/(${controllers})/"
+
 # Patterns of hardcoded root-relative URLs. A leading "/" followed by a
 # lowercase letter matches controller paths such as /administratepaper/view.
 php_patterns=(
@@ -40,6 +47,7 @@ php_patterns=(
     "\\\$[a-zA-Z_]*[rR]eview->getUrl\\(\\) *[,)]"
     "= *\\\$[a-zA-Z_]*[rR]eview->getUrl\\(\\) *;"
     "\\\$_SERVER\\[[\"']SERVER_NAME[\"']\\]"
+    "$absolute_internal"
 )
 js_patterns=(
     "url: *[\"'\`]/[a-z]"
@@ -48,7 +56,8 @@ js_patterns=(
     "(window\\.)?location(\\.href)? *= *[\"'\`]/[a-z]"
     "action=[\"']/[a-z]"
     "href=[\"']/[a-z]"
-    "[\"'\`]/(administrate[a-z]*|paper|user|volume|section|review|file|export|submit|page|mailing|coi|doi|stats|browse|search)/"
+    "[\"'\`]/(${controllers})/"
+    "$absolute_internal"
 )
 
 join_patterns() {
