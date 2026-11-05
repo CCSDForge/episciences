@@ -145,6 +145,7 @@ final class AdminViewsOutputEscapingTest extends TestCase
             $view->paper = $paper;
             $view->review = $this->createMock(\Episciences_Review::class);
             $view->current_demand = ['PCID' => 12];
+            $view->isAllowedToAnswerRevisionRequest = true;
             $view->zIdentifier = $zIdentifier;
             $view->doNotDisplayContactChoice = true;
 
