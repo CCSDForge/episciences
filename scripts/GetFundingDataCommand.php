@@ -164,9 +164,9 @@ class GetFundingDataCommand extends Command
                 $version        = (int) $value['VERSION']; // cast: function expects int, DB returns string
 
                 if (!$dryRun) {
-                    // dropped only when the TEI is read again: the author and licence enrichments share it
-                    if ($noCache) {
-                        Episciences_Hal_TeiCacheManager::delete($trimIdentifier, $version);
+                    // replaced only once HAL returned it: the author and licence enrichments share it
+                    if ($noCache && !Episciences_Hal_TeiCacheManager::refresh($trimIdentifier, $version)) {
+                        $logger->warning("HAL TEI of {$trimIdentifier} (version {$version}) could not be read again: cached TEI used, if any");
                     }
 
                     try {

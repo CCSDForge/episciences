@@ -520,6 +520,8 @@ final class FundingReferenceFactoryTest extends TestCase
             'Horizon2020 in one word' => ['Horizon2020', 'Horizon 2020 Framework Programme'],
             'Horizon Europe' => ['HORIZON EUROPE', 'Horizon Europe Framework Programme'],
             'Horizon Europe call' => ['HORIZON-MSCA-2021-PF-01', 'Horizon Europe Framework Programme'],
+            'H2020 with the EC prefix' => ['EC:H2020:MSCA', 'Horizon 2020 Framework Programme'],
+            'Horizon Europe with the EC prefix' => ['EC:HORIZON-EIC-2022', 'Horizon Europe Framework Programme'],
         ];
     }
 
@@ -561,6 +563,31 @@ final class FundingReferenceFactoryTest extends TestCase
         self::assertSame('European Commission', $references[0]->funderName);
         self::assertSame('https://doi.org/10.13039/501100000780', $references[0]->funderCrossrefId);
         self::assertSame('https://ror.org/00k4n6c32', $references[0]->funderRor);
+    }
+
+    public function testAmbiguousFunderNameAloneGetsNoIdentifier(): void
+    {
+        // several funders are named "National Science Foundation": the US one must not be credited by default
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'National Science Foundation',
+            'code' => 'KP-06-H23/1',
+        ]]);
+
+        self::assertSame('National Science Foundation', $references[0]->funderName);
+        self::assertNull($references[0]->funderCrossrefId);
+        self::assertNull($references[0]->funderRor);
+    }
+
+    public function testAmbiguousFunderNameConfirmedByTheOpenAirePrefixGetsItsIdentifiers(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'NSF',
+            'code' => '1652569',
+            'openaireId' => 'nsf_________::abc',
+        ]]);
+
+        self::assertSame('NSF', $references[0]->funderName);
+        self::assertSame('https://doi.org/10.13039/100000001', $references[0]->funderCrossrefId);
     }
 
     public function testUnknownFunderNameIsKeptWithTheOpenAirePrefixFunder(): void

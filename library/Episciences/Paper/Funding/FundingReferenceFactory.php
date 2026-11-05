@@ -50,8 +50,8 @@ final class FundingReferenceFactory
      * "Horizon 2020" is matched before the bare "Horizon" of Horizon Europe.
      */
     private const HAL_FINANCING_STREAMS = [
-        '/^(?:H2020|HORIZON[\s-]*2020)\b/i' => 'Horizon 2020 Framework Programme',
-        '/^HORIZON\b/i' => 'Horizon Europe Framework Programme',
+        '/^(?:EC:)?(?:H2020|HORIZON[\s-]*2020)\b/i' => 'Horizon 2020 Framework Programme',
+        '/^(?:EC:)?HORIZON\b/i' => 'Horizon Europe Framework Programme',
         '/^(?:EC:)?FP7\b/i' => 'Seventh Framework Programme',
         '/^(?:EC:)?FP6\b/i' => 'Sixth Framework Programme',
         '/^(?:EC:)?FP5\b/i' => 'Fifth Framework Programme',
@@ -194,8 +194,9 @@ final class FundingReferenceFactory
      */
     private static function resolveFunder(?string $funderName, ?string $openaireId): array
     {
-        $nameKey = $funderName !== null ? FunderRegistry::findKey($funderName) : null;
         $prefixKey = $openaireId !== null ? FunderRegistry::findKey(null, $openaireId) : null;
+        // an ambiguous name ("NSF") identifies no funder alone, but still tells a funder contradicting the prefix
+        $nameKey = $funderName !== null ? FunderRegistry::findKeyByName($funderName, $prefixKey !== null) : null;
 
         if ($prefixKey === null || $nameKey === null || $nameKey === $prefixKey) {
             return [$prefixKey ?? $nameKey, $funderName];

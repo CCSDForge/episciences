@@ -27,17 +27,26 @@ final class HalTeiFundingParser
     private const XML_NS = 'http://www.w3.org/XML/1998/namespace';
 
     /**
-     * @return list<array<string, string>>
+     * Reads the TEI once: the fundings of the document, and the references of <funder ref="#..."/>
+     * that point to no project it can read (project missing from <listOrg type="projects">, of an unknown
+     * type or without xml:id), left out of the fundings, which are then not the complete list.
+     *
+     * @return array{fundings: list<array<string, string>>, unresolved: list<string>}|null null when the TEI
+     *         does not hold the HAL document (unreadable TEI or empty search result): then no funding read
+     *         means nothing about the fundings of the document
      */
-    public static function parse(string $tei): array
+    public static function read(string $tei): ?array
     {
         $xpath = self::loadXpath($tei);
-        if ($xpath === null) {
-            return [];
+        $documents = $xpath?->query('//tei:biblFull');
+
+        if ($xpath === null || !$documents instanceof \DOMNodeList || $documents->length === 0) {
+            return null;
         }
 
         $projectsById = self::indexProjects($xpath);
         $fundings = [];
+        $unresolved = [];
 
         foreach (self::funders($xpath) as $funder) {
             $ref = self::reference($funder);
@@ -45,6 +54,8 @@ final class HalTeiFundingParser
             if ($ref !== '') {
                 if (isset($projectsById[$ref])) {
                     $fundings[] = $projectsById[$ref];
+                } else {
+                    $unresolved[] = $ref;
                 }
                 continue;
             }
@@ -55,34 +66,23 @@ final class HalTeiFundingParser
             }
         }
 
-        return $fundings;
+        return ['fundings' => $fundings, 'unresolved' => $unresolved];
     }
 
     /**
-     * References of <funder ref="#..."/> that point to no project parse() can read (project missing
-     * from <listOrg type="projects">, of an unknown type or without xml:id): parse() leaves them out,
-     * so its result is then not the complete list of the document fundings.
-     *
-     * @return list<string>
+     * @return list<array<string, string>>
+     */
+    public static function parse(string $tei): array
+    {
+        return self::read($tei)['fundings'] ?? [];
+    }
+
+    /**
+     * @return list<string> see read()
      */
     public static function unresolvedReferences(string $tei): array
     {
-        $xpath = self::loadXpath($tei);
-        if ($xpath === null) {
-            return [];
-        }
-
-        $projectsById = self::indexProjects($xpath);
-        $unresolved = [];
-
-        foreach (self::funders($xpath) as $funder) {
-            $ref = self::reference($funder);
-            if ($ref !== '' && !isset($projectsById[$ref])) {
-                $unresolved[] = $ref;
-            }
-        }
-
-        return $unresolved;
+        return self::read($tei)['unresolved'] ?? [];
     }
 
     /**
@@ -115,9 +115,7 @@ final class HalTeiFundingParser
      */
     public static function hasDocument(string $tei): bool
     {
-        $documents = self::loadXpath($tei)?->query('//tei:biblFull');
-
-        return $documents instanceof \DOMNodeList && $documents->length > 0;
+        return self::read($tei) !== null;
     }
 
     /**

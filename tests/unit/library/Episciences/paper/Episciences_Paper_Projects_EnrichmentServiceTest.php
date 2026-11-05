@@ -9,6 +9,7 @@ use Episciences_Repositories;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use RuntimeException;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Table_Abstract;
 
@@ -180,6 +181,7 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
     protected function tearDown(): void
     {
         Episciences_Hal_TeiCacheManager::setCachePool(null);
+        Episciences_Hal_TeiCacheManager::setHttpClient(null);
         Episciences_Paper_Projects_Repository::setCachePool(new ArrayAdapter());
         if ($this->previousAdapter !== null) {
             Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
@@ -252,20 +254,45 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
         self::assertSame(0, Episciences_Paper_Projects_EnrichmentService::enrichHalFundingFromTei(self::PAPER_ID, self::HAL_ID, 0));
     }
 
-    public function testHalRowIsKeptWhenAFunderRefersToAnUnknownProject(): void
+    public function testStoredFundingsAreKeptAndNewOnesAddedWhenAFunderRefersToAnUnknownProject(): void
     {
-        // the project is missing from listOrg: the fundings read would be incomplete
+        // the project is missing from listOrg: the fundings read are incomplete, so none stored is removed
         $adapter = $this->givenHalTeiAndRow(
-            self::halTei('<biblFull><titleStmt><title>A paper</title><funder ref="#projanr-404"/></titleStmt></biblFull>'),
-            [1 => ['funding' => '{"0":{"fundingStatement":"Kept funding"}}']]
+            self::halTei(
+                '<biblFull><titleStmt><title>A paper</title><funder ref="#projanr-404"/>'
+                . '<funder>Kept funding</funder><funder>New funding</funder></titleStmt></biblFull>'
+            ),
+            [1 => ['funding' => '{"0":{"fundingStatement":"Kept funding"},"1":{"projectTitle":"Project missing from the TEI","code":"ANR-19-CE23-0001"}}']]
         );
 
         $adapter->expects(self::never())->method('delete');
-        $adapter->expects(self::never())->method('update');
-        $adapter->expects(self::never())->method('query');
-        $this->expectOutputRegex('/refers to unknown project\(s\) projanr-404: HAL fundings not updated/');
+        $adapter->expects(self::once())
+            ->method('update')
+            ->with(T_PAPER_PROJECTS, ['funding' => json_encode([
+                ['fundingStatement' => 'Kept funding'],
+                ['fundingStatement' => 'New funding'],
+                ['projectTitle' => 'Project missing from the TEI', 'code' => 'ANR-19-CE23-0001'],
+            ], JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)], self::anything())
+            ->willReturn(1);
+        $this->expectOutputRegex('/refers to unknown project\(s\) projanr-404: stored HAL fundings missing from the TEI kept/');
 
-        self::assertSame(0, Episciences_Paper_Projects_EnrichmentService::enrichHalFundingFromTei(self::PAPER_ID, self::HAL_ID, 0));
+        self::assertSame(1, Episciences_Paper_Projects_EnrichmentService::enrichHalFundingFromTei(self::PAPER_ID, self::HAL_ID, 0));
+    }
+
+    public function testUnavailableTeiIsAFailure(): void
+    {
+        // HAL did not return the TEI: the caller reports that the HAL fundings could not be updated
+        $adapter = $this->givenHalTeiAndRow('', [1 => ['funding' => '{"0":{"fundingStatement":"Kept funding"}}']]);
+        Episciences_Hal_TeiCacheManager::setHttpClient(new \GuzzleHttp\Client([
+            'handler' => \GuzzleHttp\HandlerStack::create(new \GuzzleHttp\Handler\MockHandler([new \GuzzleHttp\Psr7\Response(200, [], '')])),
+        ]));
+
+        $adapter->expects(self::never())->method('delete');
+        $adapter->expects(self::never())->method('update');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('HAL TEI unavailable for ' . self::HAL_ID);
+
+        Episciences_Paper_Projects_EnrichmentService::enrichHalFundingFromTei(self::PAPER_ID, self::HAL_ID, 0);
     }
 
     public function testHalRowIsKeptWhenTheTeiHoldsNoDocument(): void

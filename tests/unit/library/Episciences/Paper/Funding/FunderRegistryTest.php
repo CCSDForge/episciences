@@ -25,6 +25,9 @@ final class FunderRegistryTest extends TestCase
             'unknown funder' => ['Défi Clé CeBBOc program of Occitanie Region', null, null],
             'unknown prefix, known name' => ['Wellcome Trust', 'unknown_____::abc', 'WT'],
             'nothing' => [null, null, null],
+            'ambiguous name alone' => ['National Science Foundation', null, null],
+            'ambiguous acronym alone' => ['EC', null, null],
+            'unambiguous NSF name' => ['U.S. National Science Foundation', null, 'NSF'],
         ];
     }
 
@@ -32,6 +35,13 @@ final class FunderRegistryTest extends TestCase
     public function testFindKey(?string $name, ?string $openaireId, ?string $expected): void
     {
         self::assertSame($expected, FunderRegistry::findKey($name, $openaireId));
+    }
+
+    public function testAmbiguousNameIsMatchedOnlyOnRequest(): void
+    {
+        self::assertNull(FunderRegistry::findKeyByName('NSF'));
+        self::assertSame('NSF', FunderRegistry::findKeyByName('NSF', true));
+        self::assertSame('ANR', FunderRegistry::findKeyByName('ANR'), 'unambiguous name');
     }
 
     public function testIdentifiersAreUrls(): void

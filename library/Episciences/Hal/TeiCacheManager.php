@@ -77,31 +77,45 @@ class Episciences_Hal_TeiCacheManager
             return false;
         }
 
+        return self::fetchAndStore($cache, $cacheItem, $identifier, $version);
+    }
+
+    /**
+     * Read the TEI from HAL again, so that metadata edited on HAL without a new version are seen.
+     * The cached TEI is replaced only once HAL returned the new one: when HAL fails, the TEI cached
+     * before, if any, is kept, and the failed TEI is not requested again in this process.
+     *
+     * @param string $identifier HAL document identifier
+     * @param int $version HAL document version (0 = latest)
+     * @return bool true if the TEI was read from HAL and cached
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public static function refresh(string $identifier, int $version = 0): bool
+    {
+        $cache = self::createCacheAdapter();
+        $cacheItem = $cache->getItem(self::buildCacheKey($identifier, $version));
+        $cacheItem->expiresAfter(self::CACHE_TTL);
+
+        return self::fetchAndStore($cache, $cacheItem, $identifier, $version);
+    }
+
+    /**
+     * Fetch the TEI from HAL and store it in the cache item; an empty response is not stored
+     */
+    private static function fetchAndStore(CacheItemPoolInterface $cache, CacheItemInterface $cacheItem, string $identifier, int $version): bool
+    {
         $teiXml = self::fetchFromApi($identifier, $version);
 
         if (trim($teiXml) === '') {
-            self::$unavailable[$cacheKey] = true;
+            self::$unavailable[$cacheItem->getKey()] = true;
             return false;
         }
 
+        unset(self::$unavailable[$cacheItem->getKey()]);
         $cacheItem->set($teiXml);
         $cache->save($cacheItem);
 
         return true;
-    }
-
-    /**
-     * Drop the cached TEI, so that the next fetch reads the document from HAL again
-     *
-     * @param string $identifier HAL document identifier
-     * @param int $version HAL document version (0 = latest)
-     * @throws \Psr\Cache\InvalidArgumentException
-     */
-    public static function delete(string $identifier, int $version = 0): void
-    {
-        $cacheKey = self::buildCacheKey($identifier, $version);
-        unset(self::$unavailable[$cacheKey]);
-        self::createCacheAdapter()->deleteItem($cacheKey);
     }
 
     /**

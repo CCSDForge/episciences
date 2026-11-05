@@ -3286,14 +3286,22 @@ class Episciences_PapersManager
      * @param list<string>|null $failedSteps receives the names of the steps that failed
      * @param-out list<string> $failedSteps
      * @param bool $refreshHalTei HAL papers: read the TEI from HAL again instead of the cached one,
-     *                            so that metadata edited on HAL without a new version (fundings, affiliations) are seen
+     *                            so that metadata edited on HAL without a new version (fundings, affiliations) are seen;
+     *                            when HAL does not return it, the step "halData" fails
+     * @param bool $refreshJsonDocument rebuild PAPERS.DOCUMENT when anything changed; false for the callers
+     *                                  that rebuild it themselves right after
      * @return int number of affected rows
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Exception the record could not be loaded from the repository, or not saved
      */
 
-    public static function updateRecordData(Episciences_Paper $paper, ?array &$failedSteps = null, bool $refreshHalTei = false): int
+    public static function updateRecordData(
+        Episciences_Paper $paper,
+        ?array &$failedSteps = null,
+        bool $refreshHalTei = false,
+        bool $refreshJsonDocument = true
+    ): int
     {
         $failedSteps = [];
         $docId = $paper->getDocId();
@@ -3312,10 +3320,10 @@ class Episciences_PapersManager
         $context = self::initializeContext($params);
         $recordData = self::fetchRecordData($context); // as well as updating the version from the original archive
 
-        if ($refreshHalTei && (string)$context['repoId'] === Episciences_Repositories::HAL_REPO_ID) {
-            // before the licence, authors and funding steps, which all read the TEI of this version
-            Episciences_Hal_TeiCacheManager::delete($context['identifier'], (int)$context['version']);
-        }
+        // before the licence, authors and funding steps, which all read the TEI of this version
+        $halTeiRefreshFailed = $refreshHalTei
+            && (string)$context['repoId'] === Episciences_Repositories::HAL_REPO_ID
+            && !Episciences_Hal_TeiCacheManager::refresh($context['identifier'], (int)$context['version']);
         $record = self::cleanRecord($recordData['record'], $context['repoId']);
         $enrichment = $recordData['enrichment'];
         // The record already loaded, if any: the files and the linked data hooks do not load it again
@@ -3329,13 +3337,13 @@ class Episciences_PapersManager
                 $context['docId'], $context['paperId']
             ),
             'licence' => static fn(): int => self::processLicence($context, 0),
-            'halData' => static fn(): int => self::processHalData($context),
+            'halData' => static fn(): int => self::processHalData($context, $halTeiRefreshFailed),
             'openAireData' => static fn(): int => self::processOpenAireData($context),
         ], $failedSteps);
 
         $affectedRows += $db?->update(T_PAPERS, ['RECORD' => $record, 'VERSION' => $context['version']], ['DOCID = ?' => $context['docId']]);
 
-        if ($affectedRows > 0) {
+        if ($refreshJsonDocument && $affectedRows > 0) {
             self::refreshJsonDocumentAfterRecordUpdate((int)$context['docId'], $failedSteps);
         }
 
@@ -3502,13 +3510,19 @@ class Episciences_PapersManager
      * HAL papers: authors from the HAL TEI and HAL funding
      *
      * @param array<string, mixed> $context
+     * @param bool $teiRefreshFailed the TEI was to be read again from HAL, which did not return it
      * @return int number of rows affected by this step
      */
 
-    private static function processHalData(array $context): int
+    private static function processHalData(array $context, bool $teiRefreshFailed = false): int
     {
         if ((string)$context['repoId'] !== Episciences_Repositories::HAL_REPO_ID) {
             return 0;
+        }
+
+        if ($teiRefreshFailed) {
+            // the cached TEI, if any, may hide the metadata edited on HAL: the user is asked to try again
+            throw new RuntimeException(sprintf('HAL TEI of %s (version %s) could not be read again from HAL', $context['identifier'], $context['version']));
         }
 
         // Not caught: the step reports an unexpected payload or a cache failure

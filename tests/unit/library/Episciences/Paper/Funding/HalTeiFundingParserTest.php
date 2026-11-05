@@ -166,6 +166,24 @@ XML;
         self::assertFalse(HalTeiFundingParser::hasDocument('<TEI><not closed'));
     }
 
+    public function testReadGivesTheFundingsAndTheUnresolvedReferencesAtOnce(): void
+    {
+        $tei = self::tei(
+            '<funder ref="#projanr-1"/><funder ref="#projanr-404"/><funder>Free text</funder>',
+            '<listOrg type="projects"><org type="anrProject" xml:id="projanr-1"><idno type="anr">ANR-10-LABX-0023</idno></org></listOrg>'
+        );
+
+        self::assertSame([
+            'fundings' => [
+                ['funderName' => 'French National Research Agency (ANR)', 'code' => 'ANR-10-LABX-0023'],
+                ['fundingStatement' => 'Free text'],
+            ],
+            'unresolved' => ['projanr-404'],
+        ], HalTeiFundingParser::read($tei));
+        self::assertNull(HalTeiFundingParser::read('<TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body><listBibl/></body></text></TEI>'), 'empty search result');
+        self::assertNull(HalTeiFundingParser::read(''));
+    }
+
     public function testParsedFundingsGoThroughTheFactory(): void
     {
         $tei = self::tei(

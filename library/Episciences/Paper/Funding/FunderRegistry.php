@@ -12,6 +12,8 @@ namespace Episciences\Paper\Funding;
  * A funder is found either from the OpenAIRE project identifier prefix
  * (e.g. "anr_________::..."), which is unambiguous, or from its name
  * (case and spacing insensitive), which covers HAL, Dataverse and legacy rows.
+ * Names shared by several funders ("National Science Foundation", "EC") are listed
+ * apart: alone, they identify no funder, so that no identifier is given to the wrong one.
  *
  * Identifiers were checked against the ROR registry (ROR "fundref" external
  * identifiers, preferred value). Unknown funders are exported by name only.
@@ -22,13 +24,14 @@ final class FunderRegistry
     private const ROR_URL_PREFIX = 'https://ror.org/';
 
     /**
-     * @var array<string, array{crossref: string, ror: string, names: list<string>, openairePrefixes: list<string>}>
+     * @var array<string, array{crossref: string, ror: string, names: list<string>, ambiguousNames?: list<string>, openairePrefixes: list<string>}>
      */
     private const FUNDERS = [
         'EC' => [
             'crossref' => '501100000780',
             'ror' => '00k4n6c32',
-            'names' => ['European Commission', 'Commission européenne', 'EC'],
+            'names' => ['European Commission', 'Commission européenne'],
+            'ambiguousNames' => ['EC'],
             'openairePrefixes' => ['corda_______', 'corda__h2020', 'corda_____he'],
         ],
         'ERC' => [
@@ -58,7 +61,8 @@ final class FunderRegistry
         'NSF' => [
             'crossref' => '100000001',
             'ror' => '021nxhr62',
-            'names' => ['National Science Foundation', 'U.S. National Science Foundation', 'NSF'],
+            'names' => ['U.S. National Science Foundation'],
+            'ambiguousNames' => ['National Science Foundation', 'NSF'],
             'openairePrefixes' => ['nsf_________'],
         ],
         'NIH' => [
@@ -80,8 +84,8 @@ final class FunderRegistry
                 'Swiss National Science Foundation',
                 'Fonds National Suisse de la Recherche Scientifique',
                 'SNSF',
-                'SNF',
             ],
+            'ambiguousNames' => ['SNF'],
             'openairePrefixes' => ['snsf________'],
         ],
         'FCT' => [
@@ -91,8 +95,8 @@ final class FunderRegistry
                 'Fundação para a Ciência e a Tecnologia',
                 'Fundação para a Ciência e Tecnologia',
                 'Fundação para a Ciência e a Tecnologia, I.P.',
-                'FCT',
             ],
+            'ambiguousNames' => ['FCT'],
             'openairePrefixes' => ['fct_________'],
         ],
         'NWO' => [
@@ -163,6 +167,9 @@ final class FunderRegistry
     /** @var array<string, string>|null normalized name => funder key */
     private static ?array $nameIndex = null;
 
+    /** @var array<string, string>|null normalized ambiguous name => funder key */
+    private static ?array $ambiguousNameIndex = null;
+
     /** @var array<string, string>|null OpenAIRE prefix => funder key */
     private static ?array $prefixIndex = null;
 
@@ -181,7 +188,20 @@ final class FunderRegistry
             return null;
         }
 
-        return self::nameIndex()[self::normalizeName($funderName)] ?? null;
+        return self::findKeyByName($funderName);
+    }
+
+    /**
+     * Find the registry key of a funder from its name only.
+     *
+     * @param bool $includeAmbiguous also match the names shared by several funders: only when another
+     *                               source (an OpenAIRE project identifier) already tells the funder
+     */
+    public static function findKeyByName(string $funderName, bool $includeAmbiguous = false): ?string
+    {
+        $name = self::normalizeName($funderName);
+
+        return self::nameIndex()[$name] ?? ($includeAmbiguous ? self::ambiguousNameIndex()[$name] ?? null : null);
     }
 
     /**
@@ -260,6 +280,23 @@ final class FunderRegistry
         }
 
         return self::$nameIndex;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function ambiguousNameIndex(): array
+    {
+        if (self::$ambiguousNameIndex === null) {
+            self::$ambiguousNameIndex = [];
+            foreach (self::FUNDERS as $key => $funder) {
+                foreach ($funder['ambiguousNames'] ?? [] as $name) {
+                    self::$ambiguousNameIndex[self::normalizeName($name)] = $key;
+                }
+            }
+        }
+
+        return self::$ambiguousNameIndex;
     }
 
     /**

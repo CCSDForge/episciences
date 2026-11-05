@@ -193,6 +193,15 @@ final class Episciences_PapersManager_RecordUpdateStepsTest extends TestCase
         self::assertSame(['licence', 'jsonDocument'], $failedSteps);
     }
 
+    public function testHalStepFailsWhenTheTeiCouldNotBeReadAgainFromHal(): void
+    {
+        // the user asked for the metadata edited on HAL: a cached TEI is no answer, they must try again
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('could not be read again from HAL');
+
+        $this->invoke('processHalData', ['repoId' => (int) Episciences_Repositories::HAL_REPO_ID] + self::context(), true);
+    }
+
     private function invoke(string $method, mixed ...$args): mixed
     {
         $reflection = new ReflectionMethod(Episciences_PapersManager::class, $method);

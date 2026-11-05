@@ -47,15 +47,37 @@ final class Episciences_Hal_TeiCacheManagerTest extends TestCase
         $this->cache->save($this->cache->getItem($key)->set($tei));
     }
 
-    public function testDeleteDropsTheCachedTeiOfThatVersionOnly(): void
+    public function testRefreshReplacesTheCachedTeiOfThatVersionOnly(): void
     {
         $this->seed('<TEI>latest</TEI>');
-        $this->seed('<TEI>v2</TEI>', 2);
+        $this->seed('<TEI>v2 before</TEI>', 2);
+        $this->halResponds(new Response(200, [], '<TEI>v2 edited on HAL</TEI>'));
 
-        Episciences_Hal_TeiCacheManager::delete(self::IDENTIFIER, 2);
+        self::assertTrue(Episciences_Hal_TeiCacheManager::refresh(self::IDENTIFIER, 2));
 
-        self::assertSame('', Episciences_Hal_TeiCacheManager::getFromCache(self::IDENTIFIER, 2));
+        self::assertSame('<TEI>v2 edited on HAL</TEI>', Episciences_Hal_TeiCacheManager::getFromCache(self::IDENTIFIER, 2));
         self::assertSame('<TEI>latest</TEI>', Episciences_Hal_TeiCacheManager::getFromCache(self::IDENTIFIER));
+    }
+
+    public function testFailedRefreshKeepsTheCachedTei(): void
+    {
+        $this->seed('<TEI>cached</TEI>');
+        $handler = $this->halResponds(new Response(200, [], ''));
+
+        self::assertFalse(Episciences_Hal_TeiCacheManager::refresh(self::IDENTIFIER));
+
+        self::assertSame('<TEI>cached</TEI>', Episciences_Hal_TeiCacheManager::fetchAndGet(self::IDENTIFIER));
+        self::assertCount(0, $handler, 'HAL called once');
+    }
+
+    public function testFailedRefreshWithoutCachedTeiIsNotRequestedAgainInTheSameProcess(): void
+    {
+        $handler = $this->halResponds(new Response(200, [], ''), new Response(200, [], '<TEI>back</TEI>'));
+
+        self::assertFalse(Episciences_Hal_TeiCacheManager::refresh(self::IDENTIFIER));
+
+        self::assertSame('', Episciences_Hal_TeiCacheManager::fetchAndGet(self::IDENTIFIER));
+        self::assertCount(1, $handler, 'HAL called once for the failed TEI');
     }
 
     public function testCachedTeiIsServedWithoutCallingHal(): void
@@ -95,12 +117,12 @@ final class Episciences_Hal_TeiCacheManagerTest extends TestCase
         self::assertFalse($this->cache->hasItem('hal-tei-' . self::IDENTIFIER . '.xml'), 'the failure is not cached');
     }
 
-    public function testDeleteRequestsAFailedTeiAgain(): void
+    public function testRefreshRequestsAFailedTeiAgain(): void
     {
         $this->halResponds(new Response(200, [], ''), new Response(200, [], '<TEI>back</TEI>'));
         Episciences_Hal_TeiCacheManager::fetchAndCache(self::IDENTIFIER);
 
-        Episciences_Hal_TeiCacheManager::delete(self::IDENTIFIER);
+        self::assertTrue(Episciences_Hal_TeiCacheManager::refresh(self::IDENTIFIER));
 
         self::assertSame('<TEI>back</TEI>', Episciences_Hal_TeiCacheManager::fetchAndGet(self::IDENTIFIER));
     }

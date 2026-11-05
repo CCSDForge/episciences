@@ -84,6 +84,7 @@ class Episciences_Paper_Projects_EnrichmentService
      * Read the HAL fundings (ANR and European projects, free-text fundings) from the document TEI,
      * fetched once and cached for the author enrichment as well, then save them.
      *
+     * @throws RuntimeException HAL did not return the TEI: the HAL fundings could not be updated
      * @throws JsonException
      * @throws \Psr\Cache\InvalidArgumentException
      */
@@ -92,31 +93,29 @@ class Episciences_Paper_Projects_EnrichmentService
         $tei = Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version);
 
         if (trim($tei) === '') {
-            self::logWarning(sprintf('HAL TEI unavailable for %s (version %d): HAL fundings not updated', $identifier, $version));
-            return 0;
+            throw new RuntimeException(sprintf('HAL TEI unavailable for %s (version %d): HAL fundings not updated', $identifier, $version));
         }
 
-        $unresolved = HalTeiFundingParser::unresolvedReferences($tei);
+        $read = HalTeiFundingParser::read($tei);
 
-        if ($unresolved !== []) {
-            // the fundings read would be incomplete: keep the stored ones rather than lose some
-            self::logWarning(sprintf(
-                'HAL TEI for %s (version %d) refers to unknown project(s) %s: HAL fundings not updated',
-                $identifier,
-                $version,
-                implode(', ', $unresolved)
-            ));
-            return 0;
-        }
-
-        $fundings = HalTeiFundingParser::parse($tei);
-
-        if ($fundings === [] && !HalTeiFundingParser::hasDocument($tei)) {
+        if ($read === null) {
             self::logWarning(sprintf('HAL TEI for %s (version %d) holds no document: HAL fundings not updated', $identifier, $version));
             return 0;
         }
 
         $rowInDbHal = Episciences_Paper_Projects_Repository::getByPaperIdAndSourceId($paperId, (int) Episciences_Repositories::HAL_REPO_ID);
+        $fundings = $read['fundings'];
+
+        if ($read['unresolved'] !== []) {
+            // the fundings read are incomplete: the new and modified ones are saved, but no stored one is removed
+            self::logWarning(sprintf(
+                'HAL TEI for %s (version %d) refers to unknown project(s) %s: stored HAL fundings missing from the TEI kept',
+                $identifier,
+                $version,
+                implode(', ', $read['unresolved'])
+            ));
+            $fundings = self::withStoredFundingsNotRead($fundings, $rowInDbHal);
+        }
 
         // the document was read: no funding in it means that there is none, or that the depositor removed it from HAL
         if ($fundings === []) {
@@ -130,6 +129,51 @@ class Episciences_Paper_Projects_EnrichmentService
         self::logInfo(sprintf('HAL TEI: %d funding(s) found for %s', count($fundings), $identifier));
 
         return self::insertOrUpdateHalFunding($rowInDbHal, $fundings, $paperId);
+    }
+
+    /**
+     * The fundings read, followed by the stored ones that match none of them
+     *
+     * @param list<array<string, string>> $fundings
+     * @param array<int|string, array<string, mixed>> $storedRows
+     * @return list<array<string, mixed>>
+     * @throws JsonException
+     */
+    private static function withStoredFundingsNotRead(array $fundings, array $storedRows): array
+    {
+        $readIdentities = array_flip(array_map(self::fundingIdentity(...), $fundings));
+        $merged = $fundings;
+
+        foreach ($storedRows as $row) {
+            $stored = json_decode((string) ($row['funding'] ?? ''), true, 512, JSON_THROW_ON_ERROR);
+
+            foreach (is_array($stored) ? $stored : [] as $funding) {
+                if (is_array($funding) && !isset($readIdentities[self::fundingIdentity($funding)])) {
+                    $merged[] = $funding;
+                }
+            }
+        }
+
+        return $merged;
+    }
+
+    /**
+     * What identifies a funding across two readings: its award number, else its text, else its title
+     *
+     * @param array<string, mixed> $funding
+     * @throws JsonException
+     */
+    private static function fundingIdentity(array $funding): string
+    {
+        foreach (['code', 'fundingStatement', 'projectTitle'] as $field) {
+            $value = $funding[$field] ?? null;
+
+            if (is_string($value) && trim($value) !== '' && $value !== self::UNIDENTIFIED) {
+                return $field . ':' . mb_strtolower(trim($value));
+            }
+        }
+
+        return json_encode($funding, JSON_THROW_ON_ERROR);
     }
 
     /**
