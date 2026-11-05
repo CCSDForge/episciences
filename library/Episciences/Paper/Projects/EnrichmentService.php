@@ -89,7 +89,14 @@ class Episciences_Paper_Projects_EnrichmentService
      */
     public static function enrichHalFundingFromTei(int $paperId, string $identifier, int $version): int
     {
-        $fundings = HalTeiFundingParser::parse(Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version));
+        $tei = Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version);
+
+        if (trim($tei) === '') {
+            self::logWarning(sprintf('HAL TEI unavailable for %s (version %d): HAL fundings not updated', $identifier, $version));
+            return 0;
+        }
+
+        $fundings = HalTeiFundingParser::parse($tei);
 
         if ($fundings === []) {
             return 0;
@@ -202,6 +209,14 @@ class Episciences_Paper_Projects_EnrichmentService
             echo $message . PHP_EOL;
         }
         self::getLogger()->info($message);
+    }
+
+    public static function logWarning(string $message): void
+    {
+        if (PHP_SAPI === 'cli') {
+            echo $message . PHP_EOL;
+        }
+        self::getLogger()->warning($message);
     }
 
     // -------------------------------------------------------------------------

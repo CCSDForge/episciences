@@ -2,6 +2,7 @@
 
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_Hal_TeiCacheManager
@@ -16,11 +17,23 @@ class Episciences_Hal_TeiCacheManager
     private const TIMEOUT_WEB = 3;
     private const TIMEOUT_CLI = 40;
 
+    private static ?CacheItemPoolInterface $cachePool = null;
+
+    /**
+     * Replace the cache pool (tests); null restores the filesystem cache
+     */
+    public static function setCachePool(?CacheItemPoolInterface $cachePool): void
+    {
+        self::$cachePool = $cachePool;
+    }
+
     /**
      * Fetch TEI from HAL API and store it in cache
      *
      * @param string $identifier HAL document identifier
      * @param int $version HAL document version (0 = latest)
+     * An empty response (failed HAL call) is not cached, so that the next call tries again.
+     *
      * @return bool true if fetched from API, false if already cached
      * @throws \Psr\Cache\InvalidArgumentException
      */
@@ -33,12 +46,26 @@ class Episciences_Hal_TeiCacheManager
 
         if (!$cacheItem->isHit()) {
             $teiXml = self::fetchFromApi($identifier, $version);
-            $cacheItem->set($teiXml);
-            $cache->save($cacheItem);
+            if (trim($teiXml) !== '') {
+                $cacheItem->set($teiXml);
+                $cache->save($cacheItem);
+            }
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Drop the cached TEI, so that the next fetch reads the document from HAL again
+     *
+     * @param string $identifier HAL document identifier
+     * @param int $version HAL document version (0 = latest)
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public static function delete(string $identifier, int $version = 0): void
+    {
+        self::createCacheAdapter()->deleteItem(self::buildCacheKey($identifier, $version));
     }
 
     /**
@@ -76,9 +103,9 @@ class Episciences_Hal_TeiCacheManager
         return self::getFromCache($identifier, $version);
     }
 
-    private static function createCacheAdapter(): FilesystemAdapter
+    private static function createCacheAdapter(): CacheItemPoolInterface
     {
-        return new FilesystemAdapter(self::CACHE_NAMESPACE, self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+        return self::$cachePool ?? new FilesystemAdapter(self::CACHE_NAMESPACE, self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
     }
 
     private static function buildCacheKey(string $identifier, int $version): string
