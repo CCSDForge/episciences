@@ -56,9 +56,10 @@ final class FundingReference
      */
     public function mergeKey(): ?string
     {
-        if ($this->awardNumber !== null) {
-            $funder = $this->funderKey !== null ? FunderRegistry::family($this->funderKey) : ($this->funderName ?? '');
+        // an award number alone ("1", "2020") does not identify a funding: the funder is needed too
+        $funder = $this->funderKey !== null ? FunderRegistry::family($this->funderKey) : $this->funderName;
 
+        if ($this->awardNumber !== null && $funder !== null) {
             return 'award:' . mb_strtolower($funder) . '|' . mb_strtolower($this->awardNumber);
         }
 

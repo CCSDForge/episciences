@@ -58,9 +58,15 @@ final class FundingReferenceFactory
         '/^(?:EC:)?FP1\b/i' => 'First Framework Programme',
     ];
 
-    /** ERC grants in the HAL "financing" value: "ERC-2014-STG" (call year) or "EC:FP7:ERC" */
+    /** ERC call identifier, giving the call year: "ERC-2014-STG", "ERC-2010-StG_20091028" */
     private const HAL_ERC_CALL_PATTERN = '/^ERC-(\d{4})\b/i';
-    private const HAL_ERC_FP7_PATTERN = '/^(?:EC:)?FP7:ERC\b/i';
+
+    /**
+     * ERC grant named in the HAL "financing" or "call" value. HAL files ERC grants under the European
+     * Commission with various financing values: "ERC-2014-STG", "EC:FP7:ERC", "ERC", "H2020 ERC",
+     * "European Research Council (ERC)", or only "H2020" with an ERC call identifier.
+     */
+    private const HAL_ERC_MENTION_PATTERN = '/\bERC\b|European Research Council/i';
 
     /** First ERC call year of each framework programme, latest first */
     private const ERC_CALL_YEAR_STREAMS = [
@@ -143,8 +149,8 @@ final class FundingReferenceFactory
             $funderKey = 'ANR';
         }
 
-        // HAL files ERC grants under the European Commission; the financing value tells them apart
-        if ($funderKey === 'EC' && self::isErcFinancing(self::clean($stored['projectFinancing'] ?? null))) {
+        // HAL files ERC grants under the European Commission; the financing or call value tells them apart
+        if ($funderKey === 'EC' && self::isErcGrant($stored)) {
             $funderKey = 'ERC';
             $funderName = FunderRegistry::displayName('ERC');
         }
@@ -212,22 +218,42 @@ final class FundingReferenceFactory
             return self::OPENAIRE_PREFIX_STREAMS[$prefix];
         }
 
-        $financing = self::clean($stored['projectFinancing'] ?? null);
-        if ($financing === null || $funderKey === null || FunderRegistry::family($funderKey) !== 'EC') {
+        if ($funderKey === null || FunderRegistry::family($funderKey) !== 'EC') {
             return null;
         }
 
-        if (preg_match(self::HAL_ERC_CALL_PATTERN, $financing, $matches)) {
-            return self::ercCallYearStream((int)$matches[1]);
+        // the financing value first, the call identifier when the financing is missing or not explicit
+        $halValues = self::halFinancingValues($stored);
+
+        foreach ($halValues as $value) {
+            if (preg_match(self::HAL_ERC_CALL_PATTERN, $value, $matches)) {
+                return self::ercCallYearStream((int)$matches[1]);
+            }
         }
 
-        foreach (self::HAL_FINANCING_STREAMS as $pattern => $streamName) {
-            if (preg_match($pattern, $financing)) {
-                return $streamName;
+        foreach ($halValues as $value) {
+            foreach (self::HAL_FINANCING_STREAMS as $pattern => $streamName) {
+                if (preg_match($pattern, $value)) {
+                    return $streamName;
+                }
             }
         }
 
         return null;
+    }
+
+    /**
+     * Known HAL European project values naming the programme: financing, then call identifier.
+     *
+     * @param array<string, mixed> $stored
+     * @return list<string>
+     */
+    private static function halFinancingValues(array $stored): array
+    {
+        return array_values(array_filter([
+            self::clean($stored['projectFinancing'] ?? null),
+            self::clean($stored['callId'] ?? null),
+        ], static fn(?string $value): bool => $value !== null));
     }
 
     /**
@@ -276,10 +302,18 @@ final class FundingReferenceFactory
         return true;
     }
 
-    private static function isErcFinancing(?string $financing): bool
+    /**
+     * @param array<string, mixed> $stored
+     */
+    private static function isErcGrant(array $stored): bool
     {
-        return $financing !== null
-            && (preg_match(self::HAL_ERC_CALL_PATTERN, $financing) === 1 || preg_match(self::HAL_ERC_FP7_PATTERN, $financing) === 1);
+        foreach (self::halFinancingValues($stored) as $value) {
+            if (preg_match(self::HAL_ERC_MENTION_PATTERN, $value) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function ercCallYearStream(int $year): ?string
@@ -313,7 +347,8 @@ final class FundingReferenceFactory
             return null;
         }
 
-        $doi = (string)preg_replace('#^(?:https?://(?:dx\.)?doi\.org/|doi:)#i', '', $doi);
+        // "doi:" prefix here, the doi.org URL prefix by the shared helper
+        $doi = \Episciences_DoiTools::cleanDoi((string)preg_replace('/^doi:\s*/i', '', $doi));
 
         return str_starts_with($doi, '10.') ? $doi : null;
     }

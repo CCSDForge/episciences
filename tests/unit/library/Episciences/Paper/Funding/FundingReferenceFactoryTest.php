@@ -361,4 +361,97 @@ final class FundingReferenceFactoryTest extends TestCase
             'statement' => null,
         ], $reference->toArray());
     }
+
+    /**
+     * @return array<string, array{array<string, string>, string}>
+     */
+    public static function halErcShapesProvider(): array
+    {
+        // shapes of the HAL European projects referential for ERC grants
+        return [
+            'H2020 financing, ERC call' => [['projectFinancing' => 'H2020', 'callId' => 'ERC-2016-COG'], 'Horizon 2020 Framework Programme'],
+            'plain ERC financing, ERC call' => [['projectFinancing' => 'ERC', 'callId' => 'ERC-2021-STG'], 'Horizon Europe Framework Programme'],
+            'no financing, ERC call' => [['callId' => 'ERC-2008-AdG'], 'Seventh Framework Programme'],
+            '"NULL" financing, ERC call' => [['projectFinancing' => 'NULL', 'callId' => 'ERC-2019-STG'], 'Horizon 2020 Framework Programme'],
+            'H2020 ERC financing' => [['projectFinancing' => 'H2020 ERC', 'callId' => 'ERC-2015-AdG'], 'Horizon 2020 Framework Programme'],
+            'long ERC financing name' => [['projectFinancing' => 'EXCELLENT SCIENCE - European Research Council (ERC)', 'callId' => 'ERC-2022-ADG'], 'Horizon Europe Framework Programme'],
+        ];
+    }
+
+    /**
+     * @param array<string, string> $halValues
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('halErcShapesProvider')]
+    public function testHalErcGrantIsRecognizedFromTheCallIdentifier(array $halValues, string $expectedStream): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'European Commission',
+            'code' => '682291',
+        ] + $halValues]);
+
+        self::assertSame('European Research Council', $references[0]->funderName);
+        self::assertSame('https://doi.org/10.13039/501100000781', $references[0]->funderCrossrefId);
+        self::assertSame($expectedStream, $references[0]->fundingStream);
+        self::assertSame('https://cordis.europa.eu/project/id/682291', $references[0]->awardUri);
+    }
+
+    public function testStreamFromTheCallIdentifierWhenTheFinancingIsMissing(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'European Commission',
+            'code' => '659114',
+            'callId' => 'H2020-MSCA-IF-2014',
+        ]]);
+
+        self::assertSame('European Commission', $references[0]->funderName, 'not an ERC grant');
+        self::assertSame('Horizon 2020 Framework Programme', $references[0]->fundingStream);
+    }
+
+    public function testSameAwardNumberWithoutFunderIsNotMerged(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([
+            ['projectTitle' => 'First project', 'funderName' => 'unidentified', 'code' => '1'],
+            ['projectTitle' => 'Second project', 'funderName' => 'unidentified', 'code' => '1'],
+        ]);
+
+        self::assertCount(2, $references);
+        self::assertSame(['First project', 'Second project'], array_map(static fn($reference) => $reference->awardTitle, $references));
+    }
+
+    public function testSameAwardNumberOfTheSameFunderIsMerged(): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([
+            ['projectTitle' => 'Project', 'funderName' => 'Some Funder', 'code' => '1'],
+            ['acronym' => 'PRJ', 'funderName' => 'Some Funder', 'code' => '1'],
+        ]);
+
+        self::assertCount(1, $references);
+        self::assertSame('PRJ', $references[0]->awardAcronym);
+    }
+
+    /**
+     * @return array<string, array{string, ?string}>
+     */
+    public static function grantDoiProvider(): array
+    {
+        return [
+            'bare' => ['10.3030/637503', '10.3030/637503'],
+            'doi.org URL' => ['https://doi.org/10.3030/637503', '10.3030/637503'],
+            'dx.doi.org http URL' => ['http://dx.doi.org/10.3030/637503', '10.3030/637503'],
+            'doi: prefix' => ['doi:10.3030/637503', '10.3030/637503'],
+            'not a DOI' => ['https://example.org/grant', null],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('grantDoiProvider')]
+    public function testGrantDoiIsNormalized(string $stored, ?string $expected): void
+    {
+        $references = FundingReferenceFactory::fromStoredList([[
+            'funderName' => 'European Commission',
+            'code' => '637503',
+            'grantDoi' => $stored,
+        ]]);
+
+        self::assertSame($expected, $references[0]->grantDoi);
+    }
 }
