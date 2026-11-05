@@ -62,12 +62,9 @@ final class PaperControllerContributorGuardTest extends TestCase
      */
     public static function contributorEndpoints(): iterable
     {
-        yield 'answerrequest'    => ['answerrequestAction'];
-        yield 'contactrequest'   => ['contactrequestAction'];
-        yield 'tmpversion'       => ['tmpversionAction'];
-        yield 'newversion'       => ['newversionAction'];
-        yield 'saveanswer'       => ['saveanswerAction'];
-        yield 'savetmpversion'   => ['savetmpversionAction'];
+        // The other endpoints of the "Answer this request" menu apply the rule of the button instead
+        // (see PaperControllerRevisionRequestAnswerAccessTest); the new version save keeps this rule for the
+        // copy-editing requests for the final version.
         yield 'savenewversion'   => ['savenewversionAction'];
         yield 'updaterecorddata' => ['updaterecorddataAction'];
     }
