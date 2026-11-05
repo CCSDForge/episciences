@@ -343,7 +343,6 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('EPISCIENCES_LOG_PATH', '');
         define('EPISCIENCES_SOLR_LOG_PATH', '');
         define('EPISCIENCES_API_URL', '');
-        define('EPISCIENCES_API_SECRET_KEY', '');
         define('EPISCIENCES_API_STATS_DELEGATION_SECRET', '');
         define('EPISCIENCES_UID', 0);
         define('EPISCIENCES_Z_SUBMIT', 0);
