@@ -503,6 +503,9 @@ class Episciences_Paper
     private $_licence;
     /** @var Episciences_Paper_Projects $_fundings */
     private $_fundings;
+    /** @var list<FundingReference>|null normalized fundings, valid while $_fundingReferencesSource is unchanged */
+    private ?array $_fundingReferences = null;
+    private ?array $_fundingReferencesSource = null;
     /** @var Episciences_Paper_Dataset $_linkedData */
 
     private array $_linkedData;
@@ -5288,7 +5291,16 @@ class Episciences_Paper
      */
     public function getFundingReferences(): array
     {
-        return FundingReferenceFactory::fromStoredList($this->getFundings());
+        // the stored fundings are read again (cheap, cached by the repository) to notice a change;
+        // their normalization, needed by several exports of the same paper, is done once
+        $fundings = $this->getFundings();
+
+        if ($this->_fundingReferences === null || $this->_fundingReferencesSource !== $fundings) {
+            $this->_fundingReferences = FundingReferenceFactory::fromStoredList($fundings);
+            $this->_fundingReferencesSource = $fundings;
+        }
+
+        return $this->_fundingReferences;
     }
 
     /**
@@ -5747,13 +5759,12 @@ class Episciences_Paper
     {
         $body = Episciences_Paper_XmlExportManager::BODY_KEY;
 
-        if (isset($data[$body][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'])) {
-            $programs = &$data[$body][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'];
-        } elseif (isset($data[$body][Episciences_Paper_XmlExportManager::CONFERENCE_KEY][Episciences_Paper_XmlExportManager::CONFERENCE_PAPER_KEY]['program'])) {
-            $programs = &$data[$body][Episciences_Paper_XmlExportManager::CONFERENCE_KEY][Episciences_Paper_XmlExportManager::CONFERENCE_PAPER_KEY]['program'];
-        } else {
+        // the Crossref export only produces journal articles
+        if (!isset($data[$body][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'])) {
             return;
         }
+
+        $programs = &$data[$body][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'];
 
         if (!is_array($programs)) {
             return;
