@@ -4,6 +4,8 @@ use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\Export;
+use Episciences\Paper\Funding\FundingReference;
+use Episciences\Paper\Funding\FundingReferenceFactory;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\Paper\Spdx\LicenseCodeManager;
@@ -501,6 +503,9 @@ class Episciences_Paper
     private $_licence;
     /** @var Episciences_Paper_Projects $_fundings */
     private $_fundings;
+    /** @var list<FundingReference>|null normalized fundings, valid while the paper_projects rows ($_fundingReferencesSource) are unchanged */
+    private ?array $_fundingReferences = null;
+    private ?array $_fundingReferencesSource = null;
     /** @var Episciences_Paper_Dataset $_linkedData */
 
     private array $_linkedData;
@@ -1172,9 +1177,8 @@ class Episciences_Paper
             return false;
         }
 
-        $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
-        $cacheName = $this->getPaperid() . '-' . $method;
-        $metadataCache = $cache->getItem($cacheName);
+        $cache = self::createMetadataCache();
+        $metadataCache = $cache->getItem(self::metadataCacheKey((int)$this->getPaperid(), $method));
 
         if ($this->isPublished()) {
             $expireAfterSec = self::CACHE_EXPIRE_METADATA_PUBLISHED;
@@ -1199,6 +1203,29 @@ class Episciences_Paper
         return $getOutput;
 
 
+    }
+
+    /**
+     * Drop cached metadata of a paper (see get()), so that the next call builds them again
+     *
+     * @param string ...$methods methods whose output is cached, e.g. "getCrossref", "getJsonV2"
+     */
+    public static function deleteMetadataCache(int $paperId, string ...$methods): void
+    {
+        self::createMetadataCache()->deleteItems(array_map(
+            static fn(string $method): string => self::metadataCacheKey($paperId, $method),
+            $methods
+        ));
+    }
+
+    private static function createMetadataCache(): FilesystemAdapter
+    {
+        return new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
+    }
+
+    private static function metadataCacheKey(int $paperId, string $method): string
+    {
+        return $paperId . '-' . $method;
     }
 
     /**
@@ -1407,7 +1434,8 @@ class Episciences_Paper
         }
 
         $xmlToArray = $this->processDatasetsToJson($xmlToArray);
-        $this->processProjects($xmlToArray);
+        $fundingReferences = $this->getFundingReferences();
+        $this->processProjects($xmlToArray, $fundingReferences);
         $sPreviousVersions = $this->getPreviousVersionsToJson($journal);
 
         if ($this->getDocid()) {
@@ -1507,6 +1535,9 @@ class Episciences_Paper
                     'graphical_abstract_alt' => $this->getStoredCurrentStringToJson('graphical_abstract_alt'),
                     'graphical_abstract_license' => $this->getStoredCurrentStringToJson('graphical_abstract_license'),
                     'metrics' => Episciences_Paper_Visits::getPaperMetricsByPaperId($this->getPaperid()),
+                    'fundings' => $fundingReferences !== []
+                        ? array_map(static fn(FundingReference $reference): array => $reference->toArray(), $fundingReferences)
+                        : null,
 
                 ],
                 'latest_version_item_number' => (int)$this->getLatestVersionId(),
@@ -3675,9 +3706,8 @@ class Episciences_Paper
      */
     public function getOaiHeader(): string
     {
-        $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
-        $cacheName = $this->getPaperid() . '-' . __FUNCTION__;
-        $oaiHeaderItem = $cache->getItem($cacheName);
+        $cache = self::createMetadataCache();
+        $oaiHeaderItem = $cache->getItem(self::metadataCacheKey((int)$this->getPaperid(), __FUNCTION__));
         $oaiHeaderItem->expiresAfter(self::CACHE_EXPIRE_OAI_HEADER);
 
         if (!$oaiHeaderItem->isHit()) {
@@ -5274,6 +5304,27 @@ class Episciences_Paper
     }
 
     /**
+     * Fundings of the paper, normalized and merged across sources (OpenAIRE, HAL, ...),
+     * with funder identifiers when the funder is known.
+     *
+     * @return list<FundingReference>
+     * @throws JsonException
+     */
+    public function getFundingReferences(): array
+    {
+        // the stored rows are read again (cached by the repository, not decoded) to notice a change;
+        // their decoding and normalization, needed by several exports of the same paper, are done once
+        $rows = $this->getPaperid() ? Episciences_Paper_ProjectsManager::getProjectsByPaperId((int)$this->getPaperid()) : [];
+
+        if ($this->_fundingReferences === null || $this->_fundingReferencesSource !== $rows) {
+            $this->_fundingReferences = FundingReferenceFactory::fromStoredList($this->getFundings());
+            $this->_fundingReferencesSource = $rows;
+        }
+
+        return $this->_fundingReferences;
+    }
+
+    /**
      * @return array [Episciences_Paper_Dataset]
      */
 
@@ -5716,28 +5767,73 @@ class Episciences_Paper
         return null;
     }
 
-    private function processProjects(array &$data): void
+    /**
+     * Rebuild the "fundref" program decoded from the Crossref export, adding the project titles
+     * Crossref has no room for, so that each title stays in the fundgroup of its own funding.
+     *
+     * The decoded shape is kept (one fundgroup: an object, several: a list) for the clients
+     * still reading it; the complete data is exposed under database.current.fundings.
+     *
+     * @param list<FundingReference> $fundingReferences
+     */
+    private function processProjects(array &$data, array $fundingReferences): void
     {
-        $projectsInfo = Episciences_Paper_ProjectsManager::getProjectsByPaperId($this->getPaperid());
-        foreach ($projectsInfo as $pInfo) {
-            if (isset($pInfo['funding'])) {
-                try {
-                    $pInfoToArray = json_decode($pInfo['funding'], true, 512, JSON_THROW_ON_ERROR);
-                    foreach ($pInfoToArray as $index => $values) {
-                        if (isset($data[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][$index])) {
-                            $currentProgram = &$data[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][$index];
-                            if (isset($currentProgram['@name'], $values['projectTitle']) && $currentProgram['@name'] === 'fundref') {
-                                $currentProgram['assertion']['assertion'][] = ['@name' => 'project_title', '#' => $values['projectTitle']];
-                            }
-                        }
+        $body = Episciences_Paper_XmlExportManager::BODY_KEY;
 
-                    }
-                } catch (JsonException $e) {
-                    trigger_error($e->getMessage());
-                }
-            }
+        // the Crossref export only produces journal articles
+        if (!isset($data[$body][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'])) {
+            return;
         }
 
+        $programs = &$data[$body][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'];
+
+        if (!is_array($programs)) {
+            return;
+        }
+
+        $fundref = self::buildFundrefProgramToJson($fundingReferences);
+
+        if (($programs['@name'] ?? null) === 'fundref') {
+            $programs = $fundref;
+            return;
+        }
+
+        foreach ($programs as $index => $program) {
+            if (is_array($program) && ($program['@name'] ?? null) === 'fundref') {
+                $programs[$index] = $fundref;
+                return;
+            }
+        }
+    }
+
+    /**
+     * Same fundgroups as the Crossref export (fundings with a funder), each with its project title.
+     *
+     * @param list<FundingReference> $fundingReferences
+     * @return array<string, mixed>
+     */
+    private static function buildFundrefProgramToJson(array $fundingReferences): array
+    {
+        $fundGroups = [];
+
+        foreach (FundingReferenceFactory::withFunder($fundingReferences) as $reference) {
+            $assertions = [['@name' => 'funder_name', '#' => $reference->funderName]];
+
+            if ($reference->awardNumber !== null) {
+                $assertions[] = ['@name' => 'award_number', '#' => $reference->awardNumber];
+            }
+
+            if ($reference->awardTitle !== null) {
+                $assertions[] = ['@name' => 'project_title', '#' => $reference->awardTitle];
+            }
+
+            $fundGroups[] = ['@name' => 'fundgroup', 'assertion' => $assertions];
+        }
+
+        return [
+            '@name' => 'fundref',
+            'assertion' => count($fundGroups) === 1 ? $fundGroups[0] : $fundGroups,
+        ];
     }
 
 

@@ -28,7 +28,8 @@ class GetFundingDataCommand extends Command
             ->addOption('doi', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by DOI')
             ->addOption('paperid', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by paper ID')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
-            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Bypass cache and fetch fresh data')
+            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Bypass cache and fetch fresh data (OpenAIRE responses and HAL TEI)')
+            ->addOption('refresh-all', null, InputOption::VALUE_NONE, 'Refresh PAPERS.DOCUMENT and the cached exports of every processed paper, even when its fundings did not change')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code); ignored when --doi or --paperid is used');
     }
 
@@ -37,6 +38,7 @@ class GetFundingDataCommand extends Command
         $io      = new SymfonyStyle($input, $output);
         $dryRun  = (bool) $input->getOption('dry-run');
         $noCache = (bool) $input->getOption('no-cache');
+        $refreshAll = (bool) $input->getOption('refresh-all');
         $rvcode  = $input->getOption('rvcode');
 
         $io->title('Funding data enrichment');
@@ -107,6 +109,7 @@ class GetFundingDataCommand extends Command
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
             $docId   = (int) $value['DOCID'];
+            $fundingRowsChanged = 0;
 
             // Process OpenAIRE funding for papers with DOI (all rows are already STATUS_PUBLISHED)
             if (!empty($value['DOI'])) {
@@ -141,7 +144,7 @@ class GetFundingDataCommand extends Command
                                 $paperId,
                                 (int) Episciences_Repositories::GRAPH_OPENAIRE_ID
                             );
-                            Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA(
+                            $fundingRowsChanged += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA(
                                 $globalfundingArray,
                                 $rowInDBGraph,
                                 $paperId
@@ -161,33 +164,23 @@ class GetFundingDataCommand extends Command
                 $version        = (int) $value['VERSION']; // cast: function expects int, DB returns string
 
                 if (!$dryRun) {
+                    // replaced only once HAL returned it: the author and licence enrichments share it
+                    if ($noCache && !Episciences_Hal_TeiCacheManager::refresh($trimIdentifier, $version)) {
+                        $logger->warning("HAL TEI of {$trimIdentifier} (version {$version}) could not be read again: cached TEI used, if any");
+                    }
+
                     try {
-                        $arrayIdEuAnr    = Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($trimIdentifier, $version);
-                        $decodeHalResp   = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
-                        $globalArrayJson = [];
-
-                        if (!empty($decodeHalResp['response']['docs'])) {
-                            $globalArrayJson = Episciences_Paper_ProjectsManager::FormatFundingANREuToArray(
-                                $decodeHalResp['response']['docs'],
-                                $trimIdentifier,
-                                $globalArrayJson
-                            );
-                        }
-
-                        if (!empty($globalArrayJson)) {
-                            $mergeArrayANREU = [];
-                            foreach ($globalArrayJson as $globalPreJson) {
-                                $mergeArrayANREU[] = $globalPreJson[0];
-                            }
-                            $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, (int) Episciences_Repositories::HAL_REPO_ID);
-                            Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
-                        }
+                        $fundingRowsChanged += Episciences_Paper_ProjectsManager::enrichHalFundingFromTei($paperId, $trimIdentifier, $version);
                     } catch (JsonException $e) {
                         $logger->error("JSON decode error for paper {$paperId} (HAL funding): " . $e->getMessage());
                     } catch (\Throwable $e) {
                         $logger->error("HAL funding error for paper {$paperId}: " . $e->getMessage());
                     }
                 }
+            }
+
+            if (!$dryRun && ($fundingRowsChanged > 0 || $refreshAll)) {
+                $this->refreshFundingConsumers($paperId, $docId, $logger);
             }
 
             if (!$dryRun) {
@@ -208,6 +201,24 @@ class GetFundingDataCommand extends Command
         $logger->info('Funding enrichment completed');
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Fundings are read by PAPERS.DOCUMENT (stored) and by the Crossref / OpenAIRE exports (cached):
+     * refresh the first and drop the cached exports, so the new fundings show up everywhere.
+     */
+    private function refreshFundingConsumers(int $paperId, int $docId, Logger $logger): void
+    {
+        try {
+            if (!Episciences_PapersManager::updateJsonDocumentData($docId)) {
+                $logger->error("DOCUMENT update failed for paper {$paperId} (docid {$docId}) after funding change");
+            }
+        } catch (\Throwable $e) {
+            $logger->error("DOCUMENT update failed for paper {$paperId} (docid {$docId}): " . get_class($e) . ': ' . $e->getMessage());
+        }
+
+        // already done when the funding rows were written, needed for --refresh-all
+        Episciences_Paper_Projects_Repository::invalidateFundingExportCaches($paperId);
     }
 
     private function bootstrap(): void
@@ -241,5 +252,9 @@ class GetFundingDataCommand extends Command
 
         Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
         Zend_Registry::set('Zend_Locale', new Zend_Locale('en'));
+
+        // Paper::toJson() (DOCUMENT refresh) needs a translator for the status labels;
+        // Episciences_Translation_Plugin::preDispatch() never runs in this command.
+        Zend_Registry::set('Zend_Translate', \Episciences\Translation\TranslatorFactory::create(PATH_TRANSLATION, null, 'auto'));
     }
 }

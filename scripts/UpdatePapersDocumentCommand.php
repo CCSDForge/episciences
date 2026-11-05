@@ -462,7 +462,7 @@ class UpdatePapersDocumentCommand extends Command
 
         try {
             $failedSteps = [];
-            $affected = \Episciences_PapersManager::updateRecordData($paper, $failedSteps);
+            $affected = \Episciences_PapersManager::updateRecordData($paper, $failedSteps, refreshJsonDocument: false); // DOCUMENT rebuilt below
 
             if ($failedSteps !== []) {
                 // Each failure is in the PHP error log, with the step and the exception

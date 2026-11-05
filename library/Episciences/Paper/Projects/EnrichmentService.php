@@ -5,11 +5,11 @@ declare(strict_types=1);
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Episciences\Paper\Funding\HalTeiFundingParser;
 
 /**
  * Orchestration of the funding enrichment pipeline.
- * Uses Repository + HalApiClient + Symfony Cache.
+ * Uses Repository, the cached HAL TEI and the OpenAIRE Graph responses.
  * Owns the singleton logger.
  */
 class Episciences_Paper_Projects_EnrichmentService
@@ -18,10 +18,7 @@ class Episciences_Paper_Projects_EnrichmentService
     public  const UNIDENTIFIED    = 'unidentified';
     private const LOGGER_CHANNEL  = 'ProjectsEnrichment';
     private const LOG_FILE_PREFIX = 'funding_enrichment_';
-    private const CACHE_NAMESPACE = 'enrichmentFunding';
     private const JSON_ENCODE_FLAGS = JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE;
-    private const JSON_DECODE_FLAGS = JSON_THROW_ON_ERROR;
-    private const JSON_MAX_DEPTH    = 512;
 
     private static ?Logger $logger = null;
 
@@ -84,60 +81,99 @@ class Episciences_Paper_Projects_EnrichmentService
     }
 
     /**
-     * Build the globalArrayJson of EU/ANR project metadata from raw HAL docs.
-     * Replaces FormatFundingANREuToArray().
+     * Read the HAL fundings (ANR and European projects, free-text fundings) from the document TEI,
+     * fetched once and cached for the author enrichment as well, then save them.
      *
+     * @throws RuntimeException HAL did not return the TEI: the HAL fundings could not be updated
+     * @throws JsonException
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public static function enrichHalFundingFromTei(int $paperId, string $identifier, int $version): int
+    {
+        $tei = Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version);
+
+        if (trim($tei) === '') {
+            throw new RuntimeException(sprintf('HAL TEI unavailable for %s (version %d): HAL fundings not updated', $identifier, $version));
+        }
+
+        $read = HalTeiFundingParser::read($tei);
+
+        if ($read === null) {
+            self::logWarning(sprintf('HAL TEI for %s (version %d) holds no document: HAL fundings not updated', $identifier, $version));
+            return 0;
+        }
+
+        $rowInDbHal = Episciences_Paper_Projects_Repository::getByPaperIdAndSourceId($paperId, (int) Episciences_Repositories::HAL_REPO_ID);
+        $fundings = $read['fundings'];
+
+        if ($read['unresolved'] !== []) {
+            // the fundings read are incomplete: the new and modified ones are saved, but no stored one is removed
+            self::logWarning(sprintf(
+                'HAL TEI for %s (version %d) refers to unknown project(s) %s: stored HAL fundings missing from the TEI kept',
+                $identifier,
+                $version,
+                implode(', ', $read['unresolved'])
+            ));
+            $fundings = self::withStoredFundingsNotRead($fundings, $rowInDbHal);
+        }
+
+        // the document was read: no funding in it means that there is none, or that the depositor removed it from HAL
+        if ($fundings === []) {
+            if ($rowInDbHal === []) {
+                return 0;
+            }
+            self::logInfo(sprintf('HAL TEI: no funding left for %s, HAL funding project removed', $identifier));
+            return Episciences_Paper_Projects_Repository::deleteByPaperIdAndSourceId($paperId, (int) Episciences_Repositories::HAL_REPO_ID);
+        }
+
+        self::logInfo(sprintf('HAL TEI: %d funding(s) found for %s', count($fundings), $identifier));
+
+        return self::insertOrUpdateHalFunding($rowInDbHal, $fundings, $paperId);
+    }
+
+    /**
+     * The fundings read, followed by the stored ones that match none of them
+     *
+     * @param list<array<string, string>> $fundings
+     * @param array<int|string, array<string, mixed>> $storedRows
+     * @return list<array<string, mixed>>
      * @throws JsonException
      */
-    public static function resolveHalProjectIds(
-        array  $halDocs,
-        string $identifier,
-        array  $accumulator
-    ): array {
-        $cache         = new FilesystemAdapter(self::CACHE_NAMESPACE, self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-        $safeIdentifier = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $identifier);
+    private static function withStoredFundingsNotRead(array $fundings, array $storedRows): array
+    {
+        $readIdentities = array_flip(array_map(self::fundingIdentity(...), $fundings));
+        $merged = $fundings;
 
-        foreach ($halDocs as $halValue) {
-            if (isset($halValue['europeanProjectId_i'])) {
-                foreach ($halValue['europeanProjectId_i'] as $idEuro) {
-                    self::logInfo('European project found on HAL: ' . $idEuro);
-                    $cacheKey  = $safeIdentifier . '_' . $idEuro . '_EU_funding.json';
-                    $cacheItem = $cache->getItem($cacheKey);
-                    $cacheItem->expiresAfter(self::ONE_MONTH);
-                    if (!$cacheItem->isHit()) {
-                        $resp = Episciences_Paper_Projects_HalApiClient::fetchEuropeanProject((int) $idEuro);
-                        $cacheItem->set($resp);
-                        $cache->save($cacheItem);
-                    } else {
-                        $resp = $cacheItem->get();
-                    }
-                    $accumulator[] = self::formatEuHalResp(
-                        json_decode((string) $resp, true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS)
-                    );
-                }
-            }
+        foreach ($storedRows as $row) {
+            $stored = json_decode((string) ($row['funding'] ?? ''), true, 512, JSON_THROW_ON_ERROR);
 
-            if (isset($halValue['anrProjectId_i'])) {
-                foreach ($halValue['anrProjectId_i'] as $idAnr) {
-                    self::logInfo('ANR project found on HAL: ' . $idAnr);
-                    $cacheKey  = $safeIdentifier . '_' . $idAnr . '_ANR_funding.json';
-                    $cacheItem = $cache->getItem($cacheKey);
-                    $cacheItem->expiresAfter(self::ONE_MONTH);
-                    if (!$cacheItem->isHit()) {
-                        $resp = Episciences_Paper_Projects_HalApiClient::fetchAnrProject((int) $idAnr);
-                        $cacheItem->set($resp);
-                        $cache->save($cacheItem);
-                    } else {
-                        self::logInfo('ANR project retrieved from cache');
-                        $resp = $cacheItem->get();
-                    }
-                    $accumulator[] = self::formatAnrHalResp(
-                        json_decode((string) $resp, true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS)
-                    );
+            foreach (is_array($stored) ? $stored : [] as $funding) {
+                if (is_array($funding) && !isset($readIdentities[self::fundingIdentity($funding)])) {
+                    $merged[] = $funding;
                 }
             }
         }
-        return $accumulator;
+
+        return $merged;
+    }
+
+    /**
+     * What identifies a funding across two readings: its award number, else its text, else its title
+     *
+     * @param array<string, mixed> $funding
+     * @throws JsonException
+     */
+    private static function fundingIdentity(array $funding): string
+    {
+        foreach (['code', 'fundingStatement', 'projectTitle'] as $field) {
+            $value = $funding[$field] ?? null;
+
+            if (is_string($value) && trim($value) !== '' && $value !== self::UNIDENTIFIED) {
+                return $field . ':' . mb_strtolower(trim($value));
+            }
+        }
+
+        return json_encode($funding, JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -169,7 +205,7 @@ class Episciences_Paper_Projects_EnrichmentService
     }
 
     /**
-     * Map a single v3 project entry ({title, acronym, code, funder}) to the DB funding structure.
+     * Map a single v3 project entry ({id, title, acronym, code, funder, pids}) to the DB funding structure.
      * 'funder' may be a scalar name (current REST serialization) or a Data Model object
      * ({name, shortName, jurisdiction, fundingStream}); both are supported.
      *
@@ -194,39 +230,38 @@ class Episciences_Paper_Projects_EnrichmentService
             $fundingArray['funderName'] = $funder['name'];
         }
 
+        // the identifier prefix tells the funder and the funding stream (e.g. "corda__h2020::...")
+        if (is_string($entry['id'] ?? null) && $entry['id'] !== '') {
+            $fundingArray['openaireId'] = $entry['id'];
+        }
+
+        $grantDoi = self::extractGrantDoi($entry['pids'] ?? null);
+        if ($grantDoi !== null) {
+            $fundingArray['grantDoi'] = $grantDoi;
+        }
+
         return $fundingArray;
     }
 
     /**
-     * Map a HAL European project API response to a normalized array.
-     * Replaces formatEuHalResp().
+     * Grant DOI of a v3 project entry, from its pids ([{scheme: "doi", value: "10.3030/101017452"}]).
      */
-    public static function formatEuHalResp(array $respEuHal): array
+    private static function extractGrantDoi(mixed $pids): ?string
     {
-        $defaults = [
-            'projectTitle'     => self::UNIDENTIFIED,
-            'acronym'          => self::UNIDENTIFIED,
-            'funderName'       => 'European Commission',
-            'code'             => self::UNIDENTIFIED,
-            'callId'           => self::UNIDENTIFIED,
-            'projectFinancing' => self::UNIDENTIFIED,
-        ];
-        return self::normalizeDocs($respEuHal, $defaults);
-    }
-
-    /**
-     * Map a HAL ANR project API response to a normalized array.
-     * Replaces formatAnrHalResp().
-     */
-    public static function formatAnrHalResp(array $respAnrHal): array
-    {
-        $defaults = [
-            'projectTitle' => self::UNIDENTIFIED,
-            'acronym'      => self::UNIDENTIFIED,
-            'funderName'   => 'French National Research Agency (ANR)',
-            'code'         => self::UNIDENTIFIED,
-        ];
-        return self::normalizeDocs($respAnrHal, $defaults);
+        if (!is_array($pids)) {
+            return null;
+        }
+        foreach ($pids as $pid) {
+            if (
+                is_array($pid)
+                && strtolower((string) ($pid['scheme'] ?? '')) === 'doi'
+                && is_string($pid['value'] ?? null)
+                && $pid['value'] !== ''
+            ) {
+                return $pid['value'];
+            }
+        }
+        return null;
     }
 
     // -------------------------------------------------------------------------
@@ -241,30 +276,17 @@ class Episciences_Paper_Projects_EnrichmentService
         self::getLogger()->info($message);
     }
 
+    public static function logWarning(string $message): void
+    {
+        if (PHP_SAPI === 'cli') {
+            echo $message . PHP_EOL;
+        }
+        self::getLogger()->warning($message);
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
-
-    /**
-     * Normalize docs from a HAL API response, filling missing keys with defaults.
-     */
-    private static function normalizeDocs(array $resp, array $defaults): array
-    {
-        $result = [];
-        if (empty($resp['response']['docs'])) {
-            return $result;
-        }
-        $i = 0;
-        foreach ($resp['response']['docs'] as $key => $value) {
-            $result[$key] = $value;
-            $missing = array_diff_key($defaults, $value);
-            foreach ($missing as $missingKey => $missingValue) {
-                $result[$i][$missingKey] = $missingValue;
-            }
-            $i++;
-        }
-        return $result;
-    }
 
     /**
      * Build an Episciences_Paper_Projects entity from raw values.

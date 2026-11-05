@@ -2,7 +2,6 @@
 
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Psr\Log\LogLevel;
 
 class Episciences_PapersManager
@@ -3279,19 +3278,30 @@ class Episciences_PapersManager
     /**
      * Updates a paper from its repository: its record and version, then its files, linked data, enrichment,
      * authors, licence and HAL / OpenAIRE data.
+     * When anything changed, PAPERS.DOCUMENT is rebuilt (step "jsonDocument").
      * Once the record is loaded, each step runs on its own: a failure is reported as a warning
      * (Episciences_Submit::runPostSaveStep()) and does not stop the following steps, nor the update of the record.
      *
      * @param Episciences_Paper $paper
      * @param list<string>|null $failedSteps receives the names of the steps that failed
      * @param-out list<string> $failedSteps
+     * @param bool $refreshHalTei HAL papers: read the TEI from HAL again instead of the cached one,
+     *                            so that metadata edited on HAL without a new version (fundings, affiliations) are seen;
+     *                            when HAL does not return it, the step "halData" fails
+     * @param bool $refreshJsonDocument rebuild PAPERS.DOCUMENT when anything changed; false for the callers
+     *                                  that rebuild it themselves right after
      * @return int number of affected rows
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Exception the record could not be loaded from the repository, or not saved
      */
 
-    public static function updateRecordData(Episciences_Paper $paper, ?array &$failedSteps = null): int
+    public static function updateRecordData(
+        Episciences_Paper $paper,
+        ?array &$failedSteps = null,
+        bool $refreshHalTei = false,
+        bool $refreshJsonDocument = true
+    ): int
     {
         $failedSteps = [];
         $docId = $paper->getDocId();
@@ -3309,6 +3319,11 @@ class Episciences_PapersManager
 
         $context = self::initializeContext($params);
         $recordData = self::fetchRecordData($context); // as well as updating the version from the original archive
+
+        // before the licence, authors and funding steps, which all read the TEI of this version
+        $halTeiRefreshFailed = $refreshHalTei
+            && (string)$context['repoId'] === Episciences_Repositories::HAL_REPO_ID
+            && !Episciences_Hal_TeiCacheManager::refresh($context['identifier'], (int)$context['version']);
         $record = self::cleanRecord($recordData['record'], $context['repoId']);
         $enrichment = $recordData['enrichment'];
         // The record already loaded, if any: the files and the linked data hooks do not load it again
@@ -3322,12 +3337,39 @@ class Episciences_PapersManager
                 $context['docId'], $context['paperId']
             ),
             'licence' => static fn(): int => self::processLicence($context, 0),
-            'halData' => static fn(): int => self::processHalData($context),
+            'halData' => static fn(): int => self::processHalData($context, $halTeiRefreshFailed),
             'openAireData' => static fn(): int => self::processOpenAireData($context),
         ], $failedSteps);
 
         $affectedRows += $db?->update(T_PAPERS, ['RECORD' => $record, 'VERSION' => $context['version']], ['DOCID = ?' => $context['docId']]);
+
+        if ($refreshJsonDocument && $affectedRows > 0) {
+            self::refreshJsonDocumentAfterRecordUpdate((int)$context['docId'], $failedSteps);
+        }
+
         return $affectedRows;
+    }
+
+    /**
+     * PAPERS.DOCUMENT is built from the record and from its satellite tables (authors, fundings, licence, ...)
+     * that updateRecordData() has just written: rebuild it, so that the API does not keep serving the former data.
+     * A failure is reported like the other steps: the record itself is updated.
+     *
+     * @param list<string> $failedSteps
+     * @param-out list<string> $failedSteps
+     */
+    private static function refreshJsonDocumentAfterRecordUpdate(int $docId, array &$failedSteps): void
+    {
+        try {
+            $refreshed = self::updateJsonDocumentData($docId);
+        } catch (Throwable $e) {
+            trigger_error(sprintf('DOCUMENT refresh failed for docid %d: %s: %s', $docId, $e::class, $e->getMessage()), E_USER_WARNING);
+            $refreshed = false;
+        }
+
+        if (!$refreshed) {
+            $failedSteps[] = 'jsonDocument';
+        }
     }
 
     private static function initializeContext(array $params): array
@@ -3468,13 +3510,19 @@ class Episciences_PapersManager
      * HAL papers: authors from the HAL TEI and HAL funding
      *
      * @param array<string, mixed> $context
+     * @param bool $teiRefreshFailed the TEI was to be read again from HAL, which did not return it
      * @return int number of rows affected by this step
      */
 
-    private static function processHalData(array $context): int
+    private static function processHalData(array $context, bool $teiRefreshFailed = false): int
     {
         if ((string)$context['repoId'] !== Episciences_Repositories::HAL_REPO_ID) {
             return 0;
+        }
+
+        if ($teiRefreshFailed) {
+            // the cached TEI, if any, may hide the metadata edited on HAL: the user is asked to try again
+            throw new RuntimeException(sprintf('HAL TEI of %s (version %s) could not be read again from HAL', $context['identifier'], $context['version']));
         }
 
         // Not caught: the step reports an unexpected payload or a cache failure
@@ -4349,7 +4397,11 @@ class Episciences_PapersManager
                 'language' => $language,
                 'article_type' => "Research Article",
                 'keywords' => $allKeywords,
-                'fundings' => Episciences_Paper_ProjectsManager::getProjectWithDuplicateRemoved($paper->getPaperid()),
+                // contents of the citation_funder_source meta tags, one per funding naming its funder
+                'fundings' => array_map(
+                    static fn(\Episciences\Paper\Funding\FundingReference $reference): string => (string)$reference->toCitationFunderSource(),
+                    \Episciences\Paper\Funding\FundingReferenceFactory::withFunder($paper->getFundingReferences())
+                ),
 //                'abstract' => $abstract,
 
             ],
@@ -4841,8 +4893,7 @@ class Episciences_PapersManager
 
         // invalidate the getJsonV2 metadata cache entry (up to CACHE_EXPIRE_METADATA_PUBLISHED = 31 days)
         // so callers going through Episciences_Paper::get('json', 2) don't keep serving the stale DOCUMENT
-        (new FilesystemAdapter(Episciences_Paper::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA))
-            ->deleteItem($paper->getPaperid() . '-getJsonV2');
+        Episciences_Paper::deleteMetadataCache((int)$paper->getPaperid(), 'getJsonV2');
 
         return true;
     }
@@ -4860,21 +4911,8 @@ class Episciences_PapersManager
     private static function updateRecordDataHal(int $paperId, array|string $identifier, float $version, int $affectedRows): int
     {
         $affectedRows += Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB(Episciences_Repositories::HAL_REPO_ID, $paperId, $identifier, $version);
-        //FUNDING
-        $arrayIdEuAnr = Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($identifier, $version);
-        $decodeHalIdsResp = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
-        $globalArrayJson = [];
-        if (!empty($decodeHalIdsResp['response']['docs'])) {
-            $globalArrayJson = Episciences_Paper_ProjectsManager::FormatFundingANREuToArray($decodeHalIdsResp['response']['docs'], $identifier, $globalArrayJson);
-        }
-        $mergeArrayANREU = [];
-        if (!empty($globalArrayJson)) {
-            foreach ($globalArrayJson as $globalPreJson) {
-                $mergeArrayANREU[] = $globalPreJson[0];
-            }
-            $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::HAL_REPO_ID);
-            $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
-        }
+        //FUNDING, from the TEI the author enrichment above has just fetched and cached
+        $affectedRows += Episciences_Paper_ProjectsManager::enrichHalFundingFromTei($paperId, (string) $identifier, (int) $version);
         return $affectedRows;
     }
 
