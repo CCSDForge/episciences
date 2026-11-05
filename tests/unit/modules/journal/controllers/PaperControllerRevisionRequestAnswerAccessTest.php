@@ -219,17 +219,37 @@ final class PaperControllerRevisionRequestAnswerAccessTest extends ControllerTes
     }
 
     /**
+     * Comments of the paper that are not a revision request: the answers and the contact of a request (its
+     * replies), and another kind of comment.
+     *
+     * @return iterable<string, array{string, int}> action, comment type
+     */
+    public static function saveEndpointsWithAnotherComment(): iterable
+    {
+        $types = [
+            'answer' => Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT,
+            'temporary version answer' => Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION,
+            'new version answer' => Episciences_CommentsManager::TYPE_REVISION_ANSWER_NEW_VERSION,
+            'contact' => Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT,
+            'author comment' => Episciences_CommentsManager::TYPE_AUTHOR_COMMENT,
+        ];
+
+        foreach (self::saveEndpoints() as $endpoint => [$action]) {
+            foreach ($types as $comment => $type) {
+                yield "$endpoint, $comment" => [$action, $type];
+            }
+        }
+    }
+
+    /**
      * The answer is attached to one of the paper's revision requests, not to another comment of the paper.
      *
-     * @dataProvider saveEndpoints
+     * @dataProvider saveEndpointsWithAnotherComment
      */
-    public function testCommentOfThePaperThatIsNotARevisionRequestIsRefused(string $action): void
+    public function testCommentOfThePaperThatIsNotARevisionRequestIsRefused(string $action, int $type): void
     {
         $this->givenJournal();
-        $this->givenRevisionRequest(
-            Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION,
-            Episciences_CommentsManager::TYPE_AUTHOR_COMMENT
-        );
+        $this->givenRevisionRequest(Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION, $type);
         $this->logInAs([Episciences_Acl::ROLE_MEMBER, Episciences_Acl::ROLE_AUTHOR], self::OWNER_UID);
 
         $result = $this->dispatch(PaperController::class, $action, $this->answerRequest('POST'));

@@ -252,8 +252,8 @@ class PaperController extends PaperDefaultController
 
         $this->view->isAllowedToSeeNoPublicDetails = $isAllowedToSeeNoPublicDetails;
 
-        // Computed once: for a non-owner, each call queries the co-authors
-        $isOwnerOrCoAuthor = $paper->isOwnerOrCoAuthor();
+        // Computed once: for a non-owner, each call queries the co-authors (not for an anonymous visitor)
+        $isOwnerOrCoAuthor = Episciences_Auth::isLogged() && $paper->isOwnerOrCoAuthor();
 
 
         $isAllowedToAnswerNewVersion =
@@ -1222,7 +1222,7 @@ class PaperController extends PaperDefaultController
         $oComment = new Episciences_Comment;
         $oComment->find($parentId);
 
-        if (!self::isRevisionRequestOfPaper($oComment, $paper)) {
+        if (!self::isRequestOfPaper($oComment, $paper, Episciences_CommentsManager::TYPE_REVISION_REQUEST)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
@@ -1412,7 +1412,7 @@ class PaperController extends PaperDefaultController
         $requestComment = new Episciences_Comment;
         $requestComment->find($requestId);
 
-        if (!self::isRevisionRequestOfPaper($requestComment, $paper)) {
+        if (!self::isRequestOfPaper($requestComment, $paper, Episciences_CommentsManager::TYPE_REVISION_REQUEST)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
@@ -1939,17 +1939,15 @@ class PaperController extends PaperDefaultController
         }
 
         // The copy-editing requests for the final version are answered with this save too: they are not part of the
-        // "Answer this request" menu and keep the rule of the contributor endpoints. Any other request is answered
-        // under the rule of the button.
-        $isCopyEditingRequest = in_array(
-            $requestComment->getType(),
-            Episciences_CommentsManager::$_copyEditingFinalVersionRequest,
-            true
-        );
-
-        $isAllowed = $isCopyEditingRequest
-            ? $this->isPaperContributorOrManager($paper)
-            : self::isRevisionRequestOfPaper($requestComment, $paper) && static::isAllowedToAnswerRevisionRequest($paper);
+        // "Answer this request" menu and keep the rule of the contributor endpoints. A revision request is answered
+        // under the rule of the button. Any other comment is not answered with a new version.
+        $isAllowed = match (true) {
+            in_array($requestComment->getType(), Episciences_CommentsManager::$_copyEditingFinalVersionRequest, true)
+                => $this->isPaperContributorOrManager($paper),
+            $requestComment->getType() === Episciences_CommentsManager::TYPE_REVISION_REQUEST
+                => static::isAllowedToAnswerRevisionRequest($paper),
+            default => false,
+        };
 
         if (!$isAllowed) {
             $this->getResponse()->setHttpResponseCode(403);
@@ -2142,23 +2140,14 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * The request answered (query parameter "pcid") must be one of the paper's: otherwise a caller could answer a
-     * request of another paper, or pick the rule of another type of request. A request not found keeps the DOCID 0.
+     * The request answered (query parameter "pcid") must be one of the paper's and, when $types is given, of one of
+     * these types: the answer is attached to it and the save reads its options. The "Answer this request" menu
+     * always sends the revision request itself (the answers are its replies). A request not found keeps the DOCID 0.
      */
-    private static function isRequestOfPaper(Episciences_Comment $request, Episciences_Paper $paper): bool
+    private static function isRequestOfPaper(Episciences_Comment $request, Episciences_Paper $paper, int ...$types): bool
     {
-        return $request->getDocid() === (int)$paper->getDocid();
-    }
-
-    /**
-     * The request answered from the "Answer this request" menu must be one of the paper's revision request comments
-     * (see RevisionRequests::COMMENT_TYPES, the comments the menu is built from): the answer is not attached to
-     * another thread of the paper.
-     */
-    private static function isRevisionRequestOfPaper(Episciences_Comment $request, Episciences_Paper $paper): bool
-    {
-        return self::isRequestOfPaper($request, $paper) &&
-            in_array($request->getType(), RevisionRequests::COMMENT_TYPES, true);
+        return $request->getDocid() === (int)$paper->getDocid() &&
+            ($types === [] || in_array($request->getType(), $types, true));
     }
 
     /**
