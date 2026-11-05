@@ -6,7 +6,8 @@
  * @var list<\Episciences\Paper\Funding\FundingReference> $fundingReferences
  */
 $fundingReferences = $this->fundingReferences ?? [];
-// OpenAIRE allows a single fundingReferences element, and every fundingReference needs a funderName
+// OpenAIRE allows a single fundingReferences element, and every fundingReference needs a funderName.
+// funderIdentifierType only accepts ISNI, GRID, Crossref Funder ID and Other (no ROR).
 $openaireFundings = \Episciences\Paper\Funding\FundingReferenceFactory::withFunder($fundingReferences);
 ?>
 <?php if (!empty($openaireFundings)): ?>
@@ -16,8 +17,6 @@ $openaireFundings = \Episciences\Paper\Funding\FundingReferenceFactory::withFund
                 <oaire:funderName><?= $this->escape($fundingReference->funderName) ?></oaire:funderName>
                 <?php if ($fundingReference->funderCrossrefId !== null) : ?>
                     <oaire:funderIdentifier funderIdentifierType="Crossref Funder ID"><?= $this->escape($fundingReference->funderCrossrefId) ?></oaire:funderIdentifier>
-                <?php elseif ($fundingReference->funderRor !== null) : ?>
-                    <oaire:funderIdentifier funderIdentifierType="ROR"><?= $this->escape($fundingReference->funderRor) ?></oaire:funderIdentifier>
                 <?php endif; ?>
                 <?php if ($fundingReference->fundingStream !== null) : ?>
                     <oaire:fundingStream><?= $this->escape($fundingReference->fundingStream) ?></oaire:fundingStream>

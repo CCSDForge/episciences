@@ -129,4 +129,16 @@ final class FundingExportPartialsTest extends TestCase
     {
         self::assertSame('', trim($this->render('openaire-funding-references.phtml', [])));
     }
+
+    public function testOpenAireNeverUsesTheRorFunderIdentifierType(): void
+    {
+        // funderIdentifierType of OpenAIRE Literature v4: ISNI, GRID, Crossref Funder ID, Other
+        $references = [new FundingReference(funderName: 'ROR-only funder', funderRor: 'https://ror.org/0000000')];
+
+        $xml = $this->render('openaire-funding-references.phtml', $references);
+        $xpath = $this->xpath($xml, 'oaire', self::OAIRE_NS, '<root xmlns:oaire="' . self::OAIRE_NS . '">%s</root>');
+
+        self::assertSame(1, $xpath->query('//oaire:fundingReference')->length);
+        self::assertSame(0, $xpath->query('//oaire:funderIdentifier')->length);
+    }
 }
