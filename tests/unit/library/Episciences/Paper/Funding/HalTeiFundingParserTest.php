@@ -134,6 +134,14 @@ XML;
         self::assertSame([], HalTeiFundingParser::parse('<TEI><not closed'));
     }
 
+    public function testHasDocumentOnlyWhenTheTeiHoldsTheHalDocument(): void
+    {
+        self::assertTrue(HalTeiFundingParser::hasDocument(self::tei('', '')));
+        self::assertFalse(HalTeiFundingParser::hasDocument('<TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body><listBibl/></body></text></TEI>'), 'empty search result');
+        self::assertFalse(HalTeiFundingParser::hasDocument(''));
+        self::assertFalse(HalTeiFundingParser::hasDocument('<TEI><not closed'));
+    }
+
     public function testParsedFundingsGoThroughTheFactory(): void
     {
         $tei = self::tei(

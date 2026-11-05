@@ -2,8 +2,15 @@
 
 namespace unit\library\Episciences;
 
+use Episciences_Hal_TeiCacheManager;
 use Episciences_Paper_Projects_EnrichmentService;
+use Episciences_Paper_Projects_Repository;
+use Episciences_Repositories;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Zend_Db_Adapter_Abstract;
+use Zend_Db_Table_Abstract;
 
 /**
  * @covers Episciences_Paper_Projects_EnrichmentService
@@ -157,5 +164,105 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
 
         self::assertArrayNotHasKey('grantDoi', $result[0]);
         self::assertSame('anr_________::abc', $result[0]['openaireId']);
+    }
+
+    // -------------------------------------------------------------------------
+    // enrichHalFundingFromTei() — a funding removed from HAL
+    // -------------------------------------------------------------------------
+
+    private const HAL_ID = 'hal-07654321';
+    private const PAPER_ID = 987654322;
+
+    private ?Zend_Db_Adapter_Abstract $previousAdapter = null;
+
+    private ArrayAdapter $projectsCache;
+
+    protected function tearDown(): void
+    {
+        Episciences_Hal_TeiCacheManager::setCachePool(null);
+        Episciences_Paper_Projects_Repository::setCachePool(new ArrayAdapter());
+        if ($this->previousAdapter !== null) {
+            Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
+        }
+    }
+
+    /**
+     * Cached TEI and cached HAL row of the paper; returns the DB adapter, which only deletions reach.
+     *
+     * @param array<int|string, array<string, mixed>> $halRow
+     */
+    private function givenHalTeiAndRow(string $tei, array $halRow): Zend_Db_Adapter_Abstract&MockObject
+    {
+        $teiCache = new ArrayAdapter(0, false);
+        $teiCache->save($teiCache->getItem('hal-tei-' . self::HAL_ID . '.xml')->set($tei));
+        Episciences_Hal_TeiCacheManager::setCachePool($teiCache);
+
+        $this->projectsCache = new ArrayAdapter(0, false);
+        $this->projectsCache->save($this->projectsCache->getItem(self::halRowCacheKey())->set($halRow));
+        Episciences_Paper_Projects_Repository::setCachePool($this->projectsCache);
+
+        $this->previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = $this->getMockBuilder($this->previousAdapter::class)
+            ->setConstructorArgs([$this->previousAdapter->getConfig()])
+            ->onlyMethods(['delete', 'update', 'query'])
+            ->getMock();
+        Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+
+        return $adapter;
+    }
+
+    private static function halRowCacheKey(): string
+    {
+        return 'projects_paper_' . self::PAPER_ID . '_source_' . Episciences_Repositories::HAL_REPO_ID;
+    }
+
+    private static function halTei(string $listBibl): string
+    {
+        return '<?xml version="1.0" encoding="utf-8"?><TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body><listBibl>'
+            . $listBibl . '</listBibl></body></text></TEI>';
+    }
+
+    public function testHalRowIsDeletedWhenTheDocumentNoLongerHasAnyFunding(): void
+    {
+        $adapter = $this->givenHalTeiAndRow(
+            self::halTei('<biblFull><titleStmt><title>A paper</title></titleStmt></biblFull>'),
+            [1 => ['funding' => '{"0":{"fundingStatement":"Removed funding"}}']]
+        );
+
+        $adapter->expects(self::once())
+            ->method('delete')
+            ->with(T_PAPER_PROJECTS, ['paperid = ?' => self::PAPER_ID, 'source_id = ?' => (int) Episciences_Repositories::HAL_REPO_ID])
+            ->willReturn(1);
+        $adapter->expects(self::never())->method('update');
+        $this->expectOutputRegex('/no funding left for ' . self::HAL_ID . ', HAL funding project removed/');
+
+        self::assertSame(1, Episciences_Paper_Projects_EnrichmentService::enrichHalFundingFromTei(self::PAPER_ID, self::HAL_ID, 0));
+        self::assertFalse($this->projectsCache->hasItem(self::halRowCacheKey()), 'cached HAL row dropped');
+    }
+
+    public function testNothingIsDeletedWhenThereWasNoHalRow(): void
+    {
+        $adapter = $this->givenHalTeiAndRow(
+            self::halTei('<biblFull><titleStmt><title>A paper</title></titleStmt></biblFull>'),
+            []
+        );
+
+        $adapter->expects(self::never())->method('delete');
+
+        self::assertSame(0, Episciences_Paper_Projects_EnrichmentService::enrichHalFundingFromTei(self::PAPER_ID, self::HAL_ID, 0));
+    }
+
+    public function testHalRowIsKeptWhenTheTeiHoldsNoDocument(): void
+    {
+        // an empty search result says nothing about the fundings of the document
+        $adapter = $this->givenHalTeiAndRow(
+            self::halTei(''),
+            [1 => ['funding' => '{"0":{"fundingStatement":"Kept funding"}}']]
+        );
+
+        $adapter->expects(self::never())->method('delete');
+        $this->expectOutputRegex('/holds no document: HAL fundings not updated/');
+
+        self::assertSame(0, Episciences_Paper_Projects_EnrichmentService::enrichHalFundingFromTei(self::PAPER_ID, self::HAL_ID, 0));
     }
 }

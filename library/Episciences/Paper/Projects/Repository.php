@@ -152,6 +152,24 @@ class Episciences_Paper_Projects_Repository
     }
 
     /**
+     * Delete the funding row of a paper for one source (e.g. the source no longer reports any funding).
+     *
+     * @return int number of deleted rows
+     */
+    public static function deleteByPaperIdAndSourceId(int $paperId, int $sourceId): int
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $deletedRows = (int) $db->delete(T_PAPER_PROJECTS, [
+            'paperid = ?'   => $paperId,
+            'source_id = ?' => $sourceId,
+        ]);
+
+        self::invalidateCache((new Episciences_Paper_Projects())->setPaperId($paperId)->setSourceId($sourceId));
+
+        return $deletedRows;
+    }
+
+    /**
      * Rows of a query, read from the cache pool or fetched (keyed by the first column) and cached.
      *
      * @param callable(): Zend_Db_Select $buildSelect

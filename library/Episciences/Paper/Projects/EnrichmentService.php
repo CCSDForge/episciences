@@ -98,17 +98,25 @@ class Episciences_Paper_Projects_EnrichmentService
 
         $fundings = HalTeiFundingParser::parse($tei);
 
-        if ($fundings === []) {
+        if ($fundings === [] && !HalTeiFundingParser::hasDocument($tei)) {
+            self::logWarning(sprintf('HAL TEI for %s (version %d) holds no document: HAL fundings not updated', $identifier, $version));
             return 0;
+        }
+
+        $rowInDbHal = Episciences_Paper_Projects_Repository::getByPaperIdAndSourceId($paperId, (int) Episciences_Repositories::HAL_REPO_ID);
+
+        // the document was read: no funding in it means that there is none, or that the depositor removed it from HAL
+        if ($fundings === []) {
+            if ($rowInDbHal === []) {
+                return 0;
+            }
+            self::logInfo(sprintf('HAL TEI: no funding left for %s, HAL funding project removed', $identifier));
+            return Episciences_Paper_Projects_Repository::deleteByPaperIdAndSourceId($paperId, (int) Episciences_Repositories::HAL_REPO_ID);
         }
 
         self::logInfo(sprintf('HAL TEI: %d funding(s) found for %s', count($fundings), $identifier));
 
-        return self::insertOrUpdateHalFunding(
-            Episciences_Paper_Projects_Repository::getByPaperIdAndSourceId($paperId, (int) Episciences_Repositories::HAL_REPO_ID),
-            $fundings,
-            $paperId
-        );
+        return self::insertOrUpdateHalFunding($rowInDbHal, $fundings, $paperId);
     }
 
     /**

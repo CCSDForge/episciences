@@ -63,6 +63,17 @@ final class HalTeiFundingParser
     }
 
     /**
+     * Whether the TEI holds the HAL document itself: only then does an empty parse() result
+     * mean that the document has no funding (and not an unreadable TEI or an empty search result).
+     */
+    public static function hasDocument(string $tei): bool
+    {
+        $documents = self::loadXpath($tei)?->query('//tei:biblFull');
+
+        return $documents instanceof \DOMNodeList && $documents->length > 0;
+    }
+
+    /**
      * @return array<string, array<string, string>> project entries keyed by their xml:id
      */
     private static function indexProjects(DOMXPath $xpath): array
