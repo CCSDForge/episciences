@@ -140,7 +140,7 @@ class Episciences_Mail_Form extends Ccsd_Form
     }
 
     /**
-     * Recipient field (to, cc, bcc) with its recipients list and contacts picker
+     * Recipient field (to, cc, bcc) with its recipients list and search
      * @throws Zend_Form_Exception
      */
     private function addRecipientField(string $target): void

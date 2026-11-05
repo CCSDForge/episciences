@@ -103,6 +103,7 @@ describe('es.mail-combobox', () => {
             expect(container.classList).toContain('ep-combobox');
             expect(Array.from(container.children)).toEqual([
                 input,
+                combobox.toggle,
                 combobox.listbox,
             ]);
             expect(container.parentElement.classList).toContain('col');
@@ -277,6 +278,219 @@ describe('es.mail-combobox', () => {
             expect(callbacks.onFreeEntry).toHaveBeenCalledWith(
                 'ada@example.org'
             );
+        });
+    });
+
+    describe('browsable list', () => {
+        const EDITOR = {
+            uid: 4,
+            fullname: 'Ed Itor',
+            username: 'ed',
+            mail: 'ed@example.org',
+            roles: ['editor'],
+            group: 'staff',
+            paperRole: null,
+        };
+        const EDITOR_2 = Object.assign({}, EDITOR, {
+            uid: 5,
+            fullname: 'Ed Two',
+            mail: 'ed2@example.org',
+        });
+
+        async function settle() {
+            for (let i = 0; i < 5; i++) {
+                await Promise.resolve();
+            }
+        }
+
+        function fetcherFor(byRole) {
+            return jest.fn(params =>
+                Promise.resolve(
+                    params.role ? byRole[params.role] || [] : [AUTHOR]
+                )
+            );
+        }
+
+        /** Text of an option as read by screen readers (without its aria-hidden arrow) */
+        function spokenText(option) {
+            const copy = option.cloneNode(true);
+            copy.querySelectorAll('[aria-hidden="true"]').forEach(node =>
+                node.remove()
+            );
+            return copy.textContent;
+        }
+
+        function optionTexts(combobox) {
+            return Array.from(
+                combobox.listbox.querySelectorAll('[role="option"]')
+            ).map(spokenText);
+        }
+
+        function groupLabels(combobox) {
+            return Array.from(
+                combobox.listbox.querySelectorAll('.ep-mail-ac-group-label')
+            ).map(label => label.textContent);
+        }
+
+        function clickOption(combobox, text) {
+            const options = Array.from(
+                combobox.listbox.querySelectorAll('[role="option"]')
+            );
+            (
+                options.find(option => spokenText(option) === text) ||
+                options.find(option => spokenText(option).includes(text))
+            ).click();
+        }
+
+        test('a click in the empty input lists the participants of the paper, then the editorial groups', async () => {
+            const fetcher = fetcherFor({});
+            const { input, combobox } = setUp(fetcher);
+
+            input.click();
+            await settle();
+
+            expect(fetcher).toHaveBeenCalledWith(
+                expect.objectContaining({ docId: 12 })
+            );
+            expect(fetcher.mock.calls[0][0].query).toBeUndefined();
+            expect(groupLabels(combobox)).toEqual([
+                "Intervenants de l'article",
+                'Équipe éditoriale',
+            ]);
+            expect(optionTexts(combobox)).toEqual(
+                expect.arrayContaining(['Rédacteurs en chef', 'Webmasters'])
+            );
+            expect(input.getAttribute('aria-expanded')).toBe('true');
+            expect(combobox.toggle.getAttribute('aria-expanded')).toBe('true');
+        });
+
+        test('without a paper, only the editorial groups are listed, without request', async () => {
+            const fetcher = fetcherFor({});
+            const { input, combobox } = setUp(fetcher, { docId: null });
+
+            input.click();
+            await settle();
+
+            expect(fetcher).not.toHaveBeenCalled();
+            expect(groupLabels(combobox)).toEqual(['Équipe éditoriale']);
+        });
+
+        test('Down arrow in the empty input opens the list on its first option', async () => {
+            const { input, combobox } = setUp(fetcherFor({}));
+
+            key(input, 'ArrowDown');
+            await settle();
+
+            const first = combobox.listbox.querySelector('[role="option"]');
+            expect(first.textContent).toContain('Alan Author');
+            expect(input.getAttribute('aria-activedescendant')).toBe(first.id);
+        });
+
+        test('the arrow button opens and closes the list, the focus staying in the input', async () => {
+            const { input, combobox } = setUp(fetcherFor({}));
+
+            combobox.toggle.click();
+            await settle();
+            expect(combobox.listbox.hidden).toBe(false);
+            expect(document.activeElement).toBe(input);
+
+            combobox.toggle.click();
+            expect(combobox.listbox.hidden).toBe(true);
+            expect(combobox.toggle.getAttribute('tabindex')).toBe('-1');
+        });
+
+        test('the list stays open after a choice, and shows the chosen recipients as such', async () => {
+            const chosen = new Set();
+            const { input, combobox, callbacks } = setUp(fetcherFor({}), {
+                onSelect: jest.fn(recipient => chosen.add(recipient.uid)),
+                isChosen: recipient => chosen.has(recipient.uid),
+            });
+            input.click();
+            await settle();
+
+            clickOption(combobox, 'Alan Author');
+
+            expect(callbacks.onSelect).not.toHaveBeenCalled();
+            expect(combobox.listbox.hidden).toBe(false);
+            const option = combobox.listbox.querySelector('[role="option"]');
+            expect(option.getAttribute('aria-disabled')).toBe('true');
+            expect(option.textContent).toContain('Déjà destinataire');
+        });
+
+        test('a group lists its members, which can be added one by one or all at once', async () => {
+            const chosen = new Set([4]);
+            const onSelect = jest.fn(recipient => chosen.add(recipient.uid));
+            const fetcher = fetcherFor({ editor: [EDITOR, EDITOR_2, OTHER] });
+            const { input, combobox } = setUp(fetcher, {
+                onSelect,
+                isChosen: recipient => chosen.has(recipient.uid),
+            });
+            input.click();
+            await settle();
+
+            clickOption(combobox, 'Rédacteurs');
+            await settle();
+
+            expect(fetcher).toHaveBeenLastCalledWith(
+                expect.objectContaining({ role: 'editor', docId: 12 })
+            );
+            expect(groupLabels(combobox)).toEqual(['Rédacteurs']);
+            expect(optionTexts(combobox).slice(0, 2)).toEqual([
+                'Retour aux groupes',
+                'Ajouter tout le groupe (2)',
+            ]);
+            expect(combobox.status.textContent).toBe(
+                'Rédacteurs : 3 utilisateurs'
+            );
+
+            clickOption(combobox, 'Ajouter tout le groupe');
+
+            expect(onSelect.mock.calls).toEqual([
+                [EDITOR_2, { silent: true }],
+                [OTHER, { silent: true }],
+            ]);
+            expect(combobox.status.textContent).toBe(
+                '2 destinataires ajoutés.'
+            );
+            expect(optionTexts(combobox)).not.toContain(
+                'Ajouter tout le groupe (0)'
+            );
+            expect(combobox.listbox.hidden).toBe(false);
+        });
+
+        test('"Back to the groups" shows the participants and the groups again', async () => {
+            const fetcher = fetcherFor({ webmaster: [EDITOR] });
+            const { input, combobox } = setUp(fetcher);
+            input.click();
+            await settle();
+            clickOption(combobox, 'Webmasters');
+            await settle();
+
+            clickOption(combobox, 'Retour aux groupes');
+            await settle();
+
+            expect(groupLabels(combobox)).toEqual([
+                "Intervenants de l'article",
+                'Équipe éditoriale',
+            ]);
+            // The participants are asked once
+            expect(fetcher.mock.calls.filter(c => !c[0].role)).toHaveLength(1);
+        });
+
+        test('typing switches from browsing to the search', async () => {
+            const fetcher = jest.fn(params =>
+                Promise.resolve(params.query ? [OTHER] : [AUTHOR])
+            );
+            const { input, combobox, callbacks } = setUp(fetcher);
+            input.click();
+            await settle();
+
+            await searchFor(input, 'gr');
+            await settle();
+            key(input, 'Enter');
+
+            expect(callbacks.onSelect).toHaveBeenCalledWith(OTHER);
+            expect(combobox.listbox.hidden).toBe(true);
         });
     });
 

@@ -1,5 +1,5 @@
-// Recipients fields of the mail forms (To, Cc, Bcc): chosen recipients, search suggestions, contacts picker.
-// See public/js/library/es.mail.js, es.mail-combobox.js, es.contacts-list.js.
+// Recipients fields of the mail forms (To, Cc, Bcc): chosen recipients, search suggestions and browsable list.
+// See public/js/library/es.mail.js, es.mail-combobox.js.
 // Text colors keep a 4.5:1 contrast on their background, focus indicators 3:1.
 
 $recipient-focus-color: $dark-blue;
@@ -73,13 +73,37 @@ button.remove-recipient {
     margin-top: 4px;
 }
 
-.show_contacts_button {
-    margin-top: 4px;
-}
-
 // Search suggestions (listbox of the combobox), overlaying the content below the input
 .ep-combobox {
     position: relative;
+
+    .recipient-input {
+        padding-right: 36px;
+    }
+}
+
+// Arrow button opening the browsable list, inside the input on the right
+.ep-combobox-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 0 4px 4px 0;
+    background: transparent;
+    color: $dark-grey;
+    cursor: pointer;
+
+    &:hover {
+        background-color: $almost-white;
+        color: $almost-black;
+    }
+
+    &[aria-expanded='true'] .caret {
+        transform: rotate(180deg);
+    }
 }
 
 .ep-mail-ac-listbox {
@@ -151,6 +175,39 @@ button.remove-recipient {
     }
 }
 
+// Already in To, Cc or Bcc: still reachable, but cannot be chosen again
+.ep-mail-ac-option-chosen {
+    cursor: default;
+
+    .ep-recipient-identity {
+        opacity: 0.75;
+    }
+}
+
+.ep-recipient-chosen {
+    flex: 0 0 auto;
+    color: $dark-grey;
+    font-size: 12px;
+    font-style: italic;
+}
+
+// Group of the editorial team, "Back to the groups", "Add the whole group"
+.ep-mail-ac-action {
+    color: $dark-blue;
+    font-weight: bold;
+
+    .ep-mail-ac-action-label {
+        flex: 1 1 auto;
+    }
+}
+
+.ep-mail-ac-back,
+.ep-mail-ac-more {
+    flex: 0 0 auto;
+    font-size: 18px;
+    line-height: 1;
+}
+
 .ep-recipient-identity {
     flex: 1 1 auto;
     min-width: 0;
@@ -181,53 +238,6 @@ button.remove-recipient {
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 4px;
-}
-
-// Contacts picker
-.ep-contacts-picker {
-    margin: 0 0 15px;
-    padding: 10px 15px;
-    background: $white;
-    border: 1px solid $lighter-grey;
-    border-radius: 4px;
-
-    .ep-contacts-picker-title {
-        margin: 0 0 10px;
-        font-size: 15px;
-        font-weight: bold;
-    }
-
-    .ep-contacts-results {
-        max-height: 320px;
-        overflow-y: auto;
-    }
-
-    .ep-contacts-group {
-        margin-bottom: 10px;
-
-        legend {
-            margin-bottom: 4px;
-            font-size: 13px;
-            font-weight: bold;
-        }
-    }
-
-    .checkbox label {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    input[type='checkbox']:focus-visible {
-        outline: 2px solid $recipient-focus-color;
-        outline-offset: 2px;
-    }
-
-    .ep-contacts-actions {
-        display: flex;
-        gap: 8px;
-        justify-content: flex-end;
-    }
 }
 
 .ep-anonymity-warning p {

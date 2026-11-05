@@ -1,4 +1,4 @@
-/* global addRecipient, removeRecipient, epInitRecipientFields, updateModalButton, refreshPaperHistory, tinyMCE, modalStructureExists, createModalStructure, in_modal */
+/* global addRecipient, removeRecipient, epInitRecipientFields, updateModalButton, refreshPaperHistory, tinyMCE, modalStructureExists, createModalStructure, in_modal, message, translate */
 
 function initModal() {
     if (!modalStructureExists()) {
@@ -34,25 +34,47 @@ $(document).ready(function () {
         delete window.__epContactsForm;
     });
 
+    // The script runs again each time the modal is opened: its handlers replace the former ones
+    let isSent = false;
     if (in_modal) {
         updateModalButton('send_mail');
 
-        $('#modal-box').on('hidden.bs.modal', function () {
-            location.reload();
-        });
+        $('#modal-box')
+            .off('hidden.bs.modal.epSendMail')
+            .on('hidden.bs.modal.epSendMail', function () {
+                // The next opening creates the editor again, on a new textarea with the same id: the former
+                // editor must be gone, or the new one loses its formatting
+                this.querySelectorAll('textarea').forEach(textarea => {
+                    const editor = textarea.id
+                        ? tinyMCE.get(textarea.id)
+                        : null;
+                    if (editor) {
+                        editor.remove();
+                    }
+                });
+                if (
+                    isSent &&
+                    $jsDocId &&
+                    typeof refreshPaperHistory === 'function'
+                ) {
+                    refreshPaperHistory($jsDocId);
+                }
+            });
+
+        // Sent: the modal closes without asking, the confirmation is a toast
+        if (sendForm) {
+            sendForm.addEventListener('ep:mail-sent', event => {
+                isSent = true;
+                $('#modal-box').modal('hide');
+                message(event.detail.message, 'alert-success');
+            });
+        }
     }
 
     setDefaultRecipient(sendForm);
     if (sendForm) {
         epInitRecipientFields(sendForm);
     }
-
-    // refresh parent page on close modal
-    $('button.close').on('click', function () {
-        if ($jsDocId) {
-            refreshPaperHistory($jsDocId);
-        }
-    });
 
     if (tinyMCE.activeEditor !== null) {
         tinyMCE.activeEditor.on('keyup', function () {
@@ -72,17 +94,24 @@ $(document).ready(function () {
     $('#send_form').on('change input', function () {
         isdirty = 1;
     });
-    $('#modal-box').on('hide.bs.modal', function () {
-        let editorContent = tinyMCE.activeEditor.getContent();
-        const hasRecipients =
-            sendForm !== null &&
-            sendForm.querySelector(
-                '.recipient-tags[data-recipient-target="cc"] .recipient-tag, .recipient-tags[data-recipient-target="bcc"] .recipient-tag'
-            ) !== null;
-        if (isdirty || hasRecipients || editorContent !== '') {
-            if (!confirm('Are you sure, you want to close?')) return false;
-        }
-    });
+    $('#modal-box')
+        .off('hide.bs.modal.epSendMail')
+        .on('hide.bs.modal.epSendMail', function () {
+            if (isSent) {
+                return;
+            }
+            let editorContent = tinyMCE.activeEditor.getContent();
+            const hasRecipients =
+                sendForm !== null &&
+                sendForm.querySelector(
+                    '.recipient-tags[data-recipient-target="cc"] .recipient-tag, .recipient-tags[data-recipient-target="bcc"] .recipient-tag'
+                ) !== null;
+            if (isdirty || hasRecipients || editorContent !== '') {
+                if (!confirm(translate('Fermer sans envoyer ce message ?'))) {
+                    return false;
+                }
+            }
+        });
 });
 
 function setDefaultRecipient(sendForm) {

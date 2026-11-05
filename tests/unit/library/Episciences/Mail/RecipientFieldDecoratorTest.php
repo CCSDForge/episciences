@@ -32,16 +32,18 @@ final class RecipientFieldDecoratorTest extends TestCase
         self::assertStringNotContainsString('<a', $matches[1], 'no link inside the label');
     }
 
-    public function testPickerButtonIsARealButtonOutsideOfTheLabel(): void
+    public function testHelpTextExplainsHowToBrowseAndSearch(): void
     {
         $html = $this->render();
 
-        self::assertSame(1, preg_match('#<button type="button" class="[^"]*show_contacts_button"[^>]*>(.*?)</button>#s', $html, $matches));
-        self::assertStringContainsString('aria-expanded="false"', $matches[0]);
-        self::assertStringContainsString('aria-controls="my-form-cc-picker"', $matches[0]);
-        self::assertStringContainsString('data-target="cc"', $matches[0]);
-        // The accessible name contains the visible text (WCAG 2.5.3)
-        self::assertStringContainsString('Choisir<span class="sr-only"> des destinataires (Cc)</span>', $matches[1]);
+        self::assertSame(1, preg_match('#<span id="my-form-cc-help"[^>]*>(.*?)</span>#s', $html, $help));
+        self::assertSame(
+            'Cliquez dans le champ ou utilisez la flèche bas pour parcourir les destinataires, ou saisissez au moins 2 caractères pour rechercher.'
+            . ' 100 destinataires au maximum (À, Cc et Bcc).',
+            trim(strip_tags($help[1]))
+        );
+        // The list is opened from the input itself: no other control in the field
+        self::assertStringNotContainsString('<button', $html);
     }
 
     public function testInputIsDescribedByTheHelpText(): void
@@ -64,6 +66,10 @@ final class RecipientFieldDecoratorTest extends TestCase
         self::assertStringContainsString('data-hidden-input="my-form-hidden_bcc"', $list[0]);
         self::assertStringContainsString('data-recipient-target="bcc"', $list[0]);
         self::assertStringContainsString('aria-label="Destinataires (Bcc)"', $list[0]);
+        // Limits of the mail, also applied when recipients are added
+        self::assertStringContainsString('data-max-recipients="100"', $list[0]);
+        self::assertStringContainsString('data-max-total="100"', $list[0]);
+        self::assertStringContainsString('data-warning-above="50"', $list[0]);
     }
 
     public function testUnknownFieldIsRefused(): void

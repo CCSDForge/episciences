@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Episciences\Mail;
 
-use Episciences_Auth;
 use Zend_Form_Decorator_Callback;
 use Zend_Form_Decorator_HtmlTag;
 use Zend_Form_Element;
@@ -12,16 +11,15 @@ use Zend_Registry;
 use Zend_Translate;
 
 /**
- * Recipient fields (To, Cc, Bcc) of the mail forms: list of the chosen recipients, search input,
- * help text and button opening the contacts picker (see public/js/library/es.mail-combobox.js and
- * public/js/library/es.contacts-list.js).
+ * Recipient fields (To, Cc, Bcc) of the mail forms: list of the chosen recipients, search input and
+ * help text (see public/js/library/es.mail-combobox.js, which makes the input a combobox, and
+ * public/js/library/es.mail.js).
  *
- * The label stays a plain <label for> of the input: the picker button is outside of it.
+ * The label stays a plain <label for> of the input.
  */
 final class RecipientFieldDecorator
 {
     public const TARGETS = ['to' => 'À', 'cc' => 'Cc', 'bcc' => 'Bcc'];
-    public const MAILING_LISTS_URL = '/administratemailinglist/index';
 
     /**
      * @param string $target to, cc or bcc
@@ -53,6 +51,10 @@ final class RecipientFieldDecorator
                 'class' => 'recipient-tags list-unstyled',
                 'data-recipient-target' => $target,
                 'data-hidden-input' => $hiddenId,
+                // Limits checked when the mail is sent, also applied when recipients are added
+                'data-max-recipients' => RecipientListValidator::MAX_PER_FIELD,
+                'data-max-total' => RecipientListValidator::MAX_TOTAL,
+                'data-warning-above' => RecipientListValidator::WARNING_ABOVE,
                 'aria-label' => self::listLabel($target),
                 'placement' => 'APPEND',
                 'openOnly' => true,
@@ -68,8 +70,8 @@ final class RecipientFieldDecorator
             $decorators[$name] = $decorator;
 
             if (str_ends_with((string)$name, 'ViewHelper')) {
-                $decorators['recipientControls'] = new Zend_Form_Decorator_Callback([
-                    'callback' => static fn(): string => self::controls($target, $inputId, $helpId),
+                $decorators['recipientHelp'] = new Zend_Form_Decorator_Callback([
+                    'callback' => static fn(): string => self::help($helpId),
                     'placement' => 'APPEND',
                 ]);
             }
@@ -89,24 +91,22 @@ final class RecipientFieldDecorator
         return sprintf(self::translate('Destinataires (%s)'), self::translate(self::TARGETS[$target] ?? $target));
     }
 
-    private static function controls(string $target, string $inputId, string $helpId): string
+    /**
+     * Help text of the input: how to browse and search, limits of the mail
+     */
+    private static function help(string $helpId): string
     {
-        $fieldName = self::translate(self::TARGETS[$target]);
-        $mailingListsUrl = Episciences_Auth::isRoot() ? self::MAILING_LISTS_URL : '';
+        $html = '<span id="' . self::escape($helpId) . '" class="help-block recipient-help">'
+            . self::escape(sprintf(
+                self::translate('Cliquez dans le champ ou utilisez la flèche bas pour parcourir les destinataires, ou saisissez au moins %d caractères pour rechercher.'),
+                RecipientSearchService::MIN_QUERY_LENGTH
+            ))
+            . ' ' . self::escape(sprintf(
+                self::translate('%d destinataires au maximum (À, Cc et Bcc).'),
+                min(RecipientListValidator::MAX_PER_FIELD, RecipientListValidator::MAX_TOTAL)
+            ));
 
-        return '<button type="button" class="btn btn-default btn-sm show_contacts_button"'
-            . ' data-target="' . self::escape($target) . '"'
-            . ' data-input-id="' . self::escape($inputId) . '"'
-            . ' aria-expanded="false" aria-controls="' . self::escape($inputId . '-picker') . '"'
-            . ($mailingListsUrl !== '' ? ' data-mailing-lists-url="' . self::escape($mailingListsUrl) . '"' : '')
-            . '>'
-            . '<span class="glyphicon glyphicon-user" aria-hidden="true"></span> '
-            . self::escape(self::translate('Choisir'))
-            . '<span class="sr-only"> ' . self::escape(sprintf(self::translate('des destinataires (%s)'), $fieldName)) . '</span>'
-            . '</button>'
-            . '<span id="' . self::escape($helpId) . '" class="help-block recipient-help">'
-            . self::escape(sprintf(self::translate('Au moins %d caractères pour lancer la recherche.'), RecipientSearchService::MIN_QUERY_LENGTH))
-            . '</span>';
+        return $html . '</span>';
     }
 
     private static function translate(string $message): string

@@ -1,4 +1,4 @@
-/* global EpMailCombobox, ajaxRequest, getLoader, tinyMCE, $modal_button, $modal_body, $modal_footer */
+/* global EpMailCombobox, ajaxRequest, getLoader, tinyMCE, $modal_button */
 var $modal_box;
 var in_modal;
 
@@ -7,8 +7,8 @@ var in_modal;
  *
  * Each field has a list of the chosen recipients (<ul class="recipient-tags">, see
  * Episciences\Mail\RecipientFieldDecorator) and a hidden input holding them as JSON
- * ([{key, value, uid}]), read by the server. Recipients are searched with es.mail-combobox.js and
- * picked with es.contacts-list.js. Every value is rendered as text.
+ * ([{key, value, uid}]), read by the server. Recipients are searched and browsed with
+ * es.mail-combobox.js. Every value is rendered as text.
  */
 
 const EP_AUTHOR_ROLES = ['author', 'coauthor'];
@@ -226,6 +226,42 @@ function epAnnounce(formEl, target, message) {
     region.textContent = message;
 }
 
+/**
+ * Limits checked when the mail is sent (Episciences\Mail\RecipientListValidator, data-max-* of the list):
+ * message when the field, or the form, cannot take another recipient, '' otherwise
+ */
+function epRecipientLimitError(formEl, container) {
+    const max = Number(container.dataset.maxRecipients) || 0;
+    const maxTotal = Number(container.dataset.maxTotal) || 0;
+    const tooMany = epT('Trop de destinataires (%d au maximum).');
+    if (max && container.querySelectorAll('.recipient-tag').length >= max) {
+        return epFormat(tooMany, max);
+    }
+    const scope = formEl || document;
+    if (
+        maxTotal &&
+        scope.querySelectorAll('.recipient-tags .recipient-tag').length >=
+            maxTotal
+    ) {
+        return epFormat(tooMany, maxTotal);
+    }
+    return '';
+}
+
+/** Visible message under the recipients of a field, read at once by screen readers */
+function epShowLimitError(container, text) {
+    const id = container.id + '-limit';
+    let error = document.getElementById(id);
+    if (!error) {
+        error = document.createElement('p');
+        error.id = id;
+        error.className = 'text-danger recipient-limit';
+        error.setAttribute('role', 'alert');
+        container.insertAdjacentElement('afterend', error);
+    }
+    error.textContent = text;
+}
+
 /** Field (to, cc, bcc) where this address is already chosen in the form, null if none */
 function epFindRecipientField(formEl, recipient) {
     for (const target of ['to', 'cc', 'bcc']) {
@@ -396,6 +432,12 @@ function addRecipient(target, recipient, type, options) {
         return existing.tag.id;
     }
 
+    const limitError = epRecipientLimitError(scope, container);
+    if (limitError) {
+        epShowLimitError(container, limitError);
+        return '';
+    }
+
     const tag = epBuildTag(container, normalized);
     container.appendChild(tag);
     addUser(
@@ -408,6 +450,7 @@ function addRecipient(target, recipient, type, options) {
     epUpdateListLabel(container);
     epSyncCopyCheckbox(scope, target, normalized, true);
     epCheckAnonymity(scope);
+    epCheckLargeMailing(scope);
 
     if (!(options && options.silent)) {
         epAnnounce(
@@ -457,9 +500,14 @@ function removeRecipient(tagOrJquery, options) {
     const recipient = { uid: tag.dataset.uid || null };
 
     tag.remove();
+    // A recipient less: the limits are no longer reached
+    (formEl || document)
+        .querySelectorAll('.recipient-limit')
+        .forEach(error => error.remove());
     epUpdateListLabel(container);
     epSyncCopyCheckbox(formEl, target, recipient, false);
     epCheckAnonymity(formEl);
+    epCheckLargeMailing(formEl);
 
     if (nextFocus) {
         nextFocus.focus();
@@ -551,6 +599,48 @@ function epCheckAnonymity(formEl) {
         }
     }
     return true;
+}
+
+/**
+ * Warns that the mail goes to many people at once, above the number of recipients given by the lists
+ * (data-warning-above, see Episciences\Mail\RecipientListValidator::WARNING_ABOVE). The text does not change
+ * with the number: it is read once, when the warning appears.
+ */
+function epCheckLargeMailing(formEl) {
+    const list = formEl ? formEl.querySelector('.recipient-tags') : null;
+    const threshold = list ? Number(list.dataset.warningAbove) || 0 : 0;
+    if (!threshold) {
+        return;
+    }
+    const count = formEl.querySelectorAll(
+        '.recipient-tags .recipient-tag'
+    ).length;
+    let warning = formEl.querySelector('.ep-large-mailing-warning');
+    if (count <= threshold) {
+        if (warning) {
+            warning.remove();
+        }
+        return;
+    }
+    if (warning) {
+        return;
+    }
+    warning = document.createElement('div');
+    warning.className = 'alert alert-warning ep-large-mailing-warning';
+    warning.setAttribute('role', 'alert');
+    warning.textContent = epFormat(
+        epT(
+            "Vous allez écrire à plus de %d personnes en même temps. Vérifiez les destinataires avant d'envoyer le message."
+        ),
+        threshold
+    );
+    const bccList = epTagsContainer(formEl, 'bcc');
+    const anchor = bccList ? bccList.closest('.form-group') : null;
+    if (anchor) {
+        anchor.insertAdjacentElement('afterend', warning);
+    } else {
+        formEl.prepend(warning);
+    }
 }
 
 function epBuildAnonymityWarning(formEl) {
@@ -699,10 +789,16 @@ function epInitRecipientFields(scope) {
             const target = input.dataset.recipientTarget;
             EpMailCombobox.attach(input, {
                 docId: epContextDocId(formEl),
-                onSelect: recipient =>
+                onSelect: (recipient, options) =>
                     epWithContactsForm(formEl, () =>
-                        addRecipient(target, recipient, 'known')
+                        addRecipient(target, recipient, 'known', options)
                     ),
+                // Already in To, Cc or Bcc: shown as such in the browsable list
+                isChosen: recipient =>
+                    epFindRecipientField(
+                        formEl,
+                        epNormalizeRecipient(recipient, 'known')
+                    ) !== null,
                 onFreeEntry: text =>
                     epWithContactsForm(formEl, () =>
                         addRecipient(target, text, 'manual')
@@ -793,26 +889,109 @@ if (typeof $ === 'function') {
 function updateModalButton(step) {
     $modal_button.off('click');
     if (step === 'send_mail') {
-        $modal_button.on('click', function () {
-            tinyMCE.triggerSave();
-            let form_values = $('#send_form').serialize();
-            let docId = $('#docid').val();
-            $modal_body.html(getLoader());
-            let request = ajaxRequest('/administratemail/send', form_values);
-            request.done(function (result, xhr) {
-                if (xhr === 'success') {
-                    localStorage.removeItem('mailContent' + docId);
-                }
-                $modal_body.html(translate(result));
-                $modal_footer.hide();
-            });
-            // Refused request: the typed text stays saved in the browser
-            request.fail(function (xhr) {
-                $modal_body.html(translate(xhr.responseText));
-                $modal_footer.hide();
-            });
-        });
+        $modal_button.on('click', () =>
+            epSendModalMail(document.getElementById('send_form'))
+        );
     }
+}
+
+/**
+ * Message of the server (HTML built by AdministratemailController::sendMail()) as text:
+ * its title and its lines, never inserted as HTML
+ * @param {string} html
+ * @returns {{title: string, lines: string[]}}
+ */
+function epServerMessage(html) {
+    const doc = new DOMParser().parseFromString(
+        String(html || ''),
+        'text/html'
+    );
+    const lines = Array.from(doc.body.querySelectorAll('div'))
+        .map(div => div.textContent.trim())
+        .filter(Boolean);
+    const title = doc.body.querySelector('p');
+    return {
+        title: (title ? title.textContent : doc.body.textContent).trim(),
+        lines,
+    };
+}
+
+/** Error shown above the mail form of the modal, which stays filled */
+function epShowSendError(form, html) {
+    let alert = form.querySelector('.ep-send-error');
+    if (!alert) {
+        alert = document.createElement('div');
+        alert.className = 'alert alert-danger ep-send-error';
+        alert.setAttribute('role', 'alert');
+        alert.tabIndex = -1;
+        form.prepend(alert);
+    }
+    const message = epServerMessage(html);
+    const title = document.createElement('strong');
+    title.textContent =
+        message.title || epT("Votre message n'a pas pu être envoyé :");
+    alert.replaceChildren(title);
+    if (message.lines.length) {
+        const list = document.createElement('ul');
+        message.lines.forEach(line => {
+            const item = document.createElement('li');
+            item.textContent = line;
+            list.appendChild(item);
+        });
+        alert.appendChild(list);
+    }
+    alert.focus();
+}
+
+/** Fields of the form, as posted (the attachments are uploaded apart) */
+function epFormQuery(form) {
+    const params = new URLSearchParams();
+    new FormData(form).forEach((value, name) => {
+        if (typeof value === 'string') {
+            params.append(name, value);
+        }
+    });
+    return params.toString();
+}
+
+/**
+ * Sends the mail of the modal. The form is only hidden while sending: when the mail is refused, it is shown
+ * again with the error above it, as typed. When it is sent, the form dispatches "ep:mail-sent" (detail.message:
+ * text of the server message), the modal closing itself (see administratemail/send.js).
+ * @param {HTMLFormElement} form
+ */
+function epSendModalMail(form) {
+    if (!form) {
+        return;
+    }
+    tinyMCE.triggerSave();
+    const docId = (form.querySelector('#docid') || {}).value;
+    const loader = document.createElement('div');
+    loader.innerHTML = getLoader();
+    form.hidden = true;
+    form.insertAdjacentElement('afterend', loader);
+    $modal_button.prop('disabled', true);
+
+    const request = ajaxRequest('/administratemail/send', epFormQuery(form));
+    request.done(function (result) {
+        localStorage.removeItem('mailContent' + docId);
+        loader.remove();
+        // The button of the modal is shared with the other modals of the page
+        $modal_button.prop('disabled', false);
+        form.dispatchEvent(
+            new CustomEvent('ep:mail-sent', {
+                bubbles: true,
+                detail: { message: epServerMessage(result).title },
+            })
+        );
+    });
+    // Refused: the typed text and the recipients stay in the form
+    request.fail(function (xhr) {
+        loader.remove();
+        form.hidden = false;
+        $modal_button.prop('disabled', false);
+        epShowSendError(form, xhr.responseText);
+    });
 }
 
 function waitForElm(selector) {
@@ -846,6 +1025,7 @@ if (typeof module !== 'undefined' && module.exports) {
         epInitRecipientFields,
         epNormalizeRecipient,
         epRemoveRecipientByEmail,
+        epSendModalMail,
         epTagsContainer,
         epWithContactsForm,
         initPaperModalRecipientTagsFromHidden,

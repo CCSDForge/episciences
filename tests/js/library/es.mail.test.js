@@ -14,6 +14,9 @@ const ALAN = {
     mail: 'alan@example.org',
 };
 
+// Limits of the mail (data-max-* of the lists): none unless a test sets them
+let limits = '';
+
 /** Markup of Episciences\Mail\RecipientFieldDecorator */
 function field(formId, target, extra = '') {
     return `
@@ -21,14 +24,13 @@ function field(formId, target, extra = '') {
             <label for="${formId}-${target}">${target}</label>
             <div class="col">
                 <ul id="${formId}-${target}-tags" class="recipient-tags list-unstyled"
-                    data-recipient-target="${target}" data-hidden-input="${formId}-hidden_${target}"></ul>
+                    data-recipient-target="${target}" data-hidden-input="${formId}-hidden_${target}"
+                    ${limits}></ul>
                 <input type="text" id="${formId}-${target}" class="recipient-input"
                        data-recipient-target="${target}" ${extra}>
-                <button type="button" class="show_contacts_button" data-target="${target}"
-                        data-input-id="${formId}-${target}" aria-expanded="false">Choisir</button>
             </div>
         </div>
-        <input type="hidden" id="${formId}-hidden_${target}" value="[]">`;
+        <input type="hidden" id="${formId}-hidden_${target}" name="hidden_${target}" value="[]">`;
 }
 
 function setUp(toExtra = '') {
@@ -255,6 +257,187 @@ describe('es.mail recipients list', () => {
         expect(tags('cc')).toHaveLength(0);
     });
 
+    describe('limits of the mail', () => {
+        beforeEach(() => {
+            limits = 'data-max-recipients="2" data-max-total="3"';
+        });
+
+        afterEach(() => {
+            limits = '';
+        });
+
+        test('a field takes no more recipients than allowed, and says so', () => {
+            setUp();
+            mail.addRecipient('cc', 'a@example.org', 'manual');
+            mail.addRecipient('cc', 'b@example.org', 'manual');
+
+            const id = mail.addRecipient('cc', 'c@example.org', 'manual');
+
+            expect(id).toBe('');
+            expect(tags('cc')).toHaveLength(2);
+            const error = document.getElementById('f-cc-tags-limit');
+            expect(error.getAttribute('role')).toBe('alert');
+            expect(error.textContent).toBe(
+                'Trop de destinataires (2 au maximum).'
+            );
+
+            mail.removeRecipient(tags('cc')[0]);
+            expect(document.getElementById('f-cc-tags-limit')).toBeNull();
+            expect(mail.addRecipient('cc', 'c@example.org', 'manual')).not.toBe(
+                ''
+            );
+        });
+
+        test('above the given number of recipients in all, the form warns once that the mail goes to many people', () => {
+            limits = 'data-warning-above="2"';
+            const form = setUp();
+            mail.addRecipient('to', 'a@example.org', 'manual');
+            mail.addRecipient('cc', 'b@example.org', 'manual');
+            expect(form.querySelector('.ep-large-mailing-warning')).toBeNull();
+
+            mail.addRecipient('bcc', 'c@example.org', 'manual');
+
+            const warning = form.querySelector('.ep-large-mailing-warning');
+            expect(warning.getAttribute('role')).toBe('alert');
+            expect(warning.textContent).toBe(
+                "Vous allez écrire à plus de 2 personnes en même temps. Vérifiez les destinataires avant d'envoyer le message."
+            );
+            // After the field Bcc, the last recipients field
+            expect(warning.previousElementSibling).toBe(
+                document.getElementById('f-bcc-tags').closest('.form-group')
+            );
+
+            mail.removeRecipient(tags('cc')[0]);
+            expect(form.querySelector('.ep-large-mailing-warning')).toBeNull();
+        });
+
+        test('the form takes no more recipients than allowed in all', () => {
+            setUp();
+            mail.addRecipient('to', 'a@example.org', 'manual');
+            mail.addRecipient('cc', 'b@example.org', 'manual');
+            mail.addRecipient('cc', 'c@example.org', 'manual');
+
+            mail.addRecipient('bcc', 'd@example.org', 'manual');
+
+            expect(tags('bcc')).toHaveLength(0);
+            expect(
+                document.getElementById('f-bcc-tags-limit').textContent
+            ).toContain('(3 au maximum)');
+        });
+    });
+
+    describe('mail sent from the modal', () => {
+        let request;
+
+        beforeEach(() => {
+            request = {};
+            global.tinyMCE = { triggerSave: jest.fn() };
+            global.getLoader = () => '<div class="loader">…</div>';
+            global.$modal_button = { prop: jest.fn() };
+            global.ajaxRequest = jest.fn(() => ({
+                done(callback) {
+                    request.done = callback;
+                    return this;
+                },
+                fail(callback) {
+                    request.fail = callback;
+                    return this;
+                },
+            }));
+        });
+
+        afterEach(() => {
+            delete global.tinyMCE;
+            delete global.getLoader;
+            delete global.$modal_button;
+            delete global.ajaxRequest;
+        });
+
+        function sendForm() {
+            const form = setUp();
+            form.id = 'send_form';
+            form.insertAdjacentHTML(
+                'beforeend',
+                '<input name="subject" value="Hello"><textarea name="content">Body</textarea>'
+            );
+            mail.addRecipient('cc', ADA, 'known');
+            return form;
+        }
+
+        test('the fields are posted, the form being hidden while sending', () => {
+            const form = sendForm();
+
+            mail.epSendModalMail(form);
+
+            const posted = new URLSearchParams(
+                global.ajaxRequest.mock.calls[0][1]
+            );
+            expect(global.ajaxRequest.mock.calls[0][0]).toBe(
+                '/administratemail/send'
+            );
+            expect(posted.get('subject')).toBe('Hello');
+            expect(JSON.parse(posted.get('hidden_cc'))[0].uid).toBe('1');
+            expect(form.hidden).toBe(true);
+            expect(document.querySelector('.loader')).not.toBeNull();
+            expect(global.$modal_button.prop).toHaveBeenCalledWith(
+                'disabled',
+                true
+            );
+        });
+
+        test('a refused mail shows the form again, as typed, with the reasons as text', () => {
+            const form = sendForm();
+            mail.epSendModalMail(form);
+
+            request.fail({
+                responseText:
+                    "<p><strong>Votre message n'a pas pu être envoyé :</strong></p>" +
+                    '<div>Trop de destinataires (100 au maximum).</div>' +
+                    '<div><img src=x onerror="window.hacked=1"></div>',
+            });
+
+            expect(form.hidden).toBe(false);
+            expect(document.querySelector('.loader')).toBeNull();
+            expect(tags('cc')).toHaveLength(1);
+            expect(form.querySelector('[name="subject"]').value).toBe('Hello');
+            const alert = form.querySelector('.ep-send-error');
+            expect(alert.getAttribute('role')).toBe('alert');
+            expect(document.activeElement).toBe(alert);
+            expect(alert.querySelector('strong').textContent).toBe(
+                "Votre message n'a pas pu être envoyé :"
+            );
+            expect(
+                Array.from(alert.querySelectorAll('li')).map(
+                    li => li.textContent
+                )
+            ).toEqual(['Trop de destinataires (100 au maximum).']);
+            expect(alert.querySelector('img')).toBeNull();
+            expect(global.$modal_button.prop).toHaveBeenLastCalledWith(
+                'disabled',
+                false
+            );
+        });
+
+        test('a sent mail is announced by the form, with the message of the server', () => {
+            const form = sendForm();
+            const listener = jest.fn();
+            form.addEventListener('ep:mail-sent', listener);
+            mail.epSendModalMail(form);
+
+            request.done('<strong>Votre e-mail a bien été envoyé.</strong>');
+
+            expect(listener).toHaveBeenCalledTimes(1);
+            expect(listener.mock.calls[0][0].detail.message).toBe(
+                'Votre e-mail a bien été envoyé.'
+            );
+            expect(global.$modal_button.prop).toHaveBeenLastCalledWith(
+                'disabled',
+                false
+            );
+            expect(document.querySelector('.loader')).toBeNull();
+        });
+    });
+
     describe('peer review anonymity', () => {
         const REVIEWER = {
             uid: 9,
@@ -334,6 +517,42 @@ describe('es.mail recipients list', () => {
             expect(document.activeElement).toBe(
                 tags('cc')[0].querySelector('button')
             );
+        });
+
+        test('the browsable list of a field shows the users already chosen in another field', async () => {
+            const form = setUp();
+            form.insertAdjacentHTML(
+                'beforeend',
+                '<input type="hidden" name="docid" value="12">'
+            );
+            global.fetch = jest.fn(() =>
+                Promise.resolve({
+                    ok: true,
+                    json: () =>
+                        Promise.resolve({
+                            results: [
+                                Object.assign({ group: 'paper' }, ADA),
+                                Object.assign({ group: 'paper' }, ALAN),
+                            ],
+                        }),
+                })
+            );
+            mail.epInitRecipientFields(document);
+            mail.addRecipient('cc', ADA, 'known');
+
+            document.getElementById('f-bcc').click();
+            for (let i = 0; i < 5; i++) {
+                await Promise.resolve();
+            }
+
+            const options = Array.from(
+                document.querySelectorAll('#f-bcc-listbox [role="option"]')
+            ).slice(0, 2);
+            expect(options.map(o => o.getAttribute('aria-disabled'))).toEqual([
+                'true',
+                null,
+            ]);
+            delete global.fetch;
         });
 
         test('a typed address goes to the field of the input', () => {

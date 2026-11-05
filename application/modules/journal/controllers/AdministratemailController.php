@@ -467,6 +467,8 @@ class AdministratemailController extends Zend_Controller_Action
             }
 
             if ($isInModal) {
+                // Not a success status: the modal shows the message above the form, which keeps what was typed
+                $this->getResponse()->setHttpResponseCode(422);
                 return $message;
             }
 
@@ -508,7 +510,10 @@ class AdministratemailController extends Zend_Controller_Action
 
             $message = '<strong>' . $selfView->translate("Une erreur interne s'est produite, veuillez recommencer.") . '</strong>';
 
-            if (!$isInModal) {
+            if ($isInModal) {
+                // Not a success status: the modal keeps the form, to send it again
+                $this->getResponse()->setHttpResponseCode(500);
+            } else {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
 

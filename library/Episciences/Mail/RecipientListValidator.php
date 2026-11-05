@@ -20,13 +20,15 @@ use Zend_Validate_EmailAddress;
 final class RecipientListValidator
 {
     public const FIELDS = ['to', 'cc', 'bcc'];
-    public const MAX_PER_FIELD = 50;
+    public const MAX_PER_FIELD = 100;
     public const MAX_TOTAL = 100;
+    /** Above this number of recipients, the form warns that the mail goes to many people at once */
+    public const WARNING_ABOVE = 50;
 
     public const ERROR_MISSING = 'Veuillez saisir au moins un destinataire';
     public const ERROR_INVALID_LIST = 'La liste des destinataires est invalide.';
     public const ERROR_INVALID_EMAIL = 'Adresse e-mail invalide : %s';
-    public const ERROR_TOO_MANY = 'Trop de destinataires (%d au maximum). Pour écrire à de nombreux destinataires, utilisez une liste de diffusion.';
+    public const ERROR_TOO_MANY = 'Trop de destinataires (%d au maximum).';
     public const ERROR_ANONYMITY = 'Un relecteur et un auteur de cet article ne peuvent pas être destinataires ensemble en À ou Cc : placez le ou les relecteurs en Cci.';
 
     private const AUTHOR_ROLES = [Episciences_Acl::ROLE_AUTHOR, Episciences_Acl::ROLE_CO_AUTHOR];
