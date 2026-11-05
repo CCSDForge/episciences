@@ -219,6 +219,27 @@ final class PaperControllerRevisionRequestAnswerAccessTest extends ControllerTes
     }
 
     /**
+     * The answer is attached to one of the paper's revision requests, not to another comment of the paper.
+     *
+     * @dataProvider saveEndpoints
+     */
+    public function testCommentOfThePaperThatIsNotARevisionRequestIsRefused(string $action): void
+    {
+        $this->givenJournal();
+        $this->givenRevisionRequest(
+            Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION,
+            Episciences_CommentsManager::TYPE_AUTHOR_COMMENT
+        );
+        $this->logInAs([Episciences_Acl::ROLE_MEMBER, Episciences_Acl::ROLE_AUTHOR], self::OWNER_UID);
+
+        $result = $this->dispatch(PaperController::class, $action, $this->answerRequest('POST'));
+
+        self::assertSame(403, $result->response->getHttpResponseCode());
+        self::assertSame([], $this->db->inserts(), 'nothing is recorded');
+        self::assertSame([], $this->db->updates(), 'nothing is recorded');
+    }
+
+    /**
      * An unknown paper is refused, not an error.
      */
     public function testNewVersionSaveOfAnUnknownPaperIsRefused(): void
@@ -411,10 +432,10 @@ final class PaperControllerRevisionRequestAnswerAccessTest extends ControllerTes
      */
     private function givenPaperPage(): void
     {
-        $settings = [Episciences_Review::SETTING_REPOSITORIES => '[1]'];
-        $this->givenJournal($settings);
-        // The settings of the current journal, registered by the bootstrap (ControllerTestCase restores the registry)
-        Zend_Registry::set('reviewSettings', $settings);
+        $this->givenJournal([Episciences_Review::SETTING_REPOSITORIES => '[1]']);
+        // The decoded settings of the current journal, registered by the bootstrap (ControllerTestCase restores the
+        // registry)
+        Zend_Registry::set('reviewSettings', [Episciences_Review::SETTING_REPOSITORIES => [1]]);
 
         $router = Zend_Controller_Front::getInstance()->getRouter();
         if (!$router->hasRoute('default')) {

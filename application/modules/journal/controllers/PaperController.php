@@ -303,7 +303,7 @@ class PaperController extends PaperDefaultController
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
 
-        $this->view->isAllowedToAnswerRevisionRequest = static::isAllowedToAnswerRevisionRequest($paper);
+        $this->view->isAllowedToAnswerRevisionRequest = static::isAllowedToAnswerRevisionRequest($paper, $isConflictDetected);
 
         // reviewers comments **************************************************
         $comments = Episciences_CommentsManager::fetchReviewerAuthorCommentsByDocId($paper->getDocid());
@@ -1222,7 +1222,7 @@ class PaperController extends PaperDefaultController
         $oComment = new Episciences_Comment;
         $oComment->find($parentId);
 
-        if (!self::isRequestOfPaper($oComment, $paper)) {
+        if (!self::isRevisionRequestOfPaper($oComment, $paper)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
@@ -1412,7 +1412,7 @@ class PaperController extends PaperDefaultController
         $requestComment = new Episciences_Comment;
         $requestComment->find($requestId);
 
-        if (!self::isRequestOfPaper($requestComment, $paper)) {
+        if (!self::isRevisionRequestOfPaper($requestComment, $paper)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
@@ -1949,7 +1949,7 @@ class PaperController extends PaperDefaultController
 
         $isAllowed = $isCopyEditingRequest
             ? $this->isPaperContributorOrManager($paper)
-            : static::isAllowedToAnswerRevisionRequest($paper);
+            : self::isRevisionRequestOfPaper($requestComment, $paper) && static::isAllowedToAnswerRevisionRequest($paper);
 
         if (!$isAllowed) {
             $this->getResponse()->setHttpResponseCode(403);
@@ -2097,8 +2097,11 @@ class PaperController extends PaperDefaultController
      * editors and root), for a paper of the current journal. A secretary in conflict of interest on the paper (see
      * isConflictDetected()) does not answer, as the button is hidden from them. The editors, guest editors, copy
      * editors and co-authors do not answer.
+     *
+     * @param bool|null $isConflictDetected the conflict of interest already computed by the caller (see
+     *                                      isConflictDetected()), null to compute it
      */
-    protected static function isAllowedToAnswerRevisionRequest(Episciences_Paper $paper): bool
+    protected static function isAllowedToAnswerRevisionRequest(Episciences_Paper $paper, ?bool $isConflictDetected = null): bool
     {
         if (!Episciences_Auth::isLogged() || $paper->getRvid() !== RVID) {
             return false;
@@ -2108,7 +2111,7 @@ class PaperController extends PaperDefaultController
             return true;
         }
 
-        return Episciences_Auth::isSecretary() && !static::isConflictDetected($paper);
+        return Episciences_Auth::isSecretary() && !($isConflictDetected ?? static::isConflictDetected($paper));
     }
 
     /**
@@ -2145,6 +2148,17 @@ class PaperController extends PaperDefaultController
     private static function isRequestOfPaper(Episciences_Comment $request, Episciences_Paper $paper): bool
     {
         return $request->getDocid() === (int)$paper->getDocid();
+    }
+
+    /**
+     * The request answered from the "Answer this request" menu must be one of the paper's revision request comments
+     * (see RevisionRequests::COMMENT_TYPES, the comments the menu is built from): the answer is not attached to
+     * another thread of the paper.
+     */
+    private static function isRevisionRequestOfPaper(Episciences_Comment $request, Episciences_Paper $paper): bool
+    {
+        return self::isRequestOfPaper($request, $paper) &&
+            in_array($request->getType(), RevisionRequests::COMMENT_TYPES, true);
     }
 
     /**
