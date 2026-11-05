@@ -1,0 +1,235 @@
+// Recipients fields of the mail forms (To, Cc, Bcc): chosen recipients, search suggestions, contacts picker.
+// See public/js/library/es.mail.js, es.mail-combobox.js, es.contacts-list.js.
+// Text colors keep a 4.5:1 contrast on their background, focus indicators 3:1.
+
+$recipient-focus-color: $dark-blue;
+
+// Chosen recipients
+.recipient-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 0 0 4px;
+    padding: 0;
+
+    &:empty {
+        display: none;
+    }
+}
+
+.recipient-tag {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    background-color: $almost-white;
+    color: $almost-black;
+    border: 1px solid $lighter-grey;
+    border-radius: 3px;
+    font-size: 12px;
+    line-height: 1.5;
+
+    &.recipient-tag-manual {
+        border-style: dashed;
+        border-color: $dark-grey;
+    }
+
+    .recipient-name {
+        padding: 0 4px 0 6px;
+        overflow-wrap: anywhere;
+    }
+}
+
+// Native button, with a target of at least 24x24 px (WCAG 2.2, 2.5.8)
+button.remove-recipient {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    min-height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 0 3px 3px 0;
+    background: transparent;
+    color: $dark-grey;
+    font-size: 10px;
+    cursor: pointer;
+
+    &:hover {
+        background-color: $lighter-grey;
+        color: $almost-black;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $recipient-focus-color;
+        outline-offset: 0;
+    }
+}
+
+.recipient-help {
+    margin-bottom: 0;
+}
+
+.recipient-error {
+    margin-top: 4px;
+}
+
+.show_contacts_button {
+    margin-top: 4px;
+}
+
+// Search suggestions (listbox of the combobox), overlaying the content below the input
+.ep-combobox {
+    position: relative;
+}
+
+.ep-mail-ac-listbox {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    // Must exceed the Bootstrap modal z-index (1050)
+    z-index: 1051;
+    max-height: 320px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-top: 4px;
+    padding: 4px 0;
+    background: $white;
+    border: 1px solid $lighter-grey;
+    border-radius: 6px;
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        0 2px 6px rgba(0, 0, 0, 0.08);
+
+    &[aria-busy='true'] {
+        opacity: 0.7;
+    }
+}
+
+// A visible band between the groups of suggestions (paper, editorial team, other users)
+.ep-mail-ac-group + .ep-mail-ac-group {
+    margin-top: 6px;
+}
+
+.ep-mail-ac-group-label {
+    position: sticky;
+    top: -4px;
+    z-index: 1;
+    margin-bottom: 4px;
+    padding: 6px 12px;
+    background-color: $almost-white;
+    border-top: 1px solid $lighter-grey;
+    border-bottom: 1px solid $lighter-grey;
+    color: $dark-blue;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.ep-mail-ac-group:first-child .ep-mail-ac-group-label {
+    border-top: 0;
+}
+
+.ep-mail-ac-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 4px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:hover {
+        background-color: $almost-white;
+    }
+
+    // Active option: never conveyed by color only (left border)
+    &[aria-selected='true'] {
+        background-color: $almost-white;
+        box-shadow: inset 3px 0 0 $recipient-focus-color;
+    }
+}
+
+.ep-recipient-identity {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ep-recipient-main,
+.ep-recipient-email {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.ep-recipient-name {
+    font-weight: bold;
+}
+
+.ep-recipient-username,
+.ep-recipient-email {
+    color: $dark-grey;
+}
+
+.ep-recipient-email {
+    font-size: 12px;
+}
+
+.ep-recipient-roles {
+    display: flex;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+// Contacts picker
+.ep-contacts-picker {
+    margin: 0 0 15px;
+    padding: 10px 15px;
+    background: $white;
+    border: 1px solid $lighter-grey;
+    border-radius: 4px;
+
+    .ep-contacts-picker-title {
+        margin: 0 0 10px;
+        font-size: 15px;
+        font-weight: bold;
+    }
+
+    .ep-contacts-results {
+        max-height: 320px;
+        overflow-y: auto;
+    }
+
+    .ep-contacts-group {
+        margin-bottom: 10px;
+
+        legend {
+            margin-bottom: 4px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+    }
+
+    .checkbox label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    input[type='checkbox']:focus-visible {
+        outline: 2px solid $recipient-focus-color;
+        outline-offset: 2px;
+    }
+
+    .ep-contacts-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+}
+
+.ep-anonymity-warning p {
+    margin-bottom: 8px;
+}

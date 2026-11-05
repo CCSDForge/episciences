@@ -387,10 +387,8 @@ if ($this->citations !== '') {
         var paper = <?php if ($this->js_paper) : ?><?php echo $this->js_paper; ?><?php else:?>null<?php endif;?>;
         var paper_ratings = <?php if ($this->js_ratings) : ?><?php echo $this->js_ratings; ?><?php else:?>null<?php endif;?>;
         var author = <?php if ($this->js_contributor) : ?><?php echo $this->js_contributor; ?><?php else:?>null<?php endif;?>;
-        var sender = <?php if ($this->js_sender) : ?><?php echo $this->js_sender; ?><?php else:?>null<?php endif;?>;
-        // Used by recipients autocomplete (Cc/Bcc) inside paper status modals (es.mail.js)
-        var users = <?php if (isset($this->js_users)) : ?><?php echo $this->js_users; ?><?php else:?>[]<?php endif;?>;
-        var sender_uid = <?= (int) Episciences_Auth::getUid(); ?>;
+        // Logged user: sender tags of the templates (view.js), "receive a copy" of the mail forms (es.mail.js)
+        var sender = <?= $this->js_sender ?: 'null' ?>;
         var available_languages = <?php echo $this->available_languages?>;
         let siteLocale = '<?= $this->siteLocale ?>';
         let defaultLocale = '<?= $this->defaultLocale ?>';
@@ -411,12 +409,10 @@ $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
 
-$this->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
-$this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
-// Security: DOMPurify for XSS prevention (needed by es.contacts-list.js)
+$this->render('partials/mail_recipients_scripts.phtml');
+// Security: DOMPurify for XSS prevention (sanitizeHTML(), used by view.js)
 $this->jQuery()->addJavascriptFile("https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js");
 $this->jQuery()->addJavascriptFile("/js/utils/sanitizer.js");
-$this->jQuery()->addJavascriptFile("/js/library/es.contacts-list.js");
 $this->jQuery()->addJavascriptFile('/js/administratepaper/view.js');
 $this->jQuery()->addJavascriptFile('/js/common/utils.js');
 $this->jQuery()->addJavascriptFile('/js/paper/edit_master_file.js');

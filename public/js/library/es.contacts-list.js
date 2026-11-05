@@ -1,305 +1,473 @@
-(function () {
-    if (window.__epContactsListBound) {
+/* global EpMailCombobox, addRecipient, removeRecipient, epWithContactsForm, epContextDocId, epAnnounce, epTagsContainer */
+/**
+ * Contacts picker of the mail forms: panel opened under a recipient field by its "Choose" button
+ * (button.show_contacts_button, see Episciences\Mail\RecipientFieldDecorator).
+ *
+ * It lists the participants of the paper of the mail, the members of an editorial group, or the result
+ * of a search (2 characters at least), with native checkboxes. Recipients already in the field are checked.
+ * There is no "select all": mailing lists are meant for mails to many recipients.
+ *
+ * Disclosure pattern: the button has aria-expanded, the focus goes to the search field when the panel
+ * opens and back to the button when it closes. Vanilla JS.
+ */
+(function (root) {
+    'use strict';
+
+    if (root.__epContactsListBound) {
         return;
     }
-    window.__epContactsListBound = true;
+    root.__epContactsListBound = true;
 
-    // Read "var <name> = <json>;" assignments from the inline <script> blocks of
-    // the response and assign parsed JSON values (objects/arrays/numbers) to the
-    // matching globals. Values are parsed as data via JSON.parse — no script is
-    // executed, so the contacts payload is consumed without code evaluation.
-    function applyContactsData(markup) {
-        const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script[^>]*>/gi;
-        let scriptMatch;
-        while ((scriptMatch = scriptRegex.exec(markup)) !== null) {
-            scriptMatch[1].split('\n').forEach(line => {
-                const assignment = line.match(
-                    /^\s*var\s+([A-Za-z_$][\w$]*)\s*=\s*(.+);\s*$/
-                );
-                if (!assignment) {
-                    return;
-                }
-                let value;
-                try {
-                    value = JSON.parse(assignment[2]);
-                } catch (e) {
-                    return; // Non-JSON assignment (e.g. a quoted string) is ignored.
-                }
-                if (
-                    value !== null &&
-                    (typeof value === 'object' || typeof value === 'number')
-                ) {
-                    window[assignment[1]] = value;
-                }
+    const STAFF_GROUPS = [
+        ['chief_editor', 'Rédacteurs en chef'],
+        ['secretary', 'Secrétaires de rédaction'],
+        ['editor', 'Rédacteurs'],
+        ['guest_editor', 'Rédacteurs invités'],
+        ['copyeditor', 'Préparateurs de copie'],
+        ['webmaster', 'Webmasters'],
+    ];
+    const t = key => EpMailCombobox.t(key);
+    const format = (message, ...args) =>
+        EpMailCombobox.format(message, ...args);
+
+    function element(tag, attributes, text) {
+        const node = document.createElement(tag);
+        Object.entries(attributes || {}).forEach(([name, value]) => {
+            if (value !== null && value !== undefined) {
+                node.setAttribute(name, value);
+            }
+        });
+        if (text !== undefined) {
+            node.textContent = text;
+        }
+        return node;
+    }
+
+    function chosenTags(form, target) {
+        const container = form ? epTagsContainer(form, target) : null;
+        return container
+            ? Array.from(container.querySelectorAll('.recipient-tag[data-uid]'))
+            : [];
+    }
+
+    /**
+     * @param {HTMLButtonElement} button
+     */
+    function Picker(button) {
+        this.button = button;
+        this.target = button.dataset.target;
+        this.input = document.getElementById(button.dataset.inputId);
+        this.form = button.closest('form');
+        this.id = (this.input ? this.input.id : 'ep-recipients') + '-picker';
+        this.docId =
+            typeof epContextDocId === 'function'
+                ? epContextDocId(this.form)
+                : null;
+        // uid => recipient
+        this.selected = new Map();
+        this.initial = new Set(
+            chosenTags(this.form, this.target).map(tag => tag.dataset.uid)
+        );
+        this.initial.forEach(uid => this.selected.set(uid, null));
+        this.timer = null;
+        // Pending request of each results area: a newer one replaces it
+        this.controllers = new Map();
+        this.build();
+    }
+
+    Picker.prototype.build = function () {
+        const fieldName = EpMailCombobox.fieldLabel(this.target);
+        const panel = element('section', {
+            id: this.id,
+            class: 'ep-contacts-picker',
+            'aria-labelledby': this.id + '-title',
+        });
+        panel.appendChild(
+            element(
+                'h3',
+                { id: this.id + '-title', class: 'ep-contacts-picker-title' },
+                format(t('Choisir des destinataires (%s)'), fieldName)
+            )
+        );
+
+        const searchGroup = element('div', { class: 'form-group' });
+        searchGroup.appendChild(
+            element(
+                'label',
+                { for: this.id + '-search' },
+                t('Rechercher un utilisateur')
+            )
+        );
+        this.search = element('input', {
+            id: this.id + '-search',
+            type: 'search',
+            class: 'form-control input-sm',
+            autocomplete: 'off',
+            'aria-describedby': this.id + '-search-help',
+        });
+        searchGroup.appendChild(this.search);
+        searchGroup.appendChild(
+            element(
+                'p',
+                { id: this.id + '-search-help', class: 'help-block' },
+                format(
+                    t(
+                        'Nom, identifiant ou adresse e-mail, au moins %d caractères.'
+                    ),
+                    EpMailCombobox.MIN_QUERY_LENGTH
+                )
+            )
+        );
+        panel.appendChild(searchGroup);
+
+        const roleGroup = element('div', { class: 'form-group' });
+        roleGroup.appendChild(
+            element('label', { for: this.id + '-role' }, t('Équipe éditoriale'))
+        );
+        this.role = element('select', {
+            id: this.id + '-role',
+            class: 'form-control input-sm',
+        });
+        this.role.appendChild(
+            element('option', { value: '' }, t('Choisir un groupe'))
+        );
+        STAFF_GROUPS.forEach(([role, label]) => {
+            this.role.appendChild(element('option', { value: role }, t(label)));
+        });
+        roleGroup.appendChild(this.role);
+        panel.appendChild(roleGroup);
+
+        this.status = element('div', {
+            id: this.id + '-status',
+            class: 'sr-only',
+            role: 'status',
+            'aria-live': 'polite',
+        });
+        panel.appendChild(this.status);
+
+        this.results = element('div', { class: 'ep-contacts-results' });
+        this.paperResults = element('div');
+        this.groupResults = element('div');
+        this.searchResults = element('div');
+        this.results.append(
+            this.paperResults,
+            this.groupResults,
+            this.searchResults
+        );
+        panel.appendChild(this.results);
+
+        if (this.button.dataset.mailingListsUrl) {
+            const hint = element(
+                'p',
+                { class: 'help-block' },
+                t('Pour écrire à de nombreux destinataires :') + ' '
+            );
+            hint.appendChild(
+                element(
+                    'a',
+                    { href: this.button.dataset.mailingListsUrl },
+                    t('utiliser une liste de diffusion')
+                )
+            );
+            panel.appendChild(hint);
+        }
+
+        const actions = element('div', { class: 'ep-contacts-actions' });
+        this.validate = element('button', {
+            type: 'button',
+            class: 'btn btn-primary btn-sm',
+        });
+        this.cancel = element(
+            'button',
+            { type: 'button', class: 'btn btn-default btn-sm' },
+            t('Annuler')
+        );
+        actions.append(this.validate, this.cancel);
+        panel.appendChild(actions);
+
+        this.panel = panel;
+        this.updateValidateLabel();
+
+        this.search.addEventListener('input', () => this.scheduleSearch());
+        this.role.addEventListener('change', () => this.loadGroup());
+        this.validate.addEventListener('click', () => this.apply());
+        this.cancel.addEventListener('click', () => this.close());
+        panel.addEventListener('change', event => this.onCheckboxChange(event));
+        panel.addEventListener('keydown', event => this.onKeyDown(event));
+    };
+
+    Picker.prototype.open = function () {
+        const anchor =
+            this.button.closest('.form-group') || this.button.parentElement;
+        anchor.insertAdjacentElement('afterend', this.panel);
+        this.button.setAttribute('aria-expanded', 'true');
+        this.search.focus();
+        if (this.docId) {
+            this.load(this.paperResults, t("Intervenants de l'article"), {
+                docId: this.docId,
             });
         }
-    }
+    };
 
-    function ensureGetContactsCssLoaded() {
-        // DOMPurify removes <link> tags, so load the stylesheet manually
-        const id = 'ep-get-contacts-css';
-        if (document.getElementById(id)) return;
-        const link = document.createElement('link');
-        link.id = id;
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-        link.href = '/css/administratemail/get-contacts.css';
-        document.head.appendChild(link);
-    }
+    /**
+     * @param {boolean} [restoreFocus] false when the whole form goes away (modal closed)
+     */
+    Picker.prototype.close = function (restoreFocus) {
+        this.abort();
+        this.panel.remove();
+        this.button.setAttribute('aria-expanded', 'false');
+        delete this.button.epPicker;
+        if (restoreFocus !== false) {
+            this.button.focus();
+        }
+    };
 
-    // Sync footer submit disabled state with revision-deadline rules (see view.js).
-    function refreshRevisionSubmitAfterContactsClosed(modalBody) {
-        if (!modalBody || typeof jQuery === 'undefined') {
+    Picker.prototype.abort = function () {
+        if (this.timer !== null) {
+            clearTimeout(this.timer);
+            this.timer = null;
+        }
+        this.controllers.forEach(controller => controller.abort());
+        this.controllers.clear();
+    };
+
+    Picker.prototype.onKeyDown = function (event) {
+        if (event.key === 'Escape') {
+            // Closes the panel only, not the modal around the form
+            event.preventDefault();
+            event.stopPropagation();
+            this.close();
+        } else if (event.key === 'Enter' && event.target === this.search) {
+            // Never submit the mail form from the search field
+            event.preventDefault();
+        }
+    };
+
+    Picker.prototype.scheduleSearch = function () {
+        const query = this.search.value.trim();
+        if (this.timer !== null) {
+            clearTimeout(this.timer);
+            this.timer = null;
+        }
+        if (query.length < EpMailCombobox.MIN_QUERY_LENGTH) {
+            if (this.controllers.has(this.searchResults)) {
+                this.controllers.get(this.searchResults).abort();
+            }
+            this.searchResults.replaceChildren();
             return;
         }
-        const $deadline = jQuery(modalBody).find("[id$='-revision-deadline']");
-        if ($deadline.length) {
-            $deadline.trigger('change');
+        this.timer = setTimeout(() => {
+            this.timer = null;
+            this.load(this.searchResults, t('Résultats de la recherche'), {
+                query,
+                docId: this.docId,
+            });
+        }, EpMailCombobox.DEBOUNCE_MS);
+    };
+
+    Picker.prototype.loadGroup = function () {
+        const option = this.role.options[this.role.selectedIndex];
+        if (!this.role.value) {
+            this.groupResults.replaceChildren();
+            return;
         }
-    }
+        this.load(this.groupResults, option.textContent, {
+            role: this.role.value,
+            docId: this.docId,
+        });
+    };
 
-    // Clean up contacts state when modal closes to prevent issues when opening another modal
-    function cleanupContactsState(modal) {
-        const modalBody = modal.querySelector('.modal-body');
-        if (!modalBody) return;
-
-        const contactsContainer = modalBody.querySelector(
-            '.contacts-container'
-        );
-        const form = modalBody.querySelector('form');
-
-        // Clear __epContactsForm if it belongs to this modal
-        if (
-            window.__epContactsForm instanceof HTMLElement &&
-            modalBody.contains(window.__epContactsForm)
-        ) {
-            window.__epContactsForm = null;
+    Picker.prototype.load = async function (area, legend, params) {
+        const controller =
+            typeof AbortController === 'function'
+                ? new AbortController()
+                : null;
+        if (this.controllers.has(area)) {
+            this.controllers.get(area).abort();
         }
-
-        // Reset contacts container
-        if (contactsContainer) {
-            contactsContainer.innerHTML = '';
-            contactsContainer.style.display = 'none';
+        if (controller) {
+            this.controllers.set(area, controller);
         }
-
-        // Ensure form is visible again
-        if (form) {
-            form.style.display = '';
-        }
-
-        // Reset submit button state
-        const modalContent = modal.querySelector('.modal-content');
-        const submitButton = modalContent
-            ? modalContent.querySelector('.submit-modal')
-            : null;
-        if (submitButton && submitButton.dataset.epContactsBound) {
-            const originalText = submitButton.dataset.epContactsOriginalText;
-            if (originalText) {
-                submitButton.textContent = originalText;
+        area.setAttribute('aria-busy', 'true');
+        this.status.textContent = t('Recherche en cours…');
+        try {
+            const items = await EpMailCombobox.fetchRecipients(
+                Object.assign({}, params, {
+                    signal: controller ? controller.signal : undefined,
+                })
+            );
+            if (controller && controller.signal.aborted) {
+                return;
             }
-            delete submitButton.dataset.epContactsBound;
-            delete submitButton.dataset.epContactsOriginalText;
+            this.render(area, legend, items);
+            this.status.textContent = items.length
+                ? format(t('%s : %d utilisateurs'), legend, items.length)
+                : format(t('%s : aucun utilisateur'), legend);
+        } catch (e) {
+            if (e && e.name === 'AbortError') {
+                return;
+            }
+            area.replaceChildren(
+                element(
+                    'p',
+                    { class: 'text-danger' },
+                    t(
+                        'Recherche indisponible, vous pouvez saisir une adresse e-mail.'
+                    )
+                )
+            );
+            this.status.textContent = t(
+                'Recherche indisponible, vous pouvez saisir une adresse e-mail.'
+            );
+        } finally {
+            if (this.controllers.get(area) === controller) {
+                this.controllers.delete(area);
+                area.removeAttribute('aria-busy');
+            }
         }
+    };
 
-        // Clear global contact variables to prevent stale data
-        if (typeof window.all_contacts !== 'undefined') {
-            window.all_contacts = null;
+    Picker.prototype.render = function (area, legend, items) {
+        const fieldset = element('fieldset', { class: 'ep-contacts-group' });
+        fieldset.appendChild(element('legend', {}, legend));
+        if (!items.length) {
+            fieldset.appendChild(
+                element('p', { class: 'help-block' }, t('Aucun utilisateur'))
+            );
         }
+        const prefix = this.id + '-' + Math.random().toString(36).slice(2, 8);
+        items.forEach(recipient => {
+            const uid = String(recipient.uid);
+            const row = element('div', { class: 'checkbox' });
+            const id = prefix + '-' + uid;
+            // No name: the checkboxes are inside the mail form and must not be posted
+            const checkbox = element('input', {
+                type: 'checkbox',
+                id,
+                'data-uid': uid,
+            });
+            checkbox.checked = this.selected.has(uid);
+            checkbox.epRecipient = recipient;
+            const label = element('label', { for: id });
+            label.appendChild(EpMailCombobox.renderRecipientContent(recipient));
+            row.append(checkbox, label);
+            fieldset.appendChild(row);
+        });
+        area.replaceChildren(fieldset);
+    };
 
-        // Clear added contacts hidden input and tags
-        const hiddenAddedContacts = document.getElementById(
-            'hidden_added_contacts'
-        );
-        if (hiddenAddedContacts) {
-            hiddenAddedContacts.value = '[]';
+    Picker.prototype.onCheckboxChange = function (event) {
+        const checkbox = event.target;
+        if (
+            !(checkbox instanceof HTMLInputElement) ||
+            checkbox.type !== 'checkbox'
+        ) {
+            return;
         }
-        const addedContactsTags = document.getElementById(
-            'added_contacts_tags'
-        );
-        if (addedContactsTags) {
-            addedContactsTags.innerHTML = '';
+        const uid = checkbox.dataset.uid;
+        if (checkbox.checked) {
+            this.selected.set(uid, checkbox.epRecipient);
+        } else {
+            this.selected.delete(uid);
         }
+        // The same user may be listed in several groups
+        this.panel
+            .querySelectorAll('input[type="checkbox"][data-uid="' + uid + '"]')
+            .forEach(other => {
+                other.checked = checkbox.checked;
+            });
+        this.updateValidateLabel();
+    };
+
+    Picker.prototype.additions = function () {
+        return Array.from(this.selected.entries()).filter(
+            ([uid, recipient]) => !this.initial.has(uid) && recipient
+        );
+    };
+
+    Picker.prototype.removals = function () {
+        return Array.from(this.initial).filter(uid => !this.selected.has(uid));
+    };
+
+    Picker.prototype.updateValidateLabel = function () {
+        const count = this.additions().length;
+        this.validate.textContent =
+            count === 0
+                ? t('Valider la sélection')
+                : format(
+                      t(
+                          count === 1
+                              ? 'Ajouter %d destinataire'
+                              : 'Ajouter %d destinataires'
+                      ),
+                      count
+                  );
+    };
+
+    Picker.prototype.apply = function () {
+        const removals = this.removals();
+        chosenTags(this.form, this.target)
+            .filter(tag => removals.includes(tag.dataset.uid))
+            .forEach(tag => removeRecipient(tag, { silent: true }));
+
+        const additions = this.additions();
+        epWithContactsForm(this.form, () => {
+            additions.forEach(([, recipient]) => {
+                addRecipient(this.target, recipient, 'known', { silent: true });
+            });
+        });
+        this.close();
+        if (
+            typeof epAnnounce === 'function' &&
+            (additions.length || removals.length)
+        ) {
+            epAnnounce(
+                this.form,
+                this.target,
+                format(
+                    t('Destinataires mis à jour : %d ajoutés, %d retirés.'),
+                    additions.length,
+                    removals.length
+                )
+            );
+        }
+    };
+
+    function onButtonClick(event) {
+        const button = event.target.closest
+            ? event.target.closest('button.show_contacts_button')
+            : null;
+        if (!button) {
+            return;
+        }
+        event.preventDefault();
+        if (button.epPicker) {
+            button.epPicker.close();
+            return;
+        }
+        button.epPicker = new Picker(button);
+        button.epPicker.open();
     }
 
-    // Listen for modal hide events to clean up contacts state
-    if (typeof jQuery !== 'undefined') {
-        jQuery(document).on('hide.bs.modal', '.modal', function () {
-            cleanupContactsState(this);
+    document.addEventListener('click', onButtonClick);
+
+    // A modal closed with an open picker: the picker goes away with it
+    if (typeof root.jQuery === 'function') {
+        root.jQuery(document).on('hidden.bs.modal', '.modal', function () {
+            this.querySelectorAll('button.show_contacts_button').forEach(
+                button => {
+                    if (button.epPicker) {
+                        button.epPicker.close(false);
+                    }
+                }
+            );
         });
     }
 
-    // Intercept .submit-modal clicks when contacts list is open (capture phase)
-    document.addEventListener(
-        'click',
-        evt => {
-            const submitBtn = evt.target.closest
-                ? evt.target.closest('.submit-modal')
-                : null;
-            if (!submitBtn) return;
+    const api = { Picker, STAFF_GROUPS };
+    root.EpContactsPicker = api;
 
-            const modalBody = submitBtn
-                .closest('.modal-content')
-                ?.querySelector('.modal-body');
-            if (!modalBody) return;
-
-            const contactsContainer = modalBody.querySelector(
-                '.contacts-container'
-            );
-            const cf =
-                typeof window !== 'undefined' &&
-                window.__epContactsForm instanceof HTMLElement &&
-                modalBody.contains(window.__epContactsForm)
-                    ? window.__epContactsForm
-                    : null;
-            const form = cf || modalBody.querySelector('form');
-            if (!contactsContainer || !form) return;
-
-            const contactsOpen =
-                contactsContainer.style.display !== 'none' &&
-                form.style.display === 'none';
-
-            if (contactsOpen) {
-                evt.preventDefault();
-                evt.stopImmediatePropagation();
-                if (typeof addContacts === 'function') {
-                    addContacts(true);
-                }
-                contactsContainer.style.display = 'none';
-                form.style.display = 'block';
-                const requiredFields = modalBody.querySelectorAll(
-                    '.ccsd_form_required'
-                );
-                requiredFields.forEach(el => (el.style.display = ''));
-                refreshRevisionSubmitAfterContactsClosed(modalBody);
-            }
-        },
-        true
-    );
-
-    // Delegated handler: works when DOMContentLoaded already fired before this script,
-    // and uses the anchor as root for .closest (avoids Text nodes without .closest).
-    document.addEventListener('click', ev => {
-        const button =
-            ev.target && ev.target.closest
-                ? ev.target.closest('a.show_contacts_button')
-                : null;
-        if (!button) return;
-
-        const modalBody = button.closest('.modal-body');
-        if (!modalBody) return;
-
-        const form = button.closest('form') || modalBody.querySelector('form');
-        const contactsContainer = modalBody.querySelector(
-            '.contacts-container'
-        );
-        if (!form || !contactsContainer) return;
-
-        ev.preventDefault();
-
-        void (async () => {
-            const url = new URL(button.href, window.location.origin);
-            const target = url.searchParams.get('target');
-
-            // Store form reference for addRecipient() to find the correct tags container
-            window.__epContactsForm = form;
-
-            form.style.display = 'none';
-
-            const requiredFields = modalBody.querySelectorAll(
-                '.ccsd_form_required'
-            );
-            requiredFields.forEach(el => (el.style.display = 'none'));
-
-            contactsContainer.style.display = 'block';
-            contactsContainer.innerHTML = getLoader();
-            ensureGetContactsCssLoaded();
-
-            const modalContent = modalBody.closest('.modal-content');
-            const submitButton = modalContent
-                ? modalContent.querySelector('.submit-modal')
-                : null;
-            if (submitButton) {
-                submitButton.disabled = false;
-                if (submitButton.dataset.epContactsBound) {
-                    submitButton.textContent =
-                        submitButton.getAttribute('data-contacts-text') ||
-                        'Submit';
-                }
-            }
-            if (submitButton && !submitButton.dataset.epContactsBound) {
-                submitButton.dataset.epContactsBound = 'true';
-                submitButton.dataset.epContactsOriginalText =
-                    submitButton.textContent || '';
-                submitButton.textContent =
-                    submitButton.getAttribute('data-contacts-text') || 'Submit';
-                submitButton.addEventListener('click', evt => {
-                    if (
-                        contactsContainer.style.display !== 'none' &&
-                        form.style.display === 'none'
-                    ) {
-                        evt.preventDefault();
-                        if (typeof addContacts === 'function') {
-                            addContacts(true);
-                        }
-                        contactsContainer.style.display = 'none';
-                        form.style.display = 'block';
-                        requiredFields.forEach(el => (el.style.display = ''));
-                        const originalText =
-                            submitButton.dataset.epContactsOriginalText;
-                        if (originalText) {
-                            submitButton.textContent = originalText;
-                        }
-                        refreshRevisionSubmitAfterContactsClosed(modalBody);
-                    }
-                });
-            }
-
-            try {
-                const response = await fetch(
-                    `/administratemail/getcontacts?target=${target}`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
-                        body: 'ajax=true',
-                    }
-                );
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const content = await response.text();
-
-                // Read the contacts data objects from the response without
-                // executing embedded script. Only JSON value assignments are read.
-                applyContactsData(content);
-                // target is known from the request URL (the response sets it via
-                // a quoted, non-JSON assignment we intentionally skip below).
-                window.target = target;
-
-                // Sanitize HTML before injection
-                contactsContainer.innerHTML = sanitizeHTML(content);
-
-                // Load get-contacts.js for filter functionality
-                // (DOMPurify removes <script> tags, so it must be loaded manually)
-                $.ajaxSetup({ cache: true });
-                $.getScript('/js/administratemail/get-contacts.js')
-                    .done(function () {
-                        if (typeof initGetContacts === 'function') {
-                            initGetContacts();
-                        }
-                    })
-                    .fail(function () {
-                        console.error('Failed to load get-contacts.js');
-                    });
-            } catch (error) {
-                console.error('Error loading contacts:', error);
-                contactsContainer.innerHTML =
-                    '<p class="text-danger">Error loading contacts</p>';
-            }
-        })();
-    });
-})();
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = api;
+    }
+})(typeof window !== 'undefined' ? window : globalThis);

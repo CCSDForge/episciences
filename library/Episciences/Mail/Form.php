@@ -6,6 +6,8 @@
  * Time: 17:11
  */
 
+use Episciences\Mail\RecipientFieldDecorator;
+
 class Episciences_Mail_Form extends Ccsd_Form
 {
     public $prefix = null;
@@ -43,8 +45,6 @@ class Episciences_Mail_Form extends Ccsd_Form
 
     public function generate()
     {
-        $translator = Zend_Registry::get('Zend_Translate');
-
         $this->setAttrib('class', 'form-horizontal');
         $this->setAction('/administratemail/send');
         $this->setAttrib('id', $this->getPrefixedName('send_form'));
@@ -88,65 +88,24 @@ class Episciences_Mail_Form extends Ccsd_Form
             'placeholder' => RVCODE . '@' . DOMAIN,
             'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>'));
 
-        $title = $translator->translate('Ajouter des destinataires');
-
         // to
-        $to_element = $this->getPrefixedName('to');
         if (!$this->getToEnabled()) {
-            $this->addElement('text', $to_element, [
+            $this->addElement('text', $this->getPrefixedName('to'), [
                 'label' => 'À',
                 'disabled' => true,
             ]);
         } else {
-            $this->addElement('text', $to_element, [
-                'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=to">' . $translator->translate('À') . '</a>',
-                'class' => 'autocomplete'
-            ]);
-
-            $decorators = $this->getElement($to_element)->getDecorators();
-
-            $this->getElement($to_element)
-                ->clearDecorators()
-                ->addDecorator(array('openDiv' => 'HtmlTag'), array('tag' => 'span', 'id' => 'to_tags', 'placement' => 'APPEND', 'openOnly' => true))
-                ->addDecorator(array('closeDiv' => 'HtmlTag'), array('tag' => 'span', 'placement' => 'APPEND', 'closeOnly' => true))
-                ->addDecorators($decorators);
+            $this->addRecipientField('to');
         }
 
         $this->addElement('hidden', $this->getPrefixedName('hidden_to'));
 
-
         // cc
-        $cc_element = $this->getPrefixedName('cc');
-        $this->addElement('text', $cc_element, [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
-            'class' => 'autocomplete'
-        ]);
-
-        $decorators = $this->getElement($cc_element)->getDecorators();
-
-        $this->getElement($cc_element)
-            ->clearDecorators()
-            ->addDecorator(array('openDiv' => 'HtmlTag'), array('tag' => 'span', 'id' => 'cc_tags', 'placement' => 'APPEND', 'openOnly' => true))
-            ->addDecorator(array('closeDiv' => 'HtmlTag'), array('tag' => 'span', 'placement' => 'APPEND', 'closeOnly' => true))
-            ->addDecorators($decorators);
-
+        $this->addRecipientField('cc');
         $this->addElement('hidden', $this->getPrefixedName('hidden_cc'));
 
         // bcc
-        $bcc_element = $this->getPrefixedName('bcc');
-        $this->addElement('text', $bcc_element, [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
-            'class' => 'autocomplete'
-        ]);
-
-        $decorators = $this->getElement($bcc_element)->getDecorators();
-
-        $this->getElement($bcc_element)
-            ->clearDecorators()
-            ->addDecorator(array('openDiv' => 'HtmlTag'), array('tag' => 'span', 'id' => 'bcc_tags', 'placement' => 'APPEND', 'openOnly' => true))
-            ->addDecorator(array('closeDiv' => 'HtmlTag'), array('tag' => 'span', 'placement' => 'APPEND', 'closeOnly' => true))
-            ->addDecorators($decorators);
-
+        $this->addRecipientField('bcc');
         $this->addElement('hidden', $this->getPrefixedName('hidden_bcc'));
 
 
@@ -178,6 +137,17 @@ class Episciences_Mail_Form extends Ccsd_Form
         }
 
         return $this;
+    }
+
+    /**
+     * Recipient field (to, cc, bcc) with its recipients list and contacts picker
+     * @throws Zend_Form_Exception
+     */
+    private function addRecipientField(string $target): void
+    {
+        $name = $this->getPrefixedName($target);
+        $this->addElement('text', $name);
+        RecipientFieldDecorator::apply($this->getElement($name), $target, $target . '_tags', $this->getPrefixedName('hidden_' . $target));
     }
 
     private function getPrefixedName($name)

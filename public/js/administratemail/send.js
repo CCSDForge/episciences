@@ -1,21 +1,4 @@
-$.widget('ui.autocomplete', $.ui.autocomplete, {
-    options: {
-        renderItem: null,
-        renderMenu: null,
-    },
-    _renderItem: function (ul, item) {
-        if ($.isFunction(this.options.renderItem))
-            return this.options.renderItem(ul, item);
-        else return this._super(ul, item);
-    },
-    _renderMenu: function (ul, items) {
-        if ($.isFunction(this.options.renderMenu)) {
-            this.options.renderMenu(ul, items);
-        }
-        this._super(ul, items);
-    },
-});
-window.__epAutocompleteRenderItemBridge = true;
+/* global addRecipient, removeRecipient, epInitRecipientFields, updateModalButton, refreshPaperHistory, tinyMCE, modalStructureExists, createModalStructure, in_modal */
 
 function initModal() {
     if (!modalStructureExists()) {
@@ -25,100 +8,44 @@ function initModal() {
 
 $(document).ready(function () {
     let $jsDocId = $('#docid').val();
+    const sendForm = document.getElementById('send_form');
 
     // already in a modal, do not open another one
     initModal();
 
-    $('form input').each(function (i, input) {
-        let input_id = $(input).attr('id');
-        $(input).keydown(function (e) {
-            let code = e.keyCode || e.which;
-            // shift+tab: previous input
-            if (e.shiftKey && code == 9) {
-                e.preventDefault();
-                $('#' + input_id + '-element')
-                    .prevAll('div:first')
-                    .find('input')
-                    .focus();
-            }
-            // tab : next input
-            else if (code == 9) {
-                e.preventDefault();
-                let next = $('#' + input_id + '-element').nextAll('div:first');
-                if ($(next).attr('id') == 'content-element') {
-                    tinyMCE.get('content').focus();
-                } else {
-                    $(next).find('input').focus();
-                }
-            }
-        });
-    });
-
     // "send me a copy" checkbox
-    $('#copy').on('click', function (e) {
+    $('#copy').on('click', function () {
+        if (!window.sender || !window.sender.uid) {
+            return;
+        }
+        window.__epContactsForm = sendForm;
         if ($('#copy').prop('checked')) {
-            addRecipient(
-                'bcc',
-                $.grep(users, function (e) {
-                    return e.uid == sender_uid;
-                })[0],
-                'known'
-            );
-            //resizeInput('#bcc', 'add');
+            addRecipient('bcc', window.sender, 'known');
         } else {
-            removeRecipient(
-                $('#bcc_tags .recipient-tag[data-uid="' + sender_uid + '"]')
-            );
-            //resizeInput('#bcc', 'remove');
+            const tag = sendForm
+                ? sendForm.querySelector(
+                      '.recipient-tags[data-recipient-target="bcc"] .recipient-tag[data-uid="' +
+                          String(window.sender.uid) +
+                          '"]'
+                  )
+                : null;
+            removeRecipient(tag);
         }
-    });
-
-    $('.show_contacts_button').on('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation(); // Prevent es.contacts-list.js from handling this
-        // fetch and parse button url
-        let oUrl = $.url($(this).attr('href'));
-        let urlParams = oUrl.param();
-
-        // Set form reference for addRecipient() to find tags containers
-        window.__epContactsForm = document.getElementById('send_form');
-
-        if (in_modal) {
-            // fetch and display contacts
-            urlParams['ajax'] = true;
-            let displayContactsRequest = ajaxRequest(
-                oUrl.attr('path'),
-                urlParams
-            );
-            displayContactsRequest.done(function (content) {
-                $('#send_form').hide();
-                $('#add_contacts_box').html(content);
-                $('#add_contacts_box').show();
-            });
-
-            updateModalButton('addContacts');
-        } else {
-            openModal(
-                $(this).attr('href'),
-                $(this).attr('title'),
-                { callback: 'addContacts' },
-                e
-            );
-        }
+        delete window.__epContactsForm;
     });
 
     if (in_modal) {
         updateModalButton('send_mail');
 
         $('#modal-box').on('hidden.bs.modal', function () {
-            // restore default button behaviour
-            //$('#modal-box .modal-footer').show();
             location.reload();
         });
     }
 
-    setDefaultRecipient();
-    initAutocomplete();
+    setDefaultRecipient(sendForm);
+    if (sendForm) {
+        epInitRecipientFields(sendForm);
+    }
 
     // refresh parent page on close modal
     $('button.close').on('click', function () {
@@ -145,131 +72,24 @@ $(document).ready(function () {
     $('#send_form').on('change input', function () {
         isdirty = 1;
     });
-    $('#modal-box').on('hide.bs.modal', function (e) {
+    $('#modal-box').on('hide.bs.modal', function () {
         let editorContent = tinyMCE.activeEditor.getContent();
-        if (
-            (isdirty ||
-                $('span#bcc_tags div').length ||
-                $('span#cc_tags div').length ||
-                editorContent !== '') &&
-            $('#add_contacts_box').css('display') === 'none'
-        ) {
+        const hasRecipients =
+            sendForm !== null &&
+            sendForm.querySelector(
+                '.recipient-tags[data-recipient-target="cc"] .recipient-tag, .recipient-tags[data-recipient-target="bcc"] .recipient-tag'
+            ) !== null;
+        if (isdirty || hasRecipients || editorContent !== '') {
             if (!confirm('Are you sure, you want to close?')) return false;
-        }
-        if ($('#add_contacts_box').css('display') === 'block') {
-            e.preventDefault();
-            $('#add_contacts_box').hide();
-            $('#send_form').show();
-            updateModalButton('send_mail');
         }
     });
 });
 
-// recipient input autocomplete
-function initAutocomplete() {
-    $('form .autocomplete').each(function (i, input) {
-        let input_id = $(input).attr('id');
-        let input_val;
-
-        $(input).autocomplete({
-            appendTo: $(input).closest('form'),
-            minLength: 2,
-
-            source: function (request, response) {
-                let matcher = new RegExp(
-                    $.ui.autocomplete.escapeRegex(request.term),
-                    'i'
-                );
-                response(
-                    $.grep(users, function (value) {
-                        value = value.label || value.value || value;
-                        return (
-                            matcher.test(value) ||
-                            matcher.test(normalize(value))
-                        );
-                    })
-                );
-            },
-
-            focus: function () {
-                return false;
-            },
-
-            select: function (event, ui) {
-                addRecipient(input_id, ui.item, 'known');
-                $(input).val('');
-
-                return false;
-            },
-
-            renderItem: function (ul, item) {
-                return $('<li>')
-                    .append('<a>' + item.htmlLabel + '</a>')
-                    .appendTo(ul);
-            },
-        });
-
-        $(input).blur(function () {
-            if ($(input).val() != '') {
-                addRecipient(input_id, $(input).val(), 'unknown');
-                $(input).autocomplete('close');
-                $(input).val('');
-            }
-        });
-
-        $(input).keydown(function (e) {
-            let code = e.keyCode || e.which;
-            input_val = $(input).val().length;
-            if (code == 13) {
-                e.preventDefault();
-                if ($(input).val() != '') {
-                    addRecipient(input_id, $(input).val(), 'unknown');
-                    $(input).autocomplete('close');
-                    $(input).val('');
-                }
-            }
-        });
-
-        $(input).keyup(function (e) {
-            let code = e.keyCode || e.which;
-            if (
-                code == 8 &&
-                input_val == 0 &&
-                $('#' + input_id + '_tags').find('.recipient-tag').length
-            ) {
-                removeRecipient(
-                    $('#' + input_id + '_tags').find('.recipient-tag:last')
-                );
-            }
-        });
-    });
-}
-
-function normalize(term) {
-    let accentMap = {
-        à: 'a',
-        â: 'a',
-        é: 'e',
-        è: 'e',
-        ê: 'e',
-        ë: 'e',
-        ï: 'i',
-        î: 'i',
-        ô: 'o',
-        ù: 'u',
-        û: 'u',
-    };
-    let ret = '';
-    for (let i = 0; i < term.length; i++) {
-        ret += accentMap[term.charAt(i)] || term.charAt(i);
-    }
-    return ret;
-}
-
-function setDefaultRecipient() {
+function setDefaultRecipient(sendForm) {
     if (typeof recipient !== 'undefined' && recipient) {
-        addRecipient('to', recipient, 'known');
-        //resizeInput('#to', 'add');
+        window.__epContactsForm = sendForm;
+        addRecipient('to', recipient, 'known', { silent: true });
+        delete window.__epContactsForm;
     }
 }
 

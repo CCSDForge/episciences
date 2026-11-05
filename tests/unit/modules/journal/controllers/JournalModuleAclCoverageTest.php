@@ -231,7 +231,6 @@ final class JournalModuleAclCoverageTest extends TestCase
     public static function editorialOnlyEndpoints(): iterable
     {
         // recipient/directory lookups
-        yield 'administratemail-getcontacts' => ['administratemail-getcontacts'];
         yield 'administratemail-getrecipients' => ['administratemail-getrecipients'];
         // management actions of volumes / sections / grids / review settings
         yield 'volume-delete' => ['volume-delete'];

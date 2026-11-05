@@ -1,7 +1,17 @@
 <?php
 
+use Episciences\AppRegistry;
+use Episciences\Mail\AuthPaperAccessProvider;
+use Episciences\Mail\RecipientAccessDenied;
+use Episciences\Mail\RecipientAccessPolicy;
+use Episciences\Mail\RecipientListValidator;
+use Episciences\Mail\RecipientSearchAudit;
+use Episciences\Mail\RecipientSearchService;
 use Episciences\Mail\RecipientSuggestions;
 use Episciences\Security\AccessLog;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+
+require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
 class AdministratemailController extends Zend_Controller_Action
 {
@@ -360,11 +370,13 @@ class AdministratemailController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         } elseif ($isSendRequest) {
 
-            if ($this->checkRecipients($post)['isDetectedErrors']) {
+            $checkedRecipients = $this->checkRecipients($post);
+
+            if ($checkedRecipients['isDetectedErrors']) {
                 $form->setDefaults($post);
             }
 
-            $result = $this->sendMail($post);
+            $result = $this->sendMail($post, $checkedRecipients);
 
             if ($result) {
                 $this->_helper->layout->disableLayout();
@@ -381,33 +393,26 @@ class AdministratemailController extends Zend_Controller_Action
                 if (!$request->getParam('tmp')) {
                     $user = new Episciences_User;
                     if ($user->findWithCAS($uid)) {
-                        $js_recipient = [
-                            'uid' => $user->getUid(),
-                            'fullname' => $user->getFullName(),
-                            'screenName' => $user->getScreenName(),
-                            'username' => $user->getUsername(),
-                            'mail' => $user->getEmail(),
-                            'label' => $user->getScreenName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>',
-                            'htmlLabel' => '<div>' . htmlspecialchars((string)$user->getScreenName(), ENT_QUOTES, 'UTF-8') . ' <span class="darkgrey">' . '(' . htmlspecialchars(mb_strtolower((string)$user->getUsername()), ENT_QUOTES, 'UTF-8') . ')' . '</span>' . '</div>'
-                                . '<div class="grey">' . htmlspecialchars((string)$user->getEmail(), ENT_QUOTES, 'UTF-8') . '</div>'
-                        ];
+                        $js_recipient = RecipientSuggestions::fromUser($user);
                     }
                 } else {
                     $user = new Episciences_User_Tmp;
                     if (!empty($user->find($uid))) {
                         $user->generateScreen_name();
+                        // Not an account: no UID (the id of a temporary user may be the UID of another account)
                         $js_recipient = [
-                            'uid' => $user->getId(),
-                            'screenName' => $user->getScreenName(),
-                            'fullname' => $user->getFullName(),
-                            'mail' => $user->getEmail(),
-                            'label' => $user->getScreenName() . '<' . $user->getEmail() . '>',
-                            'htmlLabel' => '<div>' . htmlspecialchars((string)$user->getScreenName(), ENT_QUOTES, 'UTF-8') . '</div>' . '<div class="grey">' . htmlspecialchars((string)$user->getEmail(), ENT_QUOTES, 'UTF-8') . '</div>'
+                            'uid' => null,
+                            'fullname' => (string)$user->getScreenName(),
+                            'username' => '',
+                            'mail' => (string)$user->getEmail(),
                         ];
                     }
                 }
+                if (isset($js_recipient) && $js_recipient['uid'] !== null && $docId > 0) {
+                    $js_recipient['paperRole'] = $this->paperRoleOf((int)$js_recipient['uid'], $docId);
+                }
                 if (isset($js_recipient)) {
-                    $this->view->js_recipient = Zend_Json::encode($js_recipient);
+                    $this->view->js_recipient = RecipientSuggestions::toScriptJson($js_recipient);
                 }
                 if ($ajax && isset($js_recipient)) {
                     $form->setDefaults(['to' => $user->getScreenName() . ' <' . $user->getEmail() . '>']);
@@ -416,7 +421,7 @@ class AdministratemailController extends Zend_Controller_Action
 
         }
 
-        $this->view->js_users = Zend_Json::encode(array_values(RecipientSuggestions::fromUsers(Episciences_Review::getUsers())));
+        $this->view->js_sender = RecipientSuggestions::senderJson();
 
         $this->view->form = $form;
         $this->view->ajax = $ajax;
@@ -430,7 +435,7 @@ class AdministratemailController extends Zend_Controller_Action
      * @return string|void
      * @throws Exception
      */
-    private function sendMail(array $post)
+    private function sendMail(array $post, array $checkedRecipients)
     {
         $paper = null;
 
@@ -439,15 +444,9 @@ class AdministratemailController extends Zend_Controller_Action
         /** @var Zend_View $selfView */
         $selfView = $this->view;
 
-        $checkedRecipients = $this->checkRecipients($post);
-
         // Contrôle des erreurs
-        $errors = [];
+        $errors = $checkedRecipients['errors'];
         $isEmptyMail = empty($post['subject']) && empty($post['content']) && empty($post[Episciences_Mail_Send::ATTACHMENTS]);
-
-        if ($checkedRecipients['isDetectedErrors']) {
-            $errors[] = "Veuillez saisir au moins un destinataire";
-        }
 
         if (!empty($errors) || $isEmptyMail) {
 
@@ -458,7 +457,9 @@ class AdministratemailController extends Zend_Controller_Action
             if (!empty($errors)) {
 
                 foreach ($errors as $error) {
-                    $message .= '<div>' . $selfView->translate($error) . '</div>';
+                    $text = $selfView->translate($error['message']);
+                    $text = $error['argument'] === null ? $text : sprintf($text, $error['argument']);
+                    $message .= '<div>' . $selfView->escape($text) . '</div>';
                 }
 
             } else {
@@ -616,93 +617,156 @@ class AdministratemailController extends Zend_Controller_Action
     }
 
     /**
-     * Récupère une liste de destinataires en fonction du type choisi (relecteurs, membres...)
+     * Recipients search of the mail forms (JSON): GET, XHR only.
+     *
+     * Parameters: q (text search), role (editorial role listed without text), docid (paper of the mail: its
+     * participants are listed first). Without q nor role, the participants of the paper are returned.
+     * The users the caller may find are decided by RecipientAccessPolicy (the ACL only allows the editorial roles).
      */
-    public function getrecipientsAction()
+    public function getrecipientsAction(): void
     {
-
         $this->_helper->getHelper('layout')->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
+        /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $type = $request->getParam('type');
+        $params = $request->isGet() && $request->isXmlHttpRequest() ? self::recipientSearchParams($request) : null;
 
-        $result = [];
-        $recipients = Episciences_UsersManager::getUsersWithRoles($type);
-        /** @var Episciences_User $recipient */
-        foreach ($recipients as $recipient) {
-            $user = [];
-            $user['uid'] = $recipient->getUid();
-            $user['name'] = $recipient->getFullName();
-            $user['mail'] = $recipient->getEmail();
-            $user['label'] = $user['name'] . ' (' . $recipient->getUsername() . ') &lt;' . $user['mail'] . '&gt;';
-            $result[] = $user;
+        if ($params === null) {
+            $this->sendRecipientsJson(400, ['error' => 'bad_request']);
+            return;
         }
 
-        echo Zend_Json::encode(array_values($result));
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $rvid = (int)RVID;
+
+        try {
+            $scope = $this->recipientAccessPolicy($db)->scope($params['docid']);
+        } catch (RecipientAccessDenied) {
+            AccessLog::denied(AccessLog::HTTP_FORBIDDEN, 'recipients_search_scope', ['docid' => $params['docid']]);
+            $this->sendRecipientsJson(403, ['error' => 'forbidden']);
+            return;
+        }
+
+        (new RecipientSearchAudit(
+            new FilesystemAdapter('recipientSearch', RecipientSearchAudit::DEFAULT_WINDOW_SECONDS, dirname(APPLICATION_PATH) . '/cache/'),
+            AppRegistry::getMonoLogger()
+        ))->record((int)Episciences_Auth::getUid(), $rvid);
+
+        $service = new RecipientSearchService($db);
+
+        if ($params['q'] !== '') {
+            $results = $service->search($rvid, $scope, $params['q'], $params['role'], $params['limit'] ?? RecipientSearchService::DEFAULT_LIMIT);
+        } elseif ($params['role'] !== null) {
+            $results = $service->staff($rvid, $scope, $params['role'], $params['limit'] ?? RecipientSearchService::STAFF_LIMIT);
+        } else {
+            $results = $service->paperParticipants($rvid, $scope);
+        }
+
+        $this->sendRecipientsJson(200, ['results' => $results]);
     }
 
-
-    public function getcontactsAction()
+    /**
+     * @return ?array{q: string, role: ?string, docid: ?int, limit: ?int} null when a parameter is invalid
+     */
+    private static function recipientSearchParams(Zend_Controller_Request_Http $request): ?array
     {
-        $this->_helper->layout->disableLayout();
-        $request = $this->getRequest();
+        // Query string only: route parameters must not override the search
+        $query = $request->getQuery('q', '');
+        $role = $request->getQuery('role', '');
+        $docId = $request->getQuery('docid', '');
+        $limit = $request->getQuery('limit', '');
 
-        // fetch all contacts
-        $contacts = Episciences_UsersManager::getUsersWithRoles();
+        if (!is_string($query) || !is_string($role) || !is_string($docId) || !is_string($limit) || mb_strlen($query) > 100) {
+            return null;
+        }
 
-        // sort contacts by name
-        $contacts = Episciences_UsersManager::sortByName($contacts);
+        $isValid = ($role === '' || in_array($role, RecipientSearchService::BROWSEABLE_STAFF_ROLES, true))
+            && ($docId === '' || ctype_digit($docId))
+            && ($limit === '' || ctype_digit($limit));
 
-        $roles = [
-            'chief_editors' => Episciences_Acl::ROLE_CHIEF_EDITOR,
-            'guest_editors' => Episciences_Acl::ROLE_GUEST_EDITOR,
-            'editors' => Episciences_Acl::ROLE_EDITOR,
-            'secretaries' => Episciences_Acl::ROLE_SECRETARY,
-            'webmasters' => Episciences_Acl::ROLE_WEBMASTER,
-            'reviewers' => Episciences_Acl::ROLE_REVIEWER,
-            'authors' => Episciences_Acl::ROLE_AUTHOR,
-            'members' => Episciences_Acl::ROLE_MEMBER
+        if (!$isValid) {
+            return null;
+        }
+
+        return [
+            'q' => trim($query),
+            'role' => $role === '' ? null : $role,
+            'docid' => $docId === '' ? null : (int)$docId,
+            'limit' => $limit === '' ? null : (int)$limit,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function sendRecipientsJson(int $httpCode, array $payload): void
+    {
+        $this->getResponse()
+            ->setHttpResponseCode($httpCode)
+            ->setHeader('Content-Type', 'application/json; charset=utf-8', true)
+            ->setHeader('Cache-Control', 'no-store', true)
+            ->setHeader('X-Content-Type-Options', 'nosniff', true)
+            ->setBody(json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG));
+    }
+
+    private function recipientAccessPolicy(Zend_Db_Adapter_Abstract $db): RecipientAccessPolicy
+    {
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+
+        $papers = new AuthPaperAccessProvider(
+            $db,
+            (int)RVID,
+            (int)Episciences_Auth::getUid(),
+            static fn(Episciences_Paper $paper): bool => DefaultController::isConflictDetected($paper, $review)
+        );
+
+        return new RecipientAccessPolicy(
+            self::strictRoles(),
+            (bool)$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS),
+            (bool)$review->getSetting(Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS),
+            (bool)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED),
+            $papers
+        );
+    }
+
+    /**
+     * Role of a user in the paper of the mail (author, reviewer...), null if none, or if the logged user may not
+     * know it (same rules as the recipients search)
+     */
+    private function paperRoleOf(int $uid, int $docId): ?string
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        try {
+            $scope = $this->recipientAccessPolicy($db)->scope($docId);
+        } catch (RecipientAccessDenied) {
+            return null;
+        }
+
+        return $scope->contextPaperId === null
+            ? null
+            : ((new RecipientSearchService($db))->paperRoles((int)RVID, $scope->contextPaperId, $scope->withContextReviewers)[$uid] ?? null);
+    }
+
+    /**
+     * Roles of the logged user in the current journal, without the administrator cascade
+     * @return list<string>
+     */
+    private static function strictRoles(): array
+    {
+        $checks = [
+            Episciences_Acl::ROLE_ROOT => Episciences_Auth::isRoot(),
+            Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_Auth::isChiefEditor(RVID, true),
+            Episciences_Acl::ROLE_ADMIN => Episciences_Auth::isAdministrator(RVID, true),
+            Episciences_Acl::ROLE_SECRETARY => Episciences_Auth::isSecretary(RVID, true),
+            Episciences_Acl::ROLE_EDITOR => Episciences_Auth::isEditor(RVID, true),
+            Episciences_Acl::ROLE_GUEST_EDITOR => Episciences_Auth::isGuestEditor(RVID, true),
+            Episciences_Acl::ROLE_COPY_EDITOR => Episciences_Auth::isCopyEditor(),
         ];
 
-        $js_contacts = [];
-
-        /** @var Episciences_User $user */
-        // loop through all contacts, and sort them according to their roles
-        foreach ($contacts as $user) {
-
-            // prepare js object
-            $js_user = [
-                'uid' => $user->getUid(),
-                'username' => $user->getUsername(),
-                'firstname' => $user->getFirstname(),
-                'lastname' => $user->getLastname(),
-                'fullname' => $user->getFullName(),
-                'screen_name' => $user->getScreenName(),
-                'mail' => $user->getEmail(),
-                'role' => $user->getRoles(),
-            ];
-
-            $user->loadRoles();
-
-            foreach ($roles as $roleName => $roleCode) {
-                // all contacts
-                $js_contacts['contacts'][$user->getUid()] = $js_user;
-                // sorted by role
-                if ($user->hasRole($roleCode)) {
-                    $js_contacts[$roleName][$user->getUid()] = $js_user;
-                }
-            }
-        }
-
-        $this->view->target = $request->getParam('target');
-        $this->view->contacts = $js_contacts['contacts'];
-        foreach ($js_contacts as $role => $contacts) {
-            $varName = 'js_' . $role;
-            $this->view->$varName = Zend_Json::encode($contacts);
-
-        }
-
+        return array_keys(array_filter($checks));
     }
 
     /**
@@ -929,29 +993,19 @@ class AdministratemailController extends Zend_Controller_Action
     }
 
     /**
-     * @param array $post
+     * Recipients of the mailing form, checked (structure, addresses, number, journal accounts, anonymity)
+     * @param array<string, mixed> $post
      * @param bool $strict [default true: the main recipient ($to) is required ]
-     * @return array
-     * @throws Zend_Json_Exception
+     * @return array{recipients: array{to: list<array{key: string, value: string, uid: ?int}>, cc: list<array{key: string, value: string, uid: ?int}>, bcc: list<array{key: string, value: string, uid: ?int}>}, errors: list<array{message: string, argument: string|int|null}>, isDetectedErrors: bool}
      */
     private function checkRecipients(array $post, bool $strict = true): array
     {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $docId = isset($post['docid']) && is_numeric($post['docid']) ? (int)$post['docid'] : 0;
 
-        $to = (!empty(Ccsd_Tools::ifsetor($post['hidden_to']))) ? Zend_Json::decode($post['hidden_to']) : [];
-        $cc = (!empty(Ccsd_Tools::ifsetor($post['hidden_cc']))) ? Zend_Json::decode($post['hidden_cc']) : [];
-        $bcc = (!empty(Ccsd_Tools::ifsetor($post['hidden_bcc']))) ? Zend_Json::decode($post['hidden_bcc']) : [];
+        $paperId = $docId > 0 ? AuthPaperAccessProvider::paperIdOf($db, (int)RVID, $docId) : null;
 
-        return [
-            'recipients' => [
-                'to' => $to,
-                'cc' => $cc,
-                'bcc' => $bcc
-
-            ],
-
-            'isDetectedErrors' => $strict ? empty($to) : (empty($to) && empty($cc) && empty($bcc))
-        ];
-
+        return (new RecipientListValidator(new RecipientSearchService($db), (int)RVID))->validate($post, $strict, $paperId);
     }
 
     /**

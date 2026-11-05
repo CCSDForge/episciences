@@ -1,453 +1,309 @@
-const fs = require('fs');
-const path = require('path');
+global.EpMailCombobox = require('../../public/js/library/es.mail-combobox.js');
+Object.assign(global, require('../../public/js/library/es.mail.js'));
+require('../../public/js/library/es.contacts-list.js');
 
-describe('es.contacts-list', function () {
-    let contactsListJs;
-    let mockGetLoader;
+const ADA = {
+    uid: 1,
+    fullname: 'Ada Lovelace',
+    username: 'ada',
+    mail: 'ada@example.org',
+    roles: ['editor'],
+    group: 'staff',
+};
+const ALAN = {
+    uid: 2,
+    fullname: 'Alan Author',
+    username: 'alan',
+    mail: 'alan@example.org',
+    roles: [],
+    group: 'paper',
+    paperRole: 'author',
+};
 
-    beforeEach(function () {
-        delete window.__epContactsListBound;
-
-        // Load the actual JavaScript file
-        contactsListJs = fs.readFileSync(
-            path.join(__dirname, '../../public/js/library/es.contacts-list.js'),
-            'utf8'
-        );
-
-        // Mock getLoader function
-        mockGetLoader = jest.fn(
-            () => '<div class="loader"><div class="progress-bar"></div></div>'
-        );
-        global.getLoader = mockGetLoader;
-
-        // Mock sanitizeHTML function (for XSS prevention)
-        global.sanitizeHTML = jest.fn(html => html);
-
-        // Mock jQuery and $.getScript
-        global.$ = jest.fn(selector => {
-            if (selector === '#' || typeof selector === 'function') {
-                return; // Handle jQuery ready
-            }
-            return {
-                ajaxSetup: jest.fn(),
-            };
-        });
-        global.$.ajaxSetup = jest.fn();
-        global.$.getScript = jest.fn(() => ({
-            done: jest.fn(function (callback) {
-                // Simulate successful script load
-                if (typeof callback === 'function') {
-                    global.initGetContacts = jest.fn();
-                    callback();
-                }
-                return this;
-            }),
-            fail: jest.fn(function () {
-                return this;
-            }),
-        }));
-
-        // Create mock DOM structure matching the new modal structure
-        document.body.innerHTML = `
-            <div class="modal-body">
-                <form id="test-form">
-                    <label>
-                        <a class="show_contacts_button"
-                           href="/administratemail/getcontacts?target=cc">
-                            CC
-                        </a>
-                    </label>
-                    <label>
-                        <a class="show_contacts_button"
-                           href="/administratemail/getcontacts?target=bcc">
-                            BCC
-                        </a>
-                    </label>
-                </form>
-                <span class="ccsd_form_required">* Required fields</span>
-                <div class="contacts-container" style="display: none;"></div>
-            </div>
-        `;
-
-        // Mock fetch API
-        global.fetch = jest.fn(() =>
-            Promise.resolve({
-                ok: true,
-                status: 200,
-                text: () =>
-                    Promise.resolve(
-                        '<script>var target="cc"; var all_contacts={};</script>' +
-                            '<div class="contact">Contact 1</div>' +
-                            '<div class="contact">Contact 2</div>'
-                    ),
-            })
-        );
-
-        // Execute the script to bind event listeners
-        eval(contactsListJs);
-    });
-
-    afterEach(function () {
-        delete window.__epContactsListBound;
-        jest.clearAllMocks();
-        delete global.getLoader;
-        delete global.fetch;
-        delete global.sanitizeHTML;
-        delete global.$;
-        delete global.initGetContacts;
-    });
-
-    describe('Label click event', function () {
-        it('should hide form and show contacts container on CC button click', function () {
-            const button = document.querySelector(
-                '.show_contacts_button[href*="target=cc"]'
-            );
-            const form = document.getElementById('test-form');
-            const container = document.querySelector('.contacts-container');
-
-            button.click();
-
-            expect(form.style.display).toBe('none');
-            expect(container.style.display).toBe('block');
-        });
-
-        it('should hide required fields indicator', function () {
-            const button = document.querySelector(
-                '.show_contacts_button[href*="target=cc"]'
-            );
-            const requiredFields = document.querySelector(
-                '.ccsd_form_required'
-            );
-
-            button.click();
-
-            expect(requiredFields.style.display).toBe('none');
-        });
-
-        it('should display loader while loading contacts', function () {
-            const button = document.querySelector(
-                '.show_contacts_button[href*="target=cc"]'
-            );
-            const container = document.querySelector('.contacts-container');
-
-            button.click();
-
-            expect(mockGetLoader).toHaveBeenCalled();
-            expect(container.innerHTML).toContain('loader');
-        });
-
-        it('should make POST request to correct endpoint for CC', async function () {
-            const button = document.querySelector(
-                '.show_contacts_button[href*="target=cc"]'
-            );
-
-            button.click();
-
-            // Wait a bit for async operation
-            await new Promise(resolve => setTimeout(resolve, 10));
-
-            expect(global.fetch).toHaveBeenCalledWith(
-                '/administratemail/getcontacts?target=cc',
-                expect.objectContaining({
-                    method: 'POST',
-                    headers: expect.objectContaining({
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }),
-                    body: 'ajax=true',
-                })
-            );
-        });
-
-        it('should make POST request to correct endpoint for BCC', async function () {
-            const button = document.querySelector(
-                '.show_contacts_button[href*="target=bcc"]'
-            );
-
-            button.click();
-
-            await new Promise(resolve => setTimeout(resolve, 10));
-
-            expect(global.fetch).toHaveBeenCalledWith(
-                '/administratemail/getcontacts?target=bcc',
-                expect.objectContaining({
-                    method: 'POST',
-                })
-            );
-        });
-
-        it('should populate container with fetched content', async function () {
-            const button = document.querySelector(
-                '.show_contacts_button[href*="target=cc"]'
-            );
-            const container = document.querySelector('.contacts-container');
-
-            button.click();
-
-            // Wait for async fetch to complete
-            await new Promise(resolve => setTimeout(resolve, 50));
-
-            expect(container.innerHTML).toContain('Contact 1');
-            expect(container.innerHTML).toContain('Contact 2');
-        });
-
-        it('should load get-contacts.js script', async function () {
-            const button = document.querySelector(
-                '.show_contacts_button[href*="target=cc"]'
-            );
-
-            button.click();
-
-            await new Promise(resolve => setTimeout(resolve, 50));
-
-            expect(global.$.getScript).toHaveBeenCalledWith(
-                '/js/administratemail/get-contacts.js'
-            );
-            expect(global.initGetContacts).toHaveBeenCalled();
-        });
-    });
-
-    describe('Error handling', function () {
-        it('should display error message when fetch fails', async function () {
-            // Override fetch to simulate error
-            global.fetch = jest.fn(() =>
-                Promise.reject(new Error('Network error'))
-            );
-
-            const button = document.querySelector(
-                '.show_contacts_button[href*="target=cc"]'
-            );
-            const container = document.querySelector('.contacts-container');
-
-            // Mock console.error to avoid test output noise
-            const consoleErrorSpy = jest
-                .spyOn(console, 'error')
-                .mockImplementation(() => {});
-
-            button.click();
-
-            // Wait for async operation and error handling
-            await new Promise(resolve => setTimeout(resolve, 50));
-
-            expect(consoleErrorSpy).toHaveBeenCalledWith(
-                'Error loading contacts:',
-                expect.any(Error)
-            );
-            expect(container.innerHTML).toContain('text-danger');
-            expect(container.innerHTML).toContain('Error loading contacts');
-
-            consoleErrorSpy.mockRestore();
-        });
-
-        it('should display error message when response is not ok', async function () {
-            // Override fetch to simulate HTTP error
-            global.fetch = jest.fn(() =>
-                Promise.resolve({
-                    ok: false,
-                    status: 404,
-                    text: () => Promise.resolve('Not found'),
-                })
-            );
-
-            const button = document.querySelector(
-                '.show_contacts_button[href*="target=cc"]'
-            );
-            const container = document.querySelector('.contacts-container');
-
-            const consoleErrorSpy = jest
-                .spyOn(console, 'error')
-                .mockImplementation(() => {});
-
-            button.click();
-
-            await new Promise(resolve => setTimeout(resolve, 50));
-
-            expect(consoleErrorSpy).toHaveBeenCalled();
-            expect(container.innerHTML).toContain('text-danger');
-
-            consoleErrorSpy.mockRestore();
-        });
-    });
-
-    describe('Edge cases', function () {
-        it('should do nothing if modal-body is not found', function () {
-            document.body.innerHTML = `
-                <a class="show_contacts_button" href="/administratemail/getcontacts?target=cc">CC</a>
-            `;
-            document.querySelector('.show_contacts_button').click();
-            expect(global.fetch).not.toHaveBeenCalled();
-        });
-
-        it('should not proceed if form is not found in modal body', function () {
-            document.body.innerHTML = `
-                <div class="modal-body">
-                    <a class="show_contacts_button"
-                       href="/administratemail/getcontacts?target=cc">
-                        CC
-                    </a>
-                    <div class="contacts-container"></div>
-                </div>
-            `;
-
-            const button = document.querySelector('.show_contacts_button');
-            button.click();
-
-            // Should not call fetch when form is missing
-            expect(global.fetch).not.toHaveBeenCalled();
-        });
-
-        it('should not proceed if contacts-container is not found', function () {
-            document.body.innerHTML = `
-                <div class="modal-body">
-                    <form>
-                        <a class="show_contacts_button"
-                           href="/administratemail/getcontacts?target=cc">
-                            CC
-                        </a>
-                    </form>
-                </div>
-            `;
-
-            const button = document.querySelector('.show_contacts_button');
-            button.click();
-
-            // Should not call fetch when container is missing
-            expect(global.fetch).not.toHaveBeenCalled();
-        });
-
-        it('enables footer submit while contacts picker is open (deadline must not block merge)', function () {
-            document.body.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-body">
-                        <form id="revision-form">
-                            <a class="show_contacts_button"
-                               href="/administratemail/getcontacts?target=cc">CC</a>
-                        </form>
-                        <div class="contacts-container" style="display: none;"></div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="submit-modal" disabled>Valider</button>
+/** Markup of Episciences\Mail\RecipientFieldDecorator in a paper modal form */
+function setUp(buttonExtra = '') {
+    document.body.innerHTML = `
+        <div class="modal"><div class="modal-body">
+            <form id="f">
+                <input type="hidden" name="docid" value="12">
+                <div class="form-group" id="cc-group">
+                    <label for="f-cc">Cc</label>
+                    <div class="col">
+                        <ul id="f-cc-tags" class="recipient-tags" data-recipient-target="cc"
+                            data-hidden-input="f-hidden_cc"></ul>
+                        <input type="text" id="f-cc" class="recipient-input" data-recipient-target="cc">
+                        <button type="button" class="show_contacts_button" data-target="cc"
+                                data-input-id="f-cc" aria-expanded="false" aria-controls="f-cc-picker"
+                                ${buttonExtra}>Choisir</button>
                     </div>
                 </div>
-            `;
+                <input type="hidden" id="f-hidden_cc" value="[]">
+            </form>
+        </div></div>`;
+    return document.querySelector('.show_contacts_button');
+}
 
-            const submitBtn = document.querySelector('.submit-modal');
-            expect(submitBtn.disabled).toBe(true);
-
-            document.querySelector('.show_contacts_button').click();
-
-            expect(submitBtn.disabled).toBe(false);
+function mockSearch(resultsFor) {
+    global.fetch = jest.fn(url => {
+        const params = new URL(url).searchParams;
+        return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ results: resultsFor(params) }),
         });
     });
+}
 
-    describe('Contacts data handling', function () {
-        afterEach(function () {
-            delete window.all_contacts;
-            delete window.reviewers;
-            delete window.sender_uid;
-            delete window.target;
-            delete window.__shouldNotRun;
+async function flush() {
+    for (let i = 0; i < 5; i++) {
+        await Promise.resolve();
+    }
+}
+
+function picker() {
+    return document.getElementById('f-cc-picker');
+}
+
+function tags() {
+    return Array.from(document.querySelectorAll('#f-cc-tags .recipient-tag'));
+}
+
+describe('es.contacts-list (contacts picker)', () => {
+    beforeEach(() => {
+        mockSearch(params =>
+            params.has('q') || params.has('role') ? [ADA] : [ALAN]
+        );
+    });
+
+    test('opens under the field, with the focus on the search field', async () => {
+        const button = setUp();
+
+        button.click();
+        await flush();
+
+        const panel = picker();
+        expect(panel.previousElementSibling.id).toBe('cc-group');
+        expect(button.getAttribute('aria-expanded')).toBe('true');
+        expect(document.activeElement).toBe(
+            document.getElementById('f-cc-picker-search')
+        );
+        expect(panel.getAttribute('aria-labelledby')).toBe('f-cc-picker-title');
+        expect(document.getElementById('f-cc-picker-title').textContent).toBe(
+            'Choisir des destinataires (Cc)'
+        );
+        expect(panel.querySelector('[role="status"]')).not.toBeNull();
+    });
+
+    test('lists the participants of the paper of the mail', async () => {
+        const button = setUp();
+
+        button.click();
+        await flush();
+
+        const url = new URL(global.fetch.mock.calls[0][0]);
+        expect(url.searchParams.get('docid')).toBe('12');
+        expect(url.searchParams.has('q')).toBe(false);
+        const legend = picker().querySelector('legend');
+        expect(legend.textContent).toBe("Intervenants de l'article");
+        const checkbox = picker().querySelector('input[type="checkbox"]');
+        expect(checkbox.hasAttribute('name')).toBe(false);
+        expect(
+            picker().querySelector('label[for="' + checkbox.id + '"]')
+                .textContent
+        ).toContain('alan@example.org');
+    });
+
+    test('has no "select all" and offers no mailing lists link by default', async () => {
+        setUp().click();
+        await flush();
+
+        expect(picker().textContent).not.toMatch(/tout sélectionner/i);
+        expect(picker().querySelector('a')).toBeNull();
+    });
+
+    test('points to the mailing lists when allowed', async () => {
+        setUp(
+            'data-mailing-lists-url="/administratemailinglist/index"'
+        ).click();
+        await flush();
+
+        expect(picker().querySelector('a').getAttribute('href')).toBe(
+            '/administratemailinglist/index'
+        );
+    });
+
+    test('lists an editorial group', async () => {
+        setUp().click();
+        await flush();
+        const select = document.getElementById('f-cc-picker-role');
+        expect(
+            document.querySelector('label[for="f-cc-picker-role"]')
+        ).not.toBeNull();
+
+        select.value = 'editor';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        await flush();
+
+        const url = new URL(global.fetch.mock.calls[1][0]);
+        expect(url.searchParams.get('role')).toBe('editor');
+        expect(picker().textContent).toContain('ada@example.org');
+    });
+
+    test('a former group answer does not replace the group now selected', async () => {
+        const answers = {};
+        global.fetch = jest.fn((url, options) => {
+            const role = new URL(url).searchParams.get('role');
+            return new Promise(resolve => {
+                answers[role || 'paper'] = () =>
+                    resolve({
+                        ok: true,
+                        json: () =>
+                            Promise.resolve({
+                                results:
+                                    role === 'editor'
+                                        ? [ADA]
+                                        : role
+                                          ? [ALAN]
+                                          : [],
+                            }),
+                    });
+            });
         });
+        setUp().click();
+        answers.paper();
+        await flush();
+        const select = document.getElementById('f-cc-picker-role');
 
-        function realisticResponse() {
-            // One assignment per line, mirroring the server-rendered payload.
-            return (
-                '<script>\n' +
-                '    var sender_uid = 5;\n' +
-                "    var target = 'cc';\n" +
-                '    var all_contacts = {"1":{"uid":1,"fullname":"Ada","mail":"ada@x.org"}};\n' +
-                '    var reviewers = {"1":{"uid":1,"fullname":"Ada"}};\n' +
-                '</script>\n' +
-                '<table><tr><td>Ada</td></tr></table>'
-            );
+        select.value = 'secretary';
+        select.dispatchEvent(new Event('change'));
+        select.value = 'editor';
+        select.dispatchEvent(new Event('change'));
+        answers.editor();
+        await flush();
+        answers.secretary();
+        await flush();
+
+        expect(picker().textContent).toContain('ada@example.org');
+        expect(picker().textContent).not.toContain('alan@example.org');
+    });
+
+    test('searches from 2 characters, debounced', async () => {
+        jest.useFakeTimers();
+        try {
+            setUp().click();
+            await flush();
+            const search = document.getElementById('f-cc-picker-search');
+
+            search.value = 'a';
+            search.dispatchEvent(new Event('input'));
+            jest.advanceTimersByTime(1000);
+            expect(global.fetch).toHaveBeenCalledTimes(1);
+
+            search.value = 'ad';
+            search.dispatchEvent(new Event('input'));
+            jest.advanceTimersByTime(EpMailCombobox.DEBOUNCE_MS);
+            expect(global.fetch).toHaveBeenCalledTimes(2);
+            expect(
+                new URL(global.fetch.mock.calls[1][0]).searchParams.get('q')
+            ).toBe('ad');
+        } finally {
+            jest.useRealTimers();
         }
+    });
 
-        it('assigns parsed JSON globals from the response without executing script', async function () {
-            global.fetch = jest.fn(() =>
-                Promise.resolve({
-                    ok: true,
-                    status: 200,
-                    text: () => Promise.resolve(realisticResponse()),
+    test('adds the checked users and gives the focus back to the button', async () => {
+        const button = setUp();
+        button.click();
+        await flush();
+        const checkbox = picker().querySelector('input[type="checkbox"]');
+        const validate = picker().querySelector('.btn-primary');
+        expect(validate.textContent).toBe('Valider la sélection');
+
+        checkbox.click();
+        expect(validate.textContent).toBe('Ajouter 1 destinataire');
+        validate.click();
+
+        expect(tags().map(tag => tag.dataset.uid)).toEqual(['2']);
+        expect(tags()[0].dataset.paperRole).toBe('author');
+        expect(picker()).toBeNull();
+        expect(button.getAttribute('aria-expanded')).toBe('false');
+        expect(document.activeElement).toBe(button);
+    });
+
+    test('recipients already in the field are checked, and unchecking removes them', async () => {
+        const button = setUp();
+        window.__epContactsForm = document.getElementById('f');
+        addRecipient('cc', ALAN, 'known');
+        delete window.__epContactsForm;
+
+        button.click();
+        await flush();
+        const checkbox = picker().querySelector('input[type="checkbox"]');
+        expect(checkbox.checked).toBe(true);
+
+        checkbox.click();
+        picker().querySelector('.btn-primary').click();
+
+        expect(tags()).toHaveLength(0);
+    });
+
+    test('Escape closes the picker only, not the modal', async () => {
+        const button = setUp();
+        const modalHandler = jest.fn();
+        document
+            .querySelector('.modal')
+            .addEventListener('keydown', modalHandler);
+        button.click();
+        await flush();
+
+        document
+            .getElementById('f-cc-picker-search')
+            .dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Escape',
+                    bubbles: true,
+                    cancelable: true,
                 })
             );
 
-            document
-                .querySelector('.show_contacts_button[href*="target=cc"]')
-                .click();
-            await new Promise(resolve => setTimeout(resolve, 50));
+        expect(picker()).toBeNull();
+        expect(modalHandler).not.toHaveBeenCalled();
+        expect(document.activeElement).toBe(button);
+    });
 
-            expect(window.all_contacts).toEqual({
-                1: { uid: 1, fullname: 'Ada', mail: 'ada@x.org' },
-            });
-            expect(window.reviewers).toEqual({
-                1: { uid: 1, fullname: 'Ada' },
-            });
-            expect(window.sender_uid).toBe(5);
+    test('Enter in the search field does not submit the mail form', async () => {
+        setUp().click();
+        await flush();
+
+        const event = new KeyboardEvent('keydown', {
+            key: 'Enter',
+            bubbles: true,
+            cancelable: true,
         });
+        document.getElementById('f-cc-picker-search').dispatchEvent(event);
 
-        it('sets target from the request URL, not from the response', async function () {
-            global.fetch = jest.fn(() =>
-                Promise.resolve({
-                    ok: true,
-                    status: 200,
-                    text: () => Promise.resolve(realisticResponse()),
-                })
-            );
+        expect(event.defaultPrevented).toBe(true);
+    });
 
-            document
-                .querySelector('.show_contacts_button[href*="target=bcc"]')
-                .click();
-            await new Promise(resolve => setTimeout(resolve, 50));
+    test('a second click on the button closes the picker', async () => {
+        const button = setUp();
+        button.click();
+        await flush();
 
-            expect(window.target).toBe('bcc');
-        });
+        button.click();
 
-        it('does not execute non-data script found in the response', async function () {
-            global.fetch = jest.fn(() =>
-                Promise.resolve({
-                    ok: true,
-                    status: 200,
-                    text: () =>
-                        Promise.resolve(
-                            '<script>window.__shouldNotRun = true;</script>' +
-                                '<script>\n    var all_contacts = {"1":{"uid":1}};\n</script>' +
-                                '<table></table>'
-                        ),
-                })
-            );
+        expect(picker()).toBeNull();
+        expect(button.getAttribute('aria-expanded')).toBe('false');
+    });
 
-            document
-                .querySelector('.show_contacts_button[href*="target=cc"]')
-                .click();
-            await new Promise(resolve => setTimeout(resolve, 50));
+    test('a failed search is reported in the picker', async () => {
+        global.fetch = jest.fn(() =>
+            Promise.resolve({ ok: false, status: 403 })
+        );
+        setUp().click();
+        await flush();
 
-            expect(window.__shouldNotRun).toBeUndefined();
-            expect(window.all_contacts).toEqual({ 1: { uid: 1 } });
-        });
-
-        it('ignores assignments that are not valid JSON', async function () {
-            global.fetch = jest.fn(() =>
-                Promise.resolve({
-                    ok: true,
-                    status: 200,
-                    text: () =>
-                        Promise.resolve(
-                            '<script>\n' +
-                                '    var url = "/js/x.js";\n' +
-                                '    var all_contacts = {"1":{"uid":1}};\n' +
-                                '</script>'
-                        ),
-                })
-            );
-
-            document
-                .querySelector('.show_contacts_button[href*="target=cc"]')
-                .click();
-            await new Promise(resolve => setTimeout(resolve, 50));
-
-            // String assignment is skipped (only objects/arrays/numbers are kept).
-            expect(window.url).toBeUndefined();
-            expect(window.all_contacts).toEqual({ 1: { uid: 1 } });
-        });
+        expect(picker().querySelector('.text-danger').textContent).toBe(
+            'Recherche indisponible, vous pouvez saisir une adresse e-mail.'
+        );
     });
 });

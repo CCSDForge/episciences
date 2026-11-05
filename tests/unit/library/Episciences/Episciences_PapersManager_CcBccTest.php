@@ -138,27 +138,6 @@ final class Episciences_PapersManager_CcBccTest extends TestCase
         self::assertSame('paper-modal-init-1', $rows[1]['key']);
     }
 
-    /**
-     * Fixed (BUG-2): the dead `if ($p === '') continue;` guard has been removed.
-     * array_values(array_filter(...)) is now the sole empty-string filter.
-     */
-    public function testDeadCodeGuardHasBeenRemoved(): void
-    {
-        $source = (string) file_get_contents(
-            dirname(__DIR__, 4) . '/library/Episciences/PapersManager.php'
-        );
-        $start = strpos($source, 'function recipientHiddenJsonFromSemicolonString');
-        $end   = strpos($source, 'function applyRecipientTagDecorators');
-        $body  = substr($source, (int) $start, (int) $end - (int) $start);
-
-        self::assertStringContainsString('array_values', $body,
-            'array_values() must wrap array_filter() to guarantee sequential indices'
-        );
-        self::assertStringNotContainsString("if (\$p === '') {", $body,
-            'The dead-code guard must be absent — array_values(array_filter()) handles empty strings'
-        );
-    }
-
     // -----------------------------------------------------------------------
     // addMailModalCcBccWithTags — normal behaviour
     // -----------------------------------------------------------------------
@@ -215,20 +194,16 @@ final class Episciences_PapersManager_CcBccTest extends TestCase
         );
     }
 
-    public function testTagSpanDecoratorIsAddedToCcElement(): void
+    public function testRecipientsListIsRenderedBeforeTheCcInput(): void
     {
         $form = $this->makeFormWithCcBcc('my-form');
         $this->callAddCcBcc($form, 'my-form', '', '');
 
-        $decoratorKeys = array_keys($form->getElement('cc')->getDecorators());
-        $hasHtmlTag = false;
-        foreach ($decoratorKeys as $key) {
-            if (stripos($key, 'HtmlTag') !== false) {
-                $hasHtmlTag = true;
-                break;
-            }
-        }
-        self::assertTrue($hasHtmlTag, 'An HtmlTag decorator (span container) must be added to the cc element');
+        $html = $form->getElement('cc')->render(new \Zend_View());
+
+        self::assertStringContainsString('<ul id="my-form-cc-tags"', $html);
+        self::assertStringContainsString('data-hidden-input="my-form-hidden_cc"', $html);
+        self::assertLessThan(strpos($html, '<input'), strpos($html, '<ul id="my-form-cc-tags"'));
     }
 
     public function testSkipsCcWhenElementMissing(): void

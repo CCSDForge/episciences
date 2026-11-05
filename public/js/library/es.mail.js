@@ -1,822 +1,799 @@
+/* global EpMailCombobox, ajaxRequest, getLoader, tinyMCE, $modal_button, $modal_body, $modal_footer */
 var $modal_box;
 var in_modal;
 
-// Same bridge as administratemail/send.js so the renderItem option is honored (htmlLabel layout).
-(function ($) {
-    if (!$ || !$.ui || !$.ui.autocomplete) {
-        return;
-    }
-    if (window.__epAutocompleteRenderItemBridge) {
-        return;
-    }
-    window.__epAutocompleteRenderItemBridge = true;
-    $.widget('ui.autocomplete', $.ui.autocomplete, {
-        options: {
-            renderItem: null,
-            renderMenu: null,
-        },
-        _renderItem: function (ul, item) {
-            if ($.isFunction(this.options.renderItem)) {
-                return this.options.renderItem(ul, item);
-            }
-            return this._super(ul, item);
-        },
-        _renderMenu: function (ul, items) {
-            if ($.isFunction(this.options.renderMenu)) {
-                this.options.renderMenu(ul, items);
-            }
-            this._super(ul, items);
-        },
-    });
-})(typeof jQuery !== 'undefined' ? jQuery : null);
-
-/**
- * Paper status modals: render initial CC/BCC tags from hidden_* JSON set server-side.
+/*
+ * Recipients of the mail forms (To, Cc, Bcc).
+ *
+ * Each field has a list of the chosen recipients (<ul class="recipient-tags">, see
+ * Episciences\Mail\RecipientFieldDecorator) and a hidden input holding them as JSON
+ * ([{key, value, uid}]), read by the server. Recipients are searched with es.mail-combobox.js and
+ * picked with es.contacts-list.js. Every value is rendered as text.
  */
-function initPaperModalRecipientTagsFromHidden() {
-    document.querySelectorAll('form[id]').forEach(form => {
-        if (!form.id) {
-            return;
-        }
-        ['cc', 'bcc'].forEach(target => {
-            const span = form.querySelector(
-                '#' + form.id + '-' + target + '-tags'
-            );
-            if (!span || !span.id) {
-                return;
-            }
-            if (span.querySelector('.recipient-tag')) {
-                return;
-            }
-            const hid = form.querySelector('#' + form.id + '-hidden_' + target);
-            if (!hid || !hid.value) {
-                return;
-            }
-            let arr;
-            try {
-                arr = JSON.parse(hid.value);
-            } catch (e) {
-                return;
-            }
-            if (!Array.isArray(arr) || !arr.length) {
-                return;
-            }
-            hid.value = '[]';
-            window.__epContactsForm = form;
-            arr.forEach(r => {
-                if (r && r.value) {
-                    addRecipient(target, r.value, 'else');
-                }
-            });
-            delete window.__epContactsForm;
-        });
-    });
+
+const EP_AUTHOR_ROLES = ['author', 'coauthor'];
+const EP_REVIEWER_ROLE = 'reviewer';
+let epRecipientTagCount = 0;
+
+function epT(key) {
+    return EpMailCombobox.t(key);
 }
 
-$(function () {
-    initPaperModalRecipientTagsFromHidden();
-    $('a#modal-contributor').click(function () {
-        waitForElm('input#coAuthorsInfo').then(elm => {
-            $('input#coAuthorsInfo').each(function () {
-                addRecipient('cc', JSON.parse(this.value), 'known');
-            });
-        });
-    });
+function epFormat(message, ...args) {
+    return EpMailCombobox.format(message, ...args);
+}
 
-    if (
-        typeof window.users !== 'undefined' &&
-        window.users &&
-        window.users.length &&
-        $.ui &&
-        $.ui.autocomplete
-    ) {
-        initRecipientsAutocompleteInScope($(document));
+/** UID of the logged user (see var sender in the views), null if unknown */
+function epSenderUid() {
+    return typeof window.sender !== 'undefined' &&
+        window.sender &&
+        window.sender.uid
+        ? String(window.sender.uid)
+        : null;
+}
+
+function epFormOf(element) {
+    if (element && element.closest) {
+        const form = element.closest('form');
+        if (form) {
+            return form;
+        }
     }
-});
+    return window.__epContactsForm instanceof HTMLElement
+        ? window.__epContactsForm
+        : null;
+}
+
+/** List of the chosen recipients of a field */
+function epTagsContainer(formEl, target) {
+    const scope = formEl || document;
+    const byData = scope.querySelector(
+        '.recipient-tags[data-recipient-target="' + target + '"]'
+    );
+    if (byData) {
+        return byData;
+    }
+    if (formEl && formEl.id) {
+        const prefixed = document.getElementById(
+            formEl.id + '-' + target + '-tags'
+        );
+        if (prefixed) {
+            return prefixed;
+        }
+    }
+    return document.getElementById(target + '_tags');
+}
+
+/** Hidden input holding the recipients of a field (JSON) */
+function epHiddenInput(formEl, target, container) {
+    const scope = formEl || document;
+    const id =
+        container && container.dataset ? container.dataset.hiddenInput : '';
+    if (id) {
+        const byData =
+            scope.querySelector('#' + CSS.escape(id)) ||
+            document.getElementById(id);
+        if (byData) {
+            return byData;
+        }
+    }
+    if (formEl && formEl.id) {
+        const prefixed = scope.querySelector(
+            '#' + CSS.escape(formEl.id + '-hidden_' + target)
+        );
+        if (prefixed) {
+            return prefixed;
+        }
+    }
+    return (
+        scope.querySelector('input[name="hidden_' + target + '"]') ||
+        document.getElementById('hidden_' + target)
+    );
+}
+
+/** Text input of a field: name "cc", subform "x[cc]", or id "{formId}-cc" */
+function epRecipientInput(formEl, target) {
+    const scope = formEl || document;
+    const byData = scope.querySelector(
+        'input[data-recipient-target="' + target + '"]'
+    );
+    if (byData) {
+        return byData;
+    }
+    if (formEl && formEl.id) {
+        const prefixed = document.getElementById(formEl.id + '-' + target);
+        if (prefixed && prefixed.tagName === 'INPUT') {
+            return prefixed;
+        }
+    }
+    return (
+        Array.from(scope.querySelectorAll('input')).find(input => {
+            const name = input.getAttribute('name') || '';
+            return name === target || name.endsWith('[' + target + ']');
+        }) || null
+    );
+}
+
+function epReadRecipients(hidden) {
+    if (!hidden || !hidden.value) {
+        return [];
+    }
+    try {
+        const parsed = JSON.parse(hidden.value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function epWriteRecipients(hidden, recipients) {
+    if (hidden) {
+        hidden.value = JSON.stringify(recipients);
+    }
+}
+
+// add recipient to recipients hidden input ($field: element, selector string or jQuery)
+function addUser($field, key, value, uid, paperRole) {
+    let input = $field;
+    if (typeof $field === 'string') {
+        input = document.querySelector($field);
+    } else if ($field && $field.jquery) {
+        input = $field[0];
+    }
+    if (!input) {
+        return;
+    }
+    const recipients = epReadRecipients(input);
+    const recipient = { key: key, value: value, uid: uid || null };
+    // Kept to show the recipient again as such when the form comes back (validation error)
+    if (paperRole) {
+        recipient.paperRole = paperRole;
+    }
+    recipients.push(recipient);
+    epWriteRecipients(input, recipients);
+}
 
 /**
- * Remove accents from a string for search matching.
- * Uses String.normalize() for robust Unicode handling.
+ * Normalizes a recipient: a known user ({uid, fullname, mail...}) or a typed address ("Name <a@b>", "a@b")
+ * @returns {{uid: (string|null), name: string, mail: string, username: string, paperRole: (string|null), value: string, known: boolean}}
  */
-function epNormalize(term) {
-    if (!term || typeof term !== 'string') {
+function epNormalizeRecipient(recipient, type) {
+    if (recipient && typeof recipient === 'object' && recipient.mail) {
+        const uid =
+            type === 'known' && recipient.uid ? String(recipient.uid) : null;
+        const name = recipient.fullname || recipient.screen_name || '';
+        return {
+            uid,
+            name,
+            mail: String(recipient.mail),
+            username: recipient.username || '',
+            paperRole: recipient.paperRole || null,
+            value: name
+                ? name + ' <' + recipient.mail + '>'
+                : String(recipient.mail),
+            known: uid !== null,
+        };
+    }
+
+    const raw = String(recipient ?? '').trim();
+    const mail = EpMailCombobox.extractEmail(raw) || raw;
+    const name = raw
+        .replace(/<[^<>]*>\s*$/, '')
+        .trim()
+        .replace(/^"(.*)"$/, '$1');
+    return {
+        uid: null,
+        name: name !== mail ? name : '',
+        mail,
+        username: '',
+        paperRole: null,
+        value: name && name !== mail ? name + ' <' + mail + '>' : mail,
+        known: false,
+    };
+}
+
+function epFieldLabel(target) {
+    return EpMailCombobox.fieldLabel(target);
+}
+
+function epUpdateListLabel(container) {
+    const target = container.dataset.recipientTarget;
+    if (!target) {
+        return;
+    }
+    const count = container.querySelectorAll('.recipient-tag').length;
+    container.setAttribute(
+        'aria-label',
+        epFormat(epT('Destinataires (%s), %d'), epFieldLabel(target), count)
+    );
+}
+
+/** Live region of a field (created by the combobox), or of the page */
+function epAnnounce(formEl, target, message) {
+    const input = epRecipientInput(formEl, target);
+    let region = input ? document.getElementById(input.id + '-status') : null;
+    if (!region) {
+        region = document.getElementById('ep-mail-live');
+    }
+    if (!region) {
+        region = document.createElement('div');
+        region.id = 'ep-mail-live';
+        region.className = 'sr-only';
+        region.setAttribute('role', 'status');
+        region.setAttribute('aria-live', 'polite');
+        document.body.appendChild(region);
+    }
+    region.textContent = message;
+}
+
+/** Field (to, cc, bcc) where this address is already chosen in the form, null if none */
+function epFindRecipientField(formEl, recipient) {
+    for (const target of ['to', 'cc', 'bcc']) {
+        const container = epTagsContainer(formEl, target);
+        if (!container) {
+            continue;
+        }
+        const tags = Array.from(container.querySelectorAll('.recipient-tag'));
+        const found = tags.find(
+            tag =>
+                (recipient.uid && tag.dataset.uid === recipient.uid) ||
+                (tag.dataset.email || '').toLowerCase() ===
+                    recipient.mail.toLowerCase()
+        );
+        if (found) {
+            return { target, tag: found };
+        }
+    }
+    return null;
+}
+
+/** Recipient tag: name, address for screen readers and a real button to remove it */
+function epBuildTag(container, recipient) {
+    const tag = document.createElement(
+        container.tagName === 'UL' ? 'li' : 'span'
+    );
+    epRecipientTagCount += 1;
+    tag.id = 'ep-recipient-' + epRecipientTagCount;
+    tag.className =
+        'recipient-tag' + (recipient.known ? '' : ' recipient-tag-manual');
+    if (recipient.uid) {
+        tag.dataset.uid = recipient.uid;
+    }
+    tag.dataset.email = recipient.mail;
+    tag.dataset.value = recipient.value;
+    if (recipient.paperRole) {
+        tag.dataset.paperRole = recipient.paperRole;
+    }
+
+    const shownName = recipient.name || recipient.mail;
+    const name = document.createElement('span');
+    name.className = 'recipient-name';
+    name.textContent = shownName;
+    name.title = recipient.mail;
+    tag.appendChild(name);
+
+    const details = document.createElement('span');
+    details.className = 'sr-only';
+    details.textContent = recipient.name ? ' <' + recipient.mail + '>' : '';
+    if (!recipient.known) {
+        details.textContent += ' ' + epT('(adresse saisie)');
+    }
+    tag.appendChild(details);
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'remove-recipient';
+    const icon = document.createElement('span');
+    icon.className = 'glyphicon glyphicon-remove';
+    icon.setAttribute('aria-hidden', 'true');
+    const label = document.createElement('span');
+    label.className = 'sr-only';
+    label.textContent = epFormat(epT('Retirer %s'), shownName);
+    button.appendChild(icon);
+    button.appendChild(label);
+    tag.appendChild(button);
+
+    return tag;
+}
+
+/** Field without recipients list (e.g. the disabled "To" of the modals): plain text + hidden JSON */
+function epAddToPlainField(formEl, target, recipient) {
+    const scope = formEl || document;
+    const input = epRecipientInput(formEl, target);
+    // The server may already have filled the field with this recipient
+    if (
+        input &&
+        !(input.value || '')
+            .toLowerCase()
+            .includes(recipient.mail.toLowerCase())
+    ) {
+        const current = (input.value || '').replace(/\s*;+\s*$/, '').trimEnd();
+        input.value = current
+            ? current + '; ' + recipient.value
+            : recipient.value;
+    }
+    const hidden =
+        scope.querySelector('#hidden_' + target) ||
+        epHiddenInput(formEl, target, null);
+    if (hidden) {
+        const recipients = epReadRecipients(hidden);
+        const exists =
+            recipient.uid &&
+            recipients.some(r => r && String(r.uid) === recipient.uid);
+        if (!exists) {
+            recipients.push({
+                key:
+                    'fallback-' +
+                    target +
+                    '-' +
+                    (recipient.uid || Date.now().toString()),
+                value: recipient.value,
+                uid: recipient.uid,
+                paperRole: recipient.paperRole,
+            });
+            epWriteRecipients(hidden, recipients);
+        }
+    }
+    return '';
+}
+
+function epSyncCopyCheckbox(formEl, target, recipient, isAdded) {
+    const copy = (formEl || document).querySelector('#copy');
+    const senderUid = epSenderUid();
+    if (
+        !copy ||
+        target !== 'bcc' ||
+        !senderUid ||
+        recipient.uid !== senderUid
+    ) {
+        return;
+    }
+    copy.checked = isAdded;
+}
+
+/**
+ * add a recipient: tag + hidden input
+ * @param {string} target to, cc, bcc
+ * @param {Object|string} recipient known user or typed address
+ * @param {string} type 'known' for a user of the journal, anything else for a typed address
+ * @param {{silent?: boolean}} [options]
+ * @returns {string} id of the tag ('' when the field has no recipients list)
+ */
+function addRecipient(target, recipient, type, options) {
+    const formEl =
+        window.__epContactsForm instanceof HTMLElement
+            ? window.__epContactsForm
+            : null;
+    const normalized = epNormalizeRecipient(recipient, type);
+    if (!normalized.mail) {
         return '';
     }
-    return term.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const container = epTagsContainer(formEl, target);
+
+    if (!container) {
+        return epAddToPlainField(formEl, target, normalized);
+    }
+
+    const scope = formEl || container.closest('form');
+    const existing = epFindRecipientField(scope, normalized);
+    if (existing) {
+        if (!(options && options.silent)) {
+            epAnnounce(
+                scope,
+                target,
+                existing.target === target
+                    ? epFormat(
+                          epT('%s est déjà destinataire.'),
+                          normalized.name || normalized.mail
+                      )
+                    : epFormat(
+                          epT('%s est déjà destinataire en %s.'),
+                          normalized.name || normalized.mail,
+                          epFieldLabel(existing.target)
+                      )
+            );
+        }
+        return existing.tag.id;
+    }
+
+    const tag = epBuildTag(container, normalized);
+    container.appendChild(tag);
+    addUser(
+        epHiddenInput(scope, target, container),
+        tag.id,
+        normalized.value,
+        normalized.uid,
+        normalized.paperRole
+    );
+    epUpdateListLabel(container);
+    epSyncCopyCheckbox(scope, target, normalized, true);
+    epCheckAnonymity(scope);
+
+    if (!(options && options.silent)) {
+        epAnnounce(
+            scope,
+            target,
+            epFormat(
+                epT('%s ajouté aux destinataires (%s).'),
+                normalized.name || normalized.mail,
+                epFieldLabel(target)
+            )
+        );
+    }
+
+    return tag.id;
 }
 
 /**
- * Extract recipient target (to/cc/bcc) from input element.
+ * Remove a recipient tag and update the hidden input
+ * @param {(HTMLElement|jQuery)} tagOrJquery
+ * @param {{moveFocus?: boolean, silent?: boolean}} [options]
  */
-function epGetRecipientTargetFromInput(el) {
-    const n = (el.getAttribute('name') || el.name || '').toString();
-    if (n === 'to' || n === 'cc' || n === 'bcc') {
-        return n;
+function removeRecipient(tagOrJquery, options) {
+    const tag =
+        tagOrJquery && tagOrJquery.jquery ? tagOrJquery[0] : tagOrJquery;
+    if (!tag || !tag.parentElement) {
+        return;
     }
-    const id = (el.getAttribute('id') || '').toString();
-    if (id.endsWith('-to')) {
-        return 'to';
+    const container = tag.parentElement;
+    const target =
+        container.dataset.recipientTarget ||
+        epTargetFromContainerId(container.id);
+    if (!target) {
+        return;
     }
-    if (id.endsWith('-cc')) {
-        return 'cc';
+    const formEl = container.closest('form');
+    const hidden = epHiddenInput(formEl, target, container);
+    epWriteRecipients(
+        hidden,
+        epReadRecipients(hidden).filter(r => r && r.key !== tag.id)
+    );
+
+    const moveFocus = options && options.moveFocus;
+    const nextFocus = moveFocus
+        ? epFocusAfterRemoval(tag, formEl, target)
+        : null;
+    const name = tag.querySelector('.recipient-name');
+    const recipient = { uid: tag.dataset.uid || null };
+
+    tag.remove();
+    epUpdateListLabel(container);
+    epSyncCopyCheckbox(formEl, target, recipient, false);
+    epCheckAnonymity(formEl);
+
+    if (nextFocus) {
+        nextFocus.focus();
     }
-    if (id.endsWith('-bcc')) {
-        return 'bcc';
+    if (!(options && options.silent)) {
+        epAnnounce(
+            formEl,
+            target,
+            epFormat(
+                epT('%s retiré des destinataires (%s).'),
+                name ? name.textContent : '',
+                epFieldLabel(target)
+            )
+        );
     }
-    return id;
+}
+
+/** Legacy ids: cc_tags, {formId}-bcc-tags */
+function epTargetFromContainerId(id) {
+    const match = (id || '').match(/(?:^|-)(to|cc|bcc)(?:_tags|-tags)$/);
+    return match ? match[1] : null;
+}
+
+/** Focus after a removal: next tag, else previous tag, else the input of the field */
+function epFocusAfterRemoval(tag, formEl, target) {
+    const sibling = tag.nextElementSibling || tag.previousElementSibling;
+    if (sibling && sibling.querySelector('.remove-recipient')) {
+        return sibling.querySelector('.remove-recipient');
+    }
+    return epRecipientInput(formEl, target);
+}
+
+/** Removes the tag of an address in a form (e.g. co-authors copy unchecked) */
+function epRemoveRecipientByEmail(formEl, email) {
+    const found = epFindRecipientField(formEl, {
+        uid: null,
+        mail: String(email || ''),
+    });
+    if (found) {
+        removeRecipient(found.tag);
+    }
 }
 
 /**
- * Get tags container selector for a form and target field.
+ * An author and a reviewer of the paper in To/Cc would learn the identity of each other:
+ * warning with a button moving the reviewers to Bcc. The server refuses such a mail.
  */
-function epGetTagsSelector(formEl, targetField) {
-    if (
-        formEl &&
-        formEl.id &&
-        document.getElementById(formEl.id + '-' + targetField + '-tags')
-    ) {
-        return '#' + formEl.id + '-' + targetField + '-tags';
+function epCheckAnonymity(formEl) {
+    if (!formEl) {
+        return false;
     }
-    return '#' + targetField + '_tags';
+    const visibleTags = ['to', 'cc']
+        .map(target => epTagsContainer(formEl, target))
+        .filter(Boolean)
+        .flatMap(container =>
+            Array.from(container.querySelectorAll('.recipient-tag'))
+        );
+    const toInput = epRecipientInput(formEl, 'to');
+    // This form only: other mail forms of the page have their own hidden_to
+    const plainTo = formEl.querySelector('input[name="hidden_to"]');
+    const roles = visibleTags.map(tag => tag.dataset.paperRole || '');
+
+    if (toInput && toInput.dataset.paperRole) {
+        roles.push(toInput.dataset.paperRole);
+    }
+    epReadRecipients(plainTo).forEach(r =>
+        roles.push((r && r.paperRole) || '')
+    );
+
+    const isBroken =
+        roles.some(role => EP_AUTHOR_ROLES.includes(role)) &&
+        roles.includes(EP_REVIEWER_ROLE);
+
+    let warning = formEl.querySelector('.ep-anonymity-warning');
+    if (!isBroken) {
+        if (warning) {
+            warning.remove();
+        }
+        return false;
+    }
+    if (!warning) {
+        warning = epBuildAnonymityWarning(formEl);
+        const ccContainer = epTagsContainer(formEl, 'cc');
+        const anchor = ccContainer ? ccContainer.closest('.form-group') : null;
+        if (anchor) {
+            anchor.insertAdjacentElement('afterend', warning);
+        } else {
+            formEl.prepend(warning);
+        }
+    }
+    return true;
 }
 
-/**
- * Execute callback with form context set.
- */
+function epBuildAnonymityWarning(formEl) {
+    const warning = document.createElement('div');
+    warning.className = 'alert alert-warning ep-anonymity-warning';
+    warning.setAttribute('role', 'alert');
+
+    const text = document.createElement('p');
+    text.textContent = epT(
+        "Un relecteur et un auteur de l'article sont destinataires en À ou Cc : leur identité serait révélée l'un à l'autre."
+    );
+    warning.appendChild(text);
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-default btn-sm';
+    button.textContent = epT('Déplacer les relecteurs en Cci');
+    button.addEventListener('click', () => epMoveReviewersToBcc(formEl));
+    warning.appendChild(button);
+
+    return warning;
+}
+
+function epMoveReviewersToBcc(formEl) {
+    const bccInput = epRecipientInput(formEl, 'bcc');
+    ['to', 'cc'].forEach(target => {
+        const container = epTagsContainer(formEl, target);
+        if (!container) {
+            return;
+        }
+        container
+            .querySelectorAll(
+                '.recipient-tag[data-paper-role="' + EP_REVIEWER_ROLE + '"]'
+            )
+            .forEach(tag => {
+                const recipient = {
+                    uid: tag.dataset.uid,
+                    fullname: tag.querySelector('.recipient-name').textContent,
+                    mail: tag.dataset.email,
+                    paperRole: tag.dataset.paperRole,
+                };
+                removeRecipient(tag, { silent: true });
+                epWithContactsForm(formEl, () =>
+                    addRecipient(
+                        'bcc',
+                        recipient,
+                        recipient.uid ? 'known' : 'manual',
+                        {
+                            silent: true,
+                        }
+                    )
+                );
+            });
+    });
+    epAnnounce(formEl, 'bcc', epT('Les relecteurs ont été déplacés en Cci.'));
+    if (bccInput) {
+        bccInput.focus();
+    }
+}
+
+/** Execute callback with form context set */
 function epWithContactsForm(formEl, cb) {
     const prev = window.__epContactsForm;
     if (formEl) {
         window.__epContactsForm = formEl;
     }
     try {
-        cb();
+        return cb();
     } finally {
         window.__epContactsForm = prev;
     }
 }
 
-function initRecipientsAutocompleteInScope($scope) {
-    $scope.find('form .autocomplete').each(function () {
-        const input = this;
-        const $input = $(input);
-        if ($input.hasClass('ui-autocomplete-input')) {
-            return;
-        }
-        const input_id = $input.attr('id');
-        if (!input_id) {
-            return;
-        }
-        const formEl = $input.closest('form').get(0) || null;
-        const targetField = epGetRecipientTargetFromInput(input);
-        const tagsSel = epGetTagsSelector(formEl, targetField);
-        let input_val = 0;
+/** Paper of the mail, for the suggestions (participants first) */
+function epContextDocId(formEl) {
+    const field = formEl ? formEl.querySelector('input[name="docid"]') : null;
+    if (field && field.value) {
+        return field.value;
+    }
+    return typeof window.paper !== 'undefined' &&
+        window.paper &&
+        window.paper.id
+        ? window.paper.id
+        : null;
+}
 
-        $input.autocomplete({
-            appendTo: 'body',
-            minLength: 2,
-            source: function (request, response) {
-                const matcher = new RegExp(
-                    $.ui.autocomplete.escapeRegex(request.term),
-                    'i'
-                );
-                response(
-                    $.grep(window.users, function (value) {
-                        value = value.label || value.value || value;
-                        return (
-                            matcher.test(value) ||
-                            matcher.test(epNormalize(value))
+/** Keyboard on the remove buttons of the tags */
+function epOnTagKeyDown(event) {
+    const button = event.target.closest
+        ? event.target.closest('.remove-recipient')
+        : null;
+    if (!button) {
+        return;
+    }
+    const tag = button.closest('.recipient-tag');
+    if (event.key === 'Backspace' || event.key === 'Delete') {
+        event.preventDefault();
+        removeRecipient(tag, { moveFocus: true });
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        const sibling =
+            event.key === 'ArrowLeft'
+                ? tag.previousElementSibling
+                : tag.nextElementSibling;
+        if (sibling && sibling.querySelector('.remove-recipient')) {
+            event.preventDefault();
+            sibling.querySelector('.remove-recipient').focus();
+        } else if (event.key === 'ArrowRight') {
+            const container = tag.parentElement;
+            const input = epRecipientInput(
+                container.closest('form'),
+                container.dataset.recipientTarget
+            );
+            if (input) {
+                event.preventDefault();
+                input.focus();
+            }
+        }
+    }
+}
+
+function epOnTagClick(event) {
+    const button = event.target.closest
+        ? event.target.closest('.remove-recipient')
+        : null;
+    if (button) {
+        event.preventDefault();
+        removeRecipient(button.closest('.recipient-tag'), { moveFocus: true });
+    }
+}
+
+/**
+ * Search and typed addresses on the recipient inputs of a scope (document, loaded form)
+ * @param {(Document|HTMLElement)} [scope]
+ */
+function epInitRecipientFields(scope) {
+    if (typeof EpMailCombobox === 'undefined') {
+        return;
+    }
+    (scope || document)
+        .querySelectorAll('input.recipient-input')
+        .forEach(input => {
+            if (input.disabled) {
+                return;
+            }
+            const formEl = input.closest('form');
+            const target = input.dataset.recipientTarget;
+            EpMailCombobox.attach(input, {
+                docId: epContextDocId(formEl),
+                onSelect: recipient =>
+                    epWithContactsForm(formEl, () =>
+                        addRecipient(target, recipient, 'known')
+                    ),
+                onFreeEntry: text =>
+                    epWithContactsForm(formEl, () =>
+                        addRecipient(target, text, 'manual')
+                    ),
+                onBackspaceEmpty: () => {
+                    // Focus the last recipient, without removing it: a second Backspace removes it
+                    const container = epTagsContainer(formEl, target);
+                    const buttons = container
+                        ? container.querySelectorAll('.remove-recipient')
+                        : [];
+                    if (buttons.length) {
+                        buttons[buttons.length - 1].focus();
+                    }
+                },
+            });
+        });
+}
+
+/**
+ * Recipients set server-side in the hidden_* JSON (paper modals defaults, form shown again after a validation
+ * error): rendered as tags, known users staying known.
+ */
+function initPaperModalRecipientTagsFromHidden() {
+    document.querySelectorAll('form[id]').forEach(form => {
+        ['to', 'cc', 'bcc'].forEach(target => {
+            const container = epTagsContainer(form, target);
+            if (!container || container.querySelector('.recipient-tag')) {
+                return;
+            }
+            const hidden = epHiddenInput(form, target, container);
+            const recipients = epReadRecipients(hidden);
+            if (!recipients.length) {
+                return;
+            }
+            epWriteRecipients(hidden, []);
+            epWithContactsForm(form, () => {
+                recipients.forEach(r => {
+                    if (!r || !r.value) {
+                        return;
+                    }
+                    if (r.uid) {
+                        const typed = epNormalizeRecipient(r.value, 'manual');
+                        addRecipient(
+                            target,
+                            {
+                                uid: r.uid,
+                                fullname: typed.name,
+                                mail: typed.mail,
+                                paperRole: r.paperRole,
+                            },
+                            'known',
+                            { silent: true }
                         );
-                    })
-                );
-            },
-            focus: function () {
-                return false;
-            },
-            select: function (event, ui) {
-                epWithContactsForm(formEl, function () {
-                    addRecipient(targetField, ui.item, 'known');
+                    } else {
+                        addRecipient(target, r.value, 'manual', {
+                            silent: true,
+                        });
+                    }
                 });
-                $input.val('');
-                return false;
-            },
-            renderItem: function (ul, item) {
-                return $('<li>')
-                    .append('<a>' + item.htmlLabel + '</a>')
-                    .appendTo(ul);
-            },
-        });
-
-        $input.on('blur', function () {
-            if ($input.val() !== '') {
-                epWithContactsForm(formEl, function () {
-                    addRecipient(targetField, $input.val(), 'unknown');
-                });
-                $input.autocomplete('close');
-                $input.val('');
-            }
-        });
-
-        $input.on('keydown', function (e) {
-            const code = e.keyCode || e.which;
-            input_val = ($input.val() || '').length;
-            if (code === 13) {
-                e.preventDefault();
-                if ($input.val() !== '') {
-                    epWithContactsForm(formEl, function () {
-                        addRecipient(targetField, $input.val(), 'unknown');
-                    });
-                    $input.autocomplete('close');
-                    $input.val('');
-                }
-            }
-        });
-
-        $input.on('keyup', function (e) {
-            const code = e.keyCode || e.which;
-            if (
-                code === 8 &&
-                input_val === 0 &&
-                $(tagsSel).find('.recipient-tag').length
-            ) {
-                removeRecipient($(tagsSel).find('.recipient-tag:last'));
-            }
+            });
         });
     });
 }
 
-/**
- * Find CC/BCC text input in paper modals: name "cc", Zend subform "askEditors[cc]",
- * or id "{formId}-cc" (e.g. ask-other-editors-form-cc).
- */
-function epFindRecipientTextInput($scope, formEl, target) {
-    const fid = formEl && formEl.id ? formEl.id : '';
-    if (fid) {
-        const byId = document.getElementById(fid + '-' + target);
-        if (byId && byId.tagName && byId.tagName.toLowerCase() === 'input') {
-            return $(byId);
-        }
-    }
-    let $i = $scope.find('input[name="' + target + '"]');
-    if ($i.length) {
-        return $i.first();
-    }
-    const suffix = '[' + target + ']';
-    $i = $scope.find('input').filter(function () {
-        const n = (this.getAttribute('name') || this.name || '').toString();
-        return n === target || n.endsWith(suffix);
-    });
-    return $i.first();
-}
+document.addEventListener('click', epOnTagClick);
+document.addEventListener('keydown', epOnTagKeyDown);
 
-/** Focus Cc/Bcc input: handles {formId}-cc as well as plain #cc (send form). */
-function epFocusRecipientField(target) {
-    if (!target) {
-        return;
-    }
-    const formEl = window.__epContactsForm;
-    if (formEl && formEl.id) {
-        const byPrefixed = document.getElementById(formEl.id + '-' + target);
-        if (byPrefixed && typeof byPrefixed.focus === 'function') {
-            byPrefixed.focus();
-            return;
-        }
-    }
-    const plain = document.getElementById(target);
-    if (plain && typeof plain.focus === 'function') {
-        plain.focus();
-    }
-}
+if (typeof $ === 'function') {
+    $(function () {
+        initPaperModalRecipientTagsFromHidden();
+        epInitRecipientFields(document);
 
-/**
- * Apply pick-list selection to the mail form (Cc/Bcc tags + hidden JSON).
- * Same flow as the historical function, with safe JSON parse, picker hide, and
- * prefixed input focus for paper modals ({formId}-cc).
- *
- * @param {boolean} [skipModalChrome] Pass true from paper status modals: merge
- *   only; do not toggle #send_form or call $modal_box.modal('hide').
- */
-function addContacts(skipModalChrome) {
-    if (document.getElementById('hidden_added_contacts')) {
-        window.__epContactsMergeInProgress = true;
-        try {
-            let added_contacts = [];
-            try {
-                added_contacts = JSON.parse(
-                    $('#hidden_added_contacts').val() || '[]'
-                );
-            } catch (e) {
-                added_contacts = [];
-            }
-
-            // Hide inline / paper hosts only (not #modal-box — Bootstrap owns visibility).
-            const $pickerHost = $('#added_contacts_tags').closest(
-                '#add_contacts_box, .contacts-container'
-            );
-            if ($pickerHost.length) {
-                $pickerHost.hide();
-            }
-
-            // target is a global variable set by get-contacts.js (cc or bcc)
-            const recipientTarget = typeof target !== 'undefined' ? target : 'cc';
-            for (const contact of Object.values(added_contacts)) {
-                const user = Object.values(all_contacts).find(
-                    c => c.uid == contact.uid
-                );
-                if (user) {
-                    addRecipient(recipientTarget, user, 'known');
-                }
-            }
-
-            $('#added_contacts_tags').empty();
-            $('#hidden_added_contacts').val('[]');
-        } finally {
-            window.__epContactsMergeInProgress = false;
-        }
-    }
-
-    if (typeof target !== 'undefined' && target) {
-        epFocusRecipientField(target);
-    }
-    //resizeInput('#' + target, 'add');
-
-    if (skipModalChrome === true) {
-        return;
-    }
-
-    /*global in_modal */
-    if (in_modal) {
-        $('#add_contacts_box').hide();
-        $('#send_form').show();
-        updateModalButton('send_mail');
-    } else {
-        $modal_box.modal('hide');
-    }
-}
-
-function epMailUsersList() {
-    const u = typeof window.users !== 'undefined' ? window.users : null;
-    if (!u) {
-        return [];
-    }
-    return Array.isArray(u) ? u : Object.values(u);
-}
-
-function epManualRecipientToRawString(recipient) {
-    if (typeof recipient === 'string') {
-        return recipient;
-    }
-    if (recipient && typeof recipient === 'object' && recipient.mail) {
-        return recipient.fullname
-            ? recipient.fullname + ' <' + recipient.mail + '>'
-            : '<' + recipient.mail + '>';
-    }
-    return recipient == null ? '' : String(recipient);
-}
-
-/** Extract a single email from "u@h", "<u@h>", or "Name <u@h>". */
-function epExtractLookupEmail(rawStr) {
-    if (!rawStr || typeof rawStr !== 'string') {
-        return '';
-    }
-    const t = rawStr.trim();
-    const bracketOnly = t.match(/^<\s*([^<>@\s][^<>]*@[^<>]+)\s*>$/);
-    if (bracketOnly) {
-        return bracketOnly[1].trim();
-    }
-    if (/^[^\s<>]+@[^\s<>]+$/.test(t)) {
-        return t;
-    }
-    const tail = t.match(/<\s*([^<>@\s][^<>]*@[^<>]+)\s*>$/);
-    if (tail) {
-        return tail[1].trim();
-    }
-    return '';
-}
-
-/** For display/storage: drop outer <email> chevrons when there is nothing else. */
-function epRecipientLabelWithoutRedundantChevrons(rawStr) {
-    if (!rawStr || typeof rawStr !== 'string') {
-        return rawStr;
-    }
-    const t = rawStr.trim();
-    const m = t.match(/^<\s*([^<>]+@[^<>]+)\s*>$/);
-    if (m) {
-        return m[1].trim();
-    }
-    return rawStr;
-}
-
-/**
- * If manual input matches an entry in window.users (e.g. "<uid@journal.fr>"), treat as known.
- */
-function epResolveManualRecipientToKnown(recipient) {
-    const list = epMailUsersList();
-    if (!list.length) {
-        return { recipient, type: 'unknown' };
-    }
-    if (recipient && typeof recipient === 'object' && recipient.uid) {
-        return { recipient, type: 'known' };
-    }
-    const rawStr = epManualRecipientToRawString(recipient);
-    const email = epExtractLookupEmail(rawStr);
-    if (!email) {
-        return { recipient, type: 'unknown' };
-    }
-    const found = list.find(
-        u =>
-            u &&
-            u.mail &&
-            String(u.mail).toLowerCase() === email.toLowerCase()
-    );
-    if (found) {
-        return { recipient: found, type: 'known' };
-    }
-    return { recipient, type: 'unknown' };
-}
-
-/**
- * add a recipient
- *  create tag
- *  activate delete button
- *  add recipient to hidden input
- *  return tag id
- * @param target
- * @param recipient
- * @param {string} type
- * @returns {string} id
- */
-function addRecipient(target, recipient, type) {
-    if (type !== 'known') {
-        const resolved = epResolveManualRecipientToKnown(recipient);
-        if (resolved.type === 'known') {
-            recipient = resolved.recipient;
-            type = 'known';
-        }
-    }
-
-    const formEl =
-        typeof window.__epContactsForm !== 'undefined'
-            ? window.__epContactsForm
-            : null;
-    const $scope = formEl ? $(formEl) : $(document);
-
-    let $tags_container = $('#' + target + '_tags');
-    if (!$tags_container.length && formEl && formEl.id) {
-        $tags_container = $scope.find('#' + formEl.id + '-' + target + '-tags');
-    }
-    let label = '';
-    let value = '';
-    let rawValue = '';
-    let tooltip = '';
-    let style = 'unknown';
-    let uid = null;
-
-    // recipient has been found via autocomplete
-    if (type === 'known') {
-        label = htmlEntities(recipient.fullname);
-        rawValue = recipient.fullname + ' <' + recipient.mail + '>';
-        value = htmlEntities(rawValue);
-
-        // Build tooltip securely using DOM elements
-        const $tooltipDiv1 = $('<div>').addClass('white');
-        const $strong = $('<strong>').text(recipient.fullname);
-        $tooltipDiv1.append($strong);
-        if (recipient.username) {
-            $tooltipDiv1.append(' (' + htmlEntities(recipient.username) + ')');
-        }
-
-        const $tooltipDiv2 = $('<div>').addClass('white').text(recipient.mail);
-
-        const $tooltipContainer = $('<div>')
-            .append($tooltipDiv1)
-            .append($tooltipDiv2);
-        tooltip = $tooltipContainer.html();
-
-        style = 'default';
-        uid = recipient.uid;
-
-        if ($tags_container.length) {
-            const $dup = $tags_container.find(
-                '.recipient-tag[data-uid="' + uid + '"]'
-            );
-            if ($dup.length) {
-                return $dup.attr('id');
-            }
-        }
-
-        // if sender added himself as bcc, check the checkbox
-        if (
-            !$('#copy').prop('checked') &&
-            uid == sender_uid &&
-            target === 'bcc'
-        ) {
-            $('#copy').prop('checked', true);
-        }
-    }
-    // recipient has been manually inserted (or rehydrated from hidden JSON as plain text)
-    else {
-        const rawStr = epManualRecipientToRawString(recipient);
-        const shown = epRecipientLabelWithoutRedundantChevrons(rawStr);
-        label = shown;
-        value = htmlEntities(shown === rawStr ? rawStr : shown);
-        const $tooltipDiv = $('<div>')
-            .addClass('white')
-            .text(
-                translate(
-                    "Cette adresse est inconnue et n'est peut-être pas valide."
-                )
-            );
-        tooltip = $tooltipDiv.prop('outerHTML');
-    }
-
-    let tag = getTag(label, value, uid, tooltip, style);
-
-    // Fallback for fields without tags container (e.g. disabled "to" field in modals).
-    // Write to plain input (semicolon-separated) and hidden JSON field.
-    if (!$tags_container.length) {
-        const $input = epFindRecipientTextInput($scope, formEl, target);
-        const $hidden = $scope.find('#hidden_' + target).first();
-        if ($input.length) {
-            const currentRaw = ($input.val() || '').toString();
-            const current = currentRaw.replace(/\s*;+\s*$/, '').trimEnd();
-            const toAppend = rawValue || value;
-            const next = current ? current + '; ' + toAppend : toAppend;
-            $input.val(next);
-        }
-        if ($hidden.length) {
-            const key =
-                'fallback-' +
-                target +
-                '-' +
-                (uid ? uid : Date.now().toString());
-            const recipients = $hidden.val() ? JSON.parse($hidden.val()) : [];
-            const exists =
-                uid &&
-                recipients.some(
-                    r => r && r.uid && String(r.uid) === String(uid)
-                );
-            if (!exists) {
-                recipients.push({
-                    key,
-                    value: rawValue || value,
-                    uid: uid || null,
+        $('a#modal-contributor').click(function () {
+            waitForElm('input#coAuthorsInfo').then(() => {
+                $('input#coAuthorsInfo').each(function () {
+                    // The form of these hidden inputs: other mail forms of the page have a Cc field too
+                    const coAuthor = JSON.parse(this.value);
+                    epWithContactsForm(this.closest('form'), () =>
+                        addRecipient('cc', coAuthor, 'known')
+                    );
                 });
-                $hidden.val(JSON.stringify(recipients));
-            }
-        }
-        return '';
-    }
-
-    // insert tag
-    $tags_container.append(tag);
-    $tags_container.find('.recipient-tag:last').uniqueId();
-    let id = $tags_container.find('.recipient-tag:last').attr('id');
-
-    // activate tooltip
-    activateTooltip(
-        $tags_container.find('.recipient-tag:last').find('.recipient-name')
-    );
-
-    // activate delete button
-    let $button = $tags_container
-        .find('.recipient-tag:last')
-        .find('.remove-recipient');
-    activateDeleteButton($button, target);
-
-    // add recipient to hidden input (if the form uses JSON hidden fields)
-    let $hidden = $();
-    if (formEl && formEl.id) {
-        $hidden = $scope.find('#' + formEl.id + '-hidden_' + target);
-    }
-    if (!$hidden.length) {
-        $hidden = $scope.find('input[name="hidden_' + target + '"]');
-    }
-    if (!$hidden.length) {
-        $hidden = $('#hidden_' + target);
-    }
-    if ($hidden.length) {
-        addUser($hidden, id, value, uid);
-    }
-
-    return id;
-}
-
-function activateDeleteButton($button, target) {
-    $button.on('click', function () {
-        const $tag = $(this).parent('.recipient-tag');
-        const $form = $tag.closest('form');
-        const formNode = $form.length ? $form[0] : null;
-        removeRecipient($tag);
-        const $inp = $form.length
-            ? epFindRecipientTextInput($form, formNode, target)
-            : $();
-        if ($inp.length) {
-            $inp.focus();
-        } else {
-            epFocusRecipientField(target);
-        }
-    });
-}
-
-/**
- * Extract target (cc/bcc) from tags container span id.
- */
-function epExtractTargetFromSpanId(spanId) {
-    if (!spanId) {
-        return null;
-    }
-    if (spanId.endsWith('-cc-tags') || spanId === 'cc_tags') {
-        return 'cc';
-    }
-    if (spanId.endsWith('-bcc-tags') || spanId === 'bcc_tags') {
-        return 'bcc';
-    }
-    if (spanId.endsWith('-to-tags') || spanId === 'to_tags') {
-        return 'to';
-    }
-    if (spanId === 'added_contacts_tags') {
-        return 'added_contacts';
-    }
-    // Fallback: remove _tags suffix
-    return spanId.replace('_tags', '').replace(/-tags$/, '');
-}
-
-/**
- * Find hidden input for recipients based on form and target.
- */
-function epFindHiddenInput($form, formEl, target) {
-    if (target === 'added_contacts') {
-        return $('#hidden_added_contacts');
-    }
-    if (formEl && formEl.id) {
-        const $prefixed = $form.find('#' + formEl.id + '-hidden_' + target);
-        if ($prefixed.length) {
-            return $prefixed;
-        }
-    }
-    const $inForm = $form.find('#hidden_' + target);
-    if ($inForm.length) {
-        return $inForm;
-    }
-    return $('#hidden_' + target);
-}
-
-/**
- * Remove a recipient tag, destroy tooltip, and update hidden input.
- */
-function removeRecipient($tag) {
-    if (!$tag || !$tag.length) {
-        return;
-    }
-    const $parentSpan = $tag.parent('span');
-    if (!$parentSpan.length) {
-        return;
-    }
-
-    const $mailForm = $tag.closest('form');
-    const mailFormEl = $mailForm.get(0) || null;
-    const spanId = $parentSpan.attr('id') || '';
-    const suffix = epExtractTargetFromSpanId(spanId);
-
-    if (!suffix) {
-        return;
-    }
-
-    const $recipients_hidden_input = epFindHiddenInput($mailForm, mailFormEl, suffix);
-    if (!$recipients_hidden_input.length) {
-        return;
-    }
-
-    let $copy_checkbox = $('#copy');
-
-    let recipients = JSON.parse($recipients_hidden_input.val() || '[]');
-    for (let i in recipients) {
-        if (recipients[i].key === $tag.attr('id')) {
-            recipients.splice(i, 1);
-            break;
-        }
-    }
-    $recipients_hidden_input.val(JSON.stringify(recipients));
-
-    $tag.tooltip('destroy');
-    $tag.remove();
-
-    // if user removed himself from bcc, uncheck the checkbox
-    if (
-        $copy_checkbox.prop('checked') &&
-        $tag.data('uid') == sender_uid &&
-        suffix == 'bcc'
-    ) {
-        $copy_checkbox.prop('checked', false);
-    }
-}
-
-// add recipient to recipients hidden input ($field: selector string or jQuery)
-function addUser($field, key, value, uid) {
-    uid = uid || null;
-    const $input = $field instanceof jQuery ? $field : $($field);
-    let recipients = [];
-    if ($input.val()) {
-        try {
-            recipients = JSON.parse($input.val());
-        } catch (e) {
-            recipients = [];
-        }
-    }
-    recipients.push({ key: key, value: value, uid: uid });
-
-    $input.val(JSON.stringify(recipients));
-}
-
-// generate tag (html)
-function getTag(label, value, uid, tooltip, style) {
-    tooltip = tooltip || false;
-    style = style || 'default';
-
-    let css = style === 'default' ? '' : ' ' + style;
-
-    // Create DOM elements instead of HTML strings for security
-    const $tag = $('<div>').addClass('recipient-tag' + css);
-
-    if (uid) {
-        $tag.attr('data-uid', uid);
-    }
-    $tag.attr('data-value', value);
-
-    const $nameDiv = $('<div>').addClass('recipient-name').text(label);
-    if (tooltip) {
-        $nameDiv.attr('data-toggle', 'tooltip').attr('title', tooltip);
-    }
-
-    const $removeSpan = $('<span>').addClass(
-        'grey glyphicon glyphicon-remove icon-action remove-recipient'
-    );
-
-    $tag.append($nameDiv).append($removeSpan);
-
-    return $tag;
-}
-
-// resize input
-function resizeInput(input, action) {
-    let inputY = $(input).position().top;
-    let lineHeight = 24;
-    let offsetY = action === 'add' ? lineHeight : 0;
-    let availableWidth = getAvailableWidth(input, inputY - offsetY);
-
-    // Si c'est une suppression et que l'input occupe toute la largeur de sa ligne, on teste si il y a de la place au dessus
-    if (
-        action === 'remove' &&
-        availableWidth == $(input).parent('div').width()
-    ) {
-        availableWidth = getAvailableWidth(input, inputY - lineHeight);
-    }
-
-    if (availableWidth >= parseInt($(input).css('min-width'))) {
-        $(input).css('width', availableWidth + 'px');
-    } else {
-        $(input).css('width', $(input).parent('div').width() + 'px');
-    }
-}
-
-// Calcule la place restante pour un input
-function getAvailableWidth(field, y) {
-    let availableWidth = 0;
-    let offset = 0;
-    // On parcourt tous les tags déjà insérés
-    $(field + '_tags')
-        .find('.recipient-tag')
-        .each(function () {
-            // On ne prend en compte que les span qui se situent sur la ligne désirée
-            if (
-                y ==
-                parseInt($(this).position().top) -
-                    parseInt($(this).css('padding-top'))
-            ) {
-                offset += Math.ceil(
-                    parseInt($(this).width()) +
-                        parseInt($(this).css('border-left-width')) +
-                        parseInt($(this).css('border-right-width')) +
-                        parseInt($(this).css('padding-left')) +
-                        parseInt($(this).css('padding-right')) +
-                        5
-                );
-            }
+            });
         });
-    return $(field).parent('div').width() - offset;
+    });
 }
 
 // update modal submit button callback
 function updateModalButton(step) {
-    //var original_callback = $('button#submit-modal').click;
     $modal_button.off('click');
-    if (step === 'addContacts') {
-        $modal_button.on('click', function (e) {
-            e.preventDefault();
-            addContacts();
-        });
-    } else if (step === 'send_mail') {
-        $modal_button.on('click', function (e) {
+    if (step === 'send_mail') {
+        $modal_button.on('click', function () {
             tinyMCE.triggerSave();
             let form_values = $('#send_form').serialize();
             let docId = $('#docid').val();
@@ -837,13 +814,14 @@ function updateModalButton(step) {
         });
     }
 }
+
 function waitForElm(selector) {
     return new Promise(resolve => {
         if (document.querySelector(selector)) {
             return resolve(document.querySelector(selector));
         }
 
-        const observer = new MutationObserver(mutations => {
+        const observer = new MutationObserver(() => {
             if (document.querySelector(selector)) {
                 resolve(document.querySelector(selector));
                 observer.disconnect();
@@ -855,4 +833,21 @@ function waitForElm(selector) {
             subtree: true,
         });
     });
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        addRecipient,
+        removeRecipient,
+        addUser,
+        epAnnounce,
+        epCheckAnonymity,
+        epContextDocId,
+        epInitRecipientFields,
+        epNormalizeRecipient,
+        epRemoveRecipientByEmail,
+        epTagsContainer,
+        epWithContactsForm,
+        initPaperModalRecipientTagsFromHidden,
+    };
 }
