@@ -22,16 +22,14 @@ use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 #[AsCommand(name: 'enrichment:funding', description: 'Enrich funding data from OpenAIRE Research Graph and HAL')]
 class GetFundingDataCommand extends Command
 {
-    /** Episciences_Paper::get() cache entries of the exports carrying fundings */
-    private const FUNDING_EXPORT_CACHE_METHODS = ['getCrossref', 'getOpenaire', 'getDatacite'];
-
     protected function configure(): void
     {
         $this
             ->addOption('doi', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by DOI')
             ->addOption('paperid', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by paper ID')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
-            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Bypass cache and fetch fresh data')
+            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Bypass cache and fetch fresh data (OpenAIRE responses and HAL TEI)')
+            ->addOption('refresh-all', null, InputOption::VALUE_NONE, 'Refresh PAPERS.DOCUMENT and the cached exports of every processed paper, even when its fundings did not change')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code); ignored when --doi or --paperid is used');
     }
 
@@ -40,6 +38,7 @@ class GetFundingDataCommand extends Command
         $io      = new SymfonyStyle($input, $output);
         $dryRun  = (bool) $input->getOption('dry-run');
         $noCache = (bool) $input->getOption('no-cache');
+        $refreshAll = (bool) $input->getOption('refresh-all');
         $rvcode  = $input->getOption('rvcode');
 
         $io->title('Funding data enrichment');
@@ -164,6 +163,10 @@ class GetFundingDataCommand extends Command
                 $trimIdentifier = Episciences_Paper::stripRefusedSuffix(trim($value['IDENTIFIER']));
                 $version        = (int) $value['VERSION']; // cast: function expects int, DB returns string
 
+                if ($noCache) {
+                    Episciences_Hal_TeiCacheManager::delete($trimIdentifier, $version);
+                }
+
                 if (!$dryRun) {
                     try {
                         $fundingRowsChanged += Episciences_Paper_ProjectsManager::enrichHalFundingFromTei($paperId, $trimIdentifier, $version);
@@ -175,7 +178,7 @@ class GetFundingDataCommand extends Command
                 }
             }
 
-            if (!$dryRun && $fundingRowsChanged > 0) {
+            if (!$dryRun && ($fundingRowsChanged > 0 || $refreshAll)) {
                 $this->refreshFundingConsumers($paperId, $docId, $logger);
             }
 
@@ -213,11 +216,8 @@ class GetFundingDataCommand extends Command
             $logger->error("DOCUMENT update failed for paper {$paperId} (docid {$docId}): " . get_class($e) . ': ' . $e->getMessage());
         }
 
-        $metadataCache = new FilesystemAdapter(Episciences_Paper::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
-        $metadataCache->deleteItems(array_map(
-            static fn(string $method): string => $paperId . '-' . $method,
-            self::FUNDING_EXPORT_CACHE_METHODS
-        ));
+        // already done when the funding rows were written, needed for --refresh-all
+        Episciences_Paper_Projects_Repository::invalidateFundingExportCaches($paperId);
     }
 
     private function bootstrap(): void

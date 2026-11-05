@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 /**
  * DB read/write layer for the paper_projects table.
@@ -13,6 +14,9 @@ class Episciences_Paper_Projects_Repository
 {
     private const JSON_DECODE_FLAGS = JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
     private const JSON_MAX_DEPTH    = 512;
+
+    /** Episciences_Paper::get() cache entries of the exports carrying fundings */
+    private const FUNDING_EXPORT_CACHE_METHODS = ['getCrossref', 'getOpenaire', 'getDatacite'];
 
     private static ?CacheItemPoolInterface $_cachePool = null;
 
@@ -183,6 +187,21 @@ class Episciences_Paper_Projects_Repository
         if ($sourceId !== null) {
             $cachePool->deleteItem(self::paperSourceCacheKey($paperId, $sourceId));
         }
+
+        self::invalidateFundingExportCaches($paperId);
+    }
+
+    /**
+     * Drop the Episciences_Paper::get() cache entries of the exports carrying fundings,
+     * so that every funding writer refreshes them, not only the funding enrichment command.
+     */
+    public static function invalidateFundingExportCaches(int $paperId): void
+    {
+        (new FilesystemAdapter(Episciences_Paper::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA))
+            ->deleteItems(array_map(
+                static fn(string $method): string => $paperId . '-' . $method,
+                self::FUNDING_EXPORT_CACHE_METHODS
+            ));
     }
 
     private static function paperCacheKey(int $paperId): string
