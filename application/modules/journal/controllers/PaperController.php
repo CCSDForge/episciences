@@ -252,6 +252,9 @@ class PaperController extends PaperDefaultController
 
         $this->view->isAllowedToSeeNoPublicDetails = $isAllowedToSeeNoPublicDetails;
 
+        // Computed once: for a non-owner, each call queries the co-authors (not for an anonymous visitor)
+        $isOwnerOrCoAuthor = Episciences_Auth::isLogged() && $paper->isOwnerOrCoAuthor();
+
 
         $isAllowedToAnswerNewVersion =
             Episciences_Auth::isLogged() &&
@@ -262,7 +265,7 @@ class PaperController extends PaperDefaultController
 
         // Same rule as the temporary version form and its save (see isAllowedToWriteTemporaryVersion())
         $this->view->isAllowedToWriteTemporaryVersion = Episciences_Auth::isLogged() &&
-            DocumentFilePolicy::isTemporaryVersionFileWritable($paper->isOwnerOrCoAuthor(), $isConflictDetected, $commonTest);
+            DocumentFilePolicy::isTemporaryVersionFileWritable($paper->isOwner(), $isConflictDetected, $commonTest);
 
 
         // paper password bloc
@@ -299,6 +302,8 @@ class PaperController extends PaperDefaultController
         $this->savePaperPassword($request, $paper, $displayPaperPasswordBloc);
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
+
+        $this->view->isAllowedToAnswerRevisionRequest = static::isAllowedToAnswerRevisionRequest($paper, $isConflictDetected);
 
         // reviewers comments **************************************************
         $comments = Episciences_CommentsManager::fetchReviewerAuthorCommentsByDocId($paper->getDocid());
@@ -391,7 +396,7 @@ class PaperController extends PaperDefaultController
 
         // Copy-editing is between the author and the editorial staff: reviewers do not see it (see DocumentFilePolicy)
         $isAllowedToSeeCopyEditing = Episciences_Auth::isLogged() &&
-            ($paper->isOwnerOrCoAuthor() || (!$isConflictDetected && $commonTest));
+            ($isOwnerOrCoAuthor || (!$isConflictDetected && $commonTest));
 
         $copyEditingDemands = $isAllowedToSeeCopyEditing ?
             Episciences_CommentsManager::getList($paper->getDocid(), $copyEditingSettings) :
@@ -1156,10 +1161,7 @@ class PaperController extends PaperDefaultController
 
         $paper = $papersManager::get($oComment->getDocid(), false);
 
-        // The request form discloses the revision request: contributor or staff only.
-        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
-            $this->getResponse()->setHttpResponseCode(403);
-            $this->_helper->viewRenderer->setNoRender();
+        if ($this->refuseUnlessAllowedToAnswer($paper)) {
             return;
         }
 
@@ -1200,8 +1202,17 @@ class PaperController extends PaperDefaultController
         // get paper object
         $paper = Episciences_PapersManager::get($docId, false);
 
-        // Answers are recorded on the contributor's paper: contributor or staff only.
-        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
+        if ($this->refuseUnlessAllowedToAnswer($paper)) {
+            return;
+        }
+
+        $parentId = $request->getQuery('pcid');
+
+        // get revision request: it must be one of the paper's
+        $oComment = new Episciences_Comment;
+        $oComment->find($parentId);
+
+        if (!self::isRequestOfPaper($oComment, $paper, Episciences_CommentsManager::TYPE_REVISION_REQUEST)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
@@ -1227,12 +1238,6 @@ class PaperController extends PaperDefaultController
                 )
             )
         ) {
-            $parentId = $request->getQuery('pcid');
-
-            // get revision request
-            $oComment = new Episciences_Comment;
-            $oComment->find($parentId);
-
             // save author's answer to revision request
             $oAnswer = new Episciences_Comment();
             $oAnswer->setFilePath(Episciences_PapersManager::buildDocumentPath($docId) . '/comments/');
@@ -1340,11 +1345,7 @@ class PaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($oComment->getDocid(), false);
 
-        // The form discloses the revision request: contributor or staff only, among them the users allowed to
-        // record the temporary version (see isAllowedToWriteTemporaryVersion()).
-        if (!$paper || !$this->isPaperContributorOrManager($paper) || !$this->isAllowedToWriteTemporaryVersion($paper)) {
-            $this->getResponse()->setHttpResponseCode(403);
-            $this->_helper->viewRenderer->setNoRender();
+        if ($this->refuseUnlessAllowedToAnswer($paper, true)) {
             return;
         }
 
@@ -1389,9 +1390,16 @@ class PaperController extends PaperDefaultController
         $docId = $request->getQuery(self::DOC_ID_STR);
         $paper = Episciences_PapersManager::get($docId, false);
 
-        // Temporary versions are recorded on the contributor's paper: contributor or staff only, under the rule of
-        // the files they are uploaded with (see isAllowedToWriteTemporaryVersion()).
-        if (!$paper || !$this->isPaperContributorOrManager($paper) || !$this->isAllowedToWriteTemporaryVersion($paper)) {
+        if ($this->refuseUnlessAllowedToAnswer($paper, true)) {
+            return;
+        }
+
+        // revision request detail: it must be one of the paper's
+        $requestId = $request->getQuery('pcid');
+        $requestComment = new Episciences_Comment;
+        $requestComment->find($requestId);
+
+        if (!self::isRequestOfPaper($requestComment, $paper, Episciences_CommentsManager::TYPE_REVISION_REQUEST)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
@@ -1412,10 +1420,6 @@ class PaperController extends PaperDefaultController
         $reviewers = $paper->getReviewers(null, true);
         $editors = $paper->getEditors(true, true);
         $coAuthors = $paper->getCoAuthors();
-        // revision request detail
-        $requestId = $request->getQuery('pcid');
-        $requestComment = new Episciences_Comment;
-        $requestComment->find($requestId);
 
         $isAlreadyAccepted = $requestComment->getOption('isAlreadyAccepted');
         $reassignReviewers = $requestComment->getOption('reassign_reviewers');
@@ -1845,10 +1849,7 @@ class PaperController extends PaperDefaultController
         // fetch paper
         $paper = Episciences_PapersManager::get($oComment->getDocid());
 
-        // The form discloses the revision request: contributor or staff only.
-        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
-            $this->getResponse()->setHttpResponseCode(403);
-            $this->_helper->viewRenderer->setNoRender();
+        if ($this->refuseUnlessAllowedToAnswer($paper)) {
             return;
         }
 
@@ -1915,8 +1916,31 @@ class PaperController extends PaperDefaultController
 
         $paper = $this->loadPaper($request);
 
-        // New versions are recorded on the contributor's paper: contributor or staff only.
-        if (!$this->isPaperContributorOrManager($paper)) {
+        if (!$paper) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        $requestComment = $this->loadRequestComment($request);
+
+        // The rule depends on the type of the request: it must be one of the paper's
+        if (!self::isRequestOfPaper($requestComment, $paper)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        // The copy-editing requests for the final version are answered with this save too: they are not part of the
+        // "Answer this request" menu and keep the rule of the contributor endpoints. A revision request is answered
+        // under the rule of the button. Any other comment is not answered with a new version.
+        $isAllowed = match (true) {
+            in_array($requestComment->getType(), Episciences_CommentsManager::$_copyEditingFinalVersionRequest, true)
+                => $this->isPaperContributorOrManager($paper),
+            $requestComment->getType() === Episciences_CommentsManager::TYPE_REVISION_REQUEST
+                => static::isAllowedToAnswerRevisionRequest($paper),
+            default => false,
+        };
+
+        if (!$isAllowed) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
@@ -1987,7 +2011,6 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        $requestComment = $this->loadRequestComment($request);
         $reassignReviewers = $requestComment->getOption('reassign_reviewers');
         $isAlreadyAccepted = $requestComment->getOption('isAlreadyAccepted');
         $reviewers = $paper->getReviewers(null, true);
@@ -2037,19 +2060,85 @@ class PaperController extends PaperDefaultController
 
     /**
      * @param Zend_Controller_Request_Http $request
-     * @return Episciences_Paper
+     * @return Episciences_Paper|null null when the paper is not found
      * @throws Zend_Db_Statement_Exception
      */
 
-    private function loadPaper(Zend_Controller_Request_Http $request): Episciences_Paper
+    private function loadPaper(Zend_Controller_Request_Http $request): ?Episciences_Paper
     {
         $docId = $request->getQuery(self::DOC_ID_STR);
 
         $paper = Episciences_PapersManager::get($docId, false);
+
+        if (!$paper) {
+            return null;
+        }
+
         $paper->loadOtherVolumes();
         $paper->loadDataDescriptors();
 
         return $paper;
+    }
+
+    /**
+     * The answer to a revision request ("Answer this request" button and the endpoints of its menu) is reserved to
+     * the paper's owner and to the secretaries (Episciences_Auth::isSecretary(): with the administrators, chief
+     * editors and root), for a paper of the current journal. A secretary in conflict of interest on the paper (see
+     * isConflictDetected()) does not answer, as the button is hidden from them. The editors, guest editors, copy
+     * editors and co-authors do not answer.
+     *
+     * @param bool|null $isConflictDetected the conflict of interest already computed by the caller (see
+     *                                      isConflictDetected()), null to compute it
+     */
+    protected static function isAllowedToAnswerRevisionRequest(Episciences_Paper $paper, ?bool $isConflictDetected = null): bool
+    {
+        if (!Episciences_Auth::isLogged() || $paper->getRvid() !== RVID) {
+            return false;
+        }
+
+        if ($paper->isOwner()) {
+            return true;
+        }
+
+        return Episciences_Auth::isSecretary() && !($isConflictDetected ?? static::isConflictDetected($paper));
+    }
+
+    /**
+     * Guard of the endpoints of the "Answer this request" menu (forms and saves): they apply the rule of the button
+     * (see isAllowedToAnswerRevisionRequest()), hiding the button is not enough. Everyone else gets a 403, e.g. an
+     * editor, a guest editor, a copy editor, a co-author or a secretary in conflict of interest who opens the URL
+     * directly.
+     *
+     * @param Episciences_Paper|false|null $paper the paper, false or null when it is not found
+     * @param bool $withTemporaryVersionFiles the answer uploads the files of a temporary version: the user must also
+     *                                        be allowed to (see isAllowedToWriteTemporaryVersion())
+     * @return bool true when refused: the 403 is set and nothing is rendered
+     */
+    private function refuseUnlessAllowedToAnswer(Episciences_Paper|false|null $paper, bool $withTemporaryVersionFiles = false): bool
+    {
+        if (
+            $paper &&
+            static::isAllowedToAnswerRevisionRequest($paper) &&
+            (!$withTemporaryVersionFiles || $this->isAllowedToWriteTemporaryVersion($paper))
+        ) {
+            return false;
+        }
+
+        $this->getResponse()->setHttpResponseCode(403);
+        $this->_helper->viewRenderer->setNoRender();
+
+        return true;
+    }
+
+    /**
+     * The request answered (query parameter "pcid") must be one of the paper's and, when $types is given, of one of
+     * these types: the answer is attached to it and the save reads its options. The "Answer this request" menu
+     * always sends the revision request itself (the answers are its replies). A request not found keeps the DOCID 0.
+     */
+    private static function isRequestOfPaper(Episciences_Comment $request, Episciences_Paper $paper, int ...$types): bool
+    {
+        return $request->getDocid() === (int)$paper->getDocid() &&
+            ($types === [] || in_array($request->getType(), $types, true));
     }
 
     /**
@@ -2066,12 +2155,13 @@ class PaperController extends PaperDefaultController
     /**
      * A temporary version answers a revision request with files, uploaded under the rule of the temporary version
      * files (see DocumentFilePolicy::isTemporaryVersionFileWritable() and FileController::uploadAction()): the
-     * author and co-authors, and the editorial staff of the paper unless they are in conflict of interest.
-     * Without this, a user allowed to record the version could not upload its files.
+     * paper's owner, and the editorial staff of the paper unless they are in conflict of interest. Without this, a
+     * user allowed to record the version could not upload its files. The co-authors do not record it: they are
+     * informed of the paper and read it, without acting on it.
      */
     protected function isAllowedToWriteTemporaryVersion(Episciences_Paper $paper): bool
     {
-        if ($paper->isOwnerOrCoAuthor()) {
+        if ($paper->isOwner()) {
             return true;
         }
 
@@ -4364,10 +4454,7 @@ class PaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($oComment->getDocid(), false);
 
-        // The request form discloses the comment: contributor or staff only.
-        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
-            $this->getResponse()->setHttpResponseCode(403);
-            $this->_helper->viewRenderer->setNoRender();
+        if ($this->refuseUnlessAllowedToAnswer($paper)) {
             return;
         }
 
@@ -4679,7 +4766,7 @@ class PaperController extends PaperDefaultController
         }
 
         $targetFile  = Episciences_Paper_FilesManager::findById($currentMasterFileId);
-        
+
         if (!$targetFile || $targetFile->getDocId() !== $paper->getDocid()) {
             $this->jsonEncodedResult($result);
             return;
