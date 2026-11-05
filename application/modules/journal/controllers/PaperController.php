@@ -4316,7 +4316,8 @@ class PaperController extends PaperDefaultController
                     return;
                 }
 
-                $result = Episciences_PapersManager::updateRecordData($paper, $failedSteps);
+                // asked for by the user: the HAL TEI is read again, not taken from the cache
+                $result = Episciences_PapersManager::updateRecordData($paper, $failedSteps, true);
 
                 if ($failedSteps !== []) {
                     // The record is updated, but not all of its data: told, to try again

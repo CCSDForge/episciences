@@ -198,7 +198,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
 
                     try {
                         $failedSteps = [];
-                        $affectedRows = Episciences_PapersManager::updateRecordData($currentPaper, $failedSteps);
+                        $affectedRows = Episciences_PapersManager::updateRecordData($currentPaper, $failedSteps, refreshJsonDocument: false); // DOCUMENT rebuilt below
                         $logTrace(sprintf('Update metadata... > Affected rows: %s', $affectedRows));
                         if ($failedSteps !== []) {
                             // Each failure is in the PHP error log, with the step and the exception
