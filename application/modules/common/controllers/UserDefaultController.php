@@ -974,9 +974,13 @@ class UserDefaultController extends Zend_Controller_Action
         $request = $this->getRequest();
         $token = $request->getParam('token');
 
-        $userTokens = new Ccsd_User_Models_UserTokens(['TOKEN' => $request->getParam('token')]);
+        // a missing or malformed token (truncated link, crawler) is refused like an unknown one,
+        // instead of raising an application error when the token model rejects it
+        $isWellFormed = is_string($token) && strlen($token) === Ccsd_User_Models_UserTokens::TOKEN_STRING_LENGTH;
+
+        $userTokens = new Ccsd_User_Models_UserTokens();
         $userTokensMapper = new Ccsd_User_Models_UserTokensMapper();
-        $tokenData = $userTokensMapper->findByToken($token, $userTokens);
+        $tokenData = $isWellFormed ? $userTokensMapper->findByToken($token, $userTokens) : null;
 
         // le client essaie d'utiliser un jeton prévu pour autre chose que la validation de compte,
         // ou il n'y a pas de jeton
