@@ -3,7 +3,6 @@
 # Checked by .github/scripts/check-source-reading-tests.php: no file may be added to this list.
 # Remove a file once it is converted to tests that run the code.
 
-tests/unit/library/Episciences/Episciences_PapersManager_CcBccTest.php
 tests/unit/library/Episciences/Episciences_ReviewersManagerTest.php
 tests/unit/library/Episciences/Episciences_ReviewerTest.php
 tests/unit/library/Episciences/Episciences_ReviewTest.php

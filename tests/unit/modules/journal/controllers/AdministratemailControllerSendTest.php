@@ -1,0 +1,183 @@
+<?php
+
+declare(strict_types=1);
+
+namespace unit\modules\journal\controllers;
+
+use AdministratemailController;
+use Episciences\Mail\RecipientListValidator;
+use Episciences_Acl;
+use unit\modules\ControllerTestCase;
+
+/**
+ * Mail sent from the modal of the paper page (AdministratemailController::sendAction(), in_modal):
+ * a refused mail is not answered as a success, so that the modal keeps the form as typed.
+ */
+final class AdministratemailControllerSendTest extends ControllerTestCase
+{
+    public static function setUpBeforeClass(): void
+    {
+        self::loadController('journal', 'AdministratemailController');
+    }
+
+    /**
+     * @param array<string, string> $fields
+     * @return array<string, string>
+     */
+    private static function modalPost(array $fields): array
+    {
+        return array_merge([
+            'in_modal' => '1',
+            'submit' => '1',
+            'subject' => 'Hello',
+            'content' => '<p>Body</p>',
+            'hidden_to' => '[]',
+            'hidden_cc' => '[]',
+            'hidden_bcc' => '[]',
+        ], $fields);
+    }
+
+    public function testMailWithoutRecipientIsRefusedWithAnErrorStatus(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->xhrPostRequest(self::modalPost([]), true)
+        );
+
+        self::assertSame(422, $result->statusCode());
+        self::assertStringContainsString("Votre message n'a pas pu être envoyé :", $result->body());
+        self::assertStringContainsString('Veuillez saisir au moins un destinataire', $result->body());
+    }
+
+    public function testTooManyRecipientsAreRefusedWithAnErrorStatus(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+        $bcc = [];
+        for ($i = 0; $i <= RecipientListValidator::MAX_TOTAL; $i++) {
+            $bcc[] = ['key' => 'k' . $i, 'value' => 'user' . $i . '@example.org', 'uid' => null];
+        }
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->xhrPostRequest(self::modalPost(['hidden_bcc' => (string)json_encode($bcc)]), true)
+        );
+
+        self::assertSame(422, $result->statusCode());
+        self::assertStringContainsString('Trop de destinataires (100 au maximum).', $result->body());
+    }
+
+    public function testMailAboutAPaperTheSenderCannotManageIsRefused(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_COPY_EDITOR]);
+        $this->givenJournal();
+        // The document belongs to the journal, but cannot be loaded for the sender: no access to the paper
+        $this->db->respondTo('/SELECT `PAPERS`\.`PAPERID` FROM `PAPERS` WHERE \(DOCID = 12\)/', [['PAPERID' => 90]]);
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->xhrPostRequest(self::modalPost([
+                'docid' => '12',
+                'hidden_to' => (string)json_encode([['key' => 'a', 'value' => 'author@example.org', 'uid' => null]]),
+                'hidden_cc' => (string)json_encode([['key' => 'b', 'value' => 'candidate@example.org', 'uid' => null]]),
+            ]), true)
+        );
+
+        // Not sent: it would be written into the history of the paper
+        self::assertSame(403, $result->statusCode());
+        self::assertStringContainsString("Vous n'avez pas accès à cet article.", $result->body());
+        self::assertStringNotContainsString("'reviewer'", implode("\n", $this->db->selects()), 'the answer must not depend on the reviewers of the paper');
+    }
+
+    public function testRecipientOutsideTheSearchScopeIsNotPrefilled(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_COPY_EDITOR]);
+        $this->givenJournal();
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->getRequest([], ['recipient' => '42'])
+        );
+
+        self::assertNull($result->view->js_recipient ?? null);
+        $lookup = implode("\n", array_filter($this->db->selects(), static fn(string $sql): bool => str_contains($sql, 'u.UID = 42')));
+        self::assertStringContainsString("ROLEID IN ('chief_editor', 'secretary', 'editor', 'guest_editor', 'copyeditor', 'webmaster')", $lookup, 'the account is looked up within the staff only');
+    }
+
+    public function testUserInvitedWithoutAccountIsOnlyPrefilledAsAReviewerOfThePaper(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+        $this->givenJournal();
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->getRequest([], ['recipient' => '42', 'tmp' => '1'])
+        );
+
+        self::assertNull($result->view->js_recipient ?? null);
+        self::assertStringNotContainsString('USER_TMP', implode("\n", $this->db->selects()), 'no paper: the invitation is not looked up');
+    }
+
+    public function testRecipientFoundByTheSearchIsPrefilled(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+        $this->givenJournal();
+        $this->db->respondTo('/u\.UID = 42/', [
+            ['UID' => 42, 'FIRSTNAME' => 'Sam', 'LASTNAME' => 'Staff', 'USERNAME' => 'sstaff', 'EMAIL' => 'sam@example.org', 'ROLES' => 'editor'],
+        ]);
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->getRequest([], ['recipient' => '42'])
+        );
+
+        $recipient = json_decode((string)($result->view->js_recipient ?? 'null'), true);
+        self::assertSame(42, $recipient['uid'] ?? null);
+        self::assertSame('sam@example.org', $recipient['mail'] ?? null);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function malformedDocIds(): array
+    {
+        return [
+            'trailing text' => ['12abc'],
+            'decimal' => ['12.5'],
+            'exponent' => ['1e3'],
+            'leading space' => [' 12'],
+            'zero' => ['0'],
+            'negative' => ['-12'],
+        ];
+    }
+
+    /**
+     * @dataProvider malformedDocIds
+     */
+    public function testMalformedPaperIsRefusedWithoutLoadingAnyPaper(string $docId): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+        $this->givenJournal();
+
+        $result = $this->dispatch(
+            AdministratemailController::class,
+            'send',
+            $this->xhrPostRequest(self::modalPost([
+                'docid' => $docId,
+                'hidden_to' => (string)json_encode([['key' => 'a', 'value' => 'someone@example.org', 'uid' => null]]),
+            ]), true)
+        );
+
+        self::assertSame(403, $result->statusCode());
+        self::assertStringContainsString("Vous n'avez pas accès à cet article.", $result->body());
+        self::assertStringNotContainsString('PAPERS', implode("\n", $this->db->selects()), 'no paper is loaded for a malformed id');
+        self::assertSame([], $this->db->inserts(), 'nothing is sent nor logged');
+    }
+}

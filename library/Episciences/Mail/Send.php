@@ -1,5 +1,8 @@
 <?php
 
+use Episciences\Mail\RecipientFieldDecorator;
+use Episciences\Mail\RecipientSuggestions;
+
 class Episciences_Mail_Send
 {
     public const ENCODING_TYPE = 'UTF-8';
@@ -32,8 +35,6 @@ class Episciences_Mail_Send
      */
     public static function getForm($prefix = null, bool $button_enabled = true, bool $to_enabled = true, ?int $docId = 0): Ccsd_Form
     {
-        $translator = Zend_Registry::get('Zend_Translate');
-
         $form = new Ccsd_Form;
         $form->setAction('/administratemail/send');
         $form->setAttrib('id', 'send_form');
@@ -66,8 +67,6 @@ class Episciences_Mail_Send
             'placeholder' => RVCODE . '@' . DOMAIN,
             'value' => Episciences_Auth::getScreenName() . ' <' . Episciences_Auth::getEmail() . '>'));
 
-        $title = $translator->translate('Ajouter des destinataires');
-
         // to
         $to_element = self::getElementName('to', $prefix);
 
@@ -84,15 +83,9 @@ class Episciences_Mail_Send
 
         } else {
 
-            $options = [
-                'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=to">' . $translator->translate('À') . '</a>',
-                'class' => 'autocomplete'
+            $form->addElement('text', $to_element);
 
-            ];
-
-            $form->addElement('text', $to_element, $options);
-
-            self::decorate($form->getElement($to_element), 'to');
+            self::decorate($form->getElement($to_element), 'to', $prefix);
 
         }
 
@@ -107,39 +100,23 @@ class Episciences_Mail_Send
                 /** @var Episciences_User $coAuthor */
                 $form->addElement('hidden', 'coauthorsInfo-' . $coAuthor->getUid(), [
                     'id' => 'coAuthorsInfo',
-                    'value' => Zend_Json::encode([
-                        'uid' => $coAuthor->getUid(),
-                        'username' => $coAuthor->getUsername(),
-                        'lastname' => $coAuthor->getLastname(),
-                        'fullname' => $coAuthor->getFullName(),
-                        'screen_name' => $coAuthor->getScreenName(),
-                        'mail' => $coAuthor->getEmail(),
-                        'label' => $coAuthor->getFullName() . ' <' . $coAuthor->getEmail() . '>',
-                        'htmlLabel' => "<div>" . htmlspecialchars($coAuthor->getFullName(), ENT_QUOTES, 'UTF-8') . "</div><div class=\"grey\">" . htmlspecialchars($coAuthor->getEmail(), ENT_QUOTES, 'UTF-8') . "</div>"
-                    ])
+                    'value' => Zend_Json::encode(RecipientSuggestions::fromUser($coAuthor) + ['paperRole' => Episciences_Acl::ROLE_CO_AUTHOR])
                 ]);
             }
         }
         // cc
         $cc_element = self::getElementName('cc', $prefix);
-        $form->addElement('text', $cc_element, [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
-            'class' => 'autocomplete'
-        ]);
+        $form->addElement('text', $cc_element);
 
-
-        self::decorate($form->getElement($cc_element), 'cc');
+        self::decorate($form->getElement($cc_element), 'cc', $prefix);
 
         $form->addElement('hidden', self::getElementName('hidden_cc', $prefix));
 
         // bcc
         $bcc_element = self::getElementName('bcc', $prefix);
-        $form->addElement('text', $bcc_element, [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
-            'class' => 'autocomplete'
-        ]);
+        $form->addElement('text', $bcc_element);
 
-        self::decorate($form->getElement($bcc_element), 'bcc');
+        self::decorate($form->getElement($bcc_element), 'bcc', $prefix);
 
         $form->addElement('hidden', self::getElementName('hidden_bcc', $prefix));
 
@@ -327,25 +304,10 @@ class Episciences_Mail_Send
     }
 
     /**
-     * @param Zend_Form_Element $element
-     * @param string $id
-     * @return Zend_Form_Element
+     * Recipients list, search and contacts picker of a recipient field (to, cc, bcc)
      */
-    private static function decorate(Zend_Form_Element $element, string $id): Zend_Form_Element
+    private static function decorate(Zend_Form_Element $element, string $target, ?string $prefix): Zend_Form_Element
     {
-
-        $decorators = $element->getDecorators();
-
-        try {
-            $element->clearDecorators()
-                ->addDecorator(['openDiv' => 'HtmlTag'], ['tag' => 'span', 'id' => $id . '_tags', 'placement' => 'APPEND', 'openOnly' => true])
-                ->addDecorator(['closeDiv' => 'HtmlTag'], ['tag' => 'span', 'placement' => 'APPEND', 'closeOnly' => true])
-                ->addDecorators($decorators);
-        } catch (Zend_Form_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
-        return $element;
-
+        return RecipientFieldDecorator::apply($element, $target, $target . '_tags', self::getElementName('hidden_' . $target, $prefix));
     }
 }

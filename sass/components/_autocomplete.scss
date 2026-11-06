@@ -31,17 +31,6 @@
   font-style: italic;
 }
 
-// htmlLabel spans: stack name and email on separate lines without block-in-inline issues
-.ui-autocomplete .ui-menu-item .ep-ac-name,
-.ui-autocomplete .ui-menu-item .ep-ac-email {
-  display: block;
-}
-
-.ui-autocomplete .ui-menu-item .ep-ac-email {
-  font-size: 10px;
-  color: #666;
-}
-
 input.ui-autocomplete-input {
   margin-bottom: 0;
 }

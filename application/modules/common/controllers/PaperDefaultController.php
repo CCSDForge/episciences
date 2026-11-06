@@ -1,6 +1,8 @@
 <?php
 
 use Episciences\AppRegistry;
+use Episciences\Mail\RecipientListValidator;
+use Episciences\Mail\RecipientSearchService;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
 use Episciences\Trait\Tools;
@@ -164,6 +166,13 @@ class PaperDefaultController extends DefaultController
         // Other recipients (plain cc/bcc fields and/or JSON hiddens from tag UI in paper status modals)
         $cc = $this->extractModalRecipientEmails($data, 'cc');
         $bcc = $this->extractModalRecipientEmails($data, 'bcc');
+
+        if ($this->areOtherRecipientsRefused($submitter, $paper, $cc, $bcc)) {
+            // The form refuses these recipients before sending: the main recipient is still notified, alone
+            $cc = [];
+            $bcc = [];
+        }
+
         $this->addOtherRecipients($mail, $cc, $bcc);
 
         if (!$mail->writeMail()) {
@@ -181,6 +190,48 @@ class PaperDefaultController extends DefaultController
             Episciences_Paper_Logger::CODE_MAIL_SENT,
             Episciences_Auth::getUid(),
             ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
+    }
+
+    /**
+     * Same checks as the mailing form (see RecipientListValidator): number of recipients, and no reviewer of the
+     * paper visible together with one of its authors. Invalid addresses are not checked here: they are skipped.
+     *
+     * @param list<string> $cc
+     * @param list<string> $bcc
+     */
+    protected function areOtherRecipientsRefused(Episciences_User $to, Episciences_Paper $paper, array $cc, array $bcc): bool
+    {
+        if ($cc === [] && $bcc === []) {
+            return false;
+        }
+
+        $toJson = static fn(array $emails): string => json_encode(array_map(
+            static fn(string $email, int $index): array => ['key' => (string)$index, 'value' => $email, 'uid' => null],
+            $emails,
+            array_keys($emails)
+        ), JSON_THROW_ON_ERROR);
+        $validator = new Zend_Validate_EmailAddress();
+        $valid = static fn(array $emails): array => array_values(array_filter(
+            array_map(static fn(string $email): string => RecipientListValidator::emailOf($email), $emails),
+            static fn(string $email): bool => $validator->isValid($email)
+        ));
+
+        $result = (new RecipientListValidator(new RecipientSearchService(Zend_Db_Table_Abstract::getDefaultAdapter()), (int)$paper->getRvid()))
+            ->validate([
+                'hidden_to' => $toJson($valid([(string)$to->getEmail()])),
+                'hidden_cc' => $toJson($valid($cc)),
+                'hidden_bcc' => $toJson($valid($bcc)),
+            ], false, (int)$paper->getPaperid());
+
+        if ($result['isDetectedErrors']) {
+            AppRegistry::getMonoLogger()?->warning(sprintf(
+                'SEND_MAIL_FROM_MODAL_RECIPIENTS_REFUSED_DOCID_%s: %s',
+                $paper->getDocid(),
+                implode(' ', array_column($result['errors'], 'message'))
+            ));
+        }
+
+        return $result['isDetectedErrors'];
     }
 
     /**
