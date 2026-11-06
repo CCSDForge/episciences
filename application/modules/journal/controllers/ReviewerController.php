@@ -73,7 +73,15 @@ class ReviewerController extends PaperDefaultController
         $assignmentId = $invitation->getAid();
         $assignment = Episciences_User_AssignmentsManager::findById($assignmentId);
 
-        if (!$assignment) {
+        // an invitation of another journal is reported as missing, without telling that it exists elsewhere
+        if (!$assignment || (int)$assignment->getRvid() !== (int)RVID) {
+            $this->view->errors = array("Cette invitation n'existe pas !");
+            return;
+        }
+
+        $paper = Episciences_PapersManager::get($assignment->getItemid());
+
+        if (!$paper) {
             $this->view->errors = array("Cette invitation n'existe pas !");
             return;
         }
@@ -129,7 +137,6 @@ class ReviewerController extends PaperDefaultController
             $this->view->jQuery()->addJavascriptFile("/js/reviewer/invitation.js");
         }
 
-        $paper = Episciences_PapersManager::get($assignment->getItemid());
         $checkIsAlreadyInvited = $this->checkIsAlreadyInvited($paper);
         $isAlreadyInvited = $checkIsAlreadyInvited['isAlreadyInvited'] ?? false;
 
