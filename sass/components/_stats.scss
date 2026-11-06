@@ -581,6 +581,12 @@
     }
   }
 
+  // the export of the figures: alone, at the right as the export of the charts, below the floating column
+  .stat-figures-data {
+    clear: both;
+    justify-content: flex-end;
+  }
+
   .fa-download {
     margin-right: 2px;
   }
