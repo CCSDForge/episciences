@@ -195,27 +195,48 @@ class Episciences_QueueMessageTest extends TestCase
     }
 
     // =========================================================================
-    // Helpers
+    // Message built with some fields only (Episciences_Paper::postPaperStatus())
     // =========================================================================
 
     /**
-     * Build a QueueMessage with private uninitialized properties (id, created_at,
-     * updated_at) set to null via reflection so toArray() can be called safely.
+     * Built as Episciences_Paper::postPaperStatus() does, without a timeout: reading the fields it did not set
+     * used to fail ("Typed property ... must not be accessed before initialization") and stopped the submission
      */
+    public function testFieldsNotSetAreNull(): void
+    {
+        $msg = new QueueMessage([
+            'rvcode' => 'epijinfo',
+            'message' => ['docid' => 1, 'status' => 0],
+            'type' => QueueMessageManager::TYPE_STATUS_CHANGED,
+        ]);
+
+        self::assertNull($msg->getTimeout());
+        self::assertNull($msg->getId());
+        self::assertNull($msg->getProcessed());
+        self::assertNull($msg->getCreatedAt());
+        self::assertNull($msg->getUpdatedAt());
+        self::assertSame([
+            'id' => null,
+            'rvcode' => 'epijinfo',
+            'message' => ['docid' => 1, 'status' => 0],
+            'timeout' => null,
+            'created_at' => null,
+            'processed' => null,
+            'updated_at' => null,
+        ], $msg->toArray());
+    }
+
+    public function testTypeIsNullUntilSet(): void
+    {
+        self::assertNull((new QueueMessage())->getType());
+    }
+
+    // =========================================================================
+    // Helpers
+    // =========================================================================
+
     private function buildInitializedMessage(): QueueMessage
     {
-        $msg = new QueueMessage();
-        // Public setters for nullable properties
-        $msg->setRvcode(null);
-        $msg->setMessage(null);
-        $msg->setTimeout(null);
-        $msg->setProcessed(null);
-        // id, created_at, updated_at have private setters — initialize via reflection
-        foreach (['id', 'created_at', 'updated_at'] as $prop) {
-            $rp = new \ReflectionProperty(QueueMessage::class, $prop);
-            $rp->setAccessible(true);
-            $rp->setValue($msg, null);
-        }
-        return $msg;
+        return new QueueMessage();
     }
 }
