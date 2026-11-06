@@ -1408,8 +1408,9 @@ class Episciences_Submit
 
         try {
             $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
-        } catch (Zend_Exception $e) {
-            Episciences_View_Helper_Log::log($e->getMessage());
+        } catch (Zend_Exception $registryException) {
+            // Keep $e: the error to report is the original one, not the failed translator lookup
+            Episciences_View_Helper_Log::log($registryException->getMessage());
             $translator = null;
         }
 
