@@ -39,7 +39,7 @@ final readonly class PublicAddressGuard
      */
     public static function systemResolver(?Closure $hostLookup = null, ?Closure $recordLookup = null): Closure
     {
-        $hostLookup ??= static fn(string $host): array|false => gethostbynamel($host);
+        $hostLookup ??= gethostbynamel(...);
         // NXDOMAIN and "no A record" give an empty array, a server failure or a timeout gives false (and a warning)
         $recordLookup ??= static fn(string $host): array|false => @dns_get_record($host, DNS_A);
 
