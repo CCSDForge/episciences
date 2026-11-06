@@ -276,9 +276,10 @@ function statsExportName() {
 }
 
 /**
- * Pure helper: rows of the CSV export of a chart: a header, then a row by category with the raw values
+ * Pure helper: rows of the CSV export of a chart: a header, then a row by category with the raw values,
+ * then the rows given apart (e.g. a total which is not the sum of the categories)
  */
-function buildChartCsvRows(categoryLabel, labels, datasets) {
+function buildChartCsvRows(categoryLabel, labels, datasets, footerRows = []) {
     return [
         [categoryLabel].concat(datasets.map(dataset => dataset.label)),
     ].concat(
@@ -290,7 +291,8 @@ function buildChartCsvRows(categoryLabel, labels, datasets) {
                         : dataset.data[i]
                 )
             )
-        )
+        ),
+        footerRows
     );
 }
 
@@ -334,7 +336,8 @@ function createBarChart(canvasId, labels, datasets, options = {}) {
                     rows: buildChartCsvRows(
                         options.categoryLabel || '',
                         labels,
-                        datasets
+                        datasets,
+                        options.csvFooterRows || []
                     ),
                 }))
             );
