@@ -1,3 +1,10 @@
+// Declared before the document-ready handler: loaded with $.getScript() once the page is ready,
+// this script runs the handler at once, before the declarations below it would be evaluated.
+// Tables whose columns will be measured again at the next frame
+const tablesToAdjust = new Set();
+// DataTables API of each table node, replaced when the table is rebuilt
+const tableApis = new WeakMap();
+
 $(document).ready(function () {
     let $action = selfAction;
     let $controller = selfController;
@@ -97,11 +104,6 @@ $(document).ready(function () {
         console.log(new ReferenceError());
     }
 });
-
-// Tables whose columns will be measured again at the next frame
-const tablesToAdjust = new Set();
-// DataTables API of each table node, replaced when the table is rebuilt
-const tableApis = new WeakMap();
 
 /**
  *
