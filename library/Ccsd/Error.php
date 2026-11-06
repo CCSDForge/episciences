@@ -8,6 +8,7 @@ class Ccsd_Error extends Exception
     public const ID_DOES_NOT_EXIST_CODE = 'idDoesNotExist';
     public const DEFAULT_PREFIX_CODE = 'The operation ended with this error: <strong><small>[%s]</small></strong>.';
     public const ARXIV_VERSION_DOES_NOT_EXIST_CODE = 'arXivVersionDoesNotExist';
+    public const REPOSITORY_TIMEOUT_CODE = 'repositoryTimeout';
     protected $_type;
 
     /**
@@ -77,6 +78,9 @@ class Ccsd_Error extends Exception
                 break;
             case self::ARXIV_VERSION_DOES_NOT_EXIST_CODE :
                 $message = "This version of the document does not exist or is not online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).";
+                break;
+            case self::REPOSITORY_TIMEOUT_CODE :
+                $message = "The open archive %s did not respond in time. Please try again in a few moments. If the problem persists, please contact the support at %s.";
                 break;
             case 'hookIsNotOpenAccessRight':
             case 'hookUnboundVersions':

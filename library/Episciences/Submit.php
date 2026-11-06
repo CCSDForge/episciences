@@ -1408,8 +1408,9 @@ class Episciences_Submit
 
         try {
             $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
-        } catch (Zend_Exception $e) {
-            Episciences_View_Helper_Log::log($e->getMessage());
+        } catch (Zend_Exception $registryException) {
+            // Keep $e: the error to report is the original one, not the failed translator lookup
+            Episciences_View_Helper_Log::log($registryException->getMessage());
             $translator = null;
         }
 
@@ -1425,6 +1426,8 @@ class Episciences_Submit
                 Episciences_Repositories::getLabel($repoId),
                 Episciences_Repositories::getIdentifierExemple($repoId)
             );
+        } elseif (str_contains($e->getMessage(), Ccsd_Error::REPOSITORY_TIMEOUT_CODE)) {
+            $error = sprintf($error, Episciences_Repositories::getLabel($repoId), $mailToStr);
         } elseif (str_contains($parsedError, Ccsd_Error::DEFAULT_PREFIX_CODE)) {
             $error = sprintf(
                 $error,

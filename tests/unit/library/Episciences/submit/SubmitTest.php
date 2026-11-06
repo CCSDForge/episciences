@@ -2,6 +2,7 @@
 
 namespace unit\library\Episciences\submit;
 
+use Ccsd_Error;
 use Episciences_Oai_Client;
 use Episciences_Paper;
 use Episciences_Repositories;
@@ -403,6 +404,64 @@ class SubmitTest extends TestCase
 
         Episciences_Submit::normalizeSubmissionParameters($post);
         self::assertSame(0, $post['h_repoId']);
+    }
+
+    // -------------------------------------------------------------------------
+    // buildCcsdErrorResult() — private, tested via ReflectionMethod
+    // -------------------------------------------------------------------------
+
+    public function testRepositoryTimeoutGivesAClearMessage(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
+        $method->setAccessible(true);
+
+        $repoId = 2;
+        $result = $method->invoke(null, new Ccsd_Error(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, CURLE_OPERATION_TIMEDOUT), $repoId);
+
+        self::assertSame(0, $result['status']);
+        self::assertStringContainsString(
+            sprintf('The open archive %s did not respond in time', Episciences_Repositories::getLabel($repoId)),
+            $result['error']
+        );
+        self::assertStringContainsString('mailto:' . EPISCIENCES_SUPPORT, $result['error']);
+        self::assertStringNotContainsString('%s', $result['error']);
+    }
+
+    public function testRepositoryTimeoutMessageIsFormattedWhenTheTranslatorIsMissing(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
+        $method->setAccessible(true);
+
+        // Web context (not CLI) without a registered translator: the registry lookup throws
+        $hadServerSoftware = array_key_exists('SERVER_SOFTWARE', $_SERVER);
+        $previousServerSoftware = $_SERVER['SERVER_SOFTWARE'] ?? null;
+        $hadTranslator = Zend_Registry::isRegistered('Zend_Translate');
+        $previousTranslator = $hadTranslator ? Zend_Registry::get('Zend_Translate') : null;
+
+        $_SERVER['SERVER_SOFTWARE'] = 'Apache';
+        if ($hadTranslator) {
+            Zend_Registry::getInstance()->offsetUnset('Zend_Translate');
+        }
+
+        try {
+            $repoId = 2;
+            $result = $method->invoke(null, new Ccsd_Error(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, CURLE_OPERATION_TIMEDOUT), $repoId);
+        } finally {
+            if ($hadServerSoftware) {
+                $_SERVER['SERVER_SOFTWARE'] = $previousServerSoftware;
+            } else {
+                unset($_SERVER['SERVER_SOFTWARE']);
+            }
+            if ($hadTranslator) {
+                Zend_Registry::set('Zend_Translate', $previousTranslator);
+            }
+        }
+
+        self::assertStringContainsString(
+            sprintf('The open archive %s did not respond in time', Episciences_Repositories::getLabel($repoId)),
+            $result['error']
+        );
+        self::assertStringNotContainsString('%s', $result['error']);
     }
 
     // -------------------------------------------------------------------------

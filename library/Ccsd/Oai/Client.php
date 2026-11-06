@@ -1,8 +1,23 @@
 <?php
 
+use Psr\Log\LoggerInterface;
+
 class Ccsd_Oai_Client {
-	
+
+	/**
+	 * Maximum duration in seconds of an OAI-PMH request: a submission waits for the answer,
+	 * so an unresponsive repository must fail fast instead of blocking the author
+	 */
+	public const REQUEST_TIMEOUT = 30;
+	public const CONNECT_TIMEOUT = 10;
+
 	protected $baseUrl = null;
+
+	/** Failed requests are logged here when set */
+	protected ?LoggerInterface $logger = null;
+
+	/** curl_getinfo() of the last request: timings, HTTP code, remote address */
+	protected array $lastTransferInfo = [];
 	protected $_outputFormat = null; // format de sortie des verbes OAI : array or xml
 
 	public function __construct( $url = null, $format = 'array')
@@ -13,6 +28,11 @@ class Ccsd_Oai_Client {
 		$this->_outputFormat = $format;
 	}
 	
+	public function setLogger(?LoggerInterface $logger): void
+	{
+		$this->logger = $logger;
+	}
+
 	public function getBaseUrl()
 	{
 		return $this->baseUrl;
@@ -82,8 +102,19 @@ class Ccsd_Oai_Client {
 			$dom = new DOMDocument();
             $userAgent = method_exists($this, 'getUserAgent') ? $this->getUserAgent() : 'CcsdToolsCurl';
             $options[CURLOPT_USERAGENT] = $userAgent;
+            $options[CURLOPT_CONNECTTIMEOUT] = static::CONNECT_TIMEOUT;
+            $options[CURLOPT_TIMEOUT] = static::REQUEST_TIMEOUT;
 			$url = $this->baseUrl.'?verb=GetRecord&identifier='.$identifier.'&metadataPrefix='.$format;
-			$curlResponse = $this->fetchResponse($url, $options);
+
+			try {
+				$curlResponse = $this->fetchResponse($url, $options);
+			} catch (Ccsd_Error $e) {
+				$this->logRequestFailure($url, $e);
+				if ($e->getCode() === CURLE_OPERATION_TIMEDOUT) {
+					throw new Ccsd_Error(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, CURLE_OPERATION_TIMEDOUT);
+				}
+				throw $e;
+			}
 
             if(empty($curlResponse)) {
                 throw new Ccsd_Error("No body returned");
@@ -131,7 +162,37 @@ class Ccsd_Oai_Client {
      */
     protected function fetchResponse(string $url, array $options): string
     {
-        return (string)Ccsd_Tools::curlSourceGetContents($url, $options);
+        $this->lastTransferInfo = [];
+        try {
+            return (string)Ccsd_Tools::curlSourceGetContents($url, $options, $transferInfo);
+        } finally {
+            $this->lastTransferInfo = $transferInfo ?? [];
+        }
+    }
+
+    /**
+     * Logs a failed HTTP call of the OAI-PMH server, with what is needed to tell a network problem
+     * (no connection, IPv6 route) from an unresponsive repository
+     * @param string $url
+     * @param Ccsd_Error $e
+     */
+    protected function logRequestFailure(string $url, Ccsd_Error $e): void
+    {
+        if ($this->logger === null) {
+            return;
+        }
+
+        $info = $this->lastTransferInfo;
+
+        $this->logger->warning('OAI-PMH request failed', [
+            'url' => $url,
+            'curl_errno' => $e->getCode(),
+            'error' => $e->getMessage(),
+            'http_code' => $info['http_code'] ?? null,
+            'primary_ip' => $info['primary_ip'] ?? null,
+            'connect_time' => $info['connect_time'] ?? null,
+            'total_time' => $info['total_time'] ?? null,
+        ]);
     }
 
 	protected static function isOaiError( DOMNodeList $nodelist )
