@@ -159,7 +159,13 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
         isAutoWidth = true;
     }
 
-    let oTable = $('.dataTable').DataTable({
+    // With scrollX, DataTables copies the header into a second table of the same class: only the
+    // table of the rows is (re)built, otherwise each rebuild sends its request twice
+    const $table = $('.dataTable').not(
+        '.dataTables_scrollHead .dataTable, .dataTables_scrollFoot .dataTable'
+    );
+
+    let oTable = $table.DataTable({
         fnPreDrawCallback: function () {
             $("div[id$='_processing']").removeAttr('class');
             $(this)
@@ -240,7 +246,7 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
     tableNode.addEventListener('error', adjustColumnsOnImageLoad, true);
 
     // oTable.column(9).visible(false);
-    addToggleButton('.dataTable', '.dt-header .right');
+    addToggleButton($table, '.dt-header .right');
 
     return oTable;
 }

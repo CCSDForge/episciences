@@ -94,6 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Papers lists: filtering sent each request twice, the copy of the table header (horizontal scrolling) being rebuilt as a second table.
 - Paper file download: the request that fetches the file from its repository now applies its connection and transfer time limits, validates the requested URLs more strictly, and falls back to the local copy on any network error, not only on HTTP errors.
 - Dashboard: the "Copy-editing & publication" panel title is translated in French ("Préparation de copie & publication"); the conflict of interest confirmation buttons read "conflit d'intérêts" instead of the misspelled "conflit d'interêt".
 - Fundings: the OpenAIRE export wrote one `fundingReferences` element per funding, and a `fundingReference` without `funderName`, both invalid; Crossref received fundgroups without funder name. `PAPERS.DOCUMENT` misplaced the project titles of papers with several fundings (only the first title kept, outside its fundgroup). The `citation_funder_source` meta tags of the paper page listed a funding reported by several sources once per source, and raised a warning for a funding without grant number.
