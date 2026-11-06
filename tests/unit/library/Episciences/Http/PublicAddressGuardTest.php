@@ -6,6 +6,7 @@ namespace unit\library\Episciences\Http;
 
 use Episciences\Http\PublicAddressGuard;
 use Episciences\Http\RefusedAddressException;
+use Episciences\Http\UnresolvedHostException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
@@ -17,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \Episciences\Http\PublicAddressGuard
+ * @covers \Episciences\Http\UnresolvedHostException
  */
 final class PublicAddressGuardTest extends TestCase
 {
@@ -77,7 +79,7 @@ final class PublicAddressGuardTest extends TestCase
     {
         $guard = new PublicAddressGuard(static fn(string $host): array => []);
 
-        $this->expectException(RefusedAddressException::class);
+        $this->expectException(UnresolvedHostException::class);
         $guard->pin(new Uri('https://unknown.invalid/file'));
     }
 

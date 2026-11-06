@@ -43,7 +43,8 @@ final readonly class PublicAddressGuard
 
     /**
      * @return string CURLOPT_RESOLVE entry "host:port:address"
-     * @throws RefusedAddressException
+     * @throws RefusedAddressException the URL is not allowed (final)
+     * @throws UnresolvedHostException the host did not resolve (may be transient)
      */
     public function pin(UriInterface $uri): string
     {
@@ -58,7 +59,7 @@ final readonly class PublicAddressGuard
         $addresses = filter_var($literal, FILTER_VALIDATE_IP) !== false ? [$literal] : ($this->resolver)($host);
 
         if ($addresses === []) {
-            throw new RefusedAddressException('The host could not be resolved.');
+            throw new UnresolvedHostException('The host could not be resolved.');
         }
 
         foreach ($addresses as $address) {

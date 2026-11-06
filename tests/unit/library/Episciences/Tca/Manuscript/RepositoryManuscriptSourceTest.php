@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Tca\Manuscript;
 
+use Episciences\Http\PublicAddressGuard;
 use Episciences\Tca\Contract\ManuscriptFile;
 use Episciences\Tca\Contract\ManuscriptTemporarilyUnavailableException;
 use Episciences\Tca\Contract\ManuscriptTooLargeException;
@@ -544,7 +545,7 @@ final class RepositoryManuscriptSourceTest extends TestCase
             static fn(Episciences_Paper $p): ?string => $backupPath,
             $maxBytes,
             $userAgent,
-            $hostResolver ?? static fn(string $host): array => [self::PUBLIC_IP]
+            new PublicAddressGuard($hostResolver ?? static fn(string $host): array => [self::PUBLIC_IP])
         );
     }
 
