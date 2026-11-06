@@ -51,7 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1151](https://github.com/CCSDForge/episciences/pull/1151): Add `num` and `year` CSV column support to `import:volumes` (`scripts/ImportVolumesCommand.php`).
 - [#1148](https://github.com/CCSDForge/episciences/pull/1148): Add `--rvcode` option, `--rvid` integer validation, and batch processing support via `--config` (`journals.ini`) in `ZbjatsZipperCommand` (`zbjats:zip`).
 - [#1148](https://github.com/CCSDForge/episciences/pull/1148): Cache PDF and XML responses with Symfony Cache in `ZbjatsTools` and support new-front URLs.
-- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Allow anonymous access to public review report attachments for open peer review.
 - Add `CheckDoajJournalsCommand` CLI command to check journal presence in DOAJ, track published article count, and enforce API rate limits.
 - Add constraint description helper text to the volume year field in volume management.
 - Add TomSelect component to paper filters on `/paper/submitted` and `/paper/ratings`.
