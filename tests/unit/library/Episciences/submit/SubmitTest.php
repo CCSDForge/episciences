@@ -2,6 +2,7 @@
 
 namespace unit\library\Episciences\submit;
 
+use Ccsd_Error;
 use Episciences_Oai_Client;
 use Episciences_Paper;
 use Episciences_Repositories;
@@ -403,6 +404,27 @@ class SubmitTest extends TestCase
 
         Episciences_Submit::normalizeSubmissionParameters($post);
         self::assertSame(0, $post['h_repoId']);
+    }
+
+    // -------------------------------------------------------------------------
+    // buildCcsdErrorResult() — private, tested via ReflectionMethod
+    // -------------------------------------------------------------------------
+
+    public function testRepositoryTimeoutGivesAClearMessage(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
+        $method->setAccessible(true);
+
+        $repoId = 2;
+        $result = $method->invoke(null, new Ccsd_Error(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, CURLE_OPERATION_TIMEDOUT), $repoId);
+
+        self::assertSame(0, $result['status']);
+        self::assertStringContainsString(
+            sprintf('The open archive %s did not respond in time', Episciences_Repositories::getLabel($repoId)),
+            $result['error']
+        );
+        self::assertStringContainsString('mailto:' . EPISCIENCES_SUPPORT, $result['error']);
+        self::assertStringNotContainsString('%s', $result['error']);
     }
 
     // -------------------------------------------------------------------------

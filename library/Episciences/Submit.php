@@ -1425,6 +1425,8 @@ class Episciences_Submit
                 Episciences_Repositories::getLabel($repoId),
                 Episciences_Repositories::getIdentifierExemple($repoId)
             );
+        } elseif (str_contains($e->getMessage(), Ccsd_Error::REPOSITORY_TIMEOUT_CODE)) {
+            $error = sprintf($error, Episciences_Repositories::getLabel($repoId), $mailToStr);
         } elseif (str_contains($parsedError, Ccsd_Error::DEFAULT_PREFIX_CODE)) {
             $error = sprintf(
                 $error,

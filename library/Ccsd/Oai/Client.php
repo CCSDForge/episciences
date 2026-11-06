@@ -1,7 +1,14 @@
 <?php
 
 class Ccsd_Oai_Client {
-	
+
+	/**
+	 * Maximum duration in seconds of an OAI-PMH request: a submission waits for the answer,
+	 * so an unresponsive repository must fail fast instead of blocking the author
+	 */
+	public const REQUEST_TIMEOUT = 30;
+	public const CONNECT_TIMEOUT = 10;
+
 	protected $baseUrl = null;
 	protected $_outputFormat = null; // format de sortie des verbes OAI : array or xml
 
@@ -82,8 +89,18 @@ class Ccsd_Oai_Client {
 			$dom = new DOMDocument();
             $userAgent = method_exists($this, 'getUserAgent') ? $this->getUserAgent() : 'CcsdToolsCurl';
             $options[CURLOPT_USERAGENT] = $userAgent;
+            $options[CURLOPT_CONNECTTIMEOUT] = static::CONNECT_TIMEOUT;
+            $options[CURLOPT_TIMEOUT] = static::REQUEST_TIMEOUT;
 			$url = $this->baseUrl.'?verb=GetRecord&identifier='.$identifier.'&metadataPrefix='.$format;
-			$curlResponse = $this->fetchResponse($url, $options);
+
+			try {
+				$curlResponse = $this->fetchResponse($url, $options);
+			} catch (Ccsd_Error $e) {
+				if ($e->getCode() === CURLE_OPERATION_TIMEDOUT) {
+					throw new Ccsd_Error(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, CURLE_OPERATION_TIMEDOUT);
+				}
+				throw $e;
+			}
 
             if(empty($curlResponse)) {
                 throw new Ccsd_Error("No body returned");

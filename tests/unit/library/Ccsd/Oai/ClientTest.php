@@ -4,6 +4,7 @@ namespace unit\library\Ccsd\Oai;
 
 use Ccsd_Error;
 use Ccsd_Oai_Client;
+use Ccsd_Tools;
 use Episciences_Oai_Client;
 use Episciences_Repositories;
 use Exception;
@@ -135,6 +136,78 @@ class ClientTest extends TestCase
         );
     }
 
+    public function testGetRecordSendsAShortTimeout(): void
+    {
+        $oai = $this->getClientReturning(
+            '<?xml version="1.0"?><OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/"><GetRecord>'
+            . '<record><header><identifier>oai:zenodo.org:6078767</identifier></header></record>'
+            . '</GetRecord></OAI-PMH>'
+        );
+
+        $oai->getRecord('oai:zenodo.org:6078767');
+
+        self::assertSame(Ccsd_Oai_Client::REQUEST_TIMEOUT, $oai->requestedOptions[CURLOPT_TIMEOUT]);
+        self::assertSame(Ccsd_Oai_Client::CONNECT_TIMEOUT, $oai->requestedOptions[CURLOPT_CONNECTTIMEOUT]);
+        self::assertLessThan(Ccsd_Tools::DEFAULT_CURL_OPT_TIMEOUT, Ccsd_Oai_Client::REQUEST_TIMEOUT);
+    }
+
+    public function testGetRecordReportsATimeoutAsRepositoryTimeout(): void
+    {
+        $oai = $this->getClientFailingWith(
+            new Ccsd_Error('Timeout was reached', CURLE_OPERATION_TIMEDOUT, 'CURL_ERROR')
+        );
+
+        try {
+            $oai->getRecord('oai:arXiv.org:1706.03762');
+            self::fail('A timeout must raise a Ccsd_Error');
+        } catch (Ccsd_Error $e) {
+            self::assertSame(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, $e->getMessage());
+            self::assertSame(CURLE_OPERATION_TIMEDOUT, $e->getCode());
+        }
+    }
+
+    public function testGetRecordKeepsOtherCurlErrors(): void
+    {
+        $oai = $this->getClientFailingWith(
+            new Ccsd_Error("Couldn't resolve host name", CURLE_COULDNT_RESOLVE_HOST, 'CURL_ERROR')
+        );
+
+        $this->expectException(Ccsd_Error::class);
+        $this->expectExceptionMessage('CURL_ERROR_' . CURLE_COULDNT_RESOLVE_HOST);
+        $oai->getRecord('oai:arXiv.org:1706.03762');
+    }
+
+    public function testRepositoryTimeoutHasItsOwnMessage(): void
+    {
+        $message = (new Ccsd_Error(Ccsd_Error::REPOSITORY_TIMEOUT_CODE))->parseError();
+
+        self::assertStringContainsString('did not respond in time', $message);
+        self::assertStringNotContainsString('The operation ended with this error', $message);
+    }
+
+
+    /**
+     * OAI client whose HTTP call fails with the given error (no network)
+     * @param Ccsd_Error $error
+     * @return Ccsd_Oai_Client
+     */
+    private function getClientFailingWith(Ccsd_Error $error): Ccsd_Oai_Client
+    {
+        return new class('https://oai.example.org/oai', 'xml', $error) extends Ccsd_Oai_Client {
+            private Ccsd_Error $error;
+
+            public function __construct(string $url, string $format, Ccsd_Error $error)
+            {
+                parent::__construct($url, $format);
+                $this->error = $error;
+            }
+
+            protected function fetchResponse(string $url, array $options): string
+            {
+                throw $this->error;
+            }
+        };
+    }
 
     /**
      * OAI client whose HTTP call returns a fixed body (no network)
@@ -145,6 +218,7 @@ class ClientTest extends TestCase
     {
         return new class('https://oai.example.org/oai', 'xml', $body) extends Ccsd_Oai_Client {
             public ?string $requestedUrl = null;
+            public array $requestedOptions = [];
             private string $body;
 
             public function __construct(string $url, string $format, string $body)
@@ -156,6 +230,7 @@ class ClientTest extends TestCase
             protected function fetchResponse(string $url, array $options): string
             {
                 $this->requestedUrl = $url;
+                $this->requestedOptions = $options;
                 return $this->body;
             }
         };
