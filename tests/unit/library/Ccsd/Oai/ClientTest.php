@@ -314,7 +314,7 @@ class ClientTest extends TestCase
             // Use default test URLs when repository is not configured
             $defaultUrls = [
                 1 => 'https://api.archives-ouvertes.fr/oai/hal',  // HAL
-                2 => 'http://export.arxiv.org/oai2',              // ArXiv
+                2 => 'https://oaipmh.arxiv.org/oai',             // ArXiv
                 4 => 'https://zenodo.org/oai2d'                   // Zenodo
             ];
             $baseUrl = $defaultUrls[$repoId] ?? null;
