@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- [#1445](https://github.com/CCSDForge/episciences/pull/1445): paper file download: the request that fetches the file from its repository now applies its connection and transfer time limits, validates the requested URLs more strictly, and falls back to the local copy on any network error, not only on HTTP errors.
+
 ## v1.0.58.2 - 2026-11-11
 
 ### Security
