@@ -12,9 +12,8 @@ use Psr\Http\Message\StreamInterface;
  *
  * Covers the responses that announce no Content-Length (or a wrong one): the write that crosses
  * the limit writes nothing and returns 0. cURL takes this short write as an error and aborts
- * the transfer (CURLE_WRITE_ERROR, 23); the caller then checks hasExceededLimit().
- * Throwing instead would not stop cURL: ext/curl ignores an exception raised in
- * CURLOPT_WRITEFUNCTION, takes the whole chunk as written and keeps downloading.
+ * the transfer (CURLE_WRITE_ERROR, 23); the caller then checks hasExceededLimit(), which also
+ * covers a transfer handler that would ignore the short write.
  */
 final class SizeLimitedStream implements StreamInterface
 {
