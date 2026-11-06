@@ -174,18 +174,5 @@ class Episciences_Paper_DocumentBackup
         return (file_exists($mainFilePathName)) && (is_readable($mainFilePathName));
     }
 
-    /**
-     * Removes the backup copy, which is keyed on the DOCID only: to be called when the document
-     * of a DOCID changes (paper replaced in place by a new version).
-     *
-     * @return bool true when there is no backup copy left
-     */
-    public function deleteDocumentBackupFile(): bool
-    {
-        $mainFilePathName = $this->getPathFileName();
-
-        return !file_exists($mainFilePathName) || unlink($mainFilePathName);
-    }
-
 
 }

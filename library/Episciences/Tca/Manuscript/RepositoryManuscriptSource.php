@@ -14,11 +14,9 @@ use Episciences\Tca\Contract\ManuscriptSourceInterface;
 use Episciences\Tca\Contract\ManuscriptTemporarilyUnavailableException;
 use Episciences\Tca\Contract\ManuscriptTooLargeException;
 use Episciences_Paper;
-use Episciences_Paper_DocumentBackup;
 use Episciences_Paper_File;
 use Episciences_Paper_FilesManager;
 use Episciences_PapersManager;
-use Episciences_ReviewsManager;
 use Episciences_Tools;
 use finfo;
 use GuzzleHttp\Client;
@@ -38,7 +36,8 @@ use Throwable;
 /**
  * Downloads the manuscript of a paper version from its repository (arXiv, HAL, Zenodo...).
  *
- * The local backup copy of the PDF is used first when it exists: repository files are immutable.
+ * The file is always downloaded from the repository, never read from the local backup copy of the PDF,
+ * which is keyed on the DOCID only and may hold another file or a previous version of the paper.
  * Remote files are streamed to a temporary file (never fully loaded in memory), which gives
  * the exact size required by the Turnitin upload. Redirects are followed by hand so that
  * the body of an intermediate response never ends up in the downloaded file, and so that
@@ -105,15 +104,11 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     /** @var Closure(Episciences_Paper): ?Episciences_Paper_File */
     private Closure $mainFileLoader;
 
-    /** @var Closure(Episciences_Paper): ?string */
-    private Closure $backupPathResolver;
-
     private PublicAddressGuard $addressGuard;
 
     /**
      * @param Closure(int): ?Episciences_Paper|null $paperLoader
      * @param Closure(Episciences_Paper): ?Episciences_Paper_File|null $mainFileLoader
-     * @param Closure(Episciences_Paper): ?string|null $backupPathResolver path of a readable local copy, or null
      * @param PublicAddressGuard|null $addressGuard checks every requested URL (SSRF guard)
      */
     public function __construct(
@@ -121,14 +116,12 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         private LoggerInterface $logger,
         ?Closure $paperLoader = null,
         ?Closure $mainFileLoader = null,
-        ?Closure $backupPathResolver = null,
         private int $maxBytes = ManuscriptFile::MAX_SIZE,
         private string $userAgent = '',
         ?PublicAddressGuard $addressGuard = null
     ) {
         $this->paperLoader = $paperLoader ?? $this->defaultPaperLoader(...);
         $this->mainFileLoader = $mainFileLoader ?? $this->defaultMainFileLoader(...);
-        $this->backupPathResolver = $backupPathResolver ?? $this->defaultBackupPathResolver(...);
         $this->addressGuard = $addressGuard ?? new PublicAddressGuard();
     }
 
@@ -166,37 +159,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
 
         $mainFile = $paper->hasFilesEnrichment() ? ($this->mainFileLoader)($paper) : null;
 
-        return $this->fromBackup($paper, $mainFile) ?? $this->fromRepository($paper, $mainFile);
-    }
-
-    private function fromBackup(Episciences_Paper $paper, ?Episciences_Paper_File $mainFile): ?ManuscriptFile
-    {
-        $path = ($this->backupPathResolver)($paper);
-
-        if ($path === null) {
-            return null;
-        }
-
-        $size = (int) filesize($path);
-
-        if ($size <= 0) {
-            return null;
-        }
-
-        if ($size > $this->maxBytes) {
-            throw new ManuscriptTooLargeException($size, $this->maxBytes);
-        }
-
-        $stream = Utils::streamFor(Utils::tryFopen($path, 'rb'));
-        $manuscript = $this->buildManuscript($paper, $mainFile, $stream, $size, null);
-
-        $this->logger->info('Manuscript read from the local backup', [
-            'docid' => $paper->getDocid(),
-            'size' => $size,
-            'mime' => $manuscript?->mimeType,
-        ]);
-
-        return $manuscript;
+        return $this->fromRepository($paper, $mainFile);
     }
 
     private function fromRepository(Episciences_Paper $paper, ?Episciences_Paper_File $mainFile): ?ManuscriptFile
@@ -590,18 +553,5 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     private function defaultMainFileLoader(Episciences_Paper $paper): ?Episciences_Paper_File
     {
         return Episciences_Paper_FilesManager::getMainFile((int) $paper->getDocid());
-    }
-
-    private function defaultBackupPathResolver(Episciences_Paper $paper): ?string
-    {
-        $journal = Episciences_ReviewsManager::findByRvid($paper->getRvid());
-
-        if (!$journal) {
-            return null;
-        }
-
-        $backup = new Episciences_Paper_DocumentBackup((int) $paper->getDocid(), (string) $journal->getCode());
-
-        return $backup->hasDocumentBackupFile() ? $backup->getPathFileName() : null;
     }
 }

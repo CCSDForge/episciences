@@ -1764,13 +1764,6 @@ class Episciences_Submit
 
         Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($oldDocId, $paper->getRepoid());
         Episciences_Paper_FilesManager::deleteByDocId($oldDocId);
-
-        // The backup copy of the main document is keyed on the DOCID: it holds the replaced version
-        $journal = Episciences_ReviewsManager::findByRvid($paper->getRvid());
-
-        if ($journal && !(new Episciences_Paper_DocumentBackup($oldDocId, (string)$journal->getCode()))->deleteDocumentBackupFile()) {
-            trigger_error(sprintf('The backup copy of the document of docid %d could not be deleted.', $oldDocId), E_USER_WARNING);
-        }
     }
 
     /**

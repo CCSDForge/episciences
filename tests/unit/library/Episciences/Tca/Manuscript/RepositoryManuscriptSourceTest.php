@@ -43,8 +43,6 @@ final class RepositoryManuscriptSourceTest extends TestCase
     /** @var array<int, array{request: RequestInterface, options: array<string, mixed>}> */
     private array $history = [];
 
-    private ?string $backupFile = null;
-
     private bool $hadMetadataSources;
 
     private mixed $originalMetadataSources = null;
@@ -84,10 +82,6 @@ final class RepositoryManuscriptSourceTest extends TestCase
             Zend_Registry::getInstance()->offsetUnset('metadataSources');
         }
         $this->resetRepositoriesCache();
-
-        if ($this->backupFile !== null && is_file($this->backupFile)) {
-            unlink($this->backupFile);
-        }
     }
 
     // -------------------------------------------------------------------------
@@ -156,37 +150,6 @@ final class RepositoryManuscriptSourceTest extends TestCase
 
         self::assertNull($source->fetch(self::DOCID));
         self::assertSame([], $this->history);
-    }
-
-    // -------------------------------------------------------------------------
-    // Local backup
-    // -------------------------------------------------------------------------
-
-    public function testUsesTheLocalBackupWithoutAnyHttpCall(): void
-    {
-        $this->backupFile = (string) tempnam(sys_get_temp_dir(), 'tca_backup_');
-        file_put_contents($this->backupFile, self::PDF);
-
-        $source = $this->makeSource([], $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID), backupPath: $this->backupFile);
-        $file = $source->fetch(self::DOCID);
-
-        self::assertInstanceOf(ManuscriptFile::class, $file);
-        self::assertSame([], $this->history);
-        self::assertSame('2401.01234v2.pdf', $file->fileName);
-        self::assertSame(strlen(self::PDF), $file->size);
-        self::assertSame('application/pdf', $file->mimeType);
-        self::assertSame(self::PDF, $file->stream->getContents());
-    }
-
-    public function testRefusesALocalBackupLargerThanTheLimit(): void
-    {
-        $this->backupFile = (string) tempnam(sys_get_temp_dir(), 'tca_backup_');
-        file_put_contents($this->backupFile, self::PDF);
-
-        $source = $this->makeSource([], $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID), backupPath: $this->backupFile, maxBytes: 10);
-
-        $this->expectException(ManuscriptTooLargeException::class);
-        $source->fetch(self::DOCID);
     }
 
     // -------------------------------------------------------------------------
@@ -633,7 +596,6 @@ final class RepositoryManuscriptSourceTest extends TestCase
         array $responses,
         ?Episciences_Paper $paper,
         ?Episciences_Paper_File $mainFile = null,
-        ?string $backupPath = null,
         int $maxBytes = ManuscriptFile::MAX_SIZE,
         string $userAgent = '',
         ?callable $handler = null,
@@ -647,7 +609,6 @@ final class RepositoryManuscriptSourceTest extends TestCase
             new NullLogger(),
             static fn(int $docId): ?Episciences_Paper => $paper,
             static fn(Episciences_Paper $p): ?Episciences_Paper_File => $mainFile,
-            static fn(Episciences_Paper $p): ?string => $backupPath,
             $maxBytes,
             $userAgent,
             new PublicAddressGuard($hostResolver ?? static fn(string $host): array => [self::PUBLIC_IP])

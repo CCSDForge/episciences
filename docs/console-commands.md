@@ -1376,8 +1376,9 @@ similarity check will (`Episciences\Tca\Manuscript\RepositoryManuscriptSource`),
 and prints its file name, size and MIME type. Use it to check that a repository
 serves an analysable file before submitting anything to Turnitin.
 
-The local backup copy (`data/{rvcode}/files/{docid}/documents/{docid}.pdf`) is
-used first; otherwise the file is downloaded from the repository. Temporary
+The main file is always downloaded from the repository, never read from the local
+backup copy (`data/{rvcode}/files/{docid}/documents/{docid}.pdf`), which may hold
+another file of the paper or a previous version. Temporary
 versions, datasets, software, missing, removed or restricted files give no
 manuscript: run with `-v` to print the reason. The log is written to
 `tca_manuscript-<date>.log`, the same file as the Turnitin integration.
