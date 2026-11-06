@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     initStatsHistorySwitch();
+    showCurrentStatsYear();
 
     const loadingStats = document.getElementById('loading-stats');
 
@@ -35,6 +36,24 @@ function initStatsHistorySwitch() {
     });
 }
 
+/**
+ * The years scrolled sideways (narrow screens): the current year is brought into view
+ */
+function showCurrentStatsYear() {
+    const years = document.querySelector('.stats-toolbar .stats-years');
+    const current = years ? years.querySelector('.stats-year.active') : null;
+
+    if (!current || years.scrollWidth <= years.clientWidth) {
+        return;
+    }
+
+    // centred in the row, without scrolling the page
+    years.scrollLeft =
+        current.offsetLeft -
+        years.offsetLeft -
+        (years.clientWidth - current.offsetWidth) / 2;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { initStatsHistorySwitch };
+    module.exports = { initStatsHistorySwitch, showCurrentStatsYear };
 }

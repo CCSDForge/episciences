@@ -2395,7 +2395,6 @@ return array(
     'Toutes les données' => 'All the data',
     'moyenne' => 'average',
     'médiane' => 'median',
-    'Exporter les chiffres (CSV)' => 'Export the figures (CSV)',
     'Exporter la liste (CSV)' => 'Export the list (CSV)',
     'Réglage de la revue : les statistiques ne portent que sur les données postérieures au %s. Réservé aux administrateurs de la revue.' => 'Setting of the journal: the statistics only cover the data after %s. For the administrators of the journal only.',
     "Articles pour lesquels une version temporaire a été déposée dans Episciences, en attendant la version de l'archive ouverte. Ces versions ne sont pas comptées comme des soumissions." => 'Articles for which a temporary version was deposited in Episciences, pending the version of the open archive. These versions are not counted as submissions.',
