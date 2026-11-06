@@ -11,20 +11,14 @@
             <?= $this->translate(array("L'auteur a suggéré un rédacteur", "L'auteur a suggéré des rédacteurs", count($this->suggestedEditors)))?>
             :
             <?php
-
-            $lastItem = end($this->suggestedEditors);
+            $suggestedEditorNames = [];
             foreach ($this->suggestedEditors as $editorId) {
-
                 if (is_array($this->editors) && array_key_exists($editorId, $this->editors)) {
-                    echo $this->editors[$editorId]->getFullname();
-                }
-
-                if (current($this->suggestedEditors) != $lastItem) {
-                    echo ', ';
+                    $suggestedEditorNames[] = $this->escape($this->editors[$editorId]->getFullname());
                 }
             }
-            ?>
-            .</i>
+            echo implode(', ', $suggestedEditorNames);
+            ?>.</i>
     </p>
 </div>
 <?php endif; ?>
