@@ -6,6 +6,7 @@ namespace unit\library\Episciences;
 
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Table_Abstract;
@@ -69,6 +70,22 @@ final class Episciences_QueueMessageManagerAddTest extends TestCase
 
         self::assertSame('30', (string)$this->db->fetchOne(
             $this->db->select()->from(QueueMessageManager::TABLE, ['timeout'])->where('id = ?', $id)
+        ));
+    }
+
+    public function testMessageWithoutTypeIsRefusedBeforeTheDatabase(): void
+    {
+        $message = new QueueMessage(['rvcode' => self::RVCODE, 'message' => ['docid' => 3]]);
+
+        try {
+            $message->send();
+            self::fail('A message without a type must be refused');
+        } catch (InvalidArgumentException $e) {
+            self::assertSame('type cannot be empty', $e->getMessage());
+        }
+
+        self::assertSame('0', (string)$this->db->fetchOne(
+            $this->db->select()->from(QueueMessageManager::TABLE, ['COUNT(*)'])->where('rvcode = ?', self::RVCODE)
         ));
     }
 }
