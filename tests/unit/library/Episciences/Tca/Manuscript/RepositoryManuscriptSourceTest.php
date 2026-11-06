@@ -35,6 +35,7 @@ final class RepositoryManuscriptSourceTest extends TestCase
 {
     private const int DOCID = 4242;
     private const string PDF = "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n";
+    private const string PUBLIC_IP = '93.184.216.34';
     private const string ZIP = "PK\x03\x04\x14\x00\x00\x00\x08\x00some compressed bytes";
 
     /** @var array<int, array{request: RequestInterface, options: array<string, mixed>}> */
@@ -425,7 +426,98 @@ final class RepositoryManuscriptSourceTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // SSRF guard
+    // -------------------------------------------------------------------------
+
+    public function testPinsTheRequestToTheCheckedAddress(): void
+    {
+        $source = $this->makeSource([new Response(200, [], self::PDF)], $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID));
+
+        $source->fetch(self::DOCID);
+
+        $options = $this->history[0]['options'];
+        self::assertSame(['arxiv.org:443:' . self::PUBLIC_IP], $options['curl'][CURLOPT_RESOLVE]);
+        self::assertSame('v4', $options['force_ip_resolve']);
+    }
+
+    /**
+     * @dataProvider nonPublicAddressProvider
+     */
+    public function testRefusesAHostResolvingToANonPublicAddress(string $address): void
+    {
+        $source = $this->makeSource(
+            [],
+            $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID),
+            hostResolver: static fn(string $host): array => [$address]
+        );
+
+        self::assertNull($source->fetch(self::DOCID));
+        self::assertSame([], $this->history);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function nonPublicAddressProvider(): array
+    {
+        return [
+            'loopback' => ['127.0.0.1'],
+            'private' => ['10.0.0.5'],
+            'link-local metadata' => ['169.254.169.254'],
+            'carrier-grade NAT' => ['100.64.0.1'],
+            'IPv6 loopback' => ['::1'],
+        ];
+    }
+
+    public function testRefusesAHostWhenOneOfItsAddressesIsNotPublic(): void
+    {
+        $source = $this->makeSource(
+            [],
+            $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID),
+            hostResolver: static fn(string $host): array => [self::PUBLIC_IP, '192.168.1.1']
+        );
+
+        self::assertNull($source->fetch(self::DOCID));
+        self::assertSame([], $this->history);
+    }
+
+    public function testRefusesARedirectToAnInternalAddressLiteral(): void
+    {
+        $source = $this->makeSource(
+            [new Response(302, ['Location' => 'http://169.254.169.254/latest/meta-data/'])],
+            $this->makePaper((int) Episciences_Repositories::HAL_REPO_ID)
+        );
+
+        self::assertNull($source->fetch(self::DOCID));
+        self::assertCount(1, $this->history);
+    }
+
+    public function testRefusesARedirectToAnIpv6Literal(): void
+    {
+        $source = $this->makeSource(
+            [new Response(302, ['Location' => 'http://[::1]:8080/admin'])],
+            $this->makePaper((int) Episciences_Repositories::HAL_REPO_ID)
+        );
+
+        self::assertNull($source->fetch(self::DOCID));
+        self::assertCount(1, $this->history);
+    }
+
+    public function testThrowsARetryableExceptionWhenTheHostDoesNotResolve(): void
+    {
+        $source = $this->makeSource(
+            [],
+            $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID),
+            hostResolver: static fn(string $host): array => []
+        );
+
+        $this->expectException(ManuscriptTemporarilyUnavailableException::class);
+        $source->fetch(self::DOCID);
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
+
     // -------------------------------------------------------------------------
 
     /**
@@ -438,7 +530,8 @@ final class RepositoryManuscriptSourceTest extends TestCase
         ?string $backupPath = null,
         int $maxBytes = ManuscriptFile::MAX_SIZE,
         string $userAgent = '',
-        ?callable $handler = null
+        ?callable $handler = null,
+        ?\Closure $hostResolver = null
     ): RepositoryManuscriptSource {
         $stack = HandlerStack::create($handler ?? new MockHandler($responses));
         $stack->push(Middleware::history($this->history));
@@ -450,7 +543,8 @@ final class RepositoryManuscriptSourceTest extends TestCase
             static fn(Episciences_Paper $p): ?Episciences_Paper_File => $mainFile,
             static fn(Episciences_Paper $p): ?string => $backupPath,
             $maxBytes,
-            $userAgent
+            $userAgent,
+            $hostResolver ?? static fn(string $host): array => [self::PUBLIC_IP]
         );
     }
 

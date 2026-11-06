@@ -74,10 +74,14 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     /** @var Closure(Episciences_Paper): ?string */
     private Closure $backupPathResolver;
 
+    /** @var Closure(string): list<string> */
+    private Closure $hostResolver;
+
     /**
      * @param Closure(int): ?Episciences_Paper|null $paperLoader
      * @param Closure(Episciences_Paper): ?Episciences_Paper_File|null $mainFileLoader
      * @param Closure(Episciences_Paper): ?string|null $backupPathResolver path of a readable local copy, or null
+     * @param Closure(string): list<string>|null $hostResolver IPv4 addresses of a host name, empty when it does not resolve
      */
     public function __construct(
         private ClientInterface $httpClient,
@@ -86,11 +90,13 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         ?Closure $mainFileLoader = null,
         ?Closure $backupPathResolver = null,
         private int $maxBytes = ManuscriptFile::MAX_SIZE,
-        private string $userAgent = ''
+        private string $userAgent = '',
+        ?Closure $hostResolver = null
     ) {
         $this->paperLoader = $paperLoader ?? $this->defaultPaperLoader(...);
         $this->mainFileLoader = $mainFileLoader ?? $this->defaultMainFileLoader(...);
         $this->backupPathResolver = $backupPathResolver ?? $this->defaultBackupPathResolver(...);
+        $this->hostResolver = $hostResolver ?? $this->defaultHostResolver(...);
     }
 
     /**
@@ -217,7 +223,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     }
 
     /**
-     * Follows the redirects by hand: each hop gets its own sink and its scheme is checked.
+     * Follows the redirects by hand: each hop gets its own sink, and its scheme and host are checked.
      *
      * @return array{0: ResponseInterface, 1: StreamInterface, 2: string} the final response, its body and URL
      * @throws UnavailableManuscript
@@ -228,7 +234,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     {
         for ($hop = 0; $hop <= self::MAX_REDIRECTS; $hop++) {
             $sink = new SizeLimitedStream(Utils::streamFor(Utils::tryFopen('php://temp/maxmemory:0', 'w+b')), $this->maxBytes);
-            $response = $this->send($docId, $url, $sink);
+            $response = $this->send($docId, $url, $sink, $this->pinPublicAddress($docId, $url));
             $status = $response->getStatusCode();
             $location = $response->getHeaderLine('Location');
 
@@ -248,7 +254,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         throw new ManuscriptTemporarilyUnavailableException(sprintf('Too many redirects while downloading the manuscript of docid %d.', $docId));
     }
 
-    private function send(int $docId, string $url, SizeLimitedStream $sink): ResponseInterface
+    private function send(int $docId, string $url, SizeLimitedStream $sink, string $pinnedAddress): ResponseInterface
     {
         try {
             return $this->httpClient->request('GET', $url, [
@@ -259,6 +265,9 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
                 'timeout' => self::TIMEOUT,
                 'headers' => array_filter(['User-Agent' => $this->userAgent, 'Accept' => '*/*']),
                 'on_headers' => $this->rejectAnnouncedOversize(...),
+                // Connect to the address that was checked, never to a new DNS answer (DNS rebinding)
+                'force_ip_resolve' => 'v4',
+                'curl' => [CURLOPT_RESOLVE => [$pinnedAddress]],
             ]);
         } catch (GuzzleException $e) {
             throw $this->translateTransferFailure($docId, $url, $sink, $e);
@@ -440,6 +449,37 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         return mb_substr($fileName, -self::FILE_NAME_MAX_LENGTH);
     }
 
+    /**
+     * SSRF guard: file links and redirect targets come from third parties (repository APIs, remote servers).
+     * Refuses a host that resolves to a loopback, private, link-local or reserved address,
+     * and returns the CURLOPT_RESOLVE entry pinning the request to the checked address.
+     *
+     * @throws UnavailableManuscript
+     * @throws ManuscriptTemporarilyUnavailableException
+     */
+    private function pinPublicAddress(int $docId, string $url): string
+    {
+        $uri = new Uri($url);
+        $host = $uri->getHost();
+        $port = $uri->getPort() ?? ($uri->getScheme() === 'http' ? 80 : 443);
+
+        $literal = trim($host, '[]');
+        $addresses = filter_var($literal, FILTER_VALIDATE_IP) !== false ? [$literal] : ($this->hostResolver)($host);
+
+        if ($addresses === []) {
+            throw new ManuscriptTemporarilyUnavailableException(sprintf('The repository host of docid %d does not resolve.', $docId));
+        }
+
+        foreach ($addresses as $address) {
+            if (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_GLOBAL_RANGE) === false) {
+                $this->logger->warning('Refused a repository URL resolving to a non public address', ['docid' => $docId, 'url' => $url, 'address' => $address]);
+                throw new UnavailableManuscript(sprintf('%s resolves to a non public address', $host));
+            }
+        }
+
+        return sprintf('%s:%d:%s', $host, $port, $addresses[0]);
+    }
+
     private function isHttpUrl(string $url): bool
     {
         if (filter_var($url, FILTER_VALIDATE_URL) === false) {
@@ -467,6 +507,16 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     private function defaultMainFileLoader(Episciences_Paper $paper): ?Episciences_Paper_File
     {
         return Episciences_Paper_FilesManager::getMainFile((int) $paper->getDocid());
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function defaultHostResolver(string $host): array
+    {
+        $addresses = gethostbynamel($host);
+
+        return $addresses === false ? [] : $addresses;
     }
 
     private function defaultBackupPathResolver(Episciences_Paper $paper): ?string
