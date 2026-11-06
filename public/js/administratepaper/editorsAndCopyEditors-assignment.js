@@ -54,6 +54,8 @@ function getAssignUserForm(button, docid, vid, partial) {
                 placement: 'bottom',
                 html: true,
                 content: result,
+                // keep a gap between the popover and the window edges
+                viewport: { selector: 'body', padding: 15 },
             })
             .popover('show');
 
