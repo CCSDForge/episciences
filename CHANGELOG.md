@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Paper file download: the request that fetches the file from its repository now applies its connection and transfer time limits, validates the requested URLs more strictly, and falls back to the local copy on any network error, not only on HTTP errors.
 - bioRxiv / medRxiv submission: the references of the preprint are kept as formatted by the repository, with their DOI; the submission no longer fails on some of them (e.g. authors not tagged), and none of them is truncated or lost (single author, single reference, formatted title) (`Episciences_Repositories_BioMedRxiv::referencesProcess()`).
 - [#1341](https://github.com/CCSDForge/episciences/pull/1341): submitting a refused paper again only renames ("-REFUSED" suffix) the versions of that paper in its journal, never another paper sharing its identifier, e.g. the same document accepted in another journal (`Episciences_PapersManager::renameIdentifier()`).
 - [#1342](https://github.com/CCSDForge/episciences/pull/1342): the "-REFUSED" suffix of a refused paper submitted again is no longer shown, whatever the status of the paper (e.g. its previous versions made obsolete), nor sent to the repositories (link to the document, HAL enrichment scripts); it is no longer removed from the database when the paper is saved, and it is removed again when the new submission is not saved; the COAR Notify debug mode no longer adds it (`Episciences_Paper::getIdentifier()`, `Episciences_Paper::restoreRefusedIdentifier()`).

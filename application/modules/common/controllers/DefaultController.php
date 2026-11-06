@@ -1,6 +1,9 @@
 <?php
+use Episciences\Http\PublicAddressGuard;
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\HandlerStack;
 use Monolog\Logger;
 
 
@@ -303,22 +306,13 @@ class DefaultController extends Zend_Controller_Action
         $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid(), \Episciences_ReviewsManager::findByRvid($paper->getRvid())->getCode());
         $hasDocumentBackupFile = $paperDocBackup->hasDocumentBackupFile();
 
-        $clientHeaders = [
-            'headers' =>
-                [
-                    'User-Agent' => DOMAIN,
-                    'connect_timeout' => 10,
-                    'timeout' => 20
-                ]
-        ];
-
         Episciences_Tools::mbstringBinarySafeEncoding();
 
-        $client = new Client($clientHeaders);
+        $client = $this->createDocumentHttpClient();
         $saveCopy = false;
 
         try {
-            $res = $client->get($url);
+            $res = $client->request('GET', $url);
             $headers = $res->getHeaders();
             $mainDocumentContent = $res->getBody()->getContents();
 
@@ -335,7 +329,7 @@ class DefaultController extends Zend_Controller_Action
 
             }
 
-        } catch (GuzzleHttp\Exception\RequestException $e) {
+        } catch (GuzzleException $e) {
 
             // we failed to get content via http, try a local backup
             if ($hasDocumentBackupFile) {
@@ -367,6 +361,26 @@ class DefaultController extends Zend_Controller_Action
 
     }
 
+
+    /**
+     * HTTP client fetching the main document from its repository: HTTP(S) only,
+     * public addresses only (every redirect included), bounded connect and transfer times.
+     *
+     * @param callable|null $handler transport handler, the cURL one by default
+     */
+    protected function createDocumentHttpClient(?callable $handler = null): ClientInterface
+    {
+        $stack = HandlerStack::create($handler);
+        $stack->push((new PublicAddressGuard())->middleware(), 'public_address_guard');
+
+        return new Client([
+            'handler' => $stack,
+            'headers' => ['User-Agent' => DOMAIN],
+            'connect_timeout' => 10,
+            'timeout' => 20,
+            'allow_redirects' => ['max' => 5, 'protocols' => ['http', 'https']],
+        ]);
+    }
 
     protected function renderFormErrors(Zend_Form $form = null): void{
 
