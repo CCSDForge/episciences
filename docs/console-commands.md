@@ -63,6 +63,7 @@ php scripts/console.php <command> --help
 | [`episciences:worker`](#episciencesworker) | Continuously consume one Messenger queue (`solr_index` or `next_revalidation`) |
 | [`episciences:queue`](#episciencesqueue) | Inspect and manage one Messenger queue |
 | [`next:revalidate-cache`](#nextrevalidate-cache) | Immediately trigger (or enqueue) Next.js cache revalidation for a journal and one or more tags |
+| [`episciences:manuscript:probe`](#episciencesmanuscriptprobe) | Resolve and download the manuscript of a paper version, as it will be submitted to Turnitin (diagnostic) |
 | [`notify:process-inbox`](#notifyprocess-inbox) | Process inbound COAR Notify notifications from repository inboxes (e.g. HAL) |
 | [`translations:update`](#translationsupdate) | Update translation strings in a PHP array file from a YAML config |
 
@@ -1363,6 +1364,36 @@ php scripts/console.php episciences:queue --transport=<solr_index|next_revalidat
 Exactly one of `--stats`, `--list-failed`, `--retry`, `--setup`,
 `--list-dispatch-failures` or `--retry-dispatch-failure` is required, and
 both it and `--transport` are validated before any bootstrap.
+
+---
+
+## Turnitin
+
+### `episciences:manuscript:probe`
+
+Resolves and downloads the manuscript of a paper version exactly as the Turnitin
+similarity check will (`Episciences\Tca\Manuscript\RepositoryManuscriptSource`),
+and prints its file name, size and MIME type. Use it to check that a repository
+serves an analysable file before submitting anything to Turnitin.
+
+The local backup copy (`data/{rvcode}/files/{docid}/documents/{docid}.pdf`) is
+used first; otherwise the file is downloaded from the repository. Temporary
+versions, datasets, software, missing, removed or restricted files give no
+manuscript: run with `-v` to print the reason. The log is written to
+`tca_manuscript_<date>.log`.
+
+```bash
+php scripts/console.php episciences:manuscript:probe <docid> [--save=<path>] [-v]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--save <path>` | Write the downloaded file to this path (refused if it already exists) |
+| `-v` | Print every step of the resolution, including why no manuscript was found |
+
+Exit codes: `0` a manuscript was found, `1` no analysable manuscript or the
+repository failed (the message says whether a retry may succeed), `2` invalid
+arguments.
 
 ---
 
