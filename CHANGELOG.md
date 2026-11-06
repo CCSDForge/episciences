@@ -94,6 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Papers lists: filtering sent each request twice, the copy of the table header (horizontal scrolling) being rebuilt as a second table.
 - Papers lists (management, assigned papers, my submissions, my reviews, mail history): the "Filter papers" button and the search box behaviour were often not set up, depending on the loading order of the page scripts, so filtering did nothing.
 - Paper file download: the request that fetches the file from its repository now applies its connection and transfer time limits, validates the requested URLs more strictly, and falls back to the local copy on any network error, not only on HTTP errors.
 - Dashboard: the "Copy-editing & publication" panel title is translated in French ("Préparation de copie & publication"); the conflict of interest confirmation buttons read "conflit d'intérêts" instead of the misspelled "conflit d'interêt".
