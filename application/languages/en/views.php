@@ -2455,8 +2455,8 @@ return array(
     "Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission" => "You've been redirected, because you must confirm the lack of conflict of interest to access this submission",
     "Conflit d'intérêt" => 'Conflict of interest',
     "Merci de déclarer si vous avez un conflit avec cette soumission" => 'Please declare whether you have a conflict of interest with this submission',
-    "Continuer (Pas de conflit d'interêt)" => 'Continue (No conflict of interest)',
-    "Stop (J'ai un conflit d'interêt)" => 'Stop (I have a conflict of interest)',
+    "Continuer (Pas de conflit d'intérêts)" => 'Continue (No conflict of interest)',
+    "Stop (J'ai un conflit d'intérêts)" => 'Stop (I have a conflict of interest)',
     'Décider plus tard' => 'Decide later',
     "Continuer et Accéder à la soumission. Vous n'avez pas de conflit d'intérêt à déclarer. Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Continue and Access the submission. You do not have a conflict of interest to declare. Your action will be recorded in the submission event log.',
     "Ne pas accéder à la soumission. Les informations sur cette soumission resteront masquées pour vous. Vous pouvez ajouter un commentaire facultatif pour expliquer la nature de votre conflit d'intérêt. Le commentaire sera visible par les gestionnaires de l'article. Votre action sera enregistrée dans le journal des événements liés à la soumission." => 'Do not access the submission. Information about this submission will remain hidden from you. You may add an optional comment to explain the nature of your conflict of interest. The comment will be visible to the managers of the article. Your action will be recorded in the submission event log.',
@@ -2739,7 +2739,7 @@ return array(
     // "Évaluation" is deliberately not redefined here: it is already translated above ("Review")
     // and that translation is reused by the dashboard quadrant title.
     "Révisions & suggestions" => "Revisions & suggestions",
-    "Copy-editing & publication" => "Copy-editing & publication",
+    "Préparation de copie & publication" => "Copy-editing & publication",
     "Archives / historique" => "Archives / history",
     "suggestion d'acceptation" => "suggested acceptance",
     "suggestions d'acceptation" => "suggested acceptances",
