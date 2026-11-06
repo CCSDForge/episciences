@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace unit\library\Episciences\Submit;
 
 use Episciences_Paper;
+use Episciences_Paper_DocumentBackup;
+use Episciences_ReviewsManager;
 use Episciences_Submit;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -23,6 +25,9 @@ final class ReplacementCleanupTest extends TestCase
     /** @var int[] */
     private array $docIds = [];
 
+    /** @var Episciences_Paper_DocumentBackup[] */
+    private array $backups = [];
+
     protected function setUp(): void
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -34,6 +39,12 @@ final class ReplacementCleanupTest extends TestCase
 
     protected function tearDown(): void
     {
+        foreach ($this->backups as $backup) {
+            $backup->deleteDocumentBackupFile();
+            @rmdir($backup->getPath());
+            @rmdir(dirname($backup->getPath()));
+        }
+
         if ($this->docIds !== []) {
             $this->db->delete(T_PAPER_FILES, ['doc_id IN (?)' => $this->docIds]);
             $this->db->delete(T_PAPERS, ['DOCID IN (?)' => $this->docIds]);
@@ -68,6 +79,20 @@ final class ReplacementCleanupTest extends TestCase
         return $docId;
     }
 
+    private function makeBackup(int $docId): Episciences_Paper_DocumentBackup
+    {
+        $journal = Episciences_ReviewsManager::findByRvid(RVID);
+        if (!$journal) {
+            self::markTestSkipped('The test journal does not exist.');
+        }
+
+        $backup = new Episciences_Paper_DocumentBackup($docId, (string)$journal->getCode());
+        $this->backups[] = $backup;
+        self::assertTrue($backup->saveDocumentBackupFile('%PDF-1.4 previous version'));
+
+        return $backup;
+    }
+
     private function countFiles(int $docId): int
     {
         return (int)$this->db->fetchOne(
@@ -81,7 +106,7 @@ final class ReplacementCleanupTest extends TestCase
         $method->setAccessible(true);
         $method->invoke(
             new Episciences_Submit(),
-            new Episciences_Paper(['docid' => $newDocId, 'repoId' => 1]),
+            new Episciences_Paper(['docid' => $newDocId, 'repoId' => 1, 'rvid' => RVID]),
             ['can_replace' => '1', 'old_docid' => $oldDocId]
         );
     }
@@ -103,5 +128,26 @@ final class ReplacementCleanupTest extends TestCase
         $this->cleanupOldData($docId, $docId);
 
         self::assertSame(0, $this->countFiles($docId));
+    }
+
+    public function testBackupCopyOfAPaperReplacedInPlaceIsRemoved(): void
+    {
+        $docId = $this->insertPaperWithFile();
+        $backup = $this->makeBackup($docId);
+
+        $this->cleanupOldData($docId, $docId);
+
+        self::assertFalse($backup->hasDocumentBackupFile());
+    }
+
+    public function testBackupCopyOfAPaperKeptAsARowOfItsOwnIsKept(): void
+    {
+        $oldDocId = $this->insertPaperWithFile();
+        $newDocId = $this->insertPaperWithFile();
+        $backup = $this->makeBackup($oldDocId);
+
+        $this->cleanupOldData($newDocId, $oldDocId);
+
+        self::assertTrue($backup->hasDocumentBackupFile());
     }
 }
