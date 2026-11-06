@@ -23,10 +23,10 @@ use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Psr7\Header;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
 use GuzzleHttp\Psr7\Utils;
+use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
@@ -200,6 +200,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         $size = (int) $body->getSize();
 
         if ($size <= 0) {
+            $body->close();
             $this->logUnavailable($docId, 'empty file', $context);
             return null;
         }
@@ -246,7 +247,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
 
             if ($status >= 300 && $status < 400 && $location !== '') {
                 $sink->close();
-                $url = (string) UriResolver::resolve(new Uri($url), new Uri($location));
+                $url = $this->resolveRedirect($url, $location);
                 $this->logger->debug('Following a repository redirect', ['docid' => $docId, 'url' => $url]);
                 continue;
             }
@@ -259,6 +260,18 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
 
         // A redirect loop or chain is a property of the repository, not a transient failure
         throw new UnavailableManuscript(sprintf('more than %d redirects', self::MAX_REDIRECTS));
+    }
+
+    /**
+     * @throws UnavailableManuscript the Location header is not a valid URI (final)
+     */
+    private function resolveRedirect(string $url, string $location): string
+    {
+        try {
+            return (string) UriResolver::resolve(new Uri($url), new Uri($location));
+        } catch (InvalidArgumentException $e) {
+            throw new UnavailableManuscript(sprintf('malformed redirect from %s', $url), 0, $e);
+        }
     }
 
     private function send(int $docId, string $url, SizeLimitedStream $sink, string $pinnedAddress): ResponseInterface
@@ -453,7 +466,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             return null;
         }
 
-        $parameters = array_change_key_case(Header::parse($header)[0] ?? []);
+        $parameters = $this->contentDispositionParameters($header);
         $extended = $this->decodeExtendedFileName((string) ($parameters['filename*'] ?? ''));
 
         if ($extended !== null) {
@@ -463,6 +476,33 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         $name = $parameters['filename'] ?? '';
 
         return $name !== '' ? $name : null;
+    }
+
+    /**
+     * The parameters of a Content-Disposition header, keyed by lowercased name (RFC 6266).
+     * Not Guzzle's Header::parse(): it splits on every "=" and on unquoted commas,
+     * which truncates names such as "a=b final.pdf" or "Smith, J. paper.pdf".
+     *
+     * @return array<string, string>
+     */
+    private function contentDispositionParameters(string $header): array
+    {
+        preg_match_all('/;\s*([^\s=;]+)\s*=\s*("(?:[^"\\\\]|\\\\.)*"|[^;]*)/', $header, $matches, PREG_SET_ORDER);
+
+        $parameters = [];
+
+        foreach ($matches as [, $name, $value]) {
+            $value = trim($value);
+
+            if (strlen($value) >= 2 && str_starts_with($value, '"') && str_ends_with($value, '"')) {
+                // Quoted-string: drop the quotes and the backslash escapes
+                $value = (string) preg_replace('/\\\\(.)/s', '$1', substr($value, 1, -1));
+            }
+
+            $parameters[strtolower($name)] = $value;
+        }
+
+        return $parameters;
     }
 
     /**

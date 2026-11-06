@@ -240,6 +240,33 @@ final class RepositoryManuscriptSourceTest extends TestCase
         self::assertSame('memoire.pdf', $source->fetch(self::DOCID)?->fileName);
     }
 
+    /**
+     * @dataProvider plainFileNameProvider
+     */
+    public function testReadsThePlainNameWithEqualSignsCommasAndEscapes(string $contentDisposition, string $expected): void
+    {
+        $source = $this->makeSource(
+            [new Response(200, ['Content-Disposition' => $contentDisposition], self::PDF)],
+            $this->makePaper((int) Episciences_Repositories::HAL_REPO_ID, 'hal-01234567')
+        );
+
+        self::assertSame($expected, $source->fetch(self::DOCID)?->fileName);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function plainFileNameProvider(): array
+    {
+        return [
+            'equal sign in a quoted name' => ['attachment; filename="a=b final.pdf"', 'a=b final.pdf'],
+            'comma in an unquoted name' => ['attachment; filename=Smith, J. paper.pdf', 'Smith, J. paper.pdf'],
+            'semicolon in a quoted name' => ['attachment; filename="part1;part2.pdf"; size=12', 'part1;part2.pdf'],
+            'escaped quote' => ['attachment; filename="the \\"best\\" paper.pdf"', 'the "best" paper.pdf'],
+            'case-insensitive parameter name' => ['attachment; FileName="paper.pdf"', 'paper.pdf'],
+        ];
+    }
+
     public function testEncodesTheSpacesAndAccentsOfAStoredFileLink(): void
     {
         $mainFile = $this->makeMainFile('https://zenodo.org/api/records/1/files/Mémoire final.pdf/content', 'Mémoire final.pdf');
@@ -314,6 +341,31 @@ final class RepositoryManuscriptSourceTest extends TestCase
 
         self::assertNull($source->fetch(self::DOCID));
         self::assertCount(1, $this->history);
+    }
+
+    /**
+     * @dataProvider malformedLocationProvider
+     */
+    public function testReturnsNullOnAMalformedRedirect(string $location): void
+    {
+        $source = $this->makeSource(
+            [new Response(302, ['Location' => $location])],
+            $this->makePaper((int) Episciences_Repositories::HAL_REPO_ID)
+        );
+
+        self::assertNull($source->fetch(self::DOCID));
+        self::assertCount(1, $this->history);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function malformedLocationProvider(): array
+    {
+        return [
+            'no host' => ['http://'],
+            'port out of range' => ['http://hal.science:70000/document'],
+        ];
     }
 
     /**

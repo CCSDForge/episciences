@@ -82,7 +82,7 @@ class ManuscriptProbeCommand extends Command
 
         try {
             if (is_string($savePath)) {
-                $this->save($manuscript->stream, $savePath);
+                $this->save($manuscript->stream, $manuscript->size, $savePath);
                 $io->success(sprintf('Saved to %s', $savePath));
             }
         } catch (RuntimeException $e) {
@@ -96,17 +96,28 @@ class ManuscriptProbeCommand extends Command
     }
 
     /**
+     * Removes the partial file when the copy fails, so that a truncated file is never left behind.
+     *
      * @throws RuntimeException the file cannot be created or written
      */
-    private function save(StreamInterface $stream, string $path): void
+    private function save(StreamInterface $stream, int $size, string $path): void
     {
         $target = Utils::streamFor(Utils::tryFopen($path, 'xb'));
 
         try {
             Utils::copyToStream($stream, $target);
-        } finally {
+
+            // copyToStream() stops silently when a write returns 0 bytes
+            if ($target->tell() !== $size) {
+                throw new RuntimeException(sprintf('%d of %d bytes written', $target->tell(), $size));
+            }
+        } catch (Throwable $e) {
             $target->close();
+            unlink($path);
+            throw $e;
         }
+
+        $target->close();
     }
 
     /**

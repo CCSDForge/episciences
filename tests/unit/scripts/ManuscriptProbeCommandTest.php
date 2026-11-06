@@ -7,6 +7,7 @@ namespace unit\scripts;
 use Episciences\Tca\Contract\ManuscriptFile;
 use Episciences\Tca\Contract\ManuscriptSourceInterface;
 use Episciences\Tca\Contract\ManuscriptTemporarilyUnavailableException;
+use GuzzleHttp\Psr7\PumpStream;
 use GuzzleHttp\Psr7\Utils;
 use ManuscriptProbeCommand;
 use PHPUnit\Framework\TestCase;
@@ -47,6 +48,28 @@ final class ManuscriptProbeCommandTest extends TestCase
 
         self::assertSame(Command::SUCCESS, $tester->execute(['docid' => '42', '--save' => $this->savePath]));
         self::assertSame('%PDF-1.4', file_get_contents($this->savePath));
+    }
+
+    public function testRemovesThePartialFileWhenTheCopyFails(): void
+    {
+        $this->savePath = sys_get_temp_dir() . '/manuscript_probe_' . bin2hex(random_bytes(6)) . '.pdf';
+        $failingStream = new PumpStream(static fn(): never => throw new \RuntimeException('I/O error'));
+        $tester = $this->makeTester(static fn(): ManuscriptFile => new ManuscriptFile($failingStream, 'paper.pdf', 8, 'application/pdf'));
+
+        self::assertSame(Command::FAILURE, $tester->execute(['docid' => '42', '--save' => $this->savePath]));
+        self::assertStringContainsString('I/O error', $tester->getDisplay());
+        self::assertFileDoesNotExist($this->savePath);
+    }
+
+    public function testRemovesAnIncompleteCopy(): void
+    {
+        $this->savePath = sys_get_temp_dir() . '/manuscript_probe_' . bin2hex(random_bytes(6)) . '.pdf';
+        // The stream holds fewer bytes than the announced size
+        $tester = $this->makeTester(static fn(): ManuscriptFile => new ManuscriptFile(Utils::streamFor('%PDF'), 'paper.pdf', 8, 'application/pdf'));
+
+        self::assertSame(Command::FAILURE, $tester->execute(['docid' => '42', '--save' => $this->savePath]));
+        self::assertStringContainsString('4 of 8 bytes written', $tester->getDisplay());
+        self::assertFileDoesNotExist($this->savePath);
     }
 
     public function testRefusesToOverwriteAnExistingFile(): void
