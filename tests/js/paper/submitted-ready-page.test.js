@@ -28,6 +28,7 @@ function readyPageJquery() {
                 bound.push(selector + ' ' + event);
                 return element;
             },
+            not: () => element,
             unbind: () => element,
             bind: (events, handler) => {
                 bound.push(selector + ' ' + events);
