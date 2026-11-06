@@ -19,10 +19,12 @@ use Episciences_Paper_File;
 use Episciences_Paper_FilesManager;
 use Episciences_PapersManager;
 use Episciences_ReviewsManager;
+use Episciences_Tools;
 use finfo;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Header;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
@@ -45,8 +47,14 @@ use Throwable;
 final readonly class RepositoryManuscriptSource implements ManuscriptSourceInterface
 {
     public const int CONNECT_TIMEOUT = 10;
-    public const int TIMEOUT = 120;
+    /** Upper bound of a whole transfer: a stalled download is stopped earlier by the low speed limit. */
+    public const int TIMEOUT = 900;
+    /** A transfer slower than LOW_SPEED_LIMIT bytes per second during LOW_SPEED_TIME seconds is aborted. */
+    public const int LOW_SPEED_LIMIT = 1024;
+    public const int LOW_SPEED_TIME = 60;
     public const int MAX_REDIRECTS = 5;
+    /** Log channel, and name of the daily log file (tca_manuscript-YYYY-MM-DD.log). */
+    public const string LOG_CHANNEL = 'tca_manuscript';
 
     private const int MIME_SNIFF_BYTES = 8192;
     private const int FILE_NAME_MAX_LENGTH = 200;
@@ -55,6 +63,16 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
 
     /** Statuses meaning the file is gone or not accessible without credentials: final, no retry. */
     private const array UNAVAILABLE_STATUSES = [401, 403, 404, 410];
+
+    /** Transient statuses: retry later. */
+    private const array TRANSIENT_STATUSES = [408, 425, 429];
+
+    /**
+     * cURL errors that will not go away by retrying the same URL: final, no retry.
+     * 1 unsupported protocol, 3 malformed URL, 47 too many redirects,
+     * 51 and 60 certificate of the server not verified, 58 problem with the certificate.
+     */
+    private const array PERMANENT_CURL_ERRORS = [1, 3, 47, 51, 58, 60];
 
     /** MIME types too vague to describe the file: the file name extension is trusted instead. */
     private const array GENERIC_MIME_TYPES = [
@@ -65,8 +83,21 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         'application/cdfv2',
     ];
 
-    /** A web page instead of a file: login, embargo or landing page answered with a 200. */
-    private const array WEB_PAGE_MIME_TYPES = ['text/html', 'application/xhtml+xml'];
+    /**
+     * Not a manuscript: a login, embargo or landing page, or the JSON / XML metadata of the file, answered with a 200.
+     * JATS and other XML manuscripts are detected as text/xml or application/xml, which stay accepted.
+     */
+    private const array NOT_A_FILE_MIME_TYPES = [
+        'text/html',
+        'application/xhtml+xml',
+        'application/json',
+        'application/ld+json',
+        'application/problem+json',
+        'application/vnd.api+json',
+    ];
+
+    /** Detected types too weak to overrule an announced web page or JSON document. */
+    private const array WEAK_DETECTED_MIME_TYPES = ['', 'text/plain', 'application/octet-stream'];
 
     /** @var Closure(int): ?Episciences_Paper */
     private Closure $paperLoader;
@@ -108,7 +139,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     {
         return new self(
             new Client(),
-            $logger ?? LoggerFactory::rotating('tca_manuscript'),
+            $logger ?? LoggerFactory::rotating(self::LOG_CHANNEL),
             userAgent: defined('EPISCIENCES_USER_AGENT') ? (string) EPISCIENCES_USER_AGENT : ''
         );
     }
@@ -177,9 +208,11 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             return null;
         }
 
-        $url = $mainFile instanceof Episciences_Paper_File ? $mainFile->getSelfLink() : (string) $paper->getPaperUrl();
+        $url = $this->encodeUnsafeCharacters(
+            $mainFile instanceof Episciences_Paper_File ? $mainFile->getSelfLink() : (string) $paper->getPaperUrl()
+        );
 
-        if (!$this->isHttpUrl($url)) {
+        if (!Episciences_Tools::isHttpUrl($url)) {
             $this->logUnavailable($docId, 'no downloadable URL', ['url' => $url]);
             return null;
         }
@@ -211,7 +244,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         $manuscript = $this->buildManuscript($paper, $mainFile, $body, $size, $response);
 
         if (!$manuscript instanceof ManuscriptFile) {
-            $this->logUnavailable($docId, 'the repository returned a web page instead of a file', $context);
+            $this->logUnavailable($docId, 'the repository returned a web page or metadata instead of a file', $context);
             return null;
         }
 
@@ -235,8 +268,16 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     private function download(int $docId, string $url): array
     {
         for ($hop = 0; $hop <= self::MAX_REDIRECTS; $hop++) {
+            $pinnedAddress = $this->pinPublicAddress($docId, $url);
             $sink = new SizeLimitedStream(Utils::streamFor(Utils::tryFopen('php://temp/maxmemory:0', 'w+b')), $this->maxBytes);
-            $response = $this->send($docId, $url, $sink, $this->pinPublicAddress($docId, $url));
+
+            try {
+                $response = $this->send($docId, $url, $sink, $pinnedAddress);
+            } catch (Throwable $e) {
+                $sink->close();
+                throw $e;
+            }
+
             $status = $response->getStatusCode();
             $location = $response->getHeaderLine('Location');
 
@@ -253,7 +294,8 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             return [$response, $sink, $url];
         }
 
-        throw new ManuscriptTemporarilyUnavailableException(sprintf('Too many redirects while downloading the manuscript of docid %d.', $docId));
+        // A redirect loop or chain is a property of the repository, not a transient failure
+        throw new UnavailableManuscript(sprintf('more than %d redirects', self::MAX_REDIRECTS));
     }
 
     private function send(int $docId, string $url, SizeLimitedStream $sink, string $pinnedAddress): ResponseInterface
@@ -269,7 +311,12 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
                 'on_headers' => $this->rejectAnnouncedOversize(...),
                 // Connect to the address that was checked, never to a new DNS answer (DNS rebinding)
                 'force_ip_resolve' => 'v4',
-                'curl' => [CURLOPT_RESOLVE => [$pinnedAddress]],
+                'curl' => [
+                    CURLOPT_RESOLVE => [$pinnedAddress],
+                    // A large file on a slow repository is fine, a stalled transfer is not
+                    CURLOPT_LOW_SPEED_LIMIT => self::LOW_SPEED_LIMIT,
+                    CURLOPT_LOW_SPEED_TIME => self::LOW_SPEED_TIME,
+                ],
             ]);
         } catch (GuzzleException $e) {
             throw $this->translateTransferFailure($docId, $url, $sink, $e);
@@ -289,6 +336,9 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         }
     }
 
+    /**
+     * @return ManuscriptTooLargeException|ManuscriptTemporarilyUnavailableException|UnavailableManuscript
+     */
     private function translateTransferFailure(int $docId, string $url, SizeLimitedStream $sink, Throwable $e): Throwable
     {
         for ($cause = $e; $cause instanceof Throwable; $cause = $cause->getPrevious()) {
@@ -301,7 +351,13 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             return new ManuscriptTooLargeException($sink->getBytesReceived(), $this->maxBytes);
         }
 
-        $this->logger->warning('Manuscript download failed', ['docid' => $docId, 'url' => $url, 'error' => $e->getMessage()]);
+        $errno = $e instanceof RequestException ? ($e->getHandlerContext()['errno'] ?? null) : null;
+
+        $this->logger->warning('Manuscript download failed', ['docid' => $docId, 'url' => $url, 'errno' => $errno, 'error' => $e->getMessage()]);
+
+        if (in_array($errno, self::PERMANENT_CURL_ERRORS, true)) {
+            return new UnavailableManuscript(sprintf('transfer error %d from %s', $errno, $url), 0, $e);
+        }
 
         return new ManuscriptTemporarilyUnavailableException(
             sprintf('The repository of docid %d could not be reached.', $docId),
@@ -324,7 +380,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
 
         $this->logger->warning('Repository error while downloading the manuscript', ['docid' => $docId, 'url' => $url, 'status' => $status]);
 
-        if ($status === 429 || $status >= 500) {
+        if ($status >= 500 || in_array($status, self::TRANSIENT_STATUSES, true)) {
             throw new ManuscriptTemporarilyUnavailableException(sprintf('The repository of docid %d answered HTTP %d.', $docId, $status));
         }
 
@@ -332,7 +388,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     }
 
     /**
-     * @return ManuscriptFile|null null when the content is a web page
+     * @return ManuscriptFile|null null when the content is a web page or metadata, not a file
      */
     private function buildManuscript(
         Episciences_Paper $paper,
@@ -349,7 +405,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
 
         $mimeType = $this->detectMimeType($stream, $response, $fileName);
 
-        if (in_array($mimeType, self::WEB_PAGE_MIME_TYPES, true)) {
+        if ($this->isNotAFile($mimeType, $response)) {
             $stream->close();
             return null;
         }
@@ -357,6 +413,25 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         $fileName = $this->ensureExtension($fileName, $mimeType, $mainFile?->getFileType());
 
         return new ManuscriptFile($stream, $fileName, $size, $mimeType);
+    }
+
+    /**
+     * A web page or a metadata document instead of the file. The announced Content-Type is trusted
+     * only when the content itself says nothing more precise (an HTML error page sniffed as text/plain).
+     */
+    private function isNotAFile(string $mimeType, ?ResponseInterface $response): bool
+    {
+        if (in_array($mimeType, self::NOT_A_FILE_MIME_TYPES, true)) {
+            return true;
+        }
+
+        return in_array($mimeType, self::WEAK_DETECTED_MIME_TYPES, true)
+            && in_array($this->announcedMimeType($response), self::NOT_A_FILE_MIME_TYPES, true);
+    }
+
+    private function announcedMimeType(?ResponseInterface $response): string
+    {
+        return strtolower(trim(explode(';', $response?->getHeaderLine('Content-Type') ?? '')[0]));
     }
 
     private function detectMimeType(StreamInterface $stream, ?ResponseInterface $response, string $fileName): string
@@ -376,7 +451,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             return $fromExtension;
         }
 
-        $announced = strtolower(trim(explode(';', $response?->getHeaderLine('Content-Type') ?? '')[0]));
+        $announced = $this->announcedMimeType($response);
 
         if ($announced !== '' && !in_array($announced, self::GENERIC_MIME_TYPES, true)) {
             return $announced;
@@ -416,14 +491,37 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         }
 
         $parameters = array_change_key_case(Header::parse($header)[0] ?? []);
+        $extended = $this->decodeExtendedFileName((string) ($parameters['filename*'] ?? ''));
 
-        if (isset($parameters['filename*']) && preg_match("/^[\w-]+'[^']*'(.+)$/", $parameters['filename*'], $matches)) {
-            return rawurldecode($matches[1]);
+        if ($extended !== null) {
+            return $extended;
         }
 
         $name = $parameters['filename'] ?? '';
 
         return $name !== '' ? $name : null;
+    }
+
+    /**
+     * RFC 5987 / RFC 6266 filename*: charset'language'percent-encoded-name.
+     * Returns null when the value is absent, malformed or in a charset that cannot be read,
+     * so that the plain filename parameter is used instead.
+     */
+    private function decodeExtendedFileName(string $value): ?string
+    {
+        if (!preg_match("/^([\w-]+)'[^']*'(.+)$/", $value, $matches)) {
+            return null;
+        }
+
+        $name = rawurldecode($matches[2]);
+
+        $name = match (strtolower($matches[1])) {
+            'utf-8' => $name,
+            'iso-8859-1' => mb_convert_encoding($name, 'UTF-8', 'ISO-8859-1'),
+            default => null,
+        };
+
+        return ($name !== null && $name !== '' && mb_check_encoding($name, 'UTF-8')) ? $name : null;
     }
 
     /**
@@ -461,13 +559,17 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         }
     }
 
-    private function isHttpUrl(string $url): bool
+    /**
+     * Percent-encodes the spaces, control characters and non-ASCII bytes of a file link
+     * (a repository may store "files/Mémoire final.pdf"), as an HTTP client would.
+     */
+    private function encodeUnsafeCharacters(string $url): string
     {
-        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
-            return false;
-        }
-
-        return in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true);
+        return (string) preg_replace_callback(
+            '/[^\x21-\x7E]/',
+            static fn(array $byte): string => rawurlencode($byte[0]),
+            trim($url)
+        );
     }
 
     /**

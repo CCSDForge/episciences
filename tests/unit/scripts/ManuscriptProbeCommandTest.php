@@ -57,6 +57,14 @@ final class ManuscriptProbeCommandTest extends TestCase
         self::assertSame(Command::INVALID, $tester->execute(['docid' => '42', '--save' => $this->savePath]));
     }
 
+    public function testRefusesASavePathInAMissingDirectory(): void
+    {
+        $tester = $this->makeTester(static fn(): never => self::fail('The source must not be called'));
+
+        self::assertSame(Command::INVALID, $tester->execute(['docid' => '42', '--save' => '/nonexistent-directory-' . bin2hex(random_bytes(4)) . '/x.pdf']));
+        self::assertStringContainsString('not a writable directory', $tester->getDisplay());
+    }
+
     public function testRejectsAnInvalidDocid(): void
     {
         $tester = $this->makeTester(static fn(): never => self::fail('The source must not be called'));

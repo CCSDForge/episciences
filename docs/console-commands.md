@@ -1380,7 +1380,7 @@ The local backup copy (`data/{rvcode}/files/{docid}/documents/{docid}.pdf`) is
 used first; otherwise the file is downloaded from the repository. Temporary
 versions, datasets, software, missing, removed or restricted files give no
 manuscript: run with `-v` to print the reason. The log is written to
-`tca_manuscript_<date>.log`.
+`tca_manuscript-<date>.log`, the same file as the Turnitin integration.
 
 ```bash
 php scripts/console.php episciences:manuscript:probe <docid> [--save=<path>] [-v]

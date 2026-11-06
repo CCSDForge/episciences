@@ -17,7 +17,8 @@ interface ManuscriptSourceInterface
      * or null when no analysable file is available.
      *
      * Null is a final answer (unknown paper, temporary version, dataset or software,
-     * no file, file removed or restricted by the repository): retrying will not help.
+     * no file, file removed or restricted by the repository, web page or metadata instead of a file,
+     * redirect loop, invalid certificate): retrying will not help.
      *
      * @throws ManuscriptTemporarilyUnavailableException the repository could not be reached
      *                                                   or answered with a transient error; retry later

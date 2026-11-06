@@ -14,6 +14,7 @@ use Episciences_Paper_File;
 use Episciences_Repositories;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
@@ -223,6 +224,8 @@ final class RepositoryManuscriptSourceTest extends TestCase
         $options = $this->history[0]['options'];
         self::assertSame(RepositoryManuscriptSource::CONNECT_TIMEOUT, $options['connect_timeout']);
         self::assertSame(RepositoryManuscriptSource::TIMEOUT, $options['timeout']);
+        self::assertSame(RepositoryManuscriptSource::LOW_SPEED_LIMIT, $options['curl'][CURLOPT_LOW_SPEED_LIMIT]);
+        self::assertSame(RepositoryManuscriptSource::LOW_SPEED_TIME, $options['curl'][CURLOPT_LOW_SPEED_TIME]);
         self::assertFalse($options['allow_redirects']);
         self::assertSame('Episciences test agent', $this->history[0]['request']->getHeaderLine('User-Agent'));
     }
@@ -252,6 +255,44 @@ final class RepositoryManuscriptSourceTest extends TestCase
         );
 
         self::assertSame('résumé.pdf', $source->fetch(self::DOCID)?->fileName);
+    }
+
+    public function testDecodesAnIsoLatin1NameFromContentDisposition(): void
+    {
+        $source = $this->makeSource(
+            [new Response(200, ['Content-Disposition' => "attachment; filename=\"memoire.pdf\"; filename*=ISO-8859-1''m%E9moire.pdf"], self::PDF)],
+            $this->makePaper((int) Episciences_Repositories::HAL_REPO_ID, 'hal-01234567')
+        );
+
+        self::assertSame('mémoire.pdf', $source->fetch(self::DOCID)?->fileName);
+    }
+
+    public function testFallsBackToThePlainNameWhenTheExtendedNameCannotBeRead(): void
+    {
+        $source = $this->makeSource(
+            [new Response(200, ['Content-Disposition' => "attachment; filename=\"memoire.pdf\"; filename*=KOI8-R''%E9%E9.pdf"], self::PDF)],
+            $this->makePaper((int) Episciences_Repositories::HAL_REPO_ID, 'hal-01234567')
+        );
+
+        self::assertSame('memoire.pdf', $source->fetch(self::DOCID)?->fileName);
+    }
+
+    public function testEncodesTheSpacesAndAccentsOfAStoredFileLink(): void
+    {
+        $mainFile = $this->makeMainFile('https://zenodo.org/api/records/1/files/Mémoire final.pdf/content', 'Mémoire final.pdf');
+        $source = $this->makeSource(
+            [new Response(200, [], self::PDF)],
+            $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID),
+            $mainFile
+        );
+
+        $file = $source->fetch(self::DOCID);
+
+        self::assertInstanceOf(ManuscriptFile::class, $file);
+        self::assertSame(
+            'https://zenodo.org/api/records/1/files/M%C3%A9moire%20final.pdf/content',
+            (string) $this->history[0]['request']->getUri()
+        );
     }
 
     public function testStripsPathSeparatorsFromTheFileName(): void
@@ -340,6 +381,79 @@ final class RepositoryManuscriptSourceTest extends TestCase
         self::assertNull($source->fetch(self::DOCID));
     }
 
+    /**
+     * @dataProvider metadataInsteadOfAFileProvider
+     */
+    public function testReturnsNullWhenTheRepositoryAnswersWithMetadataOrAnErrorPage(string $contentType, string $body): void
+    {
+        $source = $this->makeSource(
+            [new Response(200, ['Content-Type' => $contentType], $body)],
+            $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID),
+            $this->makeMainFile('https://baobab.example.org/api/records/1/files/paper.pdf', 'paper.pdf')
+        );
+
+        self::assertNull($source->fetch(self::DOCID));
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function metadataInsteadOfAFileProvider(): array
+    {
+        return [
+            'file metadata (InvenioRDM links.self)' => ['application/json', '{"key": "paper.pdf", "size": 1234, "links": {}}'],
+            'error page sniffed as plain text' => ['text/html; charset=utf-8', 'Service temporarily closed, come back later.'],
+        ];
+    }
+
+    public function testKeepsAPlainTextManuscript(): void
+    {
+        $source = $this->makeSource(
+            [new Response(200, ['Content-Type' => 'text/plain'], 'Abstract. We prove that...')],
+            $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID),
+            $this->makeMainFile('https://zenodo.org/api/records/1/files/paper.txt/content', 'paper.txt', 'txt')
+        );
+
+        self::assertSame('text/plain', $source->fetch(self::DOCID)?->mimeType);
+    }
+
+    /**
+     * @dataProvider permanentTransferErrorProvider
+     */
+    public function testReturnsNullOnAPermanentTransferError(int $errno): void
+    {
+        $source = $this->makeSource(
+            [],
+            $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID),
+            handler: static fn(RequestInterface $request): never => throw new RequestException(
+                'cURL error ' . $errno,
+                $request,
+                null,
+                null,
+                ['errno' => $errno]
+            )
+        );
+
+        self::assertNull($source->fetch(self::DOCID));
+    }
+
+    /**
+     * @return array<string, array{int}>
+     */
+    public static function permanentTransferErrorProvider(): array
+    {
+        return ['certificate not verified' => [60], 'too many redirects' => [47]];
+    }
+
+    public function testReturnsNullAfterTooManyRedirects(): void
+    {
+        $redirects = array_fill(0, RepositoryManuscriptSource::MAX_REDIRECTS + 1, new Response(302, ['Location' => 'https://hal.science/loop']));
+        $source = $this->makeSource($redirects, $this->makePaper((int) Episciences_Repositories::HAL_REPO_ID));
+
+        self::assertNull($source->fetch(self::DOCID));
+        self::assertCount(RepositoryManuscriptSource::MAX_REDIRECTS + 1, $this->history);
+    }
+
     public function testReturnsNullForAnEmptyFile(): void
     {
         $source = $this->makeSource([new Response(200, [], '')], $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID));
@@ -367,7 +481,7 @@ final class RepositoryManuscriptSourceTest extends TestCase
      */
     public static function transientStatusProvider(): array
     {
-        return ['429' => [429], '500' => [500], '503' => [503]];
+        return ['408' => [408], '425' => [425], '429' => [429], '500' => [500], '503' => [503]];
     }
 
     public function testThrowsARetryableExceptionWhenTheRepositoryIsUnreachable(): void
@@ -386,15 +500,6 @@ final class RepositoryManuscriptSourceTest extends TestCase
             self::assertTrue($e->isRetryable());
             self::assertInstanceOf(ConnectException::class, $e->getPrevious());
         }
-    }
-
-    public function testThrowsARetryableExceptionAfterTooManyRedirects(): void
-    {
-        $redirects = array_fill(0, RepositoryManuscriptSource::MAX_REDIRECTS + 1, new Response(302, ['Location' => 'https://hal.science/loop']));
-        $source = $this->makeSource($redirects, $this->makePaper((int) Episciences_Repositories::HAL_REPO_ID));
-
-        $this->expectException(ManuscriptTemporarilyUnavailableException::class);
-        $source->fetch(self::DOCID);
     }
 
     public function testStopsWhenTheAnnouncedSizeExceedsTheLimit(): void

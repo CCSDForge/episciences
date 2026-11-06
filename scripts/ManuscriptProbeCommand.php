@@ -7,6 +7,8 @@ use Episciences\Tca\Contract\ManuscriptSourceException;
 use Episciences\Tca\Contract\ManuscriptSourceInterface;
 use Episciences\Tca\Manuscript\RepositoryManuscriptSource;
 use GuzzleHttp\Psr7\Utils;
+use Psr\Http\Message\StreamInterface;
+use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use scripts\Command\Bootstrapper;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -53,6 +55,11 @@ class ManuscriptProbeCommand extends Command
             return Command::INVALID;
         }
 
+        if (is_string($savePath) && !is_writable(dirname($savePath))) {
+            $io->error(sprintf('%s is not a writable directory.', dirname($savePath)));
+            return Command::INVALID;
+        }
+
         $this->bootstrap();
 
         try {
@@ -73,14 +80,33 @@ class ManuscriptProbeCommand extends Command
             ['MIME type' => $manuscript->mimeType]
         );
 
-        if (is_string($savePath)) {
-            Utils::copyToStream($manuscript->stream, Utils::streamFor(Utils::tryFopen($savePath, 'xb')));
-            $io->success(sprintf('Saved to %s', $savePath));
+        try {
+            if (is_string($savePath)) {
+                $this->save($manuscript->stream, $savePath);
+                $io->success(sprintf('Saved to %s', $savePath));
+            }
+        } catch (RuntimeException $e) {
+            $io->error(sprintf('The file could not be saved: %s', $e->getMessage()));
+            return Command::FAILURE;
+        } finally {
+            $manuscript->stream->close();
         }
 
-        $manuscript->stream->close();
-
         return Command::SUCCESS;
+    }
+
+    /**
+     * @throws RuntimeException the file cannot be created or written
+     */
+    private function save(StreamInterface $stream, string $path): void
+    {
+        $target = Utils::streamFor(Utils::tryFopen($path, 'xb'));
+
+        try {
+            Utils::copyToStream($stream, $target);
+        } finally {
+            $target->close();
+        }
     }
 
     /**
@@ -88,9 +114,14 @@ class ManuscriptProbeCommand extends Command
      */
     protected function getSource(OutputInterface $output): ManuscriptSourceInterface
     {
-        return RepositoryManuscriptSource::create(
-            LoggerFactory::cli('tca_manuscript', $output->isVerbose(), Level::Debug, Level::Debug)
-        );
+        // Same log file as the Turnitin integration, plus the console with -v
+        $logger = LoggerFactory::rotating(RepositoryManuscriptSource::LOG_CHANNEL);
+
+        if ($output->isVerbose()) {
+            $logger->pushHandler(new StreamHandler('php://stdout', Level::Debug));
+        }
+
+        return RepositoryManuscriptSource::create($logger);
     }
 
     /**
