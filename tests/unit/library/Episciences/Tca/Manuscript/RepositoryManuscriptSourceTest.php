@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Tca\Manuscript;
 
+use Episciences\Files\File;
 use Episciences\Http\PublicAddressGuard;
+use Episciences\Paper\DataDescriptor;
 use Episciences\Tca\Contract\ManuscriptFile;
 use Episciences\Tca\Contract\ManuscriptTemporarilyUnavailableException;
 use Episciences\Tca\Contract\ManuscriptTooLargeException;
@@ -38,6 +40,7 @@ final class RepositoryManuscriptSourceTest extends TestCase
     private const int DOCID = 4242;
     private const string PDF = "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n";
     private const string PUBLIC_IP = '93.184.216.34';
+    private const int DATAVERSE_REPO_ID = 990;
     private const string ZIP = "PK\x03\x04\x14\x00\x00\x00\x08\x00some compressed bytes";
 
     /** @var array<int, array{request: RequestInterface, options: array<string, mixed>}> */
@@ -46,6 +49,8 @@ final class RepositoryManuscriptSourceTest extends TestCase
     private bool $hadMetadataSources;
 
     private mixed $originalMetadataSources = null;
+
+    private ?string $tempDir = null;
 
     protected function setUp(): void
     {
@@ -70,12 +75,18 @@ final class RepositoryManuscriptSourceTest extends TestCase
             (int) Episciences_Repositories::ARXIV_REPO_ID => $source('arXiv', 'https://arxiv.org/pdf/%%IDv%%VERSION'),
             (int) Episciences_Repositories::ZENODO_REPO_ID => $source('Zenodo', ''),
             (int) Episciences_Repositories::ARCHE_ID => $source('ARCHE', ''),
+            self::DATAVERSE_REPO_ID => [Episciences_Repositories::REPO_TYPE => Episciences_Repositories::TYPE_DATAVERSE] + $source('Dataverse', ''),
         ]);
         $this->resetRepositoriesCache();
     }
 
     protected function tearDown(): void
     {
+        if ($this->tempDir !== null) {
+            array_map('unlink', glob($this->tempDir . '/*') ?: []);
+            rmdir($this->tempDir);
+        }
+
         if ($this->hadMetadataSources) {
             Zend_Registry::set('metadataSources', $this->originalMetadataSources);
         } else {
@@ -107,13 +118,103 @@ final class RepositoryManuscriptSourceTest extends TestCase
     /**
      * @dataProvider nonArticleTypeProvider
      */
-    public function testReturnsNullForDatasetsAndSoftware(string $type): void
+    public function testReturnsNullForDatasetsAndSoftwareWithoutDataDescriptor(string $type): void
     {
         $paper = $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID);
         $paper->setType([Episciences_Paper::TITLE_TYPE => $type]);
 
-        self::assertNull($this->makeSource([], $paper)->fetch(self::DOCID));
+        self::assertNull($this->makeSource([], $paper, dataDescriptorPath: null)->fetch(self::DOCID));
         self::assertSame([], $this->history);
+    }
+
+    /**
+     * @dataProvider nonArticleTypeProvider
+     */
+    public function testReadsTheDataDescriptorOfDatasetsAndSoftwareInsteadOfTheRepository(string $type): void
+    {
+        $paper = $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID);
+        $paper->setType([Episciences_Paper::TITLE_TYPE => $type]);
+        $path = $this->writeTempFile('Data descriptor', self::PDF);
+
+        $file = $this->makeSource([], $paper, dataDescriptorPath: $path)->fetch(self::DOCID);
+
+        self::assertInstanceOf(ManuscriptFile::class, $file);
+        self::assertSame([], $this->history, 'the repository is never requested');
+        self::assertSame('Data descriptor.pdf', $file->fileName);
+        self::assertSame('application/pdf', $file->mimeType);
+        self::assertSame(strlen(self::PDF), $file->size);
+        self::assertSame(self::PDF, $file->stream->getContents());
+    }
+
+    public function testReadsTheDataDescriptorOfADataverseDataset(): void
+    {
+        $paper = $this->makePaper(self::DATAVERSE_REPO_ID);
+        self::assertTrue($paper->isDataset(), 'every Dataverse record is a dataset');
+        $path = $this->writeTempFile('descriptor.pdf', self::PDF);
+
+        $file = $this->makeSource([], $paper, dataDescriptorPath: $path)->fetch(self::DOCID);
+
+        self::assertSame('descriptor.pdf', $file?->fileName);
+        self::assertSame([], $this->history);
+    }
+
+    /**
+     * @dataProvider missingDataDescriptorFileProvider
+     */
+    public function testReturnsNullWhenTheDataDescriptorFileIsMissingOrEmpty(string $content): void
+    {
+        $paper = $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID);
+        $paper->setType([Episciences_Paper::TITLE_TYPE => Episciences_Paper::DATASET_TYPE_TITLE]);
+        $path = $content === 'missing' ? $this->tempDir() . '/gone.pdf' : $this->writeTempFile('empty.pdf', '');
+
+        self::assertNull($this->makeSource([], $paper, dataDescriptorPath: $path)->fetch(self::DOCID));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function missingDataDescriptorFileProvider(): array
+    {
+        return ['file missing' => ['missing'], 'empty file' => ['empty']];
+    }
+
+    /**
+     * @dataProvider unsafeDataDescriptorNameProvider
+     */
+    public function testTheDefaultLoaderRefusesAStoredNameWithADirectoryPart(string $name): void
+    {
+        $paper = $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID);
+        $paper->setType([Episciences_Paper::TITLE_TYPE => Episciences_Paper::DATASET_TYPE_TITLE]);
+        $paper->setDataDescriptors([1 => (new DataDescriptor())->setFile(new File(['name' => $name]))]);
+        $source = new RepositoryManuscriptSource(new Client(), new NullLogger(), static fn(int $docId): Episciences_Paper => $paper);
+
+        self::assertNull($source->fetch(self::DOCID));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function unsafeDataDescriptorNameProvider(): array
+    {
+        return [
+            'parent directory' => ['../../config/pwd.json'],
+            'absolute path' => ['/etc/passwd'],
+            'backslash' => ['..\\secret.pdf'],
+        ];
+    }
+
+    public function testRefusesADataDescriptorLargerThanTheLimit(): void
+    {
+        $paper = $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID);
+        $paper->setType([Episciences_Paper::TITLE_TYPE => Episciences_Paper::SOFTWARE_TYPE_TITLE]);
+        $path = $this->writeTempFile('big.pdf', self::PDF);
+
+        try {
+            $this->makeSource([], $paper, maxBytes: 10, dataDescriptorPath: $path)->fetch(self::DOCID);
+            self::fail('An exception was expected');
+        } catch (ManuscriptTooLargeException $e) {
+            self::assertSame(strlen(self::PDF), $e->getObservedSize());
+        }
     }
 
     /**
@@ -186,7 +287,8 @@ final class RepositoryManuscriptSourceTest extends TestCase
 
         $options = $this->history[0]['options'];
         self::assertSame(RepositoryManuscriptSource::CONNECT_TIMEOUT, $options['connect_timeout']);
-        self::assertSame(RepositoryManuscriptSource::TIMEOUT, $options['timeout']);
+        self::assertGreaterThan(RepositoryManuscriptSource::TIMEOUT - 5, $options['timeout']);
+        self::assertLessThanOrEqual(RepositoryManuscriptSource::TIMEOUT, $options['timeout']);
         self::assertSame(RepositoryManuscriptSource::LOW_SPEED_LIMIT, $options['curl'][CURLOPT_LOW_SPEED_LIMIT]);
         self::assertSame(RepositoryManuscriptSource::LOW_SPEED_TIME, $options['curl'][CURLOPT_LOW_SPEED_TIME]);
         self::assertFalse($options['allow_redirects']);
@@ -285,6 +387,59 @@ final class RepositoryManuscriptSourceTest extends TestCase
         );
     }
 
+    public function testEncodesTheQuotesAndAngleBracketsOfAStoredFileLink(): void
+    {
+        $mainFile = $this->makeMainFile('https://zenodo.org/api/records/1/files/l\'article "final" <v2>.pdf/content', 'l\'article.pdf');
+        $source = $this->makeSource(
+            [new Response(200, [], self::PDF)],
+            $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID),
+            $mainFile
+        );
+
+        self::assertInstanceOf(ManuscriptFile::class, $source->fetch(self::DOCID));
+        self::assertSame(
+            'https://zenodo.org/api/records/1/files/l%27article%20%22final%22%20%3Cv2%3E.pdf/content',
+            (string) $this->history[0]['request']->getUri()
+        );
+    }
+
+    /**
+     * @dataProvider unusableContentDispositionProvider
+     */
+    public function testFallsBackToTheMainFileNameWhenTheAnnouncedNameIsUnusable(string $contentDisposition): void
+    {
+        $mainFile = $this->makeMainFile('https://zenodo.org/api/records/1/files/x/content', 'Mémoire.pdf');
+        $source = $this->makeSource(
+            [new Response(200, ['Content-Disposition' => $contentDisposition], self::PDF)],
+            $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID),
+            $mainFile
+        );
+
+        self::assertSame('Mémoire.pdf', $source->fetch(self::DOCID)?->fileName);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function unusableContentDispositionProvider(): array
+    {
+        return [
+            'raw ISO-8859-1 bytes' => ["attachment; filename=\"M\xE9moire.pdf\""],
+            'dots only' => ['attachment; filename="..."'],
+            'spaces only' => ['attachment; filename="   "'],
+        ];
+    }
+
+    public function testFallsBackToTheIdentifierWhenNoNameIsUsable(): void
+    {
+        $source = $this->makeSource(
+            [new Response(200, ['Content-Disposition' => 'attachment; filename="..."'], self::PDF)],
+            $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID)
+        );
+
+        self::assertSame('2401.01234v2.pdf', $source->fetch(self::DOCID)?->fileName);
+    }
+
     public function testStripsPathSeparatorsFromTheFileName(): void
     {
         $source = $this->makeSource(
@@ -306,8 +461,9 @@ final class RepositoryManuscriptSourceTest extends TestCase
 
         $file = $source->fetch(self::DOCID);
 
-        self::assertSame('manuscript.txt.pdf', $file?->fileName);
-        self::assertSame('application/pdf', $file?->mimeType);
+        self::assertInstanceOf(ManuscriptFile::class, $file);
+        self::assertSame('manuscript.txt.pdf', $file->fileName);
+        self::assertSame('application/pdf', $file->mimeType);
     }
 
     public function testFollowsRedirectsAndKeepsOnlyTheFinalBody(): void
@@ -324,8 +480,9 @@ final class RepositoryManuscriptSourceTest extends TestCase
 
         self::assertCount(2, $this->history);
         self::assertSame('https://hal.science/document/final.pdf', (string) $this->history[1]['request']->getUri());
-        self::assertSame(self::PDF, $file?->stream->getContents());
-        self::assertSame(strlen(self::PDF), $file?->size);
+        self::assertInstanceOf(ManuscriptFile::class, $file);
+        self::assertSame(self::PDF, $file->stream->getContents());
+        self::assertSame(strlen(self::PDF), $file->size);
     }
 
     // -------------------------------------------------------------------------
@@ -379,7 +536,7 @@ final class RepositoryManuscriptSourceTest extends TestCase
     }
 
     /**
-     * @return array<string, array{int}>
+     * @return array<int, array{int}> keyed by status: PHP casts the numeric string keys to integers
      */
     public static function unavailableStatusProvider(): array
     {
@@ -457,7 +614,7 @@ final class RepositoryManuscriptSourceTest extends TestCase
      */
     public static function permanentTransferErrorProvider(): array
     {
-        return ['certificate not verified' => [60], 'too many redirects' => [47]];
+        return ['certificate not verified' => [60], 'unsupported protocol' => [1]];
     }
 
     public function testReturnsNullAfterTooManyRedirects(): void
@@ -492,7 +649,7 @@ final class RepositoryManuscriptSourceTest extends TestCase
     }
 
     /**
-     * @return array<string, array{int}>
+     * @return array<int, array{int}> keyed by status: PHP casts the numeric string keys to integers
      */
     public static function transientStatusProvider(): array
     {
@@ -544,6 +701,47 @@ final class RepositoryManuscriptSourceTest extends TestCase
 
         $this->expectException(ManuscriptTooLargeException::class);
         $source->fetch(self::DOCID);
+    }
+
+    public function testTheSinkRefusesTheWriteCrossingTheLimitSoThatCurlAbortsTheTransfer(): void
+    {
+        $writes = [];
+        // Stands for the cURL handler: a short write makes cURL abort the transfer with CURLE_WRITE_ERROR (23)
+        $handler = static function (RequestInterface $request, array $options) use (&$writes): never {
+            foreach (['0123456789', 'abcdefghij', 'klmnopqrst'] as $chunk) {
+                $written = $options['sink']->write($chunk);
+                $writes[] = $written;
+
+                if ($written !== strlen($chunk)) {
+                    throw new RequestException('cURL error 23: Failure writing output to destination', $request, null, null, ['errno' => 23]);
+                }
+            }
+
+            self::fail('The transfer should have been aborted');
+        };
+        $source = $this->makeSource([], $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID), maxBytes: 15, handler: $handler);
+
+        try {
+            $source->fetch(self::DOCID);
+            self::fail('An exception was expected');
+        } catch (ManuscriptTooLargeException $e) {
+            self::assertSame([10, 0], $writes, 'the write crossing the limit is refused, nothing after it is downloaded');
+            self::assertSame(20, $e->getObservedSize());
+        }
+    }
+
+    public function testEveryRedirectHopGetsOnlyTheTimeLeft(): void
+    {
+        $source = $this->makeSource(
+            [new Response(302, ['Location' => 'https://hal.science/final.pdf']), new Response(200, [], self::PDF)],
+            $this->makePaper((int) Episciences_Repositories::HAL_REPO_ID)
+        );
+
+        $source->fetch(self::DOCID);
+
+        self::assertCount(2, $this->history);
+        self::assertLessThanOrEqual(RepositoryManuscriptSource::TIMEOUT, $this->history[0]['options']['timeout']);
+        self::assertLessThanOrEqual($this->history[0]['options']['timeout'], $this->history[1]['options']['timeout']);
     }
 
     // -------------------------------------------------------------------------
@@ -624,7 +822,19 @@ final class RepositoryManuscriptSourceTest extends TestCase
         self::assertCount(1, $this->history);
     }
 
-    public function testThrowsARetryableExceptionWhenTheHostDoesNotResolve(): void
+    public function testThrowsARetryableExceptionWhenTheHostLookupFails(): void
+    {
+        $source = $this->makeSource(
+            [],
+            $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID),
+            hostResolver: static fn(string $host): ?array => null
+        );
+
+        $this->expectException(ManuscriptTemporarilyUnavailableException::class);
+        $source->fetch(self::DOCID);
+    }
+
+    public function testReturnsNullWhenTheHostHasNoIpv4Address(): void
     {
         $source = $this->makeSource(
             [],
@@ -632,8 +842,8 @@ final class RepositoryManuscriptSourceTest extends TestCase
             hostResolver: static fn(string $host): array => []
         );
 
-        $this->expectException(ManuscriptTemporarilyUnavailableException::class);
-        $source->fetch(self::DOCID);
+        self::assertNull($source->fetch(self::DOCID));
+        self::assertSame([], $this->history);
     }
 
     // -------------------------------------------------------------------------
@@ -651,7 +861,8 @@ final class RepositoryManuscriptSourceTest extends TestCase
         int $maxBytes = ManuscriptFile::MAX_SIZE,
         string $userAgent = '',
         ?callable $handler = null,
-        ?\Closure $hostResolver = null
+        ?\Closure $hostResolver = null,
+        ?string $dataDescriptorPath = null
     ): RepositoryManuscriptSource {
         $stack = HandlerStack::create($handler ?? new MockHandler($responses));
         $stack->push(Middleware::history($this->history));
@@ -663,8 +874,27 @@ final class RepositoryManuscriptSourceTest extends TestCase
             static fn(Episciences_Paper $p): ?Episciences_Paper_File => $mainFile,
             $maxBytes,
             $userAgent,
-            new PublicAddressGuard($hostResolver ?? static fn(string $host): array => [self::PUBLIC_IP])
+            new PublicAddressGuard($hostResolver ?? static fn(string $host): array => [self::PUBLIC_IP]),
+            static fn(Episciences_Paper $p): ?string => $dataDescriptorPath
         );
+    }
+
+    private function tempDir(): string
+    {
+        if ($this->tempDir === null) {
+            $this->tempDir = sys_get_temp_dir() . '/manuscript-source-test-' . bin2hex(random_bytes(6));
+            mkdir($this->tempDir);
+        }
+
+        return $this->tempDir;
+    }
+
+    private function writeTempFile(string $name, string $content): string
+    {
+        $path = $this->tempDir() . '/' . $name;
+        file_put_contents($path, $content);
+
+        return $path;
     }
 
     private function makePaper(int $repoId, string $identifier = '2401.01234', float $version = 2): Episciences_Paper

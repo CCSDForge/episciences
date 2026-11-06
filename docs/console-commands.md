@@ -1378,9 +1378,11 @@ serves an analysable file before submitting anything to Turnitin.
 
 The main file is always downloaded from the repository, never read from the local
 backup copy (`data/{rvcode}/files/{docid}/documents/{docid}.pdf`), which may hold
-another file of the paper or a previous version. Temporary
-versions, datasets, software, missing, removed or restricted files give no
-manuscript: run with `-v` to print the reason. The log is written to
+another file of the paper or a previous version. For a dataset or software, the
+repository holds the data or the code: the file checked is the latest data
+descriptor uploaded to Episciences (`data/{rvcode}/files/{docid}/dd/`). Temporary
+versions, datasets and software without data descriptor, missing, removed or
+restricted files give no manuscript: run with `-v` to print the reason. The log is written to
 `tca_manuscript-<date>.log`, the same file as the Turnitin integration.
 
 ```bash

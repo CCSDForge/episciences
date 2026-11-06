@@ -7,8 +7,8 @@ namespace Episciences\Http;
 use GuzzleHttp\Exception\TransferException;
 
 /**
- * The host of an outgoing request did not resolve: possibly a transient DNS failure,
- * unlike RefusedAddressException, which is final.
+ * The host name lookup of an outgoing request failed (DNS server failure, timeout): possibly transient,
+ * unlike RefusedAddressException (unknown domain, host without IPv4 address...), which is final.
  */
 final class UnresolvedHostException extends TransferException
 {

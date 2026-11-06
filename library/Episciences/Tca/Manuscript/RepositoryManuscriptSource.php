@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Episciences\Tca\Manuscript;
 
 use Closure;
+use Episciences\Files\FileManager;
 use Episciences\Http\PublicAddressGuard;
 use Episciences\Http\RefusedAddressException;
 use Episciences\Http\UnresolvedHostException;
@@ -17,7 +18,10 @@ use Episciences_Paper;
 use Episciences_Paper_File;
 use Episciences_Paper_FilesManager;
 use Episciences_PapersManager;
+use Episciences_Review;
+use Episciences_ReviewsManager;
 use Episciences_Tools;
+use Episciences\Upload\SafeFileName;
 use finfo;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
@@ -38,6 +42,11 @@ use Throwable;
  *
  * The file is always downloaded from the repository, never read from the local backup copy of the PDF,
  * which is keyed on the DOCID only and may hold another file or a previous version of the paper.
+ *
+ * Datasets and software are the exception: the repository holds the data or the code, not a text.
+ * The text checked is then the latest data descriptor (or software descriptor) uploaded by the author
+ * to Episciences, read from the journal files. Only its final published version is deposited in an archive,
+ * after the similarity check.
  * Remote files are streamed to a temporary file (never fully loaded in memory), which gives
  * the exact size required by the Turnitin upload. Redirects are followed by hand so that
  * the body of an intermediate response never ends up in the downloaded file, and so that
@@ -46,7 +55,10 @@ use Throwable;
 final readonly class RepositoryManuscriptSource implements ManuscriptSourceInterface
 {
     public const int CONNECT_TIMEOUT = 10;
-    /** Upper bound of a whole transfer: a stalled download is stopped earlier by the low speed limit. */
+    /**
+     * Upper bound, in seconds, of a whole download, redirects included: every hop gets the time left.
+     * A stalled download is stopped earlier by the low speed limit.
+     */
     public const int TIMEOUT = 900;
     /** A transfer slower than LOW_SPEED_LIMIT bytes per second during LOW_SPEED_TIME seconds is aborted. */
     public const int LOW_SPEED_LIMIT = 1024;
@@ -59,6 +71,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     private const int FILE_NAME_MAX_LENGTH = 200;
     private const string DEFAULT_MIME_TYPE = 'application/octet-stream';
     private const string DEFAULT_EXTENSION = 'bin';
+    private const string DEFAULT_FILE_NAME = 'manuscript';
 
     /** Statuses meaning the file is gone or not accessible without credentials: final, no retry. */
     private const array UNAVAILABLE_STATUSES = [401, 403, 404, 410];
@@ -68,10 +81,11 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
 
     /**
      * cURL errors that will not go away by retrying the same URL: final, no retry.
-     * 1 unsupported protocol, 3 malformed URL, 47 too many redirects,
+     * 1 unsupported protocol, 3 malformed URL,
      * 51 and 60 certificate of the server not verified, 58 problem with the certificate.
+     * Redirects are followed by hand (MAX_REDIRECTS), so cURL never reports too many redirects (47).
      */
-    private const array PERMANENT_CURL_ERRORS = [1, 3, 47, 51, 58, 60];
+    private const array PERMANENT_CURL_ERRORS = [1, 3, 51, 58, 60];
 
     /** MIME types too vague to describe the file: the file name extension is trusted instead. */
     private const array GENERIC_MIME_TYPES = [
@@ -104,12 +118,17 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     /** @var Closure(Episciences_Paper): ?Episciences_Paper_File */
     private Closure $mainFileLoader;
 
+    /** @var Closure(Episciences_Paper): ?string */
+    private Closure $dataDescriptorLoader;
+
     private PublicAddressGuard $addressGuard;
 
     /**
      * @param Closure(int): ?Episciences_Paper|null $paperLoader
      * @param Closure(Episciences_Paper): ?Episciences_Paper_File|null $mainFileLoader
      * @param PublicAddressGuard|null $addressGuard checks every requested URL (SSRF guard)
+     * @param Closure(Episciences_Paper): ?string|null $dataDescriptorLoader path of the latest data descriptor
+     *        of a dataset or software, null when there is none
      */
     public function __construct(
         private ClientInterface $httpClient,
@@ -118,11 +137,13 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         ?Closure $mainFileLoader = null,
         private int $maxBytes = ManuscriptFile::MAX_SIZE,
         private string $userAgent = '',
-        ?PublicAddressGuard $addressGuard = null
+        ?PublicAddressGuard $addressGuard = null,
+        ?Closure $dataDescriptorLoader = null
     ) {
         $this->paperLoader = $paperLoader ?? $this->defaultPaperLoader(...);
         $this->mainFileLoader = $mainFileLoader ?? $this->defaultMainFileLoader(...);
         $this->addressGuard = $addressGuard ?? new PublicAddressGuard();
+        $this->dataDescriptorLoader = $dataDescriptorLoader ?? $this->defaultDataDescriptorLoader(...);
     }
 
     /**
@@ -153,11 +174,20 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         }
 
         if ($paper->isDataSetOrSoftware()) {
-            $this->logUnavailable($docId, 'dataset or software');
-            return null;
+            return $this->fromDataDescriptor($paper);
         }
 
-        $mainFile = $paper->hasFilesEnrichment() ? ($this->mainFileLoader)($paper) : null;
+        $mainFile = null;
+
+        // Repositories listing the files of a record (Zenodo...): the main file; the others: the computed paper URL
+        if ($paper->hasFilesEnrichment()) {
+            $mainFile = ($this->mainFileLoader)($paper);
+
+            if ($mainFile === null) {
+                $this->logUnavailable($docId, 'no file in the repository record');
+                return null;
+            }
+        }
 
         return $this->fromRepository($paper, $mainFile);
     }
@@ -165,15 +195,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     private function fromRepository(Episciences_Paper $paper, ?Episciences_Paper_File $mainFile): ?ManuscriptFile
     {
         $docId = (int) $paper->getDocid();
-
-        if ($paper->hasFilesEnrichment() && !$mainFile instanceof Episciences_Paper_File) {
-            $this->logUnavailable($docId, 'no file in the repository record');
-            return null;
-        }
-
-        $url = $this->encodeUnsafeCharacters(
-            $mainFile instanceof Episciences_Paper_File ? $mainFile->getSelfLink() : (string) $paper->getPaperUrl()
-        );
+        $url = $this->encodeUnsafeCharacters($mainFile?->getSelfLink() ?? (string) $paper->getPaperUrl());
 
         if (!Episciences_Tools::isHttpUrl($url)) {
             $this->logUnavailable($docId, 'no downloadable URL', ['url' => $url]);
@@ -222,6 +244,49 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     }
 
     /**
+     * The data descriptor of a dataset or software, uploaded to Episciences: no download.
+     *
+     * @throws ManuscriptTooLargeException
+     */
+    private function fromDataDescriptor(Episciences_Paper $paper): ?ManuscriptFile
+    {
+        $docId = (int) $paper->getDocid();
+        $path = ($this->dataDescriptorLoader)($paper);
+
+        if ($path === null) {
+            $this->logUnavailable($docId, 'dataset or software without data descriptor');
+            return null;
+        }
+
+        $size = is_file($path) && is_readable($path) ? (int) filesize($path) : 0;
+
+        if ($size <= 0) {
+            $this->logger->warning('Data descriptor file missing, unreadable or empty', ['docid' => $docId, 'path' => $path]);
+            $this->logUnavailable($docId, 'data descriptor file missing, unreadable or empty', ['path' => $path]);
+            return null;
+        }
+
+        if ($size > $this->maxBytes) {
+            throw new ManuscriptTooLargeException($size, $this->maxBytes);
+        }
+
+        $stream = Utils::streamFor(Utils::tryFopen($path, 'rb'));
+        $fileName = $this->firstUsableFileName([basename($path)]);
+        $mimeType = $this->detectMimeType($stream, null, $fileName);
+        $fileName = $this->ensureExtension($fileName, $mimeType, null);
+
+        $this->logger->info('Data descriptor read from the journal files', [
+            'docid' => $docId,
+            'path' => $path,
+            'size' => $size,
+            'mime' => $mimeType,
+            'file_name' => $fileName,
+        ]);
+
+        return new ManuscriptFile($stream, $fileName, $size, $mimeType);
+    }
+
+    /**
      * Follows the redirects by hand: each hop gets its own sink, and its scheme and host are checked.
      *
      * @return array{0: ResponseInterface, 1: StreamInterface, 2: string} the final response, its body and URL
@@ -231,15 +296,31 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
      */
     private function download(int $docId, string $url): array
     {
+        $deadline = microtime(true) + self::TIMEOUT;
+
         for ($hop = 0; $hop <= self::MAX_REDIRECTS; $hop++) {
+            $timeLeft = $deadline - microtime(true);
+
+            if ($timeLeft <= 0) {
+                throw new ManuscriptTemporarilyUnavailableException(
+                    sprintf('The download of docid %d did not complete within %d seconds.', $docId, self::TIMEOUT)
+                );
+            }
+
             $pinnedAddress = $this->pinPublicAddress($docId, $url);
             $sink = new SizeLimitedStream(Utils::streamFor(Utils::tryFopen('php://temp/maxmemory:0', 'w+b')), $this->maxBytes);
 
             try {
-                $response = $this->send($docId, $url, $sink, $pinnedAddress);
+                $response = $this->send($docId, $url, $sink, $pinnedAddress, $timeLeft);
             } catch (Throwable $e) {
                 $sink->close();
                 throw $e;
+            }
+
+            // A transfer handler ignoring the short write of the sink still delivers a truncated body
+            if ($sink->hasExceededLimit()) {
+                $sink->close();
+                throw new ManuscriptTooLargeException($sink->getBytesReceived(), $this->maxBytes);
             }
 
             $status = $response->getStatusCode();
@@ -274,15 +355,15 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         }
     }
 
-    private function send(int $docId, string $url, SizeLimitedStream $sink, string $pinnedAddress): ResponseInterface
+    private function send(int $docId, string $url, SizeLimitedStream $sink, string $pinnedAddress, float $timeLeft): ResponseInterface
     {
         try {
             return $this->httpClient->request('GET', $url, [
                 'sink' => $sink,
                 'http_errors' => false,
                 'allow_redirects' => false,
-                'connect_timeout' => self::CONNECT_TIMEOUT,
-                'timeout' => self::TIMEOUT,
+                'connect_timeout' => min(self::CONNECT_TIMEOUT, $timeLeft),
+                'timeout' => $timeLeft,
                 'headers' => array_filter(['User-Agent' => $this->userAgent, 'Accept' => '*/*']),
                 'on_headers' => $this->rejectAnnouncedOversize(...),
                 // Connect to the address that was checked, never to a new DNS answer (DNS rebinding)
@@ -373,11 +454,11 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         int $size,
         ?ResponseInterface $response
     ): ?ManuscriptFile {
-        $fileName = $this->sanitizeFileName(
-            $this->contentDispositionFileName($response)
-            ?? ($mainFile?->getFileName() ?: null)
-            ?? sprintf('%sv%s', $paper->getIdentifier(), $paper->getVersion())
-        );
+        $fileName = $this->firstUsableFileName([
+            $this->contentDispositionFileName($response),
+            $mainFile?->getFileName(),
+            sprintf('%sv%s', $paper->getIdentifier(), $paper->getVersion()),
+        ]);
 
         $mimeType = $this->detectMimeType($stream, $response, $fileName);
 
@@ -530,17 +611,39 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     /**
      * Keeps the accents (Turnitin receives the name URL-encoded) but drops path separators and control characters.
      */
-    private function sanitizeFileName(string $fileName): string
+    /**
+     * The first candidate that is still a usable name once sanitized: a name announced by the server
+     * but unreadable (raw ISO-8859-1, dots only) gives way to the next candidate.
+     *
+     * @param list<string|null> $candidates in order of preference
+     */
+    private function firstUsableFileName(array $candidates): string
     {
+        foreach ($candidates as $candidate) {
+            $fileName = $candidate === null ? null : $this->sanitizeFileName($candidate);
+
+            if ($fileName !== null) {
+                return $fileName;
+            }
+        }
+
+        return self::DEFAULT_FILE_NAME;
+    }
+
+    /**
+     * @return string|null null when nothing usable is left
+     */
+    private function sanitizeFileName(string $fileName): ?string
+    {
+        if (!mb_check_encoding($fileName, 'UTF-8')) {
+            return null;
+        }
+
         $fileName = basename(str_replace('\\', '/', $fileName));
         $fileName = (string) preg_replace('/[\x00-\x1F\x7F\/:]+/u', '_', $fileName);
         $fileName = trim($fileName, " .\t");
 
-        if ($fileName === '' || !mb_check_encoding($fileName, 'UTF-8')) {
-            return 'manuscript';
-        }
-
-        return mb_substr($fileName, -self::FILE_NAME_MAX_LENGTH);
+        return $fileName === '' ? null : mb_substr($fileName, -self::FILE_NAME_MAX_LENGTH);
     }
 
     /**
@@ -548,7 +651,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
      * Returns the CURLOPT_RESOLVE entry pinning the request to the checked public address.
      *
      * @throws UnavailableManuscript the URL is not allowed (final)
-     * @throws ManuscriptTemporarilyUnavailableException the host did not resolve
+     * @throws ManuscriptTemporarilyUnavailableException the host name lookup failed
      */
     private function pinPublicAddress(int $docId, string $url): string
     {
@@ -558,18 +661,19 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             $this->logger->warning('Refused a repository URL', ['docid' => $docId, 'url' => $url, 'reason' => $e->getMessage()]);
             throw new UnavailableManuscript(sprintf('refused URL %s: %s', $url, $e->getMessage()), 0, $e);
         } catch (UnresolvedHostException $e) {
-            throw new ManuscriptTemporarilyUnavailableException(sprintf('The repository host of docid %d does not resolve.', $docId), 0, $e);
+            throw new ManuscriptTemporarilyUnavailableException(sprintf('The repository host of docid %d could not be resolved.', $docId), 0, $e);
         }
     }
 
     /**
-     * Percent-encodes the spaces, control characters and non-ASCII bytes of a file link
-     * (a repository may store "files/Mémoire final.pdf"), as an HTTP client would.
+     * Percent-encodes the spaces, control characters, non-ASCII bytes and quotes and angle brackets
+     * of a file link (a repository may store "files/l'article final.pdf"), as an HTTP client would.
+     * Episciences_Tools::isHttpUrl() refuses the link otherwise.
      */
     private function encodeUnsafeCharacters(string $url): string
     {
         return (string) preg_replace_callback(
-            '/[^\x21-\x7E]/',
+            '/[^\x21-\x7E]|["\'<>]/',
             static fn(array $byte): string => rawurlencode($byte[0]),
             trim($url)
         );
@@ -593,5 +697,35 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     private function defaultMainFileLoader(Episciences_Paper $paper): ?Episciences_Paper_File
     {
         return Episciences_Paper_FilesManager::getMainFile((int) $paper->getDocid());
+    }
+
+    /**
+     * data/{journal code}/files/{docid}/dd/{file name}: built from the journal of the paper,
+     * REVIEW_FILES_PATH being defined only for the requests of a journal site.
+     */
+    private function defaultDataDescriptorLoader(Episciences_Paper $paper): ?string
+    {
+        $paper->loadDataDescriptors();
+        $fileName = $paper->getLatestDataDescriptor()?->getFile()->getName();
+
+        // The stored name is joined to a directory: no directory part allowed
+        if ($fileName === null || !SafeFileName::isBare($fileName)) {
+            return null;
+        }
+
+        $review = Episciences_ReviewsManager::find($paper->getRvid());
+
+        if (!$review instanceof Episciences_Review) {
+            return null;
+        }
+
+        return sprintf(
+            '%s/../data/%s/files/%d/%s/%s',
+            APPLICATION_PATH,
+            $review->getCode(),
+            (int) $paper->getDocid(),
+            FileManager::DD_SOURCE,
+            $fileName
+        );
     }
 }
