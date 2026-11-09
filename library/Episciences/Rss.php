@@ -25,13 +25,12 @@ class Episciences_Rss
         if ($review) {
             $this->setReview($review);
 
-            $this->setFeed($this->createFeed($review->getName(), (string)$settings["action"]));
+            $this->setFeed($this->createFeed($review->getName()));
 
-            if ($settings["action"] === 'papers') {
-                $this->listPapers($settings);
-            } elseif ($settings["action"] === 'news') {
+            if ($settings["action"] === 'news') {
                 $this->listNews($settings);
             } else {
+                // The papers feeds are built by the Episciences API (see RssController)
                 trigger_error(sprintf('RSS Undefined method %s', $settings["action"]), E_USER_ERROR);
             }
 
@@ -39,69 +38,17 @@ class Episciences_Rss
     }
 
     /**
-     * @param array<mixed> $settings
-     * @throws Zend_Db_Select_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Feed_Exception
+     * Channel of the news feed
      */
-    public function listPapers(array $settings): void
+    private function createFeed(string $reviewName): Feed
     {
-        $review = $this->getReview();
-
-        $papers = $this->getEpisciences_PapersForRss($settings, $review);
-        $feed = $this->getFeed();
-
-
-        foreach ($papers as $paper) {
-            if ($paper->hasDoi()) {
-                $link = sprintf('https://doi.org/%s', $paper->getDoi());
-            } else {
-                $link = APPLICATION_URL . '/' . $paper->getDocid();
-            }
-
-            $authors = $paper->getMetadata('authors');
-            $abtract = ($paper->getAbstract()) ?: '[...]';
-            $entry = $feed->createEntry();
-            $entry->setTitle($paper->getTitle());
-            $entry->setLink($link);
-            if (!empty($authors)) {
-                foreach ($authors as $oneAuthor) {
-                    $entry->addAuthor([
-                        'name' => $oneAuthor
-                    ]);
-                }
-            }
-            $publicationDate = strtotime($paper->getPublication_date());
-            $entry->setDateModified($publicationDate);
-            $entry->setDateCreated($publicationDate);
-            $entry->setDescription($abtract);
-            $entry->setContent($abtract);
-            $feed->addEntry($entry);
-        }
-
-
-        echo $feed->export('rss');
-    }
-
-    /**
-     * Channel of the feed of an action ('papers' or 'news')
-     */
-    private function createFeed(string $reviewName, string $action): Feed
-    {
-        if ($action === 'news') {
-            $feedTitle = $this->_translator->translate("Dernières actualités");
-            $feedDescription = $feedTitle;
-        } else {
-            $feedTitle = $action === 'papers' ? $this->_translator->translate("Dernières publications") : '';
-            $feedDescription = $this->_translator->translate("Derniers articles");
-            $action = 'papers';
-        }
+        $feedTitle = $this->_translator->translate("Dernières actualités");
 
         $feed = new Feed;
         $feed->setTitle(sprintf('%s - %s', $reviewName, $feedTitle));
         $feed->setLink(APPLICATION_URL);
-        $feed->setFeedLink(APPLICATION_URL . '/rss/' . $action, 'rss');
-        $feed->setDescription($feedDescription);
+        $feed->setFeedLink(APPLICATION_URL . '/rss/news', 'rss');
+        $feed->setDescription($feedTitle);
         $feed->setImage(['uri' => APPLICATION_URL . '/img/episciences_sign_50x50.png', 'title' => DOMAIN, 'link' => APPLICATION_URL]);
         $feed->setGenerator(DOMAIN);
 
@@ -123,23 +70,6 @@ class Episciences_Rss
     {
         $this->_review = $review;
         return $this;
-    }
-
-    /**
-     * @param array<mixed> $settings
-     * @param Episciences_Review $review
-     * @return Episciences_Paper[]
-     * @throws Zend_Db_Select_Exception
-     */
-    private function getEpisciences_PapersForRss(array $settings, Episciences_Review $review): array
-    {
-        $filters = [
-            'is' => ['status' => Episciences_Paper::STATUS_PUBLISHED],
-            'order' => 'PUBLICATION_DATE DESC'];
-
-        $filters['limit'] = self::getMaxEntries($settings);
-
-        return $review->getPapers($filters);
     }
 
     /**
