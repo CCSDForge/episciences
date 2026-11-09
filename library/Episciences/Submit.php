@@ -20,6 +20,15 @@ class Episciences_Submit
     protected $_db = null;
     public const POSTED_VOLUME_KEY = 'volumes';
     public const POSTED_SECTION_KEY = 'sections';
+    /** Key of getDoc()'s result naming where the record comes from, when not from the repository itself */
+    public const RECORD_SOURCE = 'recordSource';
+    /** Versions of the document given by the fallback source (internal to getDoc()) */
+    private const FALLBACK_VERSIONS = 'fallbackVersions';
+    private const FALLBACK_LATEST_VERSION = 'fallbackLatestVersion';
+
+    /** @var null|callable(string): Episciences_Oai_Client */
+    private static $oaiClientFactory = null;
+
 
     /**
      * Validate cover letter file requirement.
@@ -931,7 +940,7 @@ class Episciences_Submit
             //OAI identifier
             $identifier = Episciences_Repositories::getIdentifier($repoId, $id, $version !== null ? (int)$version : null);
 
-            $result['record'] = self::loadRecord($hookApiRecord, $repoId, $identifier, $result, $oai);
+            $result['record'] = self::loadRecord($hookApiRecord, $repoId, $identifier, $result, $oai, $id);
             $result['hookVersion'] = $version;
             $result['hookId'] = $id;
             $result['hookRepoId'] = (int)$repoId;
@@ -987,8 +996,14 @@ class Episciences_Submit
             if (Episciences_Repositories::isFromHalRepository($repoId)) {
                 self::assertHalSubmissionAllowed($result['record'], $id, $identifier, $oai);
             } elseif (Episciences_Repositories::isFromArxivRepository((int)$repoId)) {
-                self::assertArxivVersionExists($oai, $identifier, $version !== null ? (int)$version : null);
+                if (isset($result[self::RECORD_SOURCE])) {
+                    self::assertFallbackVersionExists($result, $version !== null ? (int)$version : null);
+                } else {
+                    self::assertArxivVersionExists($oai, $identifier, $version !== null ? (int)$version : null);
+                }
             }
+
+            unset($result[self::FALLBACK_VERSIONS], $result[self::FALLBACK_LATEST_VERSION]);
 
         } catch (Ccsd_Error $e) {
             return self::buildCcsdErrorResult($e, $repoId);
@@ -1103,7 +1118,106 @@ class Episciences_Submit
     }
 
     /**
-     * Load record either from hookApiRecords or from OAI.
+     * Replace the creation of the OAI-PMH client (tests); null restores the default
+     * @param null|callable(string): Episciences_Oai_Client $factory receives the base URL
+     */
+    public static function setOaiClientFactory(?callable $factory): void
+    {
+        self::$oaiClientFactory = $factory;
+    }
+
+    /**
+     * Hooks of the OAI-PMH requests and of their fallback: arXiv only (Episciences_Repositories_ArXiv_SubmissionHooks)
+     *
+     * @param array<string, mixed> $hookParams with 'repoId'
+     * @return array<string, mixed> empty for the other repositories
+     */
+    private static function callSubmissionHook(string $hookName, array $hookParams): array
+    {
+        if (!Episciences_Repositories::isFromArxivRepository((int)($hookParams['repoId'] ?? 0))) {
+            return [];
+        }
+
+        return Episciences_Repositories_ArXiv_SubmissionHooks::$hookName($hookParams);
+    }
+
+    /**
+     * OAI-PMH client of the repository, with the request options of the repository hook (attempts, timeouts)
+     */
+    private static function createOaiClient(string $baseUrl, ?string $repoId): Episciences_Oai_Client
+    {
+        $oai = self::$oaiClientFactory !== null
+            ? (self::$oaiClientFactory)($baseUrl)
+            : new Episciences_Oai_Client($baseUrl, 'xml');
+
+        $options = self::callSubmissionHook('hookOaiRequestOptions', ['repoId' => $repoId]);
+
+        if (isset($options['maxAttempts'])) {
+            $oai->setMaxAttempts((int)$options['maxAttempts']);
+        }
+        if (isset($options['requestTimeout'])) {
+            $oai->setRequestTimeout((int)$options['requestTimeout']);
+        }
+        if (isset($options['connectTimeout'])) {
+            $oai->setConnectTimeout((int)$options['connectTimeout']);
+        }
+
+        return $oai;
+    }
+
+    /**
+     * Record from the fallback source of the repository (DataCite for arXiv), when the OAI-PMH server is
+     * unavailable.
+     *
+     * @param Ccsd_Error $oaiError failure of the OAI-PMH request
+     * @return string the record
+     * @throws Ccsd_Error $oaiError when there is no fallback or when the fallback fails too;
+     *  ID_DOES_NOT_EXIST_CODE when the fallback source does not know the document
+     */
+    private static function loadFallbackRecord(Ccsd_Error $oaiError, ?string $repoId, string $id, array &$result): string
+    {
+        if (!Ccsd_Oai_Client::isTransientFailure($oaiError)) {
+            throw $oaiError;
+        }
+
+        $logger = \Episciences\AppRegistry::getMonoLogger();
+
+        try {
+            $fallback = self::callSubmissionHook('hookFallbackRecord', ['repoId' => $repoId, 'identifier' => $id]);
+        } catch (Ccsd_Error $fallbackError) {
+            if ($fallbackError->getMessage() === Ccsd_Error::ID_DOES_NOT_EXIST_CODE) {
+                throw $fallbackError;
+            }
+            $logger?->warning('Fallback record unavailable', [
+                'repoId' => $repoId,
+                'identifier' => $id,
+                'error' => $fallbackError->getMessage(),
+                'code' => $fallbackError->getCode(),
+            ]);
+            throw $oaiError;
+        }
+
+        if (empty($fallback['record']) || !is_string($fallback['record'])) {
+            throw $oaiError;
+        }
+
+        $result[self::RECORD_SOURCE] = (string)($fallback['source'] ?? '');
+        $result[self::FALLBACK_VERSIONS] = (array)($fallback['versions'] ?? []);
+        $result[self::FALLBACK_LATEST_VERSION] = $fallback['latestVersion'] ?? null;
+
+        $logger?->notice('Record loaded from the fallback source', [
+            'repoId' => $repoId,
+            'identifier' => $id,
+            'source' => $result[self::RECORD_SOURCE],
+            'oai_error' => $oaiError->getMessage(),
+        ]);
+
+        return $fallback['record'];
+    }
+
+    /**
+     * Load record either from hookApiRecords or from OAI, or from the fallback source when OAI is unavailable.
+     * @param string $id repository identifier of the document, without version
      * @throws Ccsd_Error
      * @throws Exception
      */
@@ -1112,7 +1226,8 @@ class Episciences_Submit
         ?string                 $repoId,
         ?string                 $identifier,
         array                   &$result,
-        ?Episciences_Oai_Client &$oai
+        ?Episciences_Oai_Client &$oai,
+        string                  $id = ''
     )
     {
         if (!empty($hookApiRecord)) {
@@ -1130,8 +1245,14 @@ class Episciences_Submit
         $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
 
         if ($baseUrl) {
-            $oai = new Episciences_Oai_Client($baseUrl, 'xml');
-            $record = $oai->getRecord($identifier);
+            $oai = self::createOaiClient($baseUrl, $repoId);
+
+            try {
+                $record = $oai->getRecord($identifier);
+            } catch (Ccsd_Error $oaiError) {
+                $record = self::loadFallbackRecord($oaiError, $repoId, $id, $result);
+                $oai = null; // the OAI-PMH server is unavailable: no other request to it
+            }
 
             if ((int)$repoId === (int)Episciences_Repositories::ARXIV_REPO_ID) {
                 $record = self::stripSurplusArxivDescriptions($record);
@@ -1327,6 +1448,33 @@ class Episciences_Submit
     }
 
     /**
+     * Check that the requested version exists, from the versions given by the fallback source.
+     * A version just after the latest known one may be online already but not yet in the fallback
+     * source (DataCite is updated a few hours after the arXiv announcement): the author is asked to try again.
+     * @throws Ccsd_Error
+     */
+    private static function assertFallbackVersionExists(array $result, ?int $version): void
+    {
+        if ($version === null) {
+            return;
+        }
+
+        $versions = array_map('intval', (array)($result[self::FALLBACK_VERSIONS] ?? []));
+
+        if (in_array($version, $versions, true)) {
+            return;
+        }
+
+        $latestVersion = $result[self::FALLBACK_LATEST_VERSION] ?? null;
+
+        if ($latestVersion !== null && $version === (int)$latestVersion + 1) {
+            throw new Ccsd_Error(Ccsd_Error::REPOSITORY_UNAVAILABLE_CODE);
+        }
+
+        throw new Ccsd_Error('arXivVersionDoesNotExist:');
+    }
+
+    /**
      *
      * @param Episciences_Paper|null $oldPaper
      * @param Episciences_Paper $submissionInProgress
@@ -1404,8 +1552,9 @@ class Episciences_Submit
 
         try {
             $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
-        } catch (Zend_Exception $e) {
-            Episciences_View_Helper_Log::log($e->getMessage());
+        } catch (Zend_Exception $registryException) {
+            // Keep $e: the error to report is the original one, not the failed translator lookup
+            Episciences_View_Helper_Log::log($registryException->getMessage());
             $translator = null;
         }
 
@@ -1421,6 +1570,11 @@ class Episciences_Submit
                 Episciences_Repositories::getLabel($repoId),
                 Episciences_Repositories::getIdentifierExemple($repoId)
             );
+        } elseif (
+            str_contains($e->getMessage(), Ccsd_Error::REPOSITORY_TIMEOUT_CODE) ||
+            str_contains($e->getMessage(), Ccsd_Error::REPOSITORY_UNAVAILABLE_CODE)
+        ) {
+            $error = sprintf($error, Episciences_Repositories::getLabel($repoId), $mailToStr);
         } elseif (str_contains($parsedError, Ccsd_Error::DEFAULT_PREFIX_CODE)) {
             $error = sprintf(
                 $error,
