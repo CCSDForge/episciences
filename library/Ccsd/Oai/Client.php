@@ -79,7 +79,10 @@ class Ccsd_Oai_Client {
 	 */
 	public static function isTransientFailure(Ccsd_Error $e): bool
 	{
-		if ($e instanceof Ccsd_Oai_ServerErrorException || $e->getMessage() === Ccsd_Error::REPOSITORY_TIMEOUT_CODE) {
+		if (
+			$e instanceof Ccsd_Oai_ServerErrorException
+			|| in_array($e->getMessage(), [Ccsd_Error::REPOSITORY_TIMEOUT_CODE, Ccsd_Error::REPOSITORY_UNAVAILABLE_CODE], true)
+		) {
 			return true;
 		}
 
@@ -204,7 +207,8 @@ class Ccsd_Oai_Client {
      * @param string $url
      * @param array $options cURL options
      * @return string response body
-     * @throws Ccsd_Error the failure of the last attempt; a timeout is reported as REPOSITORY_TIMEOUT_CODE
+     * @throws Ccsd_Error the failure of the last attempt; a timeout is reported as REPOSITORY_TIMEOUT_CODE,
+     *  another transient cURL error (DNS, connection, TLS, empty answer) as REPOSITORY_UNAVAILABLE_CODE
      */
     protected function requestWithRetries(string $url, array $options): string
     {
@@ -217,6 +221,10 @@ class Ccsd_Oai_Client {
                 if ($attempt >= $this->maxAttempts || !self::isTransientFailure($e)) {
                     if ($e->getType() === Ccsd_Error::CURL_ERROR_TYPE && $e->getCode() === CURLE_OPERATION_TIMEDOUT) {
                         throw new Ccsd_Error(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, CURLE_OPERATION_TIMEDOUT);
+                    }
+                    // Shown to the author as a temporary unavailability instead of the raw cURL error (logged above)
+                    if ($e->getType() === Ccsd_Error::CURL_ERROR_TYPE && in_array($e->getCode(), self::TRANSIENT_CURL_ERRORS, true)) {
+                        throw new Ccsd_Error(Ccsd_Error::REPOSITORY_UNAVAILABLE_CODE, $e->getCode());
                     }
                     throw $e;
                 }
