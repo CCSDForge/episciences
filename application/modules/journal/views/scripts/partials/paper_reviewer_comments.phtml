@@ -1,5 +1,5 @@
 <?php
-const PARTIALS_DEMAND_ITEM_PHTML = 'partials/demand_item.phtml';
+$demandItemPartial = 'partials/demand_item.phtml';
 
 // Extract data from view
 $comments = $this->comments;
@@ -27,7 +27,7 @@ $paperId = $this->paper->getPaperId();
                 <?php $replyForm = $replyForms[$pcId] ?? null; ?>
 
                 <!-- Main demand -->
-                <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                <?= $this->partial($demandItemPartial, [
                         'item' => $comment,
                         'paperId' => $paperId,
                         'isReply' => false,
@@ -41,7 +41,7 @@ $paperId = $this->paper->getPaperId();
                 <?php if (isset($comment['replies'])) : ?>
                     <div class="timeline-thread">
                         <?php foreach ($comment['replies'] as $reply) : ?>
-                            <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                            <?= $this->partial($demandItemPartial, [
                                     'item' => $reply,
                                     'paperId' => $paperId,
                                     'isReply' => true,

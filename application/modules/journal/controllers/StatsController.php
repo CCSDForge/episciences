@@ -359,7 +359,11 @@ class StatsController extends Episciences_Controller_Action
 
         // Users: not available by year, the database does not allow to get this information
         if ($isAvailableUsersStats) {
-            $charts['users'] = self::buildUsersChartData($details[self::NB_USERS] ?? [], fn(string $role) => $this->view->translate($role));
+            $charts['users'] = self::buildUsersChartData(
+                $details[self::NB_USERS] ?? [],
+                fn(string $role) => $this->view->translate($role),
+                (int)$dashboard['value'][self::NB_USERS]
+            );
             $this->view->chart5Title = $this->view->translate("Le nombre d'utilisateurs par rôles");
             $this->view->allUsers = $dashboard['value'][self::NB_USERS];
         }
@@ -459,7 +463,7 @@ class StatsController extends Episciences_Controller_Action
             [$t('Évaluations demandées'), $view->reviewsRequested],
             [$t('Évaluations reçues'), $view->reviewsReceived],
             [$t("Nombre médian d'évaluations par article évalué"), $view->medianReviewsNumber],
-            [$t("Nombre total d'utilisateurs"), $view->isAvailableUsersStats ? $view->allUsers : null],
+            // the total of the users is exported with the chart of the users, in its own panel
         ]);
     }
 
@@ -618,11 +622,14 @@ class StatsController extends Episciences_Controller_Action
 
     /**
      * Users by role, sorted from the largest number (the root role is left out)
+     * The total of the users, if given, ends the CSV export of the chart: as a user can have several roles,
+     * it is not the sum of the roles, so its label says it.
      * @param array $usersDetails role => ['nbUsers' => n]
      * @param callable $translate translation of a role
-     * @return array{labels: string[], datasets: array}
+     * @param int|null $total total number of users (distinct users)
+     * @return array{labels: string[], datasets: array, csvFooterRows: array<int, array{0: string, 1: int}>}
      */
-    public static function buildUsersChartData(array $usersDetails, callable $translate): array
+    public static function buildUsersChartData(array $usersDetails, callable $translate, ?int $total = null): array
     {
         unset($usersDetails[Episciences_Acl::ROLE_ROOT]);
 
@@ -637,6 +644,10 @@ class StatsController extends Episciences_Controller_Action
         return [
             'labels' => array_column($users, 0),
             'datasets' => [['label' => (string)$translate(self::CHART_LABELS['users']), 'data' => array_column($users, 1)]],
+            'csvFooterRows' => $total === null ? [] : [[
+                $translate("Nombre total d'utilisateurs") . ' (' . $translate('Un utilisateur peut avoir plusieurs rôles.') . ')',
+                $total,
+            ]],
         ];
     }
 

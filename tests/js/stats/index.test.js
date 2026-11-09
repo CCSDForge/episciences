@@ -4,7 +4,7 @@
 
 const path = require('path');
 
-const { initStatsHistorySwitch } = require(
+const { initStatsHistorySwitch, showCurrentStatsYear } = require(
     path.join(__dirname, '../../../public/js/stats/index.js')
 );
 
@@ -56,5 +56,46 @@ describe('initStatsHistorySwitch', function () {
         document.body.innerHTML = '<p>No switch</p>';
 
         expect(() => initStatsHistorySwitch()).not.toThrow();
+    });
+});
+
+describe('showCurrentStatsYear', function () {
+    // jsdom has no layout: the sizes of the row of the years are given
+    function setUp(scrollWidth, clientWidth) {
+        document.body.innerHTML = `
+            <div class="stats-toolbar">
+                <nav class="stats-years">
+                    <a class="stats-year">Tout</a>
+                    <a class="stats-year active">2024</a>
+                </nav>
+            </div>
+        `;
+        const years = document.querySelector('.stats-years');
+        const current = document.querySelector('.stats-year.active');
+        const define = (element, name, value) =>
+            Object.defineProperty(element, name, { configurable: true, value });
+
+        define(years, 'scrollWidth', scrollWidth);
+        define(years, 'clientWidth', clientWidth);
+        define(years, 'offsetLeft', 10);
+        define(current, 'offsetLeft', 410);
+        define(current, 'offsetWidth', 60);
+
+        return years;
+    }
+
+    it('centres the current year in the row scrolled sideways', function () {
+        const years = setUp(900, 300);
+        showCurrentStatsYear();
+
+        // 410 - 10 - (300 - 60) / 2
+        expect(years.scrollLeft).toBe(280);
+    });
+
+    it('leaves the row as it is when all the years are shown', function () {
+        const years = setUp(300, 300);
+        showCurrentStatsYear();
+
+        expect(years.scrollLeft).toBe(0);
     });
 });
