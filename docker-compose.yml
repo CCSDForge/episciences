@@ -73,7 +73,7 @@ services:
         # Enable it explicitly for step-debugging via the xdebug override file
         # (make up-xdebug).
         - XDEBUG_MODE=off
-        - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003 start_with_request=yes
+        - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003
         - COMPOSER_HOME=/tmp/composer
         - SMTP_HOST=mailpit
         - SMTP_PORT=1025
