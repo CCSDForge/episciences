@@ -111,9 +111,13 @@ up: ## Start all docker containers
 	$(DOCKER_COMPOSE) up -d
 	$(PRINT_SERVICES)
 
+# Explicit -f flags stop Compose from loading docker-compose.override.yml on its own:
+# add it back when present, before the Xdebug file so that the latter wins.
+COMPOSE_XDEBUG_FILES := -f docker-compose.yml $(if $(wildcard docker-compose.override.yml),-f docker-compose.override.yml) -f docker-compose.xdebug.yml
+
 up-xdebug: ## Start all docker containers with Xdebug step-debugging enabled
 	@echo "Starting Docker containers with Xdebug enabled..."
-	$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.xdebug.yml up -d
+	$(DOCKER_COMPOSE) $(COMPOSE_XDEBUG_FILES) up -d
 	$(PRINT_SERVICES)
 	@echo "🐞 Xdebug is active. Attach your IDE to host.docker.internal:9003 to step-debug."
 

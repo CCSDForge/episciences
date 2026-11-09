@@ -71,7 +71,7 @@ services:
         # start on every PHP process (including phpunit's RunInSeparateProcess
         # children) and emit connection noise that PHPUnit treats as errors.
         # Enable it explicitly for step-debugging via the xdebug override file
-        # (docker compose -f docker-compose.yml -f docker-compose.xdebug.yml up).
+        # (make up-xdebug).
         - XDEBUG_MODE=off
         - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003 start_with_request=yes
         - COMPOSER_HOME=/tmp/composer
