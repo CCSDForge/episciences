@@ -67,13 +67,8 @@ services:
         - ./src/php-fpm/php-fpm.conf:/usr/local/etc/php-fpm.d/zz-custom.conf
     environment:
         - PHP_FPM_LISTEN_PORT=9000
-        # Xdebug is off by default: with start_with_request=yes it would try to
-        # start on every PHP process (including phpunit's RunInSeparateProcess
-        # children) and emit connection noise that PHPUnit treats as errors.
-        # Enable it explicitly for step-debugging via the xdebug override file
-        # (make up-xdebug).
-        - XDEBUG_MODE=off
-        - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003
+        # Xdebug is off in the image (src/php-fpm/xdebug.ini); make up-xdebug turns
+        # step-debugging on (docker-compose.xdebug.yml).
         - COMPOSER_HOME=/tmp/composer
         - SMTP_HOST=mailpit
         - SMTP_PORT=1025

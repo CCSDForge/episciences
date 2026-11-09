@@ -113,13 +113,15 @@ up: ## Start all docker containers
 
 # Explicit -f flags stop Compose from loading docker-compose.override.yml on its own:
 # add it back when present, before the Xdebug file so that the latter wins.
-COMPOSE_XDEBUG_FILES := -f docker-compose.yml $(if $(wildcard docker-compose.override.yml),-f docker-compose.override.yml) -f docker-compose.xdebug.yml
+XDEBUG_COMPOSE_FILES := -f docker-compose.yml $(if $(wildcard docker-compose.override.yml),-f docker-compose.override.yml) -f docker-compose.xdebug.yml
 
 up-xdebug: ## Start all docker containers with Xdebug step-debugging enabled
 	@echo "Starting Docker containers with Xdebug enabled..."
-	$(DOCKER_COMPOSE) $(COMPOSE_XDEBUG_FILES) up -d
+	$(DOCKER_COMPOSE) $(XDEBUG_COMPOSE_FILES) up -d
 	$(PRINT_SERVICES)
-	@echo "🐞 Xdebug is active. Attach your IDE to host.docker.internal:9003 to step-debug."
+	@echo "🐞 Xdebug is active: listen on port 9003 in your IDE (server dev.episciences.org, path mapping: project root → /var/www/htdocs)."
+	@echo "   Console scripts: docker compose exec -e XDEBUG_TRIGGER=1 php-fpm php <script>"
+	@echo "   Run 'make up' to start again without Xdebug."
 
 down: ## Stop all docker containers and remove orphans
 	@echo "Stopping Docker containers..."
