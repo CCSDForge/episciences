@@ -36,6 +36,28 @@ final class FeedControllerTest extends TestCase
      */
     public function testActionPermanentlyRedirectsToJournalPapersFeed(string $action): void
     {
+        self::assertFalse(defined('PREFIX_URL'), 'this case covers deployments without URL prefix');
+        self::assertSame([301, '/rss/papers'], $this->dispatch($action));
+    }
+
+    /**
+     * Journals served behind a "/<journal code>/" prefix (PREFIX_URL) keep it in the redirect.
+     *
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testRedirectKeepsJournalUrlPrefix(): void
+    {
+        define('PREFIX_URL', '/dev/');
+
+        self::assertSame([301, '/dev/rss/papers'], $this->dispatch('indexAction'));
+    }
+
+    /**
+     * @return array{int, string|null} HTTP response code, Location header
+     */
+    private function dispatch(string $action): array
+    {
         $request = new Zend_Controller_Request_HttpTestCase();
         $response = new Zend_Controller_Response_HttpTestCase();
         $controller = new \FeedController($request, $response);
@@ -43,7 +65,6 @@ final class FeedControllerTest extends TestCase
         $controller->{$action}();
 
         self::assertTrue($response->isRedirect());
-        self::assertSame(301, $response->getHttpResponseCode());
 
         $location = null;
         foreach ($response->getHeaders() as $header) {
@@ -51,6 +72,7 @@ final class FeedControllerTest extends TestCase
                 $location = $header['value'];
             }
         }
-        self::assertSame('/rss/papers', $location);
+
+        return [$response->getHttpResponseCode(), $location];
     }
 }

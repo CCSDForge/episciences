@@ -9,7 +9,7 @@ declare(strict_types=1);
  */
 class FeedController extends Zend_Controller_Action
 {
-    public const JOURNAL_FEED_URL = '/rss/papers';
+    public const JOURNAL_FEED_PATH = 'rss/papers';
 
     public function indexAction(): void
     {
@@ -30,7 +30,11 @@ class FeedController extends Zend_Controller_Action
     {
         /** @var Zend_Controller_Action_Helper_Redirector $redirector */
         $redirector = $this->_helper->getHelper('Redirector');
+        // Deployments serving journals behind a "/<journal code>/" URL prefix define PREFIX_URL;
+        // the redirect must keep it. The redirector turns an empty prefix into "/".
+        $prefix = defined('PREFIX_URL') ? (string) constant('PREFIX_URL') : '/';
+
         // No exit: the ViewRenderer skips rendering on a redirect response.
-        $redirector->setCode(301)->setExit(false)->gotoUrl(self::JOURNAL_FEED_URL);
+        $redirector->setCode(301)->setExit(false)->gotoUrl($prefix . self::JOURNAL_FEED_PATH);
     }
 }
