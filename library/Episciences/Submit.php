@@ -996,11 +996,7 @@ class Episciences_Submit
             if (Episciences_Repositories::isFromHalRepository($repoId)) {
                 self::assertHalSubmissionAllowed($result['record'], $id, $identifier, $oai);
             } elseif (Episciences_Repositories::isFromArxivRepository((int)$repoId)) {
-                if (isset($result[self::RECORD_SOURCE])) {
-                    self::assertFallbackVersionExists($result, $version !== null ? (int)$version : null);
-                } else {
-                    self::assertArxivVersionExists($oai, $identifier, $version !== null ? (int)$version : null);
-                }
+                self::assertArxivRequestedVersion($result, $oai, $identifier, $version !== null ? (int)$version : null, $repoId, $id);
             }
 
             unset($result[self::FALLBACK_VERSIONS], $result[self::FALLBACK_LATEST_VERSION]);
@@ -1426,6 +1422,81 @@ class Episciences_Submit
     }
 
     /**
+     * arXiv: check that the requested version exists, from arXivRaw, or from the fallback source
+     * (DataCite) when the record comes from it or when the arXivRaw request fails transiently.
+     * @param string $id repository identifier of the document, without version
+     * @throws Ccsd_Error
+     * @throws Exception
+     */
+    private static function assertArxivRequestedVersion(
+        array                   &$result,
+        ?Episciences_Oai_Client $oai,
+        ?string                 $identifier,
+        ?int                    $version,
+        ?string                 $repoId,
+        string                  $id
+    ): void
+    {
+        if (isset($result[self::RECORD_SOURCE])) {
+            self::assertFallbackVersionExists($result, $version);
+            return;
+        }
+
+        try {
+            self::assertArxivVersionExists($oai, $identifier, $version);
+        } catch (Ccsd_Error $versionError) {
+            // arXivVersionDoesNotExist and the other non transient errors are rethrown
+            self::loadFallbackVersions($versionError, $repoId, $id, $result);
+            self::assertFallbackVersionExists($result, $version);
+        }
+    }
+
+    /**
+     * Versions of the document from the fallback source (DataCite for arXiv), when the version check
+     * request to the OAI-PMH server fails transiently. The record itself comes from the repository:
+     * RECORD_SOURCE is not set.
+     *
+     * Unlike loadFallbackRecord(), a document unknown to the fallback source is not reported as missing:
+     * the repository has just served its record, the fallback source is only late.
+     *
+     * @param Ccsd_Error $oaiError failure of the version check request
+     * @throws Ccsd_Error $oaiError when there is no fallback or when the fallback fails too
+     */
+    private static function loadFallbackVersions(Ccsd_Error $oaiError, ?string $repoId, string $id, array &$result): void
+    {
+        if (!Ccsd_Oai_Client::isTransientFailure($oaiError)) {
+            throw $oaiError;
+        }
+
+        $logger = \Episciences\AppRegistry::getMonoLogger();
+
+        try {
+            $fallback = self::callSubmissionHook('hookFallbackRecord', ['repoId' => $repoId, 'identifier' => $id]);
+        } catch (Ccsd_Error $fallbackError) {
+            $logger?->warning('Fallback versions unavailable', [
+                'repoId' => $repoId,
+                'identifier' => $id,
+                'error' => $fallbackError->getMessage(),
+                'code' => $fallbackError->getCode(),
+            ]);
+            throw $oaiError;
+        }
+
+        if (!isset($fallback['versions'])) { // no fallback, or fallback switched off
+            throw $oaiError;
+        }
+
+        $result[self::FALLBACK_VERSIONS] = (array)$fallback['versions'];
+        $result[self::FALLBACK_LATEST_VERSION] = $fallback['latestVersion'] ?? null;
+
+        $logger?->notice('Versions loaded from the fallback source', [
+            'repoId' => $repoId,
+            'identifier' => $id,
+            'oai_error' => $oaiError->getMessage(),
+        ]);
+    }
+
+    /**
      * arXiv: check that requested version exists.
      * @throws Exception
      */
@@ -1439,6 +1510,9 @@ class Episciences_Submit
             return;
         }
 
+        // The fallback source answers when this request fails: no second attempt, to stay within the
+        // time limit of the web server
+        $oai->setMaxAttempts(1);
         $arXivRawRecord = $oai->getArXivRawRecord($identifier);
         $versionHistory = self::extractVersionsFromArXivRaw($arXivRawRecord);
 
