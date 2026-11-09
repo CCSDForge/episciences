@@ -1,16 +1,19 @@
-# Opt-in override that turns Xdebug step-debugging back on for the php-fpm
-# service. The base docker-compose.yml ships with XDEBUG_MODE=off so that every
-# PHP process (tests, console, cron) runs without Xdebug overhead or the stderr
-# noise that breaks phpunit's #[RunInSeparateProcess] tests.
+# Opt-in override that turns Xdebug step-debugging on for the php-fpm service.
+# The image ships with xdebug.mode=off (src/php-fpm/xdebug.ini) so that every
+# PHP process (tests, console, workers) runs without Xdebug overhead.
 #
-# Use when you need to step-debug:
+# Use when you need to step-debug (map the project root to /var/www/htdocs in the IDE):
 #   make up-xdebug
 # which also loads docker-compose.override.yml when present, as plain
 #   docker compose -f docker-compose.yml -f docker-compose.xdebug.yml up
 # does not.
 #
-# These keys override the base file's environment (compose merges by key, the
-# later file wins).
+# Web requests always start a debugging session (src/php-fpm/xdebug-fpm.conf);
+# console scripts only with a trigger:
+#   docker compose exec -e XDEBUG_TRIGGER=1 php-fpm php scripts/<script>.php
+#
+# These keys are merged with the base file (compose merges by key, the later
+# file wins).
 services:
   php-fpm:
     environment:
@@ -20,3 +23,6 @@ services:
       # Apache listens on port 80 behind Traefik, so the port PHP reports never matches
       # a server declared on 443. Also used when debugging console scripts.
       - PHP_IDE_CONFIG=serverName=dev.episciences.org
+    volumes:
+      # PHP-FPM only, after the other pool files: console scripts keep the trigger mode
+      - ./src/php-fpm/xdebug-fpm.conf:/usr/local/etc/php-fpm.d/zz-xdebug.conf:ro
