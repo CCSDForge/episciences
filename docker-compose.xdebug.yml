@@ -13,3 +13,7 @@ services:
     environment:
       - XDEBUG_MODE=debug
       - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003 start_with_request=yes
+      # Lets the IDE pick its server configuration (and path mappings) by name only:
+      # Apache listens on port 80 behind Traefik, so the port PHP reports never matches
+      # a server declared on 443. Also used when debugging console scripts.
+      - PHP_IDE_CONFIG=serverName=dev.episciences.org
