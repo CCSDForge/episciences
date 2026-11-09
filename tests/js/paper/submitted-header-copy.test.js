@@ -44,6 +44,7 @@ global.$ = jest.fn(domJquery);
 global.translate = jest.fn(text => text);
 global.getLoader = jest.fn(() => '');
 global.addToggleButton = jest.fn(table => toggled.push(...table.elements));
+global.JS_PREFIX_URL = '/';
 
 // eval() is safe and intentional here: the input is a source file from this repository,
 // never external data, and submitted.js is a plain script with no module exports.

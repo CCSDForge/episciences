@@ -58,11 +58,13 @@ describe('submitted.js loaded into a ready page', function () {
         global.translate = jest.fn(text => text);
         global.getLoader = jest.fn(() => '');
         global.addToggleButton = jest.fn();
+        global.JS_PREFIX_URL = '/';
     });
 
     afterEach(function () {
         delete global.selfController;
         delete global.selfAction;
+        delete global.JS_PREFIX_URL;
     });
 
     it('builds the table and binds the filter button and the search box', function () {
