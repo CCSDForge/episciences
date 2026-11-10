@@ -61,6 +61,14 @@
             </xsl:choose>
         </xsl:variable>
 
+        <!-- The author of a submission not handled yet (first version) can delete it -->
+        <xsl:variable name="canRemoveSubmission" select="(episciences/status = '') and (episciences/uid = php:function('Episciences_Auth::getUid') and episciences/hasOtherVersions = '')"/>
+        <xsl:if test="$canRemoveSubmission">
+            <xsl:call-template name="remove-submission-modal">
+                <xsl:with-param name="title" select="$title"/>
+            </xsl:call-template>
+        </xsl:if>
+
         <div class="panel panel-default collapsable" style="margin-top: 20px">
 
             <div class="panel-heading">
@@ -342,20 +350,13 @@
                 <xsl:if test="((episciences/status = '') and (episciences/uid = php:function('Episciences_Auth::getUid')) and (episciences/hasOtherVersions = '')) or (episciences and not(episciences/tmp/text() = '1') and (($rightOrcid = '1') or (episciences/isAllowedToListAssignedPapers/text() = '1'))) or (episciences/uid = php:function('Episciences_Auth::getUid'))">
                     <hr />
                 </xsl:if>
-                <xsl:if test="(episciences/status = '') and (episciences/uid = php:function('Episciences_Auth::getUid') and episciences/hasOtherVersions = '')">
-                    <a>
-                        <xsl:attribute name="href">
-                            <xsl:value-of select="concat('/paper/remove/id/', episciences/id)"/>
-                        </xsl:attribute>
-                        <button class="btn btn-danger btn-sm" style="margin-right: 5px">
-                            <span class="glyphicon glyphicon-remove-circle" style="margin-right: 5px"/>
-                            <xsl:variable name="string">
-                                <xsl:text>Supprimer la soumission</xsl:text>
-                            </xsl:variable>
-                            <xsl:value-of
-                                    select="php:function('Ccsd_Tools::translate', $string)"/>
-                        </button>
-                    </a>
+                <xsl:if test="$canRemoveSubmission">
+                    <!-- The removal cannot be undone: the button opens a confirmation dialog, which posts the form -->
+                    <button type="button" id="remove-submission-button" class="btn btn-danger btn-sm" style="margin-right: 5px"
+                            data-toggle="modal" data-target="#remove-submission-modal">
+                        <span class="glyphicon glyphicon-remove-circle" style="margin-right: 5px"/>
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Supprimer la soumission')"/>
+                    </button>
                 </xsl:if>
 
                 <xsl:if test="episciences">
@@ -505,6 +506,71 @@
         <xsl:param name="lang"/>
         <span class="badge rounded-pill text-bg-light"><xsl:value-of select="php:function('Episciences_Tools::getLanguageName', string($lang))"/></span>
         <xsl:text> </xsl:text>
+    </xsl:template>
+
+    <!--
+        Confirmation dialog of the removal of a submission by its author (Bootstrap modal opened by
+        #remove-submission-button). The form posts the session request token; the dialog is kept at
+        the top level of the record so that it is not displayed under the modal backdrop.
+    -->
+    <xsl:template name="remove-submission-modal">
+        <xsl:param name="title"/>
+        <div class="modal fade" id="remove-submission-modal" tabindex="-1" role="dialog"
+             aria-labelledby="remove-submission-modal-title" aria-describedby="remove-submission-modal-description" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <form id="remove-submission" method="post" class="modal-content"
+                      onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+                    <xsl:attribute name="action">
+                        <xsl:value-of select="concat('/paper/remove/id/', episciences/id)"/>
+                    </xsl:attribute>
+                    <input type="hidden" name="csrf_token">
+                        <xsl:attribute name="value">
+                            <xsl:value-of select="php:function('Episciences_Csrf_Helper::getSessionToken')"/>
+                        </xsl:attribute>
+                    </input>
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <xsl:attribute name="aria-label">
+                                <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Fermer')"/>
+                            </xsl:attribute>
+                            <span aria-hidden="true">&#215;</span>
+                        </button>
+                        <h4 class="modal-title text-danger" id="remove-submission-modal-title">
+                            <span class="glyphicon glyphicon-warning-sign" aria-hidden="true" style="margin-right: 8px"/>
+                            <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Supprimer la soumission')"/>
+                        </h4>
+                    </div>
+                    <div class="modal-body" id="remove-submission-modal-description">
+                        <p>
+                            <strong>
+                                <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Voulez-vous vraiment supprimer cette soumission ?')"/>
+                            </strong>
+                        </p>
+                        <xsl:if test="normalize-space($title) != ''">
+                            <blockquote class="small" style="margin-bottom: 15px">
+                                <xsl:value-of select="$title"/>
+                            </blockquote>
+                        </xsl:if>
+                        <div class="alert alert-warning" role="alert" style="margin-bottom: 0">
+                            <strong>
+                                <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Cette action est irréversible.')"/>
+                            </strong>
+                            <xsl:text> </xsl:text>
+                            <xsl:value-of select="php:function('Ccsd_Tools::translate', 'La revue ne traitera plus cet article, et les relecteurs et rédacteurs qui y sont assignés en seront retirés.')"/>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">
+                            <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Annuler')"/>
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <span class="glyphicon glyphicon-trash" aria-hidden="true" style="margin-right: 5px"/>
+                            <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Supprimer définitivement')"/>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </xsl:template>
 
 </xsl:stylesheet>

@@ -3775,7 +3775,15 @@ class PaperController extends PaperDefaultController
         $this->_helper->viewRenderer->setNoRender();
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $docId = $request->getParam('id');
+        $docId = (int)$request->getParam('id');
+
+        // The removal changes data: only accept the form of the paper page, with the session request token
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $message = $this->view->translate("Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, la soumission n'a pas été supprimée. Merci de recharger cette page puis de recommencer.");
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            $this->_helper->redirector->gotoUrl('/' . $docId);
+            return;
+        }
 
         // check paper status before removal
         $authorizedStatus = [Episciences_Paper::STATUS_SUBMITTED];
