@@ -7,6 +7,7 @@ use Episciences\Paper\DataDescriptor;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\LinkedDataNotStoredException;
 use Episciences\Paper\PartiallyStoredException;
+use Episciences\Paper\Record\TitleNormalizer;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Submit\SubmittedRecord;
 use GuzzleHttp\Client;
@@ -976,6 +977,11 @@ class Episciences_Submit
             $identifier = Episciences_Repositories::getIdentifier($repoId, $id, $version !== null ? (int)$version : null);
 
             $result['record'] = self::loadRecord($hookApiRecord, $repoId, $identifier, $result, $oai);
+
+            // Some repositories (e.g. arXiv, HAL) accept line breaks in titles: store them on a single line
+            if (is_string($result['record'])) {
+                $result['record'] = TitleNormalizer::normalize($result['record']);
+            }
             $result['hookVersion'] = $version;
             $result['hookId'] = $id;
             $result['hookRepoId'] = (int)$repoId;

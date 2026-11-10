@@ -40,6 +40,8 @@ require_once __DIR__ . '/GetDoiCommand.php';
 require_once __DIR__ . '/Command/AbstractCommand.php';
 require_once __DIR__ . '/Command/Bootstrapper.php';
 require_once __DIR__ . '/Command/E2EExternalAccountCommand.php';
+// Extends Command/AbstractCommand.php: must be loaded after it
+require_once __DIR__ . '/NormalizeRecordTitlesCommand.php';
 require_once __DIR__ . '/UpdateLicensesCommand.php';
 require_once __DIR__ . '/ImportSpdxLicenseListCommand.php';
 require_once __DIR__ . '/NormalizeUserAffiliationsCommand.php';
@@ -131,6 +133,7 @@ $application->addCommand(new UpdatePapersDocumentCommand());
 $application->addCommand(new UpdateLicensesCommand());
 $application->addCommand(new ImportSpdxLicenseListCommand());
 $application->addCommand(new CleanHalRecordDescriptionsCommand());
+$application->addCommand(new NormalizeRecordTitlesCommand());
 $application->addCommand(new DeletePapersCommand());
 
 // Translation commands

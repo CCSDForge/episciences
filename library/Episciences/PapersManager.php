@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Paper\Record\TitleNormalizer;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LogLevel;
@@ -3448,6 +3449,10 @@ class Episciences_PapersManager
         if ($record === '') {
             return $record;
         }
+
+        // Before the default namespace is stripped below, while the record is still well-formed XML:
+        // some repositories (e.g. arXiv, HAL) accept line breaks in titles, stored on a single line
+        $record = TitleNormalizer::normalize($record);
 
         $record = preg_replace('#xmlns="(.*)"#', '', $record);
 
