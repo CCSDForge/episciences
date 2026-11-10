@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use Episciences\Console\ProgressAwareStreamHandler;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
@@ -39,7 +40,7 @@ class CleanHalRecordDescriptionsCommand extends Command
     {
         $this
             ->addOption('docid', null, InputOption::VALUE_REQUIRED, 'Process only this DOCID.')
-            ->addOption('buffer', null, InputOption::VALUE_REQUIRED, 'Number of papers loaded per page.', self::DEFAULT_BUFFER)
+            ->addOption('buffer', null, InputOption::VALUE_REQUIRED, 'Number of papers loaded per batch.', self::DEFAULT_BUFFER)
             ->addOption('update-document', null, InputOption::VALUE_NONE, 'Regenerate PAPERS.DOCUMENT for modified papers by delegating to papers:update-document.')
             ->addOption('no-reindex', null, InputOption::VALUE_NONE, 'Do not queue a Solr reindex for modified papers.')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Report what would change without writing anything.');
@@ -91,15 +92,6 @@ class CleanHalRecordDescriptionsCommand extends Command
 
         $logger->info(sprintf('Candidate papers: %d. Buffer: %d', $candidates, $buffer));
 
-        try {
-            $paginator = Zend_Paginator::factory($dataQuery);
-            $paginator->setItemCountPerPage($buffer);
-        } catch (Zend_Paginator_Exception $e) {
-            $io->error($e->getMessage());
-            return Command::FAILURE;
-        }
-
-        $totalPages   = $paginator->count();
         $modifiedIds  = [];
         $untouchedIds = [];
         $failureCount = 0;
@@ -108,12 +100,12 @@ class CleanHalRecordDescriptionsCommand extends Command
         $stdoutHandler?->setProgressBar($progressBar);
         $progressBar->start();
 
-        for ($page = 1; $page <= $totalPages; $page++) {
-            $paginator->setCurrentPageNumber($page);
-
+        $this->forEachBatch($db, $dataQuery, $buffer, function (array $rows, int $lastDocId) use (
+            $db, $isDryRun, $logger, $progressBar, &$modifiedIds, &$untouchedIds, &$failureCount
+        ): void {
             $pageUpdates = [];
 
-            foreach ($paginator->getCurrentItems() as $row) {
+            foreach ($rows as $row) {
                 /** @var array<string, mixed> $row */
                 $docId  = (int)$row['DOCID'];
                 $record = (string)($row['RECORD'] ?? '');
@@ -142,7 +134,7 @@ class CleanHalRecordDescriptionsCommand extends Command
             }
 
             if ($pageUpdates === []) {
-                continue;
+                return;
             }
 
             if ($isDryRun) {
@@ -150,7 +142,7 @@ class CleanHalRecordDescriptionsCommand extends Command
                     $logger->info(sprintf('[DOCID %d] dry-run: RECORD would be rewritten.', $docId));
                     $modifiedIds[] = $docId;
                 }
-                continue;
+                return;
             }
 
             try {
@@ -163,13 +155,13 @@ class CleanHalRecordDescriptionsCommand extends Command
                 $db->commit();
 
                 $modifiedIds = array_merge($modifiedIds, array_keys($pageUpdates));
-                $logger->info(sprintf('Page %d/%d: %d RECORD(s) rewritten.', $page, $totalPages, count($pageUpdates)));
+                $logger->info(sprintf('%d RECORD(s) rewritten, up to DOCID %d.', count($pageUpdates), $lastDocId));
             } catch (Exception $e) {
                 $db->rollBack();
-                $logger->error(sprintf('Page %d/%d: transaction failed: %s', $page, $totalPages, $e->getMessage()));
+                $logger->error(sprintf('Batch up to DOCID %d: transaction failed: %s', $lastDocId, $e->getMessage()));
                 $failureCount += count($pageUpdates);
             }
-        }
+        });
 
         $progressBar->finish();
         $stdoutHandler?->setProgressBar(null);
@@ -203,12 +195,9 @@ class CleanHalRecordDescriptionsCommand extends Command
 
         if ($shouldReindex) {
             try {
-                Ccsd_Search_Solr_Indexer::addToIndexQueue(
-                    $modifiedIds,
-                    'episciences',
-                    Ccsd_Search_Solr_Indexer::O_UPDATE,
-                    'episciences'
-                );
+                foreach ($modifiedIds as $docId) {
+                    SolrIndexing::enqueueIndex($docId);
+                }
                 $logger->info(sprintf('Solr reindex queued for %d paper(s).', count($modifiedIds)));
             } catch (Exception $e) {
                 $logger->error('Queuing the Solr reindex failed: ' . $e->getMessage());
@@ -243,6 +232,38 @@ class CleanHalRecordDescriptionsCommand extends Command
     // -------------------------------------------------------------------------
     // Public pure helpers — testable without bootstrap or DB
     // -------------------------------------------------------------------------
+
+    /**
+     * Run $processBatch on the rows of $dataQuery, $buffer rows at a time, in DOCID order.
+     *
+     * Keyset pagination (DOCID > last DOCID seen) rather than LIMIT/OFFSET: a rewritten record
+     * no longer matches the shortlist filter of $dataQuery, so an OFFSET computed on the initial
+     * result set would skip as many rows as were rewritten in the previous batches.
+     *
+     * @param callable(list<array<string, mixed>>, int): void $processBatch receives the rows and the last DOCID of the batch
+     */
+    public function forEachBatch(Zend_Db_Adapter_Abstract $db, Zend_Db_Select $dataQuery, int $buffer, callable $processBatch): void
+    {
+        $lastDocId = 0;
+
+        do {
+            $batchQuery = (clone $dataQuery)
+                ->where('DOCID > ?', $lastDocId)
+                ->reset(Zend_Db_Select::ORDER)
+                ->order('DOCID ASC')
+                ->limit($buffer);
+
+            /** @var list<array<string, mixed>> $rows */
+            $rows = $db->fetchAll($batchQuery);
+
+            if ($rows === []) {
+                return;
+            }
+
+            $lastDocId = (int)$rows[array_key_last($rows)]['DOCID'];
+            $processBatch($rows, $lastDocId);
+        } while (count($rows) === $buffer);
+    }
 
     /**
      * Normalise the --buffer option value.

@@ -6,6 +6,8 @@ namespace unit\scripts;
 use CleanHalRecordDescriptionsCommand;
 use Episciences_Repositories_HAL_Hooks;
 use PHPUnit\Framework\TestCase;
+use Zend_Db_Adapter_Abstract;
+use Zend_Db_Table_Abstract;
 use Symfony\Component\Console\Input\InputDefinition;
 
 require_once __DIR__ . '/../../../scripts/CleanHalRecordDescriptionsCommand.php';
@@ -13,7 +15,8 @@ require_once __DIR__ . '/../../../scripts/CleanHalRecordDescriptionsCommand.php'
 /**
  * Unit tests for CleanHalRecordDescriptionsCommand.
  *
- * All tests are pure: no bootstrap, no database, no I/O side-effects.
+ * All tests are pure (no bootstrap, no I/O side-effects), except the forEachBatch() ones,
+ * which run on a temporary table of the test database.
  */
 class CleanHalRecordDescriptionsCommandTest extends TestCase
 {
@@ -181,5 +184,81 @@ class CleanHalRecordDescriptionsCommandTest extends TestCase
     public function testFormatDocIdListHandlesEmptyList(): void
     {
         self::assertSame('', $this->command->formatDocIdList([]));
+    }
+
+    // -------------------------------------------------------------------------
+    // forEachBatch()
+    // -------------------------------------------------------------------------
+
+    private const BATCH_TABLE = 'tmp_clean_hal_descriptions_batches';
+
+    /**
+     * @param list<string> $records RECORD values of the rows, DOCID 1 to n
+     */
+    private function createBatchTable(array $records): Zend_Db_Adapter_Abstract
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        if (!$db instanceof Zend_Db_Adapter_Abstract) {
+            self::markTestSkipped('No database adapter available.');
+        }
+
+        $db->query('DROP TEMPORARY TABLE IF EXISTS ' . self::BATCH_TABLE);
+        $db->query('CREATE TEMPORARY TABLE ' . self::BATCH_TABLE . ' (DOCID INT PRIMARY KEY, RECORD VARCHAR(50))');
+
+        foreach ($records as $index => $record) {
+            $db->insert(self::BATCH_TABLE, ['DOCID' => $index + 1, 'RECORD' => $record]);
+        }
+
+        return $db;
+    }
+
+    public function testForEachBatchReachesEveryRowWhenRewrittenRowsLeaveTheFilter(): void
+    {
+        $db = $this->createBatchTable(array_fill(0, 10, 'has marker'));
+        $query = $db->select()->from(self::BATCH_TABLE, ['DOCID', 'RECORD'])
+            ->where('RECORD LIKE ?', '%marker%')
+            ->order('DOCID ASC');
+
+        $processed = [];
+
+        try {
+            $this->command->forEachBatch($db, $query, 3, function (array $rows) use ($db, &$processed): void {
+                foreach ($rows as $row) {
+                    $processed[] = (int)$row['DOCID'];
+                    // The rewritten row no longer matches the filter, as a cleaned RECORD
+                    $db->update(self::BATCH_TABLE, ['RECORD' => 'cleaned'], ['DOCID = ?' => $row['DOCID']]);
+                }
+            });
+
+            $left = $db->fetchCol('SELECT DOCID FROM ' . self::BATCH_TABLE . " WHERE RECORD LIKE '%marker%'");
+        } finally {
+            $db->query('DROP TEMPORARY TABLE IF EXISTS ' . self::BATCH_TABLE);
+        }
+
+        self::assertSame(range(1, 10), $processed);
+        self::assertSame([], $left);
+    }
+
+    public function testForEachBatchVisitsUntouchedRowsOnceAndPassesTheLastDocIdOfEachBatch(): void
+    {
+        $db = $this->createBatchTable(array_fill(0, 7, 'has marker'));
+        $query = $db->select()->from(self::BATCH_TABLE, ['DOCID', 'RECORD'])->where('RECORD LIKE ?', '%marker%');
+
+        $processed = [];
+        $lastDocIds = [];
+
+        try {
+            // Nothing rewritten: the rows stay in the shortlist, as records the hook leaves alone
+            $this->command->forEachBatch($db, $query, 3, function (array $rows, int $lastDocId) use (&$processed, &$lastDocIds): void {
+                array_push($processed, ...array_map(static fn(array $row): int => (int)$row['DOCID'], $rows));
+                $lastDocIds[] = $lastDocId;
+            });
+        } finally {
+            $db->query('DROP TEMPORARY TABLE IF EXISTS ' . self::BATCH_TABLE);
+        }
+
+        self::assertSame(range(1, 7), $processed);
+        self::assertSame([3, 6, 7], $lastDocIds);
     }
 }
