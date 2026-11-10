@@ -1,4 +1,22 @@
 var openedPopover = null;
+// Incremented each time getAssignUserForm() is called, so that the callback of a
+// pending request can tell whether its form is still the one to display
+var assignmentPopoverGeneration = 0;
+
+/**
+ * Closes the popovers opened by .popover-link buttons. Bootstrap 3 keeps a destroyed
+ * tip in the DOM until the end of its fade-out: remove it right away, otherwise
+ * page-wide selectors (#filter, form[id^=assign]) could still match the old form.
+ */
+function destroyLinkPopovers() {
+    $('.popover-link').each(function () {
+        let popover = $(this).data('bs.popover');
+        if (popover && popover.$tip) {
+            popover.$tip.remove();
+        }
+    });
+    $('.popover-link').popover('destroy');
+}
 
 /**
  *
@@ -12,10 +30,11 @@ function getAssignUserForm(button, docid, vid, partial) {
     let isPartial = partial !== '' ? JSON.parse(partial) : false;
 
     let buttonId = $(button).attr('id');
+    let generation = ++assignmentPopoverGeneration;
 
     // destroy previous popups, including the ones opened by other buttons:
     // two assignment forms open at once would share the same #filter id
-    $('.popover-link').popover('destroy');
+    destroyLinkPopovers();
     openedPopover = null;
 
     // toggle: do we open or close popup ?
@@ -45,6 +64,15 @@ function getAssignUserForm(button, docid, vid, partial) {
         .popover('show');
 
     request.done(function (result) {
+        // Another form has been opened while this one was loading, or the loader
+        // has been closed (e.g. by the page-wide click handler): do not reopen it
+        if (
+            generation !== assignmentPopoverGeneration ||
+            !$(button).data('bs.popover')
+        ) {
+            return;
+        }
+
         // destroy loading popup
         $(button).popover('destroy');
 
@@ -58,13 +86,15 @@ function getAssignUserForm(button, docid, vid, partial) {
             })
             .popover('show');
 
-        // editors or copy editors filter handlers
-        $('#filter').on('keyup', function () {
-            filterList('#filter', '.' + buttonId + '-list label');
+        // editors or copy editors filter handlers, bound to the form just displayed
+        let $filter = $(button).data('bs.popover').tip().find('#filter');
+        $filter.on('keyup', function () {
+            filterList(this, '.' + buttonId + '-list label');
         });
-        $('#filter').on('paste', function () {
+        $filter.on('paste', function () {
+            let input = this;
             setTimeout(function () {
-                filterList('#filter', '.' + buttonId + '-list label');
+                filterList(input, '.' + buttonId + '-list label');
             }, 4);
         });
 
