@@ -1,21 +1,26 @@
+// Role tags (users list, mail recipients...): the text keeps a 4.5:1 contrast on its background (WCAG 1.4.3).
+// Light backgrounds take a dark text, the others are dark enough for the white text of .label.
+$role-dark-text: #2c2c2c;
+
 .role-root, .role-epiadmin  {
   background-color: $red;
 }
 
 .role-chief_editor {
-  background-color: $orangered;
+  background-color: #d83b00;
 }
 
 .role-administrator {
   background-color: $orange;
+  color: $role-dark-text;
 }
 
 .role-editor {
-  background-color: $dark-orange;
+  background-color: #b05f00;
 }
 
 .role-webmaster {
-  background-color: $darker-green;
+  background-color: #008824;
 }
 
 .role-reviewer {
@@ -29,46 +34,49 @@
 
 .role-editorial_board {
   background-color: #cb904d;
+  color: $role-dark-text;
 }
 
 .role-technical_board {
   background-color: #ffc100;
-  color: #2c2c2c;
+  color: $role-dark-text;
 }
 
 .role-scientific_advisory_board {
   background-color: #ffeaae;
-  color: #2c2c2c;
+  color: $role-dark-text;
 }
 
 .role-advisory_board {
   background-color: #ffeaae;
-  color: #2c2c2c;
+  color: $role-dark-text;
 }
 
 .role-managing_editor {
   background-color: #ffc100;
-  color: #2c2c2c;
+  color: $role-dark-text;
 }
 
 .role-handling_editor {
   background-color: #cb904d;
+  color: $role-dark-text;
 }
 
 .role-former_member {
-  background-color: #6B8C70;
+  background-color: #5f7c64;
 }
 
 .role-guest_editor {
-  background-color: $burnt-orange;
+  background-color: #c45200;
 }
 
 .role-secretary {
   background-color: darksalmon;
+  color: $role-dark-text;
 }
 
 .role-copyeditor {
-  background-color: #A2839BFF;
+  background-color: #8e6a86;
 }
 
 .role-author {
@@ -77,6 +85,7 @@
 
 .role-guest {
   background-color: $light-grey;
+  color: $role-dark-text;
 }
 
 // Not a role: marks a switch user (su) session next to the role tags and in the navbar

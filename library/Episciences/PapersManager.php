@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Mail\RecipientFieldDecorator;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LogLevel;
@@ -1836,25 +1837,6 @@ class Episciences_PapersManager
         return json_encode($out, JSON_UNESCAPED_UNICODE);
     }
 
-    private static function applyRecipientTagDecorators(\Zend_Form_Element $element, string $formId, string $field): void
-    {
-        $tagsId = $formId . '-' . $field . '-tags';
-        $decorators = $element->getDecorators();
-        $element->clearDecorators()
-            ->addDecorator(['openDiv' => 'HtmlTag'], [
-                'tag' => 'span',
-                'id' => $tagsId,
-                'placement' => 'APPEND',
-                'openOnly' => true,
-            ])
-            ->addDecorator(['closeDiv' => 'HtmlTag'], [
-                'tag' => 'span',
-                'placement' => 'APPEND',
-                'closeOnly' => true,
-            ])
-            ->addDecorators($decorators);
-    }
-
     /**
      * Tag containers + JSON hiddens for CC/BCC (aligned with administrate mail UI).
      *
@@ -1870,12 +1852,17 @@ class Episciences_PapersManager
         ?Ccsd_Form $hiddenFieldsForm = null
     ): void {
         $targetForm = $hiddenFieldsForm ?? $form;
+
+        // The main recipient of these paper modals, when there is one, is the author: tells the recipients
+        // script that a reviewer must not be added in Cc (es.mail.js, anonymity warning)
+        $form->getElement('to')?->setAttrib('data-paper-role', Episciences_Acl::ROLE_AUTHOR);
+
         foreach (['cc' => $ccDefaults, 'bcc' => $bccDefaults] as $field => $defaults) {
             $el = $form->getElement($field);
             if (!$el) {
                 continue;
             }
-            self::applyRecipientTagDecorators($el, $formId, $field);
+            RecipientFieldDecorator::apply($el, $field, $formId . '-' . $field . '-tags', $formId . '-hidden_' . $field);
             $targetForm->addElement('hidden', 'hidden_' . $field, [
                 'id' => $formId . '-hidden_' . $field,
                 'value' => self::recipientHiddenJsonFromSemicolonString($defaults),
@@ -1922,19 +1909,15 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $translator = Zend_Registry::get('Zend_Translate');
-        $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => 'Cc',
             'id' => $formId . '-cc',
-            'class' => 'autocomplete'
         ]);
 
         // bcc
         $form->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => 'Bcc',
             'id' => $formId . '-bcc',
-            'class' => 'autocomplete'
         ]);
 
         self::addMailModalCcBccWithTags($form, $formId, '', '');
@@ -2016,19 +1999,15 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $translator = Zend_Registry::get('Zend_Translate');
-        $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => 'Cc',
             'id' => $formId . '-cc',
-            'class' => 'autocomplete'
         ]);
 
         // bcc
         $form->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => 'Bcc',
             'id' => $formId . '-bcc',
-            'class' => 'autocomplete'
         ]);
 
         self::addMailModalCcBccWithTags($form, $formId, '', '');
@@ -2110,12 +2089,9 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $translator = Zend_Registry::get('Zend_Translate');
-        $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => 'Cc',
             'id' => $formId . '-cc',
-            'class' => 'autocomplete'
         ]);
 
         $bccVal = '';
@@ -2129,10 +2105,9 @@ class Episciences_PapersManager
 
         // bcc
         $form->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => 'Bcc',
             'id' => $formId . '-bcc',
             'value' => $bccVal,
-            'class' => 'autocomplete'
         ]);
 
         self::addMailModalCcBccWithTags($form, $formId, '', $bccVal);
@@ -2221,19 +2196,15 @@ class Episciences_PapersManager
         ]);
 
         // cc
-        $translator = Zend_Registry::get('Zend_Translate');
-        $title = $translator->translate('Ajouter des destinataires');
         $askeditors_subform->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => 'Cc',
             'id' => $formId . '-cc',
-            'class' => 'autocomplete'
         ]);
 
         // bcc
         $askeditors_subform->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => 'Bcc',
             'id' => $formId . '-bcc',
-            'class' => 'autocomplete'
         ]);
 
         // Tags + hidden_cc/bcc on parent form (same form id as modal — required by es.mail.js)
@@ -2336,21 +2307,17 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $translator = Zend_Registry::get('Zend_Translate');
-        $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => 'Cc',
             'id' => $formId . '-cc',
-            'class' => 'autocomplete'
         ]);
 
         // bcc
         $bccDefault = Episciences_Review::forYourInformation($docId);
         $form->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => 'Bcc',
             'id' => $formId . '-bcc',
             'value' => $bccDefault,
-            'class' => 'autocomplete'
         ]);
 
         self::addMailModalCcBccWithTags($form, $formId, '', $bccDefault);
@@ -3689,19 +3656,15 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $translator = Zend_Registry::get('Zend_Translate');
-        $contactsTitle = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $contactsTitle . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => 'Cc',
             'id' => $prefix . '-cc',
-            'class' => 'autocomplete',
         ]);
 
         // bcc
         $form->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $contactsTitle . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => 'Bcc',
             'id' => $prefix . '-bcc',
-            'class' => 'autocomplete',
         ]);
 
         self::addMailModalCcBccWithTags($form, $formElementId, '', '');

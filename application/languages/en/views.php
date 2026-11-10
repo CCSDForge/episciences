@@ -2817,4 +2817,14 @@ return array(
     "Le permalien '%s' est déjà utilisé par une autre page. Veuillez choisir un autre permalien." => "The permalink '%s' is already used by another page. Please choose a different permalink.",
     "Codes réservés (non utilisables) :" => "Reserved codes (cannot be used):",
     "Le titre des pages prédéfinies ne peut pas être modifié" => "The title of predefined pages cannot be modified",
+
+    // Mail recipients fields
+    "Nom, identifiant ou adresse e-mail" => "Name, username or email address",
+    "Destinataires (%s)" => "Recipients (%s)",
+    "Cliquez dans le champ ou utilisez la flèche bas pour parcourir les destinataires, ou saisissez au moins %d caractères pour rechercher." => "Click in the field or use the down arrow to browse the recipients, or type at least %d characters to search.",
+    "%d destinataires au maximum (À, Cc et Bcc)." => "%d recipients at most (To, Cc and Bcc).",
+    "La liste des destinataires est invalide." => "The list of recipients is invalid.",
+    "Adresse e-mail invalide : %s" => "Invalid email address: %s",
+    "Trop de destinataires (%d au maximum)." => "Too many recipients (%d at most).",
+    "Un relecteur et un auteur de cet article ne peuvent pas être destinataires ensemble en À ou Cc : placez le ou les relecteurs en Cci." => "A reviewer and an author of this paper cannot both be recipients in To or Cc: put the reviewers in Bcc.",
 );

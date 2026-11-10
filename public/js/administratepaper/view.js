@@ -60,10 +60,10 @@ function getTags() {
                 value: sender.fullname,
             });
         }
-        if (sender.email) {
+        if (sender.mail) {
             tags.push({
                 text: translate("E-mail de l'expéditeur"),
-                value: sender.email,
+                value: sender.mail,
             });
         }
         if (sender.screen_name) {
@@ -297,31 +297,32 @@ $(document).ready(function () {
         $('#btn-hide-citations').hide();
         $('#btn-show-citations').show();
     });
-    $('input#copycoauthor').click(function () {
-        let coAuthorsMailStr = $('input#coauthormail').val();
-        if (!coAuthorsMailStr) {
+    // Co-authors in Cc of the paper modals ("<a@b>;<c@d>")
+    function coAuthorsEmails($modal) {
+        const value = $modal.find('input#coauthormail').val() || '';
+        return value.split(';').map(e => e.trim()).filter(e => e);
+    }
+
+    function addCoAuthorsInCc($modal) {
+        const form = $modal.find('input[id$="-cc"]').closest('form').get(0);
+        if (!form) {
             return;
         }
-        let $modal = $('.modal.in, .modal.show').first();
-        let $ccInput = $modal.find('input[id$="-cc"]');
-        if (!$ccInput.length) {
-            return;
-        }
-        // Split by semicolon to handle multiple co-authors: "<a@b>;<c@d>"
-        let emails = coAuthorsMailStr.split(';').map(e => e.trim()).filter(e => e);
-        if ($(this).prop('checked')) {
-            // Add each co-author as a separate CC tag
-            emails.forEach(email => {
-                $ccInput.val(email).trigger('blur');
+        epWithContactsForm(form, () => {
+            coAuthorsEmails($modal).forEach(email => {
+                addRecipient('cc', email, 'manual', { silent: true });
             });
+        });
+    }
+
+    $('input#copycoauthor').click(function () {
+        let $modal = $('.modal.in, .modal.show').first();
+        if ($(this).prop('checked')) {
+            addCoAuthorsInCc($modal);
         } else {
-            // Remove each co-author tag
-            emails.forEach(email => {
-                let resolved = epResolveManualRecipientToKnown(email);
-                if (resolved.type === 'known' && resolved.recipient.uid) {
-                    let $tag = $modal.find('.recipient-tag[data-uid="' + resolved.recipient.uid + '"]');
-                    removeRecipient($tag);
-                }
+            const form = $modal.find('input[id$="-cc"]').closest('form').get(0);
+            coAuthorsEmails($modal).forEach(email => {
+                epRemoveRecipientByEmail(form, EpMailCombobox.extractEmail(email));
             });
         }
     });
@@ -331,18 +332,7 @@ $(document).ready(function () {
         let $modal = $(this);
         let $checkbox = $modal.find('input#copycoauthor');
         if ($checkbox.length && $checkbox.prop('checked')) {
-            let coAuthorsMailStr = $modal.find('input#coauthormail').val();
-            if (!coAuthorsMailStr) {
-                return;
-            }
-            let $ccInput = $modal.find('input[id$="-cc"]');
-            if (!$ccInput.length) {
-                return;
-            }
-            let emails = coAuthorsMailStr.split(';').map(e => e.trim()).filter(e => e);
-            emails.forEach(email => {
-                $ccInput.val(email).trigger('blur');
-            });
+            addCoAuthorsInCc($modal);
         }
     });
 });

@@ -62,4 +62,7 @@ return [
 
     // Activity timeline filters
     'activity_timeline_events_shown' => 'événement(s) affiché(s)',
+
+    // Roles
+    "copyeditor" => "Préparateur de copie",
 ];
