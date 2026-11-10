@@ -13,8 +13,9 @@ function getAssignUserForm(button, docid, vid, partial) {
 
     let buttonId = $(button).attr('id');
 
-    // destroy previous popups
-    $(button).popover('destroy');
+    // destroy previous popups, including the ones opened by other buttons:
+    // two assignment forms open at once would share the same #filter id
+    $('.popover-link').popover('destroy');
     openedPopover = null;
 
     // toggle: do we open or close popup ?
