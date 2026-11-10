@@ -214,6 +214,62 @@ class Episciences_Review_DoiSettingsTest extends TestCase
     }
 
     // =========================================================================
+    // replaceIntegersTag() — private, tested via reflection
+    // =========================================================================
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function callReplaceIntegersTag(string $doi, string $letter, string $name): array
+    {
+        $m = new ReflectionMethod(Episciences_Review_DoiSettings::class, 'replaceIntegersTag');
+        $m->setAccessible(true);
+        return $m->invoke(null, $doi, $letter, $name);
+    }
+
+    public function testSectionTagWithSeparatorKeepsTheNumbersOfTheSection(): void
+    {
+        self::assertSame(['jcode.2-4', ''], $this->callReplaceIntegersTag('jcode.%S_INT[-]%', 'S', 'Section 2 part 4'));
+    }
+
+    public function testVolumeTagWithSeparatorKeepsTheNumbersOfTheVolume(): void
+    {
+        self::assertSame(['jcode.12_3', ''], $this->callReplaceIntegersTag('jcode.%V_INT[_]%', 'V', 'Volume 12 issue 3'));
+    }
+
+    public function testSeparatorIsUsedLiterally(): void
+    {
+        self::assertSame(['1$2', ''], $this->callReplaceIntegersTag('%V_INT[$]%', 'V', 'Vol 1 no 2'));
+    }
+
+    public function testWithoutSeparatorTheIntegersTagValueIsReturned(): void
+    {
+        self::assertSame(['jcode.%S_INT%', '2.4'], $this->callReplaceIntegersTag('jcode.%S_INT%', 'S', 'Section 2 part 4'));
+    }
+
+    public function testWithoutVolumeTheTagWithSeparatorIsRemoved(): void
+    {
+        self::assertSame(['jcode.', ''], $this->callReplaceIntegersTag('jcode.%V_INT[-]%', 'V', ''));
+    }
+
+    public function testTheVolumeTagDoesNotReplaceTheSectionTag(): void
+    {
+        self::assertSame(['%S_INT[-]%.3', ''], $this->callReplaceIntegersTag('%S_INT[-]%.%V_INT[-]%', 'V', 'Volume 3'));
+    }
+
+    public function testCreateDoiWithTemplateWithoutVolumeNorSection(): void
+    {
+        $this->settings->setDoiPrefix('10.12345');
+        $this->settings->setDoiFormat('%R%.%V_INT[-]%%S_INT[-]%%P%');
+        $paper = $this->createMock(\Episciences_Paper::class);
+        $paper->method('getVid')->willReturn(0);
+        $paper->method('getSid')->willReturn(0);
+        $paper->method('getPaperid')->willReturn(123);
+
+        self::assertSame('10.12345/jcode.123', $this->settings->createDoiWithTemplate($paper, 'JCODE'));
+    }
+
+    // =========================================================================
     // createDoiWithTemplate — empty prefix guard (no DB needed)
     // =========================================================================
 

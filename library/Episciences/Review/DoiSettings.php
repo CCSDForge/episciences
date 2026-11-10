@@ -174,31 +174,8 @@ class Episciences_Review_DoiSettings
         $doiFormat = $this->getDoiFormat();
         $doi = $doiFormat;
 
-        if ($volume !== '') {
-            $hasVolumeReplacementChar = preg_match("/.*(%V_INT\[(.)\]%).*/", $doiFormat, $matchesVolumeReplacementChar);
-            if ($hasVolumeReplacementChar) {
-                $replacementChar = $matchesVolumeReplacementChar[2];
-                $volumeIntWithChar = self::keepOnlyIntegersInTag($volume, $replacementChar);
-                $doi = preg_replace("/%V_INT\[.\]%/", $volumeIntWithChar, $doiFormat);
-            } else {
-                $volumeInt = self::keepOnlyIntegersInTag($volume);
-            }
-        } else {
-            $doi = preg_replace("/%V_INT\[.\]%/", '', $doi); //remove empty tag
-        }
-
-        if ($section !== '') {
-            $hasSectionReplacementChar = preg_match("/(.*)(%S_INT\[(.)\]%)/", $doiFormat, $matchesSectionReplacementChar);
-            if ($hasSectionReplacementChar) {
-                $replacementChar = $matchesSectionReplacementChar[2];
-                $sectionIntWithChar = self::keepOnlyIntegersInTag($section, $replacementChar);
-                $doi = preg_replace("/%S_INT\[.\]%/", $sectionIntWithChar, $doi);
-            } else {
-                $sectionInt = self::keepOnlyIntegersInTag($section);
-            }
-        } else {
-            $doi = preg_replace("/%S_INT\[.\]%/", '', $doi); //remove empty tag
-        }
+        [$doi, $volumeInt] = self::replaceIntegersTag($doi, 'V', $volume);
+        [$doi, $sectionInt] = self::replaceIntegersTag($doi, 'S', $section);
 
 
         $template[self::DOI_FORMAT_REVIEW_CODE] = $rvCode;
@@ -266,6 +243,30 @@ class Episciences_Review_DoiSettings
     public function setDoiFormat(string $doiFormat): void
     {
         $this->_doiFormat = $doiFormat;
+    }
+
+    /**
+     * Replace the %V_INT[c]% (or %S_INT[c]%) tag of a DOI: the numbers of the volume (or section) name,
+     * separated with the character c.
+     * @param string $doi DOI being built
+     * @param string $letter 'V' (volume) or 'S' (section)
+     * @param string $name name of the volume or section; '' without volume or section
+     * @return array{0: string, 1: string} the DOI, and the value of the %V_INT% (or %S_INT%) tag:
+     *                                     '' when the DOI uses the tag with a separator
+     */
+    private static function replaceIntegersTag(string $doi, string $letter, string $name): array
+    {
+        $pattern = '/%' . $letter . '_INT\\[(.)\\]%/';
+
+        if ($name === '') {
+            return [(string)preg_replace($pattern, '', $doi), ''];
+        }
+
+        if (preg_match($pattern, $doi, $matches)) {
+            return [str_replace($matches[0], self::keepOnlyIntegersInTag($name, $matches[1]), $doi), ''];
+        }
+
+        return [$doi, self::keepOnlyIntegersInTag($name)];
     }
 
     /**
