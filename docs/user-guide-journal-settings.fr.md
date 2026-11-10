@@ -2,17 +2,17 @@
 
 *[English](user-guide-journal-settings.en.md) · [Français](user-guide-journal-settings.fr.md)*
 
-Ce guide résume la page **Paramètres de la revue** et les pages associées **Licences** et **Paramètres DOI** :
+Ce guide résume la page **Paramètres de la revue** et les pages associées **Paramètres des licences** et **Paramètres DOI** :
 ce que fait chaque réglage et comment l'utiliser.
 
 ## En bref
 
 | À retenir | |
 |---|---|
-| Où trouver la page ? | Menu **Gérer la revue › Revue › Paramètres** (adresse `/review/settings`), ou bouton **Paramètres de la revue** du tableau de bord. |
+| Où trouver la page ? | Menu **Gérer la revue › Revue › Paramètres** (adresse `/review/settings`), ou bouton **Paramètres de la revue** du tableau de bord. Les onglets **Général**, **Licences** et **DOI** (ce dernier pour l'équipe d'Episciences) en haut de la page mènent aux trois pages de paramètres. |
 | Qui peut la modifier ? | Les rédacteurs en chef, administrateurs et secrétaires de rédaction de la revue. |
 | Quand les changements s'appliquent-ils ? | Dès l'enregistrement. Certains concernent aussi les articles en cours ou publiés, d'autres seulement les prochaines actions : voir ci-dessous. |
-| Comment enregistrer ? | Bouton **Enregistrer les paramètres**, toujours visible en bas de l'écran. Un message signale les modifications non enregistrées ; le navigateur demande confirmation si vous quittez la page. Il en va de même sur les pages **Licences** et **Paramètres DOI**. |
+| Comment enregistrer ? | Bouton **Enregistrer les paramètres**, toujours visible en bas de l'écran. Un message signale les modifications non enregistrées ; le navigateur demande confirmation si vous quittez la page. Il en va de même sur les pages **Paramètres des licences** et **Paramètres DOI**. |
 | Et si une valeur est refusée ? | Le message « Le formulaire comporte des erreurs » s'affiche et la page se place sur le premier champ à corriger. Rien n'est enregistré tant qu'une erreur subsiste. |
 | Licences et DOI ? | Ils ont leur propre page. La page Paramètres en affiche un résumé en haut, avec un lien. |
 | Un réglage est grisé ? | Il dépend d'un autre réglage désactivé (ex. « Ne pas permettre le choix d'un rédacteur en chef » quand l'auteur ne peut pas choisir de rédacteur). Il reste modifiable mais n'a pas d'effet pour l'instant. |
@@ -156,7 +156,7 @@ Reprise dans le pied de page du site, les exports et les métadonnées diffusée
 | Visibilité des statistiques | Cachée / Publique / Réservée aux administrateurs | Qui voit la page des statistiques. |
 | Début des statistiques | Date `AAAA-MM-JJ` (facultatif) | Seules les données postérieures sont comptées. |
 
-## Licences (`/review/licenses`)
+## Paramètres des licences (`/review/licenses`)
 
 | Réglage | Effet | Conseil |
 |---|---|---|

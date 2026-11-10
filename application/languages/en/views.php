@@ -2901,4 +2901,5 @@ return array(
     "Délais : fixés à l'envoi de chaque invitation. Formulaire de soumission et assignation automatique des rédacteurs : à chaque nouvelle soumission. Notifications : aux prochains courriels. Réassignation des relecteurs et délai de révision : à la prochaine demande de modifications." => "Deadlines: set when each invitation is sent. Submission form and automatic assignment of the editors: on each new submission. Notifications: in the next emails. Reassignment of the reviewers and revision deadline: at the next revision request.",
     "Jamais rétroactivement" => "Never retroactively",
     "Les invitations déjà envoyées gardent leur délai et leur date limite, les rédacteurs déjà assignés restent assignés, les courriels déjà envoyés ne sont pas renvoyés." => "The invitations already sent keep their delay and deadline, the editors already assigned stay assigned, the emails already sent are not sent again.",
+    "Paramètres des licences" => "License settings",
 );

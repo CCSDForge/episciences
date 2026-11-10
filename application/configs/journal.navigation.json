@@ -150,7 +150,7 @@
             "privilege": "chief_editor,administrator,secretary"
           },
           {
-            "label": "Licences",
+            "label": "Paramètres des licences",
             "controller": "review",
             "action": "licenses",
             "resource": "review-licenses",

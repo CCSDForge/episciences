@@ -2,17 +2,17 @@
 
 *[English](user-guide-journal-settings.en.md) · [Français](user-guide-journal-settings.fr.md)*
 
-This guide sums up the **Journal settings** page and the related **Licenses** and **DOI settings** pages: what each
+This guide sums up the **Journal settings** page and the related **License settings** and **DOI settings** pages: what each
 setting does and how to use it.
 
 ## In short
 
 | Key points | |
 |---|---|
-| Where is the page? | **Journal management › Journal › Settings** menu (`/review/settings` address), or the **Journal settings** button of the dashboard. |
+| Where is the page? | **Journal management › Journal › Settings** menu (`/review/settings` address), or the **Journal settings** button of the dashboard. The **General**, **Licenses** and **DOI** tabs (the last one for the Episciences team) at the top of the page lead to the three settings pages. |
 | Who can change it? | The editors in chief, administrators and editorial secretaries of the journal. |
 | When do the changes apply? | As soon as they are saved. Some also concern the articles in progress or published, others only the next actions: see below. |
-| How to save? | **Save settings** button, always visible at the bottom of the screen. A message tells when changes are not saved; the browser asks for a confirmation if you leave the page. The **Licenses** and **DOI settings** pages work the same way. |
+| How to save? | **Save settings** button, always visible at the bottom of the screen. A message tells when changes are not saved; the browser asks for a confirmation if you leave the page. The **License settings** and **DOI settings** pages work the same way. |
 | What if a value is refused? | "This form contains errors." is shown and the page moves to the first field to fix. Nothing is saved while an error remains. |
 | Licenses and DOIs? | They have their own page. The Settings page sums them up at the top, with a link. |
 | A setting is dimmed? | It depends on another setting which is off (e.g. "Do not allow choosing an editor in chief" while the author cannot choose an editor). It can still be changed but has no effect for now. |
@@ -156,7 +156,7 @@ Used in the footer of the website, the exports and the published metadata (OAI-P
 | Statistics visibility | Hidden / Public / Restricted to administrators | Who sees the statistics page. |
 | Statistics start date | `YYYY-MM-DD` date (optional) | Only the data after it are counted. |
 
-## Licenses (`/review/licenses`)
+## License settings (`/review/licenses`)
 
 | Setting | Effect | Tip |
 |---|---|---|

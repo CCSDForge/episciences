@@ -22,6 +22,8 @@ $doiModes = [
 $allowedLicenses = $this->allowedLicenses ?? [];
 ?>
 
+<?= $this->partial('partials/journal_settings_tabs.phtml', ['active' => 'general', 'canEditDoiSettings' => $this->canEditDoiSettings]) ?>
+
 <div class="journal-settings">
 
     <p class="journal-settings-intro">

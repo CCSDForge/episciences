@@ -8,7 +8,7 @@ $this->jQuery()
     ->addJavascriptFile('/js/doi/settings.js')
     ->addJavascriptFile('/js/review/settings.js');
 ?>
-<?= $this->partial('partials/back_to_journal_settings.phtml') ?>
+<?= $this->partial('partials/journal_settings_tabs.phtml', ['active' => 'doi']) ?>
 
 <p class="journal-settings-intro">
     <?= $this->translate("Ces paramètres déterminent comment les DOI des articles de la revue sont créés. Les DOI déjà attribués ne sont pas modifiés.") ?>

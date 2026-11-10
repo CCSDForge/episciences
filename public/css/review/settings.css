@@ -35,13 +35,23 @@
     color: #555;
 }
 
-/* Link back to the settings page (licenses and DOI pages) */
-.journal-settings-back {
-    margin-bottom: 1em;
+/* Tabs linking the general settings, licenses and DOI settings pages */
+/* the tabs stay visible while scrolling, below the fixed top navbar (51px, as the other sticky elements) */
+.journal-settings-tabs {
+    position: sticky;
+    top: 51px;
+    z-index: 3;
+    margin-bottom: 1.2em;
+    padding-top: .5em;
+    background: #fff;
 }
 
-.journal-settings-back .fa-solid {
+.journal-settings-tabs .fa-solid {
     margin-right: 0.35em;
+}
+
+.journal-settings-tabs .nav-tabs > li.active > a {
+    font-weight: bold;
 }
 
 /* DOI and licenses summaries */
@@ -97,7 +107,7 @@
 /* Table of contents */
 .journal-settings-toc {
     position: sticky;
-    top: 1em;
+    top: calc(51px + 4.5em);
     margin-bottom: 1em;
 }
 
@@ -141,7 +151,8 @@
     padding: 0 1.1em .5em;
     border: 1px solid #ddd;
     border-radius: 4px;
-    scroll-margin-top: 1em;
+    /* below the fixed top navbar and the sticky tabs */
+    scroll-margin-top: calc(51px + 4.5em);
 }
 
 .journal-settings-form .journal-settings-section legend {
@@ -250,6 +261,7 @@
 }
 
 @media print {
+    .journal-settings-tabs,
     .journal-settings-toc,
     .journal-settings-unsaved,
     [data-unsaved-warning] .form-actions {

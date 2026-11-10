@@ -167,6 +167,7 @@ class ReviewController extends Zend_Controller_Action
         }
 
         $review->loadSettings();
+        $this->view->canEditDoiSettings = Episciences_Auth::isRoot();
 
         $isSubmitted = $request->isPost() && array_key_exists('submit', $request->getPost());
         $form = $review->licensesSettingsForm();

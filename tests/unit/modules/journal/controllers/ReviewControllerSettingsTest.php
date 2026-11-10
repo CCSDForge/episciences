@@ -419,8 +419,9 @@ final class ReviewControllerSettingsTest extends ControllerTestCase
 
     /**
      * @dataProvider pagesLinkedToTheSettingsProvider
+     * @param list<string> $expectedTabs
      */
-    public function testThePagesSummedUpLeadBackToTheSettings(string $script): void
+    public function testThePagesSummedUpShareTheSettingsTabs(string $script, string $activeUrl, array $expectedTabs): void
     {
         $view = new Zend_View();
         $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/');
@@ -429,23 +430,63 @@ final class ReviewControllerSettingsTest extends ControllerTestCase
 
         $html = $view->render($script);
 
-        self::assertMatchesRegularExpression(
-            '#<nav class="journal-settings-back"[^>]*>\s*<a class="btn btn-default btn-sm" href="/review/settings">#',
-            $html
-        );
-        self::assertLessThan(strpos($html, 'journal-settings-intro'), strpos($html, 'journal-settings-back'), 'the link comes first');
+        self::assertSame($expectedTabs, $this->tabUrls($html));
+        self::assertSame([$activeUrl], $this->activeTabUrls($html));
+        self::assertLessThan(strpos($html, 'journal-settings-intro'), strpos($html, 'journal-settings-tabs'), 'the tabs come first');
         self::assertStringContainsString('<p class="journal-settings-unsaved alert alert-warning" role="status" hidden>', $html);
         self::assertContains('/js/review/settings.js', $view->jQuery()->getJavascriptFiles());
     }
 
+    public function testTheLicensesPageShowsTheDoiTabToThoseWhoCanEditTheDoiSettings(): void
+    {
+        $view = new Zend_View();
+        $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/');
+        $view->addHelperPath('ZendX/JQuery/View/Helper', 'ZendX_JQuery_View_Helper');
+        $view->form = '<form></form>';
+        $view->canEditDoiSettings = true;
+
+        self::assertSame(['/review/settings', '/review/licenses', '/doi/settings'], $this->tabUrls($view->render('review/licenses.phtml')));
+    }
+
+    public function testTheSettingsPageShowsTheDoiTabOnlyToThoseWhoCanEditTheDoiSettings(): void
+    {
+        $html = $this->renderPage();
+        self::assertSame(['/review/settings', '/review/licenses'], $this->tabUrls($html));
+        self::assertSame(['/review/settings'], $this->activeTabUrls($html));
+
+        self::assertSame(['/review/settings', '/review/licenses', '/doi/settings'], $this->tabUrls($this->renderPage([], true)));
+    }
+
     /**
-     * @return array<string, array{string}>
+     * @return list<string>
+     */
+    private function tabUrls(string $html): array
+    {
+        preg_match('#<nav class="journal-settings-tabs".*?</nav>#s', $html, $nav);
+        preg_match_all('#<a href="([^"]+)"#', $nav[0] ?? '', $matches);
+
+        return $matches[1];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function activeTabUrls(string $html): array
+    {
+        preg_match_all('#<li class="active">\s*<a href="([^"]+)" aria-current="page">#', $html, $matches);
+
+        return $matches[1];
+    }
+
+    /**
+     * @return array<string, array{string, string, list<string>}>
      */
     public static function pagesLinkedToTheSettingsProvider(): array
     {
         return [
-            'licenses' => ['review/licenses.phtml'],
-            'DOI settings' => ['doi/settings.phtml'],
+            // the DOI tab is shown to those who can edit the DOI settings, hence always on the DOI page
+            'licenses' => ['review/licenses.phtml', '/review/licenses', ['/review/settings', '/review/licenses']],
+            'DOI settings' => ['doi/settings.phtml', '/doi/settings', ['/review/settings', '/review/licenses', '/doi/settings']],
         ];
     }
 }

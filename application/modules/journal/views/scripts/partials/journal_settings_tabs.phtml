@@ -1,0 +1,32 @@
+<?php
+/**
+ * Tabs linking the three journal settings pages: general settings (review/settings),
+ * licenses (review/licenses) and DOI settings (doi/settings, only shown to those who can edit them).
+ *
+ * Partial parameters:
+ * - active: 'general', 'licenses' or 'doi'
+ * - canEditDoiSettings: whether the DOI tab is shown
+ *
+ * @var Zend_View $this
+ */
+$active = $this->active ?? 'general';
+$tabs = [
+    'general' => ['/review/settings', 'Général', 'fa-sliders'],
+    'licenses' => ['/review/licenses', 'Licences', 'fa-scale-balanced'],
+];
+if (!empty($this->canEditDoiSettings) || $active === 'doi') {
+    $tabs['doi'] = ['/doi/settings', 'DOI', 'fa-fingerprint'];
+}
+?>
+<nav class="journal-settings-tabs" aria-label="<?= $this->escape($this->translate('Paramètres de la revue')) ?>">
+    <ul class="nav nav-tabs">
+        <?php foreach ($tabs as $key => [$url, $label, $icon]) : ?>
+            <li<?= $key === $active ? ' class="active"' : '' ?>>
+                <a href="<?= $url ?>"<?= $key === $active ? ' aria-current="page"' : '' ?>>
+                    <span class="fa-solid <?= $icon ?>" aria-hidden="true"></span>
+                    <?= $this->translate($label) ?>
+                </a>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+</nav>
