@@ -1,7 +1,4 @@
 var openedPopover = null;
-// Incremented each time getAssignUserForm() is called, so that the callback of a
-// pending request can tell whether its form is still the one to display
-var assignmentPopoverGeneration = 0;
 
 /**
  * Closes the popovers opened by .popover-link buttons. Bootstrap 3 keeps a destroyed
@@ -9,13 +6,16 @@ var assignmentPopoverGeneration = 0;
  * page-wide selectors (#filter, form[id^=assign]) could still match the old form.
  */
 function destroyLinkPopovers() {
-    $('.popover-link').each(function () {
-        let popover = $(this).data('bs.popover');
-        if (popover && popover.$tip) {
+    document.querySelectorAll('.popover-link').forEach(function (link) {
+        let popover = $(link).data('bs.popover');
+        if (!popover) {
+            return;
+        }
+        if (popover.$tip) {
             popover.$tip.remove();
         }
+        $(link).popover('destroy');
     });
-    $('.popover-link').popover('destroy');
 }
 
 /**
@@ -29,8 +29,7 @@ function destroyLinkPopovers() {
 function getAssignUserForm(button, docid, vid, partial) {
     let isPartial = partial !== '' ? JSON.parse(partial) : false;
 
-    let buttonId = $(button).attr('id');
-    let generation = ++assignmentPopoverGeneration;
+    let buttonId = button.id;
 
     // destroy previous popups, including the ones opened by other buttons:
     // two assignment forms open at once would share the same #filter id
@@ -63,17 +62,17 @@ function getAssignUserForm(button, docid, vid, partial) {
         })
         .popover('show');
 
-    request.done(function (result) {
-        // Another form has been opened while this one was loading, or the loader
-        // has been closed (e.g. by the page-wide click handler): do not reopen it
-        if (
-            generation !== assignmentPopoverGeneration ||
-            !$(button).data('bs.popover')
-        ) {
-            return;
-        }
+    // Every close path (another form opened, click elsewhere on the page,
+    // closeResult()) destroys the loader, which triggers 'hide.bs.popover':
+    // stop loading a form that would no longer be displayed
+    let abortRequest = function () {
+        request.abort();
+    };
+    $(button).one('hide.bs.popover', abortRequest);
 
-        // destroy loading popup
+    request.done(function (result) {
+        // destroy loading popup, without aborting the request that just completed
+        $(button).off('hide.bs.popover', abortRequest);
         $(button).popover('destroy');
 
         // show form in the popover
@@ -87,16 +86,20 @@ function getAssignUserForm(button, docid, vid, partial) {
             .popover('show');
 
         // editors or copy editors filter handlers, bound to the form just displayed
-        let $filter = $(button).data('bs.popover').tip().find('#filter');
-        $filter.on('keyup', function () {
-            filterList(this, '.' + buttonId + '-list label');
-        });
-        $filter.on('paste', function () {
-            let input = this;
-            setTimeout(function () {
-                filterList(input, '.' + buttonId + '-list label');
-            }, 4);
-        });
+        let filter = $(button)
+            .data('bs.popover')
+            .tip()[0]
+            .querySelector('#filter');
+        if (filter) {
+            filter.addEventListener('keyup', function () {
+                filterList(filter, '.' + buttonId + '-list label');
+            });
+            filter.addEventListener('paste', function () {
+                setTimeout(function () {
+                    filterList(filter, '.' + buttonId + '-list label');
+                }, 4);
+            });
+        }
 
         // Initialize editor availability handling
         if (buttonId === 'editors') {
