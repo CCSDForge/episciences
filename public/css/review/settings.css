@@ -1,0 +1,258 @@
+/* Journal settings page (review/settings) */
+
+.journal-settings-intro {
+    margin-bottom: 1.25em;
+    color: #555;
+}
+
+/* When a change takes effect */
+.journal-settings-effects {
+    margin: -0.5em 0 1.25em;
+}
+
+.journal-settings-effects summary {
+    cursor: pointer;
+    color: #007cba;
+}
+
+.journal-settings-effects dl {
+    margin: 0.6em 0 0;
+    padding: 0.75em 1em;
+    background: #f8f9fa;
+    border-left: 3px solid #007cba;
+}
+
+.journal-settings-effects dt {
+    margin-top: 0.5em;
+}
+
+.journal-settings-effects dt:first-child {
+    margin-top: 0;
+}
+
+.journal-settings-effects dd {
+    margin: 0.2em 0 0;
+    color: #555;
+}
+
+/* Link back to the settings page (licenses and DOI pages) */
+.journal-settings-back {
+    margin-bottom: 1em;
+}
+
+.journal-settings-back .fa-solid {
+    margin-right: 0.35em;
+}
+
+/* DOI and licenses summaries */
+.journal-settings-related {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 1em;
+}
+
+.journal-settings-card {
+    height: 100%;
+    margin-bottom: 1em;
+    padding: .9em 1.1em;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.journal-settings-card-title {
+    margin: 0 0 .6em;
+    font-size: 15px;
+    line-height: 1.4;
+    color: #333;
+}
+
+.journal-settings-card-title .fa-solid {
+    margin-right: .35em;
+    color: #007cba;
+}
+
+.journal-settings-summary {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: .3em 1em;
+    margin: 0 0 .8em;
+}
+
+.journal-settings-summary dt {
+    font-weight: 600;
+}
+
+.journal-settings-summary dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.journal-settings-card-note {
+    margin: 0;
+    font-size: 12px;
+    color: #666;
+}
+
+/* Table of contents */
+.journal-settings-toc {
+    position: sticky;
+    top: 1em;
+    margin-bottom: 1em;
+}
+
+.journal-settings-toc-title {
+    margin: 0 0 .5em;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.journal-settings-toc ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-left: 2px solid #e5e5e5;
+}
+
+.journal-settings-toc a {
+    display: block;
+    margin-left: -2px;
+    padding: .25em .75em;
+    color: #555;
+    border-left: 2px solid transparent;
+}
+
+.journal-settings-toc a:hover,
+.journal-settings-toc a:focus {
+    color: #007cba;
+    text-decoration: none;
+    background: #f5f9fc;
+}
+
+.journal-settings-toc a[aria-current="true"] {
+    font-weight: 600;
+    color: #007cba;
+    border-left-color: #007cba;
+}
+
+/* Sections of the form */
+.journal-settings-form .journal-settings-section {
+    margin-bottom: 1.5em;
+    padding: 0 1.1em .5em;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    scroll-margin-top: 1em;
+}
+
+.journal-settings-form .journal-settings-section legend {
+    width: auto;
+    margin: 0 0 .25em -.4em;
+    padding: 0 .4em;
+    font-size: 17px;
+    font-weight: 600;
+    color: #007cba;
+    border: 0;
+}
+
+.journal-settings-section-description {
+    margin: 0 0 1em;
+    color: #666;
+}
+
+.journal-settings-form .help-block {
+    margin: .3em 0 0;
+    font-size: 12px;
+}
+
+.journal-settings-form .checkbox {
+    margin: 0;
+}
+
+.journal-settings-form .checkbox label {
+    font-weight: normal;
+}
+
+.journal-settings-form .checkbox + .help-block {
+    margin-left: 20px;
+}
+
+/* Settings closer to each other than in the other forms */
+.journal-settings-form .form-group {
+    margin-bottom: 10px;
+}
+
+/* Groups of checkboxes: one per line */
+.journal-settings-choices label {
+    display: block;
+    margin: 0 0 .2em;
+    font-weight: normal;
+}
+
+.journal-settings-choices input[type="checkbox"] {
+    margin-right: .4em;
+}
+
+/* Short fields */
+.journal-settings-form .journal-settings-number {
+    display: inline-block;
+    width: 6em;
+}
+
+.journal-settings-form .journal-settings-date {
+    display: inline-block;
+    width: 11em;
+}
+
+.journal-settings-deadline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5em;
+}
+
+.journal-settings-deadline .journal-settings-unit {
+    width: auto;
+}
+
+/* Errors */
+.journal-settings-form .errors {
+    margin: .3em 0 0;
+    padding: 0;
+    list-style: none;
+    color: #a94442;
+}
+
+/* Setting without effect with the current value of the setting it depends on */
+.journal-settings-inactive {
+    opacity: .55;
+}
+
+/* Unsaved changes and save button always reachable */
+/* shown only while the form differs from the saved values (the script removes the hidden attribute) */
+.journal-settings-unsaved[hidden],
+[data-unsaved-warning] .form-actions .journal-settings-unsaved[hidden] {
+    display: none;
+}
+
+[data-unsaved-warning] .form-actions .journal-settings-unsaved {
+    display: inline-block;
+    margin: 0 1em 0 0;
+    padding: .4em .8em;
+    vertical-align: middle;
+}
+
+[data-unsaved-warning] .form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding: .75em 0;
+    background: #fff;
+    border-top: 1px solid #ddd;
+}
+
+@media print {
+    .journal-settings-toc,
+    .journal-settings-unsaved,
+    [data-unsaved-warning] .form-actions {
+        display: none;
+    }
+}

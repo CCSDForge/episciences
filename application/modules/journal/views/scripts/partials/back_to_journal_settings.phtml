@@ -1,0 +1,12 @@
+<?php
+/**
+ * Link back to the journal settings page (review/settings), at the top of the pages it sums up (licenses, DOI settings).
+ * @var Zend_View $this
+ */
+?>
+<nav class="journal-settings-back" aria-label="<?= $this->escape($this->translate('Paramètres de la revue')) ?>">
+    <a class="btn btn-default btn-sm" href="/review/settings">
+        <span class="fa-solid fa-arrow-left" aria-hidden="true"></span>
+        <?= $this->translate('Retour aux paramètres de la revue') ?>
+    </a>
+</nav>

@@ -1,4 +1,18 @@
 <?php
-$this->jQuery()->addJavascriptFile('/js/review/licenses.js');
+/**
+ * Licenses of the journal: see ReviewController::licensesAction() and Episciences_Review::licensesSettingsForm().
+ * @var Zend_View $this
+ */
+$this->jQuery()
+    ->addStylesheet('/css/review/settings.css')
+    ->addJavascriptFile('/js/review/licenses.js')
+    ->addJavascriptFile('/js/review/settings.js');
+?>
+<?= $this->partial('partials/back_to_journal_settings.phtml') ?>
 
-echo $this->form;
+<p class="journal-settings-intro">
+    <?= $this->translate("Licences proposées quand on définit la licence d'un article. La licence par défaut y est pré-sélectionnée ; quand des licences autorisées sont choisies, elle en fait toujours partie.") ?>
+</p>
+
+<?= $this->partial('partials/unsaved_changes_warning.phtml') ?>
+<?= $this->form ?>
