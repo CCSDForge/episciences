@@ -134,6 +134,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Remove the legacy `scripts/DeletePaper.php` script (replaced by the `papers:delete` console command), which reported a deletion as successful even when it had failed.
 
+- Configuration: the unused `EPISCIENCES.SECRET_KEY` and `EPISCIENCES.API_SECRET_KEY` settings are dropped from the `pwd.json` templates; they can be removed from existing `pwd.json` files.
+
 ## v1.0.58.1 - 2026-10-29
 
 ### Changed
