@@ -17,7 +17,7 @@ return static function (RectorConfig $rectorConfig): void {
 
     // Activation des ensembles de règles
     $rectorConfig->sets([
-        LevelSetList::UP_TO_PHP_81,  // Migration du code jusqu’à PHP 8.1
+        LevelSetList::UP_TO_PHP_83,  // Migration du code jusqu’à PHP 8.3
         SetList::CODE_QUALITY,       // Améliorations générales du code
         SetList::DEAD_CODE,          // Suppression du code inutilisé
         SetList::TYPE_DECLARATION,   // Ajout de types et retours manquants
