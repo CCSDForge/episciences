@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\AppRegistry;
 use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
@@ -1157,7 +1158,7 @@ class Episciences_Paper
      * fetch article in given format
      * @param string $format
      * @param int|null $version
-     * @return string|false
+     * @return string|false|null null when the export failed (e.g. JSON v2)
      * @throws InvalidArgumentExceptionAlias
      */
     public function get(string $format = 'tei', int $version = null)
@@ -1194,8 +1195,11 @@ class Episciences_Paper
             } else {
                 $getOutput = Export::$method($this);
             }
-            $metadataCache->set($getOutput);
-            $cache->save($metadataCache);
+            // Do not cache a failed export (e.g. toJson() returning null): it would be served until expiry
+            if ($getOutput !== null) {
+                $metadataCache->set($getOutput);
+                $cache->save($metadataCache);
+            }
         } else {
             $getOutput = $metadataCache->get();
         }
@@ -1430,7 +1434,7 @@ class Episciences_Paper
 
         if ($crossRefXml === '') {
             // The Crossref export failed to produce well-formed XML: nothing to serialize
-            trigger_error(sprintf('[DOCID %s] toJson(): empty Crossref XML export', $this->getDocid()), E_USER_WARNING);
+            AppRegistry::getMonoLogger()?->warning(sprintf('[DOCID %s] toJson(): empty Crossref XML export', $this->getDocid()));
             return null;
         }
 

@@ -230,8 +230,7 @@ $paperLanguageRaw = $this->paperLanguage;
                             $abstractLang = '';
                         }
                         $abstract = array_values($abstractArray);
-                        $abstract = $this->escape($abstract[0]);
-                        $abstract = trim($abstract);
+                        $abstract = trim((string)$abstract[0]);
 
 
                         echo '<jats:p' . $abstractLang . '>';
