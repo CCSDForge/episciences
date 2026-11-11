@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Security
+
+- dependencies: apply security updates for Composer (`symfony/*` packages: CVE-2026-123824, CVE-2026-121623, CVE-2026-122053, CVE-2026-118515, CVE-2026-123792) and Yarn (recursive updates for `undici`, `brace-expansion`, `fast-uri`, `colord`, `serialize-javascript`).
+
 ### Fixed
 
 - [#1467](https://github.com/CCSDForge/episciences/pull/1467): Crossref export: escape resource URLs (such as PDF file names with "&") to avoid malformed XML; escape abstract once instead of twice; do not cache failed exports, and keep stored document metadata when the export is empty (`Episciences_Paper::get()`, `Episciences_Paper::save()`, `Episciences_Paper::toJson()`).
