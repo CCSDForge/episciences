@@ -27,8 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Journal sites: `/feed`, `/feed/rss` and `/feed/atom` (portal-only URLs) now permanently redirect to the journal papers feed (`/rss/papers`) instead of returning a 404 logged on every hit.
-- bioRxiv / medRxiv submission: the references of the preprint are kept as formatted by the repository, with their DOI; the submission no longer fails on some of them (e.g. authors not tagged), and none of them is truncated or lost (single author, single reference, formatted title) (`Episciences_Repositories_BioMedRxiv::referencesProcess()`).
+- [#1467](https://github.com/CCSDForge/episciences/pull/1467): Crossref export: escape resource URLs (such as PDF file names with "&") to avoid malformed XML; escape abstract once instead of twice; do not cache failed exports, and keep stored document metadata when the export is empty (`Episciences_Paper::get()`, `Episciences_Paper::save()`, `Episciences_Paper::toJson()`).
+- [#1454](https://github.com/CCSDForge/episciences/pull/1454): journal sites: `/feed`, `/feed/rss` and `/feed/atom` (portal-only URLs) now permanently redirect to the journal papers feed (`/rss/papers`) instead of returning a 404 logged on every hit.
+- [#1423](https://github.com/CCSDForge/episciences/pull/1423): bioRxiv / medRxiv submission: the references of the preprint are kept as formatted by the repository, with their DOI; the submission no longer fails on some of them (e.g. authors not tagged), and none of them is truncated or lost (single author, single reference, formatted title) (`Episciences_Repositories_BioMedRxiv::referencesProcess()`).
 - [#1341](https://github.com/CCSDForge/episciences/pull/1341): submitting a refused paper again only renames ("-REFUSED" suffix) the versions of that paper in its journal, never another paper sharing its identifier, e.g. the same document accepted in another journal (`Episciences_PapersManager::renameIdentifier()`).
 - [#1342](https://github.com/CCSDForge/episciences/pull/1342): the "-REFUSED" suffix of a refused paper submitted again is no longer shown, whatever the status of the paper (e.g. its previous versions made obsolete), nor sent to the repositories (link to the document, HAL enrichment scripts); it is no longer removed from the database when the paper is saved, and it is removed again when the new submission is not saved; the COAR Notify debug mode no longer adds it (`Episciences_Paper::getIdentifier()`, `Episciences_Paper::restoreRefusedIdentifier()`).
 
@@ -52,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1379](https://github.com/CCSDForge/episciences/pull/1379): harden file, attachment and volume metadata access checks; resolve ACL resources with dispatcher-normalized names.
 - [#1352](https://github.com/CCSDForge/episciences/pull/1352): declare the paper revision deadline property.
 - [#1310](https://github.com/CCSDForge/episciences/pull/1310): co-author form and co-author removal are now consistent with the paper management page.
-- [#1344](https://github.com/CCSDForge/episciences/pull/1344): graphical abstract and linked data forms are now consistent with the paper context.
+- [#1344](https://github.com/CCSDForge/episciences/pull/1344): harden checks on graphical abstract and linked data forms and make them consistent with the paper context. Special thanks to [Takuma Imamura](https://github.com/hyperfinitism) for the detailed report and reproduction steps.
 - [#1349](https://github.com/CCSDForge/episciences/pull/1349): profile edition form opened from the user list is submitted for the selected account.
 - [#1345](https://github.com/CCSDForge/episciences/issues/1345): authors can edit the relationship of an existing related work. Authors can add, edit or remove linked data until the paper is published; editorial roles still can afterwards.
 - [#1332](https://github.com/CCSDForge/episciences/pull/1332): journal settings: the statistics start date is now strictly validated (YYYY-MM-DD); a malformed stored value is ignored by the statistics page instead of making it fail.
