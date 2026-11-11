@@ -1303,7 +1303,10 @@ class Episciences_Paper
             trigger_error($e->getMessage());
         }
 
-        $data['DOCUMENT'] = $document;
+        // Keep the stored document rather than wiping it when generation fails
+        if ($document !== null) {
+            $data['DOCUMENT'] = $document;
+        }
 
         if (!$db?->update(T_PAPERS, $data, ['DOCID = ?' => $docId])) {
             return false;
@@ -1349,6 +1352,13 @@ class Episciences_Paper
         $serializer = new Serializer([new ObjectNormalizer()], [new XmlEncoder(), new JsonEncoder(new JsonEncode(['json_encode_options' => JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE]))]);
         // from crossref template
         $crossRefXml = Episciences_Paper_XmlExportManager::getXmlCleaned(Episciences_Paper_XmlExportManager::xmlExport($this, Episciences_Paper_XmlExportManager::CROSSREF_FORMAT));
+
+        if ($crossRefXml === '') {
+            // The Crossref export failed to produce well-formed XML: nothing to serialize
+            trigger_error(sprintf('[DOCID %s] toJson(): empty Crossref XML export', $this->getDocid()), E_USER_WARNING);
+            return null;
+        }
+
         $crossRefXml = str_replace(array("jats:p", "jats:"), array("value", ""), Episciences_Tools::spaceCleaner($crossRefXml));
         $xmlToArray = $serializer->decode($crossRefXml, "xml");
 
