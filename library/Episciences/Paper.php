@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\AppRegistry;
 use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
@@ -1110,7 +1111,7 @@ class Episciences_Paper
      * fetch article in given format
      * @param string $format
      * @param int|null $version
-     * @return string|false
+     * @return string|false|null null when the export failed (e.g. JSON v2)
      * @throws InvalidArgumentExceptionAlias
      */
     public function get(string $format = 'tei', int $version = null)
@@ -1148,8 +1149,11 @@ class Episciences_Paper
             } else {
                 $getOutput = Export::$method($this);
             }
-            $metadataCache->set($getOutput);
-            $cache->save($metadataCache);
+            // Do not cache a failed export (e.g. toJson() returning null): it would be served until expiry
+            if ($getOutput !== null) {
+                $metadataCache->set($getOutput);
+                $cache->save($metadataCache);
+            }
         } else {
             $getOutput = $metadataCache->get();
         }
@@ -1303,7 +1307,10 @@ class Episciences_Paper
             trigger_error($e->getMessage());
         }
 
-        $data['DOCUMENT'] = $document;
+        // Keep the stored document rather than wiping it when generation fails
+        if ($document !== null) {
+            $data['DOCUMENT'] = $document;
+        }
 
         if (!$db?->update(T_PAPERS, $data, ['DOCID = ?' => $docId])) {
             return false;
@@ -1349,6 +1356,13 @@ class Episciences_Paper
         $serializer = new Serializer([new ObjectNormalizer()], [new XmlEncoder(), new JsonEncoder(new JsonEncode(['json_encode_options' => JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE]))]);
         // from crossref template
         $crossRefXml = Episciences_Paper_XmlExportManager::getXmlCleaned(Episciences_Paper_XmlExportManager::xmlExport($this, Episciences_Paper_XmlExportManager::CROSSREF_FORMAT));
+
+        if ($crossRefXml === '') {
+            // The Crossref export failed to produce well-formed XML: nothing to serialize
+            AppRegistry::getMonoLogger()?->warning(sprintf('[DOCID %s] toJson(): empty Crossref XML export', $this->getDocid()));
+            return null;
+        }
+
         $crossRefXml = str_replace(array("jats:p", "jats:"), array("value", ""), Episciences_Tools::spaceCleaner($crossRefXml));
         $xmlToArray = $serializer->decode($crossRefXml, "xml");
 
