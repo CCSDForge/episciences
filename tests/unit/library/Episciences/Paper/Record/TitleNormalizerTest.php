@@ -140,7 +140,7 @@ class TitleNormalizerTest extends TestCase
 
     public function testTitleOfAnotherVocabularyIsLeftAlone(): void
     {
-        $record = '<record xmlns:other="https://example.org/other"><other:title>Not\na DC title</other:title></record>';
+        $record = "<record xmlns:other=\"https://example.org/other\"><other:title>Not\na DC title</other:title></record>";
 
         $this->assertSame($record, TitleNormalizer::normalize($record));
     }

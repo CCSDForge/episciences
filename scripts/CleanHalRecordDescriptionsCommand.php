@@ -195,11 +195,14 @@ class CleanHalRecordDescriptionsCommand extends Command
 
         if ($shouldReindex) {
             try {
+                // getPort() rather than enqueueIndex(): the latter swallows a port construction
+                // failure, and the command would report a reindex that was never queued
+                $port = SolrIndexing::getPort();
                 foreach ($modifiedIds as $docId) {
-                    SolrIndexing::enqueueIndex($docId);
+                    $port->enqueueIndex($docId);
                 }
                 $logger->info(sprintf('Solr reindex queued for %d paper(s).', count($modifiedIds)));
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 $logger->error('Queuing the Solr reindex failed: ' . $e->getMessage());
                 $failureCount++;
             }
