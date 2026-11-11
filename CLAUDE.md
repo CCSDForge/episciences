@@ -50,3 +50,13 @@
 - `tmp/`
 - `log/`
 - `logs/`
+
+## Conventions
+- New PHP classes use a real namespace (`Episciences\...`), not the legacy underscore naming
+- New PHP files must pass `make phpstan LEVEL=6`
+- Logging in new code: `AppRegistry::getMonoLogger()?->warning(...)`, not `Ccsd_Log::message()`
+- Cache: Symfony Cache PSR-6; `Episciences_Cache` / `Ccsd_Cache` are deprecated
+- Validate external URLs (HTTP/HTTPS only) before fetching them (SSRF)
+- SQL (MySQL 8, `ONLY_FULL_GROUP_BY`): non-aggregated SELECT columns go in GROUP BY; count paginated grouped queries with `SELECT COUNT(*) FROM (...) AS sub`; use `->order('COL DESC')`, the second argument of `Zend_Db_Select::order()` is ignored
+- `date_create()->format()` and `preg_replace()` may return false/null: handle it (see `Repositories\Common::safeDateFormat`)
+- Tests: typed properties without default need `= null` (PHP 8.1); do not mock `Zend_Translate`; use `ArrayAdapter(0, false)` for `assertSame()` on cached objects
