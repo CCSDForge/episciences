@@ -344,9 +344,9 @@ class CleanHalRecordDescriptionsCommand extends Command
     // -------------------------------------------------------------------------
 
     /**
-     * @return array{0: Zend_Db_Select, 1: Zend_Db_Select}
+     * @return array{0: Zend_Db_Select, 1: Zend_Db_Select} count query and data query
      */
-    private function buildQueries(Zend_Db_Adapter_Abstract $db, ?int $docId): array
+    public function buildQueries(Zend_Db_Adapter_Abstract $db, ?int $docId): array
     {
         $countQuery = $db->select()->from(T_PAPERS, [new Zend_Db_Expr('COUNT(*)')]);
         $dataQuery  = $db->select()->from(T_PAPERS, ['DOCID', 'RECORD']);
@@ -360,6 +360,10 @@ class CleanHalRecordDescriptionsCommand extends Command
             }
 
             $query->where('(' . implode(' OR ', $orConditions) . ')');
+
+            if ($docId !== null) {
+                $query->where('DOCID = ?', $docId);
+            }
         }
 
         $dataQuery->order('DOCID ASC');

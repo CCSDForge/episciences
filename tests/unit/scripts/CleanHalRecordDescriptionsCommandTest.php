@@ -261,4 +261,26 @@ class CleanHalRecordDescriptionsCommandTest extends TestCase
         self::assertSame(range(1, 7), $processed);
         self::assertSame([3, 6, 7], $lastDocIds);
     }
+
+    // -------------------------------------------------------------------------
+    // buildQueries()
+    // -------------------------------------------------------------------------
+
+    public function testBuildQueriesRestrictsBothQueriesToTheRequestedDocId(): void
+    {
+        $db = $this->createBatchTable([]);
+
+        foreach ($this->command->buildQueries($db, 42) as $query) {
+            self::assertStringContainsString('DOCID = 42', (string)$query);
+        }
+    }
+
+    public function testBuildQueriesDoesNotFilterOnDocIdByDefault(): void
+    {
+        $db = $this->createBatchTable([]);
+
+        foreach ($this->command->buildQueries($db, null) as $query) {
+            self::assertStringNotContainsString('DOCID = ', (string)$query);
+        }
+    }
 }
