@@ -4460,6 +4460,12 @@ class Episciences_PapersManager
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $paper = self::get($docId, false);
             $toJson = $paper->toJson();
+
+            // Keep the stored document rather than wiping it when generation fails
+            if ($toJson === null) {
+                return;
+            }
+
             $str = sprintf('UPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', $db->quote($toJson), $docId);
             $db->query($str)->closeCursor();
         } catch (Zend_Db_Statement_Exception $e) {

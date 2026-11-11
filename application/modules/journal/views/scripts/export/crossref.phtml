@@ -211,8 +211,7 @@ $paperLanguageRaw = $this->paperLanguage;
                             $abstractLang = '';
                         }
                         $abstract = array_values($abstractArray);
-                        $abstract = $this->escape($abstract[0]);
-                        $abstract = trim($abstract);
+                        $abstract = trim((string)$abstract[0]);
 
 
                         echo '<jats:p' . $abstractLang . '>';
@@ -361,9 +360,9 @@ $paperLanguageRaw = $this->paperLanguage;
             </program>
 
             <doi_data>
-                <?php $pdfLink = $paper->getMainPaperUrl() ?>
+                <?php $pdfLink = $this->escape($paper->getMainPaperUrl()) ?>
                 <doi><?php echo htmlentities($this->doi, ENT_XML1); ?></doi>
-                <resource><?php echo $journalUrl . '/' . $paper->getPaperid(); ?></resource>
+                <resource><?php echo $this->escape($journalUrl . '/' . $paper->getPaperid()); ?></resource>
                 <collection property="crawler-based">
                     <item crawler="iParadigms">
                         <resource><?= $pdfLink ?></resource>
