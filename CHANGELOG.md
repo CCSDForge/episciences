@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v1.0.58.2 - 2026-11-11
+
 ### Security
 
 - dependencies: apply security updates for Composer (`symfony/*` packages: CVE-2026-123824, CVE-2026-121623, CVE-2026-122053, CVE-2026-118515, CVE-2026-123792) and Yarn (recursive updates for `undici`, `brace-expansion`, `fast-uri`, `colord`, `serialize-javascript`).
