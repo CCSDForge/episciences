@@ -9,13 +9,14 @@
 /sass/.sass-cache/
 /sass/components/.sass-cache/
 /.php_cs.cache/
-# Claude Code: only the shared project skills are versioned
+# Agent skills (Agent Skills standard): shared skills live in .agents/skills;
+# .claude/skills only holds symlinks to them for Claude Code
+/.agents/skills/**/.claude/
 !/.claude/
 /.claude/*
 !/.claude/skills/
 /.claude/skills/*
-!/.claude/skills/episciences-merge-branches/
-/.claude/skills/**/.claude/
+!/.claude/skills/episciences-merge-branches
 __pycache__/
 
 # Test coverage reports

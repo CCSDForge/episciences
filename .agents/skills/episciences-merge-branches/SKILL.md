@@ -145,7 +145,7 @@ git rev-parse --short HEAD        # note this "before" SHA: it is used in step f
 git merge --no-ff <source>        # default message: "Merge branch '<source>' into <target>"
 ```
 
-Keep the default message: it is the convention of the repository history. Add no Claude mention and no `Co-Authored-By` line.
+Keep the default message: it is the convention of the repository history. Add no AI/agent mention and no `Co-Authored-By` line.
 
 **d. Conflicts, if any**
 
@@ -209,7 +209,7 @@ A hardcoded URL coming from the source breaks the target's path-based routing, e
    git add <fixed files>
    git commit -m "fix(urls): prefix hardcoded URLs merged from <source> into <target>"
    ```
-   The message body lists the fixed files. No Claude mention.
+   The message body lists the fixed files. No AI/agent mention.
 
 Hardcoded URLs **already present** on the target before the merge are out of scope: do not fix them, but mention them if you come across them. Exception: those flagged by `check-hardcoded-internal-urls.php`, since it must pass; fix them in a `fix(urls)` commit separate from the merge.
 
