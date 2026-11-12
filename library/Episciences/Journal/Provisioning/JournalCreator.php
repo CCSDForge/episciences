@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Episciences\Journal\Provisioning;
 
 use Ccsd_Website_Common;
+use Episciences\Reviewer\RequestTypeRepository;
 use Episciences_Review;
 use Episciences_Review_DoiSettings;
 use Episciences_ReviewsManager;
@@ -36,6 +37,7 @@ final class JournalCreator
         private readonly WebsiteCloner $websiteCloner,
         private readonly PagesCloner $pagesCloner,
         private readonly AdminRoleAssigner $adminRoleAssigner,
+        private readonly RequestTypeRepository $requestTypeRepository = new RequestTypeRepository(),
     ) {
     }
 
@@ -70,6 +72,9 @@ final class JournalCreator
 
             $insertedSettings = $this->settingsCloner->clone($template->getRvid(), $rvid, $existingRvid !== null);
             $report->add('REVIEW_SETTING', "$insertedSettings setting(s) cloned from '{$spec->templateRvcode}'");
+
+            $createdRequestTypes = $this->requestTypeRepository->createDefaults($rvid);
+            $report->add('Review request types', "$createdRequestTypes default type(s) created");
 
             if ($spec->resetDoi) {
                 $this->settingsCloner->resetDoiSettings($rvid);
@@ -159,6 +164,7 @@ final class JournalCreator
 
         $countCloneable = $this->settingsCloner->countCloneable($template->getRvid());
         $report->add('REVIEW_SETTING', "$countCloneable setting(s) would be cloned from '{$spec->templateRvcode}'");
+        $report->add('Review request types', 'missing default types would be created');
 
         if ($spec->resetDoi) {
             $report->add('DOI settings', 'would be reset to manual mode with an empty prefix (--reset-doi)');
