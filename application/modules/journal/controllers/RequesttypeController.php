@@ -130,6 +130,11 @@ class RequesttypeController extends Zend_Controller_Action
 
         if ($type !== null && $type->getRvid() === RVID && $this->getRepository()->delete((int)$type->getId(), RVID)) {
             RequestTypeMailTemplate::deleteFor($type, (string)RVCODE);
+            // the grid of the type, if the journal created one
+            $gridFile = Episciences_GridsManager::filenameOf(Episciences_GridsManager::requestTypeGridKey((int)$type->getId()));
+            if (Episciences_GridsManager::gridExists($gridFile)) {
+                Episciences_GridsManager::delete($gridFile);
+            }
             $this->flash(Ccsd_View_Helper_Message::MSG_SUCCESS, 'Le type de demande a été supprimé.');
         } else {
             $this->flash(Ccsd_View_Helper_Message::MSG_ERROR, 'Ce type de demande ne peut pas être supprimé : il a déjà été utilisé, désactivez-le.');

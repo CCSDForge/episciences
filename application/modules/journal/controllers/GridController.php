@@ -1,7 +1,20 @@
 <?php
 
+use Episciences\Reviewer\RequestTypeRepository;
+
 class GridController extends Zend_Controller_Action
 {
+    /**
+     * File of a grid from its key: a volume id (0: default grid) or "t<request type id>" for the grid of a review
+     * request type (#319); an invalid key gives a file name that never exists
+     */
+    private static function gridFilename(mixed $rgid): string
+    {
+        $key = Episciences_GridsManager::gridKey($rgid);
+
+        return $key === null ? 'grid_invalid.xml' : Episciences_GridsManager::filenameOf($key);
+    }
+
 
     public function indexAction()
     {
@@ -25,6 +38,19 @@ class GridController extends Zend_Controller_Action
 
         $this->view->form = Episciences_GridsManager::getGridForm($grids);
 
+        // review request types of the journal (#319): their grids, and the types without one
+        $requestTypes = [];
+        foreach ((new RequestTypeRepository())->findAllForJournal(RVID) as $requestType) {
+            $requestTypes[(int)$requestType->getId()] = $requestType;
+        }
+        $this->view->requestTypes = $requestTypes;
+        $this->view->requestTypesWithoutGrid = array_filter(
+            $requestTypes,
+            static fn($requestType): bool => !array_key_exists('grid_' . Episciences_GridsManager::requestTypeGridKey((int)$requestType->getId()), $grids)
+        );
+        $this->view->csrfToken = Episciences_Csrf_Helper::getSessionToken();
+        $this->view->locale = Episciences_Tools::getLocale();
+
         // Traductions
         $this->view->translator = Zend_Registry::get('Zend_Translate');
     }
@@ -46,7 +72,7 @@ class GridController extends Zend_Controller_Action
         }
 
         $oGrid = new Episciences_Rating_Report();
-        $oGrid->loadXML(REVIEW_GRIDS_PATH . 'grid_' . $rgid . '.xml');
+        $oGrid->loadXML(REVIEW_GRIDS_PATH . self::gridFilename($rgid));
 
         $form = Episciences_Rating_Manager::getRatingForm($oGrid);
 
@@ -70,14 +96,24 @@ class GridController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         } elseif ($request->getPost('submit')) {
 
-            $id = (is_numeric($request->getPost('volume'))) ? $request->getPost('volume') : 0;
-            $filename = 'grid_' . $id . '.xml';
+            // grid of a review request type of the journal (#319), else grid of a volume (0: default grid)
+            $requestTypeId = $request->getPost('request_type');
+            $requestType = is_scalar($requestTypeId) && ctype_digit((string)$requestTypeId)
+                ? (new RequestTypeRepository())->findById((int)$requestTypeId)
+                : null;
+
+            if ($requestType !== null && $requestType->getRvid() === RVID) {
+                $filename = Episciences_GridsManager::filenameOf(Episciences_GridsManager::requestTypeGridKey((int)$requestType->getId()));
+            } else {
+                $id = (is_numeric($request->getPost('volume'))) ? (int)$request->getPost('volume') : 0;
+                $filename = 'grid_' . $id . '.xml';
+            }
 
             $grid = new Episciences_Rating_Grid;
             $grid->setFilename($filename);
 
             if (file_exists(REVIEW_GRIDS_PATH . $filename)) {
-                $message = '<strong>' . $this->view->translate("Une grille de notation existe déjà pour ce volume.") . '</strong>';
+                $message = '<strong>' . $this->view->translate("Cette grille de notation existe déjà.") . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
             } elseif ($grid->save()) {
                 $message = '<strong>' . $this->view->translate("La nouvelle grille a bien été enregistrée.") . '</strong>';
@@ -105,18 +141,15 @@ class GridController extends Zend_Controller_Action
             return;
         }
 
-        $from = (int)$request->getPost('from');
-        $to = (int)$request->getPost('to');
-
         $source_grid = new Episciences_Rating_Grid;
-        if (!$source_grid->loadXML(REVIEW_GRIDS_PATH . 'grid_' . $from . '.xml')) {
+        if (!$source_grid->loadXML(REVIEW_GRIDS_PATH . self::gridFilename($request->getPost('from')))) {
             $message = '<strong>' . $this->view->translate("La grille source n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
             $this->_helper->redirector('list', 'grid');
         }
 
         $dest_grid = new Episciences_Rating_Grid;
-        if (!$dest_grid->loadXML(REVIEW_GRIDS_PATH . 'grid_' . $to . '.xml')) {
+        if (!$dest_grid->loadXML(REVIEW_GRIDS_PATH . self::gridFilename($request->getPost('to')))) {
             $message = '<strong>' . $this->view->translate("La grille de destination n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
             $this->_helper->redirector('list', 'grid');
@@ -152,10 +185,10 @@ class GridController extends Zend_Controller_Action
 
         /** @var array $params */
         $params = $request->getPost('params');
-        $rgid =(int) $params['rgid'];
-        $file = 'grid_' . $rgid . '.xml';
+        $rgid = Episciences_GridsManager::gridKey($params['rgid'] ?? null);
+        $file = self::gridFilename($rgid);
 
-        if ($rgid === 0) {
+        if ($rgid === '0') {
             $message = '<strong>' . $this->view->translate("La grille par défault ne pas pu être supprimée.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             return;
@@ -191,7 +224,7 @@ class GridController extends Zend_Controller_Action
 
         $request = $this->getRequest();
         $params = $request->getParams();
-        $filename = 'grid_' . $params['rgid'] . '.xml';
+        $filename = self::gridFilename($params['rgid'] ?? null);
 
         $oGrid = new Episciences_Rating_Grid;
         if (!$oGrid->loadXML(REVIEW_GRIDS_PATH . $filename)) {
@@ -301,7 +334,7 @@ class GridController extends Zend_Controller_Action
 
         $request = $this->getRequest();
         $params = $request->getParams();
-        $filename = 'grid_' . $params['rgid'] . '.xml';
+        $filename = self::gridFilename($params['rgid'] ?? null);
 
         $oGrid = new Episciences_Rating_Grid;
         if (!$oGrid->loadXML(REVIEW_GRIDS_PATH . $filename)) {
@@ -349,7 +382,7 @@ class GridController extends Zend_Controller_Action
 
         $request = $this->getRequest();
         $params = $request->getParams();
-        $filename = 'grid_' . $params['rgid'] . '.xml';
+        $filename = self::gridFilename($params['rgid'] ?? null);
         $criterion_id = $params['id'];
 
         if (!Episciences_GridsManager::gridExists($filename)) {
@@ -407,10 +440,9 @@ class GridController extends Zend_Controller_Action
         $request = $this->getRequest();
         $params = $request->getParams();
 
-        $gridId = filter_var($params['rgid'], FILTER_SANITIZE_NUMBER_INT);
         $criterionId = filter_var($params['id'], FILTER_SANITIZE_NUMBER_INT);
 
-        $filename = 'grid_' . $gridId . '.xml';
+        $filename = self::gridFilename($params['rgid'] ?? null);
 
         if (!Episciences_GridsManager::gridExists($filename)) {
             $message = '<strong>' . $this->view->translate("Cette grille n'existe pas.") . '</strong>';
@@ -466,8 +498,7 @@ class GridController extends Zend_Controller_Action
         $params = $request->getPost('params');
 
 
-        $rgid = filter_var($params['rgid'], FILTER_SANITIZE_NUMBER_INT);
-        $filename = 'grid_' . $rgid . '.xml';
+        $filename = self::gridFilename($params['rgid'] ?? null);
         $item_id = $params['id'];
 
 

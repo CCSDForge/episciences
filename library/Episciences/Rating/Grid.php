@@ -46,7 +46,10 @@ class Episciences_Rating_Grid
         }
 
         if (!$this->getId()) {
-            $this->setId(filter_var($this->getFilename(), FILTER_SANITIZE_NUMBER_INT));
+            // grid_<volume id>.xml, or grid_t<request type id>.xml for the grid of a review request type (#319)
+            $this->setId(preg_match('/^grid_(t\d+)\.xml$/', (string)$this->getFilename(), $matches) === 1
+                ? $matches[1]
+                : filter_var($this->getFilename(), FILTER_SANITIZE_NUMBER_INT));
         }
 
         $items = $xml->getElementsByTagName('div');

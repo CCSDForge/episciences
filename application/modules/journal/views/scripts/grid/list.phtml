@@ -39,13 +39,22 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 
     <?php foreach ($this->grids as $key => $grid) : ?>
         <?php if ($key != 'grid_0') : ?>
+            <?php // grid of a review request type (#319), else of a volume
+            $gridRequestTypeId = Episciences_GridsManager::requestTypeIdOfKey((string)$grid->getId());
+            $gridRequestType = $gridRequestTypeId === null ? null : ($this->requestTypes[$gridRequestTypeId] ?? null);
+            ?>
 
             <div class="panel panel-default collapsable">
 
                 <div class="panel-heading">
                     <h2 class="panel-title">
-                        <?php echo $this->translate('Grille pour le volume : '); ?>
-                        <?= Episciences_VolumesManager::translateVolumeKey('volume_' . $grid->getId() . '_title'); ?>
+                        <?php if ($gridRequestTypeId !== null) : ?>
+                            <?= $this->escape($this->translate('Grille pour le type de demande : ')) ?>
+                            <?= $gridRequestType ? $this->escape($gridRequestType->getLabel($this->locale)) : $this->escape($this->translate('type supprimé')) ?>
+                        <?php else : ?>
+                            <?php echo $this->translate('Grille pour le volume : '); ?>
+                            <?= Episciences_VolumesManager::translateVolumeKey('volume_' . $grid->getId() . '_title'); ?>
+                        <?php endif; ?>
                     </h2>
                 </div>
 
@@ -54,10 +63,19 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                 </div>
 
                 <div class="panel-footer" style="text-align: center;">
+                    <?php if ($gridRequestTypeId !== null) : ?>
+                        <?php if ($gridRequestType) : ?>
+                            <a href="/requesttype/edit?id=<?= (int)$gridRequestTypeId ?>" class="btn btn-default" role="button">
+                                <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+                                <?= $this->escape($this->translate('Modifier ce type de demande')) ?>
+                            </a>
+                        <?php endif; ?>
+                    <?php else : ?>
                     <a href="/volume/edit?id=<?= filter_var($key, FILTER_SANITIZE_NUMBER_INT) ?>" class="btn btn-default" role="button">
                         <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
                         <?= $this->translate('Modifier ce volume'); ?>
                     </a>
+                    <?php endif; ?>
                 </div>
 
             </div>
@@ -69,5 +87,26 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 <?php if (Episciences_Auth::isSecretary()) : ?>
     <?php if ($this->form) : ?>
         <?php echo $this->form; ?>
+    <?php endif; ?>
+
+    <?php // grid of a review request type (#319): used for the reports of this type instead of the volume grid ?>
+    <?php if (!empty($this->requestTypesWithoutGrid)) : ?>
+        <form action="/grid/add" method="post" class="form-horizontal">
+            <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
+            <div class="form-group">
+                <label for="request_type" class="col-md-3 control-label"><?= $this->escape($this->translate('Créer une grille pour le type de demande :')) ?></label>
+                <div class="col-md-4">
+                    <select id="request_type" name="request_type" class="form-control" aria-describedby="request_type-help">
+                        <?php foreach ($this->requestTypesWithoutGrid as $requestTypeId => $requestType) : ?>
+                            <option value="<?= (int)$requestTypeId ?>"><?= $this->escape($requestType->getLabel($this->locale)) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span id="request_type-help" class="help-block"><?= $this->escape($this->translate("Les rapports de ce type utiliseront cette grille, quel que soit le volume de l'article.")) ?></span>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" name="submit" value="1" class="btn btn-primary"><?= $this->escape($this->translate('Créer la grille')) ?></button>
+                </div>
+            </div>
+        </form>
     <?php endif; ?>
 <?php endif; ?>

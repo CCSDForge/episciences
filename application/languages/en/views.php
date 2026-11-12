@@ -2949,4 +2949,10 @@ return array(
     "Date limite proposée à l'invitation. Laisser vide pour utiliser le réglage de la revue." => "Due date suggested in the invitation. Leave empty to use the journal setting.",
     "Proposer ce type à l'invitation d'un relecteur" => "Offer this type when inviting a reviewer",
     "Le rapport de relecture reste toujours proposé." => "The review report is always offered.",
+    "Cette grille de notation existe déjà." => "This rating grid already exists.",
+    "Grille pour le type de demande : " => "Grid for the request type: ",
+    "type supprimé" => "deleted type",
+    "Modifier ce type de demande" => "Edit this request type",
+    "Créer une grille pour le type de demande :" => "Create a grid for the request type:",
+    "Les rapports de ce type utiliseront cette grille, quel que soit le volume de l'article." => "The reports of this type will use this grid, whatever the volume of the article.",
 );

@@ -3958,9 +3958,9 @@ class Episciences_Paper
      * @param null $visibility_filter
      * @return bool|Episciences_Rating_Grid
      */
-    public function getGrid($visibility_filter = null)
+    public function getGrid($visibility_filter = null, ?int $requestTypeId = null)
     {
-        $path = $this->getGridPath();
+        $path = $this->getGridPath($requestTypeId);
         if (!$path) {
             return false;
         }
@@ -3993,8 +3993,13 @@ class Episciences_Paper
      * return rating grid path
      * @return string|bool
      */
-    public function getGridPath()
+    public function getGridPath(?int $requestTypeId = null)
     {
+        // the grid of the review request type of the report comes first (#319)
+        if ($requestTypeId !== null && ($typeGrid = Episciences_GridsManager::requestTypeGridPath($requestTypeId)) !== null) {
+            return $typeGrid;
+        }
+
         if (Episciences_GridsManager::gridExists('grid_' . $this->getVid() . '.xml')) {
             return REVIEW_GRIDS_PATH . 'grid_' . $this->getVid() . '.xml';
         }

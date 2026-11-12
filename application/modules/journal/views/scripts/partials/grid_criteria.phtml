@@ -96,7 +96,7 @@
                         url: "/grid/sortcriterion",
                         type: 'POST',
                         headers: {'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''},
-                        data: {sorted: $(this).sortable("toArray"), rgid: <?php echo $this->grid->getId(); ?>},
+                        data: {sorted: $(this).sortable("toArray"), rgid: <?= json_encode((string)$this->grid->getId(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>},
                         dataType: "json",
                         success: function (result) {
                             location.reload();
@@ -122,8 +122,8 @@
         <?php if ($this->defaultGrid->getId() != $this->grid->getId()) : ?>
             <form action="/grid/copy" method="post" style="display:inline">
                 <input type="hidden" name="csrf_token" value="<?= $this->escape(Episciences_Csrf_Helper::getSessionToken()) ?>">
-                <input type="hidden" name="from" value="<?= (int)$this->defaultGrid->getId() ?>">
-                <input type="hidden" name="to" value="<?= (int)$this->grid->getId() ?>">
+                <input type="hidden" name="from" value="<?= $this->escape((string)$this->defaultGrid->getId()) ?>">
+                <input type="hidden" name="to" value="<?= $this->escape((string)$this->grid->getId()) ?>">
                 <button type="submit" class="btn btn-default">
                     <?php echo $this->translate('Copier grille par défaut'); ?>
                 </button>
@@ -157,7 +157,8 @@
             </a>
         <?php endif; ?>
 
-    <?php if ((int)$this->grid->getId() !== 0) : ?>
+    <?php // the default grid cannot be deleted; the key of a request type grid is "t<id>" (#319) ?>
+    <?php if ((string)$this->grid->getId() !== '0') : ?>
         <a class="delete" href="/grid/delete?rgid=<?php echo $this->grid->getId(); ?>">
             <button type="button" class="btn btn-danger">
                 <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>&nbsp;

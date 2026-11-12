@@ -3,6 +3,49 @@
 // rating grids manager
 class Episciences_GridsManager
 {
+    /** Prefix of the key of the grid of a review request type (#319): file grid_t<type id>.xml */
+    public const REQUEST_TYPE_KEY_PREFIX = 't';
+
+    /**
+     * Key of a grid from a request: a volume id (0: default grid) or "t<request type id>"; null for anything else
+     */
+    public static function gridKey(mixed $raw): ?string
+    {
+        if (is_int($raw)) {
+            $raw = (string)$raw;
+        }
+
+        return is_string($raw) && preg_match('/^t?\d{1,10}$/', $raw) === 1 ? $raw : null;
+    }
+
+    public static function requestTypeGridKey(int $requestTypeId): string
+    {
+        return self::REQUEST_TYPE_KEY_PREFIX . $requestTypeId;
+    }
+
+    /**
+     * Request type id of a grid key, null for a volume or the default grid
+     */
+    public static function requestTypeIdOfKey(string $key): ?int
+    {
+        return str_starts_with($key, self::REQUEST_TYPE_KEY_PREFIX) ? (int)substr($key, strlen(self::REQUEST_TYPE_KEY_PREFIX)) : null;
+    }
+
+    public static function filenameOf(string $key): string
+    {
+        return 'grid_' . $key . '.xml';
+    }
+
+    /**
+     * Path of the grid of a review request type, null when the journal has not created it
+     */
+    public static function requestTypeGridPath(int $requestTypeId): ?string
+    {
+        $filename = self::filenameOf(self::requestTypeGridKey($requestTypeId));
+
+        return self::gridExists($filename) ? REVIEW_GRIDS_PATH . $filename : null;
+    }
+
     /**
      * returns a list of all the rating grids
      * @return array
@@ -54,7 +97,10 @@ class Episciences_GridsManager
 
         $vids = [];
         foreach ($grids as $grid) {
-            $vids[] = $grid->getId();
+            // the grids of the request types are not volume grids (#319)
+            if (self::requestTypeIdOfKey((string)$grid->getId()) === null) {
+                $vids[] = $grid->getId();
+            }
         }
 
         if (!empty($vids)) {
@@ -125,8 +171,9 @@ class Episciences_GridsManager
      */
     public static function sortCriterion($params)
     {
+        $key = self::gridKey($params['rgid'] ?? null);
         $grid = new Episciences_Rating_Grid;
-        if (!$grid->loadXML(REVIEW_GRIDS_PATH . 'grid_' . $params['rgid'] . '.xml')) {
+        if ($key === null || !$grid->loadXML(REVIEW_GRIDS_PATH . self::filenameOf($key))) {
             return false;
         }
 

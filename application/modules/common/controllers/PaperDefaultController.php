@@ -1148,7 +1148,7 @@ class PaperDefaultController extends DefaultController
 
         $docId = $paper->getDocid();
 
-        $grid = $paper->getGridPath();
+        $grid = $paper->getGridPath($requestTypeId);
 
         if ($grid) {
 
