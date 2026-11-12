@@ -2,6 +2,8 @@
 -- types created by a journal, and the texts of the %%INVITATION_ACCOUNT_HINT%% tag (fragments, without subject).
 -- Created: 2026-11-12
 
+SET NAMES utf8mb4;
+
 INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
 SELECT NULL, NULL, NULL, 'paper_reviewer_invitation_quick_opinion', 'paper_review', NULL
 WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'paper_reviewer_invitation_quick_opinion');

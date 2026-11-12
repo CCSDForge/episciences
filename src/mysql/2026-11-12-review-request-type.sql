@@ -3,6 +3,9 @@
 -- on the same paper version.
 -- Created: 2026-11-12
 
+-- The labels hold non-ASCII characters: whatever the default character set of the client
+SET NAMES utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `review_request_type` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `rvid` int unsigned NOT NULL COMMENT 'Journal',
