@@ -3104,6 +3104,10 @@ class PaperController extends PaperDefaultController
 
         $this->view->paper = $paper;
 
+        // review request type of the report (#319)
+        $requestTypeId = $this->ratingRequestTypeId($request, $paper, $reviewer_uid);
+        $this->view->requestTypeId = $requestTypeId;
+
         // fetch journal detail
         $journal = Episciences_ReviewsManager::find(RVID);
         $journal->loadSettings();
@@ -3136,13 +3140,13 @@ class PaperController extends PaperDefaultController
                     $message = $this->view->translate("Votre commentaire n'a pas pu être envoyé.");
                     $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector->gotoUrl('/paper/rating?id=' . $paper->getDocid());
+                $this->_helper->redirector->gotoUrl($this->ratingUrl((int)$paper->getDocid(), $requestTypeId));
             }
         }
 
         // rating block ***********************************************************************************
 
-        $report = $this->checkRatingProcess($paper, $reviewer_uid);
+        $report = $this->checkRatingProcess($paper, $reviewer_uid, $requestTypeId);
 
         if (!$report) {
             $report = new Episciences_Rating_Report();
@@ -3241,6 +3245,45 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
+    /**
+     * Review request type of the rating page (#319): the requested one when the reviewer holds it, else the only type
+     * the reviewer holds on the paper, else the review report (null)
+     */
+    private function ratingRequestTypeId(Zend_Controller_Request_Http $request, Episciences_Paper $paper, int $reviewerUid): ?int
+    {
+        $uid = $reviewerUid > 0 ? $reviewerUid : (int)Episciences_Auth::getUid();
+        $held = array_values(array_filter(
+            Episciences_User_AssignmentsManager::currentReviewerRequestTypeIds($uid, (int)$paper->getDocid()),
+            static fn(?int $id): bool => $id !== null
+        ));
+        $requested = $request->getParam('request_type');
+        $requestedId = is_scalar($requested) && ctype_digit((string)$requested) ? (int)$requested : null;
+
+        if ($requestedId !== null && in_array($requestedId, $held, true)) {
+            return $requestedId;
+        }
+
+        if (count($held) === 1) {
+            return $held[0];
+        }
+
+        return null;
+    }
+
+    /**
+     * Rating page of a report (#319): the request type is only given for another type than the review report
+     */
+    private function ratingUrl(int $docId, ?int $requestTypeId = null): string
+    {
+        $url = '/paper/rating?id=' . $docId;
+
+        if ($requestTypeId !== null && $requestTypeId !== RequestTypeRepository::fullReportIdOf(RVID)) {
+            $url .= '&request_type=' . $requestTypeId;
+        }
+
+        return $url;
+    }
+
     private function checkAccessToRating(Episciences_Paper $paper, int $reviewerUid = null): array
     {
         $accessResult = []; // peut relire
@@ -3349,17 +3392,17 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception|Zend_Exception|JsonException
      */
-    private function checkRatingProcess(Episciences_Paper $paper, int $reviewerUid = 0): Episciences_Rating_Report|bool|null
+    private function checkRatingProcess(Episciences_Paper $paper, int $reviewerUid = 0, ?int $requestTypeId = null): Episciences_Rating_Report|bool|null
     {
         $report = null;
         if ($reviewerUid < 0) {
             $this->redirect('/administratepaper/view/id/' . $paper->getDocid());
 
         } elseif ($reviewerUid === 0) { // Déjà relecteur pour cet article
-            $report = Episciences_Rating_Report::find($paper->getDocid(), Episciences_Auth::getUid());
+            $report = Episciences_Rating_Report::find($paper->getDocid(), Episciences_Auth::getUid(), $requestTypeId);
 
         } else {  // Ajouter une relecture ou relire à la place d'un autre relecteur
-            $report = $this->reviewFromEditor($paper, $reviewerUid);
+            $report = $this->reviewFromEditor($paper, $reviewerUid, $requestTypeId);
         }
 
         return $report;
@@ -3374,7 +3417,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    private function reviewFromEditor(Episciences_Paper $paper, int $reviewerUid): ?Episciences_Rating_Report
+    private function reviewFromEditor(Episciences_Paper $paper, int $reviewerUid, ?int $requestTypeId = null): ?Episciences_Rating_Report
     {
         $user = new Episciences_User();
         if (!$user->find($reviewerUid)) {
@@ -3386,7 +3429,7 @@ class PaperController extends PaperDefaultController
             $this->view->url_reviewer = $user->toArray();// paper/rating.phtml // Pour la relecture à la place
         }
 
-        return $this->applyRating($paper, $reviewerUid);
+        return $this->applyRating($paper, $reviewerUid, $requestTypeId);
 
     }
 
@@ -3424,14 +3467,14 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    private function applyRating(Episciences_Paper $paper, int $reviewerUid): ?Episciences_Rating_Report
+    private function applyRating(Episciences_Paper $paper, int $reviewerUid, ?int $requestTypeId = null): ?Episciences_Rating_Report
     {
 
         if ($reviewerUid <= 0) {
             return null;
         }
 
-        $report = Episciences_Rating_Report::find($paper->getDocid(), $reviewerUid);
+        $report = Episciences_Rating_Report::find($paper->getDocid(), $reviewerUid, $requestTypeId);
 
         if ($report) {
             $status = $report->getStatus();
@@ -3472,8 +3515,8 @@ class PaperController extends PaperDefaultController
                 'tmp_user' => 0,
                 'item' => Episciences_User_Assignment::ITEM_PAPER,
                 'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
-                // a rating entered by an editor is a review report (#319)
-                'request_type_id' => (new RequestTypeRepository())->findFullReport(RVID)?->getId(),
+                // the request of the rating entered by an editor (#319): the review report by default
+                'request_type_id' => $requestTypeId ?? RequestTypeRepository::fullReportIdOf(RVID),
             ];
 
             /** @var Episciences_User_Assignment $eAssignment */
@@ -3612,8 +3655,7 @@ class PaperController extends PaperDefaultController
 
             // send mail to reviewer *********************
             // url to rating page
-            $paper_url = $this->view->url([self::CONTROLLER => self::CONTROLLER_NAME, self::ACTION => self::RATING_ACTION, 'id' => $report->getDocid()]);
-            $paper_url = APPLICATION_URL . $paper_url;
+            $paper_url = APPLICATION_URL . $this->ratingUrl((int)$report->getDocid(), $report->isReviewReport() ? null : $report->getRequest_type_id());
 
             $reviewerTags = $commonTags + [
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $user->getUsername(),
@@ -3721,6 +3763,9 @@ class PaperController extends PaperDefaultController
         $itemId = $request->getParam('cid');
         $uid = (int)$request->getParam('uid'); // Reviewer UID
         $file = (string)$request->getParam('file');
+        // request type of the report (#319); none: the review report
+        $requestType = $request->getParam('request_type');
+        $requestTypeId = is_scalar($requestType) && ctype_digit((string)$requestType) ? (int)$requestType : null;
 
         // Only a plain file name is expected: reject any directory component to
         // prevent path traversal when building $report_path below.
@@ -3737,7 +3782,7 @@ class PaperController extends PaperDefaultController
         }
 
         if (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid()) || Episciences_Auth::getUid() == $uid) {
-            $report = Episciences_Rating_Report::find($docid, $uid);
+            $report = Episciences_Rating_Report::find($docid, $uid, $requestTypeId);
             if (!$report) {
                 $message = $this->view->translate("Erreur lors de la suppression du fichier.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
@@ -3763,8 +3808,7 @@ class PaperController extends PaperDefaultController
             $message = $this->view->translate("Vous n'avez pas les autorisations nécessaires pour supprimer ce fichier.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
         }
-        $url = '/paper/rating?id=' . $docid;
-        $this->redirect($url);
+        $this->redirect($this->ratingUrl($docid, $requestTypeId));
     }
 
     /**

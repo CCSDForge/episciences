@@ -447,7 +447,9 @@ class FileController extends DefaultController
 
         // Trusted base derived from the persisted report (docid/uid), the file name is
         // user-influenced and confined under it by resolveSafePath().
-        $baseDir = REVIEW_FILES_PATH . $report->getDocid() . '/reports/' . $report->getUid();
+        // (the folder of a report of another request type than the review report is "<uid>_<type id>", #319)
+        $baseDir = REVIEW_FILES_PATH . $report->getDocid() . '/reports/' . $report->getUid()
+            . ($report->isReviewReport() ? '' : '_' . $report->getRequest_type_id());
         $filepath = $this->resolveSafePath($baseDir, $file);
 
         if ($filepath === null) {

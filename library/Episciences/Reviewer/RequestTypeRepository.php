@@ -19,6 +19,12 @@ class RequestTypeRepository
 
     private ?Zend_Db_Adapter_Abstract $db;
 
+    /** @var array<int, int|null> id of the review report type, by journal (cache of fullReportIdOf()) */
+    private static array $fullReportIds = [];
+
+    /** @var array<int, bool> whether the type is a review report type, by type id (cache of isFullReportId()) */
+    private static array $isFullReport = [];
+
     /**
      * @param ?Zend_Db_Adapter_Abstract $db defaults to the application database
      */
@@ -51,6 +57,39 @@ class RequestTypeRepository
     public function findFullReport(int $rvid): ?RequestType
     {
         return $this->findByCode($rvid, RequestType::CODE_FULL_REPORT);
+    }
+
+    /**
+     * Id of the review report type of the journal, read once per request
+     */
+    public static function fullReportIdOf(int $rvid, ?self $repository = null): ?int
+    {
+        if (!array_key_exists($rvid, self::$fullReportIds)) {
+            self::$fullReportIds[$rvid] = ($repository ?? new self())->findFullReport($rvid)?->getId();
+        }
+
+        return self::$fullReportIds[$rvid];
+    }
+
+    /**
+     * Whether the type is a review report type, read once per request
+     */
+    public static function isFullReportId(int $id, ?self $repository = null): bool
+    {
+        if (!array_key_exists($id, self::$isFullReport)) {
+            self::$isFullReport[$id] = (bool)($repository ?? new self())->findById($id)?->isFullReport();
+        }
+
+        return self::$isFullReport[$id];
+    }
+
+    /**
+     * Forgets the values cached by fullReportIdOf() and isFullReportId() (tests, creation of the default types)
+     */
+    public static function clearCache(): void
+    {
+        self::$fullReportIds = [];
+        self::$isFullReport = [];
     }
 
     /**
@@ -132,6 +171,10 @@ class RequestTypeRepository
                 $this->save($type);
                 $created++;
             }
+        }
+
+        if ($created > 0) {
+            unset(self::$fullReportIds[$rvid]);
         }
 
         return $created;

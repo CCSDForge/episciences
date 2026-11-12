@@ -28,6 +28,8 @@ use Zend_Translate;
 final class Episciences_Mail_Reminder_BeforeDeadlineQueryTest extends TestCase
 {
     private const DOCID = 999301;
+    /** request type of the reviewer requests (#319) */
+    private const REQUEST_TYPE_ID = 999901;
     private const UID = 999302;
     private const DATE = '2024-01-01 10:00:00';
     private const DEADLINE = '2024-01-10';
@@ -109,6 +111,7 @@ final class Episciences_Mail_Reminder_BeforeDeadlineQueryTest extends TestCase
                 'UID' => self::UID,
                 'TMP_USER' => 0,
                 'ROLEID' => 'reviewer',
+                'REQUEST_TYPE_ID' => self::REQUEST_TYPE_ID,
                 'STATUS' => $assignmentStatus,
                 'WHEN' => self::DATE,
                 'DEADLINE' => self::DEADLINE . ' 00:00:00',
@@ -128,6 +131,8 @@ final class Episciences_Mail_Reminder_BeforeDeadlineQueryTest extends TestCase
         $this->db->insert(T_REVIEWER_REPORTS, [
             'UID' => self::UID,
             'DOCID' => self::DOCID,
+            // the report of the request of the assignment (#319)
+            'REQUEST_TYPE_ID' => self::REQUEST_TYPE_ID,
             'STATUS' => Episciences_Rating_Report::STATUS_PENDING,
             'CREATION_DATE' => self::DATE,
         ]);

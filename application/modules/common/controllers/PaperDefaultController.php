@@ -375,9 +375,8 @@ class PaperDefaultController extends DefaultController
         $reviewers = $paper->getReviewers(null, true);
 
         foreach ($reviewers as $reviewer) {
-            $report = $reviewer->getReport($paper->getDocid());
-
-            if ($report && $report->getStatus() === Episciences_Rating_Report::STATUS_COMPLETED) {
+            // a reviewer may hold one request of each type (#319): informed unless every report is completed
+            if ($reviewer->hasCompletedEveryReport((int)$paper->getDocid())) {
                 continue;
             }
 
@@ -1136,9 +1135,10 @@ class PaperDefaultController extends DefaultController
      * Create rating report
      * @param Episciences_Paper $paper
      * @param int $reviewerUid
+     * @param int|null $requestTypeId request type of the report (#319); null: the review report
      * @return Episciences_Rating_Report|null
      */
-    protected function createRatingReport(Episciences_Paper $paper, int $reviewerUid = 0): ?Episciences_Rating_Report
+    protected function createRatingReport(Episciences_Paper $paper, int $reviewerUid = 0, ?int $requestTypeId = null): ?Episciences_Rating_Report
     {
         $report = null;
 
@@ -1155,6 +1155,8 @@ class PaperDefaultController extends DefaultController
             $report = new Episciences_Rating_Report();
             $report->setDocid($docId);
             $report->setUid($reviewerUid);
+            $report->setRvid($paper->getRvid());
+            $report->setRequest_type_id($requestTypeId);
             $report->loadXML($grid);
 
             if (!$report->save()) {
@@ -1231,7 +1233,7 @@ class PaperDefaultController extends DefaultController
         $uid = $user->getUid();
 
         // create rating report
-        $this->createRatingReport($paper, $uid);
+        $this->createRatingReport($paper, $uid, $newAssignment->getRequest_type_id());
 
         // log reviewer assignment to paper
         $logDetail = [
@@ -1281,7 +1283,12 @@ class PaperDefaultController extends DefaultController
         $docId = $paper->getDocid();
         $reviewerUid = $user->getUid();
 
-        $ratingUrl = $this->view->url(['controller' => 'paper', 'action' => 'rating', 'id' => $docId]);
+        $ratingUrlParams = ['controller' => 'paper', 'action' => 'rating', 'id' => $docId];
+        // the rating page of the request (#319)
+        if ($assignment->getRequest_type_id()) {
+            $ratingUrlParams['request_type'] = $assignment->getRequest_type_id();
+        }
+        $ratingUrl = $this->view->url($ratingUrlParams);
         // SECURITY FIX: Use trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection
         $ratingUrl = rtrim(APPLICATION_URL, '/') . '/' . ltrim($ratingUrl, '/');
 

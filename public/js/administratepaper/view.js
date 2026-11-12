@@ -391,17 +391,22 @@ function getReviewerMenu(button) {
     let uid = $(button).data('uid');
     let byUid = $(button).data('by_uid');
     let aid = $(button).data('aid');
+    // review request type of the invitation (#319)
+    const requestType = $(button).data('request_type');
+    const requestTypeQuery = requestType ? '&request_type=' + encodeURIComponent(requestType) : '';
+    const requestTypePath = requestType ? '/request_type/' + encodeURIComponent(requestType) : '';
     let tmp = $(button).data('tmp');
     let status = $(button).data('status');
     let rating = $(button).data('rating');
     let canBeReviewed = JSON.parse($(button).data('can_be_reviewed'));
 
     // Toggle : est-ce qu'on ouvre ou est-ce qu'on ferme le popup ?
-    if (openedPopover && openedPopover === uid) {
+    // one menu per invitation: a reviewer may have several invitations (#319)
+    if (openedPopover && openedPopover === aid) {
         openedPopover = null;
         return false;
     } else {
-        openedPopover = uid;
+        openedPopover = aid;
     }
 
     $('.popover-link').popover('destroy');
@@ -523,6 +528,7 @@ function getReviewerMenu(button) {
             uid +
             '&byUid=' +
             byUid +
+            requestTypeQuery +
             '"  ';
         content += 'data-callback="submit"';
         content +=
@@ -545,6 +551,7 @@ function getReviewerMenu(button) {
             docid +
             '/reviewer_uid/' +
             uid +
+            requestTypePath +
             '"  ';
         content += 'data-callback="submit"';
         content +=

@@ -457,17 +457,19 @@ class Episciences_Merge_MergingManager
 
             if (!empty($arrayEquality['arrayIntersect'])) {// Documents assignés deux fois avec 2 UID(s) diff.
 
-                foreach ($arrayEquality['arrayIntersect'] as $docId) {
+                foreach ($arrayEquality['arrayIntersect'] as $reportKey) {
 
+                    // a report of another request type than the review report has its own folder (#319)
+                    [$docId, $folderSuffix] = self::reportKeyParts((string)$reportKey);
                     $reportsPath = self::getReportsPath($docId);
 
-                    $mergerPath = $reportsPath . $merger;
-                    $keeperPath = $reportsPath . $keeper;
+                    $mergerPath = $reportsPath . $merger . $folderSuffix;
+                    $keeperPath = $reportsPath . $keeper . $folderSuffix;
 
-                    $mergerReport = $mergerReports[$docId];
-                    $keeperReport = $keeperReports[$docId];
+                    $mergerReport = $mergerReports[$reportKey];
+                    $keeperReport = $keeperReports[$reportKey];
 
-                    $newPath = $reportsPath . 'merger_' . $merger . '_keeper_' . $keeper . '_' . date("Y-m-d") . '_' . date("H:i:s");
+                    $newPath = $reportsPath . 'merger_' . $merger . $folderSuffix . '_keeper_' . $keeper . $folderSuffix . '_' . date("Y-m-d") . '_' . date("H:i:s");
 
                     if ($mergerReport->getStatus() > $keeperReport->getStatus()) {
 
@@ -484,24 +486,25 @@ class Episciences_Merge_MergingManager
                     }
 
 
-                    $result[self::RENAMED_GRID][$docId] = $renaming[self::RENAMED_GRID];
-                    $result['logs'][$docId] = $renaming['logs'];
+                    $result[self::RENAMED_GRID][$reportKey] = $renaming[self::RENAMED_GRID];
+                    $result['logs'][$reportKey] = $renaming['logs'];
 
                 }
 
             }
 
             if (!empty($arrayEquality['arrayDiff'][1])) {
-                foreach ($arrayEquality['arrayDiff'][1] as $docId) { // Documents assignés à l'UID merger (pas à l'UID keeper)
+                foreach ($arrayEquality['arrayDiff'][1] as $reportKey) { // Documents assignés à l'UID merger (pas à l'UID keeper)
 
+                    [$docId, $folderSuffix] = self::reportKeyParts((string)$reportKey);
                     $reportsPath = self::getReportsPath($docId);
 
-                    $mergerPath = $reportsPath . $merger;
-                    $keeperPath = $reportsPath . $keeper;
+                    $mergerPath = $reportsPath . $merger . $folderSuffix;
+                    $keeperPath = $reportsPath . $keeper . $folderSuffix;
 
                     $renaming = self::applyRenaming($mergerPath, $keeperPath);
-                    $result[self::RENAMED_GRID][$docId] = $renaming[self::RENAMED_GRID];
-                    $result['logs'][$docId] = $renaming['logs'];
+                    $result[self::RENAMED_GRID][$reportKey] = $renaming[self::RENAMED_GRID];
+                    $result['logs'][$reportKey] = $renaming['logs'];
 
                 }
 
@@ -514,6 +517,18 @@ class Episciences_Merge_MergingManager
 
         return $result;
 
+    }
+
+    /**
+     * Paper id and folder suffix of a report key of Episciences_Rating_Report::findByUid(): "<docid>" for a review
+     * report, "<docid>_<request type id>" for a report of another request type, whose folder is "<uid>_<type id>" (#319)
+     * @return array{0: int, 1: string}
+     */
+    public static function reportKeyParts(string $reportKey): array
+    {
+        $parts = explode('_', $reportKey, 2);
+
+        return [(int)$parts[0], isset($parts[1]) ? '_' . (int)$parts[1] : ''];
     }
 
     /**

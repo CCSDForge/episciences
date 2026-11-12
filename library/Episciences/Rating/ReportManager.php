@@ -38,7 +38,7 @@ class Episciences_Rating_ReportManager
         $mUidSql = $db->select()->from(self::TABLE)->where('UID = ?', $oldUid);
 
         foreach ($db->fetchAll($mUidSql) as $row) {
-            $uidValues[] = '(' . $row['ID'] . ',' . $newUid . ',' . $db->quote($row['ONBEHALF_UID']) . ',' . $row['DOCID'] . ',' . $row['STATUS'] . ',' . $db->quote($row['CREATION_DATE']) . ',' . $db->quote($row['UPDATE_DATE']) . ')';
+            $uidValues[] = '(' . $row['ID'] . ',' . $newUid . ',' . $db->quote($row['ONBEHALF_UID']) . ',' . $row['DOCID'] . ',' . (int)$row['REQUEST_TYPE_ID'] . ',' . $row['STATUS'] . ',' . $db->quote($row['CREATION_DATE']) . ',' . $db->quote($row['UPDATE_DATE']) . ')';
         }
 
         if (!empty($uidValues)) {
@@ -48,7 +48,7 @@ class Episciences_Rating_ReportManager
         $mOnBehalfUidSql = $db->select()->from(self::TABLE)->where('ONBEHALF_UID = ?', $oldUid);
 
         foreach ($db->fetchAll($mOnBehalfUidSql) as $row) {
-            $onBehalfUidValues[] = '(' . $row['ID'] . ',' . $row['UID'] . ',' . $newUid . ',' . $row['DOCID'] . ',' . $row['STATUS'] . ',' . $db->quote($row['CREATION_DATE']) . ',' . $db->quote($row['UPDATE_DATE']) . ')';
+            $onBehalfUidValues[] = '(' . $row['ID'] . ',' . $row['UID'] . ',' . $newUid . ',' . $row['DOCID'] . ',' . (int)$row['REQUEST_TYPE_ID'] . ',' . $row['STATUS'] . ',' . $db->quote($row['CREATION_DATE']) . ',' . $db->quote($row['UPDATE_DATE']) . ')';
         }
 
         if (!empty($onBehalfUidValues)) {
@@ -63,12 +63,19 @@ class Episciences_Rating_ReportManager
      * delete rating report
      * @param int $uid : reveiwer UID
      * @param int $docId
+     * @param int|null $requestTypeId the report of this request type only (#319); null: every report of the reviewer
      * @return int
      */
-    public static function deleteByUidAndDocId(int $uid, int $docId): int
+    public static function deleteByUidAndDocId(int $uid, int $docId, ?int $requestTypeId = null): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return $db->delete(T_REVIEWER_REPORTS, ['UID = ?' => $uid, 'DOCID = ?' => $docId]);
+        $where = ['UID = ?' => $uid, 'DOCID = ?' => $docId];
+
+        if ($requestTypeId !== null) {
+            $where['REQUEST_TYPE_ID = ?'] = $requestTypeId;
+        }
+
+        return $db->delete(T_REVIEWER_REPORTS, $where);
     }
 
 
@@ -77,17 +84,19 @@ class Episciences_Rating_ReportManager
      * @param int $uid
      * @return bool
      */
-    public static function renameGrid(int $docId, int $uid): bool
+    public static function renameGrid(int $docId, int $uid, ?Episciences_Rating_Report $report = null): bool
     {
         $gridPath = Episciences_PapersManager::buildDocumentPath($docId) . '/reports/';
-        $nameDir = $gridPath . $uid;
+        // the folder of the report of the request type (#319); by default, the review report folder
+        $folder = ($report !== null && !$report->isReviewReport()) ? $uid . '_' . $report->getRequest_type_id() : (string)$uid;
+        $nameDir = $gridPath . $folder;
 
         if (!is_dir($nameDir)) {
             error_log('The filename ' . $nameDir . ' does not exist or is not a directory');
             return false;
         }
 
-        $newName = $gridPath . 'unassigned_reviewer_' . $uid . '_' . date("Y-m-d") . '_' . date("H:i:s") . '.save';
+        $newName = $gridPath . 'unassigned_reviewer_' . $folder . '_' . date("Y-m-d") . '_' . date("H:i:s") . '.save';
 
         if (!rename($nameDir, $newName)) {
             error_log('Failed to rename ' . $nameDir . ' to ' . $newName);
@@ -111,7 +120,8 @@ class Episciences_Rating_ReportManager
 
         $sql = 'INSERT IGNORE INTO ';
         $sql .= $db->quoteIdentifier(self::TABLE);
-        $sql .= ' (ID, UID, ONBEHALF_UID, DOCID, STATUS, CREATION_DATE, UPDATE_DATE) VALUES ';
+        // the request type is part of the unique key (#319): it is kept
+        $sql .= ' (ID, UID, ONBEHALF_UID, DOCID, REQUEST_TYPE_ID, STATUS, CREATION_DATE, UPDATE_DATE) VALUES ';
         $sql .= implode(',', $values);
 
         // Reentrant-safe: only open/close a transaction when none is already active.

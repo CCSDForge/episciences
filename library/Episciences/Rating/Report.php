@@ -1,5 +1,8 @@
 <?php
 
+use Episciences\Reviewer\RequestType;
+use Episciences\Reviewer\RequestTypeRepository;
+
 // rating report (reviewer rating grid + reviewer rating values)
 class Episciences_Rating_Report extends Episciences_Rating_Grid
 {
@@ -15,6 +18,8 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
     private $_path;
     private $_docid;
     private $_uid;
+    /** review request type of the report (#319); null: review report of the journal of the paper */
+    private ?int $_request_type_id = null;
     private $_onbehalf_uid; // l'UID de celui qui a fait la relecture à la place de _UID
     private $_creation_date;
     private $_update_date;
@@ -30,14 +35,28 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         'HTML.AllowedAttributes' => ['p.style']
     ];
 
-    // find a rating report, for a given docid and uid
-    public static function find($docid, $uid)
+    /**
+     * Rating report of a reviewer on a paper version, for a review request type (#319)
+     * @param int|null $requestTypeId null: the review report
+     * @return Episciences_Rating_Report|false
+     */
+    public static function find($docid, $uid, ?int $requestTypeId = null)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()
-            ->from(T_REVIEWER_REPORTS)
-            ->where('DOCID = ?', $docid)
-            ->where('UID = ?', $uid);
+            ->from(['r' => T_REVIEWER_REPORTS])
+            ->where('r.DOCID = ?', $docid)
+            ->where('r.UID = ?', $uid);
+
+        if ($requestTypeId !== null) {
+            $sql->where('r.REQUEST_TYPE_ID = ?', $requestTypeId);
+        } else {
+            $sql->join(
+                ['t' => RequestTypeRepository::TABLE_NAME],
+                't.id = r.REQUEST_TYPE_ID AND t.code = ' . $db->quote(RequestType::CODE_FULL_REPORT),
+                []
+            );
+        }
 
         $row = $db->fetchRow($sql);
         return ($row) ? new Episciences_Rating_Report($row) : false;
@@ -65,7 +84,10 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
 
         $reports = [];
         foreach ($db->fetchAll($sql) as $row) {
-            $reports[$row['DOCID']] = new Episciences_Rating_Report($row);
+            // a reviewer may have one report of each request type on a paper (#319): the review report keeps the
+            // paper id as key, the others are keyed by "<docid>_<request type id>"
+            $report = new Episciences_Rating_Report($row);
+            $reports[$report->isReviewReport() ? $row['DOCID'] : $row['DOCID'] . '_' . $row['REQUEST_TYPE_ID']] = $report;
         }
         return $reports;
 
@@ -170,8 +192,8 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         // update table REVIEWER_REPORT
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $sql = 'INSERT INTO ' . T_REVIEWER_REPORTS . ' (ID, UID, ONBEHALF_UID, DOCID, STATUS, CREATION_DATE)
-        VALUES (:rid, :uid, :onbehalf_uid, :docid, :status, :creationDate)';
+        $sql = 'INSERT INTO ' . T_REVIEWER_REPORTS . ' (ID, UID, ONBEHALF_UID, DOCID, REQUEST_TYPE_ID, STATUS, CREATION_DATE)
+        VALUES (:rid, :uid, :onbehalf_uid, :docid, :requestTypeId, :status, :creationDate)';
 
         $sql .= ' ON DUPLICATE KEY UPDATE ONBEHALF_UID = :onbehalf_uid, STATUS = :status, UPDATE_DATE = :updateDate';
 
@@ -181,6 +203,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
             'uid' => $this->getUid(),
             'onbehalf_uid' => $this->getOnbehalf_uid(),
             'docid' => $this->getDocid(),
+            'requestTypeId' => $this->resolveRequestTypeId(),
             'status' => $this->getStatus(),
             'creationDate' => ($forceDate && !empty($this->getCreation_date())) ? $this->getCreation_date() : date("Y-m-d H:i:s"),
             'updateDate' => ($forceDate) ? $this->getUpdate_date() : date("Y-m-d H:i:s")
@@ -205,7 +228,10 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         if (!$this->getDocid() || !$this->getUid()) {
             return false;
         }
-        $path = REVIEW_FILES_PATH . $this->getDocid() . '/reports/' . $this->getUid() . '/';
+        // the review report keeps the historical folder; a report of another request type (#319) has its own folder
+        // next to it (not inside it: removing a reviewer moves the folder of the review report)
+        $folder = $this->isReviewReport() ? (string)$this->getUid() : $this->getUid() . '_' . $this->getRequest_type_id();
+        $path = REVIEW_FILES_PATH . $this->getDocid() . '/reports/' . $folder . '/';
 
         if (!is_dir($path)) {
             $umask = umask(0); // save current umask and set it to 0
@@ -394,6 +420,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
             'id' => $this->getId(),
             'uid' => $this->getUid(),
             'docid' => $this->getDocid(),
+            'request_type_id' => $this->getRequest_type_id(),
             'creation_date' => $this->getCreation_date(),
             'update_date' => $this->getUpdate_date(),
             'status' => $this->getStatus(),
@@ -426,6 +453,66 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
     public function getUid()
     {
         return $this->_uid;
+    }
+
+    public function getRequest_type_id(): ?int
+    {
+        return $this->_request_type_id;
+    }
+
+    public function setRequest_type_id(int|string|null $requestTypeId): void
+    {
+        $this->_request_type_id = ($requestTypeId === null || $requestTypeId === '') ? null : (int)$requestTypeId;
+    }
+
+    /**
+     * Whether the report is a review report: the type of every report made before the request types (#319)
+     */
+    public function isReviewReport(): bool
+    {
+        $typeId = $this->getRequest_type_id();
+
+        if ($typeId === null || $typeId === 0) {
+            return true;
+        }
+
+        return RequestTypeRepository::isFullReportId($typeId);
+    }
+
+    /**
+     * Request type to save: the given one, else the review report type of the journal of the paper
+     */
+    private function resolveRequestTypeId(): int
+    {
+        if ($this->getRequest_type_id() !== null) {
+            return $this->getRequest_type_id();
+        }
+
+        $rvid = $this->journalId();
+        $typeId = $rvid === null ? null : RequestTypeRepository::fullReportIdOf($rvid);
+        $this->setRequest_type_id($typeId ?? 0);
+
+        return (int)$this->getRequest_type_id();
+    }
+
+    private function journalId(): ?int
+    {
+        if ($this->getRvid()) {
+            return (int)$this->getRvid();
+        }
+
+        if (!$this->getDocid()) {
+            return null;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $rvid = $db->fetchOne($db->select()->from(T_PAPERS, ['RVID'])->where('DOCID = ?', $this->getDocid()));
+
+        if ($rvid) {
+            $this->setRvid((int)$rvid);
+        }
+
+        return $rvid ? (int)$rvid : null;
     }
 
     public function getOnbehalf_uid()

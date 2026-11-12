@@ -61,24 +61,30 @@ final class Episciences_Rating_ReportManagerTest extends TestCase
         self::assertSame('int', $method->getReturnType()->getName());
     }
 
-    public function testDeleteByUidAndDocIdHasTwoIntParameters(): void
+    public function testDeleteByUidAndDocIdHasTwoIntParametersAndAnOptionalRequestType(): void
     {
         $method = new ReflectionMethod(Episciences_Rating_ReportManager::class, 'deleteByUidAndDocId');
         $params = $method->getParameters();
 
-        self::assertCount(2, $params);
+        self::assertSame(2, $method->getNumberOfRequiredParameters());
         self::assertSame('uid',   $params[0]->getName());
         self::assertSame('docId', $params[1]->getName());
+        // the report of one review request type (#319)
+        self::assertSame('requestTypeId', $params[2]->getName());
+        self::assertTrue($params[2]->isOptional());
     }
 
-    public function testRenameGridHasTwoIntParameters(): void
+    public function testRenameGridHasTwoIntParametersAndAnOptionalReport(): void
     {
         $method = new ReflectionMethod(Episciences_Rating_ReportManager::class, 'renameGrid');
         $params = $method->getParameters();
 
-        self::assertCount(2, $params);
+        self::assertSame(2, $method->getNumberOfRequiredParameters());
         self::assertSame('docId', $params[0]->getName());
         self::assertSame('uid',   $params[1]->getName());
+        // the folder of the report of one review request type (#319)
+        self::assertSame('report', $params[2]->getName());
+        self::assertTrue($params[2]->isOptional());
     }
 
     public function testRenameGridReturnTypeIsBool(): void

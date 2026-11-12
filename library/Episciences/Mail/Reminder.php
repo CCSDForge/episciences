@@ -1327,7 +1327,7 @@ class Episciences_Mail_Reminder
             ->group('AID');
 
         // Left Join Subquery
-        $leftSQ = $db->select()->from(T_REVIEWER_REPORTS, array('DOCID', 'UID', 'RATING_STATUS' => 'STATUS'));
+        $leftSQ = $db->select()->from(T_REVIEWER_REPORTS, array('DOCID', 'UID', 'REQUEST_TYPE_ID', 'RATING_STATUS' => 'STATUS'));
 
         $sql = $db->select()
             ->from(
@@ -1354,7 +1354,8 @@ class Episciences_Mail_Reminder
                 array())
             ->joinLeft(
                 array('pr' => $leftSQ),
-                'pr.DOCID = ua.ITEMID AND pr.UID = ua.UID',
+                // the report of the request of the assignment (#319)
+                'pr.DOCID = ua.ITEMID AND pr.UID = ua.UID AND pr.REQUEST_TYPE_ID = ua.REQUEST_TYPE_ID',
                 array('RATING_STATUS')
             )
             ->joinLeft(array('p' => T_PAPERS), 'p.DOCID = ua.ITEMID', array())
@@ -1493,10 +1494,12 @@ class Episciences_Mail_Reminder
             ->group('RVID')
             ->group('ITEMID')
             ->group('ITEM')
-            ->group('UID');
+            ->group('UID')
+            // a reviewer may hold one request of each type on a paper (#319)
+            ->group('REQUEST_TYPE_ID');
 
         // left join (reviewer rating grids)
-        $leftSQ = $db->select()->from(T_REVIEWER_REPORTS, array('DOCID', 'UID', 'RATING_STATUS' => 'STATUS'));
+        $leftSQ = $db->select()->from(T_REVIEWER_REPORTS, array('DOCID', 'UID', 'REQUEST_TYPE_ID', 'RATING_STATUS' => 'STATUS'));
 
         $sql = $db->select()
             ->from(
@@ -1517,8 +1520,10 @@ class Episciences_Mail_Reminder
             )
             ->joinLeft(
                 array('pr' => $leftSQ),
+                // the report of the request of the assignment (#319)
                 'pr.DOCID = ua1.ITEMID
-                        AND pr.UID = ua1.UID',
+                        AND pr.UID = ua1.UID
+                        AND pr.REQUEST_TYPE_ID = ua1.REQUEST_TYPE_ID',
                 array('RATING_STATUS')
             )
             ->where('ROLEID = ?', 'reviewer')

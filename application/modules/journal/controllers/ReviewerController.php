@@ -1086,11 +1086,16 @@ class ReviewerController extends PaperDefaultController
         );
 
         if ($isReviewer) {
-            $ratingUrlUrl = $this->view->url([
+            $ratingUrlParams = [
                 'controller' => 'paper',
                 'action' => 'rating',
                 'id' => $paper->getDocid()
-            ]);
+            ];
+            // the rating page of the request (#319)
+            if ($requestTypeId !== null) {
+                $ratingUrlParams['request_type'] = $requestTypeId;
+            }
+            $ratingUrlUrl = $this->view->url($ratingUrlParams);
 
             $result ['isAlreadyInvited'] = true;
             $result ['url'] = $ratingUrlUrl;

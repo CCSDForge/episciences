@@ -2582,7 +2582,8 @@ class Episciences_Paper
      */
     public function getAverageRating(int $precision = 0)
     {
-        $ratings = $this->getRatings();
+        // only the review reports are rated together (#319)
+        $ratings = self::reviewReportsOf($this->getRatings());
         if (empty($ratings)) {
             return false;
         }
@@ -2635,6 +2636,26 @@ class Episciences_Paper
      * @param $uid
      * @return Episciences_Rating_Report[]
      */
+    /**
+     * Key of a report in the lists of the paper: the reviewer UID for a review report, "<uid>_<request type id>" for a
+     * report of another request type (#319)
+     */
+    public static function reportKey(Episciences_Rating_Report $report): int|string
+    {
+        return $report->isReviewReport() ? (int)$report->getUid() : $report->getUid() . '_' . $report->getRequest_type_id();
+    }
+
+    /**
+     * The review reports among the reports: only they count for the reviewed status, the required number of
+     * reviewers and the average rating (#319)
+     * @param array<int|string, Episciences_Rating_Report> $reports
+     * @return array<int|string, Episciences_Rating_Report>
+     */
+    public static function reviewReportsOf(array $reports): array
+    {
+        return array_filter($reports, static fn(Episciences_Rating_Report $report): bool => $report->isReviewReport());
+    }
+
     public function filterReportsByReviewer(array $reports, $uid): array
     {
         /** @var Episciences_Rating_Report $report */
@@ -3349,7 +3370,8 @@ class Episciences_Paper
     public function isReviewed(): bool
     {
 
-        $reports = $this->getReports();
+        // only the review reports make a paper reviewed; the other request types inform (#319)
+        $reports = self::reviewReportsOf($this->getReports());
 
         if (!$reports) {
             // if there isn't any report, paper is not reviewed
@@ -3361,7 +3383,7 @@ class Episciences_Paper
         $this->loadRatings(null, Episciences_Rating_Report::STATUS_COMPLETED);
 
         if ($review->getSetting('requiredReviewers')) {
-            return (count($this->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED)) >= (int)$review->getSetting('requiredReviewers'));
+            return (count(self::reviewReportsOf($this->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED))) >= (int)$review->getSetting('requiredReviewers'));
         }
 
         $completed_reports = 0;
@@ -3424,7 +3446,7 @@ class Episciences_Paper
 
         foreach ($result as $row) {
             $report = new Episciences_Rating_Report($row);
-            $reports[$report->getUid()] = $report;
+            $reports[self::reportKey($report)] = $report;
         }
 
         $this->setReports($reports);
@@ -3441,7 +3463,7 @@ class Episciences_Paper
     {
         $reports = [];
         foreach (Episciences_Rating_Manager::getList($this->getDocid(), $uid, $status) as $report) {
-            $reports[$report->getUid()] = $report;
+            $reports[self::reportKey($report)] = $report;
         }
 
         return $this->setRatings($reports);
@@ -4784,7 +4806,8 @@ class Episciences_Paper
                 if (!$reviewer) {
                     continue;
                 }
-                $reviewing = $reviewer->getReviewing($this->getDocid());
+                // the reviewing of the request of the invitation (#319)
+                $reviewing = $reviewer->getReviewing($this->getDocid(), isset($invitation['REQUEST_TYPE_ID']) ? (int)$invitation['REQUEST_TYPE_ID'] : null);
                 if (!$reviewing) {
                     continue;
                 }

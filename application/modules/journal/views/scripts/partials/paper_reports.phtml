@@ -4,8 +4,12 @@ $paper = $this->paper;
 $loggedUid = Episciences_Auth::getUid();
 ?>
 <div class="panel-group" id="ratings">
-    <?php foreach ($this->reports as $uid => $report) : ?>
+    <?php foreach ($this->reports as $reportKey => $report) : ?>
         <?php /** @var Episciences_Rating_Report $report */
+        // the reports are keyed by reviewer and request type (#319)
+        $uid = (int)$report->getUid();
+        $panelId = 'rating-' . preg_replace('/[^0-9_]/', '', (string)$reportKey);
+        $requestTypeLabel = $report->isReviewReport() ? '' : $this->requestTypeLabel($report->getRequest_type_id(), (int)$paper->getRvid());
         $reviewer = new Episciences_Reviewer();
         $reviewer->find($uid);
         $reviewerScreenName = ($uid === $loggedUid) ?
@@ -47,10 +51,13 @@ $loggedUid = Episciences_Auth::getUid();
         <?php if ($report->getStatus()) : ?>
             <div class="panel panel-warning">
                 <div class="panel-heading" data-parent="#ratings" data-toggle="collapse"
-                     data-target="#rating-<?= $report->getUid() ?>">
+                     data-target="#<?= $panelId ?>">
                     <h4 class="panel-title">
                         <strong><?= $message ?>
                         </strong>
+                        <?php if ($requestTypeLabel !== '') : ?>
+                            <span class="label label-info"><span class="sr-only"><?= $this->escape($this->translate('Type de demande')) ?> : </span><?= $requestTypeLabel ?></span>
+                        <?php endif; ?>
                         <?php if ($this-> isAllowedToSeeReportDetails && is_numeric($report->getScore())) : ?>
                             : <?= $this->escape(round((float)$report->getScore(), 1) . '/' . $report->getMax_score()) ?>
                         <?php endif; ?>
@@ -59,7 +66,7 @@ $loggedUid = Episciences_Auth::getUid();
                         </span>
                     </h4>
                 </div>
-                <div id="rating-<?= $report->getUid() ?>" class="panel-collapse collapse rating">
+                <div id="<?= $panelId ?>" class="panel-collapse collapse rating">
                     <div class="panel-body">
                         <?= $this->partial('partials/paper_report.phtml', ['report' => $report, 'paper' => $paper]) ?>
                     </div>

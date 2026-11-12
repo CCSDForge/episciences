@@ -9,9 +9,9 @@ class Episciences_Rating_Manager
      * @param $uid
      * @return Episciences_Rating_Report|false
      */
-    public static function find($docid, $uid)
+    public static function find($docid, $uid, ?int $requestTypeId = null)
     {
-        return Episciences_Rating_Report::find($docid, $uid);
+        return Episciences_Rating_Report::find($docid, $uid, $requestTypeId);
     }
 
     /**
@@ -174,7 +174,9 @@ class Episciences_Rating_Manager
                     $file_delete_url = '/paper/deleteattachmentreport/docid/' .
                         $grid->getDocid() . '/uid/' . $grid->getUid() .
                         '/cid/' . $criterion->getId() .
-                        '/file/' . $criterion->getAttachment();
+                        '/file/' . $criterion->getAttachment() .
+                        // the report of the request type (#319)
+                        ($grid->getRequest_type_id() ? '/request_type/' . $grid->getRequest_type_id() : '');
 
                     $safeDeleteUrl    = htmlspecialchars($file_delete_url, ENT_QUOTES, 'UTF-8');
                     $safeFilepath     = htmlspecialchars($filepath, ENT_QUOTES, 'UTF-8');

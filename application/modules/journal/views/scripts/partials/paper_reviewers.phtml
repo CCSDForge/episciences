@@ -135,6 +135,7 @@ try {
                                                 data-uid="<?= $invitation['UID'] ?>"
                                                 data-by_uid="<?= Episciences_Auth::getUid() ?>"
                                                 data-aid="<?= $invitation['ASSIGNMENT_ID'] ?>"
+                                                data-request_type="<?= (int)($invitation['REQUEST_TYPE_ID'] ?? 0) ?: '' ?>"
                                                 data-tmp="<?= $invitation['TMP_USER'] ?>">
                                             </button>
 

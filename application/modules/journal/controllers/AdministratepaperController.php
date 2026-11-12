@@ -825,7 +825,8 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->grid = $paper->getGrid();
         $paper->loadRatings(null, Episciences_Rating_Report::STATUS_COMPLETED);
 
-        $isRequiredReviewersOk = (int)$review->getSetting('requiredReviewers') <= count($paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED));
+        // only the review reports count (#319)
+        $isRequiredReviewersOk = (int)$review->getSetting('requiredReviewers') <= count(Episciences_Paper::reviewReportsOf($paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED)));
         $this->view->isRequiredReviewersOk = $isRequiredReviewersOk;
         $this->view->isAllowedToSeeReportDetails = !$paper->isOwner() && (
                 Episciences_Auth::isSecretary() ||
@@ -1048,7 +1049,9 @@ class AdministratepaperController extends PaperDefaultController
          * @var  $uid
          * @var  $rating Episciences_Rating_Report
          */
-        foreach ($ratings as $uid => $rating) {
+        foreach ($ratings as $rating) {
+            // the reports are keyed by reviewer and request type (#319)
+            $uid = (int)$rating->getUid();
             $isFound = false;
 
             foreach ($activatedInvitations as $aInvitation) {
@@ -3304,7 +3307,8 @@ class AdministratepaperController extends PaperDefaultController
                 if (!$reviewer) {
                     continue;
                 }
-                $reviewing = $reviewer->getReviewing($docId);
+                // the reviewing of the request of the invitation (#319)
+                $reviewing = $reviewer->getReviewing($docId, isset($invitation['REQUEST_TYPE_ID']) ? (int)$invitation['REQUEST_TYPE_ID'] : null);
                 if (!$reviewing) {
                     continue;
                 }
@@ -3552,7 +3556,9 @@ class AdministratepaperController extends PaperDefaultController
             $this->_helper->redirector->goToUrl('/');
         }
 
-        $report = Episciences_Rating_Report::find($docId, $reviewerUid);
+        // the report of the request type (#319); none: the review report
+        $requestType = $request->getParam('request_type');
+        $report = Episciences_Rating_Report::find($docId, $reviewerUid, is_scalar($requestType) && ctype_digit((string)$requestType) ? (int)$requestType : null);
         $paper = Episciences_PapersManager::get($docId);
         if ($paper && $report) {
             if ($report->isCompleted() && ($paper->getEditor(Episciences_Auth::getUid()) || Episciences_Auth::isAllowedToUploadPaperReport())) {
@@ -3701,13 +3707,22 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         if ($uid) {
+            // a reviewer may hold one request of each type (#319): only the report of the removed request is deleted
+            $requestTypeId = $oAssignment->getRequest_type_id();
+            $removedReport = Episciences_Rating_Report::find($docId, $uid, $requestTypeId);
+
             //remove rating report
-            Episciences_Rating_ReportManager::deleteByUidAndDocId($uid, $docId);
-            // delete reviewer alias
-            Episciences_Reviewer_AliasManager::delete($docId, $uid);
+            Episciences_Rating_ReportManager::deleteByUidAndDocId($uid, $docId, $requestTypeId);
 
             //delete reviewer grid
-            Episciences_Tools::deleteDir(Episciences_PapersManager::buildDocumentPath($docId) . '/reports/' . $uid);
+            Episciences_Tools::deleteDir($removedReport
+                ? rtrim($removedReport->getPath(), '/')
+                : Episciences_PapersManager::buildDocumentPath($docId) . '/reports/' . $uid);
+
+            // delete reviewer alias, unless the reviewer still holds another request on the paper
+            if (Episciences_User_AssignmentsManager::currentReviewerRequestTypeIds((int)$uid, (int)$docId) === []) {
+                Episciences_Reviewer_AliasManager::delete($docId, $uid);
+            }
         }
 
         if (!$isUninvited) { // Seulement si une invitation est à l'origine de la relecture

@@ -272,11 +272,13 @@ CREATE TABLE `REVIEWER_REPORT` (
   `UID` int unsigned NOT NULL,
   `ONBEHALF_UID` int unsigned DEFAULT NULL COMMENT 'Mis à jour [!= de NULL] uniquement si l’évaluation est faite à la place de relecteur UID',
   `DOCID` int unsigned NOT NULL,
+  `REQUEST_TYPE_ID` int unsigned NOT NULL COMMENT 'Review request type of the report (0: paper deleted before the types)',
   `STATUS` int unsigned NOT NULL,
   `CREATION_DATE` datetime NOT NULL,
   `UPDATE_DATE` datetime DEFAULT NULL,
   PRIMARY KEY (`ID`),
-  UNIQUE KEY `UID` (`UID`,`DOCID`),
+  UNIQUE KEY `uniq_uid_docid_request_type` (`UID`,`DOCID`,`REQUEST_TYPE_ID`),
+  KEY `idx_request_type` (`REQUEST_TYPE_ID`),
   KEY `ONBEHALF_UID` (`ONBEHALF_UID`) USING BTREE,
   KEY `idx_docid` (`DOCID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;

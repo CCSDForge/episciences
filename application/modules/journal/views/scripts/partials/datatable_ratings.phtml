@@ -70,6 +70,16 @@ foreach ($this->papers as $paper) : ?>
                 ('/' . $controller . '/rating?id=' . $paper->getDocid());
             ?>
             <a href="<?php echo $url ?>"><strong><?php echo $this->paperTitle($paper); ?></strong></a>
+            <?php // several requests of different types on the paper (#319): one rating page each ?>
+            <?php $requestTypeIds = array_values(array_filter(Episciences_User_AssignmentsManager::currentReviewerRequestTypeIds((int)$this->reviewer->getUid(), (int)$paper->getDocid()))); ?>
+            <?php if (count($requestTypeIds) > 1) : ?>
+                <br><small>
+                    <?php foreach ($requestTypeIds as $index => $requestTypeId) : ?>
+                        <?= $index > 0 ? ' · ' : '' ?>
+                        <a href="/<?= $this->escape($controller) ?>/rating?id=<?= (int)$paper->getDocid() ?>&amp;request_type=<?= (int)$requestTypeId ?>"><?= $this->requestTypeLabel($requestTypeId, (int)$paper->getRvid()) ?: $this->escape($this->translate('Type de demande')) . ' ' . (int)$requestTypeId ?></a>
+                    <?php endforeach; ?>
+                </small>
+            <?php endif; ?>
         </td>
 
         <?php echo $this->partial('partials/paper_list_volume_section.phtml', [

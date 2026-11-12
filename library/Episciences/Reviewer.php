@@ -155,22 +155,28 @@ class Episciences_Reviewer extends Episciences_User
 
     /**
      * @param int $docid
+     * @param int|null $requestTypeId the report of this request type (#319); null: the review report
      * @return bool|Episciences_Rating_Report
      */
-    public function getReport($docid)
+    public function getReport($docid, ?int $requestTypeId = null)
     {
-        $sql = $this->_db->select()
-            ->from(['r' => T_REVIEWER_REPORTS])
-            ->where('DOCID = ?', $docid)
-            ->where('UID = ?', $this->getUid());
+        return Episciences_Rating_Report::find($docid, $this->getUid(), $requestTypeId);
+    }
 
-        $row = $this->_db->fetchRow($sql);
-        if ($row) {
-            return new Episciences_Rating_Report($row);
+    /**
+     * Whether every report of the requests selected with the reviewer on the paper is completed (#319)
+     */
+    public function hasCompletedEveryReport(int $docid): bool
+    {
+        foreach ($this->getRequestTypeIds() ?: [null] as $requestTypeId) {
+            $report = $this->getReport($docid, $requestTypeId);
+
+            if (!$report || $report->getStatus() !== Episciences_Rating_Report::STATUS_COMPLETED) {
+                return false;
+            }
         }
 
-        return false;
-
+        return true;
     }
 
     /**
@@ -486,16 +492,21 @@ class Episciences_Reviewer extends Episciences_User
         $this->setReviewings($reviewings);
     }
 
-    public function getReviewing($docId)
+    /**
+     * @param int|null $requestTypeId the reviewing of this request type (#319); null: the latest request of the reviewer
+     */
+    public function getReviewing($docId, ?int $requestTypeId = null)
     {
-        if (!array_key_exists($docId, $this->_reviewings)) {
-            $this->loadReviewing($docId);
+        $key = $requestTypeId === null ? $docId : $docId . '_' . $requestTypeId;
+
+        if (!array_key_exists($key, $this->_reviewings)) {
+            $this->loadReviewing($docId, $requestTypeId);
         }
 
-        return ($this->_reviewings[$docId]);
+        return ($this->_reviewings[$key]);
     }
 
-    public function loadReviewing($docId)
+    public function loadReviewing($docId, ?int $requestTypeId = null)
     {
         // reviewing init
         $oReviewing = new Episciences_Reviewer_Reviewing();
@@ -508,6 +519,9 @@ class Episciences_Reviewer extends Episciences_User
             'uid' => $this->getUid(),
             //'status'=>	Episciences_User_Assignment::STATUS_ACTIVE
         ];
+        if ($requestTypeId !== null) {
+            $params['request_type_id'] = $requestTypeId;
+        }
         $oReviewing->loadAssignment($params);
 
         // load rating report
@@ -518,7 +532,7 @@ class Episciences_Reviewer extends Episciences_User
 
         // update reviewer reviewing
         $reviewings = $this->getReviewings();
-        $reviewings[$docId] = $oReviewing;
+        $reviewings[$requestTypeId === null ? $docId : $docId . '_' . $requestTypeId] = $oReviewing;
         $this->setReviewings($reviewings);
     }
 

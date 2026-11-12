@@ -129,7 +129,10 @@ class Episciences_Reviewer_Reviewing
 
     public function loadRating($docid, $uid)
     {
-        $rating = Episciences_Rating_Report::find($docid, $uid);
+        // the report of the request of the loaded assignment (#319); without assignment, the review report
+        $assignment = $this->getAssignment();
+        $requestTypeId = $assignment instanceof Episciences_User_Assignment ? $assignment->getRequest_type_id() : null;
+        $rating = Episciences_Rating_Report::find($docid, $uid, $requestTypeId);
         if ($rating) {
             $this->setRating($rating);
         }

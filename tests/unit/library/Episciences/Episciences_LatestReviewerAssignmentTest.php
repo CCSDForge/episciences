@@ -27,6 +27,8 @@ use Zend_Translate;
 final class Episciences_LatestReviewerAssignmentTest extends TestCase
 {
     private const DOCID = 999201;
+    /** request type of the reviewer requests (#319) */
+    private const REQUEST_TYPE_ID = 999901;
     private const ACCEPTED_UID = 999202;
     private const REMOVED_UID = 999203;
     private const OUT_OF_ORDER_UID = 999204;
@@ -86,6 +88,7 @@ final class Episciences_LatestReviewerAssignmentTest extends TestCase
             'UID' => $uid,
             'TMP_USER' => (int)$isTmpUser,
             'ROLEID' => 'reviewer',
+                'REQUEST_TYPE_ID' => self::REQUEST_TYPE_ID,
             'STATUS' => $status,
             'WHEN' => $when,
             'DEADLINE' => self::DEADLINE . ' 00:00:00',
@@ -106,6 +109,8 @@ final class Episciences_LatestReviewerAssignmentTest extends TestCase
         $this->db->insert(T_REVIEWER_REPORTS, [
             'UID' => $uid,
             'DOCID' => self::DOCID,
+            // the report of the request of the assignment (#319)
+            'REQUEST_TYPE_ID' => self::REQUEST_TYPE_ID,
             'STATUS' => $reportStatus,
             'CREATION_DATE' => self::DATE,
         ]);
