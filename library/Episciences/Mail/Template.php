@@ -368,7 +368,8 @@ class Episciences_Mail_Template
         // Traductions du sujet du template
         $subject = $this->getSubjectTranslations();
 
-        if (empty($subject)) {
+        // a fragment is inserted into another template: it has no subject
+        if (empty($subject) && !Episciences_Mail_TemplatesManager::isFragment((string)$this->getKey())) {
             $result = false;
             trigger_error('TEMPLATE::SAVE_GET_SUBJECT_TRANSLATIONS_IS_EMPTY');
         }

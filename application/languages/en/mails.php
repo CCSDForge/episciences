@@ -100,6 +100,18 @@ return [
     "paper_reviewer_invitation3_tpl_name" => "Invite a user to review an article - user does not have an account yet",
     "paper_reviewer_invitation3_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - You are invited to review an article",
 
+    // Review request types (#319)
+    "paper_reviewer_invitation_quick_opinion_tpl_name" => "Invite a user to give a quick opinion on an article",
+    "paper_reviewer_invitation_quick_opinion_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Request for a quick opinion on an article",
+    "paper_reviewer_invitation_revision_check_tpl_name" => "Invite a user to check a revised version of an article",
+    "paper_reviewer_invitation_revision_check_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Review of a revised version",
+    "paper_reviewer_invitation_generic_tpl_name" => "Invite a user - base of the request types created by the journal",
+    "paper_reviewer_invitation_generic_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - %%REVIEW_REQUEST_TYPE%%",
+    "reviewer_invitation_account_hint_known_reviewer_tpl_name" => "Reviewer invitation - sign-in help: reviewer known by the journal",
+    "reviewer_invitation_account_hint_known_user_tpl_name" => "Reviewer invitation - sign-in help: existing account",
+    "reviewer_invitation_account_hint_new_user_tpl_name" => "Reviewer invitation - sign-in help: no account yet",
+    "reviewer_invitation_account_hint_light_answer_tpl_name" => "Reviewer invitation - sign-in help: answer without an account",
+
     // Réponse à une invitation de relecture
     "paper_reviewer_acceptation_reviewer_copy_tpl_name" => "Accepted reviewer invitation (reviewer copy)",
     "paper_reviewer_acceptation_reviewer_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - You've accepted a reviewing invitation",

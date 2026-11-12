@@ -76,6 +76,9 @@ class Episciences_Mail_Tags
     public const TAG_REFUSAL_REASON = '%%REFUSAL_REASON%%';
     public const TAG_INVITATION_DEADLINE = '%%INVITATION_DEADLINE%%';
     public const TAG_INVITATION_URL = '%%INVITATION_URL%%';
+    // review request types (#319)
+    public const TAG_INVITATION_ACCOUNT_HINT = '%%INVITATION_ACCOUNT_HINT%%';
+    public const TAG_REVIEW_REQUEST_TYPE = '%%REVIEW_REQUEST_TYPE%%';
     public const TAG_INVITATION_LINK = '%%INVITATION_LINK%%'; // // identique à "TAG_INVITATION_URL", dans le ca où vous le supprimeriez pour en garder un seul, penssez bien a son remplacement dans les templates de mails par default et personnalisés.
     public const TAG_INVITATION_DATE = '%%INVITATION_DATE%%';
     public const TAG_EXPIRATION_DATE = '%%EXPIRATION_DATE%%';
@@ -192,6 +195,8 @@ class Episciences_Mail_Tags
         self::TAG_INVITATION_DEADLINE => "date d'expiration de l'invitation",
         self::TAG_INVITATION_LINK => 'Url du formulaire de réponse à l’invitation',
         self::TAG_INVITATION_URL => 'Url du formulaire de réponse à l’invitation',
+        self::TAG_INVITATION_ACCOUNT_HINT => "aide à la connexion selon le compte de la personne invitée (textes personnalisables : modèles « Invitation d'un relecteur - aide à la connexion »)",
+        self::TAG_REVIEW_REQUEST_TYPE => 'type de la demande de relecture (ex. : avis rapide)',
         self::TAG_INVITED_REVIEWERS_COUNT => "le nombre de relecteurs assignés à un article (invitations acceptées et en attente de réponse)",
         self::TAG_LAST_REVISION_DATE => "date de la dernière revision de l'article",
         self::TAG_LAST_REVISION_DATE_ISO => "date de la dernière révision de l'article au format ISO",

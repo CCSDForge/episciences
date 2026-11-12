@@ -53,6 +53,26 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER = 'paper_reviewer_invitation2';
     public const TYPE_PAPER_REVIEWER_INVITATION_NEW_USER = 'paper_reviewer_invitation3';
 
+    // Review request types (#319): one invitation template per type, key = INVITATION_KEY_PREFIX . type code.
+    // The review report type keeps the three templates above.
+    public const INVITATION_KEY_PREFIX = 'paper_reviewer_invitation_';
+    public const TYPE_PAPER_REVIEWER_INVITATION_QUICK_OPINION = 'paper_reviewer_invitation_quick_opinion';
+    public const TYPE_PAPER_REVIEWER_INVITATION_REVISION_CHECK = 'paper_reviewer_invitation_revision_check';
+    // base of the templates of the types created by a journal
+    public const TYPE_PAPER_REVIEWER_INVITATION_GENERIC = 'paper_reviewer_invitation_generic';
+    // texts of the %%INVITATION_ACCOUNT_HINT%% tag, according to the account of the invited person
+    public const TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_REVIEWER = 'reviewer_invitation_account_hint_known_reviewer';
+    public const TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_USER = 'reviewer_invitation_account_hint_known_user';
+    public const TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_NEW_USER = 'reviewer_invitation_account_hint_new_user';
+    public const TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_LIGHT_ANSWER = 'reviewer_invitation_account_hint_light_answer';
+    // fragments: inserted into another template, they have no subject
+    public const FRAGMENT_TEMPLATES = [
+        self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_REVIEWER,
+        self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_USER,
+        self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_NEW_USER,
+        self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_LIGHT_ANSWER,
+    ];
+
     public const TYPE_PAPER_REVIEWER_REMOVAL = 'paper_reviewer_removal';
     public const TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY = 'paper_reviewer_acceptation_reviewer_copy';
     public const TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY = 'paper_reviewer_acceptation_editor_copy';
@@ -723,6 +743,34 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
         Episciences_Mail_Tags::TAG_SENDER_EMAIL,
         Episciences_Mail_Tags::TAG_PAPER_REPO_URL
+    ];
+    /** templates of the review request types (#319) */
+    public const paper_reviewer_invitation_request_type_tags = [
+        Episciences_Mail_Tags::TAG_RATING_DEADLINE,
+        Episciences_Mail_Tags::TAG_INVITATION_DEADLINE,
+        Episciences_Mail_Tags::TAG_INVITATION_URL,
+        Episciences_Mail_Tags::TAG_INVITATION_ACCOUNT_HINT,
+        Episciences_Mail_Tags::TAG_REVIEW_REQUEST_TYPE,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
+        Episciences_Mail_Tags::TAG_SENDER_EMAIL,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_PAPER_REPO_URL
+    ];
+    /** texts of the %%INVITATION_ACCOUNT_HINT%% tag (#319) */
+    public const reviewer_invitation_account_hint_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
     ];
     public const paper_reviewer_refusal_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
@@ -1673,6 +1721,13 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_REVIEWER => [self::DESCRIPTION => "notification d'invitation d'un relecteur (déjà connu par la revue, c-a-d qu'il a déjà accepté au moins une invitation) à relire un article", self::RECIPIENT => 'relecteur (connu par la revue)'],
         self::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER => [self::DESCRIPTION => "notification d'invitation d'un nouveau relecteur (l'utilisateur n'a pas encore de profil sur le site de la revue, mais il connu par le système d'authentification du CCSD)", self::RECIPIENT => "nouveau relecteur"],
         self::TYPE_PAPER_REVIEWER_INVITATION_NEW_USER => [self::DESCRIPTION => "notification d'invitation d'un nouveau relecteur avec un compte temporaire. Dans ce cas spécifique et moment précis de l'acceptation de l'invitation, l'utilisateur sera invité à créer un nouveau compte pour accéder à la grille d'évaluation", self::RECIPIENT => "nouveau relecteur"],
+        self::TYPE_PAPER_REVIEWER_INVITATION_QUICK_OPINION => [self::DESCRIPTION => "invitation d'un relecteur à donner un avis rapide sur un article (type de demande « Avis rapide »)", self::RECIPIENT => 'relecteur'],
+        self::TYPE_PAPER_REVIEWER_INVITATION_REVISION_CHECK => [self::DESCRIPTION => "invitation d'un relecteur à relire la version révisée d'un article (type de demande « Relecture d'une version révisée »)", self::RECIPIENT => 'relecteur'],
+        self::TYPE_PAPER_REVIEWER_INVITATION_GENERIC => [self::DESCRIPTION => "modèle de départ des invitations pour les types de demande créés par la revue", self::RECIPIENT => 'relecteur'],
+        self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_REVIEWER => [self::DESCRIPTION => "texte inséré par le tag %%INVITATION_ACCOUNT_HINT%% quand la personne invitée est déjà relecteur de la revue", self::RECIPIENT => 'relecteur'],
+        self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_USER => [self::DESCRIPTION => "texte inséré par le tag %%INVITATION_ACCOUNT_HINT%% quand la personne invitée a déjà un compte", self::RECIPIENT => 'relecteur'],
+        self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_NEW_USER => [self::DESCRIPTION => "texte inséré par le tag %%INVITATION_ACCOUNT_HINT%% quand la personne invitée n'a pas encore de compte", self::RECIPIENT => 'relecteur'],
+        self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_LIGHT_ANSWER => [self::DESCRIPTION => "texte inséré par le tag %%INVITATION_ACCOUNT_HINT%% quand la demande se fait sans compte", self::RECIPIENT => 'relecteur'],
         self::TYPE_PAPER_REVIEWER_REMOVAL => [self::DESCRIPTION => "confirmation de l'annulation d'une invitation", self::RECIPIENT => "relecteur"],
         self::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY => [self::DESCRIPTION => "confirmation de l'acceptation de l'invitation", self::RECIPIENT => 'relecteur'],
         self::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial qu'un relecteur vient d'accepter une invitation", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
@@ -1886,11 +1941,13 @@ class Episciences_Mail_TemplatesManager
             $name->setAttribs(array('style' => 'width:538px'));
             $subform->addElement($name);
 
-            // Mail subject
-            $subject = new Zend_Form_Element_Text('subject');
-            $subject->setLabel(Zend_Registry::get("Zend_Translate")->translate('Sujet du mail'));
-            $subject->setAttribs(array('style' => 'width:538px'));
-            $subform->addElement($subject);
+            // Mail subject (a fragment is inserted into another template: it has none)
+            if (!self::isFragment((string)$template->getKey())) {
+                $subject = new Zend_Form_Element_Text('subject');
+                $subject->setLabel(Zend_Registry::get("Zend_Translate")->translate('Sujet du mail'));
+                $subject->setAttribs(array('style' => 'width:538px'));
+                $subform->addElement($subject);
+            }
 
             $body = new Zend_Form_Element_Textarea('body');
             $body->setLabel(Zend_Registry::get("Zend_Translate")->translate('Corps du message'));
@@ -2107,6 +2164,19 @@ class Episciences_Mail_TemplatesManager
      * @param bool $withoutCommunTags
      * @return array
      */
+    /**
+     * Whether the key is the invitation template of a review request type (#319), the review report excepted
+     */
+    public static function isRequestTypeInvitationKey(string $key): bool
+    {
+        return str_starts_with($key, self::INVITATION_KEY_PREFIX);
+    }
+
+    public static function isFragment(string $key): bool
+    {
+        return in_array(str_replace(self::CUSTOM_KEY_PREFIX, '', $key), self::FRAGMENT_TEMPLATES, true);
+    }
+
     public static function getAvailableTagsByKey(string $key, bool $withoutCommunTags = false): array
     {
         $key = str_replace('custom_', '', $key); // Custom key = 'custom_' . $this->getKey();
@@ -2227,8 +2297,13 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY => self::paper_author_comment_editor_copy_tags,
         ];
 
+        $map += array_fill_keys(self::FRAGMENT_TEMPLATES, self::reviewer_invitation_account_hint_tags);
+
         if (array_key_exists($key, $map)) {
             $tags = array_merge($tags, $map[$key]);
+        } elseif (self::isRequestTypeInvitationKey($key)) {
+            // template of a review request type, including the types created by a journal
+            $tags = array_merge($tags, self::paper_reviewer_invitation_request_type_tags);
         }
 
         return $tags;

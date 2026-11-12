@@ -100,6 +100,13 @@ INSERT INTO `MAIL_TEMPLATE` (`ID`, `PARENTID`, `RVID`, `RVCODE`, `KEY`, `TYPE`, 
 (NULL, NULL, NULL, NULL, 'paper_formatted_by_journal_waiting_author_validation', 'paper_copy_editing', 17),
 (NULL, NULL, NULL, NULL, 'paper_new_version_submission_author', 'paper_submission', NULL),
 (NULL, NULL, NULL, NULL, 'paper_new_version_temporary_submission_author', 'paper_submission', NULL),
-(NULL, NULL, NULL, NULL, 'inbox_paper_submission_author_copy', 'paper_submission', 1);
+(NULL, NULL, NULL, NULL, 'inbox_paper_submission_author_copy', 'paper_submission', 1),
+(NULL, NULL, NULL, NULL, 'paper_reviewer_invitation_quick_opinion', 'paper_review', NULL),
+(NULL, NULL, NULL, NULL, 'paper_reviewer_invitation_revision_check', 'paper_review', NULL),
+(NULL, NULL, NULL, NULL, 'paper_reviewer_invitation_generic', 'paper_review', NULL),
+(NULL, NULL, NULL, NULL, 'reviewer_invitation_account_hint_known_reviewer', 'paper_review', NULL),
+(NULL, NULL, NULL, NULL, 'reviewer_invitation_account_hint_known_user', 'paper_review', NULL),
+(NULL, NULL, NULL, NULL, 'reviewer_invitation_account_hint_new_user', 'paper_review', NULL),
+(NULL, NULL, NULL, NULL, 'reviewer_invitation_account_hint_light_answer', 'paper_review', NULL);
 
 

@@ -82,6 +82,7 @@ final class RequestTypeTest extends TestCase
             'dash' => ['quick-opinion'],
             'too long' => [str_repeat('a', 31)],
             'path' => ['../x'],
+            'reserved' => ['generic'],
         ];
     }
 

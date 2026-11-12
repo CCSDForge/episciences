@@ -23,6 +23,8 @@ final class RequestType
     /** Lower-case letters, digits and underscores, starting with a letter: the code is part of a mail template key */
     public const CODE_PATTERN = '/^[a-z][a-z0-9_]{0,29}$/';
     public const LABEL_MAX_LENGTH = 100;
+    /** Codes that would clash with an existing mail template key (paper_reviewer_invitation_<code>) */
+    public const RESERVED_CODES = ['generic'];
 
     private const DEFAULTS = [
         self::CODE_FULL_REPORT => [
@@ -58,7 +60,7 @@ final class RequestType
         private readonly int $position = 0,
         private readonly bool $enabled = true
     ) {
-        if (preg_match(self::CODE_PATTERN, $code) !== 1) {
+        if (preg_match(self::CODE_PATTERN, $code) !== 1 || in_array($code, self::RESERVED_CODES, true)) {
             throw new InvalidArgumentException(sprintf('Invalid review request type code "%s"', $code));
         }
 

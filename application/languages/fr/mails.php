@@ -101,6 +101,18 @@ return [
     "paper_reviewer_invitation3_tpl_name" => "Inviter un utilisateur à relire un article - utilisateur n'ayant pas encore de compte",
     "paper_reviewer_invitation3_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Vous avez été invité à relire un article",
 
+    // Review request types (#319)
+    "paper_reviewer_invitation_quick_opinion_tpl_name" => "Inviter un utilisateur à donner un avis rapide sur un article",
+    "paper_reviewer_invitation_quick_opinion_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Demande d'avis rapide sur un article",
+    "paper_reviewer_invitation_revision_check_tpl_name" => "Inviter un utilisateur à relire une version révisée d'un article",
+    "paper_reviewer_invitation_revision_check_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Relecture d'une version révisée",
+    "paper_reviewer_invitation_generic_tpl_name" => "Inviter un utilisateur - modèle de départ des types de demande créés par la revue",
+    "paper_reviewer_invitation_generic_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - %%REVIEW_REQUEST_TYPE%%",
+    "reviewer_invitation_account_hint_known_reviewer_tpl_name" => "Invitation d'un relecteur - aide à la connexion : relecteur connu de la revue",
+    "reviewer_invitation_account_hint_known_user_tpl_name" => "Invitation d'un relecteur - aide à la connexion : compte existant",
+    "reviewer_invitation_account_hint_new_user_tpl_name" => "Invitation d'un relecteur - aide à la connexion : pas encore de compte",
+    "reviewer_invitation_account_hint_light_answer_tpl_name" => "Invitation d'un relecteur - aide à la connexion : réponse sans compte",
+
     // Réponse à une invitation de relecture
     "paper_reviewer_acceptation_reviewer_copy_tpl_name" => "Invitation de relecture acceptée (copie à destination du relecteur)",
     "paper_reviewer_acceptation_reviewer_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Vous venez d'accepter une invitation de relecture",
