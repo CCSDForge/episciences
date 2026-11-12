@@ -11,8 +11,9 @@ use JsonException;
 /**
  * Type of a review request (quick opinion, review report, revised version check...), defined per journal.
  *
- * Every reviewer invitation is made for one type: it selects the invitation e-mail template, and later the rating
- * grid. A reviewer may hold requests of different types on the same paper version.
+ * Every reviewer invitation is made for one type: it selects the invitation e-mail template, and the rating grid
+ * when the journal created one for the type (grid_t<type id>.xml, see Episciences_GridsManager). A reviewer may hold
+ * requests of different types on the same paper version.
  */
 final class RequestType
 {
@@ -54,7 +55,6 @@ final class RequestType
         private readonly int $rvid,
         private readonly string $code,
         array $labels,
-        private readonly ?string $grid = null,
         private readonly bool $lightAnswer = false,
         private readonly ?string $defaultDeadline = null,
         private readonly int $position = 0,
@@ -86,7 +86,7 @@ final class RequestType
         $position = 1;
 
         foreach (self::DEFAULTS as $code => $default) {
-            $types[] = new self(null, $rvid, $code, $default['labels'], null, false, $default['deadline'], $position++);
+            $types[] = new self(null, $rvid, $code, $default['labels'], false, $default['deadline'], $position++);
         }
 
         return $types;
@@ -108,7 +108,6 @@ final class RequestType
             (int)$row['rvid'],
             (string)$row['code'],
             is_array($labels) && $labels !== [] ? $labels : ['en' => (string)$row['code']],
-            isset($row['grid']) && $row['grid'] !== '' ? (string)$row['grid'] : null,
             (bool)($row['light_answer'] ?? false),
             isset($row['default_deadline']) && $row['default_deadline'] !== '' ? (string)$row['default_deadline'] : null,
             (int)($row['position'] ?? 0),
@@ -126,7 +125,6 @@ final class RequestType
             'rvid' => $this->rvid,
             'code' => $this->code,
             'labels' => json_encode($this->labels, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
-            'grid' => $this->grid,
             'light_answer' => (int)$this->lightAnswer,
             'default_deadline' => $this->defaultDeadline,
             'position' => $this->position,
@@ -136,7 +134,7 @@ final class RequestType
 
     public function withId(int $id): self
     {
-        return new self($id, $this->rvid, $this->code, $this->labels, $this->grid, $this->lightAnswer, $this->defaultDeadline, $this->position, $this->enabled);
+        return new self($id, $this->rvid, $this->code, $this->labels, $this->lightAnswer, $this->defaultDeadline, $this->position, $this->enabled);
     }
 
     /**
@@ -144,7 +142,7 @@ final class RequestType
      */
     public function withSettings(array $labels, ?string $defaultDeadline, int $position, bool $enabled): self
     {
-        return new self($this->id, $this->rvid, $this->code, $labels, $this->grid, $this->lightAnswer, $defaultDeadline, $position, $enabled);
+        return new self($this->id, $this->rvid, $this->code, $labels, $this->lightAnswer, $defaultDeadline, $position, $enabled);
     }
 
     /**
@@ -176,11 +174,6 @@ final class RequestType
     public function getCode(): string
     {
         return $this->code;
-    }
-
-    public function getGrid(): ?string
-    {
-        return $this->grid;
     }
 
     public function isLightAnswer(): bool

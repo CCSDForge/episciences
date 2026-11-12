@@ -11,7 +11,6 @@ CREATE TABLE IF NOT EXISTS `review_request_type` (
   `rvid` int unsigned NOT NULL COMMENT 'Journal',
   `code` varchar(30) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Stable identifier, unique per journal (mail template key suffix)',
   `labels` json NOT NULL COMMENT 'Label per language, e.g. {"fr": "...", "en": "..."}',
-  `grid` varchar(255) DEFAULT NULL COMMENT 'Rating grid file of the type; NULL = grid of the volume, then default grid',
   `light_answer` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '1 = answered from the invitation link, without an account',
   `default_deadline` varchar(20) DEFAULT NULL COMMENT 'Default rating deadline, e.g. "2 week"; NULL = journal setting',
   `position` smallint unsigned NOT NULL DEFAULT '0',

@@ -1111,7 +1111,6 @@ CREATE TABLE `review_request_type` (
   `rvid` int unsigned NOT NULL,
   `code` varchar(30) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   `labels` json NOT NULL,
-  `grid` varchar(255) DEFAULT NULL,
   `light_answer` tinyint unsigned NOT NULL DEFAULT '0',
   `default_deadline` varchar(20) DEFAULT NULL,
   `position` smallint unsigned NOT NULL DEFAULT '0',

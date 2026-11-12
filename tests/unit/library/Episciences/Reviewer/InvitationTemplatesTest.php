@@ -70,7 +70,7 @@ final class InvitationTemplatesTest extends TestCase
 
     private function type(string $code, bool $lightAnswer = false, int $id = 1): RequestType
     {
-        return new RequestType($id, self::RVID, $code, ['en' => 'Phase <1> & co', 'fr' => 'Phase 1'], null, $lightAnswer);
+        return new RequestType($id, self::RVID, $code, ['en' => 'Phase <1> & co', 'fr' => 'Phase 1'], $lightAnswer);
     }
 
     public function testReviewReportKeepsTheThreeTemplatesOfTheAccountStates(): void

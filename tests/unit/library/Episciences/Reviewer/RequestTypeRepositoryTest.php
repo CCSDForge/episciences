@@ -62,7 +62,7 @@ final class RequestTypeRepositoryTest extends TestCase
 
     public function testSaveInsertsThenUpdatesWithoutChangingTheCode(): void
     {
-        $saved = $this->repository->save(new RequestType(null, self::RVID, 'phase_one', ['en' => 'Phase one'], null, false, null, 5));
+        $saved = $this->repository->save(new RequestType(null, self::RVID, 'phase_one', ['en' => 'Phase one'], false, null, 5));
         self::assertNotNull($saved->getId());
 
         $this->repository->save($saved->withSettings(['en' => 'Phase 1', 'fr' => 'Phase 1'], '2 week', 2, false));
@@ -107,9 +107,9 @@ final class RequestTypeRepositoryTest extends TestCase
 
     public function testFindAllForJournalIsOrderedAndCanKeepOnlyEnabledTypes(): void
     {
-        $this->repository->save(new RequestType(null, self::RVID, 'third', ['en' => 'Third'], null, false, null, 3));
-        $this->repository->save(new RequestType(null, self::RVID, 'first', ['en' => 'First'], null, false, null, 1));
-        $this->repository->save(new RequestType(null, self::RVID, 'disabled', ['en' => 'Disabled'], null, false, null, 2, false));
+        $this->repository->save(new RequestType(null, self::RVID, 'third', ['en' => 'Third'], false, null, 3));
+        $this->repository->save(new RequestType(null, self::RVID, 'first', ['en' => 'First'], false, null, 1));
+        $this->repository->save(new RequestType(null, self::RVID, 'disabled', ['en' => 'Disabled'], false, null, 2, false));
         $this->repository->save(new RequestType(null, self::OTHER_RVID, 'elsewhere', ['en' => 'Elsewhere']));
 
         $codes = static fn(array $types): array => array_map(static fn(RequestType $type): string => $type->getCode(), $types);
@@ -121,7 +121,7 @@ final class RequestTypeRepositoryTest extends TestCase
     public function testFindUsableRequiresTheSameJournalAndAnEnabledType(): void
     {
         $enabled = $this->repository->save(new RequestType(null, self::RVID, 'enabled', ['en' => 'Enabled']));
-        $disabled = $this->repository->save(new RequestType(null, self::RVID, 'disabled', ['en' => 'Disabled'], null, false, null, 0, false));
+        $disabled = $this->repository->save(new RequestType(null, self::RVID, 'disabled', ['en' => 'Disabled'], false, null, 0, false));
 
         self::assertNotNull($this->repository->findUsable((int)$enabled->getId(), self::RVID));
         self::assertNull($this->repository->findUsable((int)$enabled->getId(), self::OTHER_RVID));

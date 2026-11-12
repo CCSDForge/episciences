@@ -52,7 +52,7 @@ final class RequestTypeInput
         try {
             $this->type = $existing !== null
                 ? $existing->withSettings($labels, $deadline, $position, $enabled)
-                : new RequestType(null, $rvid, $code, $labels, null, false, $deadline, $position, $enabled);
+                : new RequestType(null, $rvid, $code, $labels, false, $deadline, $position, $enabled);
         } catch (InvalidArgumentException) {
             $this->errors[self::FIELD_CODE] = "Ce type de demande n'a pas pu être enregistré.";
         }

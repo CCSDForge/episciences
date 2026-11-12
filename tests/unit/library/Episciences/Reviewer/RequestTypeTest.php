@@ -96,18 +96,18 @@ final class RequestTypeTest extends TestCase
     public function testInvalidDeadlineIsRefused(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new RequestType(null, self::RVID, 'phase_one', ['en' => 'Label'], null, false, '2 fortnight');
+        new RequestType(null, self::RVID, 'phase_one', ['en' => 'Label'], false, '2 fortnight');
     }
 
     public function testReviewReportTypeCannotBeDisabled(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new RequestType(null, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report'], null, false, null, 1, false);
+        new RequestType(null, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report'], false, null, 1, false);
     }
 
     public function testRowRoundTrip(): void
     {
-        $type = new RequestType(7, self::RVID, 'phase_two', ['fr' => 'Phase 2 « détaillée »', 'en' => 'Phase two'], 'grid_x.xml', true, '1 month', 4, false);
+        $type = new RequestType(7, self::RVID, 'phase_two', ['fr' => 'Phase 2 « détaillée »', 'en' => 'Phase two'], true, '1 month', 4, false);
 
         $row = $type->toRow() + ['id' => 7];
         $copy = RequestType::fromRow($row);
