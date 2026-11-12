@@ -52,3 +52,12 @@ This document lists the various statuses a paper can have in the Episciences pla
 - `OTHER_STATUS_CODE`: Statuses not present in search filters (Obsolete, Tmp, Deleted, etc.).
 - `EDITABLE_VERSION_STATUS`: Statuses where the version is considered editable.
 - `ACCEPTED_SUBMISSIONS`: Statuses that imply the submission has been accepted (including copy-editing phases).
+
+## Assignment and invitation statuses are not synchronised with the paper lifecycle
+
+`USER_ASSIGNMENT.STATUS` and `USER_INVITATION.STATUS` are not updated when the paper moves on (published, refused, new version requested, copy-editing started...). A row can therefore stay `pending` indefinitely.
+
+When aggregating reviewer data in SQL:
+- Do not treat `pending` (or `active`) alone as "still actionable". Join `PAPERS` and exclude the statuses for which `Episciences_Paper::canBeReviewed()` is false.
+- `Episciences_Reviewer_Reviewing::loadStatus()` encodes the reference rule: an unanswered invitation is only pending if the paper can still be reviewed, otherwise it is obsolete.
+- `REVIEWER_REPORT` only carries `(UID, DOCID)`, and one reviewer may have several `USER_ASSIGNMENT` rows or `USER_INVITATION` rows (one per `AID` and resend) for the same paper. Joining without deduplication fans one report or assignment out over several rows; keep the latest invitation per assignment (see `Episciences_PapersManager::getLatestInvitationByDocIdQuery()`).

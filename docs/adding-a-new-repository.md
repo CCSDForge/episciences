@@ -183,6 +183,14 @@ fallback when `base_url` is not set or OAI-PMH fails.
       `docker compose exec -u www-data -w /var/www/htdocs php-fpm ./vendor/bin/phpunit --no-coverage tests/unit/library/Episciences/Repositories/`
       or `make test-php`) and confirm all repository tests pass.
 - [ ] Add an entry under `### Added` in `CHANGELOG.md`.
+- [ ] If the hook returns `relatedIdentifiers` in DataCite shape
+      (`identifier`/`relation`/`resource_type`/`scheme`), add the repository to
+      `Episciences_Submit::isDataCiteShapedRepo()`. Otherwise `processDatasets()`
+      treats the array values as identifiers and silently creates bogus datasets.
+      Also filter irrelevant related identifiers (e.g. community memberships) in the hook.
+- [ ] If papers from the repository need a licence, add it to the per-repository
+      lookup in `Episciences_Paper_LicenceManager::getApiResponseByRepoId()` and
+      `extractLicenceData()`; `$enrichment['license']` is not consumed.
 - [ ] Manually submit a real paper from the new repository in a dev environment
       and confirm: metadata retrieval, file download link (or mirrored file, if
       `FilesEnrichmentInterface` is implemented), and the version field's

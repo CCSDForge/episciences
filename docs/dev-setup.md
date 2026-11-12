@@ -240,6 +240,44 @@ JS coverage is generated in `coverage/lcov-report/index.html`.
 
 ---
 
+## Step-debugging with Xdebug
+
+Xdebug is installed in the `php-fpm` image but off (`xdebug.mode=off`), so tests, console commands and
+workers run without its overhead. Turn step-debugging on when you need it:
+
+```bash
+make up-xdebug   # containers with docker-compose.xdebug.yml (and docker-compose.override.yml if present)
+make up          # back to containers without Xdebug
+```
+
+In the IDE (PhpStorm):
+
+1. Listen for debug connections on port `9003`.
+2. Declare a server named exactly `dev.episciences.org` (*Settings → PHP → Servers*), with *Use path
+   mappings* and the **project root** mapped to `/var/www/htdocs`. The port does not matter: the IDE
+   picks the server by name (`PHP_IDE_CONFIG`).
+3. Set a breakpoint and load a page: every web request starts a debugging session.
+
+Console scripts connect only with a trigger:
+
+```bash
+docker compose exec -e XDEBUG_TRIGGER=1 php-fpm php scripts/<script>.php
+```
+
+Where the settings live:
+
+| File | Role |
+| --- | --- |
+| `src/php-fpm/xdebug.ini` (image) | `xdebug.mode=off` by default |
+| `docker-compose.xdebug.yml` | `XDEBUG_MODE=debug`, `XDEBUG_CONFIG` (IDE host and port), `PHP_IDE_CONFIG` |
+| `src/php-fpm/xdebug-fpm.conf` | `start_with_request=yes` for PHP-FPM only (web requests) |
+
+Troubleshooting: if breakpoints are not hit, check in the container that the IDE can be reached
+(`php -r 'var_dump((bool) @fsockopen("host.docker.internal", 9003));'`), then log one request with
+`-d xdebug.log=/proc/self/fd/2 -d xdebug.log_level=7` on a console script run with `XDEBUG_TRIGGER=1`.
+
+---
+
 ## Available Services
 
 | Service | URL | Note |
