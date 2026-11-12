@@ -1,0 +1,132 @@
+<?php
+/** @var \Episciences\Reviewer\RequestType|null $type */
+$type = $this->type;
+/** @var array<string, string> $errors */
+$errors = $this->errors;
+$values = $this->values;
+$isNew = $type === null;
+$unitLabels = ['day' => 'jour(s)', 'week' => 'semaine(s)', 'month' => 'mois'];
+$languageNames = Episciences_Tools::getLanguages();
+
+$this->layout()->pageTitle = $isNew
+    ? $this->translate('Ajouter un type de demande')
+    : $this->translate('Modifier un type de demande');
+
+/**
+ * aria-describedby of a field: its help text and its error, when there are some
+ */
+$describedBy = static function (string $field, bool $hasHelp = false) use ($errors): string {
+    $ids = [];
+    if ($hasHelp) {
+        $ids[] = $field . '-help';
+    }
+    if (isset($errors[$field])) {
+        $ids[] = $field . '-error';
+    }
+    return $ids === [] ? '' : ' aria-describedby="' . implode(' ', $ids) . '"';
+};
+
+$error = function (string $field) use ($errors): string {
+    return isset($errors[$field])
+        ? '<span id="' . $field . '-error" class="help-block">' . $this->escape($this->translate($errors[$field])) . '</span>'
+        : '';
+};
+?>
+
+<?php if ($errors !== []) : ?>
+    <div class="alert alert-danger" role="alert">
+        <?= $this->escape($this->translate('Le formulaire contient des erreurs.')) ?>
+    </div>
+<?php endif; ?>
+
+<form method="post" action="/requesttype/edit<?= $isNew ? '' : '?id=' . (int)$type->getId() ?>" class="form-horizontal" novalidate>
+    <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
+
+    <div class="form-group<?= isset($errors['code']) ? ' has-error' : '' ?>">
+        <label for="code" class="col-md-3 control-label"><?= $this->escape($this->translate('Code')) ?></label>
+        <div class="col-md-6">
+            <?php if ($isNew) : ?>
+                <input type="text" id="code" name="code" class="form-control" maxlength="30" required
+                       pattern="[a-z][a-z0-9_]{0,29}" value="<?= $this->escape($values['code']) ?>"<?= $describedBy('code', true) ?>>
+                <span id="code-help" class="help-block">
+                    <?= $this->escape($this->translate("Identifiant stable du type (ex. : phase_2) : lettres minuscules, chiffres et tirets bas. Il ne peut plus être modifié ensuite.")) ?>
+                </span>
+            <?php else : ?>
+                <p id="code" class="form-control-static"><code><?= $this->escape($values['code']) ?></code></p>
+            <?php endif; ?>
+            <?= $error('code') ?>
+        </div>
+    </div>
+
+    <?php foreach ($this->languages as $lang) : ?>
+        <?php $field = 'label_' . $lang; ?>
+        <div class="form-group<?= isset($errors[$field]) ? ' has-error' : '' ?>">
+            <label for="<?= $this->escape($field) ?>" class="col-md-3 control-label">
+                <?= $this->escape($this->translate('Libellé')) ?> (<?= $this->escape($languageNames[$lang] ?? $lang) ?>)
+            </label>
+            <div class="col-md-6">
+                <input type="text" id="<?= $this->escape($field) ?>" name="label[<?= $this->escape($lang) ?>]" class="form-control"
+                       maxlength="<?= \Episciences\Reviewer\RequestType::LABEL_MAX_LENGTH ?>" required
+                       value="<?= $this->escape($values['label'][$lang] ?? '') ?>"<?= $describedBy($field) ?>>
+                <?= $error($field) ?>
+            </div>
+        </div>
+    <?php endforeach; ?>
+
+    <div class="form-group<?= isset($errors['deadline']) ? ' has-error' : '' ?>">
+        <label for="deadline" class="col-md-3 control-label"><?= $this->escape($this->translate('Délai par défaut')) ?></label>
+        <div class="col-md-2">
+            <input type="number" id="deadline" name="deadline" class="form-control" min="1" max="<?= Episciences_Review::DEADLINE_VALUE_MAX ?>"
+                   value="<?= $this->escape($values['deadline']) ?>"<?= $describedBy('deadline', true) ?>>
+        </div>
+        <div class="col-md-2">
+            <label for="deadline_unit" class="sr-only"><?= $this->escape($this->translate('Unité du délai')) ?></label>
+            <select id="deadline_unit" name="deadline_unit" class="form-control">
+                <?php foreach (Episciences_Review::DEADLINE_UNITS as $unit) : ?>
+                    <option value="<?= $this->escape($unit) ?>"<?= $values['deadline_unit'] === $unit ? ' selected' : '' ?>>
+                        <?= $this->escape($this->translate($unitLabels[$unit] ?? $unit)) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-md-6 col-md-offset-3">
+            <span id="deadline-help" class="help-block">
+                <?= $this->escape($this->translate("Date limite proposée à l'invitation. Laisser vide pour utiliser le réglage de la revue.")) ?>
+            </span>
+            <?= $error('deadline') ?>
+        </div>
+    </div>
+
+    <div class="form-group<?= isset($errors['position']) ? ' has-error' : '' ?>">
+        <label for="position" class="col-md-3 control-label"><?= $this->escape($this->translate('Position')) ?></label>
+        <div class="col-md-2">
+            <input type="number" id="position" name="position" class="form-control" min="0" max="999"
+                   value="<?= $this->escape($values['position']) ?>"<?= $describedBy('position') ?>>
+            <?= $error('position') ?>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-md-6 col-md-offset-3">
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" name="enabled" value="1"<?= $values['enabled'] ? ' checked' : '' ?>
+                        <?= (!$isNew && $type->isFullReport()) ? ' disabled aria-describedby="enabled-help"' : '' ?>>
+                    <?= $this->escape($this->translate("Proposer ce type à l'invitation d'un relecteur")) ?>
+                </label>
+                <?php if (!$isNew && $type->isFullReport()) : ?>
+                    <span id="enabled-help" class="help-block">
+                        <?= $this->escape($this->translate('Le rapport de relecture reste toujours proposé.')) ?>
+                    </span>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-md-6 col-md-offset-3">
+            <button type="submit" class="btn btn-primary"><?= $this->escape($this->translate('Enregistrer')) ?></button>
+            <a class="btn btn-default" href="/requesttype/list"><?= $this->escape($this->translate('Annuler')) ?></a>
+        </div>
+    </div>
+</form>

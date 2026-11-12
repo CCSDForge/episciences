@@ -249,6 +249,30 @@
             ]
           },
           {
+            "label": "Types de demande de relecture",
+            "controller": "requesttype",
+            "action": "list",
+            "resource": "requesttype-list",
+            "privilege": "chief_editor,administrator,secretary",
+            "pages": [
+              {
+                "label": "Ajouter ou modifier un type de demande",
+                "controller": "requesttype",
+                "action": "edit",
+                "resource": "requesttype-edit",
+                "privilege": "chief_editor,administrator,secretary"
+              },
+              {
+                "label": "Supprimer un type de demande",
+                "controller": "requesttype",
+                "action": "delete",
+                "resource": "requesttype-delete",
+                "privilege": "chief_editor,administrator,secretary",
+                "visible": false
+              }
+            ]
+          },
+          {
             "label": "Gestion des articles",
             "controller": "administratepaper",
             "action": "list",

@@ -164,7 +164,6 @@ $tag = $this->tag;
     case Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION:
     case Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION:
     case Episciences_Paper_Logger::CODE_COPY_EDITOR_UNASSIGNMENT:
-    case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION:
     case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED:
     case Episciences_Paper_Logger::CODE_REVIEWER_ASSIGNMENT:
     case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED:
@@ -195,6 +194,20 @@ $tag = $this->tag;
             'tag' => $tag,
             'user' => $detail['user'] ?? null
         ]);
+        break;
+
+    // Reviewer invitation: user action, then the review request type recorded at the time of the invitation (#319)
+    case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION:
+        echo $this->partial('partials/paper_history_logs_user_action.phtml', [
+            'fullName' => $fullName,
+            'tag' => $tag,
+            'user' => $detail['user'] ?? null
+        ]);
+        $requestTypeLabels = $detail['request_type']['labels'] ?? null;
+        if (is_array($requestTypeLabels) && $requestTypeLabels !== []) {
+            $requestTypeLabel = $requestTypeLabels[Episciences_Tools::getLocale()] ?? reset($requestTypeLabels);
+            echo '<br><small>' . $this->escape($this->translate('Type de demande')) . ' : ' . $this->escape((string)$requestTypeLabel) . '</small>';
+        }
         break;
 
 endswitch ?>

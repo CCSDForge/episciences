@@ -193,6 +193,20 @@ return array(
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_NEW_USER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification of invitation of a new reviewer with a temporary account. In this specific case and precise moment of the acceptance of the invitation, the user will be invited to create a new account to access the review grid",
 
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_QUICK_OPINION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "invitation of a reviewer to give a quick opinion on an article (request type \"Quick opinion\")",
+
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_REVISION_CHECK][Episciences_Mail_TemplatesManager::DESCRIPTION] => "invitation of a reviewer to check the revised version of an article (request type \"Revised version check\")",
+
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_GENERIC][Episciences_Mail_TemplatesManager::DESCRIPTION] => "base of the invitations of the request types created by the journal",
+
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "text inserted by the %%INVITATION_ACCOUNT_HINT%% tag when the invited person is already a reviewer of the journal",
+
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_USER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "text inserted by the %%INVITATION_ACCOUNT_HINT%% tag when the invited person already has an account",
+
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_NEW_USER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "text inserted by the %%INVITATION_ACCOUNT_HINT%% tag when the invited person has no account yet",
+
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_LIGHT_ANSWER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "text inserted by the %%INVITATION_ACCOUNT_HINT%% tag when the request is answered without an account",
+
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REMOVAL][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of the cancellation of an invitation",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of acceptance of the invitation",

@@ -2138,9 +2138,12 @@ class Episciences_Mail_TemplatesManager
         */
 
         // On retire de la liste les templates par défaut qui ont une version modifiée
+        // (the template of a review request type created by a journal derives from the generic template, #319:
+        // it does not replace it)
         foreach ($templates as $template) {
-            if ($template['PARENTID']) {
-                unset($templates[$template['PARENTID']]);
+            $parentId = $template['PARENTID'];
+            if ($parentId && isset($templates[$parentId]) && $template['KEY'] === self::CUSTOM_KEY_PREFIX . $templates[$parentId]['KEY']) {
+                unset($templates[$parentId]);
             }
         }
 
