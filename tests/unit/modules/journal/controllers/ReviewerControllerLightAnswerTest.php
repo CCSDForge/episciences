@@ -12,6 +12,7 @@ use Episciences_User_Assignment;
 use Episciences_User_Invitation;
 use PHPUnit\Framework\MockObject\MockObject;
 use ReflectionMethod;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
 use unit\modules\ControllerTestCase;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
@@ -22,6 +23,8 @@ use Zend_View;
  */
 final class ReviewerControllerLightAnswerTest extends ControllerTestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const AID = 70;
     private const DOCID = 80;
 
@@ -57,9 +60,10 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
     /**
      * @return MockObject&Episciences_User_Invitation
      */
-    private function invitation(bool $cancelled = false, bool $answered = false, bool $expired = false)
+    private function invitation(bool $cancelled = false, bool $answered = false, bool $expired = false, ?string $token = 'row-secret')
     {
         $invitation = $this->createMock(Episciences_User_Invitation::class);
+        $invitation->method('getToken')->willReturn($token);
         $invitation->method('getId')->willReturn(7);
         $invitation->method('getAid')->willReturn(self::AID);
         $invitation->method('isCancelled')->willReturn($cancelled);
@@ -123,5 +127,39 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
         self::assertFalse($saved);
         self::assertTrue($this->controller->view->lightAnswerMissing);
         self::assertSame([], $this->db->inserts());
+    }
+
+    /**
+     * @return MockObject&Episciences_User_Assignment
+     */
+    private function assignment(int $uid, bool $tmpUser)
+    {
+        $assignment = $this->createMock(Episciences_User_Assignment::class);
+        $assignment->method('getUid')->willReturn($uid);
+        $assignment->method('isTmp_user')->willReturn($tmpUser);
+
+        return $assignment;
+    }
+
+    public function testAnInvitationWithoutLinkTokenIsNotAnsweredWithoutAnAccount(): void
+    {
+        $request = $this->postRequest([LightAnswerForm::MESSAGE => 'Opinion', LightAnswerForm::SUBMIT => '1'], true);
+        $this->controller->setRequest($request);
+        $type = new RequestType(11, RVID, 'quick_opinion', ['en' => 'Quick opinion'], true);
+
+        $this->call('lightAnswerProcess', $request, $this->invitation(token: null), $this->assignment(self::UID + 1, true), $type);
+
+        self::assertNotEmpty($this->controller->view->errors);
+        self::assertSame([], $this->db->inserts());
+        self::assertSame(['token_invalid'], array_map(static fn($record): string => (string)$record->message, $this->securityLogRecords()));
+    }
+
+    public function testAPostWithAnotherFileFieldStoresNoFile(): void
+    {
+        $file = ['name' => 'opinion.pdf', 'type' => 'application/pdf', 'tmp_name' => '/nonexistent', 'error' => UPLOAD_ERR_OK, 'size' => 10];
+        $_FILES = [LightAnswerForm::FILE => $file, 'other' => $file];
+
+        self::assertNull($this->call('uploadLightAnswerFile', sys_get_temp_dir() . '/light-answer-test/'));
+        self::assertDirectoryDoesNotExist(sys_get_temp_dir() . '/light-answer-test/');
     }
 }

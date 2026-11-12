@@ -828,6 +828,15 @@ class ReviewerController extends PaperDefaultController
         Episciences_User_Assignment $assignment,
         RequestType $requestType
     ): void {
+        // without an account, holding the signed link is the only proof: an invitation without link token is only
+        // answered here by the invited account itself, signed in
+        $isInvitee = Episciences_Auth::isLogged() && !$assignment->isTmp_user() && (int)$assignment->getUid() === (int)Episciences_Auth::getUid();
+        if ($invitation->getToken() === null && !$isInvitee) {
+            AccessLog::denied(AccessLog::TOKEN_INVALID, 'light_answer_without_link_token', ['invitation_id' => (int)$invitation->getId()]);
+            $this->view->errors = 'Lien non valide; le jeton transmis dans la requête est erroné.';
+            return;
+        }
+
         $this->view->invitation = $invitation;
         $paper = Episciences_PapersManager::get($assignment->getItemid());
         $answer = (new LightAnswerRepository())->findByAid((int)$invitation->getAid());
@@ -968,6 +977,11 @@ class ReviewerController extends PaperDefaultController
     private function uploadLightAnswerFile(string $folderPath): ?string
     {
         if (empty($_FILES[LightAnswerForm::FILE]['size'])) {
+            return null;
+        }
+
+        // only the file field of the form is checked by the form: the uploader would store any other one
+        if (array_diff(array_keys($_FILES), [LightAnswerForm::FILE]) !== []) {
             return null;
         }
 
