@@ -2914,4 +2914,9 @@ return array(
     "Jamais rétroactivement" => "Never retroactively",
     "Les invitations déjà envoyées gardent leur délai et leur date limite, les rédacteurs déjà assignés restent assignés, les courriels déjà envoyés ne sont pas renvoyés." => "The invitations already sent keep their delay and deadline, the editors already assigned stay assigned, the emails already sent are not sent again.",
     "Paramètres des licences" => "License settings",
+    // Review request types (#319)
+    "Type de demande" => "Request type",
+    "Le message et la date limite proposés dépendent du type de demande." => "The suggested message and due date depend on the request type.",
+    "Ce type de demande n'est pas disponible." => "This request type is not available.",
+    "Ce relecteur a déjà une demande de ce type en cours pour cet article." => "This reviewer already has a request of this type in progress for this article.",
 );

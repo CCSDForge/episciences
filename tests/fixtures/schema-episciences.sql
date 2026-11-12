@@ -389,11 +389,13 @@ CREATE TABLE `USER_ASSIGNMENT` (
   `FROM_UID` int unsigned DEFAULT NULL COMMENT 'Linked from',
   `TMP_USER` tinyint unsigned NOT NULL DEFAULT '0',
   `ROLEID` varchar(50) NOT NULL,
+  `REQUEST_TYPE_ID` int unsigned DEFAULT NULL COMMENT 'Review request type (reviewer rows only)',
   `STATUS` varchar(20) NOT NULL,
   `WHEN` datetime NOT NULL,
   `DEADLINE` datetime DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `FK_ITEMID_idx` (`ITEMID`),
+  KEY `idx_request_type` (`REQUEST_TYPE_ID`),
   KEY `FK_UID_idx` (`UID`),
   KEY `ITEM` (`ITEM`),
   KEY `ROLEID` (`ROLEID`),
@@ -1097,6 +1099,24 @@ CREATE TABLE `user_su_log` (
   KEY `idx_action` (`action`),
   KEY `idx_anonymization` (`is_anonymized`, `created_at`),
   KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `review_request_type`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `review_request_type` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `rvid` int unsigned NOT NULL,
+  `code` varchar(30) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `labels` json NOT NULL,
+  `grid` varchar(255) DEFAULT NULL,
+  `light_answer` tinyint unsigned NOT NULL DEFAULT '0',
+  `default_deadline` varchar(20) DEFAULT NULL,
+  `position` smallint unsigned NOT NULL DEFAULT '0',
+  `enabled` tinyint unsigned NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_rvid_code` (`rvid`, `code`),
+  KEY `idx_rvid_position` (`rvid`, `position`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `user_token`;

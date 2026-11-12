@@ -1,5 +1,8 @@
 <?php
 
+use Episciences\AppRegistry;
+use Episciences\Reviewer\RequestTypeRepository;
+
 class Episciences_UsersManager
 {
     public const VALID_USER = 1;
@@ -256,6 +259,33 @@ class Episciences_UsersManager
         return self::saveAssignment(Episciences_User_Assignment::STATUS_INACTIVE, $ids, $params);
     }
 
+    /**
+     * Request type of a reviewer assignment: the given one, else the review report type of the journal
+     * (a request without a type predates the types).
+     * @param array<string, mixed> $params
+     */
+    private static function reviewerRequestTypeId(array $params, int $rvid): ?int
+    {
+        if (!empty($params['request_type_id'])) {
+            return (int)$params['request_type_id'];
+        }
+
+        try {
+            $fullReport = (new RequestTypeRepository())->findFullReport($rvid);
+        } catch (Throwable $e) {
+            AppRegistry::getMonoLogger()?->warning(sprintf('Review request types unavailable: %s', $e->getMessage()));
+            return null;
+        }
+
+        AppRegistry::getMonoLogger()?->warning('Reviewer assignment saved without a request type: review report assumed', [
+            'rvid' => $rvid,
+            'itemid' => $params['itemid'] ?? null,
+            'status' => $params['status'] ?? null,
+        ]);
+
+        return $fullReport?->getId();
+    }
+
     private static function saveAssignment($status, $ids, array $params)
     {
         $assignments = array();
@@ -277,6 +307,11 @@ class Episciences_UsersManager
 
         if ($status === Episciences_User_Assignment::STATUS_ACTIVE) {
             $assignmentValues['deadline'] = $params['deadline'] ?? null;
+        }
+
+        // the type of a reviewer request (#319) is carried by every row of its history
+        if ($assignmentValues['roleid'] === Episciences_User_Assignment::ROLE_REVIEWER) {
+            $assignmentValues['request_type_id'] = self::reviewerRequestTypeId($params, (int)$assignmentValues['rvid']);
         }
 
         // if only one id was given, push it in an array for processing

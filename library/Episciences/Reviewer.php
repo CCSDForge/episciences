@@ -15,6 +15,8 @@ class Episciences_Reviewer extends Episciences_User
 
     protected $_when;
     protected $_status;
+    /** @var list<int> types of the requests selected with the reviewer on a paper (#319) */
+    protected array $_requestTypeIds = [];
 
     private $_assignedPapers = [];
     private $_assignments = [];
@@ -91,6 +93,23 @@ class Episciences_Reviewer extends Episciences_User
     public function setWhen($_when)
     {
         $this->_when = $_when;
+        return $this;
+    }
+
+    /**
+     * @return list<int> types of the requests selected with the reviewer on a paper (#319)
+     */
+    public function getRequestTypeIds(): array
+    {
+        return $this->_requestTypeIds;
+    }
+
+    /**
+     * @param list<int> $requestTypeIds
+     */
+    public function setRequestTypeIds(array $requestTypeIds): self
+    {
+        $this->_requestTypeIds = array_values(array_unique(array_map('intval', $requestTypeIds)));
         return $this;
     }
 
@@ -206,7 +225,8 @@ class Episciences_Reviewer extends Episciences_User
             'item' => Episciences_User_Assignment::ITEM_PAPER,
             'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
             'deadline' => $params['deadline'] ?? null,
-            'status' => $params['status'] ?? Episciences_User_Assignment::STATUS_ACTIVE
+            'status' => $params['status'] ?? Episciences_User_Assignment::STATUS_ACTIVE,
+            'request_type_id' => $params['request_type_id'] ?? null,
         ];
 
         return Episciences_UsersManager::assign($this->getUid(), $params);
@@ -224,7 +244,8 @@ class Episciences_Reviewer extends Episciences_User
             'itemid' => $docId,
             'item' => Episciences_User_Assignment::ITEM_PAPER,
             'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
-            'status' => Episciences_User_Assignment::STATUS_INACTIVE
+            'status' => Episciences_User_Assignment::STATUS_INACTIVE,
+            'request_type_id' => $params['request_type_id'] ?? null,
         ];
 
         return Episciences_UsersManager::unassign($this->getUid(), $params);
@@ -267,7 +288,11 @@ class Episciences_Reviewer extends Episciences_User
         /** @var Zend_Db_Select $select */
         $select = $this->fetchPaperReviewerAssignmentsQuery();
 
-        $docIds = $this->_db->fetchAssoc($select);
+        // one entry per paper: its most advanced request (#319)
+        $docIds = self::mostAdvancedByKey($this->_db->fetchAll($select), 'ITEMID', [
+            Episciences_User_Assignment::STATUS_ACTIVE,
+            Episciences_User_Assignment::STATUS_PENDING,
+        ]);
 
         if ($loadInvitations) {
             // load reviewer invitations
@@ -397,7 +422,8 @@ class Episciences_Reviewer extends Episciences_User
 
         $result = $this->_db->fetchAll($sql);
 
-        foreach ($result as $invitation) {
+        // one invitation per paper: an invitation waiting for an answer first (#319)
+        foreach (self::mostAdvancedByKey($result, 'DOCID', [Episciences_User_Assignment::STATUS_PENDING, Episciences_User_Assignment::STATUS_ACTIVE]) as $invitation) {
             $oInvitations[$invitation['DOCID']] = new Episciences_User_Invitation($invitation);
         }
 
@@ -538,7 +564,8 @@ class Episciences_Reviewer extends Episciences_User
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', 'reviewer')
             ->where('RVID = ?', RVID)
-            ->group('ITEMID');
+            // a reviewer may hold one request of each type on a paper (#319)
+            ->group(['ITEMID', 'REQUEST_TYPE_ID']);
 
         // Built as a single grouped expression on purpose: chaining orWhere() would OR itself with
         // every preceding where(), dropping the UID / ITEM / ROLEID / RVID restrictions below.
@@ -573,6 +600,32 @@ class Episciences_Reviewer extends Episciences_User
     }
 
     /**
+     * Keeps one row per key: the first status of $preferredStatuses found, else the first row
+     * @param list<array<string, mixed>> $rows
+     * @param list<string> $preferredStatuses most preferred first
+     * @return array<int|string, array<string, mixed>> by key
+     */
+    public static function mostAdvancedByKey(array $rows, string $key, array $preferredStatuses): array
+    {
+        $rank = static function (array $row) use ($preferredStatuses): int {
+            $position = array_search($row['STATUS'] ?? null, $preferredStatuses, true);
+            return $position === false ? 0 : count($preferredStatuses) - $position;
+        };
+
+        $result = [];
+
+        foreach ($rows as $row) {
+            $id = $row[$key];
+
+            if (!isset($result[$id]) || $rank($row) > $rank($result[$id])) {
+                $result[$id] = $row;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * @param int $rvId
      * @return Zend_Db_Select
      */
@@ -586,7 +639,8 @@ class Episciences_Reviewer extends Episciences_User
             ->where('ROLEID = ?', 'reviewer')
             ->where('UID = ?', $this->getUid())
             ->where('RVID = ?', $rvId)
-            ->group('ITEMID');
+            // a reviewer may hold one request of each type on a paper (#319)
+            ->group(['ITEMID', 'REQUEST_TYPE_ID']);
 
         // Inner Join 2
         $ui2 = $this->_db->select()

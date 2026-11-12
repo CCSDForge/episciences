@@ -6,6 +6,7 @@ use Episciences\Paper\Files\DocumentFilePolicy;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Paper\RevisionRequests;
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Reviewer\RequestTypeRepository;
 use Episciences\Security\AccessLog;
 use Episciences\Submit\SubmittedRecord;
 use GuzzleHttp\Exception\GuzzleException;
@@ -1761,14 +1762,19 @@ class PaperController extends PaperDefaultController
         $sender_uid = ($sender && is_a($sender, self::CLASS_EPI_USER_NAME)) ? $sender->getUid() : 666;
 
         // loop through each reviewer
+        // one invitation for each request of the reviewer: a reviewer may hold one request of each type (#319)
         /** @var Episciences_Reviewer $reviewer */
-        foreach ($reviewers as $reviewer) {
+        foreach (Episciences_ReviewersManager::reviewerRequests($reviewers) as [$reviewer, $requestTypeId]) {
 
             // assign reviewer to tmp version (replicate invitation process)
             // reviewer invitation ******************************
             // save assignment (pending status)
             /** @var Episciences_User_Assignment $oAssignment */
-            $oAssignment = $reviewer->assign($paper2->getDocid(), [self::DEADLINE_STR => $deadline, self::STATUS => Episciences_User_Assignment::STATUS_PENDING])[0];
+            $oAssignment = $reviewer->assign($paper2->getDocid(), [
+                self::DEADLINE_STR => $deadline,
+                self::STATUS => Episciences_User_Assignment::STATUS_PENDING,
+                'request_type_id' => $requestTypeId,
+            ])[0];
             $rating_deadline = $oAssignment->getDeadline();
 
             // save invitation (pending status)
@@ -3466,6 +3472,8 @@ class PaperController extends PaperDefaultController
                 'tmp_user' => 0,
                 'item' => Episciences_User_Assignment::ITEM_PAPER,
                 'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
+                // a rating entered by an editor is a review report (#319)
+                'request_type_id' => (new RequestTypeRepository())->findFullReport(RVID)?->getId(),
             ];
 
             /** @var Episciences_User_Assignment $eAssignment */
@@ -4364,7 +4372,8 @@ class PaperController extends PaperDefaultController
                 'item' => Episciences_User_Assignment::ITEM_PAPER,
                 'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
                 'status' => Episciences_User_Assignment::STATUS_CANCELLED,
-                'tmp_user' => $assignment->isTmp_user()
+                'tmp_user' => $assignment->isTmp_user(),
+                'request_type_id' => $assignment->getRequest_type_id(),
             ];
 
             /** @var Episciences_User_Assignment $nAssignment */

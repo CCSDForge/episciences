@@ -41,10 +41,11 @@ class Episciences_User_AssignmentsManager
         if (!$cacheItem->isHit()) {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-            // the latest assignment to each item (highest ID: two assignments can have the same date)
+            // the latest assignment to each item (highest ID: two assignments can have the same date);
+            // a reviewer may hold one request of each type on a paper (#319): the latest row of each request
             $subquery = $db->select()
                 ->from(T_ASSIGNMENTS, array('LAST_ID' => new Zend_Db_Expr('MAX(ID)')))
-                ->group('ITEMID');
+                ->group(self::isReviewerQuery($params) ? ['ITEMID', 'REQUEST_TYPE_ID'] : 'ITEMID');
 
             $select = $db->select()
                 ->from(array('a' => T_ASSIGNMENTS), '*');
@@ -73,7 +74,12 @@ class Episciences_User_AssignmentsManager
 
             foreach ($data as $assignment) {
                 $oAssignment = new Episciences_User_Assignment($assignment);
-                $result[$oAssignment->getItemid()] = $oAssignment;
+                $itemId = $oAssignment->getItemid();
+
+                // several requests on the same item: the most advanced one represents it
+                if (!isset($result[$itemId]) || self::statusRank($oAssignment) > self::statusRank($result[$itemId])) {
+                    $result[$itemId] = $oAssignment;
+                }
             }
 
             $cacheItem->set($result);
@@ -81,6 +87,106 @@ class Episciences_User_AssignmentsManager
         }
 
         return $cacheItem->get();
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     */
+    private static function isReviewerQuery(array $params): bool
+    {
+        foreach ($params as $param => $value) {
+            if (strtolower((string)$param) === 'roleid') {
+                return $value === Episciences_User_Assignment::ROLE_REVIEWER;
+            }
+        }
+
+        return false;
+    }
+
+    private static function statusRank(Episciences_User_Assignment $assignment): int
+    {
+        return match ($assignment->getStatus()) {
+            Episciences_User_Assignment::STATUS_ACTIVE => 2,
+            Episciences_User_Assignment::STATUS_PENDING => 1,
+            default => 0,
+        };
+    }
+
+    /**
+     * Types of the requests a reviewer holds on a paper: those whose latest row is pending or active (#319)
+     * @param bool $withExpiredInvitations false: a pending request whose invitation has expired is not in progress
+     *                                     (the reviewer can be invited again)
+     * @return list<int|null> null for a request saved without a type
+     */
+    public static function currentReviewerRequestTypeIds(int $uid, int $docId, bool $isTmpUser = false, bool $withExpiredInvitations = true): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = self::requestsInProgressQuery($db, $docId, $isTmpUser, $withExpiredInvitations, $uid);
+
+        return array_map(
+            static fn(array $row): ?int => $row['REQUEST_TYPE_ID'] === null ? null : (int)$row['REQUEST_TYPE_ID'],
+            $db->fetchAll($select)
+        );
+    }
+
+    /**
+     * Types of the requests in progress on a paper, for each reviewer with an account (#319): a single query, so that
+     * the invitation form does not depend on the (heavier) list of the invitations of the paper.
+     * A pending request whose invitation has expired is not in progress.
+     * @return array<int, list<int>> request type ids, by reviewer UID
+     */
+    public static function requestTypesInProgressByReviewer(int $docId): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $result = [];
+
+        foreach ($db->fetchAll(self::requestsInProgressQuery($db, $docId, false, false)) as $row) {
+            if ($row['REQUEST_TYPE_ID'] !== null) {
+                $result[(int)$row['UID']][] = (int)$row['REQUEST_TYPE_ID'];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Latest row of each reviewer request on a paper, when it is pending or active
+     */
+    private static function requestsInProgressQuery(
+        Zend_Db_Adapter_Abstract $db,
+        int $docId,
+        bool $isTmpUser,
+        bool $withExpiredInvitations,
+        ?int $uid = null
+    ): Zend_Db_Select {
+        $latest = $db->select()
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
+            ->where('ITEM = ?', Episciences_User_Assignment::ITEM_PAPER)
+            ->where('ITEMID = ?', $docId)
+            ->where('ROLEID = ?', Episciences_User_Assignment::ROLE_REVIEWER)
+            ->where('TMP_USER = ?', (int)$isTmpUser)
+            ->group(['UID', 'REQUEST_TYPE_ID']);
+
+        if ($uid !== null) {
+            $latest->where('UID = ?', $uid);
+        }
+
+        $select = $db->select()
+            ->from(['a' => T_ASSIGNMENTS], ['UID', 'REQUEST_TYPE_ID'])
+            ->join(['l' => $latest], 'a.ID = l.LAST_ID', []);
+
+        if ($withExpiredInvitations) {
+            return $select->where('a.STATUS IN (?)', [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING]);
+        }
+
+        // an assignment without invitation (added by an editor) has no expiry
+        return $select
+            ->joinLeft(['i' => T_USER_INVITATIONS], 'i.ID = a.INVITATION_ID', [])
+            ->where(sprintf(
+                '(%s OR (%s AND (i.EXPIRATION_DATE IS NULL OR i.EXPIRATION_DATE > NOW())))',
+                $db->quoteInto('a.STATUS = ?', Episciences_User_Assignment::STATUS_ACTIVE),
+                $db->quoteInto('a.STATUS = ?', Episciences_User_Assignment::STATUS_PENDING)
+            ));
     }
 
     /**

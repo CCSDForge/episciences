@@ -1606,10 +1606,11 @@ class ProcessInboxNotificationsCommand extends Command
             $journalOptions['sender'] = $sender;
         }
 
+        // one invitation for each request of the reviewer (#319)
         /** @var Episciences_Reviewer $reviewer */
-        foreach ($reviewers as $reviewer) {
+        foreach (Episciences_ReviewersManager::reviewerRequests($reviewers) as [$reviewer, $requestTypeId]) {
             try {
-                $assignmentResult = $reviewer->assign($paper->getDocid(), $params);
+                $assignmentResult = $reviewer->assign($paper->getDocid(), $params + ['request_type_id' => $requestTypeId]);
                 if (empty($assignmentResult)) {
                     continue;
                 }

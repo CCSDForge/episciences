@@ -2,7 +2,10 @@
 
 use Episciences\AppRegistry;
 use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Reviewer\InvitationTemplates;
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Reviewer\RequestType;
+use Episciences\Reviewer\RequestTypeRepository;
 use Episciences\Paper\Spdx\LicenseCodeManager;
 use Episciences\Paper\Spdx\LicenseManager;
 use Episciences\Paper\Spdx\LicenseSpdxResolver;
@@ -1142,6 +1145,85 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
+    /**
+     * Enabled review request types of the journal; the default ones are created if the journal has none yet
+     * @return list<RequestType>
+     * @throws JsonException
+     */
+    private function enabledRequestTypes(): array
+    {
+        $repository = new RequestTypeRepository();
+        $types = $repository->findAllForJournal(RVID, true);
+
+        if ($types === []) {
+            $repository->createDefaults(RVID);
+            $types = $repository->findAllForJournal(RVID, true);
+        }
+
+        return $types;
+    }
+
+    /**
+     * @param array<int, list<int>> $busyTypes request type ids, by reviewer UID
+     * @param list<RequestType> $requestTypes enabled types
+     * @return list<int> UIDs of the reviewers who cannot be invited for any enabled type
+     */
+    public static function reviewersBusyWithEveryType(array $busyTypes, array $requestTypes): array
+    {
+        $enabledIds = array_map(static fn(RequestType $type): int => (int)$type->getId(), $requestTypes);
+        $uids = [];
+
+        foreach ($busyTypes as $uid => $typeIds) {
+            if (array_diff($enabledIds, $typeIds) === []) {
+                $uids[] = (int)$uid;
+            }
+        }
+
+        return $uids;
+    }
+
+    /**
+     * Request type chosen in the invitation form: an enabled type of the journal; none posted means a review report
+     * (form opened before the types existed)
+     * @param list<RequestType> $requestTypes enabled types of the journal
+     */
+    public static function invitationRequestType(mixed $postedId, array $requestTypes): ?RequestType
+    {
+        foreach ($requestTypes as $requestType) {
+            $isPosted = is_scalar($postedId) && (string)$postedId !== '' && (string)$requestType->getId() === (string)$postedId;
+            $isDefault = ($postedId === null || $postedId === '') && $requestType->isFullReport();
+
+            if ($isPosted || $isDefault) {
+                return $requestType;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Data of the request types for the invitation form script
+     * @param list<RequestType> $requestTypes
+     * @return list<array{id: int, code: string, label: string, rating_deadline: string}>
+     */
+    private function requestTypesForInvitationForm(array $requestTypes, Episciences_Review $review): array
+    {
+        $locale = Episciences_Tools::getLocale();
+        $data = [];
+
+        foreach ($requestTypes as $requestType) {
+            $interval = $requestType->getDefaultDeadline() ?? $review->getSetting(Episciences_Review::SETTING_RATING_DEADLINE);
+            $data[] = [
+                'id' => (int)$requestType->getId(),
+                'code' => $requestType->getCode(),
+                'label' => $requestType->getLabel($locale),
+                'rating_deadline' => Episciences_Tools::addDateInterval(date('Y-m-d'), $interval),
+            ];
+        }
+
+        return $data;
+    }
+
     public function invitereviewerAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
@@ -1184,6 +1266,8 @@ class AdministratepaperController extends PaperDefaultController
             // load journal detail
             $oReview = Episciences_ReviewsManager::find(RVID);
             $oReview->loadSettings();
+            // review request types (#319)
+            $requestTypes = $this->enabledRequestTypes();
             // load reviewers array
             $reviewers = [];
             $allJsReviewers = [];
@@ -1217,14 +1301,15 @@ class AdministratepaperController extends PaperDefaultController
                 }
 
                 // **** filter reviewers list
-
-                // TODO: get this code out of the controller: move this to a model
-                // TODO: write a reviewers collection class ?
-
-                // remove reviewers who already have an accepted or pending invitation for this paper
-                foreach ($ignore_list as $uid) {
-                    unset($oReviewers[$uid]);
+                // a reviewer may hold one pending or accepted request of each type (#319):
+                // only the reviewers busy with every type are left out
+                $busyTypes = Episciences_User_AssignmentsManager::requestTypesInProgressByReviewer((int)$oPaper->getDocid());
+                $ignore_list = [];
+                foreach (self::reviewersBusyWithEveryType($busyTypes, $requestTypes) as $busyUid) {
+                    $ignore_list[$busyUid] = $busyUid;
+                    unset($oReviewers[$busyUid]);
                 }
+                $this->view->js_busy_request_types = Zend_Json::encode((object)$busyTypes);
 
                 // prepare js array
                 /** @var Episciences_Reviewer $reviewer */
@@ -1237,7 +1322,7 @@ class AdministratepaperController extends PaperDefaultController
                 }
 
                 $this->view->js_reviewers = Zend_Json::encode($reviewers);
-                $this->view->js_invitations = Zend_Json::encode(array_keys($invitations));
+                $this->view->js_ignore_list = Zend_Json::encode(array_keys($ignore_list));
 
                 $this->view->reviewers = $oReviewers;
             }
@@ -1299,6 +1384,10 @@ class AdministratepaperController extends PaperDefaultController
 
             $this->view->js_review = Zend_Json::encode($review);
             $this->view->js_templates = Zend_Json::encode($templates);
+            $this->view->js_request_types = Zend_Json::encode($this->requestTypesForInvitationForm($requestTypes, $oReview));
+            $this->view->js_templates_by_request_type = Zend_Json::encode(
+                (object)InvitationTemplates::ofCurrentJournal()->forTypes($requestTypes)
+            );
             $this->view->templates = $oTemplates;
             $this->view->available_languages = Zend_Json::encode(Episciences_Tools::getLanguages());
             $this->view->siteLocale = Episciences_Tools::getLocale();
@@ -1308,7 +1397,10 @@ class AdministratepaperController extends PaperDefaultController
 
             // reviewer invitation form
             $page = ($request->getPost('page')) ?: null;
-            $params = ['vid' => $vid, 'special_issue' => $special_issue];
+            $params = ['vid' => $vid, 'special_issue' => $special_issue, 'request_types' => []];
+            foreach ($requestTypes as $requestType) {
+                $params['request_types'][(int)$requestType->getId()] = $requestType->getLabel(Episciences_Tools::getLocale());
+            }
             if ($oReview->getSetting('rating_deadline_min')) {
                 $params['rating_deadline_min'] = Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline_min'));
             }
@@ -1683,22 +1775,23 @@ class AdministratepaperController extends PaperDefaultController
             $reviewer['firstname'] = '';
         }
 
-        // A reviewer whose invitation for this paper is pending or accepted is not invited again
-        // (a new temporary account, without id yet, by its e-mail address)
-        $isTmpReviewer = (int)($reviewer['invitation_type'] ?? 0) === 3;
-        $reviewerId = (int)($reviewer['id'] ?? 0);
-        if ($this->hasOngoingReviewerInvitation($paper, $reviewerId, $isTmpReviewer, is_string($reviewer['email'] ?? null) ? $reviewer['email'] : '')) {
-            AppRegistry::getMonoLogger()?->warning(sprintf(
-                'Reviewer invitation refused for document #%d: %s already has a pending or accepted invitation (sender %d)',
-                $paper->getDocid(),
-                $reviewerId > 0 ? 'user ' . ($isTmpReviewer ? 'tmp_' : '') . $reviewerId : 'the address of the new temporary account',
-                (int)Episciences_Auth::getUid()
-            ));
-            $message = $translator->translate('Ce relecteur a déjà une invitation en attente ou acceptée pour cet article.');
+        // review request type (#319): a type of the journal, enabled, that the reviewer does not already hold on this paper
+        $requestTypes = $this->enabledRequestTypes();
+        $requestType = self::invitationRequestType($request->getPost('request_type_id'), $requestTypes);
+        $invitedUid = (int)($reviewer['id'] ?? 0);
+        $isBusy = $requestType !== null && $invitedUid > 0 && (int)($reviewer['invitation_type'] ?? 0) !== 3 &&
+            in_array(
+                (int)$requestType->getId(),
+                Episciences_User_AssignmentsManager::currentReviewerRequestTypeIds($invitedUid, (int)$paper->getDocid(), false, false),
+                true
+            );
+
+        if ($requestType === null || $isBusy) {
+            $message = $requestType === null
+                ? $translator->translate("Ce type de demande n'est pas disponible.")
+                : $translator->translate('Ce relecteur a déjà une demande de ce type en cours pour cet article.');
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-            if (!empty($referer)) {
-                $this->_helper->redirector->gotoUrl($referer);
-            }
+            $this->_helper->redirector->gotoUrl($referer);
             return false;
         }
 
@@ -1723,7 +1816,8 @@ class AdministratepaperController extends PaperDefaultController
             'item' => Episciences_User_Assignment::ITEM_PAPER,
             'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
             'status' => Episciences_User_Assignment::STATUS_PENDING,
-            'deadline' => $request->getPost('deadline')
+            'deadline' => $request->getPost('deadline'),
+            'request_type_id' => $requestType->getId(),
         ];
         $assignments = Episciences_UsersManager::assign($uid, $params);
         /** @var Episciences_User_Assignment $oAssignment */
@@ -1824,7 +1918,8 @@ class AdministratepaperController extends PaperDefaultController
                 'tmp_user' => $oAssignment->isTmp_user(),
                 'uid' => $uid,
                 'pool' => ($vid) ? $vid : null,
-                'user' => ['fullname' => $reviewer['full_name']]]);
+                'user' => ['fullname' => $reviewer['full_name']],
+                'request_type' => ['id' => $requestType->getId(), 'code' => $requestType->getCode(), 'labels' => $requestType->getLabels()]]);
         if (!$log) {
             $errors[] = "Le log de l'invitation de relecteur n'a pas pu être enregistré";
         }
@@ -3576,7 +3671,8 @@ class AdministratepaperController extends PaperDefaultController
             'item' => Episciences_User_Assignment::ITEM_PAPER,
             'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
             'status' => Episciences_User_Assignment::STATUS_CANCELLED,
-            'tmp_user' => $oAssignment->isTmp_user()
+            'tmp_user' => $oAssignment->isTmp_user(),
+            'request_type_id' => $oAssignment->getRequest_type_id(),
         ];
         /** @var Episciences_User_Assignment $newAssignment */
         $newAssignment = Episciences_UsersManager::unassign($oAssignment->getUid(), $params)[0];

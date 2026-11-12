@@ -104,6 +104,11 @@ class Episciences_User_Assignment
      */
     protected $_deadline;
 
+    /**
+     * Review request type (#319): set on every reviewer row, null for the other roles
+     */
+    protected ?int $_request_type_id = null;
+
 
     // METHODES ******************************************************************
 
@@ -148,11 +153,16 @@ class Episciences_User_Assignment
             'TMP_USER' => $this->isTmp_user(),
             'ROLEID' => $this->getRoleid(),
             'STATUS' => $this->getStatus(),
-            'DEADLINE' => $this->getDeadline()
+            'DEADLINE' => $this->getDeadline(),
+            'REQUEST_TYPE_ID' => $this->getRequest_type_id(),
         ];
 
         // Update
         if ($this->getId()) {
+            if ($values['REQUEST_TYPE_ID'] === null) {
+                // an object built without its type must not erase the type of the row
+                unset($values['REQUEST_TYPE_ID']);
+            }
             // We preserve the existing value of 'WHEN' @see RT#294893
             $db->update(T_ASSIGNMENTS, $values, ['ID = ?' => $this->getId()]);
             Episciences_User_AssignmentsManager::getCachePool()->clear();
@@ -222,6 +232,17 @@ class Episciences_User_Assignment
         return $this->_uid;
     }
 
+
+    public function getRequest_type_id(): ?int
+    {
+        return $this->_request_type_id;
+    }
+
+    public function setRequest_type_id(int|string|null $requestTypeId): self
+    {
+        $this->_request_type_id = ($requestTypeId === null || $requestTypeId === '') ? null : (int)$requestTypeId;
+        return $this;
+    }
 
     public function getFrom_uid(): ?int
     {

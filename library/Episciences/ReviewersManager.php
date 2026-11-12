@@ -3,6 +3,27 @@
 class Episciences_ReviewersManager
 {
     /**
+     * The requests of the reviewers: one [reviewer, request type id] pair for each type they hold (#319);
+     * a reviewer without a known type gives one pair with a null type (a review report)
+     * @param array<int|string, Episciences_Reviewer> $reviewers
+     * @return list<array{0: Episciences_Reviewer, 1: int|null}>
+     */
+    public static function reviewerRequests(array $reviewers): array
+    {
+        $requests = [];
+
+        foreach ($reviewers as $reviewer) {
+            $requestTypeIds = $reviewer instanceof Episciences_Reviewer ? $reviewer->getRequestTypeIds() : [];
+
+            foreach ($requestTypeIds ?: [null] as $requestTypeId) {
+                $requests[] = [$reviewer, $requestTypeId];
+            }
+        }
+
+        return $requests;
+    }
+
+    /**
      * Renvoie la liste des relecteurs d'une revue
      * @param array $settings
      * @return Episciences_User[]

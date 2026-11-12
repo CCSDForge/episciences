@@ -61,6 +61,10 @@ $description .= ' - ' . $this->escape($this->paper->getTitle());
     var reviewers = <?php if ($this->js_reviewers) : ?><?php echo $this->js_reviewers; ?><?php else:?>null<?php endif;?>;
     var ignore_list = <?php if ($this->js_ignore_list) : ?><?php echo $this->js_ignore_list; ?><?php else:?>null<?php endif;?>;
     var templates = <?php if ($this->js_templates) : ?><?php echo $this->js_templates; ?><?php else:?>null<?php endif;?>;
+    // review request types (#319)
+    var request_types = <?= $this->js_request_types ?: '[]' ?>;
+    var templates_by_request_type = <?= $this->js_templates_by_request_type ?: 'null' ?>;
+    var busy_request_types = <?= $this->js_busy_request_types ?: '{}' ?>;
     var paper = <?php if ($this->js_paper) : ?><?php echo $this->js_paper; ?><?php else:?>null<?php endif;?>;
     var uid = <?php if ($this->js_uid) : ?><?php echo $this->js_uid; ?><?php else:?>null<?php endif;?>;
     var available_languages = <?php echo $this->available_languages?>;

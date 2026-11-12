@@ -452,7 +452,8 @@ class Episciences_PapersManager
         // of its T_TMP_USER row, which can be the UID of an account.
         $select->where('TMP_USER = ?', 0);
 
-        $select->group(['ITEMID', 'UID', 'ROLEID']);
+        // a reviewer may hold one request of each type (#319); REQUEST_TYPE_ID is NULL for the other roles
+        $select->group(['ITEMID', 'UID', 'ROLEID', 'REQUEST_TYPE_ID']);
         return $select;
     }
 
@@ -489,7 +490,8 @@ class Episciences_PapersManager
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', $roleId)
             ->where('RVID = ?', RVID)
-            ->group(['ITEMID', 'UID', 'TMP_USER']);
+            // a reviewer may hold one request of each type (#319); REQUEST_TYPE_ID is NULL for the other roles
+            ->group(['ITEMID', 'UID', 'TMP_USER', 'REQUEST_TYPE_ID']);
 
         return $db->select()
             ->distinct()
@@ -1148,7 +1150,8 @@ class Episciences_PapersManager
                     'UID' => 'a.UID',
                     'ASSIGNMENT_STATUS' => 'a.STATUS',
                     'ASSIGNMENT_DATE' => 'a.WHEN',
-                    'ASSIGNMENT_DEADLINE' => 'a.DEADLINE'
+                    'ASSIGNMENT_DEADLINE' => 'a.DEADLINE',
+                    'REQUEST_TYPE_ID' => 'a.REQUEST_TYPE_ID'
                 ]
             )
             ->join(
@@ -1178,27 +1181,69 @@ class Episciences_PapersManager
      * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
+    /**
+     * Reviewers holding at least one request with one of the statuses, from the latest row of each of their requests
+     *
+     * A reviewer may hold one request of each type (#319). The reviewer status is the most advanced status of their
+     * selected requests (active, then pending, then the first one found); REQUEST_TYPE_IDS lists their types.
+     *
+     * @param list<array<string, mixed>> $requestRows latest row of each (reviewer, request type)
+     * @param list<string> $statuses
+     * @return array<int, array{UID: int, STATUS: string, WHEN: string, REQUEST_TYPE_IDS: list<int>}> by UID
+     */
+    public static function reviewersByRequestStatus(array $requestRows, array $statuses): array
+    {
+        $priority = [Episciences_User_Assignment::STATUS_ACTIVE => 2, Episciences_User_Assignment::STATUS_PENDING => 1];
+        $reviewers = [];
+
+        foreach ($requestRows as $row) {
+            if (!in_array($row['STATUS'], $statuses, true)) {
+                continue;
+            }
+
+            $uid = (int)$row['UID'];
+            $reviewer = $reviewers[$uid] ?? ['UID' => $uid, 'STATUS' => $row['STATUS'], 'WHEN' => $row['WHEN'], 'REQUEST_TYPE_IDS' => []];
+
+            if (($priority[$row['STATUS']] ?? 0) > ($priority[$reviewer['STATUS']] ?? 0)) {
+                $reviewer['STATUS'] = $row['STATUS'];
+            }
+
+            if ((string)$row['WHEN'] > (string)$reviewer['WHEN']) {
+                $reviewer['WHEN'] = $row['WHEN'];
+            }
+
+            if ($row['REQUEST_TYPE_ID'] !== null) {
+                $reviewer['REQUEST_TYPE_IDS'][] = (int)$row['REQUEST_TYPE_ID'];
+            }
+
+            $reviewers[$uid] = $reviewer;
+        }
+
+        return $reviewers;
+    }
+
     public static function getReviewers($docId, $status = null, bool $getCASdata = false, int $vid = null): array
     {
         $reviewers = [];
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         //recuperation des relecteurs classiques
-        // the latest assignment of each reviewer (highest ID: two assignments can have the same date)
+        // the latest assignment of each request of each reviewer (highest ID: two assignments can have the same date);
+        // a reviewer may hold one request of each type (#319)
         $subquery = $db->select()
-            ->from(['z' => T_ASSIGNMENTS], ['z.UID', 'LAST_ID' => new Zend_Db_Expr('MAX(z.ID)')])
+            ->from(['z' => T_ASSIGNMENTS], ['z.UID', 'z.REQUEST_TYPE_ID', 'LAST_ID' => new Zend_Db_Expr('MAX(z.ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('ROLEID = ?', 'reviewer')
             ->where('TMP_USER = ?', 0)
-            ->group('z.UID');
+            ->group(['z.UID', 'z.REQUEST_TYPE_ID']);
 
         if (is_numeric($vid)) {
             $subquery->joinLeft(['rp' => T_REVIEWER_POOL], 'z.UID = rp.UID AND rp.VID = ' . $vid, []);
         }
 
         $select = $db->select()
-            ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
+            ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN', 'REQUEST_TYPE_ID'])
             ->joinLeft(['u' => T_USERS], 'a.UID = u.UID', ['LANGUEID', 'SCREEN_NAME'])
             //->joinUsing(T_USERS, 'UID', array('LANGUEID', 'SCREEN_NAME'))
             ->join(['b' => $subquery], 'a.ID = b.LAST_ID', [])
@@ -1207,7 +1252,7 @@ class Episciences_PapersManager
             ->where('TMP_USER = ?', 0)
             ->where('ROLEID = ?', 'reviewer');
 
-        $result = $db->fetchAssoc($select);
+        $requestRows = $db->fetchAll($select);
 
         //recuperation des relecteurs qui n'ont pas encore de compte
         if ($status === Episciences_User_Assignment::STATUS_PENDING || (is_array($status) && in_array(Episciences_User_Assignment::STATUS_PENDING, $status, true))) {
@@ -1230,21 +1275,13 @@ class Episciences_PapersManager
             $tmp_reviewers = $db->fetchAssoc($select);
         }
 
-        if ($result) {
-
-            // Filtrage des relecteurs en fonction de leur statut **************************************************
-            if (!$status) {
-                // Par défaut, on ne renvoie que les relecteurs actifs
-                $status = [Episciences_User_Assignment::STATUS_ACTIVE];
-            }
-
-            if (!empty($status)) {
-                $result = array_filter($result, static function ($user) use ($status) {
-                    return in_array($user['STATUS'], $status, true);
-                });
-            }
-
+        // Filtrage des relecteurs en fonction de leur statut **************************************************
+        if (!$status) {
+            // Par défaut, on ne renvoie que les relecteurs actifs
+            $status = [Episciences_User_Assignment::STATUS_ACTIVE];
         }
+
+        $result = self::reviewersByRequestStatus($requestRows, (array)$status);
 
         // Récupération d'un tableau d'objets "Reviewer"
         if ($result || (isset($tmp_reviewers) && !empty($tmp_reviewers))) {
@@ -1259,6 +1296,7 @@ class Episciences_PapersManager
 
                 $reviewer->setWhen($user['WHEN']);
                 $reviewer->setStatus($user['STATUS']);
+                $reviewer->setRequestTypeIds($user['REQUEST_TYPE_IDS']);
                 $reviewers[$uid] = $reviewer;
             }
 
@@ -1395,6 +1433,19 @@ class Episciences_PapersManager
             'value' => Episciences_Review::forYourInformation($docId, null, true),
             'class' => 'form-control'
         ]);
+
+        // review request type (#319): selects the e-mail template and the default deadline
+        if (is_array($params) && !empty($params['request_types'])) {
+            $form->addElement('select', 'request_type_id', [
+                'label' => 'Type de demande',
+                'class' => 'form-control',
+                'required' => true,
+                'multiOptions' => $params['request_types'],
+                'description' => 'Le message et la date limite proposés dépendent du type de demande.',
+                'aria-describedby' => 'request_type_id-description',
+            ]);
+            $form->getElement('request_type_id')?->getDecorator('Description')?->setOption('id', 'request_type_id-description');
+        }
 
         $form->addElement('date', 'deadline', [
             'label' => 'Date limite de rendu de la relecture',

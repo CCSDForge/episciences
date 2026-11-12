@@ -437,7 +437,8 @@ function setInvitationValues(user, type) {
     user.invitation_type = type;
     $('#reviewer').val(JSON.stringify(user));
 
-    let tpl = templates[type];
+    const requestType = applyRequestType(user);
+    let tpl = invitationTemplate(requestType, type);
     let recipient = user.full_name + ' <' + user.email + '>';
     let subject = replaceTags(tpl.subject[locale], user, locale);
     let body = replaceTags(tpl.body[locale], user, locale, true);
@@ -968,5 +969,106 @@ if (typeof module !== 'undefined' && module.exports) {
         ajaxAlertFail,
         translateInvitationDeadline,
         submit,
+        requestTypeSelect,
+        applyRequestType,
+        invitationTemplate,
     };
 }
+
+// Review request types (#319) ***********************************************************************************
+
+/**
+ * The request type select of the invitation form
+ * @returns {HTMLSelectElement|null}
+ */
+function requestTypeSelect() {
+    return document.querySelector(
+        '#invitation-form select[name="request_type_id"]'
+    );
+}
+
+/**
+ * Disables the types of the pending or accepted requests of the reviewer, selects an available type,
+ * then applies its default deadline
+ * @param user the invited person
+ * @returns {object|null} the selected request type (id, code, label, rating_deadline)
+ */
+function applyRequestType(user) {
+    const select = requestTypeSelect();
+
+    if (
+        !select ||
+        typeof request_types === 'undefined' ||
+        !Array.isArray(request_types)
+    ) {
+        return null;
+    }
+
+    const busyByReviewer =
+        typeof busy_request_types !== 'undefined' && busy_request_types
+            ? busy_request_types
+            : {};
+    const busy = (user.id && busyByReviewer[user.id]) || [];
+    let firstAvailable = null;
+
+    for (const option of select.options) {
+        option.disabled = busy.includes(Number(option.value));
+        if (!option.disabled && firstAvailable === null) {
+            firstAvailable = option.value;
+        }
+    }
+
+    if (
+        select.selectedOptions.length === 0 ||
+        select.selectedOptions[0].disabled
+    ) {
+        if (firstAvailable !== null) {
+            select.value = firstAvailable;
+        }
+    }
+
+    const requestType =
+        request_types.find(rt => String(rt.id) === select.value) || null;
+
+    if (requestType) {
+        review['rating_deadline'] = requestType.rating_deadline;
+        $deadline_id.val(requestType.rating_deadline);
+    }
+
+    return requestType;
+}
+
+/**
+ * Invitation template of the request type for the account state of the invited person
+ * @param requestType selected request type, or null
+ * @param accountState 1: known reviewer, 2: existing account, 3: no account
+ */
+function invitationTemplate(requestType, accountState) {
+    const byType =
+        requestType &&
+        typeof templates_by_request_type !== 'undefined' &&
+        templates_by_request_type
+            ? templates_by_request_type[requestType.id]
+            : null;
+
+    return (byType && byType[accountState]) || templates[accountState];
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const select = requestTypeSelect();
+
+    if (!select) {
+        return;
+    }
+
+    select.addEventListener('change', () => {
+        const reviewerField = document.getElementById('reviewer');
+
+        if (!reviewerField || !reviewerField.value) {
+            return;
+        }
+
+        const user = JSON.parse(reviewerField.value);
+        setInvitationValues(user, user.invitation_type);
+    });
+});

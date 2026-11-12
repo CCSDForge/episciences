@@ -1209,7 +1209,10 @@ class PaperDefaultController extends DefaultController
 
         // paper assignment
         /** @var Episciences_User_Assignment $newAssignment */
-        $newAssignment = $user->assign($assignment->getItemid(), ['deadline' => $assignment->getDeadline()])[0];
+        $newAssignment = $user->assign($assignment->getItemid(), [
+            'deadline' => $assignment->getDeadline(),
+            'request_type_id' => $assignment->getRequest_type_id(),
+        ])[0];
         $newAssignment->setInvitation_id($oInvitation->getId());
         $newAssignment->save();
         $itemId = $assignment->getItemid();
@@ -1456,7 +1459,8 @@ class PaperDefaultController extends DefaultController
                     'item' => Episciences_User_Assignment::ITEM_PAPER,
                     'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
                     'status' => Episciences_User_Assignment::STATUS_CANCELLED,
-                    'tmp_user' => $oAssignment->isTmp_user()
+                    'tmp_user' => $oAssignment->isTmp_user(),
+                    'request_type_id' => $oAssignment->getRequest_type_id(),
                 ];
 
                 /** @var Episciences_User_Assignment $newAssignment */

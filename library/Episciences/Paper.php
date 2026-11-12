@@ -14,6 +14,7 @@ use Episciences\Paper\Spdx\LicenseManager;
 use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
+use Episciences\Reviewer\RequestTypeRepository;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 use Psr\Log\LogLevel;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -2836,22 +2837,37 @@ class Episciences_Paper
             return false;
         }
 
-        $oAssignment = new Episciences_User_Assignment([
-            'uid' => $uid,
-            'item' => Episciences_User_Assignment::ITEM_PAPER,
-            'itemid' => $this->getDocid(),
-            'roleid' => $roleId,
-            'status' => Ccsd_Tools::ifsetor($status, Episciences_User_Assignment::STATUS_INACTIVE)
-        ]);
+        // a reviewer may hold one request of each type (#319): each request in progress is ended
+        $requestTypeIds = [];
 
-        $oAssignment->setRvid($this->getRvid());
-
-        if ($oAssignment->save()) {
-            return $oAssignment->getId();
+        if ($roleId === Episciences_User_Assignment::ROLE_REVIEWER) {
+            $requestTypeIds = Episciences_User_AssignmentsManager::currentReviewerRequestTypeIds((int)$uid, (int)$this->getDocid())
+                // nothing in progress: the row is a review report, as before the types
+                ?: [(new RequestTypeRepository())->findFullReport((int)$this->getRvid())?->getId()];
         }
 
-        throw new Zend_Exception("Failed to save assignment.");
+        $aid = false;
 
+        foreach ($requestTypeIds ?: [null] as $requestTypeId) {
+            $oAssignment = new Episciences_User_Assignment([
+                'uid' => $uid,
+                'item' => Episciences_User_Assignment::ITEM_PAPER,
+                'itemid' => $this->getDocid(),
+                'roleid' => $roleId,
+                'status' => Episciences_User_Assignment::STATUS_INACTIVE,
+                'request_type_id' => $requestTypeId,
+            ]);
+
+            $oAssignment->setRvid($this->getRvid());
+
+            if (!$oAssignment->save()) {
+                throw new Zend_Exception("Failed to save assignment.");
+            }
+
+            $aid = $oAssignment->getId();
+        }
+
+        return $aid;
     }
 
     /**

@@ -98,7 +98,7 @@ class ReviewerController extends PaperDefaultController
 
         $this->view->jQuery()->addJavascriptFile("/js/reviewer/invitation.js");
 
-        $checkIsAlreadyInvited = $this->checkIsAlreadyInvited($paper);
+        $checkIsAlreadyInvited = $this->checkIsAlreadyInvited($paper, $assignment->getRequest_type_id());
         $isAlreadyInvited = $checkIsAlreadyInvited['isAlreadyInvited'] ?? false;
 
         $this->view->isAlreadyInvited = $isAlreadyInvited;
@@ -654,7 +654,8 @@ class ReviewerController extends PaperDefaultController
             'item' => Episciences_User_Assignment::ITEM_PAPER,
             'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
             'status' => Episciences_User_Assignment::STATUS_DECLINED,
-            'tmp_user' => $assignment->isTmp_user()
+            'tmp_user' => $assignment->isTmp_user(),
+            'request_type_id' => $assignment->getRequest_type_id(),
         ];
 
         $newAssignment = Episciences_UsersManager::unassign($uid, $params)[0];
@@ -1070,13 +1071,19 @@ class ReviewerController extends PaperDefaultController
      * @throws Zend_Db_Statement_Exception
      */
 
-    private function checkIsAlreadyInvited(Episciences_Paper $paper): array
+    private function checkIsAlreadyInvited(Episciences_Paper $paper, ?int $requestTypeId = null): array
     {
 
         $result ['isAlreadyInvited'] = false;
 
+        // a reviewer may hold one request of each type (#319): only a request of the same type counts
+        $sameType = static fn(?int $typeId): bool => $requestTypeId === null || $typeId === null || $typeId === $requestTypeId;
+
         $reviewers = $paper->getReviewers();
-        $isReviewer = isset($reviewers[Episciences_Auth::getUid()]);
+        $reviewer = $reviewers[Episciences_Auth::getUid()] ?? null;
+        $isReviewer = $reviewer instanceof Episciences_Reviewer && (
+            $requestTypeId === null || $reviewer->getRequestTypeIds() === [] || in_array($requestTypeId, $reviewer->getRequestTypeIds(), true)
+        );
 
         if ($isReviewer) {
             $ratingUrlUrl = $this->view->url([
@@ -1098,7 +1105,9 @@ class ReviewerController extends PaperDefaultController
 
         foreach ($paperInvitations as $arrayInvitation) {
 
-            if ((int)$arrayInvitation['UID'] === Episciences_Auth::getUid()) {
+            $invitationTypeId = isset($arrayInvitation['REQUEST_TYPE_ID']) ? (int)$arrayInvitation['REQUEST_TYPE_ID'] : null;
+
+            if ((int)$arrayInvitation['UID'] === Episciences_Auth::getUid() && $sameType($invitationTypeId)) {
 
                 /** @var Episciences_User_Invitation $pendingInvitation */
                 $pendingInvitation = Episciences_User_InvitationsManager::find(['ID' => $arrayInvitation['INVITATION_ID']]);

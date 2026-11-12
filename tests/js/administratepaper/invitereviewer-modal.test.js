@@ -611,6 +611,111 @@ describe('invitereviewer-modal.js Test Suite', () => {
         });
     });
 
+    describe('review request types (#319)', () => {
+        const addRequestTypeSelect = () => {
+            document.getElementById('invitation-form').innerHTML = `
+                <select name="request_type_id">
+                    <option value="10">Review report</option>
+                    <option value="11">Quick opinion</option>
+                    <option value="12">Revised version check</option>
+                </select>`;
+            return moduleUnderTest.requestTypeSelect();
+        };
+
+        beforeEach(() => {
+            global.request_types = [
+                {
+                    id: 10,
+                    code: 'full_report',
+                    label: 'Review report',
+                    rating_deadline: '2026-09-01',
+                },
+                {
+                    id: 11,
+                    code: 'quick_opinion',
+                    label: 'Quick opinion',
+                    rating_deadline: '2026-07-15',
+                },
+                {
+                    id: 12,
+                    code: 'revision_check',
+                    label: 'Revised version check',
+                    rating_deadline: '2026-07-22',
+                },
+            ];
+            global.busy_request_types = { 7: [10] };
+            global.templates_by_request_type = {
+                11: {
+                    1: {
+                        subject: { fr: 'Avis rapide' },
+                        body: { fr: 'Corps avis rapide' },
+                    },
+                },
+            };
+        });
+
+        afterEach(() => {
+            delete global.request_types;
+            delete global.busy_request_types;
+            delete global.templates_by_request_type;
+            global.review.rating_deadline = '2026-07-22';
+        });
+
+        test('without the select, no type is applied', () => {
+            expect(moduleUnderTest.applyRequestType({ id: 7 })).toBeNull();
+        });
+
+        test('the types the reviewer already holds are disabled and an available one is selected', () => {
+            const select = addRequestTypeSelect();
+            select.value = '10';
+
+            const requestType = moduleUnderTest.applyRequestType({ id: 7 });
+
+            expect(select.options[0].disabled).toBe(true);
+            expect(select.options[1].disabled).toBe(false);
+            expect(select.value).toBe('11');
+            expect(requestType.code).toBe('quick_opinion');
+        });
+
+        test('the default deadline of the type is applied', () => {
+            const select = addRequestTypeSelect();
+            select.value = '12';
+
+            moduleUnderTest.applyRequestType({ id: 99 });
+
+            expect(document.getElementById('deadline-id').value).toBe(
+                '2026-07-22'
+            );
+            expect(global.review.rating_deadline).toBe('2026-07-22');
+        });
+
+        test('the template of the type is used, else the review report one', () => {
+            expect(
+                moduleUnderTest.invitationTemplate({ id: 11 }, 1).subject.fr
+            ).toBe('Avis rapide');
+            expect(moduleUnderTest.invitationTemplate({ id: 11 }, 2)).toBe(
+                global.templates[2]
+            );
+            expect(moduleUnderTest.invitationTemplate(null, 3)).toBe(
+                global.templates[3]
+            );
+        });
+
+        test('the invitation e-mail is the one of the selected type', () => {
+            const select = addRequestTypeSelect();
+            select.value = '11';
+
+            moduleUnderTest.setInvitationValues(
+                { id: 99, full_name: 'Rev', email: 'rev@example.com' },
+                1
+            );
+
+            expect(document.getElementById('subject').value).toBe(
+                'Avis rapide'
+            );
+        });
+    });
+
     describe('step UI Transitions', () => {
         test('step1 shows first step and hides second', () => {
             const step1 = document.getElementById('step-1');
