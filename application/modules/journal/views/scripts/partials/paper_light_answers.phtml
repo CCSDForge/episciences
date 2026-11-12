@@ -1,0 +1,53 @@
+<?php
+/**
+ * Answers given without an account to review requests (#319), for the editorial staff of the paper.
+ * Expected view vars: paper, answers (list of Episciences\Reviewer\LightAnswer).
+ */
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+?>
+<?php foreach ($this->answers as $answer) : ?>
+    <?php /** @var \Episciences\Reviewer\LightAnswer $answer */
+    if ($answer->isTmpUser()) {
+        $person = Episciences_TmpUsersManager::findById($answer->getUid());
+        if ($person) {
+            $person->generateScreen_name();
+        }
+    } else {
+        $person = new Episciences_User();
+        $person = $person->findWithCAS($answer->getUid()) ? $person : null;
+    }
+    $personName = $person ? (string)$person->getScreenName() : '';
+    $typeLabel = $this->requestTypeLabel($answer->getRequestTypeId(), (int)$paper->getRvid());
+    ?>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">
+                <?php if ($typeLabel !== '') : ?>
+                    <span class="label label-info"><span class="sr-only"><?= $this->escape($this->translate('Type de demande')) ?> : </span><?= $typeLabel ?></span>
+                <?php endif; ?>
+                <strong><?= $this->escape($personName) ?></strong>
+                <?php if ($answer->isTmpUser()) : ?>
+                    (<?= $this->escape($this->translate('compte temporaire')) ?>)
+                <?php endif; ?>
+                <span class="grey pull-right">
+                    <?= $this->Date($answer->getCreatedAt()->format('Y-m-d')) ?>
+                    <?php if ($answer->getUpdatedAt() !== null) : ?>
+                        (<?= $this->escape($this->translate('modifié le')) ?> <?= $this->Date($answer->getUpdatedAt()->format('Y-m-d')) ?>)
+                    <?php endif; ?>
+                </span>
+            </h3>
+        </div>
+        <div class="panel-body">
+            <?php if ($answer->getMessage() !== '') : ?>
+                <p><?= nl2br($this->escape($answer->getMessage())) ?></p>
+            <?php endif; ?>
+            <?php if ($answer->getFile() !== null) : ?>
+                <p>
+                    <span class="glyphicon glyphicon-paperclip" aria-hidden="true"></span>
+                    <a href="/file/lightanswer?aid=<?= (int)$answer->getAid() ?>"><?= $this->escape($answer->getFile()) ?></a>
+                </p>
+            <?php endif; ?>
+        </div>
+    </div>
+<?php endforeach; ?>

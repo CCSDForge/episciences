@@ -265,6 +265,19 @@ if ($this->citations !== '') {
     </div>
 <?php endif; ?>
 
+<?php // answers given without an account (#319): editorial staff only, as this page ************************* ?>
+<?php $lightAnswers = (new \Episciences\Reviewer\LightAnswerRepository())->findByDocid((int)$paper->getDocid()); ?>
+<?php if ($lightAnswers) : ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->escape($this->translate('Avis donnés sans compte')) ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?= $this->partial('partials/paper_light_answers.phtml', ['paper' => $paper, 'answers' => $lightAnswers]) ?>
+        </div>
+    </div>
+<?php endif; ?>
+
 <?php // reviewer comments ***************************************************** ?>
 <?php if ($this->reviewer_comments) : ?>
     <div class="panel panel-default collapsable">

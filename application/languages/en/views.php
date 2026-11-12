@@ -2972,4 +2972,5 @@ return array(
     "La personne invitée donne son avis (texte et fichier facultatif) directement depuis le lien reçu, sans créer de compte ni remplir de grille. L'avis n'est visible que par le comité éditorial." => "The invited person gives their opinion (text and optional file) directly from the link received, without creating an account or filling in a grid. The opinion is only visible to the editorial board.",
     "Avis reçu le" => "Opinion received on",
     "modifié le" => "edited on",
+    "Avis donnés sans compte" => "Opinions given without an account",
 );
