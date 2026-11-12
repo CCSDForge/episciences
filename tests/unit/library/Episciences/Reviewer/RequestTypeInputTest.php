@@ -111,4 +111,13 @@ final class RequestTypeInputTest extends TestCase
 
         self::assertEqualsCanonicalizing(['label_fr', 'label_en', 'code'], array_keys($input->getErrors()));
     }
+
+    public function testATypeCanBeAnsweredWithoutAnAccountButNeverTheReviewReport(): void
+    {
+        self::assertTrue((new RequestTypeInput($this->post(['light_answer' => '1']), self::RVID, self::LANGUAGES))->getType()?->isLightAnswer());
+        self::assertFalse((new RequestTypeInput($this->post(), self::RVID, self::LANGUAGES))->getType()?->isLightAnswer());
+
+        $fullReport = new RequestType(1, self::RVID, RequestType::CODE_FULL_REPORT, ['fr' => 'Rapport', 'en' => 'Report']);
+        self::assertFalse((new RequestTypeInput($this->post(['light_answer' => '1']), self::RVID, self::LANGUAGES, $fullReport))->getType()?->isLightAnswer());
+    }
 }

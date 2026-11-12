@@ -73,6 +73,11 @@ final class RequestType
             throw new InvalidArgumentException('The review report type cannot be disabled');
         }
 
+        if ($code === self::CODE_FULL_REPORT && $lightAnswer) {
+            // a review report is written with the rating grid, by a reviewer with an account
+            throw new InvalidArgumentException('The review report type cannot be answered without an account');
+        }
+
         $this->labels = self::cleanLabels($labels);
     }
 
@@ -139,10 +144,11 @@ final class RequestType
 
     /**
      * @param array<string, string> $labels
+     * @param bool|null $lightAnswer null: unchanged
      */
-    public function withSettings(array $labels, ?string $defaultDeadline, int $position, bool $enabled): self
+    public function withSettings(array $labels, ?string $defaultDeadline, int $position, bool $enabled, ?bool $lightAnswer = null): self
     {
-        return new self($this->id, $this->rvid, $this->code, $labels, $this->lightAnswer, $defaultDeadline, $position, $enabled);
+        return new self($this->id, $this->rvid, $this->code, $labels, $lightAnswer ?? $this->lightAnswer, $defaultDeadline, $position, $enabled);
     }
 
     /**

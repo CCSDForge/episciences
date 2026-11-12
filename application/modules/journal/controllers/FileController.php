@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Reviewer\LightAnswerRepository;
+
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Episciences\AppRegistry;
@@ -454,6 +456,51 @@ class FileController extends DefaultController
 
         if ($filepath === null) {
             $this->renderNotFound();
+            return;
+        }
+
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        $this->openFile($filepath);
+    }
+
+    /**
+     * File attached to an answer given without an account (#319): editorial staff of the paper only
+     */
+    public function lightanswerAction(): void
+    {
+        $request = $this->getRequest();
+        $aid = (int)$request->getParam('aid');
+        $answer = $aid > 0 ? (new LightAnswerRepository())->findByAid($aid) : null;
+        $paper = $answer !== null && $answer->getFile() !== null ? Episciences_PapersManager::get($answer->getDocid()) : null;
+
+        if ($answer === null || !$paper || $answer->getRvid() !== RVID) {
+            $this->renderNotFound();
+            return;
+        }
+
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+        $uid = Episciences_Auth::isLogged() ? Episciences_Auth::getUid() : null;
+
+        $isAllowed = Episciences_Rating_Report_Access::mayReadLightAnswer(
+            paper: $paper,
+            uid: $uid,
+            review: $review,
+            isSecretary: Episciences_Auth::isSecretary(),
+            isEditor: Episciences_Auth::isEditor(),
+            isCopyEditor: Episciences_Auth::isCopyEditor(),
+            hasConflict: $uid !== null && static::isConflictDetected($paper, $review)
+        );
+
+        // the stored file name only, confined to the folder of the answer
+        $filepath = $isAllowed
+            ? $this->resolveSafePath(rtrim(REVIEW_FILES_PATH . $answer->getDocid() . '/' . $answer->folder(), '/'), (string)$answer->getFile())
+            : null;
+
+        if ($filepath === null) {
+            // 404 rather than 403: the answer is not disclosed
+            $this->renderNotFound($isAllowed ? '' : 'light_answer_access');
             return;
         }
 

@@ -229,6 +229,26 @@ class Episciences_Rating_Report_Access
      * @param bool $isCopyEditor Whether the user is a copy editor (global role)
      * @return bool True if the user is editorial staff
      */
+    /**
+     * Whether the user may read an answer given without an account (#319): the editorial staff of the paper only,
+     * never the authors, and not when the user declared a conflict of interest
+     */
+    public static function mayReadLightAnswer(
+        Episciences_Paper $paper,
+        ?int $uid,
+        Episciences_Review $review,
+        bool $isSecretary,
+        bool $isEditor,
+        bool $isCopyEditor,
+        bool $hasConflict
+    ): bool {
+        if ($uid === null || $hasConflict) {
+            return false;
+        }
+
+        return self::isEditorialStaff($paper, $uid, $review, $isSecretary, $isEditor, $isCopyEditor);
+    }
+
     private static function isEditorialStaff(
         Episciences_Paper $paper,
         ?int $uid,

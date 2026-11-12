@@ -105,6 +105,12 @@ final class RequestTypeTest extends TestCase
         new RequestType(null, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report'], false, null, 1, false);
     }
 
+    public function testReviewReportTypeCannotBeAnsweredWithoutAnAccount(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new RequestType(null, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report'], true);
+    }
+
     public function testRowRoundTrip(): void
     {
         $type = new RequestType(7, self::RVID, 'phase_two', ['fr' => 'Phase 2 « détaillée »', 'en' => 'Phase two'], true, '1 month', 4, false);

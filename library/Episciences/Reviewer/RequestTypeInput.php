@@ -12,7 +12,7 @@ use InvalidArgumentException;
  * (messages to translate, by field name).
  *
  * Posted fields: code (new type only), label[<lang>], deadline + deadline_unit (both empty: journal setting),
- * position, enabled (absent: disabled).
+ * position, enabled (absent: disabled), light_answer (absent: answered with an account and the rating grid).
  */
 final class RequestTypeInput
 {
@@ -21,6 +21,8 @@ final class RequestTypeInput
     public const FIELD_DEADLINE = 'deadline';
     public const FIELD_POSITION = 'position';
     public const FIELD_ENABLED = 'enabled';
+    /** answered from the invitation link, without an account (#319); never for the review report */
+    public const FIELD_LIGHT_ANSWER = 'light_answer';
 
     /** @var array<string, string> */
     private array $errors = [];
@@ -40,6 +42,8 @@ final class RequestTypeInput
         $position = $this->position($post[self::FIELD_POSITION] ?? '');
         // the review report type stays enabled: it is the type of the requests made before the types existed
         $enabled = ($existing?->isFullReport() ?? false) || !empty($post[self::FIELD_ENABLED]);
+        $isFullReport = $existing?->isFullReport() ?? ($code === RequestType::CODE_FULL_REPORT);
+        $lightAnswer = !$isFullReport && !empty($post[self::FIELD_LIGHT_ANSWER]);
 
         if ($existing === null && (preg_match(RequestType::CODE_PATTERN, $code) !== 1 || in_array($code, RequestType::RESERVED_CODES, true))) {
             $this->errors[self::FIELD_CODE] = 'Le code doit commencer par une lettre minuscule et ne contenir que des lettres minuscules, des chiffres et des tirets bas (30 caractères au plus).';
@@ -51,8 +55,8 @@ final class RequestTypeInput
 
         try {
             $this->type = $existing !== null
-                ? $existing->withSettings($labels, $deadline, $position, $enabled)
-                : new RequestType(null, $rvid, $code, $labels, false, $deadline, $position, $enabled);
+                ? $existing->withSettings($labels, $deadline, $position, $enabled, $lightAnswer)
+                : new RequestType(null, $rvid, $code, $labels, $lightAnswer, $deadline, $position, $enabled);
         } catch (InvalidArgumentException) {
             $this->errors[self::FIELD_CODE] = "Ce type de demande n'a pas pu être enregistré.";
         }

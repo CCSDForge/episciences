@@ -123,6 +123,22 @@ $error = function (string $field) use ($errors): string {
         </div>
     </div>
 
+    <?php if ($isNew || !$type->isFullReport()) : ?>
+        <div class="form-group">
+            <div class="col-md-6 col-md-offset-3">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" name="light_answer" value="1"<?= !empty($values['light_answer']) ? ' checked' : '' ?> aria-describedby="light_answer-help">
+                        <?= $this->escape($this->translate("Réponse sans compte, depuis le lien de l'invitation")) ?>
+                    </label>
+                    <span id="light_answer-help" class="help-block">
+                        <?= $this->escape($this->translate("La personne invitée donne son avis (texte et fichier facultatif) directement depuis le lien reçu, sans créer de compte ni remplir de grille. L'avis n'est visible que par le comité éditorial.")) ?>
+                    </span>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="form-group">
         <div class="col-md-6 col-md-offset-3">
             <button type="submit" class="btn btn-primary"><?= $this->escape($this->translate('Enregistrer')) ?></button>

@@ -1,5 +1,13 @@
 <?php
 
+use Episciences\Files\File;
+use Episciences\Files\Uploader;
+use Episciences\Reviewer\LightAnswer;
+use Episciences\Reviewer\LightAnswerForm;
+use Episciences\Reviewer\LightAnswerRepository;
+use Episciences\Reviewer\RequestType;
+use Episciences\Reviewer\RequestTypeRepository;
+
 use Episciences\Reviewer\InvitationToken;
 use Episciences\Reviewer\InvitedAccountState;
 use Episciences\Security\AccessLog;
@@ -78,6 +86,13 @@ class ReviewerController extends PaperDefaultController
 
         // fetch reviewer answer (if there is one)
         $invitation->loadAnswer();
+
+        // a request answered without an account, from this link (#319)
+        $lightAnswerType = $this->lightAnswerType($assignment);
+        if ($lightAnswerType !== null) {
+            $this->lightAnswerProcess($request, $invitation, $assignment, $lightAnswerType);
+            return;
+        }
 
         $closedMessage = $this->closedInvitationMessage($invitation, $assignment);
 
@@ -783,6 +798,274 @@ class ReviewerController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
+    /**
+     * The review request type of the invitation when it is answered without an account (#319)
+     */
+    private function lightAnswerType(Episciences_User_Assignment $assignment): ?RequestType
+    {
+        $requestTypeId = $assignment->getRequest_type_id();
+        $requestType = $requestTypeId ? (new RequestTypeRepository())->findById($requestTypeId) : null;
+
+        return $requestType !== null && $requestType->isLightAnswer() && $requestType->getRvid() === (int)$assignment->getRvid()
+            ? $requestType
+            : null;
+    }
+
+    /**
+     * Answer without an account (#319): the invited person gives an opinion (message and/or file) or declines, from
+     * the invitation link; the opinion can be edited from the same link until the due date of the request
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_File_Transfer_Exception
+     * @throws Zend_Form_Exception
+     * @throws Zend_Mail_Exception
+     */
+    private function lightAnswerProcess(
+        Zend_Controller_Request_Http $request,
+        Episciences_User_Invitation $invitation,
+        Episciences_User_Assignment $assignment,
+        RequestType $requestType
+    ): void {
+        $this->view->invitation = $invitation;
+        $paper = Episciences_PapersManager::get($assignment->getItemid());
+        $answer = (new LightAnswerRepository())->findByAid((int)$invitation->getAid());
+        $error = $paper ? $this->lightAnswerError($invitation, $answer, $paper) : "Cette invitation n'existe pas !";
+
+        if ($error !== null) {
+            $this->view->displayInvitationDetails = $paper !== false && $paper !== null;
+            $this->view->errors = $error;
+            return;
+        }
+
+        $deadline = $assignment->getDeadline();
+        $isEditable = LightAnswer::isEditable($deadline !== null ? (string)$deadline : null, new DateTimeImmutable());
+        $form = LightAnswerForm::create($answer);
+        $refuseForm = $answer === null ? Episciences_ReviewersManager::refuseInvitationForm() : null;
+        $post = $request->isPost() ? $request->getPost() : [];
+
+        if ($post !== [] && $isEditable) {
+            if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+                $this->addSessionExpiredMessage();
+            } elseif (array_key_exists(LightAnswerForm::SUBMIT, $post)) {
+                if ($this->saveLightAnswer($form, $post, $answer, $invitation, $assignment, $paper, $requestType)) {
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
+                        ->addMessage($this->view->translate('Merci, votre avis a bien été transmis au comité éditorial.'));
+                    $this->redirect($this->invitationUrl($invitation));
+                    return;
+                }
+            } elseif ($refuseForm !== null && array_key_exists('submitrefuse', $post)) {
+                if ($refuseForm->isValid($post)) {
+                    $this->saveanswer($invitation, $assignment, $paper, array_merge($post, $refuseForm->getValues()));
+                    return;
+                }
+                Episciences_ReviewersManager::describeRefusalFormErrors($refuseForm);
+                $this->view->invalid_refuse_form = true;
+            }
+        }
+
+        $paper->setXslt($paper->getXml(), 'partial_paper');
+        $this->view->paper = $paper;
+        $this->view->lightAnswer = $answer;
+        $this->view->lightAnswerForm = $form;
+        $this->view->refuse_form = $refuseForm;
+        $this->view->isEditable = $isEditable;
+        $this->view->rating_deadline = $deadline;
+        $this->view->requestTypeLabel = $requestType->getLabel(Episciences_Tools::getLocale());
+        $this->view->csrfToken = Episciences_Csrf_Helper::getSessionToken();
+        $this->renderScript('reviewer/light_answer.phtml');
+    }
+
+    /**
+     * Why the light answer page cannot be used, null when it can
+     */
+    private function lightAnswerError(Episciences_User_Invitation $invitation, ?LightAnswer $answer, Episciences_Paper $paper): ?string
+    {
+        if ($invitation->isCancelled()) {
+            return "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article.";
+        }
+
+        // declined, or accepted before the type became a light answer type
+        if ($answer === null && $invitation->isAnswered()) {
+            return "Il apparaît qu'une réponse a déjà été transmise.";
+        }
+
+        if ($answer === null && $invitation->hasExpired()) {
+            return 'Cette invitation a expiré.';
+        }
+
+        return $answer === null ? $this->checkPaperStatus($paper) : null;
+    }
+
+    /**
+     * Saves the posted opinion; the first one accepts the invitation and informs the editorial committee
+     * @param array<string, mixed> $post
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_File_Transfer_Exception
+     * @throws Zend_Form_Exception
+     * @throws Zend_Mail_Exception
+     */
+    private function saveLightAnswer(
+        Zend_Form $form,
+        array $post,
+        ?LightAnswer $answer,
+        Episciences_User_Invitation $invitation,
+        Episciences_User_Assignment $assignment,
+        Episciences_Paper $paper,
+        RequestType $requestType
+    ): bool {
+        if (!$form->isValid($post)) {
+            $this->view->lightAnswerErrors = true;
+            return false;
+        }
+
+        $aid = (int)$invitation->getAid();
+        $folderPath = REVIEW_FILES_PATH . $paper->getDocid() . '/reports/light_' . $aid . '/';
+        $file = $answer?->getFile();
+        $uploaded = $this->uploadLightAnswerFile($folderPath);
+
+        if ($uploaded !== null) {
+            // one file per answer: a new file replaces the former one
+            if ($file !== null && $file !== $uploaded && is_file($folderPath . $file)) {
+                unlink($folderPath . $file);
+            }
+            $file = $uploaded;
+        }
+
+        $message = LightAnswer::cleanMessage($form->getValue(LightAnswerForm::MESSAGE));
+
+        if ($message === '' && $file === null) {
+            $this->view->lightAnswerMissing = true;
+            return false;
+        }
+
+        $now = new DateTimeImmutable();
+        $repository = new LightAnswerRepository();
+
+        if ($answer !== null) {
+            $repository->save($answer->edited($message, $file, $now));
+            return true;
+        }
+
+        $answer = $repository->save(new LightAnswer(
+            null, $aid, (int)$paper->getRvid(), (int)$paper->getDocid(), (int)$requestType->getId(),
+            (int)$assignment->getUid(), (bool)$assignment->isTmp_user(), $message, $file, $now
+        ));
+        $this->acceptWithoutAccount($invitation, $assignment, $paper);
+        $this->notifyLightAnswer($answer, $assignment, $paper, $folderPath);
+
+        return true;
+    }
+
+    /**
+     * @return string|null name of the uploaded file, null when none was sent
+     * @throws Zend_File_Transfer_Exception
+     */
+    private function uploadLightAnswerFile(string $folderPath): ?string
+    {
+        if (empty($_FILES[LightAnswerForm::FILE]['size'])) {
+            return null;
+        }
+
+        $info = (new Uploader($folderPath))->upload()->getInfo();
+        $uploaded = $info[Uploader::UPLOADED_FILES_KEY][LightAnswerForm::FILE] ?? null;
+
+        return $uploaded instanceof File ? $uploaded->getName() : null;
+    }
+
+    /**
+     * Accepts the invitation without an account: the request is in progress, and done once answered (#319)
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     */
+    private function acceptWithoutAccount(Episciences_User_Invitation $invitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper): void
+    {
+        $invitationAnswer = new Episciences_User_InvitationAnswer();
+        $invitationAnswer->setId($invitation->getId());
+        $invitationAnswer->setAnswer(Episciences_User_InvitationAnswer::ANSWER_YES);
+        $invitationAnswer->save();
+
+        $invitation->setStatus($invitation::STATUS_ACCEPTED);
+        $invitation->save();
+
+        /** @var Episciences_User_Assignment $newAssignment */
+        $newAssignment = Episciences_UsersManager::assign($assignment->getUid(), [
+            'rvid' => $assignment->getRvid(),
+            'itemid' => $assignment->getItemid(),
+            'item' => Episciences_User_Assignment::ITEM_PAPER,
+            'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
+            'tmp_user' => $assignment->isTmp_user(),
+            'deadline' => $assignment->getDeadline(),
+            'request_type_id' => $assignment->getRequest_type_id(),
+        ])[0];
+        $newAssignment->setInvitation_id($invitation->getId());
+        $newAssignment->save();
+
+        $paper->log(Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED, null, [
+            'invitation_answer_id' => $invitationAnswer->getId(),
+            'invitation_id' => $invitation->getId(),
+            'assignment_id' => $newAssignment->getId(),
+            'light_answer' => true,
+            'user' => ['fullname' => $this->invitedScreenName($assignment)],
+        ]);
+    }
+
+    private function invitedScreenName(Episciences_User_Assignment $assignment): string
+    {
+        $user = $assignment->isTmp_user() ? Episciences_TmpUsersManager::findById($assignment->getUid()) : new Episciences_User();
+
+        if ($user instanceof Episciences_User_Tmp) {
+            $user->generateScreen_name();
+            return (string)$user->getScreenName();
+        }
+
+        return ($user instanceof Episciences_User && $user->findWithCAS($assignment->getUid())) ? (string)$user->getScreenName() : '';
+    }
+
+    /**
+     * Informs the editors of the paper of a new answer, with the message and the file
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    private function notifyLightAnswer(LightAnswer $answer, Episciences_User_Assignment $assignment, Episciences_Paper $paper, string $folderPath): void
+    {
+        $recipients = $paper->getEditors(true, true);
+        Episciences_Review::checkReviewNotifications($recipients);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+        $cc = $paper->extractCCRecipients($recipients);
+
+        if (empty($recipients)) {
+            $recipients = $cc;
+            $cc = [];
+        }
+
+        $attachments = $answer->getFile() !== null ? [$answer->getFile() => $folderPath] : [];
+        $answerHtml = nl2br(htmlspecialchars($answer->getMessage(), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+        /** @var Episciences_User $recipient */
+        foreach ($recipients as $recipient) {
+            $locale = $recipient->getLangueid();
+            Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY, [
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $this->invitedScreenName($assignment),
+                Episciences_Mail_Tags::TAG_PAPER_RATING => $answerHtml,
+                Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $recipient->getUsername(),
+                Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $recipient->getScreenName(),
+                Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $recipient->getFullName(),
+                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
+                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
+                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
+                Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl((int)$paper->getDocid()),
+            ], $paper, null, $attachments, true, $cc, null);
+            $cc = [];
+        }
+    }
+
     private function answerProcess(
         Zend_Controller_Request_Http $request,
         Episciences_User_Invitation  $invitation,

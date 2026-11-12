@@ -144,7 +144,7 @@ class RequesttypeController extends Zend_Controller_Action
     }
 
     /**
-     * @return array{code: string, label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool}
+     * @return array{code: string, label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool}
      */
     private static function formValues(?RequestType $type): array
     {
@@ -159,13 +159,14 @@ class RequesttypeController extends Zend_Controller_Action
             'deadline_unit' => $deadline[1] ?? 'week',
             'position' => (string)($type?->getPosition() ?? 0),
             'enabled' => $type?->isEnabled() ?? true,
+            'light_answer' => $type?->isLightAnswer() ?? false,
         ];
     }
 
     /**
      * Posted values, shown again with the errors
      * @param array<string, mixed> $post
-     * @return array{code: string, label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool}
+     * @return array{code: string, label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool}
      */
     private static function postedValues(array $post, ?RequestType $type): array
     {
@@ -185,6 +186,7 @@ class RequesttypeController extends Zend_Controller_Action
             'deadline_unit' => $string($post[RequestTypeInput::FIELD_DEADLINE . '_unit'] ?? 'week'),
             'position' => $string($post[RequestTypeInput::FIELD_POSITION] ?? ''),
             'enabled' => ($type?->isFullReport() ?? false) || !empty($post[RequestTypeInput::FIELD_ENABLED]),
+            'light_answer' => !($type?->isFullReport() ?? false) && !empty($post[RequestTypeInput::FIELD_LIGHT_ANSWER]),
         ];
     }
 

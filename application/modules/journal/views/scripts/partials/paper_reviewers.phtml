@@ -10,6 +10,8 @@ $action = $request->getActionName();
 $url = $request->getScheme() . '://' . $request->getHttpHost() . $request->getRequestUri();
 $reviewers = $paper->getReviewers();
 $ratings = $paper->getRatings();
+// answers given without an account, by original assignment of the invitation (#319)
+$lightAnswers = (new \Episciences\Reviewer\LightAnswerRepository())->findByDocid((int)$paper->getDocid());
 $canBeReviewed =
     (Episciences_Auth::isSecretary() || $paper->getEditor(Episciences_Auth::getUid())) &&
     (Episciences_Auth::getUid() !== $paper->getUid()) &&
@@ -183,6 +185,30 @@ try {
                                                 </span>
 
                                         </div>
+
+                                        <?php // answer given without an account (#319): editorial committee only ?>
+                                        <?php $lightAnswer = $lightAnswers[(int)($invitation['INVITATION_AID'] ?? 0)] ?? null; ?>
+                                        <?php if ($lightAnswer !== null) : ?>
+                                            <details class="light-answer" style="margin: 5px 0 0 2.5em">
+                                                <summary>
+                                                    <?= $this->escape($this->translate('Avis reçu le')) ?> <?= $this->Date($lightAnswer->getCreatedAt()->format('Y-m-d')) ?>
+                                                    <?php if ($lightAnswer->getUpdatedAt() !== null) : ?>
+                                                        (<?= $this->escape($this->translate('modifié le')) ?> <?= $this->Date($lightAnswer->getUpdatedAt()->format('Y-m-d')) ?>)
+                                                    <?php endif; ?>
+                                                </summary>
+                                                <div class="well well-sm">
+                                                    <?php if ($lightAnswer->getMessage() !== '') : ?>
+                                                        <p><?= nl2br($this->escape($lightAnswer->getMessage())) ?></p>
+                                                    <?php endif; ?>
+                                                    <?php if ($lightAnswer->getFile() !== null) : ?>
+                                                        <p>
+                                                            <span class="glyphicon glyphicon-paperclip" aria-hidden="true"></span>
+                                                            <a href="/file/lightanswer?aid=<?= (int)$lightAnswer->getAid() ?>"><?= $this->escape($lightAnswer->getFile()) ?></a>
+                                                        </p>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </details>
+                                        <?php endif; ?>
 
                                         <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_ACTIVE) : ?>
 

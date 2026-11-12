@@ -1103,6 +1103,26 @@ CREATE TABLE `user_su_log` (
   KEY `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `review_light_answer`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `review_light_answer` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `aid` int unsigned NOT NULL,
+  `rvid` int unsigned NOT NULL,
+  `docid` int unsigned NOT NULL,
+  `request_type_id` int unsigned NOT NULL,
+  `uid` int unsigned NOT NULL,
+  `tmp_user` tinyint unsigned NOT NULL DEFAULT '0',
+  `message` mediumtext COLLATE utf8mb4_unicode_ci,
+  `file` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_aid` (`aid`),
+  KEY `idx_docid` (`docid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `review_request_type`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
