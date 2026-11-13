@@ -43,7 +43,8 @@ Dans **Types de demande de relecture** :
    - le **Délai par défaut** (laisser vide pour utiliser le réglage de la revue) ;
    - la **Position** dans la liste ;
    - **Proposer ce type à l'invitation d'un relecteur** (décocher pour le masquer) ;
-   - **Réponse sans compte, depuis le lien de l'invitation** (voir plus bas), et sa **Consigne** dans chaque langue.
+   - **Réponse sans compte, depuis le lien de l'invitation** (voir plus bas), et sa **Consigne** dans chaque langue
+     (affichée seulement quand l'option est cochée ; elle est conservée si l'option est décochée).
 3. Cliquez sur **Enregistrer**.
 
 Les trois types par défaut restent toujours disponibles : ils ne peuvent pas être supprimés, seulement désactivés, afin

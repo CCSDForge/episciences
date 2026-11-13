@@ -1,4 +1,5 @@
 <?php
+$this->jQuery()->addJavascriptFile('/js/requesttype/edit.js');
 /** @var \Episciences\Reviewer\RequestType|null $type */
 $type = $this->type;
 /** @var array<string, string> $errors */
@@ -128,12 +129,14 @@ $error = function (string $field) use ($errors): string {
             <div class="col-md-6 col-md-offset-3">
                 <div class="checkbox">
                     <label>
-                        <input type="checkbox" name="light_answer" value="1"<?= !empty($values['light_answer']) ? ' checked' : '' ?> aria-describedby="light_answer-help">
+                        <input type="checkbox" id="light_answer" name="light_answer" value="1"<?= !empty($values['light_answer']) ? ' checked' : '' ?>
+                               aria-describedby="light_answer-help" aria-controls="light-answer-instructions"
+                               aria-expanded="<?= !empty($values['light_answer']) ? 'true' : 'false' ?>">
                         <?= $this->escape($this->translate("Réponse sans compte, depuis le lien de l'invitation")) ?>
                     </label>
                     <span id="light_answer-help" class="help-block">
+                        <?= $this->escape($this->translate("La personne invitée répond (texte et fichier facultatif) directement depuis le lien reçu, sans créer de compte ni remplir de grille. La réponse n'est visible que par le comité éditorial.")) ?>
                         <?= $this->escape($this->translate("La consigne ci-dessous s'affiche sur la page de réponse.")) ?>
-                        <?= $this->escape($this->translate("La personne invitée donne son avis (texte et fichier facultatif) directement depuis le lien reçu, sans créer de compte ni remplir de grille. L'avis n'est visible que par le comité éditorial.")) ?>
                         <?php if ($this->hasGrid) : ?>
                             <br><?= $this->escape($this->translate("Ce type a une grille de relecture : elle n'est pas utilisée tant que cette option est cochée.")) ?>
                         <?php endif; ?>
@@ -141,6 +144,8 @@ $error = function (string $field) use ($errors): string {
                 </div>
             </div>
         </div>
+        <?php // shown only with the answer without an account (public/js/requesttype/edit.js); kept when hidden ?>
+        <div id="light-answer-instructions">
         <?php foreach ($this->languages as $lang) : ?>
             <?php $field = 'instructions_' . $lang; ?>
             <div class="form-group<?= isset($errors[$field]) ? ' has-error' : '' ?>">
@@ -154,6 +159,7 @@ $error = function (string $field) use ($errors): string {
                 </div>
             </div>
         <?php endforeach; ?>
+        </div>
     <?php endif; ?>
 
     <div class="form-group">

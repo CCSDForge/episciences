@@ -43,7 +43,8 @@ In **Review request types**:
    - **Default deadline** (leave empty to use the journal setting);
    - **Position** in the list;
    - **Offer this type when inviting a reviewer** (uncheck to hide it);
-   - **Answer without an account, from the invitation link** (see below), and its **Instructions** in each language.
+   - **Answer without an account, from the invitation link** (see below), and its **Instructions** in each language
+     (shown only while the option is checked; they are kept when it is unchecked).
 3. Click **Save**.
 
 The three default types are always available: they cannot be deleted, only disabled, so that each journal chooses the
