@@ -1,5 +1,12 @@
 <?php
 
+namespace unit\library\Episciences\Repositories\ArXiv;
+
+use Ccsd_Error;
+use DOMDocument;
+use DOMXPath;
+use Episciences_Repositories_ArXiv_DataciteFallback;
+use Episciences_Repositories_ArXiv_SubmissionHooks;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
@@ -7,6 +14,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
+use Throwable;
 
 /**
  * Unit tests for Episciences_Repositories_ArXiv_DataciteFallback and the arXiv fallback hook (no network).
@@ -14,7 +22,7 @@ use PHPUnit\Framework\TestCase;
  * @covers Episciences_Repositories_ArXiv_DataciteFallback
  * @covers Episciences_Repositories_ArXiv_SubmissionHooks
  */
-class Episciences_Repositories_ArXiv_DataciteFallbackTest extends TestCase
+final class DataciteFallbackTest extends TestCase
 {
     private const ARXIV_ID = '2602.07473';
 
@@ -182,9 +190,13 @@ class Episciences_Repositories_ArXiv_DataciteFallbackTest extends TestCase
         self::assertSame([], $this->history);
     }
 
-    public function testFallbackIsEnabledByDefault(): void
+    public function testFallbackFollowsTheConfiguredSwitch(): void
     {
-        self::assertTrue(Episciences_Repositories_ArXiv_DataciteFallback::isEnabled());
+        // bdd_const.php defines the switch (true unless pwd.json sets it): the test follows the configuration
+        self::assertSame(
+            (bool)constant(Episciences_Repositories_ArXiv_DataciteFallback::ENABLED_CONSTANT),
+            Episciences_Repositories_ArXiv_DataciteFallback::isEnabled()
+        );
     }
 
     public function testOaiRequestOptionsAllowTwoShortAttempts(): void
