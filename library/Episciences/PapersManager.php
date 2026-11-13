@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Paper\Record\TitleNormalizer;
+use Episciences\Reviewer\LightAnswerRepository;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LogLevel;
@@ -22,6 +23,8 @@ class Episciences_PapersManager
         VISITS_TEMP => 'DOCID',
         T_LOGS => 'DOCID',
         T_REVIEWER_REPORTS => 'DOCID',
+        // answers given without an account; their files are under the paper folder
+        LightAnswerRepository::TABLE_NAME => 'docid',
         T_PAPER_SETTINGS => 'DOCID',
         T_ALIAS => 'DOCID',
         // paper_citations references PAPERS

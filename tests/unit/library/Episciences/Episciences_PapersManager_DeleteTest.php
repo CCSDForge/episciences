@@ -7,6 +7,7 @@ namespace unit\library\Episciences;
 use Episciences\Messenger\Enqueue\BoundedRetryDispatcher;
 use Episciences\Next\Enqueue\NextRevalidationQueuePort;
 use Episciences\Next\RevalidationService;
+use Episciences\Reviewer\LightAnswerRepository;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexQueuePort;
 use Episciences_Paper;
@@ -51,6 +52,7 @@ final class Episciences_PapersManager_DeleteTest extends TestCase
         'answers',
         'answer details',
         'temporary reviewers',
+        'light answers',
     ];
 
     /**
@@ -123,6 +125,7 @@ final class Episciences_PapersManager_DeleteTest extends TestCase
             $this->db->delete(T_PAPER_DATASETS, ['doc_id = ?' => $docId]);
             $this->db->delete(T_PAPER_CITATIONS, ['docid = ?' => $docId]);
             $this->db->delete(T_PAPER_CLASSIFICATIONS, ['docid = ?' => $docId]);
+            $this->db->delete(LightAnswerRepository::TABLE_NAME, ['docid = ?' => $docId]);
             $this->db->delete(T_PAPERS, ['DOCID = ?' => $docId]);
         }
         $this->db->delete(T_PAPER_AUTHORS, ['paperid = ?' => self::PAPER_ID]);
@@ -297,8 +300,20 @@ final class Episciences_PapersManager_DeleteTest extends TestCase
         ]);
 
         // The reviewer has no account
+        $tmpUserId = $this->insertTmpUser($docId);
+        $aid = $this->insertAssignment($docId, $tmpUserId, true);
+        $this->db->insert(LightAnswerRepository::TABLE_NAME, [
+            'aid' => $aid,
+            'rvid' => RVID,
+            'docid' => $docId,
+            'request_type_id' => 1,
+            'uid' => $tmpUserId,
+            'tmp_user' => 1,
+            'message' => 'quick opinion',
+            'created_at' => self::DATE,
+        ]);
         $this->db->insert(T_USER_INVITATIONS, [
-            'AID' => $this->insertAssignment($docId, $this->insertTmpUser($docId), true),
+            'AID' => $aid,
             'SENDING_DATE' => self::DATE,
             'EXPIRATION_DATE' => self::DATE,
         ]);
@@ -369,6 +384,7 @@ final class Episciences_PapersManager_DeleteTest extends TestCase
             'answers' => $this->countWhere(T_USER_INVITATION_ANSWER, 'ID = ?', $invitationId),
             'answer details' => $this->countWhere(T_USER_INVITATION_ANSWER_DETAIL, 'ID = ?', $invitationId),
             'temporary reviewers' => $this->countWhere(T_TMP_USER, 'ID = ?', $this->tmpUserIds[$docId] ?? 0),
+            'light answers' => $this->countWhere(LightAnswerRepository::TABLE_NAME, 'docid = ?', $docId),
         ];
     }
 
