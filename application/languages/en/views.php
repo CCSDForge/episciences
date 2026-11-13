@@ -2989,6 +2989,7 @@ return array(
     "Réponse reçue le" => "Answer received on",
     "Consigne pour la réponse sans compte" => "Instructions for the answer without an account",
     "La consigne ci-dessous s'affiche sur la page de réponse." => "The instructions below are shown on the answer page.",
+    "Sans compte, la personne invitée ne voit ni la grille ni ses rapports précédents, et sa réponse n'est pas un rapport de relecture. Réservez cette option aux demandes qui n'en ont pas besoin." => "Without an account, the invited person sees neither the rating grid nor their previous reports, and their answer is not a review report. Keep this option for requests that do not need them.",
     "La consigne ne doit pas dépasser 1000 caractères." => "The instructions must not exceed 1000 characters.",
     "La personne invitée répond (texte et fichier facultatif) directement depuis le lien reçu, sans créer de compte ni remplir de grille. La réponse n'est visible que par le comité éditorial." => "The invited person answers (text and optional file) directly from the link received, without creating an account or filling in a grid. The answer is only visible to the editorial board.",
 );

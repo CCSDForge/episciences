@@ -107,7 +107,11 @@ Aucun compte n'est nécessaire. Le premier envoi vaut acceptation de l'invitatio
 La personne peut modifier sa réponse depuis le même lien jusqu'à la date limite.
 
 La réponse n'est visible que par l'équipe éditoriale, dans la section **Réponses données sans compte** de la page de gestion de
-l'article (et sous l'invitation, dans la section **Relecteurs**). Les auteurs ne le voient jamais.
+l'article (et sous l'invitation, dans la section **Relecteurs**). Les auteurs ne la voient jamais.
+
+Sans compte, la personne invitée ne voit ni la grille ni ses rapports précédents. Le formulaire du type le rappelle
+quand l'option est cochée sur un autre type que l'avis rapide. Pour la relecture d'une version révisée, gardez la
+réponse avec compte si le relecteur doit s'appuyer sur son rapport précédent.
 
 ## Notifications par mail
 

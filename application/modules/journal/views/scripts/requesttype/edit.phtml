@@ -146,6 +146,15 @@ $error = function (string $field) use ($errors): string {
         </div>
         <?php // shown only with the answer without an account (public/js/requesttype/edit.js); kept when hidden ?>
         <div id="light-answer-instructions">
+        <?php if ($isNew || $type->getCode() !== \Episciences\Reviewer\RequestType::CODE_QUICK_OPINION) : ?>
+            <div class="form-group">
+                <div class="col-md-6 col-md-offset-3">
+                    <div class="alert alert-warning">
+                        <?= $this->escape($this->translate("Sans compte, la personne invitée ne voit ni la grille ni ses rapports précédents, et sa réponse n'est pas un rapport de relecture. Réservez cette option aux demandes qui n'en ont pas besoin.")) ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
         <?php foreach ($this->languages as $lang) : ?>
             <?php $field = 'instructions_' . $lang; ?>
             <div class="form-group<?= isset($errors[$field]) ? ' has-error' : '' ?>">

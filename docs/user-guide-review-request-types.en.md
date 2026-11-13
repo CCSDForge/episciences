@@ -108,6 +108,10 @@ their answer from the same link until the due date.
 The answer is shown only to the editorial staff, in the **Answers given without an account** panel of the paper's
 administration page (and under the invitation in the **Reviewers** panel). Authors never see it.
 
+Without an account, the invited person sees neither the rating grid nor their previous reports. The type form reminds
+it when the option is checked on a type other than the quick opinion. For a revised version check, keep the answer
+with an account when the reviewer needs their previous report.
+
 ## Email Notifications
 
 | Event | Recipients |
