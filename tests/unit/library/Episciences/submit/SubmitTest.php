@@ -2,7 +2,15 @@
 
 namespace unit\library\Episciences\submit;
 
+use Ccsd_Error;
+use Ccsd_Oai_ServerErrorException;
 use Episciences_Oai_Client;
+use Episciences_Repositories_ArXiv_DataciteFallback;
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Response;
 use Episciences_Paper;
 use Episciences_Repositories;
 use Episciences_Submit;
@@ -406,6 +414,64 @@ class SubmitTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // buildCcsdErrorResult() — private, tested via ReflectionMethod
+    // -------------------------------------------------------------------------
+
+    public function testRepositoryTimeoutGivesAClearMessage(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
+        $method->setAccessible(true);
+
+        $repoId = 2;
+        $result = $method->invoke(null, new Ccsd_Error(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, CURLE_OPERATION_TIMEDOUT), $repoId);
+
+        self::assertSame(0, $result['status']);
+        self::assertStringContainsString(
+            sprintf('The open archive %s did not respond in time', Episciences_Repositories::getLabel($repoId)),
+            $result['error']
+        );
+        self::assertStringContainsString('mailto:' . EPISCIENCES_SUPPORT, $result['error']);
+        self::assertStringNotContainsString('%s', $result['error']);
+    }
+
+    public function testRepositoryTimeoutMessageIsFormattedWhenTheTranslatorIsMissing(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
+        $method->setAccessible(true);
+
+        // Web context (not CLI) without a registered translator: the registry lookup throws
+        $hadServerSoftware = array_key_exists('SERVER_SOFTWARE', $_SERVER);
+        $previousServerSoftware = $_SERVER['SERVER_SOFTWARE'] ?? null;
+        $hadTranslator = Zend_Registry::isRegistered('Zend_Translate');
+        $previousTranslator = $hadTranslator ? Zend_Registry::get('Zend_Translate') : null;
+
+        $_SERVER['SERVER_SOFTWARE'] = 'Apache';
+        if ($hadTranslator) {
+            Zend_Registry::getInstance()->offsetUnset('Zend_Translate');
+        }
+
+        try {
+            $repoId = 2;
+            $result = $method->invoke(null, new Ccsd_Error(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, CURLE_OPERATION_TIMEDOUT), $repoId);
+        } finally {
+            if ($hadServerSoftware) {
+                $_SERVER['SERVER_SOFTWARE'] = $previousServerSoftware;
+            } else {
+                unset($_SERVER['SERVER_SOFTWARE']);
+            }
+            if ($hadTranslator) {
+                Zend_Registry::set('Zend_Translate', $previousTranslator);
+            }
+        }
+
+        self::assertStringContainsString(
+            sprintf('The open archive %s did not respond in time', Episciences_Repositories::getLabel($repoId)),
+            $result['error']
+        );
+        self::assertStringNotContainsString('%s', $result['error']);
+    }
+
+    // -------------------------------------------------------------------------
     // isHalNotice() — private, tested via ReflectionMethod
     // -------------------------------------------------------------------------
 
@@ -601,5 +667,476 @@ class SubmitTest extends TestCase
 
         // No OAI identifier template configured: nothing to check, no TypeError
         self::assertNull($method->invoke(null, $oai, null, 1));
+    }
+
+    // =========================================================================
+    // arXiv: two OAI-PMH attempts, then the DataCite fallback (no network)
+    // =========================================================================
+
+    private const ARXIV_ID = '2602.07473';
+    private const OAI_RECORD = '<?xml version="1.0"?><OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/"><GetRecord>'
+        . '<record><header><identifier>oai:arXiv.org:2602.07473</identifier></header><metadata>'
+        . '<oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/">'
+        . '<dc:title>From arXiv</dc:title></oai_dc:dc></metadata></record></GetRecord></OAI-PMH>';
+
+    /** @var array<int, array<string, mixed>> */
+    private array $dataciteHistory = [];
+    private bool $hadArxivSources = false;
+    private mixed $previousArxivSources = null;
+    private mixed $previousRepositoriesCache = null;
+
+    public function testLoadRecordAsksArxivTwiceWithShortTimeouts(): void
+    {
+        $oai = $this->useArxivAnswering([$this->oaiTimeout(), ['body' => self::OAI_RECORD, 'http_code' => 200]]);
+
+        [$record] = $this->loadArxivRecord();
+
+        self::assertSame(2, $oai->calls);
+        self::assertSame(15, $oai->requestedOptions[CURLOPT_TIMEOUT]);
+        self::assertSame(5, $oai->requestedOptions[CURLOPT_CONNECTTIMEOUT]);
+        self::assertStringContainsString('From arXiv', $record);
+    }
+
+    public function testLoadRecordTriesArxivTwiceThenReadsDatacite(): void
+    {
+        $oai = $this->useArxivAnswering([$this->oaiTimeout(), $this->oaiTimeout()]);
+        $this->dataciteResponds(new Response(200, [], $this->dataciteBody()));
+
+        [$record, $result, $oaiAfter] = $this->loadArxivRecord();
+
+        self::assertSame(2, $oai->calls, 'two attempts on the arXiv OAI-PMH server');
+        self::assertSame(15, $oai->requestedOptions[CURLOPT_TIMEOUT]);
+        self::assertSame(5, $oai->requestedOptions[CURLOPT_CONNECTTIMEOUT]);
+        self::assertCount(1, $this->dataciteHistory);
+        self::assertStringContainsString('oai_dc:dc', $record);
+        self::assertStringContainsString('<identifier>oai:arXiv.org:' . self::ARXIV_ID . '</identifier>', $record);
+        self::assertSame(Episciences_Repositories_ArXiv_DataciteFallback::SOURCE, $result[Episciences_Submit::RECORD_SOURCE]);
+        self::assertNull($oaiAfter, 'no other request to the unavailable OAI-PMH server');
+    }
+
+    public function testLoadRecordReadsDataciteAfterTwoHttpServerErrors(): void
+    {
+        $oai = $this->useArxivAnswering([['body' => '', 'http_code' => 503], ['body' => '', 'http_code' => 502]]);
+        $this->dataciteResponds(new Response(200, [], $this->dataciteBody()));
+
+        [$record, $result] = $this->loadArxivRecord();
+
+        self::assertSame(2, $oai->calls);
+        self::assertStringContainsString('oai_dc:dc', $record);
+        self::assertSame(Episciences_Repositories_ArXiv_DataciteFallback::SOURCE, $result[Episciences_Submit::RECORD_SOURCE]);
+    }
+
+    public function testLoadRecordDoesNotReadDataciteWhenArxivAnswersTheSecondTime(): void
+    {
+        $oai = $this->useArxivAnswering([$this->oaiTimeout(), ['body' => self::OAI_RECORD, 'http_code' => 200]]);
+        $this->dataciteResponds();
+
+        [$record, $result, $oaiAfter] = $this->loadArxivRecord();
+
+        self::assertSame(2, $oai->calls);
+        self::assertStringContainsString('From arXiv', $record);
+        self::assertArrayNotHasKey(Episciences_Submit::RECORD_SOURCE, $result);
+        self::assertSame([], $this->dataciteHistory);
+        self::assertNotNull($oaiAfter);
+    }
+
+    public function testLoadRecordReportsAnUnknownDocumentFromDatacite(): void
+    {
+        $this->useArxivAnswering([$this->oaiTimeout(), $this->oaiTimeout()]);
+        $this->dataciteResponds(new Response(404, [], '{}'));
+
+        $this->expectException(Ccsd_Error::class);
+        $this->expectExceptionMessage(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
+        $this->loadArxivRecord();
+    }
+
+    public function testLoadRecordKeepsTheArxivTimeoutWhenDataciteFailsToo(): void
+    {
+        $this->useArxivAnswering([$this->oaiTimeout(), $this->oaiTimeout()]);
+        $this->dataciteResponds(new Response(503, [], 'Service Unavailable'));
+
+        $this->expectException(Ccsd_Error::class);
+        $this->expectExceptionMessage(Ccsd_Error::REPOSITORY_TIMEOUT_CODE);
+        $this->loadArxivRecord();
+    }
+
+    public function testLoadRecordReadsDataciteAfterTwoRefusedConnections(): void
+    {
+        $oai = $this->useArxivAnswering([$this->oaiConnectionRefused(), $this->oaiConnectionRefused()]);
+        $this->dataciteResponds(new Response(200, [], $this->dataciteBody()));
+
+        [$record, $result] = $this->loadArxivRecord();
+
+        self::assertSame(2, $oai->calls);
+        self::assertStringContainsString('oai_dc:dc', $record);
+        self::assertSame(Episciences_Repositories_ArXiv_DataciteFallback::SOURCE, $result[Episciences_Submit::RECORD_SOURCE]);
+    }
+
+    public function testLoadRecordReportsArxivAsUnavailableWhenTheConnectionIsRefusedAndDataciteFailsToo(): void
+    {
+        $this->useArxivAnswering([$this->oaiConnectionRefused(), $this->oaiConnectionRefused()]);
+        $this->dataciteResponds(new Response(503, [], 'Service Unavailable'));
+
+        $this->expectException(Ccsd_Error::class);
+        $this->expectExceptionMessage(Ccsd_Error::REPOSITORY_UNAVAILABLE_CODE);
+        $this->loadArxivRecord();
+    }
+
+    public function testLoadRecordKeepsTheArxivServerErrorWhenDataciteFailsToo(): void
+    {
+        $this->useArxivAnswering([['body' => '', 'http_code' => 503], ['body' => '', 'http_code' => 503]]);
+        $this->dataciteResponds(new Response(500, [], ''));
+
+        $this->expectException(Ccsd_Oai_ServerErrorException::class);
+        $this->loadArxivRecord();
+    }
+
+    public function testLoadRecordDoesNotReadDataciteAfterAnOaiError(): void
+    {
+        $oai = $this->useArxivAnswering([[
+            'body' => '<?xml version="1.0"?><OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/">'
+                . '<error code="idDoesNotExist">No matching identifier</error></OAI-PMH>',
+            'http_code' => 200,
+        ]]);
+        $this->dataciteResponds();
+
+        try {
+            $this->loadArxivRecord();
+            self::fail('An OAI error must raise a Ccsd_Error');
+        } catch (Ccsd_Error $e) {
+            self::assertStringStartsWith('idDoesNotExist', $e->getMessage());
+        }
+
+        self::assertSame(1, $oai->calls);
+        self::assertSame([], $this->dataciteHistory);
+    }
+
+    public function testLoadRecordDoesNotReadDataciteWhenSwitchedOff(): void
+    {
+        $this->useArxivAnswering([$this->oaiTimeout(), $this->oaiTimeout()]);
+        $this->dataciteResponds();
+        Episciences_Repositories_ArXiv_DataciteFallback::setEnabled(false);
+
+        try {
+            $this->loadArxivRecord();
+            self::fail('Two timeouts must raise a Ccsd_Error');
+        } catch (Ccsd_Error $e) {
+            self::assertSame(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, $e->getMessage());
+        }
+
+        self::assertSame([], $this->dataciteHistory);
+    }
+
+    // =========================================================================
+    // arXiv: version check (arXivRaw) after a record served by arXiv
+    // =========================================================================
+
+    public function testVersionCheckAsksArxivOnce(): void
+    {
+        $oai = $this->useArxivAnswering([['body' => $this->arXivRawBody(), 'http_code' => 200]]);
+        $this->dataciteResponds();
+
+        $result = $this->assertArxivRequestedVersion($oai, 2);
+
+        self::assertSame(1, $oai->calls);
+        self::assertSame([], $this->dataciteHistory);
+        self::assertArrayNotHasKey('fallbackVersions', $result);
+    }
+
+    public function testVersionCheckReadsDataciteAfterAnArxivServerError(): void
+    {
+        $oai = $this->useArxivAnswering([['body' => '', 'http_code' => 503]]);
+        $this->dataciteResponds(new Response(200, [], $this->dataciteBody()));
+
+        $result = $this->assertArxivRequestedVersion($oai, 2);
+
+        self::assertSame(1, $oai->calls, 'a single attempt: DataCite answers when arXivRaw fails');
+        self::assertCount(1, $this->dataciteHistory);
+        self::assertSame([1, 2], array_map('intval', $result['fallbackVersions']));
+        self::assertArrayNotHasKey(Episciences_Submit::RECORD_SOURCE, $result, 'the record still comes from arXiv');
+    }
+
+    public function testVersionCheckRefusesAVersionUnknownToDatacite(): void
+    {
+        $oai = $this->useArxivAnswering([$this->oaiTimeout()]);
+        $this->dataciteResponds(new Response(200, [], $this->dataciteBody()));
+
+        $this->expectException(Ccsd_Error::class);
+        $this->expectExceptionMessage(Ccsd_Error::ARXIV_VERSION_DOES_NOT_EXIST_CODE);
+        $this->assertArxivRequestedVersion($oai, 5);
+    }
+
+    public function testVersionCheckKeepsTheArxivErrorWhenDataciteDoesNotKnowTheDocument(): void
+    {
+        $oai = $this->useArxivAnswering([['body' => '', 'http_code' => 503]]);
+        $this->dataciteResponds(new Response(404, [], '{}'));
+
+        try {
+            $this->assertArxivRequestedVersion($oai, 2);
+            self::fail('The arXiv error must be raised');
+        } catch (Ccsd_Error $e) {
+            self::assertInstanceOf(Ccsd_Oai_ServerErrorException::class, $e);
+            self::assertNotSame(Ccsd_Error::ID_DOES_NOT_EXIST_CODE, $e->getMessage());
+        }
+
+        self::assertCount(1, $this->dataciteHistory);
+    }
+
+    public function testVersionCheckDoesNotReadDataciteForAnUnknownArxivVersion(): void
+    {
+        $oai = $this->useArxivAnswering([['body' => $this->arXivRawBody(), 'http_code' => 200]]);
+        $this->dataciteResponds();
+
+        try {
+            $this->assertArxivRequestedVersion($oai, 5);
+            self::fail('An unknown version must be refused');
+        } catch (Ccsd_Error $e) {
+            self::assertStringStartsWith(Ccsd_Error::ARXIV_VERSION_DOES_NOT_EXIST_CODE, $e->getMessage());
+        }
+
+        self::assertSame([], $this->dataciteHistory);
+    }
+
+    public function testVersionCheckKeepsTheArxivErrorWhenTheFallbackIsSwitchedOff(): void
+    {
+        $oai = $this->useArxivAnswering([$this->oaiTimeout()]);
+        $this->dataciteResponds();
+        Episciences_Repositories_ArXiv_DataciteFallback::setEnabled(false);
+
+        $this->expectException(Ccsd_Error::class);
+        $this->expectExceptionMessage(Ccsd_Error::REPOSITORY_TIMEOUT_CODE);
+        $this->assertArxivRequestedVersion($oai, 2);
+    }
+
+    /**
+     * @dataProvider fallbackVersionProvider
+     */
+    public function testAssertFallbackVersionExists(?int $requestedVersion, ?string $expectedError): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'assertFallbackVersionExists');
+        $method->setAccessible(true);
+        $result = ['fallbackVersions' => [1, 2, 3], 'fallbackLatestVersion' => 3];
+
+        try {
+            $method->invoke(null, $result, $requestedVersion);
+            self::assertNull($expectedError, 'the version must be refused');
+        } catch (Ccsd_Error $e) {
+            self::assertNotNull($expectedError, 'the version must be accepted: ' . $e->getMessage());
+            self::assertStringStartsWith($expectedError, $e->getMessage());
+        }
+    }
+
+    public static function fallbackVersionProvider(): array
+    {
+        return [
+            'no version requested' => [null, null],
+            'first version' => [1, null],
+            'latest version' => [3, null],
+            'next version, maybe not yet in DataCite' => [4, Ccsd_Error::REPOSITORY_UNAVAILABLE_CODE],
+            'unknown version' => [5, Ccsd_Error::ARXIV_VERSION_DOES_NOT_EXIST_CODE],
+        ];
+    }
+
+    public function testRepositoryUnavailableGivesAClearMessage(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
+        $method->setAccessible(true);
+
+        $this->seedArxivRepository();
+        $result = $method->invoke(null, new Ccsd_Oai_ServerErrorException(503, 'https://oai.example.org/oai'), 2);
+
+        self::assertSame(0, $result['status']);
+        self::assertStringContainsString('arXiv', $result['error']);
+        self::assertStringContainsString('mailto:' . EPISCIENCES_SUPPORT, $result['error']);
+        self::assertStringNotContainsString('%s', $result['error']);
+        self::assertStringNotContainsString('The operation ended with this error', $result['error']);
+    }
+
+    public function testRefusedConnectionGivesTheUnavailableMessage(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
+        $method->setAccessible(true);
+
+        $this->seedArxivRepository();
+        $result = $method->invoke(null, new Ccsd_Error(Ccsd_Error::REPOSITORY_UNAVAILABLE_CODE, CURLE_COULDNT_CONNECT), 2);
+
+        self::assertSame(0, $result['status']);
+        self::assertStringContainsString('arXiv', $result['error']);
+        self::assertStringContainsString('temporarily unavailable', $result['error']);
+        self::assertStringNotContainsString('CURL_ERROR', $result['error']);
+        self::assertStringNotContainsString('%s', $result['error']);
+    }
+
+    protected function tearDown(): void
+    {
+        Episciences_Submit::setOaiClientFactory(null);
+        Episciences_Repositories_ArXiv_DataciteFallback::setHttpClient(null);
+        Episciences_Repositories_ArXiv_DataciteFallback::setEnabled(null);
+
+        if ($this->previousRepositoriesCache !== null) {
+            if ($this->hadArxivSources) {
+                Zend_Registry::set('metadataSources', $this->previousArxivSources);
+            } else {
+                Zend_Registry::getInstance()->offsetUnset('metadataSources');
+            }
+            $cache = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+            $cache->setAccessible(true);
+            $cache->setValue(null, $this->previousRepositoriesCache);
+            $this->previousRepositoriesCache = null;
+        }
+    }
+
+    /**
+     * arXiv as the only configured repository, with its OAI-PMH settings
+     */
+    private function seedArxivRepository(): void
+    {
+        if ($this->previousRepositoriesCache === null) {
+            $this->hadArxivSources = Zend_Registry::isRegistered('metadataSources');
+            $this->previousArxivSources = $this->hadArxivSources ? Zend_Registry::get('metadataSources') : null;
+            $cache = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+            $cache->setAccessible(true);
+            $this->previousRepositoriesCache = $cache->getValue();
+            $cache->setValue(null, []);
+        }
+
+        Zend_Registry::set('metadataSources', [
+            2 => [
+                'name' => 'arXiv',
+                'type' => 'repository',
+                'identifier' => 'oai:arXiv.org:%%ID',
+                'base_url' => 'https://oai.example.org/oai',
+                'api_url' => '',
+            ],
+        ]);
+    }
+
+    /**
+     * Configures arXiv and makes its OAI-PMH client answer with $script (see getScriptedOaiClient())
+     */
+    private function useArxivAnswering(array $script): Episciences_Oai_Client
+    {
+        $this->seedArxivRepository();
+        $oai = $this->getScriptedOaiClient($script);
+        Episciences_Submit::setOaiClientFactory(static fn(string $baseUrl): Episciences_Oai_Client => $oai);
+
+        return $oai;
+    }
+
+    /**
+     * @return array{0: mixed, 1: array, 2: ?Episciences_Oai_Client} record, result, OAI client after the call
+     */
+    private function loadArxivRecord(): array
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'loadRecord');
+        $method->setAccessible(true);
+
+        $result = [];
+        $oai = null;
+        $args = [[], '2', 'oai:arXiv.org:' . self::ARXIV_ID, &$result, &$oai, self::ARXIV_ID];
+        $record = $method->invokeArgs(null, $args);
+
+        return [$record, $result, $oai];
+    }
+
+    /**
+     * Version check of an arXiv record served by arXiv (no RECORD_SOURCE), with the client set up
+     * for the record request (two attempts)
+     * @return array the submission result, with the fallback versions when DataCite was read
+     */
+    private function assertArxivRequestedVersion(Episciences_Oai_Client $oai, ?int $version): array
+    {
+        $oai->setMaxAttempts(2);
+        $method = new ReflectionMethod(Episciences_Submit::class, 'assertArxivRequestedVersion');
+        $method->setAccessible(true);
+
+        $result = [];
+        $args = [&$result, $oai, 'oai:arXiv.org:' . self::ARXIV_ID, $version, '2', self::ARXIV_ID];
+        $method->invokeArgs(null, $args);
+
+        return $result;
+    }
+
+    /**
+     * arXivRaw record listing versions v1 and v2
+     */
+    private function arXivRawBody(): string
+    {
+        return '<?xml version="1.0"?><OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/"><GetRecord>'
+            . '<record><header><identifier>oai:arXiv.org:' . self::ARXIV_ID . '</identifier></header><metadata>'
+            . '<arXivRaw xmlns="http://arxiv.org/OAI/arXivRaw/"><id>' . self::ARXIV_ID . '</id>'
+            . '<version version="v1"><date>Sat, 7 Feb 2026 10:09:41 GMT</date></version>'
+            . '<version version="v2"><date>Fri, 6 Nov 2026 14:35:09 GMT</date></version>'
+            . '</arXivRaw></metadata></record></GetRecord></OAI-PMH>';
+    }
+
+    private function dataciteResponds(Response ...$responses): void
+    {
+        $stack = HandlerStack::create(new MockHandler($responses));
+        $this->dataciteHistory = [];
+        $stack->push(Middleware::history($this->dataciteHistory));
+        Episciences_Repositories_ArXiv_DataciteFallback::setHttpClient(new Client(['handler' => $stack]));
+        Episciences_Repositories_ArXiv_DataciteFallback::setEnabled(true);
+    }
+
+    private function dataciteBody(): string
+    {
+        return (string)json_encode(['data' => ['attributes' => [
+            'titles' => [['title' => 'From DataCite']],
+            'creators' => [['name' => 'Doe, Jane', 'givenName' => 'Jane', 'familyName' => 'Doe']],
+            'descriptions' => [['description' => 'An abstract.', 'descriptionType' => 'Abstract']],
+            'dates' => [
+                ['date' => '2026-02-07T10:09:41Z', 'dateType' => 'Submitted', 'dateInformation' => 'v1'],
+                ['date' => '2026-11-06T14:35:09Z', 'dateType' => 'Submitted', 'dateInformation' => 'v2'],
+            ],
+            'version' => '2',
+            'updated' => '2026-11-09T05:24:31.000Z',
+        ]]]);
+    }
+
+    private function oaiTimeout(): Ccsd_Error
+    {
+        return new Ccsd_Error('Timeout was reached', CURLE_OPERATION_TIMEDOUT, Ccsd_Error::CURL_ERROR_TYPE);
+    }
+
+    private function oaiConnectionRefused(): Ccsd_Error
+    {
+        return new Ccsd_Error("Couldn't connect to server", CURLE_COULDNT_CONNECT, Ccsd_Error::CURL_ERROR_TYPE);
+    }
+
+    /**
+     * arXiv OAI-PMH client answering each request with the next item of $script (no network, no pause):
+     * a Ccsd_Error to throw, or ['body' => string, 'http_code' => int]
+     */
+    private function getScriptedOaiClient(array $script): Episciences_Oai_Client
+    {
+        return new class('https://oai.example.org/oai', $script) extends Episciences_Oai_Client {
+            public int $calls = 0;
+            public array $requestedOptions = [];
+            private array $script;
+
+            public function __construct(string $url, array $script)
+            {
+                parent::__construct($url, 'xml', 'episciences-test');
+                $this->setLogger(null);
+                $this->script = $script;
+            }
+
+            protected function fetchResponse(string $url, array $options): string
+            {
+                $this->requestedOptions = $options;
+                $step = $this->script[$this->calls++];
+                if ($step instanceof Ccsd_Error) {
+                    $this->lastTransferInfo = ['http_code' => 0];
+                    throw $step;
+                }
+                $this->lastTransferInfo = ['http_code' => $step['http_code']];
+                return $step['body'];
+            }
+
+            protected function pause(int $seconds): void
+            {
+            }
+        };
     }
 }
