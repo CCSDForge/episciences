@@ -72,11 +72,11 @@ final class Episciences_Rating_ReportAttachmentAccessTest extends TestCase
     ): Episciences_Paper&MockObject {
         $paper = $this->createPartialMock(
             Episciences_Paper::class,
-            ['getEditor', 'getCopyEditor', 'findLatestVersion', 'isReportsVisibleToAuthor']
+            ['getEditor', 'getCopyEditor', 'findLatestVersionForAssignmentCheck', 'isReportsVisibleToAuthor']
         );
         $paper->method('getEditor')->willReturn(false);
         $paper->method('getCopyEditor')->willReturn(false);
-        $paper->method('findLatestVersion')->willReturn($latestVersion);
+        $paper->method('findLatestVersionForAssignmentCheck')->willReturn($latestVersion);
         $paper->method('isReportsVisibleToAuthor')->willReturn($reportsVisibleToAuthor);
 
         return $paper;
