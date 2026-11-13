@@ -21,8 +21,11 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use ReflectionProperty;
 use Zend_Registry;
@@ -46,7 +49,7 @@ final class RepositoryManuscriptSourceTest extends TestCase
     /** @var array<int, array{request: RequestInterface, options: array<string, mixed>}> */
     private array $history = [];
 
-    private bool $hadMetadataSources;
+    private ?bool $hadMetadataSources = null;
 
     private mixed $originalMetadataSources = null;
 
@@ -144,6 +147,7 @@ final class RepositoryManuscriptSourceTest extends TestCase
         return [
             'list of one file' => ['["Article révisé.pdf"]', 'Article révisé.pdf'],
             'oldest versions: a bare file name' => ['revision.pdf', 'revision.pdf'],
+            'object left by a failed first upload' => ['{"1":"revision.pdf"}', 'revision.pdf'],
         ];
     }
 
@@ -178,6 +182,7 @@ final class RepositoryManuscriptSourceTest extends TestCase
     {
         return [
             'several files, none designated as the manuscript' => ['18780/["answer.pdf","main.pdf"]'],
+            'several files in an object left by a failed upload' => ['18780/{"0":"main.pdf","2":"answer.pdf"}'],
             'no file' => ['18780/[]'],
             'file missing on disk' => ['18780/["gone.pdf"]'],
             'name with a directory part' => ['18780/["../../config/pwd.json"]'],
@@ -245,8 +250,11 @@ final class RepositoryManuscriptSourceTest extends TestCase
         $paper = $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID);
         $paper->setType([Episciences_Paper::TITLE_TYPE => Episciences_Paper::DATASET_TYPE_TITLE]);
         $path = $content === 'missing' ? $this->tempDir() . '/gone.pdf' : $this->writeTempFile('empty.pdf', '');
+        $logs = new TestHandler();
 
-        self::assertNull($this->makeSource([], $paper, dataDescriptorPath: $path)->fetch(self::DOCID));
+        self::assertNull($this->makeSource([], $paper, dataDescriptorPath: $path, logger: new Logger('test', [$logs]))->fetch(self::DOCID));
+        self::assertCount(1, $logs->getRecords(), 'the missing file is logged once');
+        self::assertTrue($logs->hasWarningThatContains('No analysable manuscript'));
     }
 
     /**
@@ -280,6 +288,23 @@ final class RepositoryManuscriptSourceTest extends TestCase
             'absolute path' => ['/etc/passwd'],
             'backslash' => ['..\\secret.pdf'],
         ];
+    }
+
+    public function testTheDefaultLoaderReadsTheDataDescriptorFromTheInjectedJournalDirectory(): void
+    {
+        $paper = $this->makePaper((int) Episciences_Repositories::ZENODO_REPO_ID);
+        $paper->setType([Episciences_Paper::TITLE_TYPE => Episciences_Paper::DATASET_TYPE_TITLE]);
+        $paper->setDataDescriptors([1 => (new DataDescriptor())->setFile(new File(['name' => 'descriptor.pdf']))]);
+        $this->writeTempFile(self::DOCID . '/dd/descriptor.pdf', self::PDF);
+        $directory = $this->tempDir();
+        $source = new RepositoryManuscriptSource(
+            new Client(),
+            new NullLogger(),
+            static fn(int $docId): Episciences_Paper => $paper,
+            journalFilesDirectory: static fn(Episciences_Paper $p): string => $directory
+        );
+
+        self::assertSame('descriptor.pdf', $source->fetch(self::DOCID)?->fileName);
     }
 
     public function testRefusesADataDescriptorLargerThanTheLimit(): void
@@ -753,6 +778,34 @@ final class RepositoryManuscriptSourceTest extends TestCase
         }
     }
 
+    public function testLogsTheCurlErrorNumberOfAConnectionFailure(): void
+    {
+        $logs = new TestHandler();
+        $source = $this->makeSource(
+            [],
+            $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID),
+            handler: static fn(RequestInterface $request): never => throw new ConnectException(
+                'cURL error 35: SSL connect error',
+                $request,
+                null,
+                ['errno' => 35]
+            ),
+            logger: new Logger('test', [$logs])
+        );
+
+        try {
+            $source->fetch(self::DOCID);
+            self::fail('An exception was expected');
+        } catch (ManuscriptTemporarilyUnavailableException) {
+            $failures = array_values(array_filter(
+                $logs->getRecords(),
+                static fn($record): bool => $record['message'] === 'Manuscript download failed'
+            ));
+            self::assertCount(1, $failures);
+            self::assertSame(35, $failures[0]['context']['errno']);
+        }
+    }
+
     public function testStopsWhenTheAnnouncedSizeExceedsTheLimit(): void
     {
         $source = $this->makeSource(
@@ -1141,14 +1194,15 @@ final class RepositoryManuscriptSourceTest extends TestCase
         ?\Closure $hostResolver = null,
         ?string $dataDescriptorPath = null,
         ?\Closure $clock = null,
-        ?string $journalFilesDirectory = null
+        ?string $journalFilesDirectory = null,
+        ?LoggerInterface $logger = null
     ): RepositoryManuscriptSource {
         $stack = HandlerStack::create($handler ?? new MockHandler($responses));
         $stack->push(Middleware::history($this->history));
 
         return new RepositoryManuscriptSource(
             new Client(['handler' => $stack]),
-            new NullLogger(),
+            $logger ?? new NullLogger(),
             static fn(int $docId): ?Episciences_Paper => $paper,
             static fn(Episciences_Paper $p): ?Episciences_Paper_File => $mainFile,
             $maxBytes,

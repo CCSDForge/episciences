@@ -25,6 +25,7 @@ use Episciences\Upload\SafeFileName;
 use finfo;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Uri;
@@ -34,6 +35,7 @@ use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use Symfony\Component\Mime\MimeTypes;
 use Throwable;
 
@@ -320,7 +322,8 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
 
     /**
      * The identifier of a temporary version is "{paperid}/" followed by the JSON list of its file names,
-     * or by a single file name for the oldest versions.
+     * or by a single file name for the oldest versions. Versions recorded before the names were reindexed hold
+     * a JSON object instead of a list ({"1":"article.pdf"} when the first upload failed): only the names count.
      *
      * @return array{paperId: int, names: list<string>}|null null when the identifier is malformed
      *         or a name has a directory part
@@ -333,7 +336,8 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             return null;
         }
 
-        $decoded = str_starts_with($files, '[') && json_validate($files) ? json_decode($files, true) : [$files];
+        $isJson = (str_starts_with($files, '[') || str_starts_with($files, '{')) && json_validate($files);
+        $decoded = $isJson ? json_decode($files, true) : [$files];
         $names = array_values(is_array($decoded) ? $decoded : []);
 
         foreach ($names as $name) {
@@ -358,8 +362,8 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         $size = is_file($path) && is_readable($path) ? (int) filesize($path) : 0;
 
         if ($size <= 0) {
-            $this->logger->warning(ucfirst($what) . ' missing, unreadable or empty', ['docid' => $docId, 'path' => $path]);
-            $this->logUnavailable($docId, $what . ' missing, unreadable or empty', ['path' => $path]);
+            // A file uploaded to Episciences should always be there: an anomaly, not a property of the paper
+            $this->logUnavailable($docId, $what . ' missing, unreadable or empty', ['path' => $path], LogLevel::WARNING);
             return null;
         }
 
@@ -512,7 +516,8 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             return new ManuscriptTooLargeException($sink->getBytesReceived(), $this->maxBytes);
         }
 
-        $errno = $e instanceof RequestException ? ($e->getHandlerContext()['errno'] ?? null) : null;
+        // Guzzle reports the connection errors (cURL 6, 7, 28, 35, 52) as a ConnectException, not a RequestException
+        $errno = $e instanceof RequestException || $e instanceof ConnectException ? ($e->getHandlerContext()['errno'] ?? null) : null;
 
         $this->logger->warning('Manuscript download failed', ['docid' => $docId, 'url' => $url, 'errno' => $errno, 'error' => $e->getMessage()]);
 
@@ -790,10 +795,11 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
 
     /**
      * @param array<string, mixed> $context
+     * @param LogLevel::* $level
      */
-    private function logUnavailable(int $docId, string $reason, array $context = []): void
+    private function logUnavailable(int $docId, string $reason, array $context = [], string $level = LogLevel::NOTICE): void
     {
-        $this->logger->notice('No analysable manuscript', ['docid' => $docId, 'reason' => $reason] + $context);
+        $this->logger->log($level, 'No analysable manuscript', ['docid' => $docId, 'reason' => $reason] + $context);
     }
 
     private function defaultPaperLoader(int $docId): ?Episciences_Paper
@@ -822,7 +828,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             return null;
         }
 
-        $directory = $this->defaultJournalFilesDirectory($paper);
+        $directory = ($this->journalFilesDirectory)($paper);
 
         return $directory === null
             ? null
