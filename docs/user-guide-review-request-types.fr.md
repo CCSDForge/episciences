@@ -17,7 +17,8 @@ avis rapide, puis un rapport complet.
 
 ## Qui peut gérer les types ?
 
-L'écran **Types de demande de relecture** (paramètres de la revue, à côté des grilles de relecture) est accessible aux :
+Les types se gèrent dans l'onglet **Types de demande** de **Relecture : grilles et types de demande** (paramètres de la
+revue). Cet onglet est accessible aux :
 - **Administrateurs**
 - **Rédacteurs en chef**
 - **Secrétaires de rédaction**
@@ -34,7 +35,7 @@ Chaque revue commence avec trois types :
 
 ## Gérer les types
 
-Dans **Types de demande de relecture** :
+Dans l'onglet **Types de demande** :
 
 1. Cliquez sur **Ajouter un type de demande**, ou sur **Modifier** pour un type existant.
 2. Renseignez :
@@ -74,8 +75,10 @@ changent pas.
 
 ## Grilles de relecture
 
-Dans **Grilles de relecture**, vous pouvez créer une grille pour un type de demande (**Créer une grille pour le type
-de demande**). Un nouveau rapport utilise alors, dans l'ordre :
+La colonne **Grille de notation** de l'onglet **Types de demande** indique la grille utilisée par chaque type ;
+**Créer une grille** crée la grille d'un type. Dans l'onglet **Grilles de notation**, les grilles sont regroupées en
+grille par défaut, grilles par type de demande et grilles par volume, chaque groupe avec son formulaire de création.
+Un nouveau rapport utilise, dans l'ordre :
 
 1. la grille de son type de demande ;
 2. sinon, la grille du volume de l'article ;

@@ -13,35 +13,17 @@ use Episciences\Reviewer\RequestTypeRepository;
  */
 class RequesttypeController extends Zend_Controller_Action
 {
-    private const LIST_URL = '/requesttype/list';
+    // the types are listed in a tab of the rating grids page
+    private const LIST_URL = '/grid/list?tab=types';
 
     private ?RequestTypeRepository $repository = null;
 
     /**
-     * Types of the journal
-     * @throws JsonException
+     * Former list page of the types: they are now listed in a tab of the rating grids page
      */
     public function listAction(): void
     {
-        $this->view->headMeta()->appendHttpEquiv('robots', 'noindex, nofollow');
-
-        $repository = $this->getRepository();
-        $types = $repository->findAllForJournal(RVID);
-
-        if ($types === []) {
-            $repository->createDefaults(RVID);
-            $types = $repository->findAllForJournal(RVID);
-        }
-
-        $used = [];
-        foreach ($types as $type) {
-            $used[(int)$type->getId()] = $repository->isUsed((int)$type->getId());
-        }
-
-        $this->view->types = $types;
-        $this->view->used = $used;
-        $this->view->locale = Episciences_Tools::getLocale();
-        $this->view->csrfToken = Episciences_Csrf_Helper::getSessionToken();
+        $this->_helper->redirector->gotoUrl(self::LIST_URL);
     }
 
     /**

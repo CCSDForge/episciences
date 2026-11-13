@@ -17,7 +17,8 @@ a full report.
 
 ## Who Can Manage the Types?
 
-The **Review request types** screen (journal settings, next to the review grids) is available to:
+The types are managed in the **Request types** tab of **Review: grids and request types** (journal settings). This tab
+is available to:
 - **Administrators**
 - **Chief Editors**
 - **Secretaries**
@@ -34,7 +35,7 @@ Every journal starts with three types:
 
 ## Managing the Types
 
-In **Review request types**:
+In the **Request types** tab:
 
 1. Click **Add a request type**, or **Edit** on an existing type.
 2. Fill in:
@@ -73,8 +74,9 @@ The **review report** keeps the three existing invitation templates: your curren
 
 ## Rating Grids
 
-In **Review Grids**, you can create a grid for a request type (**Create a grid for the request type**). A new report
-then uses, in this order:
+The **Rating grid** column of the **Request types** tab shows the grid each type uses; **Create a grid** creates the
+grid of a type. In the **Rating grids** tab, the grids are grouped into the default grid, the grids per request type and
+the grids per volume, each group with its creation form. A new report uses, in this order:
 
 1. the grid of its request type;
 2. otherwise, the grid of the article's volume;

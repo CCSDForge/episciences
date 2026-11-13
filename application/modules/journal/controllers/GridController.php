@@ -4,6 +4,10 @@ use Episciences\Reviewer\RequestTypeRepository;
 
 class GridController extends Zend_Controller_Action
 {
+    // tabs of the list page
+    public const TAB_GRIDS = 'grids';
+    public const TAB_TYPES = 'types';
+
     /**
      * File of a grid from its key: a volume id (0: default grid) or "t<request type id>" for the grid of a review
      * request type (#319); an invalid key gives a file name that never exists
@@ -22,39 +26,79 @@ class GridController extends Zend_Controller_Action
     }
 
     /**
-     *  Liste des grilles de notation
+     * Review settings page: the rating grids tab, and the review request types tab (#319) for the users who manage them
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
+     * @throws JsonException
      */
-    public function listAction()
+    public function listAction(): void
     {
         $this->view->headMeta()->appendHttpEquiv('robots', 'noindex, nofollow');
 
-        // Récupération de la liste
         $grids = Episciences_GridsManager::getList();
-
-        // Formulaire d'ajout de grille
         $this->view->grids = $grids;
-
         $this->view->form = Episciences_GridsManager::getGridForm($grids);
 
-        // review request types of the journal (#319): their grids, and the types without one
+        // the request types are managed by the same roles as on the former request types page
+        $canManageTypes = Episciences_Auth::isSecretary();
+        $repository = new RequestTypeRepository();
         $requestTypes = [];
-        foreach ((new RequestTypeRepository())->findAllForJournal(RVID) as $requestType) {
+        foreach ($this->journalRequestTypes($repository, $canManageTypes) as $requestType) {
             $requestTypes[(int)$requestType->getId()] = $requestType;
         }
+
+        $gridTypeIds = [];
+        foreach (array_keys($requestTypes) as $requestTypeId) {
+            if (array_key_exists('grid_' . Episciences_GridsManager::requestTypeGridKey($requestTypeId), $grids)) {
+                $gridTypeIds[$requestTypeId] = true;
+            }
+        }
+
         $this->view->requestTypes = $requestTypes;
+        // types having their own grid
+        $this->view->requestTypeGridIds = $gridTypeIds;
         // a type answered without an account uses no grid: none is offered for it
         $this->view->requestTypesWithoutGrid = array_filter(
             $requestTypes,
-            static fn($requestType): bool => !$requestType->isLightAnswer()
-                && !array_key_exists('grid_' . Episciences_GridsManager::requestTypeGridKey((int)$requestType->getId()), $grids)
+            static fn($requestType): bool => !$requestType->isLightAnswer() && !isset($gridTypeIds[(int)$requestType->getId()])
         );
+        $this->view->canManageTypes = $canManageTypes;
+        $this->view->usedRequestTypes = $canManageTypes ? $this->usedRequestTypes($repository, array_keys($requestTypes)) : [];
+        $this->view->activeTab = $canManageTypes && $this->getRequest()->getParam('tab') === self::TAB_TYPES ? self::TAB_TYPES : self::TAB_GRIDS;
         $this->view->csrfToken = Episciences_Csrf_Helper::getSessionToken();
         $this->view->locale = Episciences_Tools::getLocale();
-
-        // Traductions
         $this->view->translator = Zend_Registry::get('Zend_Translate');
+    }
+
+    /**
+     * Request types of the journal; the default ones are created on the first visit of a user managing them
+     * @return list<\Episciences\Reviewer\RequestType>
+     * @throws JsonException
+     */
+    private function journalRequestTypes(RequestTypeRepository $repository, bool $canManageTypes): array
+    {
+        $types = $repository->findAllForJournal(RVID);
+
+        if ($types === [] && $canManageTypes) {
+            $repository->createDefaults(RVID);
+            $types = $repository->findAllForJournal(RVID);
+        }
+
+        return $types;
+    }
+
+    /**
+     * @param list<int> $requestTypeIds
+     * @return array<int, bool> whether each type is used by an invitation (a used type cannot be deleted)
+     */
+    private function usedRequestTypes(RequestTypeRepository $repository, array $requestTypeIds): array
+    {
+        $used = [];
+        foreach ($requestTypeIds as $requestTypeId) {
+            $used[$requestTypeId] = $repository->isUsed($requestTypeId);
+        }
+
+        return $used;
     }
 
     /**

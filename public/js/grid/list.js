@@ -51,4 +51,11 @@ $(document).ready(function () {
             },
         });
     });
+
+    // tables drawn in a hidden tab (list-tabs.js) are sized again when it is shown
+    document.addEventListener('grid-list:tab-shown', function () {
+        $('.dataTable:visible').each(function () {
+            $(this).dataTable().fnAdjustColumnSizing(false);
+        });
+    });
 });

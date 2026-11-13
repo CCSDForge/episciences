@@ -212,7 +212,7 @@
             ]
           },
           {
-            "label": "Grilles de relecture",
+            "label": "Relecture : grilles et types de demande",
             "controller": "grid",
             "action": "list",
             "resource": "grid-list",
@@ -245,16 +245,15 @@
                 "action": "editcriterion",
                 "resource": "grid-editcriterion",
                 "privilege": "chief_editor,administrator,secretary"
-              }
-            ]
-          },
-          {
-            "label": "Types de demande de relecture",
-            "controller": "requesttype",
-            "action": "list",
-            "resource": "requesttype-list",
-            "privilege": "chief_editor,administrator,secretary",
-            "pages": [
+              },
+              {
+                "label": "Types de demande de relecture",
+                "controller": "requesttype",
+                "action": "list",
+                "resource": "requesttype-list",
+                "privilege": "chief_editor,administrator,secretary",
+                "visible": false
+              },
               {
                 "label": "Ajouter ou modifier un type de demande",
                 "controller": "requesttype",
