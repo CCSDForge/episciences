@@ -9,7 +9,9 @@ class DataDescriptorManager
 {
     public const TABLE = T_PAPER_DATA_DESCRIPTOR;
 
-
+    /**
+     * @return array<int|string, DataDescriptor>|null the data descriptors of the paper, newest first, keyed by id
+     */
     public static function getByDocId(int $docId): ?array
     {
 
@@ -30,7 +32,7 @@ class DataDescriptorManager
     public static function getByDocIdQuery(int $docId): ?Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return $db?->select()->from(static::TABLE)->where('docid = ?', $docId)->order('submission_date DESC');
+        return $db?->select()->from(static::TABLE)->where('docid = ?', $docId)->order(['submission_date DESC', 'id DESC']);
     }
 
 
@@ -40,7 +42,7 @@ class DataDescriptorManager
         return $db->select()
             ->from(self::TABLE, 'version')
             ->where('docid = ?', $docId)
-            ->order('submission_date DESC');
+            ->order(['submission_date DESC', 'id DESC']);
 
     }
 

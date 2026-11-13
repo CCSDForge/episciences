@@ -63,6 +63,7 @@ php scripts/console.php <command> --help
 | [`episciences:worker`](#episciencesworker) | Continuously consume one Messenger queue (`solr_index` or `next_revalidation`) |
 | [`episciences:queue`](#episciencesqueue) | Inspect and manage one Messenger queue |
 | [`next:revalidate-cache`](#nextrevalidate-cache) | Immediately trigger (or enqueue) Next.js cache revalidation for a journal and one or more tags |
+| [`episciences:manuscript:probe`](#episciencesmanuscriptprobe) | Resolve and download the manuscript of a paper version, as it will be submitted to Turnitin (diagnostic) |
 | [`notify:process-inbox`](#notifyprocess-inbox) | Process inbound COAR Notify notifications from repository inboxes (e.g. HAL) |
 | [`translations:update`](#translationsupdate) | Update translation strings in a PHP array file from a YAML config |
 
@@ -1363,6 +1364,45 @@ php scripts/console.php episciences:queue --transport=<solr_index|next_revalidat
 Exactly one of `--stats`, `--list-failed`, `--retry`, `--setup`,
 `--list-dispatch-failures` or `--retry-dispatch-failure` is required, and
 both it and `--transport` are validated before any bootstrap.
+
+---
+
+## Turnitin
+
+### `episciences:manuscript:probe`
+
+Resolves and downloads the manuscript of a paper version exactly as the Turnitin
+similarity check will (`Episciences\Tca\Manuscript\RepositoryManuscriptSource`),
+and prints its file name, size and MIME type. Use it to check that a repository
+serves an analysable file before submitting anything to Turnitin.
+
+The main file is always downloaded from the repository, never read from the local
+backup copy (`data/{rvcode}/files/{docid}/documents/{docid}.pdf`), which may hold
+another file of the paper or a previous version. For a dataset or software, the
+repository holds the data or the code: the file checked is the latest data
+descriptor uploaded to Episciences (`data/{rvcode}/files/{docid}/dd/`). A temporary
+version is uploaded to Episciences too: its file is read from
+`data/{rvcode}/files/{paperid}/tmp/`. Nothing designates the manuscript among
+several attached files (the article and the answer to the reviewers, for
+instance), so only a temporary version with a single file is checked. Temporary
+versions with several files, datasets and software without data descriptor,
+missing, removed or restricted files and files not downloaded within 15 minutes
+give no manuscript: run with `-v` to print the reason. Run the command as the
+web server user (`www-data`), which can write the log. The log is written to
+`tca_manuscript-<date>.log`, the same file as the Turnitin integration.
+
+```bash
+php scripts/console.php episciences:manuscript:probe <docid> [--save=<path>] [-v]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--save <path>` | Write the downloaded file to this path (refused if it already exists) |
+| `-v` | Print every step of the resolution, including why no manuscript was found |
+
+Exit codes: `0` a manuscript was found, `1` no analysable manuscript or the
+repository failed (the message says whether a retry may succeed), `2` invalid
+arguments.
 
 ---
 
