@@ -82,6 +82,9 @@ de demande**). Un nouveau rapport utilise alors, dans l'ordre :
 
 Un rapport garde la grille avec laquelle il a été créé.
 
+Un type à réponse sans compte n'utilise pas de grille : on ne peut pas lui en créer une, et une grille créée avant de
+cocher l'option n'est pas utilisée tant que l'option reste cochée.
+
 ## Rapports
 
 Chaque demande a son propre rapport. Sur la page de gestion de l'article :

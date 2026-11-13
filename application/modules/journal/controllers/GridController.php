@@ -44,9 +44,11 @@ class GridController extends Zend_Controller_Action
             $requestTypes[(int)$requestType->getId()] = $requestType;
         }
         $this->view->requestTypes = $requestTypes;
+        // a type answered without an account uses no grid: none is offered for it
         $this->view->requestTypesWithoutGrid = array_filter(
             $requestTypes,
-            static fn($requestType): bool => !array_key_exists('grid_' . Episciences_GridsManager::requestTypeGridKey((int)$requestType->getId()), $grids)
+            static fn($requestType): bool => !$requestType->isLightAnswer()
+                && !array_key_exists('grid_' . Episciences_GridsManager::requestTypeGridKey((int)$requestType->getId()), $grids)
         );
         $this->view->csrfToken = Episciences_Csrf_Helper::getSessionToken();
         $this->view->locale = Episciences_Tools::getLocale();
@@ -102,7 +104,15 @@ class GridController extends Zend_Controller_Action
                 ? (new RequestTypeRepository())->findById((int)$requestTypeId)
                 : null;
 
-            if ($requestType !== null && $requestType->getRvid() === RVID) {
+            if ($requestTypeId !== null && $requestTypeId !== '' && ($requestType === null || $requestType->getRvid() !== RVID || $requestType->isLightAnswer())) {
+                // unknown type, or a type answered without an account: it uses no grid
+                $message = '<strong>' . $this->view->translate("Ce type de demande n'utilise pas de grille de relecture.") . '</strong>';
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                $this->_helper->redirector('list', 'grid');
+                return;
+            }
+
+            if ($requestType !== null) {
                 $filename = Episciences_GridsManager::filenameOf(Episciences_GridsManager::requestTypeGridKey((int)$requestType->getId()));
             } else {
                 $id = (is_numeric($request->getPost('volume'))) ? (int)$request->getPost('volume') : 0;

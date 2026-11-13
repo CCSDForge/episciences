@@ -133,6 +133,9 @@ $error = function (string $field) use ($errors): string {
                     </label>
                     <span id="light_answer-help" class="help-block">
                         <?= $this->escape($this->translate("La personne invitée donne son avis (texte et fichier facultatif) directement depuis le lien reçu, sans créer de compte ni remplir de grille. L'avis n'est visible que par le comité éditorial.")) ?>
+                        <?php if ($this->hasGrid) : ?>
+                            <br><?= $this->escape($this->translate("Ce type a une grille de relecture : elle n'est pas utilisée tant que cette option est cochée.")) ?>
+                        <?php endif; ?>
                     </span>
                 </div>
             </div>

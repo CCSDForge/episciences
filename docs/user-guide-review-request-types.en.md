@@ -81,6 +81,9 @@ then uses, in this order:
 
 A report keeps the grid it was created with.
 
+A type answered without an account uses no grid: no grid can be created for it, and a grid created before the option
+was checked is not used while the option stays checked.
+
 ## Reports
 
 Each request has its own report. On the paper's administration page:

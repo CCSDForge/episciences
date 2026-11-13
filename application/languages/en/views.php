@@ -2973,4 +2973,7 @@ return array(
     "Avis reçu le" => "Opinion received on",
     "modifié le" => "edited on",
     "Avis donnés sans compte" => "Opinions given without an account",
+    "Ce type de demande n'utilise pas de grille de relecture." => "This request type uses no rating grid.",
+    "Ce type se répond sans compte : cette grille n'est pas utilisée tant que l'option reste cochée." => "This type is answered without an account: this grid is not used while the option is checked.",
+    "Ce type a une grille de relecture : elle n'est pas utilisée tant que cette option est cochée." => "This type has a rating grid: it is not used while this option is checked.",
 );

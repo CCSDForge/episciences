@@ -59,6 +59,11 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                 </div>
 
                 <div class="panel-body in">
+                    <?php if ($gridRequestType && $gridRequestType->isLightAnswer()) : ?>
+                        <div class="alert alert-warning" role="status">
+                            <?= $this->escape($this->translate("Ce type se répond sans compte : cette grille n'est pas utilisée tant que l'option reste cochée.")) ?>
+                        </div>
+                    <?php endif; ?>
                     <?php echo $this->partial('partials/grid_criteria.phtml', ['grid' => $grid, 'defaultGrid' => $defaultGrid, 'translator' => $this->translator]); ?>
                 </div>
 
