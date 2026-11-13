@@ -1,5 +1,8 @@
 <?php
 
+use Episciences\AppRegistry;
+use Episciences\Reviewer\RequestTypeRepository;
+
 class Episciences_Mail_TemplatesManager
 {
     private const CUSTOM_KEY_PREFIX = 'custom_';
@@ -2109,6 +2112,9 @@ class Episciences_Mail_TemplatesManager
 
             $select->where('(RVID IS NULL OR RVID = ?)', $rvId);
 
+            // the invitation templates of the review request types disabled by the journal are not listed (#319)
+            $withoutKeys = array_merge($withoutKeys, self::disabledRequestTypeTemplateKeys($rvId));
+
         } else {
             $select->where('RVID IS NULL');
         }
@@ -2167,6 +2173,32 @@ class Episciences_Mail_TemplatesManager
      * @param bool $withoutCommunTags
      * @return array
      */
+    /**
+     * Keys (default and custom) of the invitation templates of the review request types disabled by the journal (#319)
+     * @return list<string>
+     */
+    private static function disabledRequestTypeTemplateKeys(int $rvId): array
+    {
+        try {
+            $types = (new RequestTypeRepository())->findAllForJournal($rvId);
+        } catch (Throwable $e) {
+            AppRegistry::getMonoLogger()?->warning(sprintf('Review request types unavailable: %s', $e->getMessage()));
+            return [];
+        }
+
+        $keys = [];
+
+        foreach ($types as $type) {
+            if (!$type->isEnabled()) {
+                $key = self::INVITATION_KEY_PREFIX . $type->getCode();
+                $keys[] = $key;
+                $keys[] = self::CUSTOM_KEY_PREFIX . $key;
+            }
+        }
+
+        return $keys;
+    }
+
     /**
      * Whether the key is the invitation template of a review request type (#319), the review report excepted
      */

@@ -46,8 +46,9 @@ Dans **Types de demande de relecture** :
    - **Réponse sans compte, depuis le lien de l'invitation** (voir plus bas).
 3. Cliquez sur **Enregistrer**.
 
-Un type déjà utilisé ne peut pas être supprimé : désactivez-le. Le rapport de relecture est toujours proposé et exige
-toujours un compte.
+Les trois types par défaut restent toujours disponibles : ils ne peuvent pas être supprimés, seulement désactivés, afin
+que chaque revue choisisse les types qu'elle propose. Un type créé par votre revue peut être supprimé tant qu'il n'a pas
+servi ; ensuite, désactivez-le. Le rapport de relecture est toujours proposé et exige toujours un compte.
 
 ## Inviter un relecteur
 
@@ -61,7 +62,7 @@ Les types que le relecteur a déjà en cours pour cet article sont grisés.
 
 Chaque type a son propre modèle de message, que vous pouvez personnaliser dans l'écran des modèles de mail, comme
 n'importe quel autre modèle. Un type créé par votre revue reçoit son propre modèle à sa création, copié d'un modèle
-générique.
+générique. Les modèles des types que vous avez désactivés ne sont plus listés.
 
 Le paragraphe qui aide le relecteur à se connecter dépend de son compte (relecteur connu, compte existant, pas de
 compte, réponse sans compte). Il est inséré par le tag `%%INVITATION_ACCOUNT_HINT%%` ; ses quatre textes sont eux aussi

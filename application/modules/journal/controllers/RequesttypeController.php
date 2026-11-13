@@ -137,7 +137,7 @@ class RequesttypeController extends Zend_Controller_Action
             }
             $this->flash(Ccsd_View_Helper_Message::MSG_SUCCESS, 'Le type de demande a été supprimé.');
         } else {
-            $this->flash(Ccsd_View_Helper_Message::MSG_ERROR, 'Ce type de demande ne peut pas être supprimé : il a déjà été utilisé, désactivez-le.');
+            $this->flash(Ccsd_View_Helper_Message::MSG_ERROR, 'Ce type de demande ne peut pas être supprimé (type par défaut ou déjà utilisé) : désactivez-le.');
         }
 
         $this->_helper->redirector->gotoUrl(self::LIST_URL);

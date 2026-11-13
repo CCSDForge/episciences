@@ -46,8 +46,9 @@ In **Review request types**:
    - **Answer without an account, from the invitation link** (see below).
 3. Click **Save**.
 
-A type that has already been used cannot be deleted: disable it instead. The review report type is always offered and
-always requires an account.
+The three default types are always available: they cannot be deleted, only disabled, so that each journal chooses the
+types it offers. A type created by your journal can be deleted as long as it has not been used; afterwards, disable it.
+The review report type is always offered and always requires an account.
 
 ## Inviting a Reviewer
 
@@ -61,6 +62,7 @@ The types that the reviewer already has in progress for this article are greyed 
 
 Each type has its own e-mail template, which you can customise in the mail templates screen, like any other template.
 A type created by your journal gets its own template when it is created, copied from a generic template.
+The templates of the types you disabled are no longer listed.
 
 The paragraph that helps the reviewer to sign in depends on their account (known reviewer, existing account, no
 account, answer without an account). It is inserted with the `%%INVITATION_ACCOUNT_HINT%%` tag; its four texts are

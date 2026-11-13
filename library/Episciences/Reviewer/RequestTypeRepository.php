@@ -193,14 +193,15 @@ class RequestTypeRepository
     }
 
     /**
-     * Deletes a type of the journal that was never used; a used type can only be disabled
-     * @return bool false when the type is unknown, used, or the review report type
+     * Deletes a type created by the journal and never used; a default type or a used type can only be disabled
+     * @return bool false when the type is unknown, a default type, or used
      */
     public function delete(int $id, int $rvid): bool
     {
         $type = $this->findById($id);
 
-        if ($type === null || $type->getRvid() !== $rvid || $type->isFullReport() || $this->isUsed($id)) {
+        // the default types stay available to every journal: they can be disabled, not deleted
+        if ($type === null || $type->getRvid() !== $rvid || $type->isDefault() || $this->isUsed($id)) {
             return false;
         }
 

@@ -53,7 +53,8 @@ $this->layout()->description = $this->translate("Le type est choisi à l'invitat
                     <?= $this->escape($this->translate('Modifier')) ?>
                     <span class="sr-only"><?= $this->escape($label) ?></span>
                 </a>
-                <?php if (!$type->isFullReport() && empty($this->used[$id])) : ?>
+                <?php // the default types and the used types can only be disabled ?>
+                <?php if (!$type->isDefault() && empty($this->used[$id])) : ?>
                     <form method="post" action="/requesttype/delete" style="display: inline"
                           onsubmit="return confirm(<?= $this->escape(json_encode($this->translate('Supprimer ce type de demande ?'), JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)) ?>);">
                         <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
@@ -72,5 +73,5 @@ $this->layout()->description = $this->translate("Le type est choisi à l'invitat
 </table>
 
 <p class="help-block">
-    <?= $this->escape($this->translate("Un type déjà utilisé ne peut pas être supprimé : désactivez-le pour ne plus le proposer. Le message d'invitation de chaque type se modifie dans les modèles de mail.")) ?>
+    <?= $this->escape($this->translate("Les types par défaut et les types déjà utilisés ne peuvent pas être supprimés : désactivez-les pour ne plus les proposer (leur modèle de message n'est alors plus listé). Le message d'invitation de chaque type se modifie dans les modèles de mail.")) ?>
 </p>

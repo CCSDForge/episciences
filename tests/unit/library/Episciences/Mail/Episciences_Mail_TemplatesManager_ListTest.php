@@ -15,6 +15,7 @@ use Zend_Db_Table_Abstract;
  * Rows are inserted in a transaction that is rolled back after each test.
  *
  * @covers Episciences_Mail_TemplatesManager::getList
+ * @covers Episciences_Mail_TemplatesManager::disabledRequestTypeTemplateKeys
  */
 final class Episciences_Mail_TemplatesManager_ListTest extends TestCase
 {
@@ -91,5 +92,23 @@ final class Episciences_Mail_TemplatesManager_ListTest extends TestCase
 
         self::assertNotContains('list_test_accepted', $keys);
         self::assertContains('custom_list_test_accepted', $keys);
+    }
+
+    public function testTheInvitationTemplatesOfADisabledRequestTypeAreNotListed(): void
+    {
+        $this->db->insert('review_request_type', [
+            'rvid' => self::RVID, 'code' => 'phase_two', 'labels' => '{"en":"Phase two"}', 'position' => 1, 'enabled' => 0,
+        ]);
+        $this->db->insert('review_request_type', [
+            'rvid' => self::RVID, 'code' => 'phase_three', 'labels' => '{"en":"Phase three"}', 'position' => 2, 'enabled' => 1,
+        ]);
+        $generic = $this->template('list_test_generic');
+        $this->template('custom_paper_reviewer_invitation_phase_two', $generic, self::RVID);
+        $this->template('custom_paper_reviewer_invitation_phase_three', $generic, self::RVID);
+
+        $keys = $this->listedKeys();
+
+        self::assertNotContains('custom_paper_reviewer_invitation_phase_two', $keys);
+        self::assertContains('custom_paper_reviewer_invitation_phase_three', $keys);
     }
 }

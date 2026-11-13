@@ -141,6 +141,9 @@ final class RequestTypeRepositoryTest extends TestCase
         self::assertFalse($this->repository->isUsed((int)$unused->getId()));
 
         self::assertFalse($this->repository->delete((int)$fullReport?->getId(), self::RVID));
+        // the default types stay available: never used, they still cannot be deleted
+        self::assertFalse($this->repository->delete((int)$this->repository->findByCode(self::RVID, 'quick_opinion')?->getId(), self::RVID));
+        self::assertFalse($this->repository->delete((int)$this->repository->findByCode(self::RVID, 'revision_check')?->getId(), self::RVID));
         self::assertFalse($this->repository->delete((int)$used->getId(), self::RVID));
         self::assertFalse($this->repository->delete((int)$unused->getId(), self::OTHER_RVID));
         self::assertTrue($this->repository->delete((int)$unused->getId(), self::RVID));
