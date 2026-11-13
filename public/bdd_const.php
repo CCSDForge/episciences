@@ -42,6 +42,9 @@ if (file_exists($path)) {
 defined('CAPTCHA_BRAND') || define('CAPTCHA_BRAND', '');
 defined('ALTCHA_HMAC_SECRET') || define('ALTCHA_HMAC_SECRET', '');
 
+// arXiv submission: read the metadata from DataCite when the arXiv OAI-PMH server is unavailable, enabled unless set to false in pwd.json
+defined('EPISCIENCES_ARXIV_DATACITE_FALLBACK') || define('EPISCIENCES_ARXIV_DATACITE_FALLBACK', true);
+
 /**
  * S'assure que la constante de nom $name est definie
  * Si non definie, prendra la valeur de la variable d'environnement du meme nom
