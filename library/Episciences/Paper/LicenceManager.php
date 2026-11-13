@@ -12,9 +12,9 @@ use Episciences\Paper\WriteFailure;
 class Episciences_Paper_LicenceManager
 {
     public const ONE_MONTH = 3600 * 24 * 31;
-    const ARXIV_DOI_PREFIX = '10.48550/arxiv.';
-    const ZENODO_DOI_PREFIX = '10.5281/zenodo.';
-    const DATACITE_DOI_API = 'https://api.datacite.org/dois/';
+    const ARXIV_DOI_PREFIX = Episciences_Repositories_Common::ARXIV_DOI_PREFIX;
+    const ZENODO_DOI_PREFIX = Episciences_Repositories_Common::ZENODO_DOI_PREFIX;
+    const DATACITE_DOI_API = Episciences_Repositories_Common::DATACITE_DOI_API;
 
     /**
      * @param string|int $repoId
