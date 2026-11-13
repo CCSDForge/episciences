@@ -186,27 +186,14 @@ final class Episciences_RssTest extends TestCase
         self::assertSame($expected, $xpath->evaluate('string(/rss/channel/item/content:encoded)'));
     }
 
-    /**
-     * @return array<string, array{string, string, string}>
-     */
-    public static function channelProvider(): array
-    {
-        return [
-            'papers' => ['papers', '/rss/papers', 'Derniers articles'],
-            'news' => ['news', '/rss/news', 'Dernières actualités'],
-        ];
-    }
-
-    /**
-     * @dataProvider channelProvider
-     */
-    public function testChannelDescribesTheFeedOfTheAction(string $action, string $feedLink, string $description): void
+    public function testChannelDescribesTheNewsFeed(): void
     {
         $rss = $this->newsFeed();
-        $feed = (new ReflectionMethod(Episciences_Rss::class, 'createFeed'))->invoke($rss, 'Journal', $action);
+        $feed = (new ReflectionMethod(Episciences_Rss::class, 'createFeed'))->invoke($rss, 'Journal');
 
-        self::assertSame(['rss' => APPLICATION_URL . $feedLink], $feed->getFeedLinks());
-        self::assertSame($description, $feed->getDescription());
+        self::assertSame(['rss' => APPLICATION_URL . '/rss/news'], $feed->getFeedLinks());
+        self::assertSame('Dernières actualités', $feed->getDescription());
+        self::assertSame('Journal - Dernières actualités', $feed->getTitle());
     }
 
     /**
