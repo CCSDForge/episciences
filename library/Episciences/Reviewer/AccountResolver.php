@@ -423,7 +423,9 @@ class Episciences_Reviewer_AccountResolver
         $template->loadTranslations();
         $template->setLocale($locale);
 
-        $url = APPLICATION_URL . Zend_Controller_Front::getInstance()->getRouter()->assemble([
+        // Use the view URL helper, not the router: it keeps the journal path prefix (/<rvcode>/...)
+        $view = Zend_Controller_Action_HelperBroker::getStaticHelper('viewRenderer')->view;
+        $url = APPLICATION_URL . $view->url([
             'controller' => 'user',
             'action'     => 'resetpassword',
             'lang'       => $locale,
