@@ -270,7 +270,7 @@ if ($this->citations !== '') {
 <?php if ($lightAnswers) : ?>
     <div class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->escape($this->translate('Avis donnés sans compte')) ?></h2>
+            <h2 class="panel-title"><?= $this->escape($this->translate('Réponses données sans compte')) ?></h2>
         </div>
         <div class="panel-body in">
             <?= $this->partial('partials/paper_light_answers.phtml', ['paper' => $paper, 'answers' => $lightAnswers]) ?>

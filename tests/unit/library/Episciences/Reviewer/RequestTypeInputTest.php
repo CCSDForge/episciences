@@ -120,4 +120,13 @@ final class RequestTypeInputTest extends TestCase
         $fullReport = new RequestType(1, self::RVID, RequestType::CODE_FULL_REPORT, ['fr' => 'Rapport', 'en' => 'Report']);
         self::assertFalse((new RequestTypeInput($this->post(['light_answer' => '1']), self::RVID, self::LANGUAGES, $fullReport))->getType()?->isLightAnswer());
     }
+
+    public function testInstructionsAreOptionalAndLimited(): void
+    {
+        $type = (new RequestTypeInput($this->post(['instructions' => ['fr' => 'Indiquez votre avis.', 'en' => '']]), self::RVID, self::LANGUAGES))->getType();
+        self::assertSame(['fr' => 'Indiquez votre avis.'], $type?->getAllInstructions());
+
+        $input = new RequestTypeInput($this->post(['instructions' => ['en' => str_repeat('a', RequestType::INSTRUCTIONS_MAX_LENGTH + 1)]]), self::RVID, self::LANGUAGES);
+        self::assertArrayHasKey('instructions_en', $input->getErrors());
+    }
 }

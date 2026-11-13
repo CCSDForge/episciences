@@ -21,6 +21,7 @@ final class RequestTypeTestDatabase
                 rvid INTEGER NOT NULL,
                 code TEXT NOT NULL,
                 labels TEXT NOT NULL,
+                instructions TEXT NULL,
                 light_answer INTEGER NOT NULL DEFAULT 0,
                 default_deadline TEXT NULL,
                 position INTEGER NOT NULL DEFAULT 0,

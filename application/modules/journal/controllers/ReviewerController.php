@@ -860,7 +860,7 @@ class ReviewerController extends PaperDefaultController
             } elseif (array_key_exists(LightAnswerForm::SUBMIT, $post)) {
                 if ($this->saveLightAnswer($form, $post, $answer, $invitation, $assignment, $paper, $requestType)) {
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
-                        ->addMessage($this->view->translate('Merci, votre avis a bien été transmis au comité éditorial.'));
+                        ->addMessage($this->view->translate('Merci, votre réponse a bien été transmise au comité éditorial.'));
                     $this->redirect($this->invitationUrl($invitation));
                     return;
                 }
@@ -882,6 +882,7 @@ class ReviewerController extends PaperDefaultController
         $this->view->isEditable = $isEditable;
         $this->view->rating_deadline = $deadline;
         $this->view->requestTypeLabel = $requestType->getLabel(Episciences_Tools::getLocale());
+        $this->view->requestTypeInstructions = $requestType->getInstructions(Episciences_Tools::getLocale());
         $this->view->csrfToken = Episciences_Csrf_Helper::getSessionToken();
         $this->renderScript('reviewer/light_answer.phtml');
     }

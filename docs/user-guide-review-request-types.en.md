@@ -43,7 +43,7 @@ In **Review request types**:
    - **Default deadline** (leave empty to use the journal setting);
    - **Position** in the list;
    - **Offer this type when inviting a reviewer** (uncheck to hide it);
-   - **Answer without an account, from the invitation link** (see below).
+   - **Answer without an account, from the invitation link** (see below), and its **Instructions** in each language.
 3. Click **Save**.
 
 The three default types are always available: they cannot be deleted, only disabled, so that each journal chooses the
@@ -96,13 +96,15 @@ average rating. The other types are shown for information.
 ## Answer Without an Account
 
 When the option is checked on a type, the invitation link opens a page where the invited person:
-- gives an opinion: a text, a file (optional), or both;
+- reads the instructions of the type (by default, the quick opinion asks for a few lines on the interest of the
+  article, the revised version check asks whether the revision addresses the previous comments);
+- answers: a text, a file (optional), or both;
 - or declines the request.
 
 No account is needed. The first answer accepts the invitation and informs the editors by e-mail. The person can edit
-their opinion from the same link until the due date.
+their answer from the same link until the due date.
 
-The opinion is shown only to the editorial staff, in the **Opinions given without an account** panel of the paper's
+The answer is shown only to the editorial staff, in the **Answers given without an account** panel of the paper's
 administration page (and under the invitation in the **Reviewers** panel). Authors never see it.
 
 ## Email Notifications
@@ -110,7 +112,7 @@ administration page (and under the invitation in the **Reviewers** panel). Autho
 | Event | Recipients |
 |---|---|
 | Invitation | the invited person (template of the request type) |
-| Opinion given without an account | the editors of the article (same e-mail as a completed review) |
+| Answer given without an account | the editors of the article (same e-mail as a completed review) |
 
 ## Paper History
 

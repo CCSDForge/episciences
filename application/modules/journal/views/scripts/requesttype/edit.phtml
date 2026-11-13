@@ -132,6 +132,7 @@ $error = function (string $field) use ($errors): string {
                         <?= $this->escape($this->translate("Réponse sans compte, depuis le lien de l'invitation")) ?>
                     </label>
                     <span id="light_answer-help" class="help-block">
+                        <?= $this->escape($this->translate("La consigne ci-dessous s'affiche sur la page de réponse.")) ?>
                         <?= $this->escape($this->translate("La personne invitée donne son avis (texte et fichier facultatif) directement depuis le lien reçu, sans créer de compte ni remplir de grille. L'avis n'est visible que par le comité éditorial.")) ?>
                         <?php if ($this->hasGrid) : ?>
                             <br><?= $this->escape($this->translate("Ce type a une grille de relecture : elle n'est pas utilisée tant que cette option est cochée.")) ?>
@@ -140,6 +141,19 @@ $error = function (string $field) use ($errors): string {
                 </div>
             </div>
         </div>
+        <?php foreach ($this->languages as $lang) : ?>
+            <?php $field = 'instructions_' . $lang; ?>
+            <div class="form-group<?= isset($errors[$field]) ? ' has-error' : '' ?>">
+                <label for="<?= $this->escape($field) ?>" class="col-md-3 control-label">
+                    <?= $this->escape($this->translate('Consigne pour la réponse sans compte')) ?> (<?= $this->escape($languageNames[$lang] ?? $lang) ?>)
+                </label>
+                <div class="col-md-6">
+                    <textarea id="<?= $this->escape($field) ?>" name="instructions[<?= $this->escape($lang) ?>]" rows="3" class="form-control"
+                              maxlength="<?= \Episciences\Reviewer\RequestType::INSTRUCTIONS_MAX_LENGTH ?>"<?= $describedBy($field) ?>><?= $this->escape($values['instructions'][$lang] ?? '') ?></textarea>
+                    <?= $error($field) ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
     <?php endif; ?>
 
     <div class="form-group">

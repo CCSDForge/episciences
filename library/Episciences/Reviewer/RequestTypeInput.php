@@ -12,7 +12,8 @@ use InvalidArgumentException;
  * (messages to translate, by field name).
  *
  * Posted fields: code (new type only), label[<lang>], deadline + deadline_unit (both empty: journal setting),
- * position, enabled (absent: disabled), light_answer (absent: answered with an account and the rating grid).
+ * position, enabled (absent: disabled), light_answer (absent: answered with an account and the rating grid),
+ * instructions[<lang>] (optional).
  */
 final class RequestTypeInput
 {
@@ -23,6 +24,8 @@ final class RequestTypeInput
     public const FIELD_ENABLED = 'enabled';
     /** answered from the invitation link, without an account (#319); never for the review report */
     public const FIELD_LIGHT_ANSWER = 'light_answer';
+    /** instructions[<lang>], shown on the page of the answer without an account; optional */
+    public const FIELD_INSTRUCTIONS = 'instructions';
 
     /** @var array<string, string> */
     private array $errors = [];
@@ -38,6 +41,7 @@ final class RequestTypeInput
     {
         $code = $existing?->getCode() ?? trim(self::stringValue($post[self::FIELD_CODE] ?? ''));
         $labels = $this->labels($post[self::FIELD_LABEL] ?? null, $languages);
+        $instructions = $this->instructions($post[self::FIELD_INSTRUCTIONS] ?? null, $languages);
         $deadline = $this->deadline($post);
         $position = $this->position($post[self::FIELD_POSITION] ?? '');
         // the review report type stays enabled: it is the type of the requests made before the types existed
@@ -55,8 +59,8 @@ final class RequestTypeInput
 
         try {
             $this->type = $existing !== null
-                ? $existing->withSettings($labels, $deadline, $position, $enabled, $lightAnswer)
-                : new RequestType(null, $rvid, $code, $labels, $lightAnswer, $deadline, $position, $enabled);
+                ? $existing->withSettings($labels, $deadline, $position, $enabled, $lightAnswer, $instructions)
+                : new RequestType(null, $rvid, $code, $labels, $lightAnswer, $deadline, $position, $enabled, $instructions);
         } catch (InvalidArgumentException) {
             $this->errors[self::FIELD_CODE] = "Ce type de demande n'a pas pu être enregistré.";
         }
@@ -102,6 +106,33 @@ final class RequestTypeInput
         }
 
         return $labels;
+    }
+
+    /**
+     * @param list<string> $languages
+     * @return array<string, string>
+     */
+    private function instructions(mixed $posted, array $languages): array
+    {
+        $instructions = [];
+        $posted = is_array($posted) ? $posted : [];
+
+        foreach ($languages as $lang) {
+            $text = trim(self::stringValue($posted[$lang] ?? ''));
+
+            if ($text === '') {
+                continue;
+            }
+
+            if (mb_strlen($text) > RequestType::INSTRUCTIONS_MAX_LENGTH) {
+                $this->errors[self::FIELD_INSTRUCTIONS . '_' . $lang] = 'La consigne ne doit pas dépasser 1000 caractères.';
+                continue;
+            }
+
+            $instructions[$lang] = $text;
+        }
+
+        return $instructions;
     }
 
     /**

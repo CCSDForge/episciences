@@ -146,7 +146,7 @@ class RequesttypeController extends Zend_Controller_Action
     }
 
     /**
-     * @return array{code: string, label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool}
+     * @return array{code: string, label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool, instructions: array<string, string>}
      */
     private static function formValues(?RequestType $type): array
     {
@@ -162,13 +162,14 @@ class RequesttypeController extends Zend_Controller_Action
             'position' => (string)($type?->getPosition() ?? 0),
             'enabled' => $type?->isEnabled() ?? true,
             'light_answer' => $type?->isLightAnswer() ?? false,
+            'instructions' => $type?->getAllInstructions() ?? [],
         ];
     }
 
     /**
      * Posted values, shown again with the errors
      * @param array<string, mixed> $post
-     * @return array{code: string, label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool}
+     * @return array{code: string, label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool, instructions: array<string, string>}
      */
     private static function postedValues(array $post, ?RequestType $type): array
     {
@@ -189,6 +190,7 @@ class RequesttypeController extends Zend_Controller_Action
             'position' => $string($post[RequestTypeInput::FIELD_POSITION] ?? ''),
             'enabled' => ($type?->isFullReport() ?? false) || !empty($post[RequestTypeInput::FIELD_ENABLED]),
             'light_answer' => !($type?->isFullReport() ?? false) && !empty($post[RequestTypeInput::FIELD_LIGHT_ANSWER]),
+            'instructions' => array_filter((array)($post[RequestTypeInput::FIELD_INSTRUCTIONS] ?? []), 'is_string'),
         ];
     }
 

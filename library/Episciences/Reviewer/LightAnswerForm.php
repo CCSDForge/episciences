@@ -29,7 +29,7 @@ final class LightAnswerForm
         $form->setAttrib('id', 'light-answer-form');
 
         $form->addElement('textarea', self::MESSAGE, [
-            'label' => 'Votre avis',
+            'label' => 'Votre réponse',
             'rows' => 10,
             'class' => 'form-control',
             'maxlength' => LightAnswer::MESSAGE_MAX_LENGTH,

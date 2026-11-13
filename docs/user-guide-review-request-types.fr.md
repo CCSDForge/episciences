@@ -43,7 +43,7 @@ Dans **Types de demande de relecture** :
    - le **Délai par défaut** (laisser vide pour utiliser le réglage de la revue) ;
    - la **Position** dans la liste ;
    - **Proposer ce type à l'invitation d'un relecteur** (décocher pour le masquer) ;
-   - **Réponse sans compte, depuis le lien de l'invitation** (voir plus bas).
+   - **Réponse sans compte, depuis le lien de l'invitation** (voir plus bas), et sa **Consigne** dans chaque langue.
 3. Cliquez sur **Enregistrer**.
 
 Les trois types par défaut restent toujours disponibles : ils ne peuvent pas être supprimés, seulement désactivés, afin
@@ -97,13 +97,15 @@ note moyenne. Les autres types sont affichés à titre d'information.
 ## Réponse sans compte
 
 Quand l'option est cochée sur un type, le lien de l'invitation ouvre une page où la personne invitée :
-- donne son avis : un texte, un fichier (facultatif), ou les deux ;
+- lit la consigne du type (par défaut, l'avis rapide demande quelques lignes sur l'intérêt de l'article, la relecture
+  de version révisée demande si la révision répond aux remarques précédentes) ;
+- répond : un texte, un fichier (facultatif), ou les deux ;
 - ou refuse la demande.
 
 Aucun compte n'est nécessaire. Le premier envoi vaut acceptation de l'invitation et prévient les rédacteurs par mail.
-La personne peut modifier son avis depuis le même lien jusqu'à la date limite.
+La personne peut modifier sa réponse depuis le même lien jusqu'à la date limite.
 
-L'avis n'est visible que par l'équipe éditoriale, dans la section **Avis donnés sans compte** de la page de gestion de
+La réponse n'est visible que par l'équipe éditoriale, dans la section **Réponses données sans compte** de la page de gestion de
 l'article (et sous l'invitation, dans la section **Relecteurs**). Les auteurs ne le voient jamais.
 
 ## Notifications par mail
@@ -111,7 +113,7 @@ l'article (et sous l'invitation, dans la section **Relecteurs**). Les auteurs ne
 | Événement | Destinataires |
 |---|---|
 | Invitation | la personne invitée (modèle du type de demande) |
-| Avis donné sans compte | les rédacteurs de l'article (même mail que pour une relecture terminée) |
+| Réponse donnée sans compte | les rédacteurs de l'article (même mail que pour une relecture terminée) |
 
 ## Historique de l'article
 

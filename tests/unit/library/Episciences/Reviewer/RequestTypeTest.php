@@ -37,6 +37,10 @@ final class RequestTypeTest extends TestCase
 
         self::assertTrue($types[0]->isFullReport());
         self::assertNull($types[0]->getDefaultDeadline());
+        // the instructions are shown on the page of the answer without an account
+        self::assertSame('', $types[0]->getInstructions('fr'));
+        self::assertNotSame('', $types[1]->getInstructions('fr'));
+        self::assertNotSame('', $types[2]->getInstructions('en'));
         self::assertSame('2 week', $types[1]->getDefaultDeadline());
     }
 
@@ -113,7 +117,7 @@ final class RequestTypeTest extends TestCase
 
     public function testRowRoundTrip(): void
     {
-        $type = new RequestType(7, self::RVID, 'phase_two', ['fr' => 'Phase 2 « détaillée »', 'en' => 'Phase two'], true, '1 month', 4, false);
+        $type = new RequestType(7, self::RVID, 'phase_two', ['fr' => 'Phase 2 « détaillée »', 'en' => 'Phase two'], true, '1 month', 4, false, ['fr' => ' Consigne ', 'en' => '']);
 
         $row = $type->toRow() + ['id' => 7];
         $copy = RequestType::fromRow($row);
@@ -141,5 +145,18 @@ final class RequestTypeTest extends TestCase
         self::assertSame(9, $changed->getPosition());
         self::assertFalse($changed->isEnabled());
         self::assertFalse($changed->isDefault());
+    }
+
+    public function testInstructionsAreTrimmedFallBackAndAreLimited(): void
+    {
+        $type = new RequestType(null, self::RVID, 'phase_one', ['en' => 'Phase one'], true, null, 0, true, ['fr' => '  Consigne  ', 'en' => ' ']);
+
+        self::assertSame(['fr' => 'Consigne'], $type->getAllInstructions());
+        self::assertSame('Consigne', $type->getInstructions('de'));
+        self::assertSame('{"fr":"Consigne"}', $type->toRow()['instructions']);
+        self::assertNull((new RequestType(null, self::RVID, 'phase_one', ['en' => 'Phase one']))->toRow()['instructions']);
+
+        $this->expectException(InvalidArgumentException::class);
+        new RequestType(null, self::RVID, 'phase_one', ['en' => 'Phase one'], true, null, 0, true, ['en' => str_repeat('a', RequestType::INSTRUCTIONS_MAX_LENGTH + 1)]);
     }
 }

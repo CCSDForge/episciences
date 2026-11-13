@@ -191,7 +191,7 @@ try {
                                         <?php if ($lightAnswer !== null) : ?>
                                             <details class="light-answer" style="margin: 5px 0 0 2.5em">
                                                 <summary>
-                                                    <?= $this->escape($this->translate('Avis reçu le')) ?> <?= $this->Date($lightAnswer->getCreatedAt()->format('Y-m-d')) ?>
+                                                    <?= $this->escape($this->translate('Réponse reçue le')) ?> <?= $this->Date($lightAnswer->getCreatedAt()->format('Y-m-d')) ?>
                                                     <?php if ($lightAnswer->getUpdatedAt() !== null) : ?>
                                                         (<?= $this->escape($this->translate('modifié le')) ?> <?= $this->Date($lightAnswer->getUpdatedAt()->format('Y-m-d')) ?>)
                                                     <?php endif; ?>

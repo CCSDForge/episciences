@@ -12,7 +12,7 @@ $messageElement = $form->getElement(\Episciences\Reviewer\LightAnswerForm::MESSA
 $fileElement = $form->getElement(\Episciences\Reviewer\LightAnswerForm::FILE);
 $messageErrors = $messageElement ? $messageElement->getMessages() : [];
 $fileErrors = $fileElement ? $fileElement->getMessages() : [];
-$this->layout()->pageTitle = $this->translate('Votre avis sur cet article');
+$this->layout()->pageTitle = $this->translate('Votre réponse à la demande de relecture');
 ?>
 
 <p class="info-box">
@@ -30,10 +30,10 @@ $this->layout()->pageTitle = $this->translate('Votre avis sur cet article');
 <?php if ($answer !== null && !$this->isEditable) : ?>
     <div class="panel panel-default">
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->escape($this->translate('Votre avis')) ?></h2>
+            <h2 class="panel-title"><?= $this->escape($this->translate('Votre réponse')) ?></h2>
         </div>
         <div class="panel-body">
-            <p class="text-muted"><?= $this->escape($this->translate("La date limite est passée : votre avis ne peut plus être modifié.")) ?></p>
+            <p class="text-muted"><?= $this->escape($this->translate("La date limite est passée : votre réponse ne peut plus être modifiée.")) ?></p>
             <p><?= nl2br($this->escape($answer->getMessage())) ?></p>
             <?php if ($answer->getFile() !== null) : ?>
                 <p><?= $this->escape($this->translate('Fichier joint')) ?> : <?= $this->escape($answer->getFile()) ?></p>
@@ -43,19 +43,22 @@ $this->layout()->pageTitle = $this->translate('Votre avis sur cet article');
 <?php else : ?>
     <div class="panel panel-default">
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->escape($this->translate('Votre avis')) ?></h2>
+            <h2 class="panel-title"><?= $this->escape($this->translate('Votre réponse')) ?></h2>
         </div>
         <div class="panel-body">
-            <p><?= $this->escape($this->translate('Quelques lignes suffisent. Vous pouvez saisir votre avis, déposer un fichier, ou les deux. Aucun compte n\'est nécessaire.')) ?></p>
+            <?php if ($this->requestTypeInstructions !== '') : ?>
+                <p class="lead"><?= nl2br($this->escape($this->requestTypeInstructions)) ?></p>
+            <?php endif; ?>
+            <p><?= $this->escape($this->translate('Vous pouvez saisir un texte, déposer un fichier, ou les deux. Aucun compte n\'est nécessaire.')) ?></p>
             <?php if ($answer !== null) : ?>
                 <p class="text-muted">
-                    <?= $this->escape($this->translate('Vous pouvez modifier votre avis jusqu\'à la date limite.')) ?>
+                    <?= $this->escape($this->translate('Vous pouvez modifier votre réponse jusqu\'à la date limite.')) ?>
                 </p>
             <?php endif; ?>
 
             <?php if ($this->lightAnswerMissing) : ?>
                 <div class="alert alert-danger" role="alert" id="opinion-missing">
-                    <?= $this->escape($this->translate('Merci de saisir un avis ou de déposer un fichier.')) ?>
+                    <?= $this->escape($this->translate('Merci de saisir une réponse ou de déposer un fichier.')) ?>
                 </div>
             <?php endif; ?>
 
@@ -63,7 +66,7 @@ $this->layout()->pageTitle = $this->translate('Votre avis sur cet article');
                 <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
 
                 <div class="form-group<?= $messageErrors ? ' has-error' : '' ?>">
-                    <label for="opinion" class="control-label"><?= $this->escape($this->translate('Votre avis')) ?></label>
+                    <label for="opinion" class="control-label"><?= $this->escape($this->translate('Votre réponse')) ?></label>
                     <textarea id="opinion" name="opinion" rows="10" class="form-control"
                               maxlength="<?= \Episciences\Reviewer\LightAnswer::MESSAGE_MAX_LENGTH ?>"
                         <?= $messageErrors ? 'aria-invalid="true" aria-describedby="opinion-error"' : ($this->lightAnswerMissing ? 'aria-describedby="opinion-missing"' : '') ?>><?= $this->escape((string)($messageElement ? $messageElement->getValue() : '')) ?></textarea>
@@ -89,7 +92,7 @@ $this->layout()->pageTitle = $this->translate('Votre avis sur cet article');
                 </div>
 
                 <button type="submit" name="submitopinion" value="1" class="btn btn-primary">
-                    <?= $this->escape($this->translate($answer === null ? 'Envoyer mon avis' : 'Enregistrer les modifications')) ?>
+                    <?= $this->escape($this->translate($answer === null ? 'Envoyer ma réponse' : 'Enregistrer les modifications')) ?>
                 </button>
             </form>
         </div>
@@ -97,7 +100,7 @@ $this->layout()->pageTitle = $this->translate('Votre avis sur cet article');
 
     <?php if ($this->refuse_form) : ?>
         <details class="panel panel-default"<?= $this->invalid_refuse_form ? ' open' : '' ?>>
-            <summary class="panel-heading"><?= $this->escape($this->translate("Je ne souhaite pas donner mon avis")) ?></summary>
+            <summary class="panel-heading"><?= $this->escape($this->translate("Je ne souhaite pas répondre à cette demande")) ?></summary>
             <div class="panel-body">
                 <?= $this->refuse_form ?>
             </div>
