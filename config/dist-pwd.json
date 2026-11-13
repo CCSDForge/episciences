@@ -34,6 +34,7 @@
     "READ_ONLY_MODE": false,
     "READ_ONLY_MODE_START": "",
     "READ_ONLY_MODE_END": "",
+    "ARXIV_DATACITE_FALLBACK": true,
     "SUPPORT": "email-support@platform.org",
     "CONTACT": "email-support@platform.org",
     "IGNORED_EMAILS_WHEN_INVITING_REVIEWER": [],

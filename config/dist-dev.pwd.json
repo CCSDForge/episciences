@@ -24,6 +24,7 @@
       "ENABLE" : true,
       "SSL_VERIFY": false
     },
+    "ARXIV_DATACITE_FALLBACK": true,
     "SUPPORT": "support@example.org",
     "CONTACT": "contact@example.org",
     "IGNORED_EMAILS_WHEN_INVITING_REVIEWER":  [
