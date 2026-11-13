@@ -6,27 +6,30 @@ This guide walks through setting up a local Episciences development environment 
 
 ## Prerequisites
 
-| Requirement | Minimum version |
-|-------------|-----------------|
-| Docker | 24.x |
-| Docker Compose | v2 (plugin, not standalone `docker-compose`) |
-| Git | any recent version |
+| Requirement | Minimum version | Notes |
+|-------------|-----------------|-------|
+| Docker | 24.x | |
+| Docker Compose | v2 | Plugin (`docker compose`), not standalone `docker-compose` |
+| GNU Make | any recent version | Used for all setup and dev shortcuts |
+| Git | any recent version | |
+| Node.js & Yarn | see `.nvmrc` | Required on the host for `make test-js` and `make test-e2e` |
 
 Verify your installation:
 
 ```bash
 docker --version
 docker compose version
+make --version
 ```
 
 ---
 
 ## /etc/hosts Configuration
 
-The application uses virtual-host-based routing. Add the following line to `/etc/hosts` **before** starting the containers:
+The application and shared infrastructure services use virtual-host-based routing via Traefik. Add the following line to `/etc/hosts` **before** starting the containers:
 
 ```bash
-sudo sh -c 'echo "127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org" >> /etc/hosts'
+sudo sh -c 'echo "127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org mailpit.episciences.org pma.episciences.org solr.episciences.org traefik.episciences.org sonar.episciences.org" >> /etc/hosts'
 ```
 
 Verify:
@@ -37,23 +40,41 @@ ping -c1 dev.episciences.org
 
 ---
 
-## Prerequisites: episciences-infrastructure
+## Architecture & Dependency: `episciences-infrastructure`
 
-DB (MySQL), Solr, Traefik, and phpMyAdmin are managed by [episciences-infrastructure](https://github.com/CCSDForge/episciences-infrastructure). Start it **before** this project:
+Episciences does **not** run its own database, search engine, or reverse proxy. Those stateful and shared services are managed centrally by [CCSDForge/episciences-infrastructure](https://github.com/CCSDForge/episciences-infrastructure) so that all services in the Episciences ecosystem (`episciences`, `episciences-api`, `episciences-citations`, `episciences-oai`, `episciences-manager-ng`, `coar-notify-inbox`) can share the same infrastructure.
+
+### Why `episciences-infrastructure` is required
+
+| Repository | Responsibility |
+|---|---|
+| **[episciences-infrastructure](https://github.com/CCSDForge/episciences-infrastructure)** | **Shared infrastructure & service engines:** creates the external Docker network `epi-network` and runs MySQL 8.4 (`db-episciences`, `db-auth`, `db-indexing`), Apache Solr + ZooKeeper, Traefik (TLS termination with self-signed certificates), Mailpit, phpMyAdmin, and SonarQube. |
+| **episciences** *(this repository)* | **Application & database schema:** runs the web/PHP containers (`httpd`, `php-fpm`, `worker-solr-index`, `worker-next-revalidation`) attached to `epi-network`, and **owns the `episciences` database schema, SQL migrations (`src/mysql/`), and dev dataset (`src/mysql/docker/episciences/dev-episciences.sql`)**. |
+
+Because `docker-compose.yml` declares `epi-network` as `external: true` and connects `php-fpm` directly to `db-episciences`, `db-auth`, `db-indexing`, `solr`, and `mailpit`, **`episciences-infrastructure` must be started first**; otherwise the `episciences` containers will fail to start or connect.
+
+Meanwhile, because schema changes happen per branch and pull request in **this** repository, `make dev-setup` (via `make load-dev-db`) loads `dev-episciences.sql` and `dev-cas_users.sql` from your current `episciences` branch into the MySQL containers provided by `episciences-infrastructure`.
+
+### Start `episciences-infrastructure` first
+
+Clone it alongside this repository (if not already done) and start it **before** running `make dev-setup`:
 
 ```bash
+git clone https://github.com/CCSDForge/episciences-infrastructure.git ../episciences-infrastructure
 cd ../episciences-infrastructure
-make up          # creates epi-network, starts Traefik + DBs + Solr
-make db-import   # first-time DB init (if volumes are empty)
-make solr-setup  # first-time Solr collection setup
+make up          # creates epi-network, starts Traefik + MySQL DBs + Solr + Mailpit + phpMyAdmin
+make db-import   # first-time DB init (creates/initializes shared DB volumes when empty)
+make solr-setup  # uploads Solr configset to ZooKeeper and creates the 'episciences' collection
 ```
 
 ---
 
 ## First-time Setup
 
+Once `episciences-infrastructure` is running, return to this repository and run:
+
 ```bash
-git clone <repository-url>
+git clone https://github.com/CCSDForge/episciences.git
 cd episciences
 make dev-setup
 ```
@@ -63,15 +84,16 @@ make dev-setup
 1. **`make build`** — builds all Docker images (Apache vhost, PHP-FPM, etc.)
 2. **`make copy-config`** — copies `config/dist-dev.pwd.json` → `config/pwd.json`
 3. **`make setup-logs`** — creates log directories with correct permissions
-4. **`make up`** — starts all containers in detached mode
-5. **`make wait-for-db`** — waits until MySQL is accepting connections
+4. **`make up`** — starts all application containers (`httpd`, `php-fpm`, `worker-solr-index`, `worker-next-revalidation`) on `epi-network`
+5. **`make wait-for-db`** — waits until `db-episciences`, `db-indexing`, and `db-auth` (from `episciences-infrastructure`) are accepting connections
 6. **`make init-data-dir`** — creates `data/dev/` with sub-directories and seeds `navigation.json`
 7. **`make composer-install`** — installs PHP dependencies
-8. **`make load-dev-db`** — loads the development SQL dataset
-9. **`make init-dev-users`** — creates 30 test users and prints a summary table
-10. **`make create-bot-user`** — creates the fixed `episciences-bot` account
-11. **`make collection`** — creates the Solr `episciences` collection
-12. **`make index`** — indexes sample content into Solr
+8. **`make yarn-encore-dev`** — installs JS dependencies and compiles frontend assets for dev
+9. **`make load-dev-db`** — prompts for confirmation (`y/N`) and loads `src/mysql/docker/episciences/dev-episciences.sql` and `src/mysql/docker/auth/dev-cas_users.sql`
+10. **`make init-dev-users`** — creates 30 test users and prints a summary table
+11. **`make create-bot-user`** — creates the fixed `episciences-bot` account
+12. **`make collection`** — ensures the Solr `episciences` configset and collection exist
+13. **`make solr-index sqlwhere='1=1' sync=1`** — indexes sample content into Solr
 
 When it completes, open **https://dev.episciences.org/** in your browser (accept the self-signed certificate warning).
 
@@ -105,10 +127,10 @@ directly in production.
 
 ```bash
 # List all available commands
-docker compose exec -u www-data php php scripts/console.php list
+docker compose exec -u www-data php-fpm php scripts/console.php list
 
 # Get help for a specific command
-docker compose exec -u www-data php php scripts/console.php enrichment:creators --help
+docker compose exec -u www-data php-fpm php scripts/console.php enrichment:creators --help
 ```
 
 ### Command reference
@@ -286,8 +308,10 @@ Troubleshooting: if breakpoints are not hit, check in the container that the IDE
 | Manager | https://manager-dev.episciences.org/dev/ | via Traefik |
 | OAI-PMH | https://oai-dev.episciences.org/ | via Traefik |
 | Data | https://data-dev.episciences.org/ | via Traefik |
+| Mailpit | https://mailpit.episciences.org/ | via Traefik (infra) |
 | PhpMyAdmin | https://pma.episciences.org/ | via Traefik (infra) |
-| Apache Solr | http://localhost:8983/solr | direct port (infra) |
+| Apache Solr | https://solr.episciences.org (or http://localhost:8983/solr) | via Traefik / direct port (infra) |
+| SonarQube | https://sonar.episciences.org/ | via Traefik (infra) |
 
 > All HTTPS services use Traefik's self-signed certificate — accept the browser warning on first access.
 
@@ -358,23 +382,27 @@ break the existing accounts.
 
 ### Database reset
 
-To start over with a clean database:
+To reload the development databases (`episciences` and `cas_users`) from your current branch without touching `episciences-infrastructure` volumes:
 
 ```bash
-make down
-make clean-mysql    # WARNING: deletes all MySQL volumes — prompts for confirmation
-make dev-setup
+make load-dev-db
+make init-dev-users
+make create-bot-user
 ```
+
+If you need to wipe the MySQL volumes completely, manage them from `episciences-infrastructure` (`make down` and volume cleanup there), then re-run `make up` in `episciences-infrastructure` followed by `make dev-setup` here.
 
 ---
 
 ## Database Operations Reference
 
-| Command | Description                                                 |
-|---------|-------------------------------------------------------------|
-| `make load-dev-db` | Load the development SQL dataset, inludes the 'Dev' journal |
-| `make load-db-episciences` | Restore from `~/tmp/episciences.sql`                        |
-| `make load-db-auth` | Restore from `~/tmp/cas_users.sql`                          |
-| `make backup-db` | Dump current databases to `~/tmp/`                          |
-| `make shell-mysql` | Open a MySQL shell in the container                         |
-| `make clean-mysql` | Delete MySQL volumes (irreversible, prompts)                |
+| Command | Description |
+|---------|-------------|
+| `make load-dev-db` | Load the development SQL datasets (`dev-episciences.sql` and `dev-cas_users.sql`), includes the `'dev'` journal |
+| `make load-db-episciences` | Restore from `~/tmp/episciences.sql` |
+| `make load-db-auth` | Restore from `~/tmp/cas_users.sql` |
+| `make backup-db` | Dump current `episciences` and `cas_users` databases to `~/tmp/` |
+| `make shell-mysql-episciences` | Open a MySQL shell on the `episciences` database |
+| `make shell-mysql-auth` | Open a MySQL shell on the `cas_users` database |
+| `make shell-mysql-indexing` | Open a MySQL shell on the `solr_index_queue` database |
+| `make wait-for-db` | Wait until all 3 MySQL containers (`episciences-infrastructure`) accept connections |
