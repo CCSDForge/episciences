@@ -250,6 +250,7 @@ bash <scripts>/post_merge_checks.sh <before-sha> <target> <source>
 | `methods` | `check_methods.py` | `Issues` > 0 (REVIEW if only `[unused]` notes) |
 | `hardcoded` | `.github/scripts/check-hardcoded-internal-urls.php` | the script fails (REVIEW if absent from the target) |
 | `menu` | `'/website/(ajax\|menu\|reset)` in the menu area | any occurrence |
+| `js-prefix` | unindented line reading `JS_PREFIX_URL` in `public/js/*.js` on the target (top level of the file, see step f) | any occurrence |
 | `phpunit` | full suite, compared with the baseline of the "before" SHA (`phpunit_failures.sh`) | a new failure (REVIEW if there is no baseline) |
 | `jest` | `yarn test --roots '<rootDir>/tests/js'` (Jest restricted to the repository: `tmp/` holds copies), only if `.js` files changed | Jest fails |
 
