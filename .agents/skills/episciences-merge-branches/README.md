@@ -238,5 +238,6 @@ Before pushing a change to the skill:
 | `.claude/skills/episciences-merge-branches` is a small text file | The checkout was made with `core.symlinks=false`: enable it, then `git checkout -- .claude/skills`. |
 | The scripts disappear in the middle of a merge | The target branch does not contain the skill yet: use the copy in `tmp/merge-branches/scripts`. |
 | `phpunit_failures.sh` refuses to run | The container mounts another checkout (clone, worktree): run it from that checkout or set `CONTAINER`. |
-| `phpunit` is KO with no test failure | No PHPUnit summary (bootstrap error, missing dependency): run `composer install` in the container after switching branches. |
+| `phpunit` is KO with no test failure | No PHPUnit summary (bootstrap error, missing dependency, `vendor/` installed for another branch's `composer.lock`): run `make composer-install` after switching branches. |
+| `composer install` fails with `Permission denied` | It ran as `www-data`, while `vendor/` belongs to the host user: use `make composer-install`, which runs as the host user (`CNTR_USER_ID`). |
 | The agent wants to push | It must ask first, branch by branch. Answer only for the branch it names. |
