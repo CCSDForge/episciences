@@ -423,7 +423,10 @@ class Episciences_Reviewer_AccountResolver
         $template->loadTranslations();
         $template->setLocale($locale);
 
-        // Use the view URL helper, not the router: it keeps the journal path prefix (/<rvcode>/...)
+        // Build the link with the view URL helper, like the other e-mails (e.g. emailSendingProcessing()), not
+        // with the router directly: deployments serving journals behind a "/<journal code>/" URL prefix replace
+        // that helper to add the prefix, while assembling the route with reset parameters fails there
+        // ("rv-code is not specified"). Without such a deployment, both build the same URL.
         $view = Zend_Controller_Action_HelperBroker::getStaticHelper('viewRenderer')->view;
         $url = APPLICATION_URL . $view->url([
             'controller' => 'user',
