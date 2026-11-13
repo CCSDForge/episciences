@@ -1083,10 +1083,11 @@ class Ccsd_Tools
     /**
      * @param string $url
      * @param array $options
+     * @param array|null $transferInfo filled with curl_getinfo() of the transfer, also on failure
      * @return bool|string
      * @throws Ccsd_Error
      */
-    public static function curlSourceGetContents(string $url, array $options = [])
+    public static function curlSourceGetContents(string $url, array $options = [], ?array &$transferInfo = null)
     {
 
         // S2 fix: block non-HTTP(S) schemes to prevent SSRF via file://, gopher://, etc.
@@ -1114,6 +1115,8 @@ class Ccsd_Tools
         curl_setopt_array($curlResource, $options);
         $response = curl_exec($curlResource);
         $errorCode = curl_errno($curlResource);
+        // Timings and remote address of the transfer, for the caller to log on failure
+        $transferInfo = curl_getinfo($curlResource);
         if ($errorCode === CURLE_OK) {
             curl_close($curlResource);
             return $response;
@@ -1121,7 +1124,7 @@ class Ccsd_Tools
 
         $error_message = curl_strerror($errorCode);
         curl_close($curlResource);
-        throw new Ccsd_Error($error_message, $errorCode, 'CURL_ERROR');
+        throw new Ccsd_Error($error_message, $errorCode, Ccsd_Error::CURL_ERROR_TYPE);
     }
 
     /**
