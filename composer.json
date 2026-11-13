@@ -18,7 +18,7 @@
     "ext-xml": "*",
     "ext-xsl": "*",
     "ext-zip": "*",
-    "apereo/phpcas": "1.6.1",
+    "apereo/phpcas": "1.6.2",
     "cottagelabs/coarnotify": "dev-main",
     "defuse/php-encryption": "^2.3",
     "doctrine/dbal": "^4.2.5",
@@ -37,7 +37,7 @@
     "ramsey/uuid": "^4.7",
     "seboettg/citeproc-php": "^2.6",
     "shardj/zf1-extras-future": "^1.12",
-    "shardj/zf1-future": "1.25.0",
+    "shardj/zf1-future": "1.27.0",
     "smalot/pdfparser": "^2.2",
     "solarium/solarium": "^6.3.1",
     "symfony/cache": "^7.4",
@@ -68,7 +68,23 @@
   "autoload-dev": {
     "psr-4": {
       "unit\\": "tests/unit/"
-    }
+    },
+    "exclude-from-classmap": [
+      "tests/unit/library/Episciences/*.php",
+      "tests/unit/library/Episciences/paper/*",
+      "tests/unit/library/Episciences/Auth/*",
+      "tests/unit/library/Episciences/MailingList/*",
+      "tests/unit/library/Episciences/Volume/*",
+      "tests/unit/library/Episciences/Repositories/*",
+      "tests/unit/library/Episciences/Paper/Episciences_Paper_ConflictsManagerDeleteTest.php",
+      "tests/unit/library/Episciences/Paper/Episciences_Paper_LicenseCheckStatusTest.php",
+      "tests/unit/library/Episciences/Review/*",
+      "tests/unit/library/Episciences/Translation/data/*",
+      "tests/unit/library/Ccsd/Ccsd_NewsTest.php",
+      "tests/unit/library/Ccsd/View/Helper/*",
+      "tests/unit/modules/support/NewVersionSpyHooks.php",
+      "tests/unit/scripts/ImportApacheLogsCommandTest.php"
+    ]
   },
   "license": "GNU GENERAL PUBLIC LICENSE Version 3",
   "support": {
