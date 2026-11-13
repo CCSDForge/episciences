@@ -101,26 +101,45 @@ $isSecretary = Episciences_Auth::isSecretary();
     <?= $this->escape($this->translate("Les rapports des articles d'un volume utilisent sa grille, sauf si le type de demande a la sienne.")) ?>
 </p>
 
+<?php $collapseVolumeGrids = count($volumeGrids) > GridController::VOLUME_GRIDS_SHOWN; ?>
 <?php if ($volumeGrids === []) : ?>
     <p><?= $this->escape($this->translate('Aucune grille de volume.')) ?></p>
+<?php elseif ($collapseVolumeGrids) : ?>
+    <p class="help-block"><?= $this->escape($this->translate('Les grilles des volumes sont repliées : choisissez un volume pour afficher sa grille.')) ?></p>
 <?php endif; ?>
 
 <?php foreach ($volumeGrids as $grid) : ?>
-    <div class="panel panel-default collapsable" id="rating-grid-<?= (int)$grid->getId() ?>">
+    <?php
+    $volumeGridId = (int)$grid->getId();
+    $volumeTitle = Episciences_VolumesManager::translateVolumeKey('volume_' . $volumeGridId . '_title');
+    $volumeLink = '<a href="/volume/edit?id=' . $volumeGridId . '" class="btn btn-default" role="button">'
+        . '<span class="glyphicon glyphicon-edit" aria-hidden="true"></span> '
+        . $this->escape($this->translate('Modifier ce volume')) . '</a>';
+    ?>
+    <div class="panel panel-default collapsable" id="rating-grid-<?= $volumeGridId ?>">
         <div class="panel-heading">
             <h3 class="panel-title">
-                <?= $this->escape(Episciences_VolumesManager::translateVolumeKey('volume_' . (int)$grid->getId() . '_title')) ?>
+                <?php if ($collapseVolumeGrids) : ?>
+                    <?php // the heading of a collapsable panel toggles it (functions.js): the button makes it reachable with the keyboard ?>
+                    <button type="button" class="btn btn-link" style="padding: 0" data-grid-toggle
+                            aria-expanded="false" aria-controls="rating-grid-body-<?= $volumeGridId ?>">
+                        <?= $this->escape($volumeTitle) ?>
+                    </button>
+                <?php else : ?>
+                    <?= $this->escape($volumeTitle) ?>
+                <?php endif; ?>
             </h3>
         </div>
-        <div class="panel-body in">
+        <div class="panel-body<?= $collapseVolumeGrids ? '' : ' in' ?>" id="rating-grid-body-<?= $volumeGridId ?>">
             <?= $this->partial('partials/grid_criteria.phtml', ['grid' => $grid, 'defaultGrid' => $defaultGrid, 'translator' => $this->translator]) ?>
+            <?php // a collapsed panel only hides its body: the link to the volume goes in it ?>
+            <?php if ($collapseVolumeGrids) : ?>
+                <p class="text-center"><?= $volumeLink ?></p>
+            <?php endif; ?>
         </div>
-        <div class="panel-footer text-center">
-            <a href="/volume/edit?id=<?= (int)$grid->getId() ?>" class="btn btn-default" role="button">
-                <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
-                <?= $this->escape($this->translate('Modifier ce volume')) ?>
-            </a>
-        </div>
+        <?php if (!$collapseVolumeGrids) : ?>
+            <div class="panel-footer text-center"><?= $volumeLink ?></div>
+        <?php endif; ?>
     </div>
 <?php endforeach; ?>
 

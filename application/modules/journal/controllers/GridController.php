@@ -7,6 +7,8 @@ class GridController extends Zend_Controller_Action
     // tabs of the list page
     public const TAB_GRIDS = 'grids';
     public const TAB_TYPES = 'types';
+    // beyond this number of volume grids, they are listed collapsed: only their titles are shown
+    public const VOLUME_GRIDS_SHOWN = 5;
 
     /**
      * File of a grid from its key: a volume id (0: default grid) or "t<request type id>" for the grid of a review

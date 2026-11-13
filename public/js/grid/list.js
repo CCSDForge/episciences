@@ -52,10 +52,12 @@ $(document).ready(function () {
         });
     });
 
-    // tables drawn in a hidden tab (list-tabs.js) are sized again when it is shown
-    document.addEventListener('grid-list:tab-shown', function () {
+    // tables drawn in a hidden tab or a collapsed grid (list-tabs.js) are sized again when shown
+    function adjustVisibleTables() {
         $('.dataTable:visible').each(function () {
             $(this).dataTable().fnAdjustColumnSizing(false);
         });
-    });
+    }
+    document.addEventListener('grid-list:tab-shown', adjustVisibleTables);
+    document.addEventListener('grid-list:panel-toggled', adjustVisibleTables);
 });

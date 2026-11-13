@@ -2963,6 +2963,7 @@ return array(
     "Grilles par volume" => "Grids per volume",
     "Les rapports des articles d'un volume utilisent sa grille, sauf si le type de demande a la sienne." => "The reports on the articles of a volume use its grid, unless the request type has its own.",
     "Aucune grille de volume." => "No volume grid.",
+    "Les grilles des volumes sont repliées : choisissez un volume pour afficher sa grille." => "The volume grids are collapsed: choose a volume to show its grid.",
     "Grille de notation" => "Rating grid",
     "Aucune : réponse sans compte" => "None: answered without an account",
     "Grille du type" => "Grid of the type",

@@ -91,10 +91,53 @@ final class GridControllerListTest extends ControllerTestCase
         self::assertStringContainsString('Grilles par volume', $html);
     }
 
+    public function testTheVolumeGridsAreShownWhileFew(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+
+        $html = $this->renderList([], ['grids' => $this->volumeGrids(\GridController::VOLUME_GRIDS_SHOWN)]);
+
+        self::assertStringNotContainsString('data-grid-toggle', $html);
+        self::assertStringContainsString('id="rating-grid-body-' . \GridController::VOLUME_GRIDS_SHOWN . '">', $html);
+        self::assertMatchesRegularExpression('/class="panel-body in" id="rating-grid-body-1"/', $html);
+    }
+
+    public function testManyVolumeGridsAreCollapsedBehindAButtonPerVolume(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+        $count = \GridController::VOLUME_GRIDS_SHOWN + 1;
+
+        $html = $this->renderList([], ['grids' => $this->volumeGrids($count)]);
+
+        self::assertSame($count, substr_count($html, 'data-grid-toggle'));
+        self::assertStringContainsString('aria-expanded="false" aria-controls="rating-grid-body-1"', $html);
+        self::assertMatchesRegularExpression('/class="panel-body" id="rating-grid-body-1"/', $html, 'the body is collapsed');
+        // the link to the volume is in the collapsed body, not in a footer left visible
+        self::assertStringNotContainsString('panel-footer', $html);
+        self::assertSame($count, substr_count($html, 'href="/volume/edit?id='));
+    }
+
+    /**
+     * The default grid and the grids of volumes 1 to $count
+     * @return array<string, \Episciences_Rating_Grid>
+     */
+    private function volumeGrids(int $count): array
+    {
+        $grids = [];
+        foreach (range(0, $count) as $id) {
+            $grid = new \Episciences_Rating_Grid();
+            $grid->setId($id);
+            $grids['grid_' . $id] = $grid;
+        }
+
+        return $grids;
+    }
+
     /**
      * @param array<string, string> $query
+     * @param array<string, mixed> $vars view variables replacing those set by the action
      */
-    private function renderList(array $query = []): string
+    private function renderList(array $query = [], array $vars = []): string
     {
         $result = $this->dispatch(\GridController::class, 'list', $this->getRequest($query));
         self::assertNull($result->redirectUrl());
@@ -103,6 +146,7 @@ final class GridControllerListTest extends ControllerTestCase
         $view = new Zend_View();
         $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/');
         $view->assign(Zend_Controller_Action_HelperBroker::getStaticHelper('viewRenderer')->view->getVars());
+        $view->assign($vars);
         // the scripts of the page are not under test
         $view->registerHelper(new class extends Zend_View_Helper_Abstract {
             public function jQuery(): self
