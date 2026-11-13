@@ -441,12 +441,9 @@ class Episciences_Reviewer_AccountResolver
     /**
      * Link of the account setup e-mail: origin of the application URL + path returned by the URL builder.
      *
-     * Build the path with the view URL helper, like the other e-mails, not with the router directly:
-     * deployments serving journals behind a "/<journal code>/" URL prefix replace that helper to add the
-     * prefix, while assembling the route with reset parameters fails there ("rv-code is not specified").
-     * On those deployments the application URL also ends with the prefix: keep only its origin (scheme,
-     * host, port), the helper returns the whole path. Without such a deployment, the URL is unchanged.
-     * When the application URL has no scheme or host ('' outside a journal context), it is used as is.
+     * The path comes from the view url() helper, like the other e-mails: deployments with a journal URL
+     * prefix override it to add the prefix. Only the origin (scheme, host, port) of the application URL is
+     * kept, so the prefix is not doubled; without a scheme or host, the application URL is used as is.
      *
      * @param string $applicationUrl APPLICATION_URL
      * @param callable(array<string, string>): string $urlBuilder application path of a route
