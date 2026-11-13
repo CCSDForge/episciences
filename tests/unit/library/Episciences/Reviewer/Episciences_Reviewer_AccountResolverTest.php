@@ -197,4 +197,76 @@ class Episciences_Reviewer_AccountResolverTest extends TestCase
 
         self::assertSame(EmailPolicy::normalize($rawEmail), $capturedEmail);
     }
+
+    /**
+     * The URL builder returns the whole path, the journal prefix included on prefixed deployments:
+     * the application URL contributes its origin only, so the prefix is never doubled.
+     *
+     * @return array<string, array{string, string, string}>
+     */
+    public static function accountSetupUrlProvider(): array
+    {
+        return [
+            'journal sub-domain' => [
+                'https://epijinfo.episciences.org',
+                '/user/resetpassword/lang/en/token/abc',
+                'https://epijinfo.episciences.org/user/resetpassword/lang/en/token/abc',
+            ],
+            'journal behind a URL prefix' => [
+                'https://manager-preprod.episciences.org/epijinfo',
+                '/epijinfo/user/resetpassword?lang=en&token=abc',
+                'https://manager-preprod.episciences.org/epijinfo/user/resetpassword?lang=en&token=abc',
+            ],
+            'port kept' => [
+                'http://localhost:8080/epijinfo',
+                '/epijinfo/user/resetpassword?lang=en&token=abc',
+                'http://localhost:8080/epijinfo/user/resetpassword?lang=en&token=abc',
+            ],
+            'trailing slash dropped with the path' => [
+                'http://localhost:8080/epijinfo/',
+                '/epijinfo/user/resetpassword?lang=en&token=abc',
+                'http://localhost:8080/epijinfo/user/resetpassword?lang=en&token=abc',
+            ],
+            'no journal context' => [
+                '',
+                '/user/resetpassword/lang/en/token/abc',
+                '/user/resetpassword/lang/en/token/abc',
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider accountSetupUrlProvider
+     */
+    public function testBuildAccountSetupUrlJoinsOriginAndPath(string $applicationUrl, string $path, string $expected): void
+    {
+        $url = Episciences_Reviewer_AccountResolver::buildAccountSetupUrl(
+            $applicationUrl,
+            static fn(array $params): string => $path,
+            'en',
+            'abc'
+        );
+
+        self::assertSame($expected, $url);
+    }
+
+    public function testBuildAccountSetupUrlAsksForTheResetPasswordRoute(): void
+    {
+        $captured = null;
+
+        Episciences_Reviewer_AccountResolver::buildAccountSetupUrl(
+            'https://epijinfo.episciences.org',
+            static function (array $params) use (&$captured): string {
+                $captured = $params;
+                return '/';
+            },
+            'fr',
+            'token-value'
+        );
+
+        self::assertSame(
+            ['controller' => 'user', 'action' => 'resetpassword', 'lang' => 'fr', 'token' => 'token-value'],
+            $captured
+        );
+    }
 }
