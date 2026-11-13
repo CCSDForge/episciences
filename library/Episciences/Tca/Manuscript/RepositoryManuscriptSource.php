@@ -47,6 +47,10 @@ use Throwable;
  * The text checked is then the latest data descriptor (or software descriptor) uploaded by the author
  * to Episciences, read from the journal files. Only its final published version is deposited in an archive,
  * after the similarity check.
+ *
+ * Temporary versions are the other exception: their files are uploaded to Episciences, never to a repository,
+ * and read from the journal files. Nothing designates the manuscript among several attached files
+ * (the article and the answer to the reviewers, for instance): only a temporary version with a single file is checked.
  * Remote files are streamed to a temporary file (never fully loaded in memory), which gives
  * the exact size required by the Turnitin upload. Redirects are followed by hand so that
  * the body of an intermediate response never ends up in the downloaded file, and so that
@@ -60,6 +64,12 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
      * A stalled download is stopped earlier by the low speed limit.
      */
     public const int TIMEOUT = 900;
+    /**
+     * Seconds before the deadline from which the download is out of time: a transfer failing that late
+     * used up the whole budget (the repository is too slow for the file size, retrying gives the same result),
+     * and a hop starting that late would not have the time to complete.
+     */
+    private const float DEADLINE_MARGIN = 1.0;
     /** A transfer slower than LOW_SPEED_LIMIT bytes per second during LOW_SPEED_TIME seconds is aborted. */
     public const int LOW_SPEED_LIMIT = 1024;
     public const int LOW_SPEED_TIME = 60;
@@ -123,12 +133,21 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
 
     private PublicAddressGuard $addressGuard;
 
+    /** @var Closure(): float current time in seconds */
+    private Closure $clock;
+
+    /** @var Closure(Episciences_Paper): ?string */
+    private Closure $journalFilesDirectory;
+
     /**
      * @param Closure(int): ?Episciences_Paper|null $paperLoader
      * @param Closure(Episciences_Paper): ?Episciences_Paper_File|null $mainFileLoader
      * @param PublicAddressGuard|null $addressGuard checks every requested URL (SSRF guard)
      * @param Closure(Episciences_Paper): ?string|null $dataDescriptorLoader path of the latest data descriptor
      *        of a dataset or software, null when there is none
+     * @param Closure(): float|null $clock current time in seconds, microtime(true) by default
+     * @param Closure(Episciences_Paper): ?string|null $journalFilesDirectory files directory of the journal
+     *        of a paper (data/{journal code}/files), holding the files of its temporary versions
      */
     public function __construct(
         private ClientInterface $httpClient,
@@ -138,12 +157,16 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         private int $maxBytes = ManuscriptFile::MAX_SIZE,
         private string $userAgent = '',
         ?PublicAddressGuard $addressGuard = null,
-        ?Closure $dataDescriptorLoader = null
+        ?Closure $dataDescriptorLoader = null,
+        ?Closure $clock = null,
+        ?Closure $journalFilesDirectory = null
     ) {
         $this->paperLoader = $paperLoader ?? $this->defaultPaperLoader(...);
         $this->mainFileLoader = $mainFileLoader ?? $this->defaultMainFileLoader(...);
         $this->addressGuard = $addressGuard ?? new PublicAddressGuard();
         $this->dataDescriptorLoader = $dataDescriptorLoader ?? $this->defaultDataDescriptorLoader(...);
+        $this->clock = $clock ?? static fn(): float => microtime(true);
+        $this->journalFilesDirectory = $journalFilesDirectory ?? $this->defaultJournalFilesDirectory(...);
     }
 
     /**
@@ -169,8 +192,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         }
 
         if ($paper->isTmp()) {
-            $this->logUnavailable($docId, 'temporary version');
-            return null;
+            return $this->fromTemporaryVersion($paper);
         }
 
         if ($paper->isDataSetOrSoftware()) {
@@ -202,10 +224,10 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             return null;
         }
 
-        $start = microtime(true);
+        $start = ($this->clock)();
 
         try {
-            [$response, $body, $finalUrl] = $this->download($docId, $url);
+            [$response, $body, $finalUrl] = $this->download($docId, $url, $start + self::TIMEOUT);
         } catch (UnavailableManuscript $e) {
             $this->logUnavailable($docId, $e->getMessage(), ['repoid' => $paper->getRepoid(), 'url' => $url]);
             return null;
@@ -216,7 +238,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             'repoid' => $paper->getRepoid(),
             'url' => $finalUrl,
             'status' => $response->getStatusCode(),
-            'duration_ms' => (int) round((microtime(true) - $start) * 1000),
+            'duration_ms' => (int) round((($this->clock)() - $start) * 1000),
         ];
 
         $size = (int) $body->getSize();
@@ -258,11 +280,86 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             return null;
         }
 
+        return $this->fromLocalFile($docId, $path, 'data descriptor');
+    }
+
+    /**
+     * The single file attached to a temporary version, uploaded to Episciences: no download.
+     *
+     * @throws ManuscriptTooLargeException
+     */
+    private function fromTemporaryVersion(Episciences_Paper $paper): ?ManuscriptFile
+    {
+        $docId = (int) $paper->getDocid();
+        $files = self::temporaryVersionFiles((string) $paper->getIdentifier());
+
+        if ($files === null || $files['names'] === []) {
+            $this->logUnavailable($docId, 'temporary version without usable file', ['identifier' => $paper->getIdentifier()]);
+            return null;
+        }
+
+        // The manuscript cannot be told from the other files (answer to the reviewers, sources...)
+        if (count($files['names']) > 1) {
+            $this->logUnavailable($docId, 'temporary version with several files, none designated as the manuscript', ['files' => $files['names']]);
+            return null;
+        }
+
+        $directory = ($this->journalFilesDirectory)($paper);
+
+        if ($directory === null) {
+            $this->logUnavailable($docId, 'journal of the temporary version not found');
+            return null;
+        }
+
+        return $this->fromLocalFile(
+            $docId,
+            sprintf('%s/%d/tmp/%s', rtrim($directory, '/'), $files['paperId'], $files['names'][0]),
+            'temporary version file'
+        );
+    }
+
+    /**
+     * The identifier of a temporary version is "{paperid}/" followed by the JSON list of its file names,
+     * or by a single file name for the oldest versions.
+     *
+     * @return array{paperId: int, names: list<string>}|null null when the identifier is malformed
+     *         or a name has a directory part
+     */
+    private static function temporaryVersionFiles(string $identifier): ?array
+    {
+        [$paperId, $files] = array_pad(explode('/', $identifier, 2), 2, '');
+
+        if (!ctype_digit($paperId) || (int) $paperId <= 0 || $files === '') {
+            return null;
+        }
+
+        $decoded = str_starts_with($files, '[') && json_validate($files) ? json_decode($files, true) : [$files];
+        $names = array_values(is_array($decoded) ? $decoded : []);
+
+        foreach ($names as $name) {
+            // The name is joined to a directory: no directory part allowed
+            if (!SafeFileName::isBare($name)) {
+                return null;
+            }
+        }
+
+        /** @var list<string> $names */
+        return ['paperId' => (int) $paperId, 'names' => $names];
+    }
+
+    /**
+     * A file uploaded to Episciences (data descriptor, file of a temporary version).
+     *
+     * @param string $what what the file is, for the logs
+     * @throws ManuscriptTooLargeException
+     */
+    private function fromLocalFile(int $docId, string $path, string $what): ?ManuscriptFile
+    {
         $size = is_file($path) && is_readable($path) ? (int) filesize($path) : 0;
 
         if ($size <= 0) {
-            $this->logger->warning('Data descriptor file missing, unreadable or empty', ['docid' => $docId, 'path' => $path]);
-            $this->logUnavailable($docId, 'data descriptor file missing, unreadable or empty', ['path' => $path]);
+            $this->logger->warning(ucfirst($what) . ' missing, unreadable or empty', ['docid' => $docId, 'path' => $path]);
+            $this->logUnavailable($docId, $what . ' missing, unreadable or empty', ['path' => $path]);
             return null;
         }
 
@@ -275,7 +372,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         $mimeType = $this->detectMimeType($stream, null, $fileName);
         $fileName = $this->ensureExtension($fileName, $mimeType, null);
 
-        $this->logger->info('Data descriptor read from the journal files', [
+        $this->logger->info(ucfirst($what) . ' read from the journal files', [
             'docid' => $docId,
             'path' => $path,
             'size' => $size,
@@ -289,29 +386,26 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     /**
      * Follows the redirects by hand: each hop gets its own sink, and its scheme and host are checked.
      *
+     * @param float $deadline time, in seconds, by which the whole download must be complete
      * @return array{0: ResponseInterface, 1: StreamInterface, 2: string} the final response, its body and URL
      * @throws UnavailableManuscript
      * @throws ManuscriptTemporarilyUnavailableException
      * @throws ManuscriptTooLargeException
      */
-    private function download(int $docId, string $url): array
+    private function download(int $docId, string $url, float $deadline): array
     {
-        $deadline = microtime(true) + self::TIMEOUT;
-
         for ($hop = 0; $hop <= self::MAX_REDIRECTS; $hop++) {
-            $timeLeft = $deadline - microtime(true);
-
-            if ($timeLeft <= 0) {
-                throw new ManuscriptTemporarilyUnavailableException(
-                    sprintf('The download of docid %d did not complete within %d seconds.', $docId, self::TIMEOUT)
-                );
+            // Running out of time depends on the repository and the file size: retrying gives the same result.
+            // The margin also keeps the cURL timeout above 1 ms: a timeout rounded down to 0 means no timeout at all.
+            if ($this->isDeadlineReached($deadline - self::DEADLINE_MARGIN)) {
+                throw new UnavailableManuscript(sprintf('download not completed within %d seconds', self::TIMEOUT));
             }
 
             $pinnedAddress = $this->pinPublicAddress($docId, $url);
             $sink = new SizeLimitedStream(Utils::streamFor(Utils::tryFopen('php://temp/maxmemory:0', 'w+b')), $this->maxBytes);
 
             try {
-                $response = $this->send($docId, $url, $sink, $pinnedAddress, $timeLeft);
+                $response = $this->send($docId, $url, $sink, $pinnedAddress, $deadline);
             } catch (Throwable $e) {
                 $sink->close();
                 throw $e;
@@ -355,8 +449,10 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
         }
     }
 
-    private function send(int $docId, string $url, SizeLimitedStream $sink, string $pinnedAddress, float $timeLeft): ResponseInterface
+    private function send(int $docId, string $url, SizeLimitedStream $sink, string $pinnedAddress, float $deadline): ResponseInterface
     {
+        $timeLeft = $deadline - ($this->clock)();
+
         try {
             return $this->httpClient->request('GET', $url, [
                 'sink' => $sink,
@@ -368,6 +464,9 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
                 'on_headers' => $this->rejectAnnouncedOversize(...),
                 // Connect to the address that was checked, never to a new DNS answer (DNS rebinding)
                 'force_ip_resolve' => 'v4',
+                // Proxies are not supported: a proxy resolves the host name itself and would bypass the pinned address.
+                // An empty proxy also overrides the HTTP_PROXY / HTTPS_PROXY environment variables.
+                'proxy' => '',
                 'curl' => [
                     CURLOPT_RESOLVE => [$pinnedAddress],
                     // A large file on a slow repository is fine, a stalled transfer is not
@@ -376,8 +475,13 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
                 ],
             ]);
         } catch (GuzzleException $e) {
-            throw $this->translateTransferFailure($docId, $url, $sink, $e);
+            throw $this->translateTransferFailure($docId, $url, $sink, $e, $deadline);
         }
+    }
+
+    private function isDeadlineReached(float $deadline): bool
+    {
+        return ($this->clock)() >= $deadline;
     }
 
     /**
@@ -396,7 +500,7 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     /**
      * @return ManuscriptTooLargeException|ManuscriptTemporarilyUnavailableException|UnavailableManuscript
      */
-    private function translateTransferFailure(int $docId, string $url, SizeLimitedStream $sink, Throwable $e): Throwable
+    private function translateTransferFailure(int $docId, string $url, SizeLimitedStream $sink, Throwable $e, float $deadline): Throwable
     {
         for ($cause = $e; $cause instanceof Throwable; $cause = $cause->getPrevious()) {
             if ($cause instanceof ManuscriptTooLargeException) {
@@ -414,6 +518,12 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
 
         if (in_array($errno, self::PERMANENT_CURL_ERRORS, true)) {
             return new UnavailableManuscript(sprintf('transfer error %d from %s', $errno, $url), 0, $e);
+        }
+
+        // A failure at the deadline is the global timeout (cURL error 28, or a connect timeout cut short by it).
+        // An earlier connect timeout or low speed abort, also reported as error 28, stays retryable.
+        if ($this->isDeadlineReached($deadline - self::DEADLINE_MARGIN)) {
+            return new UnavailableManuscript(sprintf('download not completed within %d seconds from %s', self::TIMEOUT, $url), 0, $e);
         }
 
         return new ManuscriptTemporarilyUnavailableException(
@@ -609,9 +719,6 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     }
 
     /**
-     * Keeps the accents (Turnitin receives the name URL-encoded) but drops path separators and control characters.
-     */
-    /**
      * The first candidate that is still a usable name once sanitized: a name announced by the server
      * but unreadable (raw ISO-8859-1, dots only) gives way to the next candidate.
      *
@@ -631,6 +738,8 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
     }
 
     /**
+     * Keeps the accents (Turnitin receives the name URL-encoded) but drops path separators and control characters.
+     *
      * @return string|null null when nothing usable is left
      */
     private function sanitizeFileName(string $fileName): ?string
@@ -713,19 +822,23 @@ final readonly class RepositoryManuscriptSource implements ManuscriptSourceInter
             return null;
         }
 
+        $directory = $this->defaultJournalFilesDirectory($paper);
+
+        return $directory === null
+            ? null
+            : sprintf('%s/%d/%s/%s', $directory, (int) $paper->getDocid(), FileManager::DD_SOURCE, $fileName);
+    }
+
+    /**
+     * data/{journal code}/files, built from the journal of the paper: REVIEW_FILES_PATH is only defined
+     * for the requests of a journal site.
+     */
+    private function defaultJournalFilesDirectory(Episciences_Paper $paper): ?string
+    {
         $review = Episciences_ReviewsManager::find($paper->getRvid());
 
-        if (!$review instanceof Episciences_Review) {
-            return null;
-        }
-
-        return sprintf(
-            '%s/../data/%s/files/%d/%s/%s',
-            APPLICATION_PATH,
-            $review->getCode(),
-            (int) $paper->getDocid(),
-            FileManager::DD_SOURCE,
-            $fileName
-        );
+        return $review instanceof Episciences_Review
+            ? sprintf('%s/../data/%s/files', APPLICATION_PATH, $review->getCode())
+            : null;
     }
 }

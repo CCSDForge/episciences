@@ -15,8 +15,11 @@ use Psr\Http\Message\StreamInterface;
  */
 final readonly class ManuscriptFile
 {
-    /** Turnitin upload limit: 100 MB. */
-    public const int MAX_SIZE = 100 * 1024 * 1024;
+    /**
+     * Turnitin upload limit: "<= 100MB". Decimal megabytes, the stricter reading:
+     * a file between 100,000,000 and 104,857,600 bytes might be refused only after a billable submission was created.
+     */
+    public const int MAX_SIZE = 100_000_000;
 
     /**
      * @param StreamInterface $stream readable stream of the file content

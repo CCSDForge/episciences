@@ -33,7 +33,7 @@ final class ManuscriptFileTest extends TestCase
 
     public function testMaxSizeIsTheTurnitinLimit(): void
     {
-        self::assertSame(104857600, ManuscriptFile::MAX_SIZE);
+        self::assertSame(100_000_000, ManuscriptFile::MAX_SIZE);
     }
 
     /**

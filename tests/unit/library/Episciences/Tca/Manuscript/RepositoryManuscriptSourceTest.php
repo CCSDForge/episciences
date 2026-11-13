@@ -83,7 +83,15 @@ final class RepositoryManuscriptSourceTest extends TestCase
     protected function tearDown(): void
     {
         if ($this->tempDir !== null) {
-            array_map('unlink', glob($this->tempDir . '/*') ?: []);
+            $entries = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($this->tempDir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
+            );
+
+            foreach ($entries as $entry) {
+                $entry->isDir() ? rmdir($entry->getPathname()) : unlink($entry->getPathname());
+            }
+
             rmdir($this->tempDir);
         }
 
@@ -107,12 +115,83 @@ final class RepositoryManuscriptSourceTest extends TestCase
         self::assertSame([], $this->history);
     }
 
-    public function testReturnsNullForATemporaryVersion(): void
-    {
-        $source = $this->makeSource([], $this->makePaper(0));
+    // -------------------------------------------------------------------------
+    // Temporary versions: files uploaded to Episciences
+    // -------------------------------------------------------------------------
 
-        self::assertNull($source->fetch(self::DOCID));
+    /**
+     * @dataProvider singleFileIdentifierProvider
+     */
+    public function testReadsTheSingleFileOfATemporaryVersion(string $files, string $expectedName): void
+    {
+        $this->writeTempFile('18780/tmp/' . $expectedName, self::PDF);
+        $paper = $this->makePaper(0, '18780/' . $files, 2.01);
+
+        $file = $this->makeSource([], $paper, journalFilesDirectory: $this->tempDir())->fetch(self::DOCID);
+
+        self::assertInstanceOf(ManuscriptFile::class, $file);
+        self::assertSame([], $this->history, 'a temporary version is never downloaded');
+        self::assertSame($expectedName, $file->fileName);
+        self::assertSame('application/pdf', $file->mimeType);
+        self::assertSame(self::PDF, $file->stream->getContents());
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function singleFileIdentifierProvider(): array
+    {
+        return [
+            'list of one file' => ['["Article révisé.pdf"]', 'Article révisé.pdf'],
+            'oldest versions: a bare file name' => ['revision.pdf', 'revision.pdf'],
+        ];
+    }
+
+    public function testReadsTheSingleFileOfATemporaryVersionWhateverItsFormat(): void
+    {
+        $this->writeTempFile('18780/tmp/manuscript.txt', 'The revised manuscript, as plain text.');
+        $paper = $this->makePaper(0, '18780/["manuscript.txt"]', 2.01);
+
+        $file = $this->makeSource([], $paper, journalFilesDirectory: $this->tempDir())->fetch(self::DOCID);
+
+        self::assertSame('manuscript.txt', $file?->fileName);
+        self::assertSame('text/plain', $file->mimeType);
+    }
+
+    /**
+     * @dataProvider temporaryVersionWithoutUsableFileProvider
+     */
+    public function testReturnsNullForATemporaryVersionWithoutASingleUsableFile(string $identifier): void
+    {
+        $this->writeTempFile('18780/tmp/main.pdf', self::PDF);
+        $this->writeTempFile('18780/tmp/answer.pdf', self::PDF);
+        $paper = $this->makePaper(0, $identifier, 2.01);
+
+        self::assertNull($this->makeSource([], $paper, journalFilesDirectory: $this->tempDir())->fetch(self::DOCID));
         self::assertSame([], $this->history);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function temporaryVersionWithoutUsableFileProvider(): array
+    {
+        return [
+            'several files, none designated as the manuscript' => ['18780/["answer.pdf","main.pdf"]'],
+            'no file' => ['18780/[]'],
+            'file missing on disk' => ['18780/["gone.pdf"]'],
+            'name with a directory part' => ['18780/["../../config/pwd.json"]'],
+            'malformed identifier' => ['2401.01234'],
+        ];
+    }
+
+    public function testRefusesATemporaryVersionFileLargerThanTheLimit(): void
+    {
+        $this->writeTempFile('18780/tmp/main.pdf', self::PDF);
+        $paper = $this->makePaper(0, '18780/["main.pdf"]', 2.01);
+
+        $this->expectException(ManuscriptTooLargeException::class);
+        $this->makeSource([], $paper, maxBytes: 10, journalFilesDirectory: $this->tempDir())->fetch(self::DOCID);
     }
 
     /**
@@ -730,6 +809,81 @@ final class RepositoryManuscriptSourceTest extends TestCase
         }
     }
 
+    public function testReturnsNullWhenTheTransferTimesOutAtTheDeadline(): void
+    {
+        $now = 0.0;
+        $source = $this->makeSource(
+            [],
+            $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID),
+            handler: static function (RequestInterface $request, array $options) use (&$now): never {
+                $now += $options['timeout']; // a slow but steady transfer uses all the time left
+                throw new RequestException('cURL error 28: Operation timed out', $request, null, null, ['errno' => 28]);
+            },
+            clock: static function () use (&$now): float {
+                return $now;
+            }
+        );
+
+        self::assertNull($source->fetch(self::DOCID));
+    }
+
+    public function testReturnsNullWhenTheConnectionTimesOutAtTheDeadline(): void
+    {
+        $now = 0.0;
+        $source = $this->makeSource(
+            [],
+            $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID),
+            handler: static function (RequestInterface $request, array $options) use (&$now): never {
+                $now += $options['timeout'];
+                throw new ConnectException('cURL error 28: Connection timed out', $request);
+            },
+            clock: static function () use (&$now): float {
+                return $now;
+            }
+        );
+
+        self::assertNull($source->fetch(self::DOCID));
+    }
+
+    public function testThrowsARetryableExceptionWhenTheTransferStallsBeforeTheDeadline(): void
+    {
+        $source = $this->makeSource(
+            [],
+            $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID),
+            handler: static fn(RequestInterface $request): never => throw new RequestException(
+                'cURL error 28: Operation too slow',
+                $request,
+                null,
+                null,
+                ['errno' => 28]
+            ),
+            clock: static fn(): float => 0.0
+        );
+
+        $this->expectException(ManuscriptTemporarilyUnavailableException::class);
+        $source->fetch(self::DOCID);
+    }
+
+    public function testReturnsNullWithoutAnotherRequestWhenARedirectLeavesNoTime(): void
+    {
+        $now = 0.0;
+        $stack = new MockHandler([new Response(302, ['Location' => 'https://hal.science/final.pdf']), new Response(200, [], self::PDF)]);
+        $source = $this->makeSource(
+            [],
+            $this->makePaper((int) Episciences_Repositories::HAL_REPO_ID),
+            handler: static function (RequestInterface $request, array $options) use (&$now, $stack) {
+                $now += RepositoryManuscriptSource::TIMEOUT - 0.5; // the first hop leaves less than a second
+                return $stack($request, $options);
+            },
+            clock: static function () use (&$now): float {
+                return $now;
+            }
+        );
+
+        self::assertNull($source->fetch(self::DOCID));
+        self::assertCount(1, $this->history);
+    }
+
     public function testEveryRedirectHopGetsOnlyTheTimeLeft(): void
     {
         $source = $this->makeSource(
@@ -757,6 +911,16 @@ final class RepositoryManuscriptSourceTest extends TestCase
         $options = $this->history[0]['options'];
         self::assertSame(['arxiv.org:443:' . self::PUBLIC_IP], $options['curl'][CURLOPT_RESOLVE]);
         self::assertSame('v4', $options['force_ip_resolve']);
+    }
+
+    public function testNeverGoesThroughAProxy(): void
+    {
+        // A proxy would resolve the host name itself and bypass the pinned address
+        $source = $this->makeSource([new Response(200, [], self::PDF)], $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID));
+
+        $source->fetch(self::DOCID);
+
+        self::assertSame('', $this->history[0]['options']['proxy']);
     }
 
     /**
@@ -847,6 +1011,119 @@ final class RepositoryManuscriptSourceTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Contract consumed by the Turnitin integration (specification §2.1)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Whatever the repository does, fetch() ends with one of the four documented outcomes,
+     * and the exception tells whether a retry may succeed.
+     *
+     * @dataProvider repositoryBehaviourProvider
+     * @param list<Response> $responses
+     */
+    public function testEveryRepositoryBehaviourEndsWithADocumentedOutcome(
+        int $repoId,
+        array $responses,
+        ?\Closure $handler,
+        string $expected
+    ): void {
+        $source = $this->makeSource($responses, $this->makePaper($repoId), handler: $handler);
+
+        self::assertSame($expected, $this->fetchOutcome($source));
+    }
+
+    /**
+     * @return array<string, array{int, list<Response>, ?\Closure, string}>
+     */
+    public static function repositoryBehaviourProvider(): array
+    {
+        $arxiv = (int) Episciences_Repositories::ARXIV_REPO_ID;
+        $hal = (int) Episciences_Repositories::HAL_REPO_ID;
+        $curlError = static fn(int $errno): \Closure => static fn(RequestInterface $request): never => throw new RequestException(
+            'cURL error ' . $errno,
+            $request,
+            null,
+            null,
+            ['errno' => $errno]
+        );
+        $redirect = new Response(302, ['Location' => 'https://hal.science/next.pdf']);
+
+        return [
+            'PDF' => [$arxiv, [new Response(200, ['Content-Type' => 'application/pdf'], self::PDF)], null, 'file'],
+            'PDF after a redirect' => [$hal, [$redirect, new Response(200, [], self::PDF)], null, 'file'],
+            'plain text manuscript' => [$arxiv, [new Response(200, ['Content-Type' => 'text/plain'], 'A plain text manuscript.')], null, 'file'],
+            'landing page instead of a file' => [$arxiv, [new Response(200, ['Content-Type' => 'text/html'], '<!DOCTYPE html><html><body>Login</body></html>')], null, 'null'],
+            'JSON metadata instead of a file' => [$arxiv, [new Response(200, ['Content-Type' => 'application/json'], '{"files": []}')], null, 'null'],
+            'empty file' => [$arxiv, [new Response(200, [], '')], null, 'null'],
+            'not found' => [$arxiv, [new Response(404)], null, 'null'],
+            'embargo' => [$arxiv, [new Response(403)], null, 'null'],
+            'withdrawn' => [$arxiv, [new Response(410)], null, 'null'],
+            'redirect to a non HTTP URL' => [$hal, [new Response(302, ['Location' => 'ftp://hal.science/file.pdf'])], null, 'null'],
+            'malformed redirect' => [$hal, [new Response(302, ['Location' => 'http:///x'])], null, 'null'],
+            'redirect loop' => [$hal, array_fill(0, RepositoryManuscriptSource::MAX_REDIRECTS + 1, $redirect), null, 'null'],
+            'invalid certificate' => [$arxiv, [], $curlError(60), 'null'],
+            'maintenance' => [$arxiv, [new Response(503)], null, 'retry'],
+            'rate limited' => [$arxiv, [new Response(429)], null, 'retry'],
+            'stalled transfer' => [$arxiv, [], $curlError(28), 'retry'],
+            'connection refused' => [$arxiv, [], static fn(RequestInterface $request): never => throw new ConnectException('Connection refused', $request), 'retry'],
+            'announced size above the limit' => [$arxiv, [new Response(200, ['Content-Length' => (string) (ManuscriptFile::MAX_SIZE + 1)], self::PDF)], null, 'too-large'],
+        ];
+    }
+
+    public function testTheStreamCanBeReadAgainForARetriedUpload(): void
+    {
+        $source = $this->makeSource([new Response(200, [], self::PDF)], $this->makePaper((int) Episciences_Repositories::ARXIV_REPO_ID));
+
+        $file = $source->fetch(self::DOCID);
+
+        self::assertInstanceOf(ManuscriptFile::class, $file);
+        self::assertSame(self::PDF, $file->stream->getContents());
+        $file->stream->rewind();
+        self::assertSame(self::PDF, $file->stream->getContents(), 'a second upload attempt sends the same bytes');
+        $file->stream->close();
+    }
+
+    /**
+     * @return 'file'|'null'|'retry'|'too-large'
+     */
+    private function fetchOutcome(RepositoryManuscriptSource $source): string
+    {
+        // Any other exception escapes and fails the test: the contract allows none
+        try {
+            $file = $source->fetch(self::DOCID);
+        } catch (ManuscriptTooLargeException $e) {
+            self::assertFalse($e->isRetryable());
+            return 'too-large';
+        } catch (ManuscriptTemporarilyUnavailableException $e) {
+            self::assertTrue($e->isRetryable());
+            return 'retry';
+        }
+
+        if ($file === null) {
+            return 'null';
+        }
+
+        $this->assertHonoursTheFileGuarantees($file);
+
+        return 'file';
+    }
+
+    private function assertHonoursTheFileGuarantees(ManuscriptFile $file): void
+    {
+        self::assertGreaterThan(0, $file->size);
+        self::assertLessThanOrEqual(ManuscriptFile::MAX_SIZE, $file->size);
+        self::assertNotSame('', pathinfo($file->fileName, PATHINFO_EXTENSION), 'the file name has an extension');
+        self::assertStringNotContainsString('/', $file->fileName);
+        self::assertNotSame('', $file->mimeType);
+        self::assertTrue($file->stream->isReadable());
+        self::assertTrue($file->stream->isSeekable(), 'a retried upload rewinds the stream');
+        self::assertSame(0, $file->stream->tell(), 'the stream starts at the beginning of the file');
+        self::assertSame($file->size, $file->stream->getSize(), 'the size is the exact Content-Length');
+        self::assertSame($file->size, strlen($file->stream->getContents()));
+        $file->stream->close();
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
 
     // -------------------------------------------------------------------------
@@ -862,7 +1139,9 @@ final class RepositoryManuscriptSourceTest extends TestCase
         string $userAgent = '',
         ?callable $handler = null,
         ?\Closure $hostResolver = null,
-        ?string $dataDescriptorPath = null
+        ?string $dataDescriptorPath = null,
+        ?\Closure $clock = null,
+        ?string $journalFilesDirectory = null
     ): RepositoryManuscriptSource {
         $stack = HandlerStack::create($handler ?? new MockHandler($responses));
         $stack->push(Middleware::history($this->history));
@@ -875,7 +1154,9 @@ final class RepositoryManuscriptSourceTest extends TestCase
             $maxBytes,
             $userAgent,
             new PublicAddressGuard($hostResolver ?? static fn(string $host): array => [self::PUBLIC_IP]),
-            static fn(Episciences_Paper $p): ?string => $dataDescriptorPath
+            static fn(Episciences_Paper $p): ?string => $dataDescriptorPath,
+            $clock,
+            static fn(Episciences_Paper $p): ?string => $journalFilesDirectory
         );
     }
 
@@ -892,6 +1173,11 @@ final class RepositoryManuscriptSourceTest extends TestCase
     private function writeTempFile(string $name, string $content): string
     {
         $path = $this->tempDir() . '/' . $name;
+
+        if (!is_dir(dirname($path))) {
+            mkdir(dirname($path), 0755, true);
+        }
+
         file_put_contents($path, $content);
 
         return $path;

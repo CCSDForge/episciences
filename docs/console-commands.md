@@ -1380,9 +1380,15 @@ The main file is always downloaded from the repository, never read from the loca
 backup copy (`data/{rvcode}/files/{docid}/documents/{docid}.pdf`), which may hold
 another file of the paper or a previous version. For a dataset or software, the
 repository holds the data or the code: the file checked is the latest data
-descriptor uploaded to Episciences (`data/{rvcode}/files/{docid}/dd/`). Temporary
-versions, datasets and software without data descriptor, missing, removed or
-restricted files give no manuscript: run with `-v` to print the reason. The log is written to
+descriptor uploaded to Episciences (`data/{rvcode}/files/{docid}/dd/`). A temporary
+version is uploaded to Episciences too: its file is read from
+`data/{rvcode}/files/{paperid}/tmp/`. Nothing designates the manuscript among
+several attached files (the article and the answer to the reviewers, for
+instance), so only a temporary version with a single file is checked. Temporary
+versions with several files, datasets and software without data descriptor,
+missing, removed or restricted files and files not downloaded within 15 minutes
+give no manuscript: run with `-v` to print the reason. Run the command as the
+web server user (`www-data`), which can write the log. The log is written to
 `tca_manuscript-<date>.log`, the same file as the Turnitin integration.
 
 ```bash
