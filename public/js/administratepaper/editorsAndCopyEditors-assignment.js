@@ -1,6 +1,24 @@
 var openedPopover = null;
 
 /**
+ * Closes the popovers opened by .popover-link buttons. Bootstrap 3 keeps a destroyed
+ * tip in the DOM until the end of its fade-out: remove it right away, otherwise
+ * page-wide selectors (#filter, form[id^=assign]) could still match the old form.
+ */
+function destroyLinkPopovers() {
+    document.querySelectorAll('.popover-link').forEach(function (link) {
+        let popover = $(link).data('bs.popover');
+        if (!popover) {
+            return;
+        }
+        if (popover.$tip) {
+            popover.$tip.remove();
+        }
+        $(link).popover('destroy');
+    });
+}
+
+/**
  *
  * @param button
  * @param docid
@@ -11,10 +29,11 @@ var openedPopover = null;
 function getAssignUserForm(button, docid, vid, partial) {
     let isPartial = partial !== '' ? JSON.parse(partial) : false;
 
-    let buttonId = $(button).attr('id');
+    let buttonId = button.id;
 
-    // destroy previous popups
-    $(button).popover('destroy');
+    // destroy previous popups, including the ones opened by other buttons:
+    // two assignment forms open at once would share the same #filter id
+    destroyLinkPopovers();
     openedPopover = null;
 
     // toggle: do we open or close popup ?
@@ -43,8 +62,17 @@ function getAssignUserForm(button, docid, vid, partial) {
         })
         .popover('show');
 
+    // Every close path (another form opened, click elsewhere on the page,
+    // closeResult()) destroys the loader, which triggers 'hide.bs.popover':
+    // stop loading a form that would no longer be displayed
+    let abortRequest = function () {
+        request.abort();
+    };
+    $(button).one('hide.bs.popover', abortRequest);
+
     request.done(function (result) {
-        // destroy loading popup
+        // destroy loading popup, without aborting the request that just completed
+        $(button).off('hide.bs.popover', abortRequest);
         $(button).popover('destroy');
 
         // show form in the popover
@@ -57,15 +85,21 @@ function getAssignUserForm(button, docid, vid, partial) {
             })
             .popover('show');
 
-        // editors or copy editors filter handlers
-        $('#filter').on('keyup', function () {
-            filterList('#filter', '.' + buttonId + '-list label');
-        });
-        $('#filter').on('paste', function () {
-            setTimeout(function () {
-                filterList('#filter', '.' + buttonId + '-list label');
-            }, 4);
-        });
+        // editors or copy editors filter handlers, bound to the form just displayed
+        let filter = $(button)
+            .data('bs.popover')
+            .tip()[0]
+            .querySelector('#filter');
+        if (filter) {
+            filter.addEventListener('keyup', function () {
+                filterList(filter, '.' + buttonId + '-list label');
+            });
+            filter.addEventListener('paste', function () {
+                setTimeout(function () {
+                    filterList(filter, '.' + buttonId + '-list label');
+                }, 4);
+            });
+        }
 
         // Initialize editor availability handling
         if (buttonId === 'editors') {
