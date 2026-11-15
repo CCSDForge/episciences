@@ -896,13 +896,13 @@ function initPaperModalRecipientTagsFromHidden() {
 }
 
 /**
- * A mail breaking the anonymity of the reviewers is not sent: the submit button of its form, or the shared button
- * of the modal showing it, is stopped before its own handlers run (capture phase), and the warning is focused
+ * A mail breaking the anonymity of the reviewers is not sent: the submit button of its form, or the button of the
+ * modal showing it (#submit-modal of the shared modal, .submit-modal of the paper status modals), is stopped before its own handlers run (capture phase), and the warning is focused
  */
 function epOnSubmitAttempt(event) {
     const button = event.target.closest
         ? event.target.closest(
-              '#submit-modal, button[type="submit"], input[type="submit"]'
+              '#submit-modal, .submit-modal, button[type="submit"], input[type="submit"]'
           )
         : null;
     if (!button) {

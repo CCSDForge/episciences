@@ -555,22 +555,36 @@ describe('es.mail recipients list', () => {
             expect(onSubmit).toHaveBeenCalledTimes(1);
         });
 
-        test('the shared button of the modal is stopped too', () => {
+        test.each([
+            [
+                'the shared modal',
+                '<button id="submit-modal" type="button"></button>',
+            ],
+            [
+                'a paper status modal',
+                '<button id="submit-modal-refuse" class="submit-modal" type="button"></button>',
+            ],
+        ])('the button of %s is stopped too', (_, buttonHtml) => {
             document.body.innerHTML =
-                '<div class="modal"><div class="modal-body"></div><button id="submit-modal" type="button"></button></div>';
+                '<div class="modal"><div class="modal-body"></div>' +
+                buttonHtml +
+                '</div>';
             const modalBody = document.querySelector('.modal-body');
             const form = document.createElement('form');
             form.id = 'm';
             form.innerHTML =
                 '<div class="ep-anonymity-warning" tabindex="-1"></div>';
             modalBody.appendChild(form);
-            const button = document.getElementById('submit-modal');
+            const button = document.querySelector('.modal button');
             const onClick = jest.fn();
             button.addEventListener('click', onClick);
 
             button.click();
 
             expect(onClick).not.toHaveBeenCalled();
+            expect(document.activeElement).toBe(
+                form.querySelector('.ep-anonymity-warning')
+            );
         });
 
         test('the warning button moves the reviewers to Bcc', () => {
