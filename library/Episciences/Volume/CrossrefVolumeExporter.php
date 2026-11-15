@@ -79,8 +79,18 @@ final class CrossrefVolumeExporter
 
         $doi = trim((string)$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI));
 
-        if (!str_contains($doi, '/') || str_ends_with($doi, '.proceedings.')) {
+        // A suffix may itself end with ".proceedings.": only an empty suffix means no DOI
+        if (!str_contains($doi, '/') || ProceedingsValidator::extractDoiSuffix($doi) === '') {
             throw new InvalidArgumentException(sprintf('Volume #%s has no proceedings DOI.', $volume->getVid()));
+        }
+
+        // Required by the Crossref schema: an empty element would get the deposit rejected
+        if (trim((string)$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_NAME)) === '') {
+            throw new InvalidArgumentException(sprintf('Volume #%s has no conference name.', $volume->getVid()));
+        }
+
+        if (self::getProceedingsTitle($volume->getTitles())['title'] === '') {
+            throw new InvalidArgumentException(sprintf('Volume #%s has no title.', $volume->getVid()));
         }
 
         return $doi;
@@ -161,7 +171,9 @@ final class CrossrefVolumeExporter
         $startDate = DateTimeImmutable::createFromFormat('!Y-m-d', $start);
         $endDate = DateTimeImmutable::createFromFormat('!Y-m-d', $end);
 
+        // createFromFormat() rolls an impossible date over (2026-02-30 becomes 2026-03-02)
         if ($startDate === false || $endDate === false
+            || $startDate->format('Y-m-d') !== $start || $endDate->format('Y-m-d') !== $end
             || !ProceedingsValidator::isDateInCrossrefRange($startDate->format('Y-m-d'))
             || !ProceedingsValidator::isDateInCrossrefRange($endDate->format('Y-m-d'))) {
             return null;

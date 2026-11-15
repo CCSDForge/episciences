@@ -116,6 +116,7 @@ final class ProceedingsValidatorTest extends TestCase
         self::assertSame('10.46298/mbj.proceedings.51', ProceedingsValidator::buildDoi('10.46298', 'mbj', '51'));
         self::assertSame('mfps.40', ProceedingsValidator::extractDoiSuffix('10.46298/mbj.proceedings.mfps.40'));
         self::assertSame('', ProceedingsValidator::extractDoiSuffix('10.46298/mbj.12'));
+        self::assertSame('a.proceedings.b', ProceedingsValidator::extractDoiSuffix('10.46298/mbj.proceedings.a.proceedings.b'), 'The whole suffix, not after its last infix');
         self::assertTrue(ProceedingsValidator::isDoiSuffixValid('a.B-c_9'));
         self::assertFalse(ProceedingsValidator::isDoiSuffixValid("51\n"));
     }

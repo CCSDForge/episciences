@@ -5,6 +5,7 @@ use Episciences\Upload\UploadChecker;
 use Episciences\Volume\CrossrefVolumeExporter;
 use Episciences\Volume\DoiQueue;
 use Episciences\Volume\DoiQueueManager;
+use Episciences\Volume\ProceedingsDoiLock;
 use Episciences\Volume\ProceedingsValidator;
 
 class VolumeController extends Zend_Controller_Action
@@ -48,20 +49,23 @@ class VolumeController extends Zend_Controller_Action
             $post = $request->getPost();
 
             $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
+            // Held until the DOI is queued: no concurrent save can take the same DOI
+            $doiLock = $isTokenValid ? ProceedingsDoiLock::acquire(RVID) : null;
 
             // A refused request does not fill the form: its values may come from another site
             // Both validations run, so that every error is shown at once
             $isFormValid = $isTokenValid && $form->isValid($post);
-            if ($isTokenValid && $this->validateProceedings($form, $post, null, $journalPrefixDoi) && $isFormValid) {
+            if ($doiLock !== null && $this->validateProceedings($form, $post, null, $journalPrefixDoi, null) && $isFormValid) {
 
                 $oVolume = new Episciences_Volume();
 
                 $this->checkValidateDate($post['year'], $request);
-                $resVol = $oVolume->save($form->getValues(), null, $post);
+                $resVol = $oVolume->save($form->getValues(), null, $post, $journalPrefixDoi, false);
                 $oVolume->saveVolumeMetadata($post);
 
                 if ($resVol) {
-                    $this->syncProceedingsDoiQueue($oVolume);
+                    $this->syncProceedingsDoiQueue($oVolume, false);
+                    $doiLock->release();
                     $message = '<strong>' . $this->view->translate("Le nouveau volume a bien été créé.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
                 } else {
@@ -69,9 +73,11 @@ class VolumeController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
 
+                $doiLock->release();
                 $this->_helper->redirector('index', 'volume');
             } else {
-                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
+                $doiLock?->release();
+                $message = '<strong>' . $this->view->translate(self::getRefusedFormMessage($isTokenValid, $doiLock !== null)) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->view->form = $form;
             }
@@ -453,19 +459,24 @@ class VolumeController extends Zend_Controller_Action
         $gaps = Episciences_Volume::findGapsInPaperOrders($sorted_papers);
         $this->view->gapsInOrderingPapers = $gaps;
 
-        $form = Episciences_VolumesManager::getForm($referer, $volume, $hasPublishedPapers);
+        $isSubmitted = $request->isPost() && array_key_exists('submit', $request->getPost());
+        $isTokenValid = $isSubmitted && Episciences_Csrf_Helper::validateRequestToken($request);
+        // Held from the DOI status read until the DOI is queued: a deposit cannot claim the DOI
+        // meanwhile, and no concurrent save can take the same DOI
+        $doiLock = $isTokenValid ? ProceedingsDoiLock::acquire(RVID) : null;
+        // Read once: the form, the validation, the save and the queue all depend on it
+        $doiQueue = DoiQueueManager::findByVid($vid);
+        $form = Episciences_VolumesManager::getForm($referer, $volume, $hasPublishedPapers, $doiQueue);
         $journalPrefixDoi = $journal->getDoiSettings()->getDoiPrefix();
         $isPostedFormInvalid = false;
-        if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
+        if ($isSubmitted) {
             $post = $request->getPost();
-
-            $isTokenValid = Episciences_Csrf_Helper::validateRequestToken($request);
 
             // A refused request does not fill the form: its values may come from another site
             // Both validations run, so that every error is shown at once
             $isFormValid = $isTokenValid && $form->isValid($post);
             $isPostedFormInvalid = $isTokenValid;
-            if ($isTokenValid && $this->validateProceedings($form, $post, $volume, $journalPrefixDoi) && $isFormValid) {
+            if ($doiLock !== null && $this->validateProceedings($form, $post, $volume, $journalPrefixDoi, $doiQueue) && $isFormValid) {
                 $isPostedFormInvalid = false;
                 // Backend protection: Restore original titles if volume has published papers
                 if ($hasPublishedPapers) {
@@ -481,12 +492,13 @@ class VolumeController extends Zend_Controller_Action
                 }
 
                 $this->checkValidateDate($post['year'], $request);
-                $resVol = $volume->save($form->getValues(), $vid, $post);
+                $resVol = $volume->save($form->getValues(), $vid, $post, $journalPrefixDoi, $doiQueue->isLocked());
 
                 $volume->saveVolumeMetadata($request->getPost());
 
                 if ($resVol) {
-                    $this->syncProceedingsDoiQueue($volume);
+                    $this->syncProceedingsDoiQueue($volume, $doiQueue->isLocked());
+                    $doiLock->release();
                     $message = '<strong>' . $this->view->translate("Vos modifications ont bien été prises en compte.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
 
@@ -507,10 +519,12 @@ class VolumeController extends Zend_Controller_Action
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
 
+                $doiLock->release();
                 $this->_helper->redirector->gotoUrl($referer);
 
             } else {
-                $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
+                $doiLock?->release();
+                $message = '<strong>' . $this->view->translate(self::getRefusedFormMessage($isTokenValid, $doiLock !== null)) . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
         }
@@ -530,14 +544,27 @@ class VolumeController extends Zend_Controller_Action
     }
 
     /**
+     * Message of a refused volume form (untranslated).
+     */
+    private static function getRefusedFormMessage(bool $isTokenValid, bool $isDoiLockAcquired): string
+    {
+        return match (true) {
+            !$isTokenValid => 'Votre session a expiré, veuillez réessayer.',
+            !$isDoiLockAcquired => 'Les DOI des volumes sont en cours de traitement, veuillez réessayer dans quelques instants.',
+            default => 'Ce formulaire comporte des erreurs.',
+        };
+    }
+
+    /**
      * Server-side rules of the proceedings fields, errors attached to the fields.
      *
      * @param array<string, mixed> $post
+     * @param DoiQueue|null $doiQueue queue entry of the volume DOI, null for a new volume
      */
-    private function validateProceedings(Ccsd_Form $form, array $post, ?Episciences_Volume $volume, string $doiPrefix): bool
+    private function validateProceedings(Ccsd_Form $form, array $post, ?Episciences_Volume $volume, string $doiPrefix, ?DoiQueue $doiQueue): bool
     {
         $vid = $volume !== null ? (int)$volume->getVid() : null;
-        $isDoiLocked = $vid !== null && DoiQueueManager::isDoiLocked($vid);
+        $isDoiLocked = $doiQueue?->isLocked() ?? false;
         $errors = (new ProceedingsValidator())->validate($post, $doiPrefix, RVCODE, RVID, $vid, $isDoiLocked);
 
         $doiError = null;
@@ -556,7 +583,8 @@ class VolumeController extends Zend_Controller_Action
                 $volume,
                 $doiPrefix,
                 trim((string)($post[Episciences_Volume::VOLUME_CONFERENCE_DOI] ?? '')),
-                $doiError
+                $doiError,
+                $doiQueue
             )
         );
 
@@ -566,12 +594,14 @@ class VolumeController extends Zend_Controller_Action
     /**
      * Queue the DOI of a saved proceedings volume for the deposit, or forget an assigned one
      * that is no longer wanted. A requested or registered DOI is left alone.
+     *
+     * @param bool $isDoiLocked status read before the save: the save keeps a locked DOI as is
      */
-    private function syncProceedingsDoiQueue(Episciences_Volume $volume): void
+    private function syncProceedingsDoiQueue(Episciences_Volume $volume, bool $isDoiLocked): void
     {
         $vid = (int)$volume->getVid();
 
-        if ($vid === 0 || DoiQueueManager::isDoiLocked($vid)) {
+        if ($vid === 0 || $isDoiLocked) {
             return;
         }
 

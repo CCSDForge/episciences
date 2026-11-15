@@ -695,9 +695,11 @@ class Episciences_Volume
      * @param array $data form data volume
      * @param int|null $vid
      * @param array $post form data volume metadata
+     * @param string|null $doiPrefix journal DOI prefix the proceedings DOI was validated with, looked up otherwise
+     * @param bool|null $isDoiLocked whether the proceedings DOI was already sent to Crossref, looked up otherwise
      * @return bool
      */
-    public function save(array $data, int $vid = null, array $post = []): bool
+    public function save(array $data, ?int $vid = null, array $post = [], ?string $doiPrefix = null, ?bool $isDoiLocked = null): bool
     {
         $post = array_merge($post, $data);
         $post['title'] = Episciences_VolumesManager::revertVolumeTitleToTextArray($post) ?? null;
@@ -742,7 +744,7 @@ class Episciences_Volume
         }
 
 
-        $proceedingsDoi = $this->resolveProceedingsDoi($post, $vid);
+        $proceedingsDoi = $this->resolveProceedingsDoi($post, $vid, $doiPrefix, $isDoiLocked);
         $settings[self::VOLUME_CONFERENCE_DOI] = $proceedingsDoi;
         $settingsProceeding[self::VOLUME_CONFERENCE_DOI] = $proceedingsDoi;
         $this->setSetting(self::VOLUME_IS_PROCEEDING, $settings[self::VOLUME_IS_PROCEEDING]);
@@ -821,24 +823,26 @@ class Episciences_Volume
     /**
      * DOI of the proceedings to store. Once requested or registered it is kept whatever is posted
      * (the suffix input is read-only then, and the stored status is the only one trusted);
-     * before that it follows the posted suffix, empty when there is none or no journal DOI prefix.
+     * before that it follows the posted suffix, empty when the volume is not a proceedings,
+     * when there is no suffix or no journal DOI prefix.
      *
      * @param array<string, mixed> $post
      */
-    private function resolveProceedingsDoi(array $post, ?int $vid): string
+    private function resolveProceedingsDoi(array $post, ?int $vid, ?string $doiPrefix, ?bool $isDoiLocked): string
     {
-        if ($vid && \Episciences\Volume\DoiQueueManager::isDoiLocked($vid)) {
+        $isDoiLocked ??= $vid && \Episciences\Volume\DoiQueueManager::isDoiLocked($vid);
+
+        if ($isDoiLocked) {
             return (string)$this->getSetting(self::VOLUME_CONFERENCE_DOI);
         }
 
-        $suffix = trim((string)($post[self::VOLUME_CONFERENCE_DOI] ?? ''));
-
-        try {
-            $doiPrefix = (string)Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix();
-        } catch (Zend_Exception $e) {
-            $doiPrefix = '';
-            trigger_error($e->getMessage());
+        // Not checked by ProceedingsValidator unless the volume is a proceedings
+        if ((string)($post[self::VOLUME_IS_PROCEEDING] ?? '') !== '1') {
+            return '';
         }
+
+        $suffix = trim((string)($post[self::VOLUME_CONFERENCE_DOI] ?? ''));
+        $doiPrefix ??= Episciences_VolumesManager::getJournalDoiPrefix();
 
         if ($suffix === '' || $doiPrefix === '') {
             return '';

@@ -175,6 +175,8 @@ final class CrossrefVolumeExporterTest extends TestCase
 
         self::assertNull($this->text($xpath, '//c:conference_date'));
         self::assertNull(CrossrefVolumeExporter::getConferenceDate('2026-02-30x', '2026-03-01'));
+        self::assertNull(CrossrefVolumeExporter::getConferenceDate('2026-02-30', '2026-03-03'), 'Not rolled over to March 2');
+        self::assertNull(CrossrefVolumeExporter::getConferenceDate('2026-03-01', '2026-04-31'), 'Not rolled over to May 1');
         self::assertNull(CrossrefVolumeExporter::getConferenceDate('1399-12-31', '2026-03-01'), 'Year refused by Crossref');
         self::assertNull(CrossrefVolumeExporter::getConferenceDate('2026-03-01', '2201-01-01'), 'Year refused by Crossref');
     }
@@ -229,6 +231,38 @@ final class CrossrefVolumeExporterTest extends TestCase
             $this->makeVolume([Episciences_Volume::VOLUME_CONFERENCE_DOI => $doi]),
             $this->makeJournal()
         );
+    }
+
+    /**
+     * @dataProvider missingRequiredMetadataProvider
+     * @param array<string, string> $settings
+     * @param array<string, string>|null $titles
+     */
+    public function testRefusesAProceedingsWithoutRequiredMetadata(array $settings, ?array $titles): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->makeExporter()->export($this->makeVolume($settings, $titles), $this->makeJournal());
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, array<string, string>|null}>
+     */
+    public static function missingRequiredMetadataProvider(): array
+    {
+        return [
+            'no conference name' => [[Episciences_Volume::VOLUME_CONFERENCE_NAME => '  '], null],
+            'no title' => [[], ['en' => ' ']],
+        ];
+    }
+
+    public function testAcceptsASuffixEndingWithTheInfix(): void
+    {
+        $doi = '10.46298/mbj.proceedings.a.proceedings.';
+
+        self::assertSame($doi, CrossrefVolumeExporter::getDepositableDoi(
+            $this->makeVolume([Episciences_Volume::VOLUME_CONFERENCE_DOI => $doi])
+        ));
     }
 
     /**

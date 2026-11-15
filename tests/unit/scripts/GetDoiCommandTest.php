@@ -439,11 +439,15 @@ class GetDoiCommandTest extends TestCase
         ]);
 
         $this->assertCount(1, $this->requests);
-        $this->assertSame([['2', DoiQueue::STATUS_REQUESTED]], $command->saved);
+        $this->assertSame(
+            [['1', DoiQueue::STATUS_REQUESTED], ['1', DoiQueue::STATUS_ASSIGNED], ['2', DoiQueue::STATUS_REQUESTED]],
+            $command->saved,
+            'The DOI that cannot be exported is given back'
+        );
         $this->assertTrue($logs->hasWarningThatContains('Volume #1 skipped'));
     }
 
-    public function testRequestVolumeDois_CrossrefFailureKeepsTheStatus(): void
+    public function testRequestVolumeDois_CrossrefFailureGivesTheDoiBack(): void
     {
         $logs    = new TestHandler();
         $command = $this->makeVolumeCommand([
@@ -457,8 +461,45 @@ class GetDoiCommandTest extends TestCase
             $this->makeLogger($logs),
         ]);
 
-        $this->assertSame([], $command->saved);
+        $this->assertSame([['1134', DoiQueue::STATUS_REQUESTED], ['1134', DoiQueue::STATUS_ASSIGNED]], $command->saved);
         $this->assertTrue($logs->hasErrorThatContains('Crossref submission failed for volume #1134'));
+    }
+
+    public function testRequestVolumeDois_UnclaimedDoiIsNotSent(): void
+    {
+        $logs    = new TestHandler();
+        $command = $this->makeVolumeCommand([
+            $this->makeVolumeQueueEntry(1134, '10.46298/mbj.proceedings.51', DoiQueue::STATUS_ASSIGNED),
+        ]);
+        $command->claimable = false;
+        [$io] = $this->makeIo();
+
+        $this->invokePrivate($command, 'requestVolumeDois', [
+            $io, $this->makeReview(), false, $this->makeMockedCrossrefClient([]), $this->makeLogger($logs),
+        ]);
+
+        $this->assertSame([], $this->requests, 'A DOI being edited is not deposited');
+        $this->assertSame([], $command->saved);
+        $this->assertTrue($logs->hasWarningThatContains('Volume #1134 skipped: its DOI is being edited'));
+    }
+
+    public function testCheckVolumeDois_StatusNotSaved_DoesNotReportPublic(): void
+    {
+        $logs    = new TestHandler();
+        $command = $this->makeVolumeCommand([
+            $this->makeVolumeQueueEntry(1134, '10.46298/mbj.proceedings.51', DoiQueue::STATUS_REQUESTED),
+        ]);
+        $command->saveSucceeds = false;
+        [$io] = $this->makeIo();
+
+        $this->invokePrivate($command, 'checkVolumeDois', [
+            $io, $this->makeReview(), false,
+            $this->makeMockedCrossrefClient([new Response(200, [], $this->diagnostic('completed', '10.46298/mbj.proceedings.51', 'Success'))]),
+            $this->makeLogger($logs),
+        ]);
+
+        $this->assertTrue($logs->hasErrorThatContains('its status could not be saved'));
+        $this->assertFalse($logs->hasInfoThatContains('is now public'));
     }
 
     public function testRequestVolumeDois_EmptyQueue_ReturnsSuccess(): void
@@ -532,10 +573,26 @@ class GetDoiCommandTest extends TestCase
     public static function unconfirmedDiagnosticProvider(): array
     {
         return [
-            'batch in progress' => ['in_process', 'Success', false],
-            'record failure'    => ['completed', 'Failure', false],
-            'dry-run success'   => ['completed', 'Success', true],
+            'batch in progress'  => ['in_process', 'Success', false],
+            'dry-run success'    => ['completed', 'Success', true],
+            'dry-run failure'    => ['completed', 'Failure', true],
         ];
+    }
+
+    public function testCheckVolumeDois_RejectedDeposit_GoesBackToAssigned(): void
+    {
+        $command = $this->makeVolumeCommand([
+            $this->makeVolumeQueueEntry(1134, '10.46298/mbj.proceedings.51', DoiQueue::STATUS_REQUESTED),
+        ]);
+        [$io] = $this->makeIo();
+
+        $this->invokePrivate($command, 'checkVolumeDois', [
+            $io, $this->makeReview(), false,
+            $this->makeMockedCrossrefClient([new Response(200, [], $this->diagnostic('completed', '10.46298/mbj.proceedings.51', 'Failure'))]),
+            new Logger('test'),
+        ]);
+
+        $this->assertSame([['1134', DoiQueue::STATUS_ASSIGNED]], $command->saved, 'Unlocked so that the volume can be fixed and deposited again');
     }
 }
 
@@ -549,6 +606,11 @@ final class InMemoryVolumeDoiCommand extends GetDoiCommand
 
     /** @var list<string> statuses looked up in the queue */
     public array $requestedStatuses = [];
+
+    /** Whether the DOI can be claimed (not being edited, still assigned) */
+    public bool $claimable = true;
+
+    public bool $saveSucceeds = true;
 
     /**
      * @param array<int, array{volume: Episciences_Volume, doiq: DoiQueue}> $queue
@@ -568,9 +630,23 @@ final class InMemoryVolumeDoiCommand extends GetDoiCommand
         return array_values(array_filter($this->queue, static fn(array $entry): bool => $entry['doiq']->getStatus() === $status));
     }
 
-    protected function saveVolumeDoiQueue(DoiQueue $doiQueue): void
+    protected function saveVolumeDoiQueue(DoiQueue $doiQueue): bool
     {
         $this->saved[] = [(string) $doiQueue->getVid(), $doiQueue->getStatus()];
+
+        return $this->saveSucceeds;
+    }
+
+    protected function claimVolumeDoi(Episciences_Volume $volume, DoiQueue $doiQueue): bool
+    {
+        if (!$this->claimable) {
+            return false;
+        }
+
+        $doiQueue->setStatus(DoiQueue::STATUS_REQUESTED);
+        $this->saved[] = [(string) $doiQueue->getVid(), $doiQueue->getStatus()];
+
+        return true;
     }
 
     protected function createVolumeExporter(): CrossrefVolumeExporter

@@ -41,7 +41,7 @@ final class DoiQueueManagerTest extends TestCase
     {
         $doiQueue = new DoiQueue(1134, DoiQueue::STATUS_REQUESTED);
 
-        self::assertSame(1, DoiQueueManager::update($doiQueue));
+        self::assertTrue(DoiQueueManager::update($doiQueue));
 
         $updates = $this->db->updates();
         self::assertCount(1, $updates);
@@ -55,13 +55,10 @@ final class DoiQueueManagerTest extends TestCase
     {
         $this->db
             ->respondTo('/FROM `doi_queue_volumes`/', [
-                ['id' => '3', 'vid' => '1134', 'doi_status' => 'assigned', 'date_init' => '2026-11-01 10:00:00', 'date_updated' => '2026-11-01 10:00:00'],
-            ])
-            ->respondTo('/FROM `VOLUME` WHERE \(VID = 1134\)/', [
-                ['VID' => '1134', 'RVID' => (string)self::RVID, 'POSITION' => '1', 'titles' => '{"en":"Proceedings"}'],
+                ['DOIQ_ID' => '3', 'DOIQ_STATUS' => 'assigned', 'VID' => '1134', 'RVID' => (string)self::RVID, 'POSITION' => '1', 'titles' => '{"en":"Proceedings"}'],
             ])
             ->respondTo('/FROM `VOLUME_SETTING`/', [
-                ['SETTING' => Episciences_Volume::VOLUME_IS_PROCEEDING, 'VALUE' => '1'],
+                ['VID' => '1134', 'SETTING' => Episciences_Volume::VOLUME_IS_PROCEEDING, 'VALUE' => '1'],
             ]);
 
         $result = DoiQueueManager::findByStatus(self::RVID, DoiQueue::STATUS_ASSIGNED);
@@ -70,23 +67,22 @@ final class DoiQueueManagerTest extends TestCase
         self::assertStringContainsString('INNER JOIN `VOLUME` AS `V` ON V.VID = DQ.vid', $queueQuery);
         self::assertStringContainsString('(V.RVID = 42)', $queueQuery);
         self::assertStringContainsString("(DQ.doi_status = 'assigned')", $queueQuery);
-        self::assertStringContainsString('(VID = 1134) AND (RVID = 42)', $this->db->selects()[1], 'The volume is looked up in the same journal');
+        self::assertStringContainsString('(VID IN (1134))', $this->db->selects()[1], 'Settings are loaded in bulk');
 
         self::assertCount(1, $result);
         self::assertInstanceOf(Episciences_Volume::class, $result[0]['volume']);
         self::assertSame(1134, (int)$result[0]['volume']->getVid());
+        self::assertSame(['en' => 'Proceedings'], $result[0]['volume']->getTitles());
         self::assertSame(1, $result[0]['volume']->isProceeding());
         self::assertSame(3, $result[0]['doiq']->getId());
+        self::assertSame(1134, $result[0]['doiq']->getVid());
         self::assertSame(DoiQueue::STATUS_ASSIGNED, $result[0]['doiq']->getStatus());
     }
 
-    public function testFindByStatusSkipsAVolumeThatNoLongerExists(): void
+    public function testFindByStatusLoadsNothingMoreWithoutQueuedVolume(): void
     {
-        $this->db->respondTo('/FROM `doi_queue_volumes`/', [
-            ['id' => '3', 'vid' => '999', 'doi_status' => 'requested', 'date_init' => '2026-11-01 10:00:00', 'date_updated' => '2026-11-01 10:00:00'],
-        ]);
-
         self::assertSame([], DoiQueueManager::findByStatus(self::RVID, DoiQueue::STATUS_REQUESTED));
+        self::assertCount(1, $this->db->selects(), 'No settings nor editors query for an empty queue');
     }
 
     public function testAddNeverChangesARequestedOrRegisteredStatus(): void
@@ -136,5 +132,30 @@ final class DoiQueueManagerTest extends TestCase
             [['table' => T_DOI_QUEUE_VOLUMES, 'where' => ['vid = ?' => 1134, 'doi_status = ?' => DoiQueue::STATUS_ASSIGNED]]],
             $this->db->deletes()
         );
+    }
+
+    public function testRemoveAssignedReturnsZeroOnDatabaseError(): void
+    {
+        $failingDb = $this->createMock(Zend_Db_Adapter_Abstract::class);
+        $failingDb->method('delete')->willThrowException(new \Zend_Db_Statement_Exception('Lock wait timeout exceeded'));
+        Zend_Db_Table_Abstract::setDefaultAdapter($failingDb);
+
+        self::assertSame(0, DoiQueueManager::removeAssigned(1134));
+    }
+
+    public function testClaimOnlyMovesAnAssignedDoiToRequested(): void
+    {
+        self::assertTrue(DoiQueueManager::claim(1134));
+
+        $updates = $this->db->updates();
+        self::assertSame(DoiQueue::STATUS_REQUESTED, $updates[0]['values']['doi_status']);
+        self::assertSame(['vid = ?' => 1134, 'doi_status = ?' => DoiQueue::STATUS_ASSIGNED], $updates[0]['where']);
+    }
+
+    public function testClaimFailsWhenTheDoiIsNoLongerAssigned(): void
+    {
+        $this->db->setAffectedRows(0);
+
+        self::assertFalse(DoiQueueManager::claim(1134));
     }
 }

@@ -112,7 +112,7 @@ final class ProceedingsValidator
      */
     public static function extractDoiSuffix(string $doi): string
     {
-        $position = strrpos($doi, self::DOI_INFIX);
+        $position = strpos($doi, self::DOI_INFIX);
 
         return $position === false ? '' : substr($doi, $position + strlen(self::DOI_INFIX));
     }

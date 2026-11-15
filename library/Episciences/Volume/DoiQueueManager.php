@@ -5,6 +5,7 @@ namespace Episciences\Volume;
 
 use Episciences\AppRegistry;
 use Episciences_Volume;
+use Episciences_VolumesAndSectionsManager;
 use Episciences_VolumesManager;
 use Throwable;
 use Zend_Db_Adapter_Abstract;
@@ -34,7 +35,8 @@ final class DoiQueueManager
     }
 
     /**
-     * Volumes of a journal whose DOI is in the given status.
+     * Volumes of a journal whose DOI is in the given status, with their settings and editors
+     * (what the Crossref export reads) loaded in bulk.
      *
      * @return list<array{volume: Episciences_Volume, doiq: DoiQueue}>
      */
@@ -42,18 +44,28 @@ final class DoiQueueManager
     {
         $db = self::db();
         $select = $db->select()
-            ->from(['DQ' => T_DOI_QUEUE_VOLUMES])
-            ->join(['V' => T_VOLUMES], 'V.VID = DQ.vid', [])
+            ->from(['DQ' => T_DOI_QUEUE_VOLUMES], ['DOIQ_ID' => 'id', 'DOIQ_STATUS' => 'doi_status'])
+            ->join(['V' => T_VOLUMES], 'V.VID = DQ.vid')
             ->where('V.RVID = ?', $rvid)
             ->where('DQ.doi_status = ?', $status)
             ->order('DQ.vid ASC');
 
-        $result = [];
+        $volumes = [];
+        $queue = [];
         foreach ($db->fetchAll($select) as $row) {
-            $volume = Episciences_VolumesManager::find((int)$row['vid'], $rvid);
-            if ($volume instanceof Episciences_Volume) {
-                $result[] = ['volume' => $volume, 'doiq' => DoiQueue::fromRow($row)];
-            }
+            $vid = (int)$row['VID'];
+            $queue[$vid] = new DoiQueue($vid, (string)$row['DOIQ_STATUS'], (int)$row['DOIQ_ID']);
+            unset($row['DOIQ_ID'], $row['DOIQ_STATUS']);
+            Episciences_VolumesAndSectionsManager::dataProcess($row, 'decode');
+            $volumes[$vid] = new Episciences_Volume($row);
+        }
+
+        Episciences_VolumesManager::loadSettingsForVolumes($volumes);
+        Episciences_VolumesManager::loadEditorsForVolumes($volumes);
+
+        $result = [];
+        foreach ($volumes as $vid => $volume) {
+            $result[] = ['volume' => $volume, 'doiq' => $queue[$vid]];
         }
 
         return $result;
@@ -91,12 +103,12 @@ final class DoiQueueManager
     }
 
     /**
-     * @return int affected rows, 0 on error
+     * @return bool false on database error
      */
-    public static function update(DoiQueue $doiQueue): int
+    public static function update(DoiQueue $doiQueue): bool
     {
         try {
-            return self::db()->update(
+            self::db()->update(
                 T_DOI_QUEUE_VOLUMES,
                 [
                     // Raw value: update() binds it
@@ -105,21 +117,49 @@ final class DoiQueueManager
                 ],
                 ['vid = ?' => $doiQueue->getVid()]
             );
+            return true;
         } catch (Throwable $e) {
             self::logError('updating', $doiQueue->getVid(), $e);
-            return 0;
+            return false;
+        }
+    }
+
+    /**
+     * Move an assigned DOI to requested before it is deposited: from then on the volume form
+     * keeps the DOI as it is. Call it under ProceedingsDoiLock.
+     *
+     * @return bool false when the DOI is no longer assigned or on database error
+     */
+    public static function claim(int $vid): bool
+    {
+        try {
+            return self::db()->update(
+                T_DOI_QUEUE_VOLUMES,
+                ['doi_status' => DoiQueue::STATUS_REQUESTED, 'date_updated' => new Zend_Db_Expr('NOW()')],
+                ['vid = ?' => $vid, 'doi_status = ?' => DoiQueue::STATUS_ASSIGNED]
+            ) === 1;
+        } catch (Throwable $e) {
+            self::logError('claiming', $vid, $e);
+            return false;
         }
     }
 
     /**
      * Forget a DOI that was assigned but not sent yet (DOI removed, volume no longer a proceedings).
+     *
+     * @return int affected rows, 0 on error
      */
     public static function removeAssigned(int $vid): int
     {
-        return self::db()->delete(T_DOI_QUEUE_VOLUMES, [
-            'vid = ?' => $vid,
-            'doi_status = ?' => DoiQueue::STATUS_ASSIGNED,
-        ]);
+        try {
+            return self::db()->delete(T_DOI_QUEUE_VOLUMES, [
+                'vid = ?' => $vid,
+                'doi_status = ?' => DoiQueue::STATUS_ASSIGNED,
+            ]);
+        } catch (Throwable $e) {
+            self::logError('removing', $vid, $e);
+            return 0;
+        }
     }
 
     private static function db(): Zend_Db_Adapter_Abstract

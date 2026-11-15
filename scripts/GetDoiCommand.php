@@ -7,6 +7,7 @@ use Episciences\Console\ProgressAwareStreamHandler;
 use Episciences\Volume\CrossrefVolumeExporter;
 use Episciences\Volume\DoiQueue;
 use Episciences\Volume\DoiQueueManager;
+use Episciences\Volume\ProceedingsDoiLock;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
@@ -504,9 +505,13 @@ class GetDoiCommand extends Command
         return Command::SUCCESS;
     }
 
+    /**
+     * The DOI is claimed (requested) before it is exported, so that the volume form cannot change
+     * it while it is deposited; a deposit that cannot be sent gives it back (assigned).
+     */
     private function requestVolumeDoi(
         Episciences_Volume          $volume,
-        DoiQueue $doiQueue,
+        DoiQueue                    $doiQueue,
         Episciences_Review          $review,
         CrossrefVolumeExporter      $exporter,
         CrossrefSubmissionApiClient $crossrefClient,
@@ -516,10 +521,16 @@ class GetDoiCommand extends Command
         $vid    = (int) $volume->getVid();
         $prefix = $dryRun ? '[dry-run] ' : '';
 
+        if (!$dryRun && !$this->claimVolumeDoi($volume, $doiQueue)) {
+            $logger->warning(sprintf('Volume #%d skipped: its DOI is being edited or is no longer assigned, it will be retried on the next --request.', $vid));
+            return;
+        }
+
         try {
             $xml = $exporter->export($volume, $review, true);
         } catch (InvalidArgumentException|RuntimeException $e) {
             $logger->warning(sprintf('Volume #%d skipped: %s', $vid, $e->getMessage()));
+            $this->releaseVolumeDoi($doiQueue, $vid, $logger, $dryRun);
             return;
         }
 
@@ -527,15 +538,26 @@ class GetDoiCommand extends Command
             $response = $crossrefClient->postMetadata($xml, self::getVolumeXmlFileName($review->getCode(), $vid), $dryRun);
         } catch (GuzzleException $e) {
             $logger->error(sprintf('Crossref submission failed for volume #%d: %s', $vid, $e->getMessage()));
+            $this->releaseVolumeDoi($doiQueue, $vid, $logger, $dryRun);
             return;
         }
 
-        if (!$dryRun) {
-            $doiQueue->setStatus(DoiQueue::STATUS_REQUESTED);
-            $this->saveVolumeDoiQueue($doiQueue);
+        $logger->info(sprintf('%sVolume #%d: Crossref answered: %s', $prefix, $vid, $response->getBody()));
+    }
+
+    /**
+     * Give back a claimed DOI that was not sent: it stays editable and is deposited again later.
+     */
+    private function releaseVolumeDoi(DoiQueue $doiQueue, int $vid, Logger $logger, bool $dryRun): void
+    {
+        if ($dryRun) {
+            return;
         }
 
-        $logger->info(sprintf('%sVolume #%d: Crossref answered: %s', $prefix, $vid, $response->getBody()));
+        $doiQueue->setStatus(DoiQueue::STATUS_ASSIGNED);
+        if (!$this->saveVolumeDoiQueue($doiQueue)) {
+            $logger->error(sprintf('Volume #%d: DOI not sent but still requested, set its status back to assigned by hand.', $vid));
+        }
     }
 
     /**
@@ -594,6 +616,7 @@ class GetDoiCommand extends Command
 
         if (!$result->isSuccess()) {
             $logger->warning(sprintf('Volume #%d: DOI %s not confirmed as successful (status: %s, %s).', $vid, $doi, $result->doiStatus, $result->doiMsg));
+            $this->unlockRejectedVolumeDoi($doiQueue, $vid, $logger, $dryRun);
             return;
         }
 
@@ -603,8 +626,30 @@ class GetDoiCommand extends Command
         }
 
         $doiQueue->setStatus(DoiQueue::STATUS_PUBLIC);
-        $this->saveVolumeDoiQueue($doiQueue);
+        if (!$this->saveVolumeDoiQueue($doiQueue)) {
+            $logger->error(sprintf('Volume #%d: DOI %s registered but its status could not be saved, it will be checked again on the next --check.', $vid, $doi));
+            return;
+        }
         $logger->info(sprintf('Volume #%d: DOI %s is now public.', $vid, $doi));
+    }
+
+    /**
+     * A deposit rejected by Crossref goes back to "assigned": the volume form unlocks the DOI so
+     * that managers can fix the metadata, and the next --request --volumes deposits it again.
+     */
+    private function unlockRejectedVolumeDoi(DoiQueue $doiQueue, int $vid, Logger $logger, bool $dryRun): void
+    {
+        if ($dryRun) {
+            $logger->info(sprintf('[dry-run] Volume #%d: DOI status would go back to assigned.', $vid));
+            return;
+        }
+
+        $doiQueue->setStatus(DoiQueue::STATUS_ASSIGNED);
+        if (!$this->saveVolumeDoiQueue($doiQueue)) {
+            $logger->error(sprintf('Volume #%d: rejected DOI still requested, its status could not be set back to assigned.', $vid));
+            return;
+        }
+        $logger->info(sprintf('Volume #%d: DOI status back to assigned, it will be deposited again on the next --request --volumes.', $vid));
     }
 
     /**
@@ -624,9 +669,35 @@ class GetDoiCommand extends Command
         return DoiQueueManager::findByStatus($rvid, $status);
     }
 
-    protected function saveVolumeDoiQueue(DoiQueue $doiQueue): void
+    /**
+     * @return bool false on database error
+     */
+    protected function saveVolumeDoiQueue(DoiQueue $doiQueue): bool
     {
-        DoiQueueManager::update($doiQueue);
+        return DoiQueueManager::update($doiQueue);
+    }
+
+    /**
+     * Claim the DOI of the volume under the journal DOI lock, then reload the volume settings:
+     * the DOI deposited is the one stored when it was claimed, not the one read with the queue.
+     */
+    protected function claimVolumeDoi(Episciences_Volume $volume, DoiQueue $doiQueue): bool
+    {
+        $lock = ProceedingsDoiLock::acquire((int) $volume->getRvid());
+        if ($lock === null) {
+            return false;
+        }
+
+        try {
+            if (!DoiQueueManager::claim($doiQueue->getVid())) {
+                return false;
+            }
+            $volume->loadSettings();
+            $doiQueue->setStatus(DoiQueue::STATUS_REQUESTED);
+            return true;
+        } finally {
+            $lock->release();
+        }
     }
 
     protected function createVolumeExporter(): CrossrefVolumeExporter

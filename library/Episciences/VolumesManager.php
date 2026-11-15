@@ -574,13 +574,14 @@ class Episciences_VolumesManager
      * @param string $referer
      * @param Episciences_Volume|null $volume
      * @param bool $hasPublishedPapers Whether the volume contains published papers (STATUS = 16) - disables title editing if true
+     * @param DoiQueue|null $doiQueue queue entry of the volume DOI when already read, looked up otherwise
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      * @throws Zend_Validate_Exception
      */
     public
-    static function getForm(string $referer = '', Episciences_Volume $volume = null, bool $hasPublishedPapers = false): \Ccsd_Form
+    static function getForm(string $referer = '', ?Episciences_Volume $volume = null, bool $hasPublishedPapers = false, ?DoiQueue $doiQueue = null): \Ccsd_Form
     {
         if (empty($referer)) {
             $referer = '/volume/list';
@@ -606,7 +607,7 @@ class Episciences_VolumesManager
         ]);
         $form->getDecorator('ViewScript')->setOption(
             self::PROCEEDINGS_DOI_VIEW_OPTION,
-            self::getProceedingsDoiViewData($volume, self::getJournalDoiPrefix())
+            self::getProceedingsDoiViewData($volume, self::getJournalDoiPrefix(), null, null, $doiQueue)
         );
 
         $languages = Episciences_Tools::getLanguages();
@@ -762,14 +763,17 @@ class Episciences_VolumesManager
      * Data of the proceedings DOI row (volume/doi_proceedings_row.phtml).
      *
      * @param string|null $postedSuffix suffix posted with a refused form, shown again unless the DOI is locked
+     * @param DoiQueue|null $doiQueue queue entry of the volume DOI when already read, looked up otherwise
      * @return array{prefix: string, suffix: string, status: string, locked: bool, doi: string, vid: int|null, error: string|null, canEditDoiSettings: bool}
      */
-    public static function getProceedingsDoiViewData(?Episciences_Volume $volume, string $doiPrefix, ?string $postedSuffix = null, ?string $error = null): array
+    public static function getProceedingsDoiViewData(?Episciences_Volume $volume, string $doiPrefix, ?string $postedSuffix = null, ?string $error = null, ?DoiQueue $doiQueue = null): array
     {
         $vid = $volume !== null && $volume->getVid() ? (int)$volume->getVid() : null;
-        $status = $vid !== null
-            ? DoiQueueManager::findByVid($vid)->getStatus()
-            : DoiQueue::STATUS_NOT_ASSIGNED;
+        $status = match (true) {
+            $vid === null => DoiQueue::STATUS_NOT_ASSIGNED,
+            $doiQueue !== null => $doiQueue->getStatus(),
+            default => DoiQueueManager::findByVid($vid)->getStatus(),
+        };
         $locked = DoiQueue::isLockedStatus($status);
         $storedDoi = $volume !== null ? (string)$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI) : '';
 
@@ -785,7 +789,10 @@ class Episciences_VolumesManager
         ];
     }
 
-    private static function getJournalDoiPrefix(): string
+    /**
+     * DOI prefix of the current journal, empty when it has none.
+     */
+    public static function getJournalDoiPrefix(): string
     {
         try {
             return (string)Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix();

@@ -68,6 +68,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
     private function givenProceedingsVolume(string $doiStatus, bool $isProceeding = true): void
     {
         $this->db
+            ->respondTo('/GET_LOCK/', [['lock' => '1']])
             ->respondTo("/FROM `VOLUME` WHERE \\(VID = '?" . self::VID . "'?\\)/", [[
                 'VID' => self::VID, 'RVID' => RVID, 'POSITION' => 1, 'titles' => '{"en":"Proceedings of MFPS"}',
             ]])
@@ -199,6 +200,40 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
         self::assertSame($expected, $this->writtenDoi(T_VOLUME_PROCEEDING));
         self::assertCount(1, $this->queuedStatuses());
         self::assertStringContainsString("'assigned'", $this->queuedStatuses()[0]);
+    }
+
+    public function testSuffixIsIgnoredWhenTheVolumeIsNotAProceedings(): void
+    {
+        $this->givenProceedingsVolume(DoiQueue::STATUS_ASSIGNED);
+
+        $result = $this->postEdit(['is_proceeding' => '0', 'conference_proceedings_doi' => 'a/b?x']);
+
+        self::assertNotNull($result->redirectUrl());
+        self::assertSame('', $this->writtenDoi(T_VOLUME_SETTINGS), 'An unvalidated suffix is never stored');
+        self::assertSame([], $this->queuedStatuses());
+    }
+
+    public function testFormIsRefusedWhileTheDoiLockIsHeld(): void
+    {
+        $this->db->respondTo('/GET_LOCK/', [['lock' => '0']]);
+        $this->givenProceedingsVolume(DoiQueue::STATUS_ASSIGNED);
+
+        $result = $this->postEdit(['conference_proceedings_doi' => 'mfps.40']);
+
+        self::assertNull($result->redirectUrl());
+        self::assertSame([], $this->writtenSettings(T_VOLUME_SETTINGS));
+        self::assertSame([], $this->queuedStatuses());
+    }
+
+    public function testTheDoiLockIsReleasedAfterTheSave(): void
+    {
+        $this->givenProceedingsVolume(DoiQueue::STATUS_ASSIGNED);
+
+        $this->postEdit(['conference_proceedings_doi' => 'mfps.40']);
+
+        $sql = implode("\n", array_column($this->db->queries(), 'sql'));
+        self::assertStringContainsString('SELECT RELEASE_LOCK(?)', $sql);
+        self::assertGreaterThan(strpos($sql, 'INSERT INTO `doi_queue_volumes`'), strrpos($sql, 'RELEASE_LOCK'), 'Released once the DOI is queued');
     }
 
     public function testRemovingTheSuffixForgetsTheAssignedDoi(): void

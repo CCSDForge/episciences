@@ -31,7 +31,7 @@ if ($hasError) {
      data-text-empty="<?= $this->escape($this->translate('Aucun DOI ne sera déposé pour ces actes.')) ?>"
      data-text-invalid="<?= $this->escape($this->translate(ProceedingsValidator::MSG_DOI_SUFFIX_FORMAT)) ?>">
     <?php if ($doi['prefix'] !== '') : ?>
-        <label for="<?= $inputId ?>" class="col-md-3 control-label optional"><?= $this->escape($this->translate('DOI des actes')) ?></label>
+        <label for="<?= $this->escape($inputId) ?>" class="col-md-3 control-label optional"><?= $this->escape($this->translate('DOI des actes')) ?></label>
     <?php else : ?>
         <span class="col-md-3 control-label"><?= $this->escape($this->translate('DOI des actes')) ?></span>
     <?php endif; ?>
@@ -47,10 +47,10 @@ if ($hasError) {
             <div class="panel panel-default">
                 <div class="panel-body">
                     <div class="input-group">
-                        <span class="input-group-addon" id="<?= $inputId ?>-prefix"><?= $this->escape($doi['prefix']) ?></span>
+                        <span class="input-group-addon" id="<?= $this->escape($inputId) ?>-prefix"><?= $this->escape($doi['prefix']) ?></span>
                         <input type="text"
-                               id="<?= $inputId ?>"
-                               name="<?= $inputId ?>"
+                               id="<?= $this->escape($inputId) ?>"
+                               name="<?= $this->escape($inputId) ?>"
                                value="<?= $this->escape($doi['suffix']) ?>"
                                class="form-control"
                                maxlength="<?= ProceedingsValidator::DOI_SUFFIX_MAX_LENGTH ?>"
@@ -63,18 +63,18 @@ if ($hasError) {
                                <?= $hasError ? 'aria-invalid="true"' : '' ?>>
                     </div>
                     <?php if ($hasError) : ?>
-                        <p id="<?= $inputId ?>-error" class="help-block"><?= $this->escape($doi['error']) ?></p>
+                        <p id="<?= $this->escape($inputId) ?>-error" class="help-block"><?= $this->escape($doi['error']) ?></p>
                     <?php endif; ?>
                     <?php if (!$doi['locked']) : ?>
-                        <p id="<?= $inputId ?>-help" class="help-block"><?= $this->escape($this->translate('Lettres sans accent, chiffres, point, tiret et tiret bas, 20 caractères au maximum.')) ?></p>
+                        <p id="<?= $this->escape($inputId) ?>-help" class="help-block"><?= $this->escape($this->translate('Lettres sans accent, chiffres, point, tiret et tiret bas, 20 caractères au maximum.')) ?></p>
                     <?php endif; ?>
                     <p class="form-control-static">
                         <span class="glyphicon glyphicon-link" aria-hidden="true"></span>
-                        <span id="<?= $inputId ?>-preview" aria-live="polite"><?php if ($doi['locked']) : ?><?= $this->escape(sprintf($this->translate('DOI : %s'), $currentDoi)) ?><?php else : ?><?= $this->escape($currentDoi !== ''
+                        <span id="<?= $this->escape($inputId) ?>-preview" aria-live="polite"><?php if ($doi['locked']) : ?><?= $this->escape(sprintf($this->translate('DOI : %s'), $currentDoi)) ?><?php else : ?><?= $this->escape($currentDoi !== ''
                             ? sprintf($this->translate('DOI qui sera déposé : %s'), $currentDoi)
                             : $this->translate('Aucun DOI ne sera déposé pour ces actes.')) ?><?php endif; ?></span>
                         <?php if ($status !== null) : ?>
-                            <span class="label <?= $status['class'] ?>"><?= $this->escape($this->translate($status['label'])) ?></span>
+                            <span class="label <?= $this->escape($status['class']) ?>"><?= $this->escape($this->translate($status['label'])) ?></span>
                         <?php endif; ?>
                     </p>
                     <?php if ($doi['status'] === DoiQueue::STATUS_PUBLIC && $doi['doi'] !== '') : ?>
@@ -82,11 +82,11 @@ if ($hasError) {
                     <?php endif; ?>
                 </div>
                 <div class="panel-footer clearfix">
-                    <p id="<?= $inputId ?>-note" class="small">
+                    <p id="<?= $this->escape($inputId) ?>-note" class="small">
                         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                         <?= $this->escape($doi['locked']
                             ? $this->translate('Ce DOI a été transmis à Crossref et ne peut plus être modifié.')
-                            : $this->translate("Après l'enregistrement du volume, le DOI sera déposé auprès de Crossref lors du prochain traitement automatique et ne pourra plus être modifié ensuite.")) ?>
+                            : $this->translate("Après l'enregistrement du volume, le DOI sera déposé auprès de Crossref lors du prochain dépôt des DOI de la revue et ne pourra plus être modifié ensuite.")) ?>
                     </p>
                     <?php if ($doi['vid'] !== null && $doi['doi'] !== '') : ?>
                         <a class="btn btn-default btn-sm pull-right" href="<?= $this->escape('/volume/export/id/' . $doi['vid']) ?>">
