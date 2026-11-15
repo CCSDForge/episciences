@@ -56,7 +56,10 @@ module.exports = defineConfig({
             name: 'chromium',
             use: {
                 ...devices['Desktop Chrome'],
-                ...(chromiumArgs.length > 0 ? { launchOptions: { args: chromiumArgs } } : {}),
+                // chrome-headless-shell ignores --unsafely-treat-insecure-origin-as-secure, full chromium honors it
+                ...(chromiumArgs.length > 0
+                    ? { channel: 'chromium', launchOptions: { args: chromiumArgs } }
+                    : {}),
             }
         }
     ]
