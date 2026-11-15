@@ -776,6 +776,71 @@ test.describe('Reviewer invitation answer', () => {
         }
     });
 
+    test('an invitation opened with an account using the invited address is linked to it without confirmation', async ({
+        browser,
+        baseURL,
+        authorPage,
+        adminPage,
+        mailpit,
+    }) => {
+        test.setTimeout(240000);
+        const suffix = Date.now();
+        const invitedEmail = `e2e-same-address-${suffix}@example.org`;
+        const username = `e2e_same_address_${suffix}`;
+        let docid;
+        let invitationPath;
+
+        await test.step('the editorial team invites a reviewer by e-mail address', async () => {
+            docid = await submitArxivPaper(authorPage, { arxivId: '1512.00567' });
+            // Accepting an invitation creates the rating report from the grid of the paper's volume
+            const vid = await createVolume(adminPage, `E2E Same address volume ${suffix}`);
+            await createVolumeGrid(adminPage, vid);
+            await assignMasterVolume(adminPage, docid, vid);
+            await inviteNewReviewer(adminPage, docid, { email: invitedEmail, lastname: `Sameaddress${suffix}` });
+            invitationPath = await receivedInvitationPath(mailpit, docid, invitedEmail);
+        });
+
+        // An account using the invited address, another account than the temporary one the invitation was sent to
+        createExternalAccount(username, invitedEmail, E2E_PASSWORD, { active: true });
+
+        const context = await newLoggedOutContext(browser, baseURL);
+        const page = await context.newPage();
+        try {
+            await test.step('the invitee signs in with that account before opening the invitation', async () => {
+                await page.goto('user/login');
+                await signIn(page, username);
+                // The account has no Episciences profile yet: it is completed first
+                await expect(page).toHaveURL(/user\/edit/);
+                await page.getByRole('button', { name: 'Save changes' }).click();
+                await expect(page).not.toHaveURL(/user\/edit/);
+            });
+
+            await test.step('the invitation is linked to the account at once: it can be answered', async () => {
+                await page.goto(invitationPath);
+                await expect(page.getByText(NOT_LINKED)).toHaveCount(0);
+                await expect(page.locator('#linkedInvitationForm')).toHaveCount(0);
+                await expect(page.locator('#submitaccept')).toBeVisible();
+            });
+
+            await test.step('the paper history records an automatic link to the account', async () => {
+                await openPaperManagement(adminPage, docid);
+                await adminPage.locator('#history .log-entry.reviewer_invitation_linked').click();
+                const details = adminPage.locator('#modal-box .log-details');
+                await expect(details).toContainText(invitedEmail);
+                await expect(details).toContainText('reviewer without an account');
+                await expect(details.locator('tr', { hasText: 'Automatic linking (same e-mail address)' })).toContainText('Yes');
+            });
+
+            await test.step('the invitee accepts with the account', async () => {
+                await page.locator('#submitaccept').click();
+                await expect(page).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
+                await expect(page.getByText('Your answer has been saved.').first()).toBeVisible();
+            });
+        } finally {
+            await context.close();
+        }
+    });
+
     test('an invitation opened with another account is only linked to it once confirmed', async ({
         authorPage,
         adminPage,
