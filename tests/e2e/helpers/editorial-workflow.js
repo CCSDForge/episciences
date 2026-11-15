@@ -179,7 +179,8 @@ async function inviteNewReviewer(page, docid, { email, lastname }) {
  * @param {number} [options.vid] volume to review the paper in, a new one by default
  */
 async function completeReview({ adminPage, reviewerPage, mailpit }, docid, { vid } = {}) {
-    vid ??= await createVolume(adminPage, `E2E Review volume ${Date.now()}`);
+    // Parallel workers may get here in the same millisecond: the title must still be unique
+    vid ??= await createVolume(adminPage, `E2E Review volume ${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
     await createVolumeGrid(adminPage, vid);
     await addQuantitativeCriterion(adminPage, vid, {
         title: `E2E soundness ${Date.now()}`,
