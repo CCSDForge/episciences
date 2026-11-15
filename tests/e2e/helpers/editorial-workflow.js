@@ -108,6 +108,25 @@ async function submitInvitation(page, docid) {
 }
 
 /**
+ * Assigns an editor to a paper from its management page ("Assign editors" form).
+ * @param {import('@playwright/test').Page} page secretary or administrator page
+ * @param {number} docid
+ * @param {string} editorFullName as listed in the form, for instance "E2E Editor"
+ */
+async function assignEditor(page, docid, editorFullName) {
+    await openPaperManagement(page, docid);
+    await page.locator('button#editors').click();
+
+    const form = page.locator('form#assign-editors');
+    await expect(form).toBeVisible();
+    await form.locator('.editors-list label', { hasText: editorFullName }).locator('input[type="checkbox"]').check();
+
+    const saved = page.waitForResponse(response => response.url().includes('/administratepaper/saveeditors'));
+    await form.locator('button[name="submit_editors"]').click();
+    expect((await (await saved).json()).result).toBeTruthy();
+}
+
+/**
  * Invites a reviewer already known to the journal.
  * @param {import('@playwright/test').Page} page editorial page
  * @param {number} docid
@@ -300,6 +319,7 @@ module.exports = {
     openPaperManagement,
     statusPanel,
     applyDecision,
+    assignEditor,
     inviteKnownReviewer,
     inviteNewReviewer,
     completeReview,

@@ -20,6 +20,9 @@ global.$ = jest.fn(() => ({
     ready: jest.fn(),
     on: jest.fn(),
     val: jest.fn(),
+    not() {
+        return this;
+    },
     DataTable: jest.fn(() => {
         const api = {
             table: () => ({ node: () => tableNode }),

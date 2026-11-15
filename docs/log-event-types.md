@@ -74,6 +74,11 @@ This document lists the various log event types used in the Episciences platform
 ### Log Detail
 Some actions include additional information in the `DETAIL` column (JSON encoded).
 
+### Detecting that a reminder was sent
+Automatic reminders (`scripts/reminders.php`) are recorded with `CODE_REMINDER_SENT` (`reminder_sent`); this is the source of truth, not the subject text of `MAIL_LOG`.
+- The `UID` of the log row is the system user (`EPISCIENCES_UID`), not the recipient.
+- The recipients are in `DETAIL`: `mail.To` is an array of `"Name <email>"` or bare email strings. Compare emails with exact, case-insensitive equality, never substring matching.
+
 ### CSS Classes
 The CSS classes are used in the management interface to colorize the log entries:
 - `success`: Green

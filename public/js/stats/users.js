@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', function () {
             valueLabels: true,
             legend: false,
             categoryLabel: statTranslate('Rôle'),
+            // the total of the users (not the sum of the roles)
+            csvFooterRows: statsChartsFromView.users.csvFooterRows || [],
         }
     );
 });

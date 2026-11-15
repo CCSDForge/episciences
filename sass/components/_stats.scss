@@ -461,6 +461,9 @@
 
 // Toolbar: the years, and the on / off switch of the start date of the statistics (administrators)
 .stats-page {
+  // the page holds its floated Bootstrap columns: without it, it ends below the toolbar, which can't stay in view
+  display: flow-root;
+
   .stats-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -469,12 +472,44 @@
     gap: 10px 16px;
     margin: 0 0 16px;
 
+    // the years and the switch stay in view while scrolling, below the fixed navbar
+    position: sticky;
+    top: $navbar-fixed-height;
+    z-index: 3;
+    padding: 8px 0;
+    background: $white;
+    border-bottom: 1px solid #e8e7e3;
+
+    // the years wrap in the room left: the switch keeps its place, at the right of the first row
     .stats-years {
-      flex: 1 1 auto;
+      flex: 1 1 0;
+      min-width: 0;
       justify-content: flex-start;
       width: auto;
       margin: 0;
       padding: 0;
+
+      // narrow screens: the years on a single row, scrolled sideways (the toolbar stays low),
+      // the switch below
+      @media (max-width: 767px) {
+        flex-basis: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 2px; // room for the outline of the focused year
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+
+        .stats-year {
+          flex: none;
+        }
+      }
+    }
+
+    // at the right, even alone on its row (narrow screens)
+    .stats-toolbar-actions {
+      flex: none;
+      align-self: flex-start;
+      margin-left: auto;
     }
   }
 
@@ -579,6 +614,12 @@
     .stat-csv-button {
       margin-top: 6px;
     }
+  }
+
+  // the export of the figures: alone, at the right as the export of the charts, below the floating column
+  .stat-figures-data {
+    clear: both;
+    justify-content: flex-end;
   }
 
   .fa-download {

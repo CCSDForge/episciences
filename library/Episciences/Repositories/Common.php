@@ -7,6 +7,11 @@ use Symfony\Component\Intl\Languages;
 class Episciences_Repositories_Common
 {
     public const URL_HDL = 'https://hdl.handle.net/';
+    /** DataCite REST API of a DOI: DATACITE_DOI_API . <doi> */
+    public const DATACITE_DOI_API = 'https://api.datacite.org/dois/';
+    /** DOIs registered at DataCite by arXiv and Zenodo: prefix . <repository identifier> */
+    public const ARXIV_DOI_PREFIX = '10.48550/arxiv.';
+    public const ZENODO_DOI_PREFIX = '10.5281/zenodo.';
     public const XML_OPENAIRE_TITLE_NODE = 'datacite:titles/datacite:title';
     public const XML_OPENAIRE_SUBJECT_NODE = 'datacite:subjects/datacite:subject';
     public const XML_OPENAIRE_DESCRIPTION_NODE = 'dc:description';

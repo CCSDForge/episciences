@@ -130,6 +130,22 @@ final class PaperControllerUpdateRecordDataTest extends ControllerTestCase
     }
 
     /**
+     * Refreshing the record metadata is reserved to the paper's contributors and to the users allowed to manage
+     * papers: any other member is refused before the repository is queried or anything is recorded.
+     */
+    public function testOtherMemberIsRefused(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_MEMBER], self::UID + 1);
+
+        $result = $this->dispatch(\PaperController::class, 'updaterecorddata', $this->xhrPostRequest(['docid' => (string)self::DOCID]));
+
+        self::assertSame(403, $result->statusCode());
+        self::assertSame([], Episciences_Repositories_NewVersionSpy_Hooks::$calls, 'the repository is not queried');
+        self::assertSame([], $this->db->inserts(), 'nothing is recorded');
+        self::assertSame([], $this->db->updates(), 'nothing is recorded');
+    }
+
+    /**
      * @return array{0: DispatchResult, 1: array<string, mixed>}
      */
     private function updateRecordData(): array

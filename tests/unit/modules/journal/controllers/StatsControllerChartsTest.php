@@ -307,6 +307,22 @@ class StatsControllerChartsTest extends TestCase
         $this->assertSame(['MEMBER', 'AUTHOR', 'EDITOR'], $users['labels']);
         $this->assertSame([203, 81, 5], $users['datasets'][0]['data']);
         $this->assertSame(strtoupper(StatsController::CHART_LABELS['users']), $users['datasets'][0]['label']);
+        $this->assertSame([], $users['csvFooterRows']);
+    }
+
+    public function testBuildUsersChartData_TotalGiven_ExportedApartFromTheRoles(): void
+    {
+        $users = StatsController::buildUsersChartData(
+            ['author' => ['nbUsers' => 81], 'member' => ['nbUsers' => 203]],
+            static fn(string $key) => $key,
+            230
+        );
+
+        $this->assertSame(
+            [["Nombre total d'utilisateurs (Un utilisateur peut avoir plusieurs rôles.)", 230]],
+            $users['csvFooterRows']
+        );
+        $this->assertSame([203, 81], $users['datasets'][0]['data']);
     }
 
     public function testChartLabels_JournalWithImportedPapers_SubmissionsMentionTheImports(): void

@@ -66,7 +66,8 @@ tests/e2e/
 │   ├── 04-paper-sorting/      paper list sorting, filtering and paging
 │   ├── 05-comments/           comment attachment deletion security
 │   ├── 06-submission/         submission from arXiv
-│   ├── 07-review/             reviewer invitation by email, acceptance, review with a volume grid
+│   ├── 07-review/             reviewer invitation by email, acceptance (also by the editor on behalf
+│   │                          of the reviewer), review with a volume grid
 │   ├── 08-editorial-decisions/ acceptance, rejection
 │   ├── 09-revisions/          minor revision with a new version, major revision answered as is
 │   ├── 10-publication/        publication in a volume, copy editing by the author
@@ -77,7 +78,8 @@ tests/e2e/
 │   │                          secretaryPage, adminPage) and the mailpit client
 │   └── files/minimal.pdf      file uploaded by the tests
 ├── helpers/
-│   ├── editorial-workflow.js  submit, decide, invite, create a volume or a grid... through the UI
+│   ├── editorial-workflow.js  submit, assign an editor, decide, invite, create a volume or a grid...
+│   │                          through the UI
 │   ├── mailpit-client.js      waits for an email, extracts its links
 │   ├── app-cli.js             runs the PHP scripts (seed and reset, mail queue)
 │   └── login.js               logs in through the login form

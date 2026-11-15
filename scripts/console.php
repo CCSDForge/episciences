@@ -40,6 +40,8 @@ require_once __DIR__ . '/GetDoiCommand.php';
 require_once __DIR__ . '/Command/AbstractCommand.php';
 require_once __DIR__ . '/Command/Bootstrapper.php';
 require_once __DIR__ . '/Command/E2EExternalAccountCommand.php';
+// Extends Command/AbstractCommand.php: must be loaded after it
+require_once __DIR__ . '/NormalizeRecordTitlesCommand.php';
 require_once __DIR__ . '/UpdateLicensesCommand.php';
 require_once __DIR__ . '/ImportSpdxLicenseListCommand.php';
 require_once __DIR__ . '/NormalizeUserAffiliationsCommand.php';
@@ -58,6 +60,9 @@ require_once __DIR__ . '/EpisciencesQueueCommand.php';
 
 // COAR Notify inbox processing command
 require_once __DIR__ . '/ProcessInboxNotificationsCommand.php';
+
+// Turnitin (TCA) manuscript acquisition diagnostic
+require_once __DIR__ . '/ManuscriptProbeCommand.php';
 
 // Journal provisioning commands
 require_once __DIR__ . '/CreateJournalCommand.php';
@@ -131,6 +136,7 @@ $application->addCommand(new UpdatePapersDocumentCommand());
 $application->addCommand(new UpdateLicensesCommand());
 $application->addCommand(new ImportSpdxLicenseListCommand());
 $application->addCommand(new CleanHalRecordDescriptionsCommand());
+$application->addCommand(new NormalizeRecordTitlesCommand());
 $application->addCommand(new DeletePapersCommand());
 
 // Translation commands
@@ -149,6 +155,9 @@ $application->addCommand(new RevalidateNextCacheCommand());
 
 // COAR Notify inbox processing command
 $application->addCommand(new ProcessInboxNotificationsCommand());
+
+// Turnitin (TCA) manuscript acquisition diagnostic
+$application->addCommand(new ManuscriptProbeCommand());
 
 // Journal provisioning commands
 $application->addCommand(new CreateJournalCommand());

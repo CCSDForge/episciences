@@ -164,6 +164,22 @@ describe('buildChartCsvRows', function () {
             ['2024', '', 277],
         ]);
     });
+
+    it('ends with the rows given apart', function () {
+        expect(
+            buildChartCsvRows(
+                'Role',
+                ['Member', 'Author'],
+                [{ label: 'Users', data: [203, 81] }],
+                [['Total number of users', 230]]
+            )
+        ).toEqual([
+            ['Role', 'Users'],
+            ['Member', 203],
+            ['Author', 81],
+            ['Total number of users', 230],
+        ]);
+    });
 });
 
 describe('buildChartTable', function () {

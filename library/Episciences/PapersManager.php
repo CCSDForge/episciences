@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Mail\RecipientFieldDecorator;
+use Episciences\Paper\Record\TitleNormalizer;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LogLevel;
@@ -3416,6 +3417,10 @@ class Episciences_PapersManager
             return $record;
         }
 
+        // Before the default namespace is stripped below, while the record is still well-formed XML:
+        // some repositories (e.g. arXiv, HAL) accept line breaks in titles, stored on a single line
+        $record = TitleNormalizer::normalize($record);
+
         $record = preg_replace('#xmlns="(.*)"#', '', $record);
 
         if ($repoId === (int)Episciences_Repositories::CWI_REPO_ID) {
@@ -4847,6 +4852,12 @@ class Episciences_PapersManager
         try {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $toJson = $paper->toJson();
+
+            // Keep the stored document rather than wiping it when generation fails
+            if ($toJson === null) {
+                return false;
+            }
+
             $str = sprintf('UPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', $db->quote($toJson), $docId);
             $db->query($str)->closeCursor();
         } catch (Zend_Db_Statement_Exception $e) {

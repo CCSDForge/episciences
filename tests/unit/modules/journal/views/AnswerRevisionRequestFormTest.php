@@ -12,8 +12,9 @@ use Zend_Controller_Request_HttpTestCase;
 use Zend_View;
 
 /**
- * Answers offered to a revision request (partials/answer_revision_request_form.phtml): the temporary version is
- * only offered to the users allowed to record it (see PaperController::isAllowedToWriteTemporaryVersion()).
+ * Answers offered to a revision request (partials/answer_revision_request_form.phtml): they are only offered to the
+ * users allowed to answer (see PaperController::isAllowedToAnswerRevisionRequest()), and the temporary version only to
+ * the users allowed to record it (see PaperController::isAllowedToWriteTemporaryVersion()).
  */
 final class AnswerRevisionRequestFormTest extends TestCase
 {
@@ -43,7 +44,7 @@ final class AnswerRevisionRequestFormTest extends TestCase
         }
     }
 
-    private function render(?bool $isAllowedToWriteTemporaryVersion, bool $isTmpVersionEnabled = true): string
+    private function render(?bool $isAllowedToWriteTemporaryVersion, bool $isTmpVersionEnabled = true, ?bool $isAllowedToAnswer = true): string
     {
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('isRevisionRequested')->willReturn(true);
@@ -62,6 +63,10 @@ final class AnswerRevisionRequestFormTest extends TestCase
         $view->paper = $paper;
         $view->review = $review;
         $view->current_demand = ['PCID' => self::PCID];
+
+        if ($isAllowedToAnswer !== null) {
+            $view->isAllowedToAnswerRevisionRequest = $isAllowedToAnswer;
+        }
 
         if ($isAllowedToWriteTemporaryVersion !== null) {
             $view->isAllowedToWriteTemporaryVersion = $isAllowedToWriteTemporaryVersion;
@@ -115,6 +120,7 @@ final class AnswerRevisionRequestFormTest extends TestCase
             'review' => $this->createMock(Episciences_Review::class),
             'current_demand' => ['PCID' => self::PCID],
             'doNotDisplayContactChoice' => $doNotDisplayContactChoice,
+            'isAllowedToAnswerRevisionRequest' => true,
         ]);
     }
 
@@ -133,5 +139,29 @@ final class AnswerRevisionRequestFormTest extends TestCase
         self::assertStringNotContainsString('/paper/contactrequest', $html);
         // The other answers stay offered
         self::assertStringContainsString('href="/paper/answerrequest?id=' . self::PCID . '"', $html);
+    }
+
+    public function testAnswersAreNotOfferedToTheUsersNotAllowedToAnswer(): void
+    {
+        // e.g. an editor or a copy editor assigned to the paper
+        $html = $this->render(true, true, false);
+
+        self::assertStringNotContainsString('id="answer-request"', $html);
+        self::assertStringNotContainsString('/paper/newversion', $html);
+        self::assertStringNotContainsString('/paper/answerrequest', $html);
+        self::assertStringNotContainsString('/paper/tmpversion', $html);
+    }
+
+    public function testAnswersAreNotOfferedWhenTheRuleIsNotGiven(): void
+    {
+        self::assertStringNotContainsString('id="answer-request"', $this->render(true, true, null));
+    }
+
+    public function testAnswersAreOfferedToTheUsersAllowedToAnswer(): void
+    {
+        $html = $this->render(false);
+
+        self::assertStringContainsString('id="answer-request"', $html);
+        self::assertStringContainsString('href="/paper/newversion?id=' . self::PCID . '"', $html);
     }
 }
