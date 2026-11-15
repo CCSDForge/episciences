@@ -485,25 +485,49 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     // -------------------------------------------------------------------------
 
     /**
-     * Runs invitationAction() on mocked database rows
+     * Runs invitationAction() on mocked database rows. As the database would, the assignment lookup does not return
+     * the row when it filters on another RVID; the paper query is expected $paperQueries times.
+     *
      * @param array<string, mixed>|false $assignmentRow
      * @param array<string, mixed>|false $paperRow
      */
-    private function runInvitationActionOn(array|false $assignmentRow, array|false $paperRow = false): void
+    private function runInvitationActionOn(
+        array|false $assignmentRow,
+        array|false $paperRow = false,
+        int         $paperQueries = 0,
+        string      $expirationDate = '+1 week'
+    ): void
     {
+        $invitationRow = [
+            'ID' => self::INVITATION_ID,
+            // an assignment id no other test caches
+            'AID' => $assignmentRow['ID'] ?? 987654321,
+            'STATUS' => Episciences_User_Invitation::STATUS_PENDING,
+            'EXPIRATION_DATE' => date('Y-m-d H:i:s', (int)strtotime($expirationDate)),
+        ];
+
         $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
         $adapter = $this->getMockBuilder($previousAdapter::class)
             ->setConstructorArgs([$previousAdapter->getConfig()])
             ->onlyMethods(['fetchRow', 'query'])
             ->getMock();
-        // first the invitation row, then the assignment row (an assignment id no other test caches)
-        $adapter->method('fetchRow')->willReturnOnConsecutiveCalls(
-            ['ID' => self::INVITATION_ID, 'AID' => $assignmentRow['ID'] ?? 987654321, 'STATUS' => Episciences_User_Invitation::STATUS_PENDING],
-            $assignmentRow
+        $adapter->method('fetchRow')->willReturnCallback(
+            static function ($select) use ($invitationRow, $assignmentRow): array|false {
+                $sql = (string)$select;
+                if (str_contains($sql, T_ASSIGNMENTS)) {
+                    // the row of another journal is filtered out by the RVID condition, kept without it
+                    $otherJournal = $assignmentRow && preg_match('/RVID = (\d+)/', $sql, $rvId) && (int)$rvId[1] !== $assignmentRow['RVID'];
+                    return $otherJournal ? false : $assignmentRow;
+                }
+                if (str_contains($sql, T_USER_INVITATION_ANSWER)) {
+                    return false;
+                }
+                return str_contains($sql, T_USER_INVITATIONS) ? $invitationRow : false;
+            }
         );
         $statement = $this->createMock(Zend_Db_Statement_Interface::class);
         $statement->method('fetch')->willReturn($paperRow);
-        $adapter->expects(self::atMost(1))->method('query')->willReturn($statement);
+        $adapter->expects(self::exactly($paperQueries))->method('query')->willReturn($statement);
 
         Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
         try {
@@ -531,7 +555,7 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
         self::assertNull($this->controller->view->invitation);
     }
 
-    public function testInvitationOfAnotherJournalIsReportedAsMissing(): void
+    public function testInvitationOfAnotherJournalIsReportedAsMissingAndLogged(): void
     {
         // opened with the URL of the current journal (RVID 1 in the tests) while it belongs to journal 8
         $this->runInvitationActionOn(self::assignmentRow(987654322, RVID + 7));
@@ -539,14 +563,27 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
         self::assertSame(["Cette invitation n'existe pas !"], $this->controller->view->errors);
         self::assertNull($this->controller->view->invitation);
         self::assertNull($this->controller->view->paper);
+        self::assertSame(
+            [[AccessLog::NOT_FOUND_MASKED, 'invitation_not_in_journal', self::INVITATION_ID]],
+            $this->loggedEvents('reason', 'invitation_id')
+        );
     }
 
     public function testInvitationWhosePaperNoLongerExistsIsReportedAsMissing(): void
     {
-        $this->runInvitationActionOn(self::assignmentRow(987654323, RVID));
+        $this->runInvitationActionOn(self::assignmentRow(987654323, RVID), false, 1);
 
         self::assertSame(["Cette invitation n'existe pas !"], $this->controller->view->errors);
         self::assertNull($this->controller->view->invitation);
+        self::assertNull($this->controller->view->paper);
+    }
+
+    public function testExpiredInvitationKeepsItsMessageWithoutLoadingThePaper(): void
+    {
+        $this->runInvitationActionOn(self::assignmentRow(987654324, RVID), false, 0, '-1 day');
+
+        self::assertSame('Cette invitation a expiré.', $this->controller->view->errors);
+        self::assertTrue($this->controller->view->displayInvitationDetails);
         self::assertNull($this->controller->view->paper);
     }
 }
