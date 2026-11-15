@@ -825,6 +825,10 @@ class StatsController extends Zend_Controller_Action
             $paperIds = array_column($papers, 'PAPERID');
             $logDates = [];
 
+            // the submission date of a submission: the one of its first version, as the API counts it (by DOCID: a
+            // refused paper submitted again is listed twice, with the same PAPERID)
+            $firstSubmissionDates = in_array(self::COLUMN_SUBMISSION, $columns, true) ? self::getFirstSubmissionDates($paperIds) : [];
+
             // the dates read in the history of the papers: only those of the columns of the figure
             foreach (self::COLUMN_LOG_STATUSES as $column => $statuses) {
                 if (in_array($column, $columns, true)) {
@@ -836,11 +840,60 @@ class StatsController extends Zend_Controller_Action
                 $row['withxsl'] = false;
                 $paperId = (int)$row['PAPERID'];
                 $dates = array_map(static fn(array $datesByPaper) => $datesByPaper[$paperId] ?? null, $logDates);
+                $dates[self::COLUMN_SUBMISSION] = $firstSubmissionDates[(int)$row['DOCID']] ?? null;
                 $rows[] = self::formatPaperRow(new Episciences_Paper($row), $columns, $dates);
             }
         }
 
         return $rows;
+    }
+
+    /**
+     * Date of the first submission of each submission, by the DOCID of the version it ends with: the oldest
+     * SUBMISSION_DATE of its versions, as the API counts the submissions (PapersRepository::getSubmissions()).
+     * A submission is the chain of the versions of a paper, by DOCID, up to its first non-obsolete version: a refused
+     * paper submitted again is a new submission, dated by its new versions. The new versions of a paper do not always
+     * keep the date of its first version (old data): the listed version can be dated after the year of the figure.
+     * @param array $paperIds
+     * @return array<int, string> DOCID of the last version of each submission => date of its first version
+     */
+    public static function getFirstSubmissionDates(array $paperIds): array
+    {
+        $paperIds = array_values(array_unique(array_filter(array_map('intval', $paperIds), static fn(int $paperId) => $paperId > 0)));
+
+        if (!$paperIds) {
+            return [];
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPERS, ['DOCID', 'PAPERID', 'STATUS', 'SUBMISSION_DATE'])
+            ->where('RVID = ?', RVID)
+            ->where('PAPERID IN (?)', $paperIds)
+            ->order(['PAPERID', 'DOCID']);
+
+        $dates = [];
+        $firstDates = []; // the oldest date of the current submission of each paper
+
+        foreach ($db->fetchAll($select) as $version) {
+            $paperId = (int)$version['PAPERID'];
+            $date = (string)$version['SUBMISSION_DATE'];
+
+            if ($date !== '' && (!isset($firstDates[$paperId]) || $date < $firstDates[$paperId])) {
+                $firstDates[$paperId] = $date;
+            }
+
+            // a non-obsolete version ends the submission
+            if ((int)$version['STATUS'] !== Episciences_Paper::STATUS_OBSOLETE) {
+                if (isset($firstDates[$paperId])) {
+                    $dates[(int)$version['DOCID']] = $firstDates[$paperId];
+                }
+
+                unset($firstDates[$paperId]);
+            }
+        }
+
+        return $dates;
     }
 
     /**
@@ -888,7 +941,7 @@ class StatsController extends Zend_Controller_Action
     /**
      * @param Episciences_Paper $paper
      * @param string[] $columns date columns (COLUMN_*) of the figure: only these dates are returned
-     * @param array<string, ?string> $logDates dates read in the history of the paper, by column (refusal, acceptance)
+     * @param array<string, ?string> $logDates dates read apart, by column: in the history of the paper (refusal, acceptance), the first submission
      * @return array<string, mixed> docid, paperid, title, status, statusLabel, statusGroup, imported, and the dates of the columns
      */
     public static function formatPaperRow(Episciences_Paper $paper, array $columns = self::DEFAULT_COLUMNS, array $logDates = []): array
@@ -914,7 +967,8 @@ class StatsController extends Zend_Controller_Action
         ];
 
         $dates = [
-            self::COLUMN_SUBMISSION => $paper->getSubmission_date(),
+            // the first submission of the submission (see getFirstSubmissionDates()), otherwise the date of the version
+            self::COLUMN_SUBMISSION => $logDates[self::COLUMN_SUBMISSION] ?? $paper->getSubmission_date(),
             self::COLUMN_REFUSAL => $logDates[self::COLUMN_REFUSAL] ?? null,
             self::COLUMN_ACCEPTANCE => $logDates[self::COLUMN_ACCEPTANCE] ?? null,
             self::COLUMN_PUBLICATION => $paper->getPublication_date(),
