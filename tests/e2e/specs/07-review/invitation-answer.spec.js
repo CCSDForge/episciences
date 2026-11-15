@@ -263,6 +263,61 @@ test.describe('Reviewer invitation answer', () => {
         });
     });
 
+    test('an accepted invitation can no longer be answered, whoever opens it', async ({
+        browser,
+        baseURL,
+        authorPage,
+        adminPage,
+        editorPage,
+        reviewerPage,
+        mailpit,
+    }) => {
+        test.setTimeout(180000);
+        let invitationPath;
+
+        await test.step('the reviewer accepts the invitation', async () => {
+            const docid = await submitArxivPaper(authorPage, { arxivId: '1703.06870' });
+            // Accepting an invitation creates the rating report from the grid of the paper's volume
+            const vid = await createVolume(adminPage, `E2E Answered invitation volume ${Date.now()}`);
+            await createVolumeGrid(adminPage, vid);
+            await assignMasterVolume(adminPage, docid, vid);
+            invitationPath = await inviteReviewer({ adminPage, mailpit }, docid);
+
+            await reviewerPage.goto(invitationPath);
+            await reviewerPage.locator('#submitaccept').click();
+            await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
+        });
+
+        await test.step('the reviewer is told they already answered, with the answer', async () => {
+            await reviewerPage.goto(invitationPath);
+            await expect(reviewerPage.getByText("You've already answered this invitation.")).toBeVisible();
+            await expect(reviewerPage.getByText('Invitation accepted on')).toBeVisible();
+            await expect(reviewerPage.locator('#submitaccept')).toHaveCount(0);
+            await expect(reviewerPage.locator('#refuse-button')).toHaveCount(0);
+        });
+
+        await test.step('another account is only told that a reply was sent', async () => {
+            await editorPage.goto(invitationPath);
+            await expect(editorPage.getByText('It appears that a reply has already been sent.')).toBeVisible();
+            await expect(editorPage.locator('#submitaccept')).toHaveCount(0);
+            // Nothing to link to another account once answered
+            await expect(editorPage.locator('#linkedInvitationForm')).toHaveCount(0);
+        });
+
+        await test.step('a visitor who is not signed in is only told that a reply was sent', async () => {
+            const context = await newLoggedOutContext(browser, baseURL);
+            const page = await context.newPage();
+            try {
+                await page.goto(invitationPath);
+                await expect(page.getByText('It appears that a reply has already been sent.')).toBeVisible();
+                await expect(page.locator('#submitaccept')).toHaveCount(0);
+                await expect(page.locator('#refuse-button')).toHaveCount(0);
+            } finally {
+                await context.close();
+            }
+        });
+    });
+
     test('a reviewer without an account is offered to create one, and declines without it', async ({
         browser,
         baseURL,
