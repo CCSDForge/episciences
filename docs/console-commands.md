@@ -42,7 +42,7 @@ php scripts/console.php <command> --help
 | [`volume:merge-pdf`](#volumemerge-pdf) | Merge all volume PDFs for a journal |
 | [`doaj:export-volumes`](#doajexport-volumes) | Create DOAJ XML exports for journal volumes |
 | [`doaj:check-journals`](#doajcheck-journals) | Check journal indexing presence in DOAJ by ISSN |
-| [`doi:manage`](#doimanage) | Manage DOI lifecycle: assign, submit to Crossref, check status, update |
+| [`doi:manage`](#doimanage) | Manage DOI lifecycle (papers and proceedings volumes): assign, submit to Crossref, check status, update |
 | [`zbjats:zip`](#zbjatszip) | Package PDF + zbJATS XML into a ZIP archive per volume |
 | [`papers:update-document`](#papersupdate-document) | Update the `DOCUMENT` JSON column in `PAPERS` from `Paper::toJson()` |
 | [`papers:clean-hal-descriptions`](#papersclean-hal-descriptions) | Strip HAL non-abstract `dc:description` markers from `PAPERS.RECORD` |
@@ -583,7 +583,18 @@ php scripts/console.php doi:manage [options]
 | `--check` | Check Crossref submission status |
 | `--update` | Re-send metadata to Crossref for already-registered DOIs (free update) |
 | `--fetch-journals` | Fetch active journals list from the API |
+| `--volumes` | With `--request` or `--check`: handle the DOIs of proceedings volumes instead of papers |
 | `--dry-run` | Simulate without writing; uses Crossref test API for `--request`/`--check`/`--update` |
+
+Proceedings volumes: a DOI set in the volume form is queued with status `assigned`.
+`--request --volumes` deposits the volume (conference and proceedings metadata, without its papers)
+as `{rvcode}-volume-{vid}.xml` and sets the status to `requested`; `--check --volumes` sets it to
+`public` once Crossref confirms the DOI. The XML is the one of `/volume/export/id/{vid}`.
+
+```bash
+php scripts/console.php doi:manage --rvcode=<code> --request --volumes [--dry-run]
+php scripts/console.php doi:manage --rvcode=<code> --check --volumes [--dry-run]
+```
 
 ---
 

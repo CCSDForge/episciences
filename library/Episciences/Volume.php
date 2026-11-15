@@ -735,7 +735,6 @@ class Episciences_Volume
             self::VOLUME_CONFERENCE_LOCATION => $data['conference_location'] ?? '',
             self::VOLUME_CONFERENCE_START_DATE => $data['conference_start'] ?? '',
             self::VOLUME_CONFERENCE_END_DATE => $data['conference_end'] ?? '',
-            self::VOLUME_CONFERENCE_DOI => ''
         ];
 
         if ((int)$settings[self::SETTING_SPECIAL_ISSUE] === 1 && !$settings['access_code']) {
@@ -743,29 +742,11 @@ class Episciences_Volume
         }
 
 
-        try {
-            $doiPrefix = Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix();
-        } catch (Zend_Exception $e) {
-            $doiPrefix = false;
-            trigger_error($e->getMessage());
-        }
-
-        if (
-            isset($post['conference_proceedings_doi']) && $post['conference_proceedings_doi'] !== '' &&
-            (
-                $data['doi_status'] === Episciences_Volume_DoiQueue::STATUS_ASSIGNED ||
-                $data['doi_status'] === Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED
-            ) &&
-
-            $doiPrefix) {
-            $doiPrefixSetting = $doiPrefix;
-            $doiPrefixSetting .= '/';
-            $doiPrefixSetting .= RVCODE;
-            $doiPrefixSetting .= '.proceedings.';
-            $doiPrefixSetting .= $post['conference_proceedings_doi'];
-            $settings[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
-            $settingsProceeding[self::VOLUME_CONFERENCE_DOI] = $doiPrefixSetting;
-        }
+        $proceedingsDoi = $this->resolveProceedingsDoi($post, $vid);
+        $settings[self::VOLUME_CONFERENCE_DOI] = $proceedingsDoi;
+        $settingsProceeding[self::VOLUME_CONFERENCE_DOI] = $proceedingsDoi;
+        $this->setSetting(self::VOLUME_IS_PROCEEDING, $settings[self::VOLUME_IS_PROCEEDING]);
+        $this->setSetting(self::VOLUME_CONFERENCE_DOI, $proceedingsDoi);
 
         $this->setVol_year(!empty($post['year']) ? $post['year'] : null);
         $this->setVol_num($post['num'] ?? null);
@@ -836,6 +817,35 @@ class Episciences_Volume
         return true;
     }
 
+
+    /**
+     * DOI of the proceedings to store. Once requested or registered it is kept whatever is posted
+     * (the suffix input is read-only then, and the stored status is the only one trusted);
+     * before that it follows the posted suffix, empty when there is none or no journal DOI prefix.
+     *
+     * @param array<string, mixed> $post
+     */
+    private function resolveProceedingsDoi(array $post, ?int $vid): string
+    {
+        if ($vid && \Episciences\Volume\DoiQueueManager::isDoiLocked($vid)) {
+            return (string)$this->getSetting(self::VOLUME_CONFERENCE_DOI);
+        }
+
+        $suffix = trim((string)($post[self::VOLUME_CONFERENCE_DOI] ?? ''));
+
+        try {
+            $doiPrefix = (string)Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix();
+        } catch (Zend_Exception $e) {
+            $doiPrefix = '';
+            trigger_error($e->getMessage());
+        }
+
+        if ($suffix === '' || $doiPrefix === '') {
+            return '';
+        }
+
+        return \Episciences\Volume\ProceedingsValidator::buildDoi($doiPrefix, RVCODE, $suffix);
+    }
 
     /**
      * Save Paper positions from a form (with jquery sortable) in a Volume

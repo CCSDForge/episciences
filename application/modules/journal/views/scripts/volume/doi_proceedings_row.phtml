@@ -1,28 +1,100 @@
-<style>
-    .form-control-nowidth {
-        height: 34px;
-        padding: 6px 12px;
-        font-size: 14px;
-        line-height: 1.42857143;
-        color: #555;
-        background-color: #fff;
-        background-image: none;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
-        box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
-        -webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s;
-        -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
-        transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
-    }
+<?php
+/**
+ * Proceedings DOI of a volume: the journal prefix, the suffix chosen by the managers, the resulting
+ * DOI and its deposit status. Behaviour in public/js/volume/confproceeding.js.
+ *
+ * @var Zend_View $this
+ * @var array{prefix: string, suffix: string, status: string, locked: bool, doi: string, vid: int|null, error: string|null, canEditDoiSettings: bool} $doi
+ * @var bool $disabled the proceedings fields are hidden
+ */
 
-</style>
-<div id="conference_doi_group" class="row" style="margin-bottom: 8px;">
-    <label class="col-md-3 control-label" style="margin-right: 24px;"><?= $this->translate("DOI des actes") ?></label>
-    <?php if (Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix()) : ?>
-        <input id="doi_proceedings_prefix_input" name="doi_proceedings_prefix_input" class="col-offset-1 col-sm-2 d-inline-block form-control-nowidth" style="margin-right: 4px;" value="<?= Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix().'/'.RVCODE.".proceedings." ?>" disabled>
-        <input id="conference_proceedings_doi" name="conference_proceedings_doi" class="col-sm-2 d-inline-block form-control-nowidth" style="margin-right: 4px;" maxlength="20" value="<?= $this->value ?>" autocomplete="off">
-        <input type="button" class="col-sm-2 d-inline-block btn btn-primary" id="btn-request-proceedings" value="<?= $this->translate("Demande DOI") ?>">
-        <input type="button" style="min-width: 128px" class="col-sm-1 d-inline-block btn btn-warning" id="btn-cancel-request-proceedings" value="<?= $this->translate("Annulation DOI") ?>" style="display:none;">
-    <?php endif;?>
+use Episciences\Volume\ProceedingsValidator;
+
+$doi = $this->doi;
+$inputId = Episciences_Volume::VOLUME_CONFERENCE_DOI;
+$hasError = !empty($doi['error']);
+$statuses = [
+    Episciences_Volume_DoiQueue::STATUS_ASSIGNED => ['label' => 'Dépôt programmé', 'class' => 'label-primary'],
+    Episciences_Volume_DoiQueue::STATUS_REQUESTED => ['label' => 'Dépôt en cours', 'class' => 'label-warning'],
+    Episciences_Volume_DoiQueue::STATUS_PUBLIC => ['label' => 'DOI enregistré', 'class' => 'label-success'],
+];
+$status = $statuses[$doi['status']] ?? null;
+$currentDoi = $doi['locked'] ? $doi['doi'] : ($doi['suffix'] !== '' ? $doi['prefix'] . $doi['suffix'] : '');
+$describedBy = [$inputId . '-prefix', $inputId . '-help', $inputId . '-preview'];
+if ($hasError) {
+    $describedBy[] = $inputId . '-error';
+}
+?>
+<div id="conference_doi_group"
+     class="form-group<?= $hasError ? ' has-error' : '' ?>"
+     data-prefix="<?= $this->escape($doi['prefix']) ?>"
+     data-status="<?= $this->escape($doi['status']) ?>"
+     data-text-preview="<?= $this->escape($this->translate('DOI qui sera déposé : %s')) ?>"
+     data-text-empty="<?= $this->escape($this->translate('Aucun DOI ne sera déposé pour ces actes.')) ?>"
+     data-text-invalid="<?= $this->escape($this->translate(ProceedingsValidator::MSG_DOI_SUFFIX_FORMAT)) ?>">
+    <?php if ($doi['prefix'] !== '') : ?>
+        <label for="<?= $inputId ?>" class="col-md-3 control-label optional"><?= $this->escape($this->translate('DOI des actes')) ?></label>
+    <?php else : ?>
+        <span class="col-md-3 control-label"><?= $this->escape($this->translate('DOI des actes')) ?></span>
+    <?php endif; ?>
+    <div class="col-md-9">
+        <?php if ($doi['prefix'] === '') : ?>
+            <p class="help-block">
+                <?= $this->escape($this->translate("Pour attribuer un DOI aux actes, le préfixe DOI de la revue doit d'abord être configuré.")) ?>
+                <?php if ($doi['canEditDoiSettings']) : ?>
+                    <a href="/doi/settings"><?= $this->escape($this->translate('Configurer les DOI de la revue')) ?></a>
+                <?php endif; ?>
+            </p>
+        <?php else : ?>
+            <div class="input-group input-group-sm">
+                <span class="input-group-addon" id="<?= $inputId ?>-prefix"><?= $this->escape($doi['prefix']) ?></span>
+                <input type="text"
+                       id="<?= $inputId ?>"
+                       name="<?= $inputId ?>"
+                       value="<?= $this->escape($doi['suffix']) ?>"
+                       class="form-control"
+                       maxlength="<?= ProceedingsValidator::DOI_SUFFIX_MAX_LENGTH ?>"
+                       pattern="<?= $this->escape(ProceedingsValidator::DOI_SUFFIX_PATTERN) ?>"
+                       autocomplete="off"
+                       aria-describedby="<?= $this->escape(implode(' ', $describedBy)) ?>"
+                       <?= $doi['locked'] ? 'readonly' : '' ?>
+                       <?= !empty($this->disabled) ? 'disabled' : '' ?>
+                       <?= $hasError ? 'aria-invalid="true"' : '' ?>>
+            </div>
+            <?php if ($hasError) : ?>
+                <p id="<?= $inputId ?>-error" class="help-block"><?= $this->escape($doi['error']) ?></p>
+            <?php endif; ?>
+            <p id="<?= $inputId ?>-help" class="help-block">
+                <?php if ($doi['locked']) : ?>
+                    <?= $this->escape($this->translate('Ce DOI a été transmis à Crossref et ne peut plus être modifié.')) ?>
+                <?php else : ?>
+                    <?= $this->escape($this->translate('Lettres sans accent, chiffres, point, tiret et tiret bas, 20 caractères au maximum.')) ?>
+                    <?= $this->escape($this->translate("Après l'enregistrement du volume, le DOI sera déposé auprès de Crossref lors du prochain traitement automatique et ne pourra plus être modifié ensuite.")) ?>
+                <?php endif; ?>
+            </p>
+            <p id="<?= $inputId ?>-preview" class="help-block" aria-live="polite">
+                <?php if ($doi['locked']) : ?>
+                    <?= $this->escape(sprintf($this->translate('DOI : %s'), $currentDoi)) ?>
+                <?php else : ?>
+                    <?= $this->escape($currentDoi !== ''
+                        ? sprintf($this->translate('DOI qui sera déposé : %s'), $currentDoi)
+                        : $this->translate('Aucun DOI ne sera déposé pour ces actes.')) ?>
+                <?php endif; ?>
+            </p>
+            <?php if ($status !== null) : ?>
+                <p class="help-block">
+                    <?= $this->escape($this->translate('Statut du DOI :')) ?>
+                    <span class="label <?= $status['class'] ?>"><?= $this->escape($this->translate($status['label'])) ?></span>
+                    <?php if ($doi['status'] === Episciences_Volume_DoiQueue::STATUS_PUBLIC && $doi['doi'] !== '') : ?>
+                        <a href="<?= $this->escape('https://doi.org/' . $doi['doi']) ?>"><?= $this->escape('https://doi.org/' . $doi['doi']) ?></a>
+                    <?php endif; ?>
+                </p>
+            <?php endif; ?>
+            <?php if ($doi['vid'] !== null && $doi['doi'] !== '') : ?>
+                <p class="help-block">
+                    <a href="<?= $this->escape('/volume/export/id/' . $doi['vid']) ?>"><?= $this->escape($this->translate('Prévisualiser le XML Crossref')) ?></a>
+                </p>
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
 </div>

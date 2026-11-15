@@ -17,6 +17,34 @@
           data-volume-has-published-articles="<?= isset($this->hasPublishedPapers) && $this->hasPublishedPapers ? 'true' : 'false' ?>"
           data-readonly-title-message="<?= $this->translate('Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume') ?>">
 
+        <?php
+        // Error summary: one link per invalid field, focused after a refused submit (confproceeding.js)
+        $proceedingsDoi = $this->element->getDecorator('ViewScript')->getOption(Episciences_VolumesManager::PROCEEDINGS_DOI_VIEW_OPTION);
+        $formErrors = [];
+        foreach ($this->element->getElements() as $element) {
+            $messages = $element->getMessages();
+            if ($messages !== [] && $element->getName() !== 'csrf_token') {
+                $formErrors[] = ['id' => $element->getId(), 'label' => (string)$element->getLabel(), 'message' => implode(' ', $messages)];
+            }
+        }
+        if (!empty($proceedingsDoi['error'])) {
+            $formErrors[] = ['id' => Episciences_Volume::VOLUME_CONFERENCE_DOI, 'label' => 'DOI des actes', 'message' => $proceedingsDoi['error']];
+        }
+        ?>
+        <?php if ($formErrors !== []) : ?>
+            <div id="form-error-summary" class="alert alert-danger" role="alert" tabindex="-1" aria-labelledby="form-error-summary-title">
+                <p id="form-error-summary-title"><strong><?= $this->escape($this->translate('Ce formulaire comporte des erreurs.')) ?></strong></p>
+                <ul>
+                    <?php foreach ($formErrors as $formError) : ?>
+                        <li>
+                            <a href="#<?= $this->escape($formError['id']) ?>"><?= $this->escape($this->translate($formError['label'])) ?></a>
+                            <?= $this->escape(' - ' . $formError['message']) ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
+
         <?php if (isset($this->hasPublishedPapers) && $this->hasPublishedPapers): ?>
         <div class="row">
             <div class="col-md-12">
@@ -33,14 +61,17 @@
 
             <div class="col-md-7">
                 <?php foreach ($this->element->getElements() as $element) : ?>
+                    <?php if (in_array($element->getName(), Episciences_VolumesManager::PROCEEDINGS_FIELDS, true)) : continue; endif; ?>
                     <div id="<?= $element->getName() ?>-element" class="form-group" <?php if ($element->getAttrib('data-none')):?>style="display: none;" <?php endif;?>>
                         <?= $element ?>
                     </div>
+                    <?php if ($element->getName() === Episciences_Volume::VOLUME_IS_PROCEEDING) : ?>
+                        <?= $this->partial('volume/proceedings_fieldset.phtml', [
+                            'form' => $this->element,
+                            'doi' => $proceedingsDoi,
+                        ]) ?>
+                    <?php endif; ?>
                 <?php endforeach; ?>
-
-                <?= $this->partial('volume/doi_proceedings_row.phtml', [
-                        'value' => $this->element->getDecorator('ViewScript')->getOption('value')
-                ]) ?>
 
                 <?php if ($this->element->getView()->volume && $this->element->getView()->paperList) : ?>
                     <?php

@@ -4,6 +4,8 @@ declare(strict_types=1);
 use Episciences\Api\CrossrefDiagnosticParser;
 use Episciences\Api\CrossrefSubmissionApiClient;
 use Episciences\Console\ProgressAwareStreamHandler;
+use Episciences\Volume\CrossrefVolumeExporter;
+use Episciences\Volume\DoiQueueManager;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
@@ -21,7 +23,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/getDoi.php (JournalScript)
  */
-#[AsCommand(name: 'doi:manage', description: 'Manage DOI lifecycle: assign, submit to Crossref, check submission status, update metadata')]
+#[AsCommand(name: 'doi:manage', description: 'Manage DOI lifecycle: assign, submit to Crossref, check submission status, update metadata (papers, or proceedings volumes with --volumes)')]
 class GetDoiCommand extends Command
 {
     private const MAX_WITHOUT_CONFIRM = 20;
@@ -38,6 +40,7 @@ class GetDoiCommand extends Command
             ->addOption('check',            null, InputOption::VALUE_NONE,     'Check Crossref submission status')
             ->addOption('update',           null, InputOption::VALUE_NONE,     'Re-send metadata to Crossref for already-registered DOIs (free update)')
             ->addOption('fetch-journals',   null, InputOption::VALUE_NONE,     'Fetch active journals list from the API')
+            ->addOption('volumes',          null, InputOption::VALUE_NONE,     'With --request or --check: handle the DOIs of proceedings volumes instead of papers')
             ->addOption('dry-run',          null, InputOption::VALUE_NONE,     'Simulate without writing: no DOI assigned/saved for --assign-*, Crossref test API used for --request/--check/--update');
     }
 
@@ -47,6 +50,12 @@ class GetDoiCommand extends Command
         $dryRun = (bool) $input->getOption('dry-run');
 
         $io->title('DOI management');
+
+        $optionError = $this->validateVolumesOption($input);
+        if ($optionError !== null) {
+            $io->error($optionError);
+            return Command::FAILURE;
+        }
 
         $this->bootstrap();
 
@@ -113,6 +122,12 @@ class GetDoiCommand extends Command
             (string) DOI_PASSWORD,
         );
 
+        if ($input->getOption('volumes')) {
+            return $input->getOption('request')
+                ? $this->requestVolumeDois($io, $review, $dryRun, $crossrefClient, $logger, $stdoutHandler)
+                : $this->checkVolumeDois($io, $review, $dryRun, $crossrefClient, $logger, $stdoutHandler);
+        }
+
         if ($input->getOption('assign-accepted')) {
             return $this->assignDois(Episciences_Paper::STATUS_ACCEPTED, $io, $review, $doiSettings, $logger, $dryRun, $stdoutHandler);
         }
@@ -136,6 +151,30 @@ class GetDoiCommand extends Command
 
         $io->warning('No action specified. Use --assign-accepted, --assign-published, --request, --check, --update, or --fetch-journals.');
         return Command::FAILURE;
+    }
+
+    /**
+     * --volumes only goes with exactly one of --request / --check.
+     *
+     * @return string|null the error to display, null when the options are consistent
+     */
+    private function validateVolumesOption(InputInterface $input): ?string
+    {
+        if (!$input->getOption('volumes')) {
+            return null;
+        }
+
+        foreach (['assign-accepted', 'assign-published', 'update', 'fetch-journals', 'paperid'] as $option) {
+            if ($input->getOption($option)) {
+                return sprintf('--volumes cannot be combined with --%s.', $option);
+            }
+        }
+
+        if ((bool)$input->getOption('request') === (bool)$input->getOption('check')) {
+            return '--volumes requires either --request or --check.';
+        }
+
+        return null;
     }
 
     private function fetchJournals(SymfonyStyle $io, Client $http, Logger $logger): int
@@ -416,6 +455,182 @@ class GetDoiCommand extends Command
         $io->newLine();
         $io->success("DOI status check completed for journal {$rvcode}.");
         return Command::SUCCESS;
+    }
+
+    /**
+     * Deposit the DOIs of proceedings volumes (status assigned) to Crossref.
+     * A volume DOI does not depend on its papers: only a volume that cannot be exported is skipped.
+     */
+    private function requestVolumeDois(
+        SymfonyStyle                $io,
+        Episciences_Review          $review,
+        bool                        $dryRun,
+        CrossrefSubmissionApiClient $crossrefClient,
+        Logger                      $logger,
+        ?ProgressAwareStreamHandler $stdoutHandler = null
+    ): int {
+        $rvcode = $review->getCode();
+        $queue  = $this->findVolumeDois($review->getRvid(), Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
+        $total  = count($queue);
+
+        if ($total === 0) {
+            $logger->info("{$rvcode}: no volume DOI to submit.");
+            $io->info('No volume DOIs to submit.');
+            return Command::SUCCESS;
+        }
+
+        if ($total > self::MAX_WITHOUT_CONFIRM
+            && !$io->confirm(sprintf('Submit %d volume DOIs to %s API?', $total, $dryRun ? 'test' : 'production'), false)) {
+            $io->note('Cancelled.');
+            return Command::FAILURE;
+        }
+
+        $logger->info(sprintf('%s: sending %d volume(s) to Crossref', $rvcode, $total));
+        $exporter    = $this->createVolumeExporter();
+        $progressBar = $io->createProgressBar($total);
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
+
+        foreach ($queue as $entry) {
+            $this->requestVolumeDoi($entry['volume'], $entry['doiq'], $review, $exporter, $crossrefClient, $logger, $dryRun);
+            $progressBar->advance();
+        }
+
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
+        $io->success("Volume DOI submission completed for journal {$rvcode}.");
+        return Command::SUCCESS;
+    }
+
+    private function requestVolumeDoi(
+        Episciences_Volume          $volume,
+        Episciences_Volume_DoiQueue $doiQueue,
+        Episciences_Review          $review,
+        CrossrefVolumeExporter      $exporter,
+        CrossrefSubmissionApiClient $crossrefClient,
+        Logger                      $logger,
+        bool                        $dryRun
+    ): void {
+        $vid    = (int) $volume->getVid();
+        $prefix = $dryRun ? '[dry-run] ' : '';
+
+        try {
+            $xml = $exporter->export($volume, $review, true);
+        } catch (InvalidArgumentException|RuntimeException $e) {
+            $logger->warning(sprintf('Volume #%d skipped: %s', $vid, $e->getMessage()));
+            return;
+        }
+
+        try {
+            $response = $crossrefClient->postMetadata($xml, self::getVolumeXmlFileName($review->getCode(), $vid), $dryRun);
+        } catch (GuzzleException $e) {
+            $logger->error(sprintf('Crossref submission failed for volume #%d: %s', $vid, $e->getMessage()));
+            return;
+        }
+
+        if (!$dryRun) {
+            $doiQueue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_REQUESTED);
+            $this->saveVolumeDoiQueue($doiQueue);
+        }
+
+        $logger->info(sprintf('%sVolume #%d: Crossref answered: %s', $prefix, $vid, $response->getBody()));
+    }
+
+    /**
+     * Check the Crossref processing of the deposited volume DOIs (status requested).
+     */
+    private function checkVolumeDois(
+        SymfonyStyle                $io,
+        Episciences_Review          $review,
+        bool                        $dryRun,
+        CrossrefSubmissionApiClient $crossrefClient,
+        Logger                      $logger,
+        ?ProgressAwareStreamHandler $stdoutHandler = null
+    ): int {
+        $rvcode      = $review->getCode();
+        $queue       = $this->findVolumeDois($review->getRvid(), Episciences_Volume_DoiQueue::STATUS_REQUESTED);
+        $parser      = new CrossrefDiagnosticParser();
+        $progressBar = $io->createProgressBar(count($queue));
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
+
+        foreach ($queue as $entry) {
+            $this->checkVolumeDoi($entry['volume'], $entry['doiq'], $rvcode, $parser, $crossrefClient, $logger, $dryRun);
+            $progressBar->advance();
+        }
+
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
+        $io->success("Volume DOI status check completed for journal {$rvcode}.");
+        return Command::SUCCESS;
+    }
+
+    private function checkVolumeDoi(
+        Episciences_Volume          $volume,
+        Episciences_Volume_DoiQueue $doiQueue,
+        string                      $rvcode,
+        CrossrefDiagnosticParser    $parser,
+        CrossrefSubmissionApiClient $crossrefClient,
+        Logger                      $logger,
+        bool                        $dryRun
+    ): void {
+        $vid     = (int) $volume->getVid();
+        $doi     = (string) $volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI);
+        $xmlBody = $crossrefClient->fetchStatus(self::getVolumeXmlFileName($rvcode, $vid), $dryRun);
+        $result  = $xmlBody === null ? null : $parser->parse($xmlBody, $doi);
+
+        if ($result === null) {
+            $logger->error(sprintf('Volume #%d: Crossref status could not be fetched or parsed.', $vid));
+            return;
+        }
+
+        if (!$result->isCompleted()) {
+            $logger->info(sprintf('Volume #%d: batch not yet processed by Crossref, will retry on next --check.', $vid));
+            return;
+        }
+
+        if (!$result->isSuccess()) {
+            $logger->warning(sprintf('Volume #%d: DOI %s not confirmed as successful (status: %s, %s).', $vid, $doi, $result->doiStatus, $result->doiMsg));
+            return;
+        }
+
+        if ($dryRun) {
+            $logger->info(sprintf('[dry-run] Volume #%d: DOI %s status would become public.', $vid, $doi));
+            return;
+        }
+
+        $doiQueue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_PUBLIC);
+        $this->saveVolumeDoiQueue($doiQueue);
+        $logger->info(sprintf('Volume #%d: DOI %s is now public.', $vid, $doi));
+    }
+
+    /**
+     * Name of the deposited file: --check queries Crossref by file name, so it must differ
+     * from the paper files ({rvcode}-{paperid}.xml).
+     */
+    private static function getVolumeXmlFileName(string $rvcode, int $vid): string
+    {
+        return sprintf('%s-volume-%d.xml', $rvcode, $vid);
+    }
+
+    /**
+     * @return array<int, array{volume: Episciences_Volume, doiq: Episciences_Volume_DoiQueue}>
+     */
+    protected function findVolumeDois(int $rvid, string $status): array
+    {
+        return DoiQueueManager::findByStatus($rvid, $status);
+    }
+
+    protected function saveVolumeDoiQueue(Episciences_Volume_DoiQueue $doiQueue): void
+    {
+        DoiQueueManager::update($doiQueue);
+    }
+
+    protected function createVolumeExporter(): CrossrefVolumeExporter
+    {
+        return new CrossrefVolumeExporter();
     }
 
     /**

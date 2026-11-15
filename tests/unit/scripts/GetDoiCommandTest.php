@@ -2,10 +2,15 @@
 
 namespace unit\scripts;
 
+use DateTimeImmutable;
 use Episciences\Api\CrossrefSubmissionApiClient;
+use Episciences\Volume\CrossrefVolumeExporter;
 use Episciences_Paper;
 use Episciences_Review;
 use Episciences_Review_DoiSettings;
+use Episciences_Volume;
+use Episciences_Volume_DoiQueue;
+use GuzzleHttp\Middleware;
 use GetDoiCommand;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
@@ -13,6 +18,7 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use Monolog\Handler\TestHandler;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -98,7 +104,7 @@ class GetDoiCommandTest extends TestCase
 
         foreach ([
             'rvcode', 'rvid', 'paperid', 'assign-accepted', 'assign-published',
-            'request', 'check', 'update', 'fetch-journals', 'dry-run',
+            'request', 'check', 'update', 'fetch-journals', 'dry-run', 'volumes',
         ] as $option) {
             $this->assertTrue($definition->hasOption($option), "Missing option: --{$option}");
         }
@@ -259,5 +265,303 @@ class GetDoiCommandTest extends TestCase
         $this->invokePrivate(new GetDoiCommand(), 'setJournalConstants', ['some-other-code', $io]);
 
         $this->assertStringNotContainsString('Could not create cache directory', $output->fetch());
+    }
+
+    // -------------------------------------------------------------------------
+    // --volumes: option combinations (checked before bootstrap)
+    // -------------------------------------------------------------------------
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private function validateVolumesOption(array $options): ?string
+    {
+        $command = new GetDoiCommand();
+        $input   = new ArrayInput($options, $command->getDefinition());
+
+        return $this->invokePrivate($command, 'validateVolumesOption', [$input]);
+    }
+
+    public function testVolumesOption_WithRequestOrCheck_IsAccepted(): void
+    {
+        $this->assertNull($this->validateVolumesOption(['--volumes' => true, '--request' => true]));
+        $this->assertNull($this->validateVolumesOption(['--volumes' => true, '--check' => true, '--dry-run' => true]));
+        $this->assertNull($this->validateVolumesOption(['--update' => true]), 'Without --volumes nothing changes');
+    }
+
+    /**
+     * @dataProvider invalidVolumesOptionsProvider
+     * @param array<string, mixed> $options
+     */
+    public function testVolumesOption_InvalidCombination_IsRefused(array $options, string $expected): void
+    {
+        $this->assertStringContainsString($expected, (string) $this->validateVolumesOption(['--volumes' => true] + $options));
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>, string}>
+     */
+    public static function invalidVolumesOptionsProvider(): array
+    {
+        return [
+            'alone'            => [[], 'requires either --request or --check'],
+            'request and check' => [['--request' => true, '--check' => true], 'requires either --request or --check'],
+            'assign-accepted'  => [['--request' => true, '--assign-accepted' => true], '--assign-accepted'],
+            'assign-published' => [['--request' => true, '--assign-published' => true], '--assign-published'],
+            'update'           => [['--update' => true], '--update'],
+        ];
+    }
+
+    // -------------------------------------------------------------------------
+    // requestVolumeDois() / checkVolumeDois() — queue and Crossref mocked
+    // -------------------------------------------------------------------------
+
+    private function makeVolumeQueueEntry(int $vid, string $doi, string $status): array
+    {
+        $volume = new Episciences_Volume();
+        $volume->setVid($vid);
+        $volume->setRvid(self::UNKNOWN_RVID);
+        $volume->setTitles(['en' => 'Proceedings']);
+        $volume->setSettings([
+            Episciences_Volume::VOLUME_IS_PROCEEDING => '1',
+            Episciences_Volume::VOLUME_CONFERENCE_NAME => 'Conference',
+            Episciences_Volume::VOLUME_CONFERENCE_DOI => $doi,
+        ]);
+        $volume->setEditors([]);
+        $volume->markEditorsLoaded();
+
+        return [
+            'volume' => $volume,
+            'doiq'   => new Episciences_Volume_DoiQueue(['id' => $vid, 'vid' => $vid, 'doi_status' => $status]),
+        ];
+    }
+
+    /**
+     * Command whose queue, status writes and exporter are in memory.
+     *
+     * @param array<int, array{volume: Episciences_Volume, doiq: Episciences_Volume_DoiQueue}> $queue
+     */
+    private function makeVolumeCommand(array $queue): GetDoiCommand
+    {
+        return new class($queue) extends GetDoiCommand {
+            /** @var array<int, array{string, string}> */
+            public array $saved = [];
+            /** @var array<int, string> */
+            public array $requestedStatuses = [];
+
+            public function __construct(private readonly array $queue)
+            {
+                parent::__construct();
+            }
+
+            protected function findVolumeDois(int $rvid, string $status): array
+            {
+                $this->requestedStatuses[] = $status;
+                return array_values(array_filter($this->queue, static fn(array $e): bool => $e['doiq']->getDoi_status() === $status));
+            }
+
+            protected function saveVolumeDoiQueue(Episciences_Volume_DoiQueue $doiQueue): void
+            {
+                $this->saved[] = [(string) $doiQueue->getVid(), $doiQueue->getDoi_status()];
+            }
+
+            protected function createVolumeExporter(): CrossrefVolumeExporter
+            {
+                return new CrossrefVolumeExporter(
+                    static fn(int $rvid): bool => true,
+                    static fn(): DateTimeImmutable => new DateTimeImmutable('2026-11-15 10:00:00')
+                );
+            }
+        };
+    }
+
+    /**
+     * @param array<int, Response|\Throwable> $responses
+     * @param array<int, array<string, mixed>> $history
+     */
+    private function makeMockedCrossrefClient(array $responses, array &$history, ?Logger $logger = null): CrossrefSubmissionApiClient
+    {
+        $stack = HandlerStack::create(new MockHandler($responses));
+        $stack->push(Middleware::history($history));
+
+        return new CrossrefSubmissionApiClient(
+            new Client(['handler' => $stack]),
+            $logger ?? new Logger('test'),
+            'https://deposit.example',
+            'https://deposit-test.example',
+            'https://query.example',
+            'https://query-test.example',
+            'login',
+            'password'
+        );
+    }
+
+    private function makeLogger(TestHandler $handler): Logger
+    {
+        return new Logger('test', [$handler]);
+    }
+
+    public function testRequestVolumeDois_PostsTheVolumeXmlAndMarksItRequested(): void
+    {
+        $history = [];
+        $command = $this->makeVolumeCommand([
+            $this->makeVolumeQueueEntry(1134, '10.46298/mbj.proceedings.51', Episciences_Volume_DoiQueue::STATUS_ASSIGNED),
+        ]);
+        [$io, $output] = $this->makeIo();
+
+        $result = $this->invokePrivate($command, 'requestVolumeDois', [
+            $io, $this->makeReview(), false,
+            $this->makeMockedCrossrefClient([new Response(200, [], 'queued')], $history),
+            new Logger('test'),
+        ]);
+
+        $this->assertSame(Command::SUCCESS, $result);
+        $this->assertSame([Episciences_Volume_DoiQueue::STATUS_ASSIGNED], $command->requestedStatuses);
+        $this->assertCount(1, $history);
+        $request = $history[0]['request'];
+        $this->assertSame('https://deposit.example', (string) $request->getUri());
+        $body = (string) $request->getBody();
+        $this->assertStringContainsString('filename="' . self::UNKNOWN_CODE . '-volume-1134.xml"', $body);
+        $this->assertStringContainsString('<doi>10.46298/mbj.proceedings.51</doi>', $body);
+        $this->assertSame([['1134', Episciences_Volume_DoiQueue::STATUS_REQUESTED]], $command->saved);
+        $this->assertStringContainsString('Volume DOI submission completed', $output->fetch());
+    }
+
+    public function testRequestVolumeDois_DryRunUsesTheTestApiAndKeepsTheStatus(): void
+    {
+        $history = [];
+        $command = $this->makeVolumeCommand([
+            $this->makeVolumeQueueEntry(1134, '10.46298/mbj.proceedings.51', Episciences_Volume_DoiQueue::STATUS_ASSIGNED),
+        ]);
+        [$io] = $this->makeIo();
+
+        $this->invokePrivate($command, 'requestVolumeDois', [
+            $io, $this->makeReview(), true,
+            $this->makeMockedCrossrefClient([new Response(200, [], 'queued')], $history),
+            new Logger('test'),
+        ]);
+
+        $this->assertSame('https://deposit-test.example', (string) $history[0]['request']->getUri());
+        $this->assertSame([], $command->saved);
+    }
+
+    public function testRequestVolumeDois_VolumeWithoutDoiIsSkippedOthersAreSent(): void
+    {
+        $history = [];
+        $logs    = new TestHandler();
+        $command = $this->makeVolumeCommand([
+            $this->makeVolumeQueueEntry(1, '', Episciences_Volume_DoiQueue::STATUS_ASSIGNED),
+            $this->makeVolumeQueueEntry(2, '10.46298/mbj.proceedings.52', Episciences_Volume_DoiQueue::STATUS_ASSIGNED),
+        ]);
+        [$io] = $this->makeIo();
+
+        $this->invokePrivate($command, 'requestVolumeDois', [
+            $io, $this->makeReview(), false,
+            $this->makeMockedCrossrefClient([new Response(200, [], 'queued')], $history),
+            $this->makeLogger($logs),
+        ]);
+
+        $this->assertCount(1, $history);
+        $this->assertSame([['2', Episciences_Volume_DoiQueue::STATUS_REQUESTED]], $command->saved);
+        $this->assertTrue($logs->hasWarningThatContains('Volume #1 skipped'));
+    }
+
+    public function testRequestVolumeDois_CrossrefFailureKeepsTheStatus(): void
+    {
+        $history = [];
+        $logs    = new TestHandler();
+        $command = $this->makeVolumeCommand([
+            $this->makeVolumeQueueEntry(1134, '10.46298/mbj.proceedings.51', Episciences_Volume_DoiQueue::STATUS_ASSIGNED),
+        ]);
+        [$io] = $this->makeIo();
+
+        $this->invokePrivate($command, 'requestVolumeDois', [
+            $io, $this->makeReview(), false,
+            $this->makeMockedCrossrefClient([new ConnectException('down', new Request('POST', 'https://deposit.example'))], $history),
+            $this->makeLogger($logs),
+        ]);
+
+        $this->assertSame([], $command->saved);
+        $this->assertTrue($logs->hasErrorThatContains('Crossref submission failed for volume #1134'));
+    }
+
+    public function testRequestVolumeDois_EmptyQueue_ReturnsSuccess(): void
+    {
+        $history = [];
+        [$io, $output] = $this->makeIo();
+
+        $result = $this->invokePrivate($this->makeVolumeCommand([]), 'requestVolumeDois', [
+            $io, $this->makeReview(), false, $this->makeMockedCrossrefClient([], $history), new Logger('test'),
+        ]);
+
+        $this->assertSame(Command::SUCCESS, $result);
+        $this->assertSame([], $history);
+        $this->assertStringContainsString('No volume DOIs to submit', $output->fetch());
+    }
+
+    private function diagnostic(string $batchStatus, string $doi, string $recordStatus): string
+    {
+        return <<<XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <doi_batch_diagnostic status="{$batchStatus}">
+              <record_diagnostic status="{$recordStatus}"><doi>{$doi}</doi><msg>done</msg></record_diagnostic>
+              <batch_data><success_count>1</success_count><failure_count>0</failure_count><warning_count>0</warning_count></batch_data>
+            </doi_batch_diagnostic>
+            XML;
+    }
+
+    public function testCheckVolumeDois_SuccessMarksTheDoiPublic(): void
+    {
+        $history = [];
+        $command = $this->makeVolumeCommand([
+            $this->makeVolumeQueueEntry(1134, '10.46298/mbj.proceedings.51', Episciences_Volume_DoiQueue::STATUS_REQUESTED),
+        ]);
+        [$io, $output] = $this->makeIo();
+
+        $result = $this->invokePrivate($command, 'checkVolumeDois', [
+            $io, $this->makeReview(), false,
+            $this->makeMockedCrossrefClient([new Response(200, [], $this->diagnostic('completed', '10.46298/MBJ.proceedings.51', 'Success'))], $history),
+            new Logger('test'),
+        ]);
+
+        $this->assertSame(Command::SUCCESS, $result);
+        $this->assertSame([Episciences_Volume_DoiQueue::STATUS_REQUESTED], $command->requestedStatuses);
+        parse_str($history[0]['request']->getUri()->getQuery(), $query);
+        $this->assertSame(self::UNKNOWN_CODE . '-volume-1134.xml', $query['file_name']);
+        $this->assertSame([['1134', Episciences_Volume_DoiQueue::STATUS_PUBLIC]], $command->saved);
+        $this->assertStringContainsString('Volume DOI status check completed', $output->fetch());
+    }
+
+    /**
+     * @dataProvider unconfirmedDiagnosticProvider
+     */
+    public function testCheckVolumeDois_UnconfirmedOrDryRun_KeepsTheStatus(string $batchStatus, string $recordStatus, bool $dryRun): void
+    {
+        $history = [];
+        $command = $this->makeVolumeCommand([
+            $this->makeVolumeQueueEntry(1134, '10.46298/mbj.proceedings.51', Episciences_Volume_DoiQueue::STATUS_REQUESTED),
+        ]);
+        [$io] = $this->makeIo();
+
+        $this->invokePrivate($command, 'checkVolumeDois', [
+            $io, $this->makeReview(), $dryRun,
+            $this->makeMockedCrossrefClient([new Response(200, [], $this->diagnostic($batchStatus, '10.46298/mbj.proceedings.51', $recordStatus))], $history),
+            new Logger('test'),
+        ]);
+
+        $this->assertSame($dryRun ? 'https://query-test.example' : 'https://query.example', $history[0]['request']->getUri()->getScheme() . '://' . $history[0]['request']->getUri()->getHost());
+        $this->assertSame([], $command->saved);
+    }
+
+    /**
+     * @return array<string, array{string, string, bool}>
+     */
+    public static function unconfirmedDiagnosticProvider(): array
+    {
+        return [
+            'batch in progress' => ['in_process', 'Success', false],
+            'record failure'    => ['completed', 'Failure', false],
+            'dry-run success'   => ['completed', 'Success', true],
+        ];
     }
 }

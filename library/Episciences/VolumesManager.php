@@ -1,8 +1,23 @@
 <?php
 
+use Episciences\Volume\DoiQueueManager;
+use Episciences\Volume\ProceedingsValidator;
+
 class Episciences_VolumesManager
 {
     public const MAX_STRING_LENGTH = 1024;
+    /** Conference fields, in display order, rendered inside the proceedings fieldset */
+    public const PROCEEDINGS_FIELDS = [
+        Episciences_Volume::VOLUME_CONFERENCE_NAME,
+        Episciences_Volume::VOLUME_CONFERENCE_ACRONYM,
+        Episciences_Volume::VOLUME_CONFERENCE_NUMBER,
+        Episciences_Volume::VOLUME_CONFERENCE_THEME,
+        Episciences_Volume::VOLUME_CONFERENCE_LOCATION,
+        Episciences_Volume::VOLUME_CONFERENCE_START_DATE,
+        Episciences_Volume::VOLUME_CONFERENCE_END_DATE,
+    ];
+    /** Option of the form ViewScript decorator carrying the DOI row data */
+    public const PROCEEDINGS_DOI_VIEW_OPTION = 'proceedingsDoi';
     public const MAX_STRING_LENGTH_VOL_NUM = 20;
 
     /**
@@ -588,9 +603,10 @@ class Episciences_VolumesManager
             'FormCss',
             'FormJavascript'
         ]);
-        if ($volume !== null && $volume->getSetting('conference_proceedings_doi') !== null) {
-            $form->getDecorator('ViewScript')->setOption('value', substr(strrchr($volume->getSetting('conference_proceedings_doi'), "."), 1));
-        }
+        $form->getDecorator('ViewScript')->setOption(
+            self::PROCEEDINGS_DOI_VIEW_OPTION,
+            self::getProceedingsDoiViewData($volume, self::getJournalDoiPrefix())
+        );
 
         $languages = Episciences_Tools::getLanguages();
         foreach ($languages as $languageCode => $language) {
@@ -709,67 +725,72 @@ class Episciences_VolumesManager
             ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
             ['Errors', ['placement' => 'APPEND']]
         ];
-        $form->addElement('checkbox', "is_proceeding", [
+        $form->addElement('checkbox', Episciences_Volume::VOLUME_IS_PROCEEDING, [
             'label' => 'Actes de conférences',
             'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
             'value' => 0,
-            'decorators' => $checkboxDecorators]);
-        $form->addElement('text', "conference_name", [
-            'label' => 'Nom de la conférence',
-        ]);
-        $form->addElement('text', "conference_theme", [
-            'label' => 'Thème de la conférence',
-        ]);
-        $form->addElement('text', "conference_acronym", [
-            'label' => 'Acronyme de la conférence',
-        ]);
-        $form->addElement('text', "conference_number", [
-            'label' => 'Numéro de la conférence',
-            'validators' => [
-                [new Zend_Validate_Int()]
-            ],
-        ]);
-        $form->addElement('text', "conference_location", [
-            'label' => 'Lieu de la conférence',
+            'decorators' => $checkboxDecorators,
+            'aria-controls' => 'conference-fields',
         ]);
 
-        $form->addElement('date', 'conference_start', [
-            'label' => 'Date de début de la conférence',
-            'style' => 'position: static;', // avoid too much z-index for the page
-            'class' => 'datepicker',
-            'format' => 'Y-m-d',
-        ]);
-        $form->addElement('date', 'conference_end', [
-            'label' => 'Date de fin de la conférence',
-            'style' => 'position: static;', // avoid too much z-index for the page
-            'class' => 'datepicker',
-            'format' => 'Y-m-d',
-        ]);
-        if ($volume !== null) {
-            $form->addElement('hidden', 'doi_status', [
-                'value' => Episciences_Volume_DoiQueueManager::findByVolumesId($volume->getVid())->getDoi_status(),
-                'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
+        // Rendered by volume/proceedings_fieldset.phtml; maximum lengths from the Crossref schema
+        $stringLength = static fn(int $max, int $min = 0): array => [new Zend_Validate_StringLength(['min' => $min, 'max' => $max])];
+        $isoDate = new Zend_Validate_Callback(static function ($value): bool {
+            $date = DateTimeImmutable::createFromFormat('!Y-m-d', (string)$value);
+            return $date !== false && $date->format('Y-m-d') === $value;
+        });
+        $isoDate->setMessage('La date doit être au format AAAA-MM-JJ.', Zend_Validate_Callback::INVALID_VALUE);
+        $fields = [
+            Episciences_Volume::VOLUME_CONFERENCE_NAME => ['label' => 'Nom de la conférence', 'validators' => $stringLength(512, 3)],
+            Episciences_Volume::VOLUME_CONFERENCE_ACRONYM => ['label' => 'Acronyme de la conférence', 'validators' => $stringLength(127)],
+            Episciences_Volume::VOLUME_CONFERENCE_NUMBER => ['label' => 'Numéro de la conférence', 'validators' => [new Zend_Validate_Digits(), ...$stringLength(15)]],
+            Episciences_Volume::VOLUME_CONFERENCE_THEME => ['label' => 'Thème de la conférence', 'validators' => $stringLength(255)],
+            Episciences_Volume::VOLUME_CONFERENCE_LOCATION => ['label' => 'Lieu de la conférence', 'validators' => $stringLength(255, 2)],
+            Episciences_Volume::VOLUME_CONFERENCE_START_DATE => ['label' => 'Date de début de la conférence', 'validators' => [$isoDate]],
+            Episciences_Volume::VOLUME_CONFERENCE_END_DATE => ['label' => 'Date de fin de la conférence', 'validators' => [clone $isoDate]],
+        ];
 
-            ]);
-        } else {
-            $form->addElement('hidden', 'doi_status', [
-                'value' => Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED,
-                'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volumes/form.phtml)
-            ]);
-
+        foreach ($fields as $name => $options) {
+            $form->addElement('text', $name, $options + ['filters' => ['StringTrim']]);
         }
 
-        $form->addElement('hidden', 'translate_text', [
-            'value' => Zend_Registry::get('Zend_Translate')->translate("Titre de l'acte de conférence"),
-            'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
-        ]);
-        $form->addElement('hidden', 'translate_text_doi_request', [
-
-            'value' => Zend_Registry::get('Zend_Translate')->translate("Le DOI qui va être demandé"),
-            'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
-
-        ]);
         return $form;
+    }
+
+    /**
+     * Data of the proceedings DOI row (volume/doi_proceedings_row.phtml).
+     *
+     * @param string|null $postedSuffix suffix posted with a refused form, shown again unless the DOI is locked
+     * @return array{prefix: string, suffix: string, status: string, locked: bool, doi: string, vid: int|null, error: string|null, canEditDoiSettings: bool}
+     */
+    public static function getProceedingsDoiViewData(?Episciences_Volume $volume, string $doiPrefix, ?string $postedSuffix = null, ?string $error = null): array
+    {
+        $vid = $volume !== null && $volume->getVid() ? (int)$volume->getVid() : null;
+        $status = $vid !== null
+            ? DoiQueueManager::findByVid($vid)->getDoi_status()
+            : Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED;
+        $locked = DoiQueueManager::isLockedStatus($status);
+        $storedDoi = $volume !== null ? (string)$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI) : '';
+
+        return [
+            'prefix' => $doiPrefix !== '' ? ProceedingsValidator::buildDoiStart($doiPrefix, RVCODE) : '',
+            'suffix' => ($locked || $postedSuffix === null) ? ProceedingsValidator::extractDoiSuffix($storedDoi) : $postedSuffix,
+            'status' => $status,
+            'locked' => $locked,
+            'doi' => $storedDoi,
+            'vid' => $vid,
+            'error' => $error,
+            'canEditDoiSettings' => Episciences_Auth::isRoot(),
+        ];
+    }
+
+    private static function getJournalDoiPrefix(): string
+    {
+        try {
+            return (string)Zend_Registry::get('reviewSettingsDoi')->getDoiPrefix();
+        } catch (Zend_Exception) {
+            return '';
+        }
     }
 
     /**

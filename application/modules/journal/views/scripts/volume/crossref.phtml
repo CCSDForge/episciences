@@ -1,85 +1,80 @@
 <?php
-/** @var $journal Episciences_Review */
-$journal = $this->journal;
-$journalUrl = $journal->getUrl();
-$journalDoi = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_DOI);
-$journalDoiPrefix = $journal->getDoiSettings()->getDoiPrefix();
-/** @var $volume Episciences_Volume */
-$volume = $this->volume;
-$volumeSettings = $volume->getSettings();
-
-$dateTime = new DateTime('now');
-$timestamp = $dateTime->format('YmdHisv');
-
+/**
+ * Crossref deposit (schema 5.3.1) of a proceedings volume.
+ * Every value is prepared by Episciences\Volume\CrossrefVolumeExporter.
+ *
+ * @var Zend_View $this
+ * @var array{name: string, theme: string, acronym: string, number: string, location: string, date: array<string, string>|null} $conference
+ * @var list<array{given_name: string, surname: string, orcid: string}> $contributors
+ */
+$conference = $this->conference;
+$contributors = $this->contributors;
 ?>
+<?= '<?xml version="1.0" encoding="UTF-8"?>' . "\n" ?>
 <doi_batch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://www.crossref.org/schema/5.3.1 https://www.crossref.org/schemas/crossref5.3.1.xsd"
            xmlns="http://www.crossref.org/schema/5.3.1"
            version="5.3.1">
     <head>
-        <doi_batch_id><?php echo DOMAIN . '_' . $volume->getVid() . '_' . $timestamp; ?></doi_batch_id>
-        <timestamp><?php echo $timestamp; ?></timestamp>
+        <doi_batch_id><?= $this->escape($this->batchId) ?></doi_batch_id>
+        <timestamp><?= $this->escape($this->timestamp) ?></timestamp>
         <depositor>
-            <depositor_name><?php echo DOMAIN; ?></depositor_name>
-            <email_address><?php echo DOI_EMAIL_CONTACT; ?></email_address>
+            <depositor_name><?= $this->escape($this->depositorName) ?></depositor_name>
+            <email_address><?= $this->escape($this->depositorEmail) ?></email_address>
         </depositor>
-        <registrant><?php echo DOMAIN; ?></registrant>
+        <registrant><?= $this->escape($this->depositorName) ?></registrant>
     </head>
     <body>
     <conference>
+        <?php if ($contributors !== []) : ?>
+            <contributors>
+                <?php foreach ($contributors as $index => $contributor) : ?>
+                    <person_name sequence="<?= $index === 0 ? 'first' : 'additional' ?>" contributor_role="editor">
+                        <?php if ($contributor['given_name'] !== '') : ?>
+                            <given_name><?= $this->escape($contributor['given_name']) ?></given_name>
+                        <?php endif; ?>
+                        <surname><?= $this->escape($contributor['surname']) ?></surname>
+                        <?php if ($contributor['orcid'] !== '') : ?>
+                            <ORCID>https://orcid.org/<?= $this->escape($contributor['orcid']) ?></ORCID>
+                        <?php endif; ?>
+                    </person_name>
+                <?php endforeach; ?>
+            </contributors>
+        <?php endif; ?>
         <event_metadata>
-            <conference_name><?= $this->escape($volumeSettings['conference_name']) ?></conference_name>
-            <?php if ($volumeSettings['conference_theme'] !== ''): ?>
-                <conference_theme><?= $this->escape($volumeSettings['conference_theme']) ?></conference_theme>
+            <conference_name><?= $this->escape($conference['name']) ?></conference_name>
+            <?php if ($conference['theme'] !== '') : ?>
+                <conference_theme><?= $this->escape($conference['theme']) ?></conference_theme>
             <?php endif; ?>
-            <?php if ($volumeSettings['conference_acronym'] !== ''): ?>
-                <conference_acronym><?= $this->escape($volumeSettings['conference_acronym']) ?></conference_acronym>
+            <?php if ($conference['acronym'] !== '') : ?>
+                <conference_acronym><?= $this->escape($conference['acronym']) ?></conference_acronym>
             <?php endif; ?>
-            <?php if ($volumeSettings['conference_number'] !== ''): ?>
-                <conference_number><?= $this->escape($volumeSettings['conference_number']) ?></conference_number>
+            <?php if ($conference['number'] !== '') : ?>
+                <conference_number><?= $this->escape($conference['number']) ?></conference_number>
             <?php endif; ?>
-            <?php if ($volumeSettings['conference_location'] !== ''): ?>
-                <conference_location><?= $this->escape($volumeSettings['conference_location']) ?></conference_location>
+            <?php if ($conference['location'] !== '') : ?>
+                <conference_location><?= $this->escape($conference['location']) ?></conference_location>
             <?php endif; ?>
-
-            <?php if ($volumeSettings['conference_start'] !== '' && $volumeSettings['conference_end'] !== '') : ?>
-
-                <?php
-                $proceeding_start = new dateTime($volumeSettings['conference_start']);
-                $proceeding_end = new dateTime($volumeSettings['conference_end']);
-                ?>
-                <conference_date start_month="<?= $proceeding_start->format('m') ?>"
-                                 start_year="<?= $proceeding_start->format('Y') ?>"
-                                 start_day="<?= $proceeding_start->format('d') ?>"
-                                 end_year="<?= $proceeding_end->format('Y') ?>"
-                                 end_month="<?= $proceeding_end->format('m') ?>"
-                                 end_day="<?= $proceeding_end->format('d') ?>"></conference_date>
+            <?php if ($conference['date'] !== null) : ?>
+                <conference_date<?php foreach ($conference['date'] as $attribute => $value) : ?> <?= $attribute ?>="<?= $this->escape($value) ?>"<?php endforeach; ?>/>
             <?php endif; ?>
         </event_metadata>
-        <proceedings_metadata language="en">
-            <?php
-            $titles = $volume->getTitles();
-            if (is_array($titles) && !empty($titles)) {
-                $firstTitle = array_values($titles)[0];
-            }
-            ?>
-            <proceedings_title><?= $this->escape($firstTitle) ?></proceedings_title>
-            <?php /* <proceedings_subject>Metadata</proceedings_subject> */ ?>
+        <proceedings_metadata language="<?= $this->escape($this->proceedingsTitle['language']) ?>">
+            <proceedings_title><?= $this->escape($this->proceedingsTitle['title']) ?></proceedings_title>
             <publisher>
-                <publisher_name><?php echo $this->escape($journal->getName()); ?></publisher_name>
+                <publisher_name><?= $this->escape($this->publisher['name']) ?></publisher_name>
+                <?php if ($this->publisher['place'] !== '') : ?>
+                    <publisher_place><?= $this->escape($this->publisher['place']) ?></publisher_place>
+                <?php endif; ?>
             </publisher>
-
             <publication_date media_type="online">
-                <year><?= $this->publicationDate ?></year>
+                <year><?= $this->escape($this->publicationYear) ?></year>
             </publication_date>
-
             <noisbn reason="simple_series"/>
             <doi_data>
-                <?php if ($journalDoiPrefix !== '' && substr(strrchr($volumeSettings['conference_proceedings_doi'], "."), 1) !== ''): ?>
-                    <doi><?php echo $this->escape($volumeSettings['conference_proceedings_doi']); ?></doi>
-                <?php endif; ?>
-                <timestamp><?php echo $timestamp; ?></timestamp>
-                <resource><?= $this->escape($journalUrl) . '/volume/view/id/' . $this->escape($volume->getVid()) ?></resource>
+                <doi><?= $this->escape($this->doi) ?></doi>
+                <timestamp><?= $this->escape($this->timestamp) ?></timestamp>
+                <resource><?= $this->escape($this->resource) ?></resource>
             </doi_data>
         </proceedings_metadata>
     </conference>
