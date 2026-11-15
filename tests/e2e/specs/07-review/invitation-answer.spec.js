@@ -85,14 +85,16 @@ async function signIn(page, username) {
 }
 
 /**
- * Creates an account not activated, as another application sharing the accounts would: no Episciences profile.
+ * Creates an account as another application sharing the accounts would: no Episciences profile.
  * @param {string} username
  * @param {string} email
  * @param {string} password
+ * @param {Object} [options]
+ * @param {boolean} [options.active=false] activated, or not activated yet
  */
-function createExternalAccount(username, email, password) {
+function createExternalAccount(username, email, password, { active = false } = {}) {
     runPhp(
-        `scripts/console.php app:e2e-external-account --username=${username} --email=${email} --password=${password} --inactive`
+        `scripts/console.php app:e2e-external-account --username=${username} --email=${email} --password=${password}${active ? '' : ' --inactive'}`
     );
 }
 
@@ -379,6 +381,68 @@ test.describe('Reviewer invitation answer', () => {
                 await expect(page.getByText('It appears that a reply has already been sent.')).toBeVisible();
                 await expect(page.getByText('Invitation accepted on')).toBeVisible();
                 await expect(page.locator('#accept-button')).toHaveCount(0);
+            });
+        } finally {
+            await context.close();
+        }
+    });
+
+    test('an invitee whose address has an active account signs in with it to accept', async ({
+        browser,
+        baseURL,
+        authorPage,
+        adminPage,
+        mailpit,
+    }) => {
+        test.setTimeout(240000);
+        const suffix = Date.now();
+        const invitedEmail = `e2e-active-reviewer-${suffix}@example.org`;
+        const username = `e2e_active_${suffix}`;
+        let docid;
+        let invitationPath;
+
+        await test.step('the editorial team invites a reviewer by e-mail address', async () => {
+            docid = await submitArxivPaper(authorPage, { arxivId: '1511.06434' });
+            // Accepting an invitation creates the rating report from the grid of the paper's volume
+            const vid = await createVolume(adminPage, `E2E Active account volume ${suffix}`);
+            await createVolumeGrid(adminPage, vid);
+            await assignMasterVolume(adminPage, docid, vid);
+            await inviteNewReviewer(adminPage, docid, { email: invitedEmail, lastname: `Activereviewer${suffix}` });
+            invitationPath = await receivedInvitationPath(mailpit, docid, invitedEmail);
+        });
+
+        // Created after the invitation, in another application: active, without any Episciences profile
+        createExternalAccount(username, invitedEmail, E2E_PASSWORD, { active: true });
+
+        const context = await newLoggedOutContext(browser, baseURL);
+        const page = await context.newPage();
+        try {
+            await test.step('the invitee is told to sign in with that account, not to create one', async () => {
+                await page.goto(invitationPath);
+                const notice = page.locator('.invitation-answer-account');
+                await expect(notice).toContainText('An account already exists for the address this invitation was sent to.');
+                await expect(notice).toContainText('Declining does not require an account.');
+                await expect(page.locator('#accept_form')).toHaveCount(0);
+                // Both the notice and the answer button go to the login page, then back to confirm the acceptance
+                await expect(notice.getByRole('link', { name: 'sign in' })).toHaveAttribute('href', /user\/login/);
+                await expect(page.locator('#accept-button')).toHaveAttribute('href', /user\/login/);
+            });
+
+            await test.step('signing in from the notice brings the invitee back to confirm the acceptance', async () => {
+                await page.locator('.invitation-answer-account').getByRole('link', { name: 'sign in' }).click();
+                await expect(page).toHaveURL(/user\/login/);
+                await signIn(page, username);
+
+                // The account has no Episciences profile yet: it is completed first, then the invitation is back
+                await expect(page).toHaveURL(/user\/edit/);
+                await page.getByRole('button', { name: 'Save changes' }).click();
+                await expect(page).toHaveURL(/reviewer\/invitation/);
+                await expect(page.getByText('You are now signed in: please confirm your acceptance below.')).toBeVisible();
+                await expect(page.locator('.invitation-answer-account')).toHaveCount(0);
+
+                await page.locator('#submitaccept').click();
+                await expect(page).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
+                await expect(page.getByText('Your answer has been saved.').first()).toBeVisible();
             });
         } finally {
             await context.close();
