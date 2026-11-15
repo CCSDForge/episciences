@@ -5,20 +5,22 @@
         margin-bottom: 10px;
     }
 </style>
-<?php if ($this->suggestedEditors) : ?>
+<?php
+$suggestedEditorNames = [];
+if (is_iterable($this->suggestedEditors) && is_array($this->editors)) {
+    foreach ($this->suggestedEditors as $editorId) {
+        if (array_key_exists($editorId, $this->editors)) {
+            $suggestedEditorNames[] = $this->escape($this->editors[$editorId]->getFullname());
+        }
+    }
+}
+?>
+<?php if (!empty($suggestedEditorNames)) : ?>
 <div class="alert alert-info">
     <p><i>
-            <?= $this->translate(array("L'auteur a suggéré un rédacteur", "L'auteur a suggéré des rédacteurs", count($this->suggestedEditors)))?>
+            <?= $this->translate(array("L'auteur a suggéré un rédacteur", "L'auteur a suggéré des rédacteurs", count($suggestedEditorNames))) ?>
             :
-            <?php
-            $suggestedEditorNames = [];
-            foreach ($this->suggestedEditors as $editorId) {
-                if (is_array($this->editors) && array_key_exists($editorId, $this->editors)) {
-                    $suggestedEditorNames[] = $this->escape($this->editors[$editorId]->getFullname());
-                }
-            }
-            echo implode(', ', $suggestedEditorNames);
-            ?>.</i>
+            <?= implode(', ', $suggestedEditorNames) ?>.</i>
     </p>
 </div>
 <?php endif; ?>
