@@ -4,6 +4,9 @@ const { runPhp } = require('../../helpers/app-cli');
 const {
     submitArxivPaper,
     openPaperManagement,
+    statusPanel,
+    applyDecision,
+    completeReview,
     inviteKnownReviewer,
     inviteNewReviewer,
     createVolume,
@@ -408,6 +411,71 @@ test.describe('Reviewer invitation answer', () => {
             await reviewerPage.goto(invitationPath);
             await expect(reviewerPage.getByText('This invitation has expired.')).toBeVisible();
         });
+    });
+
+    test('an invitation to review a rejected paper can no longer be answered', async ({
+        authorPage,
+        adminPage,
+        reviewerPage,
+        mailpit,
+    }) => {
+        test.setTimeout(180000);
+        let docid;
+        let invitationPath;
+
+        await test.step('the editorial team invites a reviewer, then rejects the paper', async () => {
+            docid = await submitArxivPaper(authorPage, { arxivId: '1603.05027' });
+            invitationPath = await inviteReviewer({ adminPage, mailpit }, docid);
+            await applyDecision(adminPage, docid, 'refusal-modal');
+            await expect(statusPanel(adminPage)).toContainText('Rejected');
+        });
+
+        await test.step('the reviewer is told the paper no longer needs a review, and cannot answer', async () => {
+            await reviewerPage.goto(invitationPath);
+            await expect(
+                reviewerPage.getByText('Thank you but this article has been rejected, it is useless to review it now.')
+            ).toBeVisible();
+            await expect(reviewerPage.locator('#submitaccept')).toHaveCount(0);
+            await expect(reviewerPage.locator('#refuse-button')).toHaveCount(0);
+        });
+    });
+
+    test('an invitation to review a paper under revision can no longer be answered', async ({
+        browser,
+        baseURL,
+        authorPage,
+        adminPage,
+        reviewerPage,
+        mailpit,
+    }) => {
+        test.setTimeout(240000);
+        const suffix = Date.now();
+        const invitedEmail = `e2e-revision-reviewer-${suffix}@example.org`;
+        let invitationPath;
+
+        await test.step('a second reviewer is invited, then the paper is sent back for revision', async () => {
+            const docid = await submitArxivPaper(authorPage, { arxivId: '1605.07146' });
+            // The journal requires a completed review before a revision request
+            await completeReview({ adminPage, reviewerPage, mailpit }, docid);
+            await inviteNewReviewer(adminPage, docid, { email: invitedEmail, lastname: `Revisionreviewer${suffix}` });
+            invitationPath = await receivedInvitationPath(mailpit, docid, invitedEmail);
+            await applyDecision(adminPage, docid, 'minor-revision-modal');
+        });
+
+        const context = await newLoggedOutContext(browser, baseURL);
+        const page = await context.newPage();
+        try {
+            await test.step('the invitee is told the paper no longer needs a review, and cannot answer', async () => {
+                await page.goto(invitationPath);
+                await expect(
+                    page.getByText('Thank you but this article is under revision, it is useless to review it now.')
+                ).toBeVisible();
+                await expect(page.locator('#accept-button')).toHaveCount(0);
+                await expect(page.locator('#refuse-button')).toHaveCount(0);
+            });
+        } finally {
+            await context.close();
+        }
     });
 
     test('a reviewer without an account is offered to create one, and declines without it', async ({
