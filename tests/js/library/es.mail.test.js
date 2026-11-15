@@ -41,7 +41,6 @@ function setUp(toExtra = '') {
             ${field('f', 'bcc')}
             <input type="checkbox" id="copy">
         </form>`;
-    window.__epContactsForm = document.getElementById('f');
     return document.getElementById('f');
 }
 
@@ -57,7 +56,6 @@ function tags(target) {
 
 describe('es.mail recipients list', () => {
     afterEach(() => {
-        delete window.__epContactsForm;
         delete window.sender;
     });
 
@@ -257,6 +255,22 @@ describe('es.mail recipients list', () => {
         expect(tags('cc')).toHaveLength(0);
     });
 
+    test('without a form, a recipient is not added when several mail forms of the page have this field', () => {
+        setUp();
+        const other = document.createElement('form');
+        other.innerHTML =
+            '<ul class="recipient-tags" data-recipient-target="cc"></ul>';
+        document.body.appendChild(other);
+
+        expect(mail.addRecipient('cc', ADA, 'known')).toBe('');
+        expect(
+            mail.addRecipient('cc', ADA, 'known', {
+                form: document.getElementById('f'),
+            })
+        ).not.toBe('');
+        expect(tags('cc')).toHaveLength(1);
+    });
+
     describe('limits of the mail', () => {
         beforeEach(() => {
             limits = 'data-max-recipients="2" data-max-total="3"';
@@ -281,8 +295,15 @@ describe('es.mail recipients list', () => {
                 'Trop de destinataires (2 au maximum).'
             );
 
+            expect(
+                document.getElementById('f-cc').getAttribute('aria-describedby')
+            ).toBe('f-cc-tags-limit');
+
             mail.removeRecipient(tags('cc')[0]);
             expect(document.getElementById('f-cc-tags-limit')).toBeNull();
+            expect(
+                document.getElementById('f-cc').hasAttribute('aria-describedby')
+            ).toBe(false);
             expect(mail.addRecipient('cc', 'c@example.org', 'manual')).not.toBe(
                 ''
             );
@@ -512,6 +533,46 @@ describe('es.mail recipients list', () => {
             expect(form.querySelector('.ep-anonymity-warning')).toBeNull();
         });
 
+        test('the mail is not sent while the warning is shown: the warning gets the focus', () => {
+            const form = setUp();
+            const submit = document.createElement('button');
+            submit.type = 'submit';
+            form.appendChild(submit);
+            const onSubmit = jest.fn(event => event.preventDefault());
+            form.addEventListener('submit', onSubmit);
+            mail.addRecipient('to', AUTHOR, 'known');
+            mail.addRecipient('cc', REVIEWER, 'known');
+
+            submit.click();
+
+            expect(onSubmit).not.toHaveBeenCalled();
+            expect(document.activeElement).toBe(
+                form.querySelector('.ep-anonymity-warning')
+            );
+
+            form.querySelector('.ep-anonymity-warning button').click();
+            submit.click();
+            expect(onSubmit).toHaveBeenCalledTimes(1);
+        });
+
+        test('the shared button of the modal is stopped too', () => {
+            document.body.innerHTML =
+                '<div class="modal"><div class="modal-body"></div><button id="submit-modal" type="button"></button></div>';
+            const modalBody = document.querySelector('.modal-body');
+            const form = document.createElement('form');
+            form.id = 'm';
+            form.innerHTML =
+                '<div class="ep-anonymity-warning" tabindex="-1"></div>';
+            modalBody.appendChild(form);
+            const button = document.getElementById('submit-modal');
+            const onClick = jest.fn();
+            button.addEventListener('click', onClick);
+
+            button.click();
+
+            expect(onClick).not.toHaveBeenCalled();
+        });
+
         test('the warning button moves the reviewers to Bcc', () => {
             const form = setUp();
             mail.addRecipient('to', AUTHOR, 'known');
@@ -590,7 +651,6 @@ describe('es.mail recipients list', () => {
         test('a typed address goes to the field of the input', () => {
             setUp();
             mail.epInitRecipientFields(document);
-            delete window.__epContactsForm;
             const input = document.getElementById('f-bcc');
 
             input.value = 'x@example.org';

@@ -202,7 +202,8 @@ describe('administratemail/send.js in the modal of the paper page', () => {
         expect(global.addRecipient).toHaveBeenCalledWith(
             'bcc',
             window.sender,
-            'known'
+            'known',
+            { form: document.getElementById('send_form') }
         );
         expect(copy.checked).toBe(false);
         delete window.sender;

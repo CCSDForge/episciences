@@ -18,7 +18,7 @@ use Zend_Db_Table_Abstract;
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
 /**
- * PaperDefaultController::areOtherRecipientsRefused(): the mails of the paper status modals get the checks of the
+ * PaperDefaultController::otherRecipientsErrors(): the mails of the paper status modals get the checks of the
  * mailing form (number of recipients, anonymity of the reviewers).
  */
 final class PaperDefaultControllerModalRecipientsCheckTest extends TestCase
@@ -49,6 +49,16 @@ final class PaperDefaultControllerModalRecipientsCheckTest extends TestCase
      */
     private function isRefused(string $to, array $cc, array $bcc = []): bool
     {
+        return $this->errors($to, $cc, $bcc) !== [];
+    }
+
+    /**
+     * @param list<string> $cc
+     * @param list<string> $bcc
+     * @return list<array{message: string, argument: string|int|null}>
+     */
+    private function errors(string $to, array $cc, array $bcc = []): array
+    {
         $user = new Episciences_User();
         $user->setEmail($to);
         $paper = new Episciences_Paper();
@@ -56,7 +66,7 @@ final class PaperDefaultControllerModalRecipientsCheckTest extends TestCase
         $paper->setPaperid(self::PAPERID);
         $paper->setDocid(12);
 
-        $method = new ReflectionMethod(PaperDefaultController::class, 'areOtherRecipientsRefused');
+        $method = new ReflectionMethod(PaperDefaultController::class, 'otherRecipientsErrors');
 
         return $method->invoke($this->controller, $user, $paper, $cc, $bcc);
     }
@@ -83,6 +93,15 @@ final class PaperDefaultControllerModalRecipientsCheckTest extends TestCase
         $this->givenAuthorAndReviewer();
 
         self::assertTrue($this->isRefused('author@example.org', ['Reviewer <reviewer@example.org>']));
+    }
+
+    public function testRefusalGivesTheReasonShownToTheSender(): void
+    {
+        $this->givenAuthorAndReviewer();
+
+        $errors = $this->errors('author@example.org', ['Reviewer <reviewer@example.org>']);
+
+        self::assertSame([RecipientListValidator::ERROR_ANONYMITY], array_column($errors, 'message'));
     }
 
     public function testReviewerInBccIsAccepted(): void

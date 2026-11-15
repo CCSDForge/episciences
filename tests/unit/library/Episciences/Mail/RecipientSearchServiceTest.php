@@ -178,6 +178,30 @@ final class RecipientSearchServiceTest extends TestCase
         self::assertSame([], $this->queries);
     }
 
+    public function testStaffGroupTellsWhenItHasMoreUsersThanTheLimit(): void
+    {
+        $row = static fn(int $uid): array => [
+            'UID' => (string)$uid, 'SCREEN_NAME' => 's', 'FIRSTNAME' => 'F', 'LASTNAME' => 'L' . $uid,
+            'USERNAME' => 'u' . $uid, 'EMAIL' => $uid . '@example.org', 'ROLES' => 'editor',
+        ];
+
+        $group = $this->service([array_map($row, [1, 2, 3])])->staffGroup(self::RVID, self::allUsers(), 'editor', 2);
+
+        self::assertStringContainsString('LIMIT 3', $this->lastQuery(), 'one more row than shown');
+        self::assertTrue($group['truncated']);
+        self::assertSame([1, 2], array_column($group['results'], 'uid'));
+    }
+
+    public function testStaffGroupWithinTheLimitIsComplete(): void
+    {
+        $rows = [['UID' => '1', 'SCREEN_NAME' => 's', 'FIRSTNAME' => 'F', 'LASTNAME' => 'L', 'USERNAME' => 'u', 'EMAIL' => 'a@example.org', 'ROLES' => 'editor']];
+
+        $group = $this->service([$rows])->staffGroup(self::RVID, self::allUsers(), 'editor', 2);
+
+        self::assertFalse($group['truncated']);
+        self::assertCount(1, $group['results']);
+    }
+
     public function testValuesAreReturnedRawWithTheirGroup(): void
     {
         $rows = [[

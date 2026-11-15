@@ -18,10 +18,11 @@ $(document).ready(function () {
         if (!window.sender || !window.sender.uid) {
             return;
         }
-        window.__epContactsForm = sendForm;
         if ($('#copy').prop('checked')) {
             // Refused (limit of recipients reached): the box must not claim a copy is sent
-            if (!addRecipient('bcc', window.sender, 'known')) {
+            if (
+                !addRecipient('bcc', window.sender, 'known', { form: sendForm })
+            ) {
                 $('#copy').prop('checked', false);
             }
         } else {
@@ -34,7 +35,6 @@ $(document).ready(function () {
                 : null;
             removeRecipient(tag);
         }
-        delete window.__epContactsForm;
     });
 
     // The script runs again each time the modal is opened: its handlers replace the former ones
@@ -128,9 +128,10 @@ $(document).ready(function () {
 
 function setDefaultRecipient(sendForm) {
     if (typeof recipient !== 'undefined' && recipient) {
-        window.__epContactsForm = sendForm;
-        addRecipient('to', recipient, 'known', { silent: true });
-        delete window.__epContactsForm;
+        addRecipient('to', recipient, 'known', {
+            silent: true,
+            form: sendForm,
+        });
     }
 }
 

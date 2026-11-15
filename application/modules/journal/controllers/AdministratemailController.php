@@ -660,14 +660,15 @@ class AdministratemailController extends Zend_Controller_Action
         $service = new RecipientSearchService($db);
 
         if ($params['q'] !== '') {
-            $results = $service->search($rvid, $scope, $params['q'], $params['role'], $params['limit'] ?? RecipientSearchService::DEFAULT_LIMIT);
+            $payload = ['results' => $service->search($rvid, $scope, $params['q'], $params['role'], $params['limit'] ?? RecipientSearchService::DEFAULT_LIMIT)];
         } elseif ($params['role'] !== null) {
-            $results = $service->staff($rvid, $scope, $params['role'], $params['limit'] ?? RecipientSearchService::STAFF_LIMIT);
+            // truncated: the group has more users than listed
+            $payload = $service->staffGroup($rvid, $scope, $params['role'], $params['limit'] ?? RecipientSearchService::STAFF_LIMIT);
         } else {
-            $results = $service->paperParticipants($rvid, $scope);
+            $payload = ['results' => $service->paperParticipants($rvid, $scope)];
         }
 
-        $this->sendRecipientsJson(200, ['results' => $results]);
+        $this->sendRecipientsJson(200, $payload);
     }
 
     /**

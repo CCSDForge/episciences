@@ -32,18 +32,6 @@ function epSenderUid() {
         : null;
 }
 
-function epFormOf(element) {
-    if (element && element.closest) {
-        const form = element.closest('form');
-        if (form) {
-            return form;
-        }
-    }
-    return window.__epContactsForm instanceof HTMLElement
-        ? window.__epContactsForm
-        : null;
-}
-
 /** List of the chosen recipients of a field */
 function epTagsContainer(formEl, target) {
     const scope = formEl || document;
@@ -248,7 +236,28 @@ function epRecipientLimitError(formEl, container) {
     return '';
 }
 
-/** Visible message under the recipients of a field, read at once by screen readers */
+/** Adds (or removes) an id in the aria-describedby of an element */
+function epToggleDescribedBy(element, id, isAdded) {
+    if (!element) {
+        return;
+    }
+    const ids = (element.getAttribute('aria-describedby') || '')
+        .split(/\s+/)
+        .filter(value => value && value !== id);
+    if (isAdded) {
+        ids.push(id);
+    }
+    if (ids.length) {
+        element.setAttribute('aria-describedby', ids.join(' '));
+    } else {
+        element.removeAttribute('aria-describedby');
+    }
+}
+
+/**
+ * Visible message under the recipients of a field, read at once by screen readers and describing the input
+ * of the field
+ */
 function epShowLimitError(container, text) {
     const id = container.id + '-limit';
     let error = document.getElementById(id);
@@ -257,9 +266,30 @@ function epShowLimitError(container, text) {
         error.id = id;
         error.className = 'text-danger recipient-limit';
         error.setAttribute('role', 'alert');
+        error.dataset.recipientTarget = container.dataset.recipientTarget || '';
         container.insertAdjacentElement('afterend', error);
     }
     error.textContent = text;
+    epToggleDescribedBy(
+        epRecipientInput(
+            container.closest('form'),
+            container.dataset.recipientTarget
+        ),
+        id,
+        true
+    );
+}
+
+/** A recipient less: the limits are no longer reached */
+function epClearLimitErrors(formEl) {
+    (formEl || document).querySelectorAll('.recipient-limit').forEach(error => {
+        epToggleDescribedBy(
+            epRecipientInput(formEl, error.dataset.recipientTarget),
+            error.id,
+            false
+        );
+        error.remove();
+    });
 }
 
 /** Field (to, cc, bcc) where this address is already chosen in the form, null if none */
@@ -388,20 +418,34 @@ function epSyncCopyCheckbox(formEl, target, recipient, isAdded) {
 }
 
 /**
+ * Form of a recipient: the given one; without it, the page must have a single list for this field (several mail
+ * forms may share a page: guessing would add the recipient to another mail)
+ * @returns {{formEl: (HTMLFormElement|null), isAmbiguous: boolean}}
+ */
+function epRecipientForm(target, options) {
+    const formEl =
+        options && options.form instanceof HTMLElement ? options.form : null;
+    if (formEl) {
+        return { formEl, isAmbiguous: false };
+    }
+    const lists = document.querySelectorAll(
+        '.recipient-tags[data-recipient-target="' + target + '"]'
+    );
+    return { formEl: null, isAmbiguous: lists.length > 1 };
+}
+
+/**
  * add a recipient: tag + hidden input
  * @param {string} target to, cc, bcc
  * @param {Object|string} recipient known user or typed address
  * @param {string} type 'known' for a user of the journal, anything else for a typed address
- * @param {{silent?: boolean}} [options]
+ * @param {{silent?: boolean, form?: HTMLFormElement}} [options] form: the mail form of the recipient
  * @returns {string} id of the tag ('' when the field has no recipients list)
  */
 function addRecipient(target, recipient, type, options) {
-    const formEl =
-        window.__epContactsForm instanceof HTMLElement
-            ? window.__epContactsForm
-            : null;
+    const { formEl, isAmbiguous } = epRecipientForm(target, options);
     const normalized = epNormalizeRecipient(recipient, type);
-    if (!normalized.mail) {
+    if (!normalized.mail || isAmbiguous) {
         return '';
     }
     const container = epTagsContainer(formEl, target);
@@ -500,10 +544,7 @@ function removeRecipient(tagOrJquery, options) {
     const recipient = { uid: tag.dataset.uid || null };
 
     tag.remove();
-    // A recipient less: the limits are no longer reached
-    (formEl || document)
-        .querySelectorAll('.recipient-limit')
-        .forEach(error => error.remove());
+    epClearLimitErrors(formEl);
     epUpdateListLabel(container);
     epSyncCopyCheckbox(formEl, target, recipient, false);
     epCheckAnonymity(formEl);
@@ -648,10 +689,18 @@ function epBuildAnonymityWarning(formEl) {
     warning.className = 'alert alert-warning ep-anonymity-warning';
     warning.setAttribute('role', 'alert');
 
+    // Focused when a sending is refused (see epOnSubmitAttempt)
+    warning.tabIndex = -1;
+
     const text = document.createElement('p');
-    text.textContent = epT(
-        "Un relecteur et un auteur de l'article sont destinataires en À ou Cc : leur identité serait révélée l'un à l'autre."
-    );
+    text.textContent =
+        epT(
+            "Un relecteur et un auteur de l'article sont destinataires en À ou Cc : leur identité serait révélée l'un à l'autre."
+        ) +
+        ' ' +
+        epT(
+            "Le message ne peut pas être envoyé tant qu'ils restent en À ou Cc."
+        );
     warning.appendChild(text);
 
     const button = document.createElement('button');
@@ -683,34 +732,17 @@ function epMoveReviewersToBcc(formEl) {
                     paperRole: tag.dataset.paperRole,
                 };
                 removeRecipient(tag, { silent: true });
-                epWithContactsForm(formEl, () =>
-                    addRecipient(
-                        'bcc',
-                        recipient,
-                        recipient.uid ? 'known' : 'manual',
-                        {
-                            silent: true,
-                        }
-                    )
+                addRecipient(
+                    'bcc',
+                    recipient,
+                    recipient.uid ? 'known' : 'manual',
+                    { silent: true, form: formEl }
                 );
             });
     });
     epAnnounce(formEl, 'bcc', epT('Les relecteurs ont été déplacés en Cci.'));
     if (bccInput) {
         bccInput.focus();
-    }
-}
-
-/** Execute callback with form context set */
-function epWithContactsForm(formEl, cb) {
-    const prev = window.__epContactsForm;
-    if (formEl) {
-        window.__epContactsForm = formEl;
-    }
-    try {
-        return cb();
-    } finally {
-        window.__epContactsForm = prev;
     }
 }
 
@@ -790,8 +822,11 @@ function epInitRecipientFields(scope) {
             EpMailCombobox.attach(input, {
                 docId: epContextDocId(formEl),
                 onSelect: (recipient, options) =>
-                    epWithContactsForm(formEl, () =>
-                        addRecipient(target, recipient, 'known', options)
+                    addRecipient(
+                        target,
+                        recipient,
+                        'known',
+                        Object.assign({}, options, { form: formEl })
                     ),
                 // Already in To, Cc or Bcc: shown as such in the browsable list
                 isChosen: recipient =>
@@ -800,9 +835,7 @@ function epInitRecipientFields(scope) {
                         epNormalizeRecipient(recipient, 'known')
                     ) !== null,
                 onFreeEntry: text =>
-                    epWithContactsForm(formEl, () =>
-                        addRecipient(target, text, 'manual')
-                    ),
+                    addRecipient(target, text, 'manual', { form: formEl }),
                 onBackspaceEmpty: () => {
                     // Focus the last recipient, without removing it: a second Backspace removes it
                     const container = epTagsContainer(formEl, target);
@@ -834,35 +867,59 @@ function initPaperModalRecipientTagsFromHidden() {
                 return;
             }
             epWriteRecipients(hidden, []);
-            epWithContactsForm(form, () => {
-                recipients.forEach(r => {
-                    if (!r || !r.value) {
-                        return;
-                    }
-                    if (r.uid) {
-                        const typed = epNormalizeRecipient(r.value, 'manual');
-                        addRecipient(
-                            target,
-                            {
-                                uid: r.uid,
-                                fullname: typed.name,
-                                mail: typed.mail,
-                                paperRole: r.paperRole,
-                            },
-                            'known',
-                            { silent: true }
-                        );
-                    } else {
-                        addRecipient(target, r.value, 'manual', {
-                            silent: true,
-                        });
-                    }
-                });
+            recipients.forEach(r => {
+                if (!r || !r.value) {
+                    return;
+                }
+                if (r.uid) {
+                    const typed = epNormalizeRecipient(r.value, 'manual');
+                    addRecipient(
+                        target,
+                        {
+                            uid: r.uid,
+                            fullname: typed.name,
+                            mail: typed.mail,
+                            paperRole: r.paperRole,
+                        },
+                        'known',
+                        { silent: true, form }
+                    );
+                } else {
+                    addRecipient(target, r.value, 'manual', {
+                        silent: true,
+                        form,
+                    });
+                }
             });
         });
     });
 }
 
+/**
+ * A mail breaking the anonymity of the reviewers is not sent: the submit button of its form, or the shared button
+ * of the modal showing it, is stopped before its own handlers run (capture phase), and the warning is focused
+ */
+function epOnSubmitAttempt(event) {
+    const button = event.target.closest
+        ? event.target.closest(
+              '#submit-modal, button[type="submit"], input[type="submit"]'
+          )
+        : null;
+    if (!button) {
+        return;
+    }
+    const scope = button.form || button.closest('.modal');
+    const warning = scope ? scope.querySelector('.ep-anonymity-warning') : null;
+    if (!warning) {
+        return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    warning.focus();
+}
+
+document.addEventListener('click', epOnSubmitAttempt, true);
 document.addEventListener('click', epOnTagClick);
 document.addEventListener('keydown', epOnTagKeyDown);
 
@@ -876,9 +933,9 @@ if (typeof $ === 'function') {
                 $('input#coAuthorsInfo').each(function () {
                     // The form of these hidden inputs: other mail forms of the page have a Cc field too
                     const coAuthor = JSON.parse(this.value);
-                    epWithContactsForm(this.closest('form'), () =>
-                        addRecipient('cc', coAuthor, 'known')
-                    );
+                    addRecipient('cc', coAuthor, 'known', {
+                        form: this.closest('form'),
+                    });
                 });
             });
         });
@@ -1036,10 +1093,10 @@ if (typeof module !== 'undefined' && module.exports) {
         epContextDocId,
         epInitRecipientFields,
         epNormalizeRecipient,
+        epOnSubmitAttempt,
         epRemoveRecipientByEmail,
         epSendModalMail,
         epTagsContainer,
-        epWithContactsForm,
         initPaperModalRecipientTagsFromHidden,
     };
 }

@@ -308,10 +308,8 @@ $(document).ready(function () {
         if (!form) {
             return;
         }
-        epWithContactsForm(form, () => {
-            coAuthorsEmails($modal).forEach(email => {
-                addRecipient('cc', email, 'manual', { silent: true });
-            });
+        coAuthorsEmails($modal).forEach(email => {
+            addRecipient('cc', email, 'manual', { silent: true, form });
         });
     }
 

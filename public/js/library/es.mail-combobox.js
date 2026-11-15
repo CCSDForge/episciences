@@ -83,7 +83,7 @@
 
     /**
      * @param {{query?: string, role?: string, docId?: (string|number|null), signal?: AbortSignal}} params
-     * @returns {Promise<Array<Object>>}
+     * @returns {Promise<Array<Object>>} the array has a "truncated" property for the editorial groups
      */
     async function fetchRecipients(params) {
         const url = new URL(ENDPOINT, root.location.origin);
@@ -111,7 +111,10 @@
             throw error;
         }
         const data = await response.json();
-        return Array.isArray(data && data.results) ? data.results : [];
+        const results = Array.isArray(data && data.results) ? data.results : [];
+        // Group listed partially (more users than the server returns)
+        results.truncated = Boolean(data && data.truncated === true);
+        return results;
     }
 
     /**
@@ -490,16 +493,45 @@
         function renderGroup() {
             const free = currentGroup.members.filter(r => !isChosen(r));
             const entries = [{ kind: 'back' }];
-            if (free.length > 1) {
+            // A partial group is never added "whole"
+            if (free.length > 1 && !currentGroup.truncated) {
                 entries.push({ kind: 'all', recipients: free });
             }
             renderSections([
                 {
                     key: 'members',
-                    label: t(currentGroup.label),
+                    label: currentGroup.truncated
+                        ? format(
+                              t('%s : les %d premiers'),
+                              t(currentGroup.label),
+                              currentGroup.members.length
+                          )
+                        : t(currentGroup.label),
                     entries: entries.concat(userEntries(currentGroup.members)),
                 },
             ]);
+        }
+
+        function announceGroup() {
+            const label = t(currentGroup.label);
+            const count = currentGroup.members.length;
+            if (currentGroup.truncated) {
+                announce(
+                    format(
+                        t(
+                            '%s : les %d premiers utilisateurs, saisissez un nom pour trouver les autres'
+                        ),
+                        label,
+                        count
+                    )
+                );
+                return;
+            }
+            announce(
+                count
+                    ? format(t('%s : %d utilisateurs'), label, count)
+                    : format(t('%s : aucun utilisateur'), label)
+            );
         }
 
         /** Shows the current view again (the chosen recipients changed), keeping the active option */
@@ -526,8 +558,8 @@
                     ? new AbortController()
                     : null;
             const current = ++requestId;
+            // Busy state for assistive technologies, without announcing every request: only results are read
             listbox.setAttribute('aria-busy', 'true');
-            announce(t('Recherche en cours…'));
             try {
                 const items = await fetcher(
                     Object.assign({ docId: options.docId }, params, {
@@ -597,15 +629,16 @@
                 return;
             }
             const items = response.items;
-            currentGroup = { role, label, members: items };
+            currentGroup = {
+                role,
+                label,
+                members: items,
+                truncated: items.truncated === true,
+            };
             renderGroup();
             open();
             setActive(0);
-            announce(
-                items.length
-                    ? format(t('%s : %d utilisateurs'), t(label), items.length)
-                    : format(t('%s : aucun utilisateur'), t(label))
-            );
+            announceGroup();
         }
 
         async function search(query) {
@@ -739,6 +772,10 @@
         }
 
         function onKeyDown(event) {
+            // Keys of an input method composition (e.g. Enter choosing a character) belong to it
+            if (event.isComposing || event.keyCode === 229) {
+                return;
+            }
             const hasText = input.value.trim() !== '';
 
             switch (event.key) {
@@ -834,7 +871,17 @@
                 return;
             }
             event.preventDefault();
-            commitFreeText(input.value + data);
+            // The pasted text replaces the selection, at the caret, as a plain paste would do
+            const value = input.value;
+            const start =
+                typeof input.selectionStart === 'number'
+                    ? input.selectionStart
+                    : value.length;
+            const end =
+                typeof input.selectionEnd === 'number'
+                    ? input.selectionEnd
+                    : value.length;
+            commitFreeText(value.slice(0, start) + data + value.slice(end));
         }
 
         /**

@@ -13,6 +13,9 @@ return [
     'week' => 'semaine(s)',
     'month' => 'mois',
 
+    // Mail recipients: French name of the Bcc field
+    "Bcc" => "Cci",
+
     // Roles
     'guest' => 'Invité',
     'member' => 'Membre',

@@ -76,16 +76,33 @@ final class RecipientSearchService implements RecipientDirectory
      */
     public function staff(int $rvid, RecipientScope $scope, string $staffRole, int $limit = self::STAFF_LIMIT): array
     {
+        return $this->staffGroup($rvid, $scope, $staffRole, $limit)['results'];
+    }
+
+    /**
+     * Users of an editorial role, without text query, and whether the group has more users than the limit
+     * (the form then tells that the list is incomplete, and does not offer to add the whole group)
+     *
+     * @return array{results: list<array{uid: int, fullname: string, username: string, mail: string, roles: list<string>, group: string, paperRole: ?string}>, truncated: bool}
+     */
+    public function staffGroup(int $rvid, RecipientScope $scope, string $staffRole, int $limit = self::STAFF_LIMIT): array
+    {
         if (!in_array($staffRole, self::BROWSEABLE_STAFF_ROLES, true)) {
-            return [];
+            return ['results' => [], 'truncated' => false];
         }
 
+        $limit = self::boundLimit($limit);
         $participants = $this->contextParticipants($rvid, $scope);
+        // One more row than shown: tells whether the group is complete
         $select = $this->baseQuery($rvid, array_keys($participants))
             ->where('u.UID IN ?', $this->roleQuery($rvid, [$staffRole]))
-            ->limit(self::boundLimit($limit));
+            ->limit($limit + 1);
+        $rows = $this->db->fetchAll($select);
 
-        return $this->toSuggestions($this->db->fetchAll($select), $participants);
+        return [
+            'results' => $this->toSuggestions(array_slice($rows, 0, $limit), $participants),
+            'truncated' => count($rows) > $limit,
+        ];
     }
 
     /**

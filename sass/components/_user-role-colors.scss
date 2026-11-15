@@ -1,13 +1,11 @@
 // Role tags (users list, mail recipients...): the text keeps a 4.5:1 contrast on its background (WCAG 1.4.3).
 // Light backgrounds take a dark text, the others are dark enough for the white text of .label.
-$role-dark-text: #2c2c2c;
-
 .role-root, .role-epiadmin  {
   background-color: $red;
 }
 
 .role-chief_editor {
-  background-color: #d83b00;
+  background-color: $role-chief-editor-bg;
 }
 
 .role-administrator {
@@ -16,11 +14,11 @@ $role-dark-text: #2c2c2c;
 }
 
 .role-editor {
-  background-color: #b05f00;
+  background-color: $role-editor-bg;
 }
 
 .role-webmaster {
-  background-color: #008824;
+  background-color: $role-webmaster-bg;
 }
 
 .role-reviewer {

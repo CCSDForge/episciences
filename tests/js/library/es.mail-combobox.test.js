@@ -458,6 +458,28 @@ describe('es.mail-combobox', () => {
             expect(combobox.listbox.hidden).toBe(false);
         });
 
+        test('a group listed partially says so and is not offered whole', async () => {
+            const partial = [EDITOR, EDITOR_2];
+            partial.truncated = true;
+            const fetcher = fetcherFor({ editor: partial });
+            const { input, combobox } = setUp(fetcher);
+            input.click();
+            await settle();
+
+            clickOption(combobox, 'Rédacteurs');
+            await settle();
+
+            expect(groupLabels(combobox)).toEqual([
+                'Rédacteurs : les 2 premiers',
+            ]);
+            expect(optionTexts(combobox)).not.toContain(
+                'Ajouter tout le groupe (2)'
+            );
+            expect(combobox.status.textContent).toBe(
+                'Rédacteurs : les 2 premiers utilisateurs, saisissez un nom pour trouver les autres'
+            );
+        });
+
         test('"Back to the groups" shows the participants and the groups again', async () => {
             const fetcher = fetcherFor({ webmaster: [EDITOR] });
             const { input, combobox } = setUp(fetcher);
@@ -680,6 +702,41 @@ describe('es.mail-combobox', () => {
             expect(input.getAttribute('aria-invalid')).toBe('true');
         });
 
+        test('a paste replaces the selection, at the caret', () => {
+            const { input, callbacks } = setUp(jest.fn());
+            input.value = 'a@example.org, XX';
+            input.setSelectionRange(15, 17);
+            const event = new Event('paste', {
+                bubbles: true,
+                cancelable: true,
+            });
+            event.clipboardData = { getData: () => 'b@example.org;' };
+
+            input.dispatchEvent(event);
+
+            expect(callbacks.onFreeEntry.mock.calls).toEqual([
+                ['a@example.org'],
+                ['b@example.org'],
+            ]);
+            expect(input.value).toBe('');
+        });
+
+        test('Enter during an input method composition is left to it', () => {
+            const { input, callbacks } = setUp(jest.fn());
+            input.value = 'a@example.org';
+            const event = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                isComposing: true,
+                bubbles: true,
+                cancelable: true,
+            });
+
+            input.dispatchEvent(event);
+
+            expect(event.defaultPrevented).toBe(false);
+            expect(callbacks.onFreeEntry).not.toHaveBeenCalled();
+        });
+
         test.each([['blur'], ['Tab']])(
             'a name typed without choosing a suggestion stays, without error (%s)',
             way => {
@@ -738,7 +795,8 @@ describe('es.mail-combobox', () => {
                 role: '',
             });
 
-            expect(results).toEqual([ADA]);
+            expect([...results]).toEqual([ADA]);
+            expect(results.truncated).toBe(false);
             const [url, options] = global.fetch.mock.calls[0];
             const parsed = new URL(url);
             expect(parsed.pathname).toBe('/administratemail/getrecipients');

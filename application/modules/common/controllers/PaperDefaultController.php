@@ -167,10 +167,13 @@ class PaperDefaultController extends DefaultController
         $cc = $this->extractModalRecipientEmails($data, 'cc');
         $bcc = $this->extractModalRecipientEmails($data, 'bcc');
 
-        if ($this->areOtherRecipientsRefused($submitter, $paper, $cc, $bcc)) {
-            // The form refuses these recipients before sending: the main recipient is still notified, alone
+        $otherRecipientsErrors = $this->otherRecipientsErrors($submitter, $paper, $cc, $bcc);
+
+        if ($otherRecipientsErrors !== []) {
+            // The status is already changed: the main recipient is still notified, alone, and the sender is told
             $cc = [];
             $bcc = [];
+            $this->warnOtherRecipientsDropped($otherRecipientsErrors);
         }
 
         $this->addOtherRecipients($mail, $cc, $bcc);
@@ -198,11 +201,12 @@ class PaperDefaultController extends DefaultController
      *
      * @param list<string> $cc
      * @param list<string> $bcc
+     * @return list<array{message: string, argument: string|int|null}> errors of RecipientListValidator, [] when accepted
      */
-    protected function areOtherRecipientsRefused(Episciences_User $to, Episciences_Paper $paper, array $cc, array $bcc): bool
+    protected function otherRecipientsErrors(Episciences_User $to, Episciences_Paper $paper, array $cc, array $bcc): array
     {
         if ($cc === [] && $bcc === []) {
-            return false;
+            return [];
         }
 
         $toJson = static fn(array $emails): string => json_encode(array_map(
@@ -231,7 +235,26 @@ class PaperDefaultController extends DefaultController
             ));
         }
 
-        return $result['isDetectedErrors'];
+        return $result['errors'];
+    }
+
+    /**
+     * Tells the sender that the copies (Cc, Bcc) of the mail were not sent, and why (shown after the redirection)
+     * @param list<array{message: string, argument: string|int|null}> $errors
+     */
+    private function warnOtherRecipientsDropped(array $errors): void
+    {
+        $message = '<p><strong>' . $this->view->escape($this->view->translate(
+            "Le message a été envoyé au destinataire principal seulement : les copies (Cc, Cci) n'ont pas été envoyées."
+        )) . '</strong></p>';
+
+        foreach ($errors as $error) {
+            $text = $this->view->translate($error['message']);
+            $text = $error['argument'] === null ? $text : sprintf($text, $error['argument']);
+            $message .= '<div>' . $this->view->escape($text) . '</div>';
+        }
+
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_WARNING)->addMessage($message);
     }
 
     /**

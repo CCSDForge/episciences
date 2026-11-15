@@ -173,6 +173,14 @@ button.remove-recipient {
         background-color: $almost-white;
         box-shadow: inset 3px 0 0 $recipient-focus-color;
     }
+
+    // Forced colors (Windows high contrast) drop the box-shadow: the active option keeps a system outline
+    @media (forced-colors: active) {
+        &[aria-selected='true'] {
+            outline: 2px solid Highlight;
+            outline-offset: -2px;
+        }
+    }
 }
 
 // Already in To, Cc or Bcc: still reachable, but cannot be chosen again
@@ -242,4 +250,10 @@ button.remove-recipient {
 
 .ep-anonymity-warning p {
     margin-bottom: 8px;
+}
+
+// Focused when the sending is refused: the focus stays visible
+.ep-anonymity-warning:focus {
+    outline: 2px solid $recipient-focus-color;
+    outline-offset: 2px;
 }
