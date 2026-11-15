@@ -1,0 +1,51 @@
+<?php
+/**
+ * One input of the proceedings fieldset (volume/proceedings_fieldset.phtml): label, input,
+ * help text and server error, linked for assistive technologies.
+ *
+ * @var Zend_View $this
+ * @var Zend_Form_Element $element
+ * @var string $label visible label (untranslated)
+ * @var string $labelClass classes of the label
+ * @var string|null $inputColumn grid column wrapping the input, its help and its error (horizontal rows)
+ * @var string $type input type
+ * @var bool $required required for proceedings
+ * @var bool $enabled the proceedings fields are shown
+ * @var string|null $help help text (untranslated)
+ * @var array<string, string> $attributes extra input attributes
+ */
+$element = $this->element;
+$name = $element->getName();
+$messages = $element->getMessages();
+$describedBy = [];
+if ($this->help !== null) {
+    $describedBy[] = $name . '-help';
+}
+if ($messages !== []) {
+    $describedBy[] = $name . '-error';
+}
+?>
+<label for="<?= $this->escape($name) ?>" class="<?= $this->escape($this->labelClass . ($this->required ? ' required' : ' optional')) ?>">
+    <?= $this->escape($this->translate($this->label)) ?>
+</label>
+<?php if ($this->inputColumn !== null) : ?><div class="<?= $this->escape($this->inputColumn) ?>"><?php endif; ?>
+<input type="<?= $this->escape($this->type) ?>"
+       id="<?= $this->escape($name) ?>"
+       name="<?= $this->escape($name) ?>"
+       value="<?= $this->escape((string)$element->getValue()) ?>"
+       class="form-control"
+       <?php foreach ($this->attributes ?? [] as $attribute => $value) : ?>
+           <?= $this->escape($attribute) ?>="<?= $this->escape($value) ?>"
+       <?php endforeach; ?>
+       <?= $this->required ? 'data-proceedings-required' : '' ?>
+       <?= $this->required && $this->enabled ? 'required aria-required="true"' : '' ?>
+       <?= $this->enabled ? '' : 'disabled' ?>
+       <?= $describedBy !== [] ? 'aria-describedby="' . $this->escape(implode(' ', $describedBy)) . '"' : '' ?>
+       <?= $messages !== [] ? 'aria-invalid="true"' : '' ?>>
+<?php if ($this->help !== null) : ?>
+    <p id="<?= $this->escape($name) ?>-help" class="help-block"><?= $this->escape($this->translate($this->help)) ?></p>
+<?php endif; ?>
+<?php if ($messages !== []) : ?>
+    <p id="<?= $this->escape($name) ?>-error" class="help-block"><?= $this->escape(implode(' ', $messages)) ?></p>
+<?php endif; ?>
+<?php if ($this->inputColumn !== null) : ?></div><?php endif; ?>

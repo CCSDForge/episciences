@@ -1,404 +1,299 @@
 /**
- * Conference Proceeding Module
+ * Proceedings part of the volume form (volume/proceedings_fieldset.phtml and
+ * volume/doi_proceedings_row.phtml).
  *
- * Manages the display and behavior of conference-related fields in volume forms.
- * Handles the "is proceeding" checkbox toggle, DOI request functionality,
- * and dynamic field requirements.
+ * - The "Actes de conférences" checkbox shows the conference fieldset; hidden inputs are disabled
+ *   so that they are neither posted nor able to block the submit.
+ * - The DOI suffix shows the resulting DOI in a live region; saving the form queues the deposit.
+ * - A DOI sent to Crossref (status requested or public) is read-only.
+ * - Client checks mirror Episciences\Volume\ProceedingsValidator, the server stays the reference.
  *
  * @module ConferenceProceeding
  */
-const ConferenceProceeding = {
-    // Store original title label text
-    originalTitleLabel: '',
+const ConferenceProceeding = (() => {
+    const CHECKBOX_ID = 'is_proceeding';
+    const FIELDSET_ID = 'conference-fields';
+    const DOI_GROUP_ID = 'conference_doi_group';
+    const DOI_INPUT_ID = 'conference_proceedings_doi';
+    const DOI_PREVIEW_ID = 'conference_proceedings_doi-preview';
+    const START_ID = 'conference_start';
+    const END_ID = 'conference_end';
+    const ERROR_SUMMARY_ID = 'form-error-summary';
+    const LOCKED_STATUSES = ['requested', 'public'];
+    const SUFFIX_PATTERN = /^[A-Za-z0-9._-]{1,20}$/;
 
     /**
-     * Sets a field as required and updates its label styling
+     * @param {Document|Element} root
+     * @param {string} id
+     * @returns {HTMLElement|null}
+     */
+    function byId(root, id) {
+        return root.querySelector(`#${CSS.escape(id)}`);
+    }
+
+    /**
+     * @param {string} prefix e.g. "10.46298/mbj.proceedings."
+     * @param {string} suffix
+     * @returns {string} the DOI, empty without suffix
+     */
+    function buildDoi(prefix, suffix) {
+        const trimmed = (suffix || '').trim();
+        return trimmed === '' ? '' : `${prefix || ''}${trimmed}`;
+    }
+
+    /**
+     * @param {string} suffix
+     * @returns {boolean}
+     */
+    function isSuffixValid(suffix) {
+        return SUFFIX_PATTERN.test(suffix);
+    }
+
+    /**
+     * @param {string} status
+     * @returns {boolean} the DOI was sent to Crossref and can no longer change
+     */
+    function isLocked(status) {
+        return LOCKED_STATUSES.includes(status);
+    }
+
+    /**
+     * Show or hide the conference fields; hidden inputs are disabled and never required.
      *
-     * @param {string} fieldName - The name/id of the field to make required
+     * @param {Document|Element} root
+     * @param {boolean} isProceeding
      */
-    setRequiredInput(fieldName) {
-        const field = document.getElementById(fieldName);
-        const label = document.querySelector(
-            `label[for='${CSS.escape(fieldName)}']`
-        );
-
-        if (field) {
-            field.setAttribute('required', 'required');
-        }
-        if (label) {
-            label.classList.remove('optional');
-            label.classList.add('required');
-        }
-    },
-
-    /**
-     * Removes required status from a field and updates its label styling
-     *
-     * @param {string} fieldName - The name/id of the field to make optional
-     */
-    unsetRequiredInput(fieldName) {
-        const field = document.getElementById(fieldName);
-        const label = document.querySelector(
-            `label[for='${CSS.escape(fieldName)}']`
-        );
-
-        if (field) {
-            field.removeAttribute('required');
-        }
-        if (label) {
-            label.classList.remove('required');
-            label.classList.add('optional');
-        }
-    },
-
-    /**
-     * Adds DOI prefix to the conference proceedings DOI field placeholder and label
-     */
-    addDoiPrefix() {
-        const journalPrefixDoi = document.getElementById('journalprefixDoi');
-        const proceedingsDoiField = document.getElementById(
-            'conference_proceedings_doi'
-        );
-        const proceedingsDoiLabel = document.querySelector(
-            "label[for='conference_proceedings_doi']"
-        );
-
-        if (journalPrefixDoi && proceedingsDoiField) {
-            const prefix = journalPrefixDoi.value;
-            proceedingsDoiField.setAttribute('placeholder', prefix);
-
-            if (proceedingsDoiLabel) {
-                proceedingsDoiLabel.textContent = `${proceedingsDoiLabel.textContent} ${prefix}`;
-            }
-        }
-    },
-
-    /**
-     * Shows all conference-related fields
-     */
-    showConferenceFields() {
-        const conferenceFields = document.querySelectorAll(
-            'div[id^="conference_"]'
-        );
-        conferenceFields.forEach(field => {
-            field.style.display = '';
-        });
-    },
-
-    /**
-     * Hides all conference-related fields
-     */
-    hideConferenceFields() {
-        const conferenceFields = document.querySelectorAll(
-            'div[id^="conference_"]'
-        );
-        conferenceFields.forEach(field => {
-            field.style.display = 'none';
-        });
-    },
-
-    /**
-     * Updates the title label based on proceeding status
-     *
-     * @param {boolean} isProceeding - Whether the volume is a proceeding
-     */
-    updateTitleLabel(isProceeding) {
-        const titleLabel = document.querySelector('div#title-element > label');
-        const translateTextInput = document.getElementById('translate_text');
-
-        if (!titleLabel) return;
-
-        if (isProceeding && translateTextInput) {
-            titleLabel.textContent = translateTextInput.value;
-        } else {
-            titleLabel.textContent = this.originalTitleLabel;
-        }
-    },
-
-    /**
-     * Sets conference fields as required
-     */
-    setConferenceFieldsRequired() {
-        this.setRequiredInput('conference_name');
-        this.setRequiredInput('conference_start-id');
-        this.setRequiredInput('conference_end-id');
-    },
-
-    /**
-     * Sets conference fields as optional
-     */
-    setConferenceFieldsOptional() {
-        this.unsetRequiredInput('conference_name');
-        this.unsetRequiredInput('conference_start');
-        this.unsetRequiredInput('conference_end');
-    },
-
-    /**
-     * Handles the proceeding checkbox change event
-     */
-    handleProceedingChange() {
-        const isProceedingCheckbox = document.getElementById('is_proceeding');
-        if (!isProceedingCheckbox) return;
-
-        const isChecked = isProceedingCheckbox.checked;
-
-        if (isChecked) {
-            this.showConferenceFields();
-            this.updateTitleLabel(true);
-            this.setConferenceFieldsRequired();
-        } else {
-            this.hideConferenceFields();
-            this.updateTitleLabel(false);
-            this.setConferenceFieldsOptional();
-        }
-    },
-
-    /**
-     * Updates the request DOI button state based on DOI field value
-     */
-    updateRequestButtonState() {
-        const doiField = document.getElementById('conference_proceedings_doi');
-        const requestButton = document.getElementById(
-            'btn-request-proceedings'
-        );
-        const displayDoi = document.getElementById('display-doi-proceeding');
-
-        if (!doiField || !requestButton) return;
-
-        if (doiField.value.length === 0) {
-            requestButton.disabled = true;
-            if (displayDoi) {
-                displayDoi.textContent = '';
-            }
-        } else {
-            requestButton.disabled = false;
-        }
-    },
-
-    /**
-     * Displays the DOI request confirmation
-     */
-    displayDoiRequest() {
-        const prefixInput = document.getElementById(
-            'doi_proceedings_prefix_input'
-        );
-        const doiField = document.getElementById('conference_proceedings_doi');
-        const translateTextDoi = document.getElementById(
-            'translate_text_doi_request'
-        );
-        const requestButton = document.getElementById(
-            'btn-request-proceedings'
-        );
-        const cancelButton = document.getElementById(
-            'btn-cancel-request-proceedings'
-        );
-
-        if (!prefixInput || !doiField) return;
-
-        const prefix = prefixInput.value;
-        const doiSuffix = doiField.value;
-        const requestText = translateTextDoi
-            ? translateTextDoi.value
-            : 'DOI request';
-
-        let displayDoi = document.getElementById('display-doi-proceeding');
-
-        if (!displayDoi) {
-            // Create display elements
-            const container = document.createElement('div');
-            container.className = 'col-sm-3 d-inline-block';
-
-            displayDoi = document.createElement('em');
-            displayDoi.id = 'display-doi-proceeding';
-            displayDoi.style.paddingTop = '2%';
-            displayDoi.style.display = 'inline-block';
-            displayDoi.style.verticalAlign = 'middle';
-
-            container.appendChild(displayDoi);
-            requestButton?.insertAdjacentElement('afterend', container);
-        }
-
-        displayDoi.textContent = `${requestText} -> ${prefix}${doiSuffix}`;
-
-        // Update button states and field
-        if (doiField) doiField.readOnly = true;
-        if (requestButton) requestButton.style.display = 'none';
-        if (cancelButton) cancelButton.style.display = '';
-    },
-
-    /**
-     * Cancels the DOI request
-     */
-    cancelDoiRequest() {
-        const displayDoi = document.getElementById('display-doi-proceeding');
-        const doiField = document.getElementById('conference_proceedings_doi');
-        const requestButton = document.getElementById(
-            'btn-request-proceedings'
-        );
-        const cancelButton = document.getElementById(
-            'btn-cancel-request-proceedings'
-        );
-
-        if (displayDoi?.parentElement) {
-            displayDoi.parentElement.remove();
-        }
-
-        if (requestButton) requestButton.style.display = '';
-        if (cancelButton) cancelButton.style.display = 'none';
-        if (doiField) doiField.readOnly = false;
-    },
-
-    /**
-     * Handles DOI status display for already assigned/pending DOIs
-     */
-    handleExistingDoi() {
-        const doiStatus = document.getElementById('doi_status');
-        if (!doiStatus) return;
-
-        const status = doiStatus.value;
-        if (status === 'assigned' || status === 'not-assigned') {
+    function toggleConferenceFields(root, isProceeding) {
+        const fieldset = byId(root, FIELDSET_ID);
+        if (!fieldset) {
             return;
         }
 
-        const prefixInput = document.getElementById(
-            'doi_proceedings_prefix_input'
-        );
-        const doiField = document.getElementById('conference_proceedings_doi');
-        const requestButton = document.getElementById(
-            'btn-request-proceedings'
-        );
-
-        if (!prefixInput || !doiField) return;
-
-        const prefix = prefixInput.value;
-        const doiSuffix = doiField.value;
-
-        // Remove the input field
-        doiField.remove();
-
-        // Create display element
-        const container = document.createElement('div');
-        const displayDoi = document.createElement('em');
-        displayDoi.id = 'display-doi-proceeding';
-        displayDoi.textContent = `${prefix}${doiSuffix}`;
-
-        container.appendChild(displayDoi);
-        prefixInput.replaceWith(container);
-
-        // Remove request button
-        if (requestButton) {
-            requestButton.remove();
-        }
-    },
-
-    /**
-     * Initializes the initial state based on proceeding checkbox
-     */
-    initializeState() {
-        const titleLabel = document.querySelector('div#title-element > label');
-        if (titleLabel) {
-            this.originalTitleLabel = titleLabel.textContent;
-        }
-
-        const isProceedingCheckbox = document.getElementById('is_proceeding');
-        if (!isProceedingCheckbox) return;
-
-        if (isProceedingCheckbox.checked) {
-            this.updateTitleLabel(true);
-            this.showConferenceFields();
-            this.setConferenceFieldsRequired();
-        } else {
-            this.hideConferenceFields();
-        }
-    },
-
-    /**
-     * Initializes button states
-     */
-    initializeButtons() {
-        const doiField = document.getElementById('conference_proceedings_doi');
-        const requestButton = document.getElementById(
-            'btn-request-proceedings'
-        );
-        const cancelButton = document.getElementById(
-            'btn-cancel-request-proceedings'
-        );
-
-        if (doiField && requestButton) {
-            if (doiField.value === '') {
-                requestButton.disabled = true;
+        fieldset.hidden = !isProceeding;
+        fieldset.querySelectorAll('input').forEach(input => {
+            input.disabled = !isProceeding;
+            if (input.hasAttribute('data-proceedings-required')) {
+                input.required = isProceeding;
+                input.setAttribute('aria-required', String(isProceeding));
             }
-        }
-
-        if (cancelButton && doiField?.value === '') {
-            cancelButton.style.display = 'none';
-        }
-    },
-
-    /**
-     * Attaches all event listeners
-     */
-    attachEventListeners() {
-        // Proceeding checkbox change
-        const isProceedingCheckbox = document.getElementById('is_proceeding');
-        if (isProceedingCheckbox) {
-            isProceedingCheckbox.addEventListener('click', () => {
-                this.handleProceedingChange();
-            });
-        }
-
-        // DOI field input change
-        const doiField = document.getElementById('conference_proceedings_doi');
-        if (doiField) {
-            doiField.addEventListener('keyup', () => {
-                this.updateRequestButtonState();
-            });
-            doiField.addEventListener('change', () => {
-                this.updateRequestButtonState();
-            });
-        }
-
-        // Request DOI button
-        const requestButton = document.getElementById(
-            'btn-request-proceedings'
-        );
-        if (requestButton) {
-            requestButton.addEventListener('click', () => {
-                this.displayDoiRequest();
-            });
-        }
-
-        // Cancel DOI request button
-        const cancelButton = document.getElementById(
-            'btn-cancel-request-proceedings'
-        );
-        if (cancelButton) {
-            cancelButton.addEventListener('click', () => {
-                this.cancelDoiRequest();
-            });
-        }
-    },
-
-    /**
-     * Initializes the module
-     */
-    init() {
-        console.log('ConferenceProceeding: Initialized');
-
-        this.initializeState();
-        this.addDoiPrefix();
-        this.initializeButtons();
-        this.handleExistingDoi();
-        this.attachEventListeners();
-    },
-};
-
-// Auto-initialize when DOM is ready (only in browser, not in tests)
-if (typeof document !== 'undefined') {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            ConferenceProceeding.init();
         });
+
+        const checkbox = byId(root, CHECKBOX_ID);
+        if (checkbox) {
+            checkbox.setAttribute('aria-expanded', String(isProceeding));
+        }
+    }
+
+    /**
+     * Refresh the resulting DOI shown under the suffix (live region).
+     *
+     * @param {Document|Element} root
+     */
+    function updateDoiPreview(root) {
+        const group = byId(root, DOI_GROUP_ID);
+        const input = byId(root, DOI_INPUT_ID);
+        const preview = byId(root, DOI_PREVIEW_ID);
+        if (!group || !input || !preview || isLocked(group.dataset.status)) {
+            return;
+        }
+
+        const doi = buildDoi(group.dataset.prefix, input.value);
+        preview.textContent =
+            doi === ''
+                ? group.dataset.textEmpty || ''
+                : (group.dataset.textPreview || '%s').replace('%s', doi);
+    }
+
+    /**
+     * @param {HTMLElement} input
+     * @param {string} id
+     * @param {boolean} add
+     */
+    function toggleDescribedBy(input, id, add) {
+        const ids = (input.getAttribute('aria-describedby') || '')
+            .split(/\s+/)
+            .filter(value => value !== '' && value !== id);
+        if (add) {
+            ids.push(id);
+        }
+        if (ids.length > 0) {
+            input.setAttribute('aria-describedby', ids.join(' '));
+        } else {
+            input.removeAttribute('aria-describedby');
+        }
+    }
+
+    /**
+     * Error shown by a client check, next to the field, with the server message.
+     *
+     * @param {HTMLElement} input
+     * @param {string} message empty to clear the error set by a client check
+     */
+    function setClientError(input, message) {
+        const errorId = `${input.id}-error`;
+        // Paired fields carry their error state on their own column
+        const group =
+            input.closest('[id$="-element"]') || input.closest('.form-group');
+        const container = input.closest('.input-group') || input;
+        let error = input.ownerDocument.getElementById(errorId);
+
+        if (message === '') {
+            if (error && error.hasAttribute('data-client-error')) {
+                error.remove();
+                input.removeAttribute('aria-invalid');
+                group?.classList.remove('has-error');
+                toggleDescribedBy(input, errorId, false);
+            }
+            return;
+        }
+
+        if (!error) {
+            error = document.createElement('p');
+            error.id = errorId;
+            error.className = 'help-block';
+            container.insertAdjacentElement('afterend', error);
+        }
+        error.setAttribute('data-client-error', '');
+        error.textContent = message;
+        input.setAttribute('aria-invalid', 'true');
+        group?.classList.add('has-error');
+        toggleDescribedBy(input, errorId, true);
+    }
+
+    /**
+     * @param {Document|Element} root
+     */
+    function validateDoiSuffix(root) {
+        const group = byId(root, DOI_GROUP_ID);
+        const input = byId(root, DOI_INPUT_ID);
+        if (!group || !input || input.readOnly) {
+            return;
+        }
+
+        const suffix = input.value.trim();
+        setClientError(
+            input,
+            suffix === '' || isSuffixValid(suffix)
+                ? ''
+                : group.dataset.textInvalid || ''
+        );
+    }
+
+    /**
+     * @param {HTMLInputElement} input date input carrying the range accepted by Crossref (min, max)
+     * @param {string} message
+     * @returns {string} the error, empty when the date is empty or in range
+     */
+    function rangeError(input, message) {
+        const { value, min, max } = input;
+        const isOutOfRange =
+            value !== '' &&
+            ((min !== '' && value < min) || (max !== '' && value > max));
+        return isOutOfRange ? message : '';
+    }
+
+    /**
+     * Years accepted by Crossref, end date not before the start date.
+     *
+     * @param {Document|Element} root
+     */
+    function validateDates(root) {
+        const fieldset = byId(root, FIELDSET_ID);
+        const start = byId(root, START_ID);
+        const end = byId(root, END_ID);
+        if (!fieldset || !start || !end) {
+            return;
+        }
+
+        const outOfRange = fieldset.dataset.textOutOfRange || '';
+        const startError = rangeError(start, outOfRange);
+        let endError = rangeError(end, outOfRange);
+        if (
+            startError === '' &&
+            endError === '' &&
+            start.value !== '' &&
+            end.value !== '' &&
+            end.value < start.value
+        ) {
+            endError = fieldset.dataset.textEndBeforeStart || '';
+        }
+
+        setClientError(start, startError);
+        setClientError(end, endError);
+    }
+
+    /**
+     * After a refused submit, move the focus to the error summary.
+     *
+     * @param {Document|Element} root
+     */
+    function focusErrorSummary(root) {
+        const summary = byId(root, ERROR_SUMMARY_ID);
+        if (summary) {
+            summary.focus();
+        }
+    }
+
+    /**
+     * @param {Document|Element} root
+     */
+    function bindEvents(root) {
+        const checkbox = byId(root, CHECKBOX_ID);
+        checkbox?.addEventListener('change', () =>
+            toggleConferenceFields(root, checkbox.checked)
+        );
+
+        const doiInput = byId(root, DOI_INPUT_ID);
+        doiInput?.addEventListener('input', () => updateDoiPreview(root));
+        ['change', 'blur'].forEach(type =>
+            doiInput?.addEventListener(type, () => validateDoiSuffix(root))
+        );
+
+        [byId(root, START_ID), byId(root, END_ID)].forEach(input =>
+            ['change', 'blur'].forEach(type =>
+                input?.addEventListener(type, () => validateDates(root))
+            )
+        );
+    }
+
+    /**
+     * @param {Document|Element} [root=document]
+     */
+    function init(root = document) {
+        const checkbox = byId(root, CHECKBOX_ID);
+        if (checkbox) {
+            toggleConferenceFields(root, checkbox.checked);
+        }
+
+        const group = byId(root, DOI_GROUP_ID);
+        const doiInput = byId(root, DOI_INPUT_ID);
+        if (group && doiInput && isLocked(group.dataset.status)) {
+            doiInput.readOnly = true;
+        }
+
+        bindEvents(root);
+        focusErrorSummary(root);
+    }
+
+    return {
+        buildDoi,
+        isSuffixValid,
+        isLocked,
+        toggleConferenceFields,
+        updateDoiPreview,
+        validateDoiSuffix,
+        validateDates,
+        focusErrorSummary,
+        init,
+    };
+})();
+
+// Auto-initialize in the browser (Jest loads the module through CommonJS)
+if (typeof module === 'undefined' && typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () =>
+            ConferenceProceeding.init()
+        );
     } else {
         ConferenceProceeding.init();
     }
