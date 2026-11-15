@@ -841,6 +841,46 @@ test.describe('Reviewer invitation answer', () => {
         }
     });
 
+    test('an invitation opened with another account stays with the invitee when the link is declined', async ({
+        authorPage,
+        adminPage,
+        editorPage,
+        reviewerPage,
+        mailpit,
+    }) => {
+        test.setTimeout(180000);
+        let invitationPath;
+
+        await test.step('the editorial team invites a reviewer', async () => {
+            const docid = await submitArxivPaper(authorPage, { arxivId: '1502.01852' });
+            invitationPath = await inviteReviewer({ adminPage, mailpit }, docid);
+        });
+
+        const linkForm = editorPage.locator('#linkedInvitationForm');
+
+        await test.step('another account opening the link declines to link the invitation', async () => {
+            await editorPage.goto(invitationPath);
+            await expect(editorPage.getByText(NOT_LINKED)).toBeVisible();
+            await linkForm.locator('button[value="declineToLink"]').click();
+
+            // Back to the papers the account reviews, the invitation not linked
+            await expect(editorPage).toHaveURL(/paper\/ratings/);
+        });
+
+        await test.step('the invited account can still answer the invitation', async () => {
+            await reviewerPage.goto(invitationPath);
+            await expect(reviewerPage.getByText('it has already been used by another account')).toHaveCount(0);
+            await expect(reviewerPage.locator('#submitaccept')).toBeVisible();
+        });
+
+        await test.step('the other account opening the link again is asked again, nothing linked', async () => {
+            await editorPage.goto(invitationPath);
+            await expect(editorPage.getByText(NOT_LINKED)).toBeVisible();
+            await expect(linkForm).toBeVisible();
+            await expect(editorPage.locator('#submitaccept')).toHaveCount(0);
+        });
+    });
+
     test('an invitation opened with another account is only linked to it once confirmed', async ({
         authorPage,
         adminPage,
