@@ -716,6 +716,7 @@ test.describe('Reviewer invitation answer', () => {
                 await page.locator('#accept-button').click();
                 await expect(page).toHaveURL(/user\/login/);
 
+                await page.locator('#form-login .dropdown-toggle').click();
                 await page.getByRole('link', { name: /forgot.*password/i }).click();
                 await expect(page).toHaveURL(/user\/lostpassword/);
                 await requestNewPassword(page, username);
