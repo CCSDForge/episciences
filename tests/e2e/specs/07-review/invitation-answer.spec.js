@@ -717,7 +717,7 @@ test.describe('Reviewer invitation answer', () => {
                 await expect(page).toHaveURL(/user\/login/);
 
                 await page.locator('#form-login .dropdown-toggle').click();
-                await page.getByRole('link', { name: /forgot.*password/i }).click();
+                await page.locator('#form-login').getByRole('link', { name: /forgot.*password/i }).click();
                 await expect(page).toHaveURL(/user\/lostpassword/);
                 await requestNewPassword(page, username);
                 // The same answer whether or not an account matches the username
