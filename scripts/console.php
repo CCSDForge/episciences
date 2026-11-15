@@ -61,6 +61,9 @@ require_once __DIR__ . '/EpisciencesQueueCommand.php';
 // COAR Notify inbox processing command
 require_once __DIR__ . '/ProcessInboxNotificationsCommand.php';
 
+// Turnitin (TCA) manuscript acquisition diagnostic
+require_once __DIR__ . '/ManuscriptProbeCommand.php';
+
 // Journal provisioning commands
 require_once __DIR__ . '/CreateJournalCommand.php';
 require_once __DIR__ . '/SeedJournalDemoCommand.php';
@@ -152,6 +155,9 @@ $application->addCommand(new RevalidateNextCacheCommand());
 
 // COAR Notify inbox processing command
 $application->addCommand(new ProcessInboxNotificationsCommand());
+
+// Turnitin (TCA) manuscript acquisition diagnostic
+$application->addCommand(new ManuscriptProbeCommand());
 
 // Journal provisioning commands
 $application->addCommand(new CreateJournalCommand());
