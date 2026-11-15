@@ -7,6 +7,7 @@ const {
     inviteNewReviewer,
     createVolume,
     createVolumeGrid,
+    addQuantitativeCriterion,
     assignMasterVolume,
 } = require('../../helpers/editorial-workflow');
 
@@ -303,6 +304,80 @@ test.describe('Reviewer invitation answer', () => {
 
                 await page.goto(invitationPath);
                 await expect(page.getByText('It appears that a reply has already been sent.')).toBeVisible();
+                await expect(page.locator('#accept-button')).toHaveCount(0);
+            });
+        } finally {
+            await context.close();
+        }
+    });
+
+    test('a reviewer without an account creates one from the invitation, and accepts with it', async ({
+        browser,
+        baseURL,
+        authorPage,
+        adminPage,
+        mailpit,
+    }) => {
+        test.setTimeout(240000);
+        // No account uses this address: accepting creates one
+        const suffix = Date.now();
+        const invitedEmail = `e2e-created-reviewer-${suffix}@example.org`;
+        const username = `e2e_created_${suffix}`;
+        let docid;
+        let invitationPath;
+
+        await test.step('the editorial team invites a reviewer by e-mail address', async () => {
+            docid = await submitArxivPaper(authorPage, { arxivId: '1602.07261' });
+            // Accepting an invitation creates the rating report from the grid of the paper's volume; the
+            // review form is only displayed once the grid has a criterion
+            const vid = await createVolume(adminPage, `E2E Created account volume ${suffix}`);
+            await createVolumeGrid(adminPage, vid);
+            await addQuantitativeCriterion(adminPage, vid, {
+                title: `E2E soundness ${suffix}`,
+                description: 'Is the paper sound?',
+            });
+            await assignMasterVolume(adminPage, docid, vid);
+            await inviteNewReviewer(adminPage, docid, { email: invitedEmail, lastname: `Createdreviewer${suffix}` });
+            invitationPath = await receivedInvitationPath(mailpit, docid, invitedEmail);
+        });
+
+        const context = await newLoggedOutContext(browser, baseURL);
+        const page = await context.newPage();
+        try {
+            await test.step('the invitee creates the account and accepts in one go', async () => {
+                await page.goto(invitationPath);
+                await page.locator('#accept-button').click();
+
+                const accountForm = page.locator('#accept_form');
+                await expect(accountForm).toBeVisible();
+                await accountForm.locator('#USERNAME').fill(username);
+                await accountForm.locator('#PASSWORD').fill(E2E_PASSWORD);
+                await accountForm.locator('#PASSWORD_VERIFY').fill(E2E_PASSWORD);
+                await accountForm.locator('#FIRSTNAME').fill('E2E');
+                await accountForm.locator('#LASTNAME').fill(`Createdreviewer${suffix}`);
+                await accountForm.locator('[name="submitaccept"]').click();
+
+                // The new account is signed in: the rating page of the paper is displayed
+                await expect(page).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
+                await expect(page.getByText('Your answer has been saved.').first()).toBeVisible();
+                await expect(page.locator('form#rating-grid')).toBeVisible();
+            });
+
+            await test.step('the reviewer signs in again with the chosen password and reviews the paper', async () => {
+                await page.goto('user/logout');
+                await page.goto(`paper/rating/id/${docid}`);
+
+                // The rating page displays the login form to a visitor who is not signed in
+                await signIn(page, username);
+                await expect(page).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
+                await expect(page.locator('form#rating-grid')).toBeVisible();
+            });
+
+            await test.step('the invitation can no longer be answered', async () => {
+                await page.goto(invitationPath);
+                // The invitation was sent to the temporary account, not to the one created from it
+                await expect(page.getByText('It appears that a reply has already been sent.')).toBeVisible();
+                await expect(page.getByText('Invitation accepted on')).toBeVisible();
                 await expect(page.locator('#accept-button')).toHaveCount(0);
             });
         } finally {
