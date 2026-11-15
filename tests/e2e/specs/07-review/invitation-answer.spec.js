@@ -372,6 +372,44 @@ test.describe('Reviewer invitation answer', () => {
         });
     });
 
+    test('an expired invitation can no longer be answered', async ({ authorPage, adminPage, reviewerPage, mailpit }) => {
+        test.setTimeout(180000);
+        let invitationPath;
+        let csrfToken;
+
+        await test.step('the editorial team invites a reviewer, who opens the invitation', async () => {
+            const docid = await submitArxivPaper(authorPage, { arxivId: '1608.08710' });
+            invitationPath = await inviteReviewer({ adminPage, mailpit }, docid);
+
+            await reviewerPage.goto(invitationPath);
+            const acceptForm = reviewerPage.locator('form', { has: reviewerPage.locator('#submitaccept') });
+            csrfToken = await acceptForm.locator('input[name="csrf_token"]').inputValue();
+        });
+
+        // No user action makes an invitation expire before its deadline
+        const invitationId = invitationPath.match(/\/id\/(\d+)/)[1];
+        runPhp(`scripts/console.php app:e2e-expire-invitation --id=${invitationId}`);
+
+        await test.step('the reviewer is told the invitation expired, and cannot answer it', async () => {
+            await reviewerPage.goto(invitationPath);
+            await expect(reviewerPage.getByText('This invitation has expired.')).toBeVisible();
+            await expect(reviewerPage.locator('#submitaccept')).toHaveCount(0);
+            await expect(reviewerPage.locator('#refuse-button')).toHaveCount(0);
+        });
+
+        await test.step('an acceptance posted from the form opened before is not stored', async () => {
+            const response = await reviewerPage.request.post(invitationPath, {
+                form: { submitaccept: '', csrf_token: csrfToken },
+                maxRedirects: 0,
+            });
+            // A stored acceptance redirects to the rating page
+            expect(response.status()).toBe(200);
+
+            await reviewerPage.goto(invitationPath);
+            await expect(reviewerPage.getByText('This invitation has expired.')).toBeVisible();
+        });
+    });
+
     test('a reviewer without an account is offered to create one, and declines without it', async ({
         browser,
         baseURL,
@@ -692,7 +730,8 @@ test.describe('Reviewer invitation answer', () => {
                 await expect(page.locator('#accept-button')).toHaveCount(0);
 
                 await page.getByRole('button', { name: 'Send me a new activation link' }).click();
-                await expect(page.getByText(`An activation link has been sent to ${invitedEmail}`)).toBeVisible();
+                // The toast and its screen reader announcer both carry the message
+                await expect(page.getByText(`An activation link has been sent to ${invitedEmail}`).first()).toBeVisible();
 
                 // The page was displayed again with a GET: refreshing it does not ask for another link
                 await page.reload();
