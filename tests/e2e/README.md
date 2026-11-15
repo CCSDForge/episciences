@@ -70,7 +70,8 @@ tests/e2e/
 │   ├── 08-editorial-decisions/ acceptance, rejection
 │   ├── 09-revisions/          minor revision with a new version, major revision answered as is
 │   ├── 10-publication/        publication in a volume, copy editing by the author
-│   └── 11-journal-configuration/ rating grid lifecycle, journal settings
+│   ├── 11-journal-configuration/ rating grid lifecycle, journal settings
+│   └── 12-mail-recipients/    recipients search of the mail forms, anonymity of the reviewers in the status modals
 ├── fixtures/
 │   ├── e2e-fixtures.js        logged-in page per role (authorPage, reviewerPage, editorPage,
 │   │                          secretaryPage, adminPage) and the mailpit client
