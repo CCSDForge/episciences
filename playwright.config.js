@@ -15,6 +15,11 @@ const defaultBaseUrl = isManager
 const rawBaseUrl = process.env.BASE_URL || defaultBaseUrl;
 // Ensure trailing slash so relative paths ('submit', 'browse') resolve correctly in both modes
 const baseURL = rawBaseUrl.endsWith('/') ? rawBaseUrl : `${rawBaseUrl}/`;
+const origin = new URL(baseURL).origin;
+// Web Crypto (used by the ALTCHA widget) requires a secure context; CI serves the app over plain HTTP
+const chromiumArgs = origin.startsWith('http://')
+    ? [`--unsafely-treat-insecure-origin-as-secure=${origin}`]
+    : [];
 
 module.exports = defineConfig({
     testDir: './tests/e2e',
@@ -49,7 +54,13 @@ module.exports = defineConfig({
     projects: [
         {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'] }
+            use: {
+                ...devices['Desktop Chrome'],
+                // chrome-headless-shell ignores --unsafely-treat-insecure-origin-as-secure, full chromium honors it
+                ...(chromiumArgs.length > 0
+                    ? { channel: 'chromium', launchOptions: { args: chromiumArgs } }
+                    : {}),
+            }
         }
     ]
 });

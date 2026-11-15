@@ -100,7 +100,7 @@ class ReviewerController extends PaperDefaultController
             $invitation->isCancelled()
         ) {
 
-            $errorMsg = $assignment->getUid() === Episciences_Auth::getUid() ? 'Vous avez déjà répondu à cette invitation.' : "Il apparaît qu'une réponse a déjà été transmise.";
+            $errorMsg = $this->alreadyAnsweredMessage($assignment);
 
             if (
                 $invitation->hasExpired() ||
@@ -227,7 +227,7 @@ class ReviewerController extends PaperDefaultController
             (int)$assignment->getUid() === (int)Episciences_Auth::getUid();
 
         if (!$invitation->isPendingRow()) {
-            $this->view->errors = $isInvitee ? 'Vous avez déjà répondu à cette invitation.' : "Il apparaît qu'une réponse a déjà été transmise.";
+            $this->view->errors = $this->alreadyAnsweredMessage($assignment);
             return false;
         }
 
@@ -272,6 +272,43 @@ class ReviewerController extends PaperDefaultController
         }
 
         return true;
+    }
+
+    /**
+     * Message for an invitation already answered: the invitee is told they answered it, anyone else only that a reply
+     * was sent. A reviewer invited without an account answers with the account created on accepting.
+     */
+    private function alreadyAnsweredMessage(Episciences_User_Assignment $assignment): string
+    {
+        if (!Episciences_Auth::isLogged()) {
+            return "Il apparaît qu'une réponse a déjà été transmise.";
+        }
+
+        $loggedUid = (int)Episciences_Auth::getUid();
+        $isInvitee = $assignment->isTmp_user()
+            ? $this->isAcceptedWithAccount((int)$assignment->getId(), $loggedUid)
+            : (int)$assignment->getUid() === $loggedUid;
+
+        return $isInvitee ? 'Vous avez déjà répondu à cette invitation.' : "Il apparaît qu'une réponse a déjà été transmise.";
+    }
+
+    /**
+     * Whether the invitation of this assignment (sent to a reviewer without an account) was accepted with this account:
+     * the acceptance assigns the account created on accepting, with the id of the "accepted" invitation row.
+     */
+    protected function isAcceptedWithAccount(int $invitedAid, int $uid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(['a' => T_ASSIGNMENTS], [new Zend_Db_Expr('1')])
+            ->join(['i' => T_USER_INVITATIONS], 'i.ID = a.INVITATION_ID', [])
+            ->where('i.AID = ?', $invitedAid)
+            ->where('i.STATUS = ?', Episciences_User_Invitation::STATUS_ACCEPTED)
+            ->where('a.UID = ?', $uid)
+            ->where('a.TMP_USER = 0')
+            ->limit(1);
+
+        return (bool)$db->fetchOne($select);
     }
 
     protected function getInvitationToken(): InvitationToken
