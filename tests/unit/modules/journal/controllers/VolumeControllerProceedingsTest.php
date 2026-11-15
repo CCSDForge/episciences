@@ -12,7 +12,7 @@ use Episciences_Acl;
 use Episciences_Review;
 use Episciences_Review_DoiSettings;
 use Episciences_Volume;
-use Episciences_Volume_DoiQueue;
+use Episciences\Volume\DoiQueue;
 use unit\library\Episciences\Messenger\Enqueue\RestoresStaticQueuePort;
 use unit\library\Episciences\Messenger\Enqueue\SpyEnqueueFailureStore;
 use unit\library\Episciences\Messenger\Enqueue\SpyMessageBus;
@@ -78,7 +78,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
                 ['SETTING' => Episciences_Volume::VOLUME_CONFERENCE_END_DATE, 'VALUE' => '2026-10-29'],
                 ['SETTING' => Episciences_Volume::VOLUME_CONFERENCE_DOI, 'VALUE' => self::storedDoi()],
             ])
-            ->respondTo('/FROM `doi_queue_volumes`/', $doiStatus === Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED ? [] : [[
+            ->respondTo('/FROM `doi_queue_volumes`/', $doiStatus === DoiQueue::STATUS_NOT_ASSIGNED ? [] : [[
                 'id' => 1, 'vid' => self::VID, 'doi_status' => $doiStatus, 'date_init' => '2026-11-01 10:00:00', 'date_updated' => '2026-11-01 10:00:00',
             ]]);
     }
@@ -155,7 +155,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
 
     public function testRequestedDoiIsKeptWhateverIsPosted(): void
     {
-        $this->givenProceedingsVolume(Episciences_Volume_DoiQueue::STATUS_REQUESTED);
+        $this->givenProceedingsVolume(DoiQueue::STATUS_REQUESTED);
 
         $result = $this->postEdit(['conference_proceedings_doi' => 'changed']);
 
@@ -168,7 +168,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
 
     public function testRequestedDoiIsKeptWhenTheSuffixIsNotPosted(): void
     {
-        $this->givenProceedingsVolume(Episciences_Volume_DoiQueue::STATUS_PUBLIC);
+        $this->givenProceedingsVolume(DoiQueue::STATUS_PUBLIC);
         $post = ['conference_proceedings_doi' => ''];
 
         $this->postEdit($post);
@@ -178,7 +178,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
 
     public function testRegisteredDoiForbidsUncheckingProceedings(): void
     {
-        $this->givenProceedingsVolume(Episciences_Volume_DoiQueue::STATUS_PUBLIC);
+        $this->givenProceedingsVolume(DoiQueue::STATUS_PUBLIC);
 
         $result = $this->postEdit(['is_proceeding' => '0']);
 
@@ -189,7 +189,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
 
     public function testAssignedDoiFollowsTheNewSuffix(): void
     {
-        $this->givenProceedingsVolume(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
+        $this->givenProceedingsVolume(DoiQueue::STATUS_ASSIGNED);
 
         $result = $this->postEdit(['conference_proceedings_doi' => 'mfps.40']);
 
@@ -203,7 +203,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
 
     public function testRemovingTheSuffixForgetsTheAssignedDoi(): void
     {
-        $this->givenProceedingsVolume(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
+        $this->givenProceedingsVolume(DoiQueue::STATUS_ASSIGNED);
 
         $this->postEdit(['conference_proceedings_doi' => '']);
 
@@ -217,7 +217,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
      */
     public function testInvalidSuffixIsRefused(string $suffix): void
     {
-        $this->givenProceedingsVolume(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
+        $this->givenProceedingsVolume(DoiQueue::STATUS_ASSIGNED);
 
         $result = $this->postEdit(['conference_proceedings_doi' => $suffix]);
 
@@ -244,7 +244,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
 
     public function testSuffixUsedByAnotherVolumeIsRefused(): void
     {
-        $this->givenProceedingsVolume(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
+        $this->givenProceedingsVolume(DoiQueue::STATUS_ASSIGNED);
         $this->db->respondTo('/FROM `VOLUME_SETTING` AS `S`/', [['COUNT(*)' => '1']]);
 
         $result = $this->postEdit(['conference_proceedings_doi' => '52']);
@@ -256,7 +256,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
 
     public function testMissingConferenceFieldsAreRefused(): void
     {
-        $this->givenProceedingsVolume(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
+        $this->givenProceedingsVolume(DoiQueue::STATUS_ASSIGNED);
 
         $result = $this->postEdit(['conference_name' => '', 'conference_start' => '2026-10-29', 'conference_end' => '2026-10-27']);
 
@@ -269,7 +269,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
 
     public function testExportReturnsTheCrossrefXmlOfTheVolume(): void
     {
-        $this->givenProceedingsVolume(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
+        $this->givenProceedingsVolume(DoiQueue::STATUS_ASSIGNED);
 
         $result = $this->dispatch(\VolumeController::class, 'export', $this->getRequest([], ['id' => (string)self::VID]));
 
@@ -280,7 +280,7 @@ final class VolumeControllerProceedingsTest extends ControllerTestCase
 
     public function testExportRefusesAVolumeThatIsNotAProceedings(): void
     {
-        $this->givenProceedingsVolume(Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED, false);
+        $this->givenProceedingsVolume(DoiQueue::STATUS_NOT_ASSIGNED, false);
 
         $result = $this->dispatch(\VolumeController::class, 'export', $this->getRequest([], ['id' => (string)self::VID]));
 

@@ -8,17 +8,13 @@
  * @var bool $disabled the proceedings fields are hidden
  */
 
+use Episciences\Volume\DoiQueue;
 use Episciences\Volume\ProceedingsValidator;
 
 $doi = $this->doi;
 $inputId = Episciences_Volume::VOLUME_CONFERENCE_DOI;
 $hasError = !empty($doi['error']);
-$statuses = [
-    Episciences_Volume_DoiQueue::STATUS_ASSIGNED => ['label' => 'Dépôt programmé', 'class' => 'label-primary'],
-    Episciences_Volume_DoiQueue::STATUS_REQUESTED => ['label' => 'Dépôt en cours', 'class' => 'label-warning'],
-    Episciences_Volume_DoiQueue::STATUS_PUBLIC => ['label' => 'DOI enregistré', 'class' => 'label-success'],
-];
-$status = $statuses[$doi['status']] ?? null;
+$status = DoiQueue::STATUS_BADGES[$doi['status']] ?? null;
 $currentDoi = $doi['locked'] ? $doi['doi'] : ($doi['suffix'] !== '' ? $doi['prefix'] . $doi['suffix'] : '');
 $describedBy = [$inputId . '-prefix', $inputId . '-help', $inputId . '-preview'];
 if ($hasError) {
@@ -85,7 +81,7 @@ if ($hasError) {
                 <p class="help-block">
                     <?= $this->escape($this->translate('Statut du DOI :')) ?>
                     <span class="label <?= $status['class'] ?>"><?= $this->escape($this->translate($status['label'])) ?></span>
-                    <?php if ($doi['status'] === Episciences_Volume_DoiQueue::STATUS_PUBLIC && $doi['doi'] !== '') : ?>
+                    <?php if ($doi['status'] === DoiQueue::STATUS_PUBLIC && $doi['doi'] !== '') : ?>
                         <a href="<?= $this->escape('https://doi.org/' . $doi['doi']) ?>"><?= $this->escape('https://doi.org/' . $doi['doi']) ?></a>
                     <?php endif; ?>
                 </p>

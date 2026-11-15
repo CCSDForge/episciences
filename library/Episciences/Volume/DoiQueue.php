@@ -1,169 +1,95 @@
 <?php
+declare(strict_types=1);
 
-class Episciences_Volume_DoiQueue
+namespace Episciences\Volume;
+
+use InvalidArgumentException;
+
+/**
+ * Entry of the deposit queue of a proceedings volume DOI (doi_queue_volumes).
+ *
+ * Lifecycle: not-assigned (no row) -> assigned (volume form) -> requested (doi:manage --request
+ * --volumes) -> public (doi:manage --check --volumes).
+ */
+final class DoiQueue
 {
-    public const DEFAULT_STATUS = self::STATUS_NOT_ASSIGNED;
-    public const STATUS_MANUAL = 'manual';
-    public const STATUS_PUBLIC = 'public';
-    public const STATUS_REQUESTED = 'requested';
-    public const STATUS_ASSIGNED = 'assigned';
+    /** No row in the queue: never stored */
     public const STATUS_NOT_ASSIGNED = 'not-assigned';
+    public const STATUS_ASSIGNED = 'assigned';
+    public const STATUS_REQUESTED = 'requested';
+    public const STATUS_PUBLIC = 'public';
 
+    /** Statuses stored in doi_queue_volumes.doi_status */
+    public const STORED_STATUSES = [self::STATUS_ASSIGNED, self::STATUS_REQUESTED, self::STATUS_PUBLIC];
 
-    public static $htmlStatus = [
-        self::STATUS_NOT_ASSIGNED => '<span class="label label-default">%s</span>',
-        self::STATUS_MANUAL => '<span class="label label-default">%s</span>',
-        self::STATUS_ASSIGNED => '<span class="label label-primary">%s</span>',
-        self::STATUS_REQUESTED => '<span class="label label-warning">%s</span>',
-        self::STATUS_PUBLIC => '<span class="label label-success">%s</span>'
+    /** The DOI was sent to Crossref: it can no longer change */
+    public const LOCKED_STATUSES = [self::STATUS_REQUESTED, self::STATUS_PUBLIC];
+
+    /** Label (to translate) and Bootstrap badge of each stored status */
+    public const STATUS_BADGES = [
+        self::STATUS_ASSIGNED => ['label' => 'Dépôt programmé', 'class' => 'label-primary'],
+        self::STATUS_REQUESTED => ['label' => 'Dépôt en cours', 'class' => 'label-warning'],
+        self::STATUS_PUBLIC => ['label' => 'DOI enregistré', 'class' => 'label-success'],
     ];
-    public static $statusList = [self::STATUS_NOT_ASSIGNED, self::STATUS_ASSIGNED, self::STATUS_REQUESTED, self::STATUS_PUBLIC, self::STATUS_MANUAL];
 
+    private string $status;
 
-    /**
-     * @var int
-     */
-    protected $_id;
-    /**
-     * @var int
-     */
-    protected $_vid;
-    /**
-     * @var string
-     */
-    protected $_doi_status;
-    /**
-     * @var string
-     */
-    protected $_date_init;
-    /**
-     * @var string
-     */
-    protected $_date_updated;
-
-    /**
-     *
-     * @param array|null $options
-     */
-    public function __construct(array $options = null)
-    {
-        if (is_array($options)) {
-            $this->setOptions($options);
-        }
+    public function __construct(
+        private readonly int $vid,
+        string $status = self::STATUS_NOT_ASSIGNED,
+        private readonly ?int $id = null
+    ) {
+        $this->setStatus($status);
     }
 
     /**
-     * set paper options
-     * @param array $options
+     * @param array<string, mixed> $row row of doi_queue_volumes
      */
-    public function setOptions(array $options)
+    public static function fromRow(array $row): self
     {
-        $classMethods = get_class_methods($this);
-        foreach ($options as $key => $value) {
-            $key = strtolower($key);
-            $method = 'set' . ucfirst($key);
-            if (in_array($method, $classMethods, true)) {
-                $this->$method($value);
-            }
-        }
+        return new self(
+            (int)($row['vid'] ?? 0),
+            (string)($row['doi_status'] ?? '') ?: self::STATUS_NOT_ASSIGNED,
+            isset($row['id']) ? (int)$row['id'] : null
+        );
     }
 
-    /**
-     * @return array
-     */
-    public function toArray()
+    public static function isLockedStatus(string $status): bool
     {
-        return [
-            'id' => $this->getId(),
-            'vid' => $this->getVid(),
-            'doi_status' => $this->getDoi_status(),
-            'date_init' => $this->getDate_init(),
-            'date_updated' => $this->getDate_updated()
-        ];
+        return in_array($status, self::LOCKED_STATUSES, true);
     }
 
-    /**
-     * @return int
-     */
-    public function getId(): int
+    public function getId(): ?int
     {
-        return $this->_id;
+        return $this->id;
     }
 
-    /**
-     * @param int $id
-     */
-    public function setId(int $id)
-    {
-        $this->_id = (int)$id;
-    }
-
-    /**
-     * @return int
-     */
     public function getVid(): int
     {
-        return $this->_vid;
+        return $this->vid;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
     }
 
     /**
-     * @param int $vid
+     * @throws InvalidArgumentException unknown status
      */
-    public function setVid(int $vid)
+    public function setStatus(string $status): self
     {
-        $this->_vid = $vid;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDoi_status(): string
-    {
-        if (!$this->_doi_status) {
-            $this->setDoi_status(self::STATUS_NOT_ASSIGNED);
+        if ($status !== self::STATUS_NOT_ASSIGNED && !in_array($status, self::STORED_STATUSES, true)) {
+            throw new InvalidArgumentException(sprintf('Unknown volume DOI status "%s".', $status));
         }
-        return $this->_doi_status;
+
+        $this->status = $status;
+
+        return $this;
     }
 
-    /**
-     * @param string $doi_status
-     */
-    public function setDoi_status(string $doi_status)
+    public function isLocked(): bool
     {
-        $this->_doi_status = $doi_status;
+        return self::isLockedStatus($this->status);
     }
-
-    /**
-     * @return string
-     */
-    public function getDate_init(): string
-    {
-        return $this->_date_init;
-    }
-
-    /**
-     * @param string $date_init
-     */
-    public function setDate_init(string $date_init)
-    {
-        $this->_date_init = $date_init;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDate_updated(): string
-    {
-        return $this->_date_updated;
-    }
-
-    /**
-     * @param string $date_updated
-     */
-    public function setDate_updated(string $date_updated)
-    {
-        $this->_date_updated = $date_updated;
-    }
-
-
 }

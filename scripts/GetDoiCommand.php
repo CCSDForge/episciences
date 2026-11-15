@@ -5,6 +5,7 @@ use Episciences\Api\CrossrefDiagnosticParser;
 use Episciences\Api\CrossrefSubmissionApiClient;
 use Episciences\Console\ProgressAwareStreamHandler;
 use Episciences\Volume\CrossrefVolumeExporter;
+use Episciences\Volume\DoiQueue;
 use Episciences\Volume\DoiQueueManager;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -470,7 +471,7 @@ class GetDoiCommand extends Command
         ?ProgressAwareStreamHandler $stdoutHandler = null
     ): int {
         $rvcode = $review->getCode();
-        $queue  = $this->findVolumeDois($review->getRvid(), Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
+        $queue  = $this->findVolumeDois($review->getRvid(), DoiQueue::STATUS_ASSIGNED);
         $total  = count($queue);
 
         if ($total === 0) {
@@ -505,7 +506,7 @@ class GetDoiCommand extends Command
 
     private function requestVolumeDoi(
         Episciences_Volume          $volume,
-        Episciences_Volume_DoiQueue $doiQueue,
+        DoiQueue $doiQueue,
         Episciences_Review          $review,
         CrossrefVolumeExporter      $exporter,
         CrossrefSubmissionApiClient $crossrefClient,
@@ -530,7 +531,7 @@ class GetDoiCommand extends Command
         }
 
         if (!$dryRun) {
-            $doiQueue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_REQUESTED);
+            $doiQueue->setStatus(DoiQueue::STATUS_REQUESTED);
             $this->saveVolumeDoiQueue($doiQueue);
         }
 
@@ -549,7 +550,7 @@ class GetDoiCommand extends Command
         ?ProgressAwareStreamHandler $stdoutHandler = null
     ): int {
         $rvcode      = $review->getCode();
-        $queue       = $this->findVolumeDois($review->getRvid(), Episciences_Volume_DoiQueue::STATUS_REQUESTED);
+        $queue       = $this->findVolumeDois($review->getRvid(), DoiQueue::STATUS_REQUESTED);
         $parser      = new CrossrefDiagnosticParser();
         $progressBar = $io->createProgressBar(count($queue));
         $stdoutHandler?->setProgressBar($progressBar);
@@ -569,7 +570,7 @@ class GetDoiCommand extends Command
 
     private function checkVolumeDoi(
         Episciences_Volume          $volume,
-        Episciences_Volume_DoiQueue $doiQueue,
+        DoiQueue $doiQueue,
         string                      $rvcode,
         CrossrefDiagnosticParser    $parser,
         CrossrefSubmissionApiClient $crossrefClient,
@@ -601,7 +602,7 @@ class GetDoiCommand extends Command
             return;
         }
 
-        $doiQueue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_PUBLIC);
+        $doiQueue->setStatus(DoiQueue::STATUS_PUBLIC);
         $this->saveVolumeDoiQueue($doiQueue);
         $logger->info(sprintf('Volume #%d: DOI %s is now public.', $vid, $doi));
     }
@@ -616,14 +617,14 @@ class GetDoiCommand extends Command
     }
 
     /**
-     * @return array<int, array{volume: Episciences_Volume, doiq: Episciences_Volume_DoiQueue}>
+     * @return array<int, array{volume: Episciences_Volume, doiq: DoiQueue}>
      */
     protected function findVolumeDois(int $rvid, string $status): array
     {
         return DoiQueueManager::findByStatus($rvid, $status);
     }
 
-    protected function saveVolumeDoiQueue(Episciences_Volume_DoiQueue $doiQueue): void
+    protected function saveVolumeDoiQueue(DoiQueue $doiQueue): void
     {
         DoiQueueManager::update($doiQueue);
     }

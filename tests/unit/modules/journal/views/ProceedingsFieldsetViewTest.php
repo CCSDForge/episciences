@@ -9,7 +9,7 @@ use DOMElement;
 use DOMXPath;
 use Episciences\Volume\ProceedingsValidator;
 use Episciences_Volume;
-use Episciences_Volume_DoiQueue;
+use Episciences\Volume\DoiQueue;
 use Episciences_VolumesManager;
 use Ccsd_Form;
 use PHPUnit\Framework\TestCase;
@@ -64,7 +64,7 @@ final class ProceedingsFieldsetViewTest extends TestCase
             'doi' => $doi + [
                 'prefix' => self::PREFIX,
                 'suffix' => '',
-                'status' => Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED,
+                'status' => DoiQueue::STATUS_NOT_ASSIGNED,
                 'locked' => false,
                 'doi' => '',
                 'vid' => null,
@@ -155,7 +155,7 @@ final class ProceedingsFieldsetViewTest extends TestCase
 
     public function testDoiSuffixMirrorsTheServerRuleAndDescribesTheResultingDoi(): void
     {
-        $xpath = $this->render(true, ['suffix' => '51', 'status' => Episciences_Volume_DoiQueue::STATUS_ASSIGNED, 'doi' => self::PREFIX . '51', 'vid' => 1134]);
+        $xpath = $this->render(true, ['suffix' => '51', 'status' => DoiQueue::STATUS_ASSIGNED, 'doi' => self::PREFIX . '51', 'vid' => 1134]);
 
         $group = $this->element($xpath, 'conference_doi_group');
         self::assertSame(self::PREFIX, $group->getAttribute('data-prefix'));
@@ -180,7 +180,7 @@ final class ProceedingsFieldsetViewTest extends TestCase
     public function testRegisteredDoiIsReadOnlyAndLinked(): void
     {
         $doi = self::PREFIX . '51';
-        $xpath = $this->render(true, ['suffix' => '51', 'status' => Episciences_Volume_DoiQueue::STATUS_PUBLIC, 'locked' => true, 'doi' => $doi, 'vid' => 1134]);
+        $xpath = $this->render(true, ['suffix' => '51', 'status' => DoiQueue::STATUS_PUBLIC, 'locked' => true, 'doi' => $doi, 'vid' => 1134]);
 
         $input = $this->element($xpath, 'conference_proceedings_doi');
         self::assertTrue($input->hasAttribute('readonly'));

@@ -3,6 +3,7 @@
 use Episciences\AppRegistry;
 use Episciences\Upload\UploadChecker;
 use Episciences\Volume\CrossrefVolumeExporter;
+use Episciences\Volume\DoiQueue;
 use Episciences\Volume\DoiQueueManager;
 use Episciences\Volume\ProceedingsValidator;
 
@@ -575,10 +576,7 @@ class VolumeController extends Zend_Controller_Action
         }
 
         if ($volume->isProceeding() && (string)$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI) !== '') {
-            $doiQueue = new Episciences_Volume_DoiQueue();
-            $doiQueue->setVid($vid);
-            $doiQueue->setDoi_status(Episciences_Volume_DoiQueue::STATUS_ASSIGNED);
-            DoiQueueManager::add($doiQueue);
+            DoiQueueManager::add(new DoiQueue($vid, DoiQueue::STATUS_ASSIGNED));
             return;
         }
 

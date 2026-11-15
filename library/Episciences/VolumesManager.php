@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Volume\DoiQueue;
 use Episciences\Volume\DoiQueueManager;
 use Episciences\Volume\ProceedingsValidator;
 
@@ -767,9 +768,9 @@ class Episciences_VolumesManager
     {
         $vid = $volume !== null && $volume->getVid() ? (int)$volume->getVid() : null;
         $status = $vid !== null
-            ? DoiQueueManager::findByVid($vid)->getDoi_status()
-            : Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED;
-        $locked = DoiQueueManager::isLockedStatus($status);
+            ? DoiQueueManager::findByVid($vid)->getStatus()
+            : DoiQueue::STATUS_NOT_ASSIGNED;
+        $locked = DoiQueue::isLockedStatus($status);
         $storedDoi = $volume !== null ? (string)$volume->getSetting(Episciences_Volume::VOLUME_CONFERENCE_DOI) : '';
 
         return [

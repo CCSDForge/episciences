@@ -5,7 +5,6 @@ namespace Episciences\Volume;
 
 use Episciences\AppRegistry;
 use Episciences_Volume;
-use Episciences_Volume_DoiQueue;
 use Episciences_VolumesManager;
 use Throwable;
 use Zend_Db_Adapter_Abstract;
@@ -18,37 +17,26 @@ use Zend_Db_Table_Abstract;
  */
 final class DoiQueueManager
 {
-    /** Statuses of a DOI sent to Crossref: it can no longer change */
-    public const LOCKED_STATUSES = [
-        Episciences_Volume_DoiQueue::STATUS_REQUESTED,
-        Episciences_Volume_DoiQueue::STATUS_PUBLIC,
-    ];
-
     /**
      * Queue entry of a volume, status "not-assigned" when there is none.
      */
-    public static function findByVid(int $vid): Episciences_Volume_DoiQueue
+    public static function findByVid(int $vid): DoiQueue
     {
         $db = self::db();
         $row = $db->fetchRow($db->select()->from(T_DOI_QUEUE_VOLUMES)->where('vid = ?', $vid));
 
-        return new Episciences_Volume_DoiQueue(is_array($row) ? $row : null);
-    }
-
-    public static function isLockedStatus(string $status): bool
-    {
-        return in_array($status, self::LOCKED_STATUSES, true);
+        return is_array($row) ? DoiQueue::fromRow($row) : new DoiQueue($vid);
     }
 
     public static function isDoiLocked(int $vid): bool
     {
-        return self::isLockedStatus(self::findByVid($vid)->getDoi_status());
+        return self::findByVid($vid)->isLocked();
     }
 
     /**
      * Volumes of a journal whose DOI is in the given status.
      *
-     * @return list<array{volume: Episciences_Volume, doiq: Episciences_Volume_DoiQueue}>
+     * @return list<array{volume: Episciences_Volume, doiq: DoiQueue}>
      */
     public static function findByStatus(int $rvid, string $status): array
     {
@@ -64,7 +52,7 @@ final class DoiQueueManager
         foreach ($db->fetchAll($select) as $row) {
             $volume = Episciences_VolumesManager::find((int)$row['vid'], $rvid);
             if ($volume instanceof Episciences_Volume) {
-                $result[] = ['volume' => $volume, 'doiq' => new Episciences_Volume_DoiQueue($row)];
+                $result[] = ['volume' => $volume, 'doiq' => DoiQueue::fromRow($row)];
             }
         }
 
@@ -77,7 +65,7 @@ final class DoiQueueManager
      *
      * @return int affected rows, 0 on error
      */
-    public static function add(Episciences_Volume_DoiQueue $doiQueue): int
+    public static function add(DoiQueue $doiQueue): int
     {
         $db = self::db();
         $table = $db->quoteIdentifier(T_DOI_QUEUE_VOLUMES);
@@ -89,9 +77,9 @@ final class DoiQueueManager
             . ' ON DUPLICATE KEY UPDATE `doi_status` = IF(%4$s IN (%5$s), %4$s, new_row.`doi_status`), `date_updated` = NOW()',
             $table,
             $doiQueue->getVid(),
-            $db->quote($doiQueue->getDoi_status()),
+            $db->quote($doiQueue->getStatus()),
             $currentStatus,
-            $db->quote(self::LOCKED_STATUSES)
+            $db->quote(DoiQueue::LOCKED_STATUSES)
         );
 
         try {
@@ -105,18 +93,17 @@ final class DoiQueueManager
     /**
      * @return int affected rows, 0 on error
      */
-    public static function update(Episciences_Volume_DoiQueue $doiQueue): int
+    public static function update(DoiQueue $doiQueue): int
     {
         try {
             return self::db()->update(
                 T_DOI_QUEUE_VOLUMES,
                 [
-                    'vid' => $doiQueue->getVid(),
                     // Raw value: update() binds it
-                    'doi_status' => $doiQueue->getDoi_status(),
+                    'doi_status' => $doiQueue->getStatus(),
                     'date_updated' => new Zend_Db_Expr('NOW()'),
                 ],
-                ['id = ?' => $doiQueue->getId()]
+                ['vid = ?' => $doiQueue->getVid()]
             );
         } catch (Throwable $e) {
             self::logError('updating', $doiQueue->getVid(), $e);
@@ -131,7 +118,7 @@ final class DoiQueueManager
     {
         return self::db()->delete(T_DOI_QUEUE_VOLUMES, [
             'vid = ?' => $vid,
-            'doi_status = ?' => Episciences_Volume_DoiQueue::STATUS_ASSIGNED,
+            'doi_status = ?' => DoiQueue::STATUS_ASSIGNED,
         ]);
     }
 
