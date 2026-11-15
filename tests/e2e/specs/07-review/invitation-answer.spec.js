@@ -85,6 +85,23 @@ async function signIn(page, username) {
 }
 
 /**
+ * Sends the lost password form displayed on the page.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} username
+ */
+async function requestNewPassword(page, username) {
+    const form = page.locator('form#accountlostpassword');
+    await form.locator('input#USERNAME').fill(username);
+    // Environment setting: the Altcha widget is only displayed when it is the configured CAPTCHA
+    if (await form.locator('altcha-widget').count()) {
+        // It solves its proof of work once checked (its box is covered by its tick mark)
+        await form.locator('altcha-widget label', { hasText: "I'm not a robot" }).click();
+        await expect(form.locator('altcha-widget [data-state="verified"]')).toBeAttached({ timeout: 30000 });
+    }
+    await form.locator('button[type="submit"]').click();
+}
+
+/**
  * Creates an account as another application sharing the accounts would: no Episciences profile.
  * @param {string} username
  * @param {string} email
@@ -439,6 +456,82 @@ test.describe('Reviewer invitation answer', () => {
                 await expect(page).toHaveURL(/reviewer\/invitation/);
                 await expect(page.getByText('You are now signed in: please confirm your acceptance below.')).toBeVisible();
                 await expect(page.locator('.invitation-answer-account')).toHaveCount(0);
+
+                await page.locator('#submitaccept').click();
+                await expect(page).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
+                await expect(page.getByText('Your answer has been saved.').first()).toBeVisible();
+            });
+        } finally {
+            await context.close();
+        }
+    });
+
+    test('an invitee who forgot the password of their account resets it, then accepts with it', async ({
+        browser,
+        baseURL,
+        authorPage,
+        adminPage,
+        mailpit,
+    }) => {
+        test.setTimeout(240000);
+        const suffix = Date.now();
+        const invitedEmail = `e2e-forgetful-reviewer-${suffix}@example.org`;
+        const username = `e2e_forgetful_${suffix}`;
+        let docid;
+        let invitationPath;
+
+        await test.step('the editorial team invites a reviewer by e-mail address', async () => {
+            docid = await submitArxivPaper(authorPage, { arxivId: '1611.07004' });
+            // Accepting an invitation creates the rating report from the grid of the paper's volume
+            const vid = await createVolume(adminPage, `E2E Forgotten password volume ${suffix}`);
+            await createVolumeGrid(adminPage, vid);
+            await assignMasterVolume(adminPage, docid, vid);
+            await inviteNewReviewer(adminPage, docid, { email: invitedEmail, lastname: `Forgetfulreviewer${suffix}` });
+            invitationPath = await receivedInvitationPath(mailpit, docid, invitedEmail);
+        });
+
+        // An active account uses the invited address, with a password the invitee no longer remembers
+        createExternalAccount(username, invitedEmail, `Forgotten-${suffix}`, { active: true });
+
+        const context = await newLoggedOutContext(browser, baseURL);
+        const page = await context.newPage();
+        try {
+            await test.step('from the login page of the invitation, the invitee asks for a new password', async () => {
+                await page.goto(invitationPath);
+                await page.locator('#accept-button').click();
+                await expect(page).toHaveURL(/user\/login/);
+
+                await page.getByRole('link', { name: /forgot.*password/i }).click();
+                await expect(page).toHaveURL(/user\/lostpassword/);
+                await requestNewPassword(page, username);
+                // The same answer whether or not an account matches the username
+                await expect(page.getByText('If an account matches this username, an e-mail has just been sent')).toBeVisible();
+            });
+
+            await test.step('the invitee chooses a new password from the e-mail', async () => {
+                const email = await mailpit.waitForEmail({ to: invitedEmail, subjectContains: ['Password reset request'] });
+                const resetUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/user/resetpassword/'));
+                expect(resetUrl).toBeTruthy();
+
+                const url = new URL(resetUrl);
+                await page.goto(url.pathname.replace(/^\//, '') + url.search);
+                await page.locator('input[name="PASSWORD"]').fill(E2E_PASSWORD);
+                await page.locator('input[name="PASSWORD_VERIFY"]').fill(E2E_PASSWORD);
+                await page.locator('form:has(input[name="PASSWORD_VERIFY"]) [type="submit"]').click();
+                await expect(page.locator('.alert-success').first()).toBeVisible();
+            });
+
+            await test.step('back to the invitation, the invitee signs in with the new password and accepts', async () => {
+                await page.goto(invitationPath);
+                await page.locator('#accept-button').click();
+                await expect(page).toHaveURL(/user\/login/);
+                await signIn(page, username);
+
+                // The account has no Episciences profile yet: it is completed first, then the invitation is back
+                await expect(page).toHaveURL(/user\/edit/);
+                await page.getByRole('button', { name: 'Save changes' }).click();
+                await expect(page).toHaveURL(/reviewer\/invitation/);
+                await expect(page.getByText('You are now signed in: please confirm your acceptance below.')).toBeVisible();
 
                 await page.locator('#submitaccept').click();
                 await expect(page).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
