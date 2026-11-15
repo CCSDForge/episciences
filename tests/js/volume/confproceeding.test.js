@@ -3,6 +3,7 @@ const ConferenceProceeding = require('../../../public/js/volume/confproceeding.j
 const PREFIX = '10.46298/mbj.proceedings.';
 const SUFFIX_INVALID = 'Invalid suffix';
 const END_BEFORE_START = 'End before start';
+const OUT_OF_RANGE = 'Year out of range';
 
 /**
  * Same markup as volume/form.phtml + volume/proceedings_fieldset.phtml +
@@ -23,7 +24,7 @@ function render({
                 <input type="checkbox" name="is_proceeding" id="is_proceeding" value="1" aria-controls="conference-fields" ${checked ? 'checked' : ''}>
                 <label for="is_proceeding">Proceedings</label>
             </div>
-            <fieldset id="conference-fields" ${checked ? '' : 'hidden'} data-text-end-before-start="${END_BEFORE_START}">
+            <fieldset id="conference-fields" ${checked ? '' : 'hidden'} data-text-end-before-start="${END_BEFORE_START}" data-text-out-of-range="${OUT_OF_RANGE}">
                 <legend>Conference and proceedings</legend>
                 <div id="conference_name-element" class="form-group">
                     <label for="conference_name" class="required">Name</label>
@@ -34,15 +35,18 @@ function render({
                     <input type="text" id="conference_acronym" name="conference_acronym" aria-describedby="conference_acronym-help" ${disabled}>
                     <p id="conference_acronym-help" class="help-block">e.g. MFPS</p>
                 </div>
-                <div id="conference_start-element" class="form-group">
-                    <label for="conference_start" class="required">Start</label>
-                    <input type="date" id="conference_start" name="conference_start" data-proceedings-required aria-describedby="conference_start-help" ${required} ${disabled}>
-                    <p id="conference_start-help" class="help-block">YYYY-MM-DD</p>
-                </div>
-                <div id="conference_end-element" class="form-group">
-                    <label for="conference_end" class="required">End</label>
-                    <input type="date" id="conference_end" name="conference_end" data-proceedings-required aria-describedby="conference_end-help" ${required} ${disabled}>
-                    <p id="conference_end-help" class="help-block">YYYY-MM-DD</p>
+                <div class="form-group" role="group" aria-labelledby="conference-group-4">
+                    <span id="conference-group-4">Conference dates</span>
+                    <div class="row">
+                        <div id="conference_start-element" class="col-sm-6">
+                            <label for="conference_start" class="required">From</label>
+                            <input type="date" id="conference_start" name="conference_start" min="1400-01-01" max="2200-12-31" data-proceedings-required ${required} ${disabled}>
+                        </div>
+                        <div id="conference_end-element" class="col-sm-6">
+                            <label for="conference_end" class="required">To</label>
+                            <input type="date" id="conference_end" name="conference_end" min="1400-01-01" max="2200-12-31" data-proceedings-required ${required} ${disabled}>
+                        </div>
+                    </div>
                 </div>
                 <div id="conference_doi_group" class="form-group" data-prefix="${PREFIX}" data-status="${status}"
                      data-text-preview="DOI to deposit: %s" data-text-empty="No DOI" data-text-invalid="${SUFFIX_INVALID}">
@@ -55,7 +59,7 @@ function render({
                                ${status === 'requested' || status === 'public' ? 'readonly' : ''} ${disabled}>
                     </div>
                     <p id="conference_proceedings_doi-help" class="help-block">Help</p>
-                    <p id="conference_proceedings_doi-preview" class="help-block" aria-live="polite">initial</p>
+                    <p class="form-control-static"><span id="conference_proceedings_doi-preview" aria-live="polite">initial</span></p>
                 </div>
             </fieldset>
         </form>
@@ -276,15 +280,56 @@ describe('ConferenceProceeding', () => {
                 END_BEFORE_START
             );
             expect(end.getAttribute('aria-describedby')).toBe(
-                'conference_end-help conference_end-error'
+                'conference_end-error'
             );
+            expect(
+                byId('conference_end-element').classList.contains('has-error')
+            ).toBe(true);
+            expect(
+                byId('conference_start-element').classList.contains('has-error')
+            ).toBe(false);
 
             end.value = '2026-10-27';
             fire(end, 'blur');
             expect(byId('conference_end-error')).toBeNull();
-            expect(end.getAttribute('aria-describedby')).toBe(
-                'conference_end-help'
-            );
+            expect(end.hasAttribute('aria-describedby')).toBe(false);
+            expect(
+                byId('conference_end-element').classList.contains('has-error')
+            ).toBe(false);
+        });
+
+        test.each([
+            ['1399-12-31', '2026-10-29', 'conference_start'],
+            ['2026-10-27', '2201-01-01', 'conference_end'],
+        ])(
+            'a year Crossref refuses (%s - %s) is reported on its date',
+            (startValue, endValue, invalidId) => {
+                render({ checked: true });
+                ConferenceProceeding.init(document);
+                byId('conference_start').value = startValue;
+                byId('conference_end').value = endValue;
+
+                fire(byId(invalidId), 'change');
+
+                expect(byId(`${invalidId}-error`).textContent).toBe(
+                    OUT_OF_RANGE
+                );
+                expect(byId(invalidId).getAttribute('aria-invalid')).toBe(
+                    'true'
+                );
+            }
+        );
+
+        test('the first and last years accepted by Crossref are valid', () => {
+            render({ checked: true });
+            ConferenceProceeding.init(document);
+            byId('conference_start').value = '1400-01-01';
+            byId('conference_end').value = '2200-12-31';
+
+            fire(byId('conference_end'), 'change');
+
+            expect(byId('conference_start-error')).toBeNull();
+            expect(byId('conference_end-error')).toBeNull();
         });
     });
 

@@ -740,7 +740,7 @@ class Episciences_VolumesManager
             $date = DateTimeImmutable::createFromFormat('!Y-m-d', (string)$value);
             return $date !== false && $date->format('Y-m-d') === $value;
         });
-        $isoDate->setMessage('La date doit être au format AAAA-MM-JJ.', Zend_Validate_Callback::INVALID_VALUE);
+        $isoDate->setMessage("La date n'est pas valide.", Zend_Validate_Callback::INVALID_VALUE);
         $fields = [
             Episciences_Volume::VOLUME_CONFERENCE_NAME => ['label' => 'Nom de la conférence', 'validators' => $stringLength(512, 3)],
             Episciences_Volume::VOLUME_CONFERENCE_ACRONYM => ['label' => 'Acronyme de la conférence', 'validators' => $stringLength(127)],

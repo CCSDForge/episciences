@@ -19,7 +19,14 @@ final class ProceedingsValidator
     public const DOI_SUFFIX_MAX_LENGTH = 20;
     private const DOI_INFIX = '.proceedings.';
 
+    /** Years accepted by Crossref in conference_date (xrefYear) */
+    public const MIN_YEAR = 1400;
+    public const MAX_YEAR = 2200;
+    public const MIN_DATE = '1400-01-01';
+    public const MAX_DATE = '2200-12-31';
+
     public const MSG_REQUIRED = 'Ce champ est obligatoire pour des actes de conférence.';
+    public const MSG_DATE_OUT_OF_RANGE = 'L\'année doit être comprise entre 1400 et 2200.';
     public const MSG_END_BEFORE_START = 'La date de fin de la conférence doit être identique ou postérieure à la date de début.';
     public const MSG_DOI_SUFFIX_FORMAT = 'Le suffixe du DOI accepte uniquement les lettres sans accent, les chiffres, le point, le tiret et le tiret bas (20 caractères au maximum).';
     public const MSG_DOI_ALREADY_USED = 'Ce DOI est déjà utilisé par un autre volume de la revue.';
@@ -58,11 +65,10 @@ final class ProceedingsValidator
             }
         }
 
-        $start = self::value($values, Episciences_Volume::VOLUME_CONFERENCE_START_DATE);
-        $end = self::value($values, Episciences_Volume::VOLUME_CONFERENCE_END_DATE);
-        if ($start !== '' && $end !== '' && !isset($errors[Episciences_Volume::VOLUME_CONFERENCE_END_DATE]) && $end < $start) {
-            $errors[Episciences_Volume::VOLUME_CONFERENCE_END_DATE] = self::MSG_END_BEFORE_START;
-        }
+        $errors += $this->validateDates(
+            self::value($values, Episciences_Volume::VOLUME_CONFERENCE_START_DATE),
+            self::value($values, Episciences_Volume::VOLUME_CONFERENCE_END_DATE)
+        );
 
         $suffix = self::value($values, Episciences_Volume::VOLUME_CONFERENCE_DOI);
         if (!$doiLocked && $doiPrefix !== '' && $suffix !== '') {
@@ -73,6 +79,14 @@ final class ProceedingsValidator
         }
 
         return $errors;
+    }
+
+    /**
+     * Whether a Y-m-d date has a year Crossref accepts.
+     */
+    public static function isDateInCrossrefRange(string $date): bool
+    {
+        return $date >= self::MIN_DATE && $date <= self::MAX_DATE;
     }
 
     public static function isDoiSuffixValid(string $suffix): bool
@@ -101,6 +115,27 @@ final class ProceedingsValidator
         $position = strrpos($doi, self::DOI_INFIX);
 
         return $position === false ? '' : substr($doi, $position + strlen(self::DOI_INFIX));
+    }
+
+    /**
+     * Range accepted by Crossref, end not before start. Empty dates are reported as required.
+     *
+     * @return array<string, string>
+     */
+    private function validateDates(string $start, string $end): array
+    {
+        $errors = [];
+        foreach ([Episciences_Volume::VOLUME_CONFERENCE_START_DATE => $start, Episciences_Volume::VOLUME_CONFERENCE_END_DATE => $end] as $field => $date) {
+            if ($date !== '' && !self::isDateInCrossrefRange($date)) {
+                $errors[$field] = self::MSG_DATE_OUT_OF_RANGE;
+            }
+        }
+
+        if ($errors === [] && $start !== '' && $end !== '' && $end < $start) {
+            $errors[Episciences_Volume::VOLUME_CONFERENCE_END_DATE] = self::MSG_END_BEFORE_START;
+        }
+
+        return $errors;
     }
 
     private function validateDoiSuffix(string $suffix, string $doi, int $rvid, ?int $vid): ?string

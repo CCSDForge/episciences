@@ -175,6 +175,8 @@ final class CrossrefVolumeExporterTest extends TestCase
 
         self::assertNull($this->text($xpath, '//c:conference_date'));
         self::assertNull(CrossrefVolumeExporter::getConferenceDate('2026-02-30x', '2026-03-01'));
+        self::assertNull(CrossrefVolumeExporter::getConferenceDate('1399-12-31', '2026-03-01'), 'Year refused by Crossref');
+        self::assertNull(CrossrefVolumeExporter::getConferenceDate('2026-03-01', '2201-01-01'), 'Year refused by Crossref');
     }
 
     public function testEditorsAreDepositedAsContributors(): void

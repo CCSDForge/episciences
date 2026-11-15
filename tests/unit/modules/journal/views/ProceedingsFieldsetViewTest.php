@@ -138,6 +138,20 @@ final class ProceedingsFieldsetViewTest extends TestCase
             self::assertSame('true', $input->getAttribute('aria-required'));
         }
         self::assertSame('date', $this->element($xpath, 'conference_start')->getAttribute('type'));
+        foreach (['conference_start', 'conference_end'] as $id) {
+            $date = $this->element($xpath, $id);
+            self::assertSame(ProceedingsValidator::MIN_DATE, $date->getAttribute('min'), 'Years accepted by Crossref');
+            self::assertSame(ProceedingsValidator::MAX_DATE, $date->getAttribute('max'));
+            self::assertFalse($date->hasAttribute('aria-describedby'), 'No format hint: the browser shows the date in its own format');
+        }
+        // Related fields share a labelled group
+        foreach ([['conference_acronym', 'conference_number'], ['conference_start', 'conference_end']] as $pair) {
+            $groups = $xpath->query(sprintf('//*[@role="group"][.//*[@id="%s"]][.//*[@id="%s"]]', ...$pair));
+            self::assertSame(1, $groups->length, implode(', ', $pair));
+            $group = $groups->item(0);
+            self::assertInstanceOf(DOMElement::class, $group);
+            self::assertNotNull($this->element($xpath, $group->getAttribute('aria-labelledby')));
+        }
         self::assertSame('2026-10-27', $this->element($xpath, 'conference_start')->getAttribute('value'));
         self::assertFalse($this->element($xpath, 'conference_acronym')->hasAttribute('required'));
     }
@@ -173,7 +187,7 @@ final class ProceedingsFieldsetViewTest extends TestCase
         $preview = $this->element($xpath, 'conference_proceedings_doi-preview');
         self::assertSame('polite', $preview->getAttribute('aria-live'));
         self::assertStringContainsString(self::PREFIX . '51', $preview->textContent);
-        self::assertStringContainsString('Dépôt programmé', $xpath->query('//span[contains(@class, "label")]')->item(0)->textContent);
+        self::assertStringContainsString('Dépôt programmé', $xpath->query('//span[contains(concat(" ", @class, " "), " label ")]')->item(0)->textContent);
         self::assertSame(1, $xpath->query('//a[@href="/volume/export/id/1134"]')->length, 'Crossref XML preview');
     }
 

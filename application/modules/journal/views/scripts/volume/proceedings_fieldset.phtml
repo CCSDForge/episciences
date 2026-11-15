@@ -1,68 +1,90 @@
 <?php
 /**
  * Conference fields and proceedings DOI of the volume form, shown when "Actes de conférences" is checked
- * (public/js/volume/confproceeding.js).
+ * (public/js/volume/confproceeding.js). Related fields (acronym and number, start and end dates)
+ * share a row; each input is rendered by volume/proceedings_field.phtml.
  *
  * @var Zend_View $this
  * @var Ccsd_Form $form
  * @var array<string, mixed> $doi data of the DOI row, see Episciences_VolumesManager::getProceedingsDoiViewData()
  */
+
+use Episciences\Volume\ProceedingsValidator;
+
 $form = $this->form;
 $isProceeding = (string)$form->getElement(Episciences_Volume::VOLUME_IS_PROCEEDING)->getValue() === '1';
 
-$requiredFields = [
-    Episciences_Volume::VOLUME_CONFERENCE_NAME,
-    Episciences_Volume::VOLUME_CONFERENCE_START_DATE,
-    Episciences_Volume::VOLUME_CONFERENCE_END_DATE,
+// Crossref accepts conference years between ProceedingsValidator::MIN_YEAR and MAX_YEAR
+$dateAttributes = ['min' => ProceedingsValidator::MIN_DATE, 'max' => ProceedingsValidator::MAX_DATE];
+
+/** Rows: a single field, or a group of related fields with a common label */
+$rows = [
+    ['fields' => [Episciences_Volume::VOLUME_CONFERENCE_NAME => []]],
+    [
+        'label' => 'Acronyme et numéro',
+        'fields' => [
+            Episciences_Volume::VOLUME_CONFERENCE_ACRONYM => ['label' => 'Acronyme', 'help' => 'Exemple : MFPS'],
+            Episciences_Volume::VOLUME_CONFERENCE_NUMBER => ['label' => 'Numéro', 'help' => 'Exemple : 51', 'attributes' => ['inputmode' => 'numeric']],
+        ],
+    ],
+    ['fields' => [Episciences_Volume::VOLUME_CONFERENCE_THEME => []]],
+    ['fields' => [Episciences_Volume::VOLUME_CONFERENCE_LOCATION => []]],
+    [
+        'label' => 'Dates de la conférence',
+        'fields' => [
+            Episciences_Volume::VOLUME_CONFERENCE_START_DATE => ['label' => 'Du', 'type' => 'date', 'required' => true, 'attributes' => $dateAttributes],
+            Episciences_Volume::VOLUME_CONFERENCE_END_DATE => ['label' => 'Au', 'type' => 'date', 'required' => true, 'attributes' => $dateAttributes],
+        ],
+    ],
 ];
-$dateFields = [Episciences_Volume::VOLUME_CONFERENCE_START_DATE, Episciences_Volume::VOLUME_CONFERENCE_END_DATE];
-$helpTexts = [
-    Episciences_Volume::VOLUME_CONFERENCE_ACRONYM => $this->translate('Exemple : MFPS'),
-    Episciences_Volume::VOLUME_CONFERENCE_NUMBER => $this->translate('Exemple : 51'),
-    Episciences_Volume::VOLUME_CONFERENCE_START_DATE => $this->translate('Format : AAAA-MM-JJ'),
-    Episciences_Volume::VOLUME_CONFERENCE_END_DATE => $this->translate('Format : AAAA-MM-JJ'),
-];
+
+$renderField = function (string $name, array $options, string $labelClass, ?string $inputColumn = null) use ($form, $isProceeding): string {
+    $element = $form->getElement($name);
+
+    return $this->partial('volume/proceedings_field.phtml', [
+        'element' => $element,
+        'label' => $options['label'] ?? (string)$element->getLabel(),
+        'labelClass' => $labelClass,
+        'inputColumn' => $inputColumn,
+        'type' => $options['type'] ?? 'text',
+        'required' => $options['required'] ?? $name === Episciences_Volume::VOLUME_CONFERENCE_NAME,
+        'enabled' => $isProceeding,
+        'help' => $options['help'] ?? null,
+        'attributes' => $options['attributes'] ?? [],
+    ]);
+};
+$hasError = static fn(array $names): bool => array_filter(
+    $names,
+    static fn(string $name): bool => $form->getElement($name)->getMessages() !== []
+) !== [];
 ?>
 <fieldset id="conference-fields" class="proceedings-fields"<?= $isProceeding ? '' : ' hidden' ?>
-          data-text-end-before-start="<?= $this->escape($this->translate(Episciences\Volume\ProceedingsValidator::MSG_END_BEFORE_START)) ?>">
+          data-text-end-before-start="<?= $this->escape($this->translate(ProceedingsValidator::MSG_END_BEFORE_START)) ?>"
+          data-text-out-of-range="<?= $this->escape($this->translate(ProceedingsValidator::MSG_DATE_OUT_OF_RANGE)) ?>">
     <legend><?= $this->escape($this->translate('Conférence et actes')) ?></legend>
 
-    <?php foreach (Episciences_VolumesManager::PROCEEDINGS_FIELDS as $name) : ?>
-        <?php
-        $element = $form->getElement($name);
-        $messages = $element->getMessages();
-        $describedBy = [];
-        if (isset($helpTexts[$name])) {
-            $describedBy[] = $name . '-help';
-        }
-        if ($messages !== []) {
-            $describedBy[] = $name . '-error';
-        }
-        $isRequired = in_array($name, $requiredFields, true);
-        ?>
-        <div id="<?= $this->escape($name) ?>-element" class="form-group<?= $messages !== [] ? ' has-error' : '' ?>">
-            <label for="<?= $this->escape($name) ?>" class="col-md-3 control-label <?= $isRequired ? 'required' : 'optional' ?>">
-                <?= $this->escape($this->translate($element->getLabel())) ?>
-            </label>
-            <div class="col-md-9">
-                <input type="<?= in_array($name, $dateFields, true) ? 'date' : 'text' ?>"
-                       id="<?= $this->escape($name) ?>"
-                       name="<?= $this->escape($name) ?>"
-                       value="<?= $this->escape((string)$element->getValue()) ?>"
-                       class="form-control input-sm"
-                       <?= $isRequired ? 'data-proceedings-required' : '' ?>
-                       <?= $isRequired && $isProceeding ? 'required aria-required="true"' : '' ?>
-                       <?= $isProceeding ? '' : 'disabled' ?>
-                       <?= $describedBy !== [] ? 'aria-describedby="' . $this->escape(implode(' ', $describedBy)) . '"' : '' ?>
-                       <?= $messages !== [] ? 'aria-invalid="true"' : '' ?>>
-                <?php if (isset($helpTexts[$name])) : ?>
-                    <p id="<?= $this->escape($name) ?>-help" class="help-block"><?= $this->escape($helpTexts[$name]) ?></p>
-                <?php endif; ?>
-                <?php if ($messages !== []) : ?>
-                    <p id="<?= $this->escape($name) ?>-error" class="help-block"><?= $this->escape(implode(' ', $messages)) ?></p>
-                <?php endif; ?>
+    <?php foreach ($rows as $index => $row) : ?>
+        <?php $names = array_keys($row['fields']); ?>
+        <?php if (!isset($row['label'])) : ?>
+            <?php $name = $names[0]; ?>
+            <div id="<?= $this->escape($name) ?>-element" class="form-group<?= $hasError($names) ? ' has-error' : '' ?>">
+                <?= $renderField($name, $row['fields'][$name], 'col-md-3 control-label', 'col-md-9') ?>
             </div>
-        </div>
+        <?php else : ?>
+            <?php $groupId = 'conference-group-' . $index; ?>
+            <div class="form-group" role="group" aria-labelledby="<?= $groupId ?>">
+                <span id="<?= $groupId ?>" class="col-md-3 control-label"><?= $this->escape($this->translate($row['label'])) ?></span>
+                <div class="col-md-9">
+                    <div class="row">
+                        <?php foreach ($row['fields'] as $name => $options) : ?>
+                            <div id="<?= $this->escape($name) ?>-element" class="col-sm-6<?= $hasError([$name]) ? ' has-error' : '' ?>">
+                                <?= $renderField($name, $options, 'small') ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
     <?php endforeach; ?>
 
     <?= $this->partial('volume/doi_proceedings_row.phtml', ['doi' => $this->doi, 'disabled' => !$isProceeding]) ?>

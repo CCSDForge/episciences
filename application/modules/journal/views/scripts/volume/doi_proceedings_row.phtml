@@ -16,7 +16,9 @@ $inputId = Episciences_Volume::VOLUME_CONFERENCE_DOI;
 $hasError = !empty($doi['error']);
 $status = DoiQueue::STATUS_BADGES[$doi['status']] ?? null;
 $currentDoi = $doi['locked'] ? $doi['doi'] : ($doi['suffix'] !== '' ? $doi['prefix'] . $doi['suffix'] : '');
-$describedBy = [$inputId . '-prefix', $inputId . '-help', $inputId . '-preview'];
+$describedBy = $doi['locked']
+    ? [$inputId . '-prefix', $inputId . '-preview', $inputId . '-note']
+    : [$inputId . '-prefix', $inputId . '-help', $inputId . '-preview', $inputId . '-note'];
 if ($hasError) {
     $describedBy[] = $inputId . '-error';
 }
@@ -42,55 +44,58 @@ if ($hasError) {
                 <?php endif; ?>
             </p>
         <?php else : ?>
-            <div class="input-group input-group-sm">
-                <span class="input-group-addon" id="<?= $inputId ?>-prefix"><?= $this->escape($doi['prefix']) ?></span>
-                <input type="text"
-                       id="<?= $inputId ?>"
-                       name="<?= $inputId ?>"
-                       value="<?= $this->escape($doi['suffix']) ?>"
-                       class="form-control"
-                       maxlength="<?= ProceedingsValidator::DOI_SUFFIX_MAX_LENGTH ?>"
-                       pattern="<?= $this->escape(ProceedingsValidator::DOI_SUFFIX_PATTERN) ?>"
-                       autocomplete="off"
-                       aria-describedby="<?= $this->escape(implode(' ', $describedBy)) ?>"
-                       <?= $doi['locked'] ? 'readonly' : '' ?>
-                       <?= !empty($this->disabled) ? 'disabled' : '' ?>
-                       <?= $hasError ? 'aria-invalid="true"' : '' ?>>
-            </div>
-            <?php if ($hasError) : ?>
-                <p id="<?= $inputId ?>-error" class="help-block"><?= $this->escape($doi['error']) ?></p>
-            <?php endif; ?>
-            <p id="<?= $inputId ?>-help" class="help-block">
-                <?php if ($doi['locked']) : ?>
-                    <?= $this->escape($this->translate('Ce DOI a été transmis à Crossref et ne peut plus être modifié.')) ?>
-                <?php else : ?>
-                    <?= $this->escape($this->translate('Lettres sans accent, chiffres, point, tiret et tiret bas, 20 caractères au maximum.')) ?>
-                    <?= $this->escape($this->translate("Après l'enregistrement du volume, le DOI sera déposé auprès de Crossref lors du prochain traitement automatique et ne pourra plus être modifié ensuite.")) ?>
-                <?php endif; ?>
-            </p>
-            <p id="<?= $inputId ?>-preview" class="help-block" aria-live="polite">
-                <?php if ($doi['locked']) : ?>
-                    <?= $this->escape(sprintf($this->translate('DOI : %s'), $currentDoi)) ?>
-                <?php else : ?>
-                    <?= $this->escape($currentDoi !== ''
-                        ? sprintf($this->translate('DOI qui sera déposé : %s'), $currentDoi)
-                        : $this->translate('Aucun DOI ne sera déposé pour ces actes.')) ?>
-                <?php endif; ?>
-            </p>
-            <?php if ($status !== null) : ?>
-                <p class="help-block">
-                    <?= $this->escape($this->translate('Statut du DOI :')) ?>
-                    <span class="label <?= $status['class'] ?>"><?= $this->escape($this->translate($status['label'])) ?></span>
-                    <?php if ($doi['status'] === DoiQueue::STATUS_PUBLIC && $doi['doi'] !== '') : ?>
-                        <a href="<?= $this->escape('https://doi.org/' . $doi['doi']) ?>"><?= $this->escape('https://doi.org/' . $doi['doi']) ?></a>
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div class="input-group">
+                        <span class="input-group-addon" id="<?= $inputId ?>-prefix"><?= $this->escape($doi['prefix']) ?></span>
+                        <input type="text"
+                               id="<?= $inputId ?>"
+                               name="<?= $inputId ?>"
+                               value="<?= $this->escape($doi['suffix']) ?>"
+                               class="form-control"
+                               maxlength="<?= ProceedingsValidator::DOI_SUFFIX_MAX_LENGTH ?>"
+                               pattern="<?= $this->escape(ProceedingsValidator::DOI_SUFFIX_PATTERN) ?>"
+                               autocomplete="off"
+                               spellcheck="false"
+                               aria-describedby="<?= $this->escape(implode(' ', $describedBy)) ?>"
+                               <?= $doi['locked'] ? 'readonly' : '' ?>
+                               <?= !empty($this->disabled) ? 'disabled' : '' ?>
+                               <?= $hasError ? 'aria-invalid="true"' : '' ?>>
+                    </div>
+                    <?php if ($hasError) : ?>
+                        <p id="<?= $inputId ?>-error" class="help-block"><?= $this->escape($doi['error']) ?></p>
                     <?php endif; ?>
-                </p>
-            <?php endif; ?>
-            <?php if ($doi['vid'] !== null && $doi['doi'] !== '') : ?>
-                <p class="help-block">
-                    <a href="<?= $this->escape('/volume/export/id/' . $doi['vid']) ?>"><?= $this->escape($this->translate('Prévisualiser le XML Crossref')) ?></a>
-                </p>
-            <?php endif; ?>
+                    <?php if (!$doi['locked']) : ?>
+                        <p id="<?= $inputId ?>-help" class="help-block"><?= $this->escape($this->translate('Lettres sans accent, chiffres, point, tiret et tiret bas, 20 caractères au maximum.')) ?></p>
+                    <?php endif; ?>
+                    <p class="form-control-static">
+                        <span class="glyphicon glyphicon-link" aria-hidden="true"></span>
+                        <span id="<?= $inputId ?>-preview" aria-live="polite"><?php if ($doi['locked']) : ?><?= $this->escape(sprintf($this->translate('DOI : %s'), $currentDoi)) ?><?php else : ?><?= $this->escape($currentDoi !== ''
+                            ? sprintf($this->translate('DOI qui sera déposé : %s'), $currentDoi)
+                            : $this->translate('Aucun DOI ne sera déposé pour ces actes.')) ?><?php endif; ?></span>
+                        <?php if ($status !== null) : ?>
+                            <span class="label <?= $status['class'] ?>"><?= $this->escape($this->translate($status['label'])) ?></span>
+                        <?php endif; ?>
+                    </p>
+                    <?php if ($doi['status'] === DoiQueue::STATUS_PUBLIC && $doi['doi'] !== '') : ?>
+                        <p><a href="<?= $this->escape('https://doi.org/' . $doi['doi']) ?>"><?= $this->escape('https://doi.org/' . $doi['doi']) ?></a></p>
+                    <?php endif; ?>
+                </div>
+                <div class="panel-footer clearfix">
+                    <p id="<?= $inputId ?>-note" class="small">
+                        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                        <?= $this->escape($doi['locked']
+                            ? $this->translate('Ce DOI a été transmis à Crossref et ne peut plus être modifié.')
+                            : $this->translate("Après l'enregistrement du volume, le DOI sera déposé auprès de Crossref lors du prochain traitement automatique et ne pourra plus être modifié ensuite.")) ?>
+                    </p>
+                    <?php if ($doi['vid'] !== null && $doi['doi'] !== '') : ?>
+                        <a class="btn btn-default btn-sm pull-right" href="<?= $this->escape('/volume/export/id/' . $doi['vid']) ?>">
+                            <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+                            <?= $this->escape($this->translate('Prévisualiser le XML Crossref')) ?>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
         <?php endif; ?>
     </div>
 </div>

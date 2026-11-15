@@ -131,7 +131,9 @@ const ConferenceProceeding = (() => {
      */
     function setClientError(input, message) {
         const errorId = `${input.id}-error`;
-        const group = input.closest('.form-group');
+        // Paired fields carry their error state on their own column
+        const group =
+            input.closest('[id$="-element"]') || input.closest('.form-group');
         const container = input.closest('.input-group') || input;
         let error = input.ownerDocument.getElementById(errorId);
 
@@ -178,6 +180,21 @@ const ConferenceProceeding = (() => {
     }
 
     /**
+     * @param {HTMLInputElement} input date input carrying the range accepted by Crossref (min, max)
+     * @param {string} message
+     * @returns {string} the error, empty when the date is empty or in range
+     */
+    function rangeError(input, message) {
+        const { value, min, max } = input;
+        const isOutOfRange =
+            value !== '' &&
+            ((min !== '' && value < min) || (max !== '' && value > max));
+        return isOutOfRange ? message : '';
+    }
+
+    /**
+     * Years accepted by Crossref, end date not before the start date.
+     *
      * @param {Document|Element} root
      */
     function validateDates(root) {
@@ -188,12 +205,21 @@ const ConferenceProceeding = (() => {
             return;
         }
 
-        const isEndBeforeStart =
-            start.value !== '' && end.value !== '' && end.value < start.value;
-        setClientError(
-            end,
-            isEndBeforeStart ? fieldset.dataset.textEndBeforeStart || '' : ''
-        );
+        const outOfRange = fieldset.dataset.textOutOfRange || '';
+        const startError = rangeError(start, outOfRange);
+        let endError = rangeError(end, outOfRange);
+        if (
+            startError === '' &&
+            endError === '' &&
+            start.value !== '' &&
+            end.value !== '' &&
+            end.value < start.value
+        ) {
+            endError = fieldset.dataset.textEndBeforeStart || '';
+        }
+
+        setClientError(start, startError);
+        setClientError(end, endError);
     }
 
     /**

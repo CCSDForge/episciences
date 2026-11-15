@@ -151,7 +151,8 @@ final class CrossrefVolumeExporter
     }
 
     /**
-     * Conference dates split as Crossref expects them, null unless both dates are valid.
+     * Conference dates split as Crossref expects them, null unless both dates are valid and in
+     * the years Crossref accepts.
      *
      * @return array<string, string>|null
      */
@@ -160,7 +161,9 @@ final class CrossrefVolumeExporter
         $startDate = DateTimeImmutable::createFromFormat('!Y-m-d', $start);
         $endDate = DateTimeImmutable::createFromFormat('!Y-m-d', $end);
 
-        if ($startDate === false || $endDate === false) {
+        if ($startDate === false || $endDate === false
+            || !ProceedingsValidator::isDateInCrossrefRange($startDate->format('Y-m-d'))
+            || !ProceedingsValidator::isDateInCrossrefRange($endDate->format('Y-m-d'))) {
             return null;
         }
 

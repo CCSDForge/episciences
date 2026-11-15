@@ -82,6 +82,15 @@ final class ProceedingsValidatorTest extends TestCase
         self::assertSame([], $this->validate(['conference_end' => '2026-10-27']), 'Same day');
     }
 
+    public function testDatesOutsideTheCrossrefYearsAreRefused(): void
+    {
+        self::assertSame([
+            'conference_start' => ProceedingsValidator::MSG_DATE_OUT_OF_RANGE,
+            'conference_end' => ProceedingsValidator::MSG_DATE_OUT_OF_RANGE,
+        ], $this->validate(['conference_start' => '1399-12-31', 'conference_end' => '2201-01-01']));
+        self::assertSame([], $this->validate(['conference_start' => '1400-01-01', 'conference_end' => '2200-12-31']));
+    }
+
     public function testInvalidSuffixIsRefusedWithoutQuery(): void
     {
         self::assertSame(['conference_proceedings_doi' => ProceedingsValidator::MSG_DOI_SUFFIX_FORMAT], $this->validate(['conference_proceedings_doi' => 'a/b']));
