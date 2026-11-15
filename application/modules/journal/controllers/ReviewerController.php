@@ -38,6 +38,8 @@ class ReviewerController extends PaperDefaultController
      */
     private const CONFIRM_ACCEPTANCE_PARAM = 'confirm-acceptance';
 
+    private const INVITATION_NOT_FOUND = "Cette invitation n'existe pas !";
+
     /**
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
@@ -51,32 +53,16 @@ class ReviewerController extends PaperDefaultController
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $invitationId = $request->getParam('id');
-
         $tmpUser = null;
 
-        // check if invitation id is valid
-        if (!$invitationId || !is_numeric($invitationId)) {
-            $this->view->errors = array("Cette invitation n'existe pas !");
+        $found = $this->findInvitationOfJournal($request->getParam('id'));
+
+        if ($found === null) {
+            $this->view->errors = [self::INVITATION_NOT_FOUND];
             return;
         }
 
-        // fetch invitation
-        $invitation = Episciences_User_InvitationsManager::find(array('ID' => $invitationId));
-
-        if (!$invitation) {
-            $this->view->errors = array("Cette invitation n'existe pas !");
-            return;
-        }
-
-        // fetch assignment
-        $assignmentId = $invitation->getAid();
-        $assignment = Episciences_User_AssignmentsManager::findById($assignmentId);
-
-        if (!$assignment) {
-            $this->view->errors = array("Cette invitation n'existe pas !");
-            return;
-        }
+        [$invitation, $assignment] = $found;
 
         if (!Episciences_Auth::isLogged() && $assignment->isTmp_user()) {
             $tmpUser = Episciences_TmpUsersManager::findById($assignment->getUid()) ?: null;
@@ -93,43 +79,25 @@ class ReviewerController extends PaperDefaultController
         // fetch reviewer answer (if there is one)
         $invitation->loadAnswer();
 
-        //  error handling
-        if (
-            $invitation->isAnswered() ||
-            $invitation->hasExpired() ||
-            $invitation->isCancelled()
-        ) {
+        $closedMessage = $this->closedInvitationMessage($invitation, $assignment);
 
-            $errorMsg = $this->alreadyAnsweredMessage($assignment);
-
-            if (
-                $invitation->hasExpired() ||
-                $invitation->isCancelled()
-            ) {
-
-                if ($invitation->hasExpired()) {
-                    $errorMsg = 'Cette invitation a expiré.';
-                } else {
-
-                    $errorMsg = "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article.";
-                }
-
-
-            }
-
+        if ($closedMessage !== null) {
             $this->view->displayInvitationDetails = true;
             $this->view->invitation = $invitation;
-            $this->view->errors = $errorMsg;
+            $this->view->errors = $closedMessage;
             return;
-
         }
 
-        // processing of the request
-        if (!$invitation->hasExpired() && !$invitation->isAnswered()) {
-            $this->view->jQuery()->addJavascriptFile("/js/reviewer/invitation.js");
-        }
-
+        // loaded only for an invitation still open: an answered, expired or cancelled one keeps its status message
         $paper = Episciences_PapersManager::get($assignment->getItemid());
+
+        if (!$paper) {
+            $this->view->errors = [self::INVITATION_NOT_FOUND];
+            return;
+        }
+
+        $this->view->jQuery()->addJavascriptFile("/js/reviewer/invitation.js");
+
         $checkIsAlreadyInvited = $this->checkIsAlreadyInvited($paper);
         $isAlreadyInvited = $checkIsAlreadyInvited['isAlreadyInvited'] ?? false;
 
@@ -206,6 +174,59 @@ class ReviewerController extends PaperDefaultController
 
         $this->answerProcess($request, $invitation, $assignment, $paper, $tmpUser);
 
+    }
+
+    /**
+     * The invitation of the request and its assignment in the current journal, null when one of them is missing.
+     *
+     * The assignment is looked up in the current journal only: an invitation of another journal is reported as
+     * missing, without telling that it exists elsewhere, and logged as such (scanning of invitation ids).
+     *
+     * @return array{Episciences_User_Invitation, Episciences_User_Assignment}|null
+     */
+    private function findInvitationOfJournal(mixed $invitationId): ?array
+    {
+        if (!$invitationId || !is_numeric($invitationId)) {
+            return null;
+        }
+
+        $invitation = Episciences_User_InvitationsManager::find(['ID' => $invitationId]);
+
+        if (!$invitation) {
+            return null;
+        }
+
+        $assignment = Episciences_User_AssignmentsManager::find(['ID' => $invitation->getAid(), 'RVID' => RVID]);
+
+        if (!$assignment) {
+            AccessLog::denied(
+                AccessLog::NOT_FOUND_MASKED,
+                'invitation_not_in_journal',
+                ['invitation_id' => (int)$invitation->getId()]
+            );
+            return null;
+        }
+
+        return [$invitation, $assignment];
+    }
+
+    /**
+     * Message for an invitation that can no longer be answered (expired, cancelled or answered), null otherwise
+     */
+    private function closedInvitationMessage(
+        Episciences_User_Invitation $invitation,
+        Episciences_User_Assignment $assignment
+    ): ?string
+    {
+        if ($invitation->hasExpired()) {
+            return 'Cette invitation a expiré.';
+        }
+
+        if ($invitation->isCancelled()) {
+            return "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article.";
+        }
+
+        return $invitation->isAnswered() ? $this->alreadyAnsweredMessage($assignment) : null;
     }
 
     /**
