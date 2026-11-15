@@ -42,6 +42,7 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     private const INVITATION_ID = 7;
     private const INVITED_UID = 200;
     private const OTHER_UID = 100;
+    private const INVITED_AID = 300;
     private const TMP_EMAIL = 'invited@example.org';
     private const INVALID_LINK = 'Lien non valide; le jeton transmis dans la requête est erroné.';
 
@@ -61,6 +62,14 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
             new Zend_Controller_Response_HttpTestCase()
         ) extends \ReviewerController {
             public ?string $redirectedTo = null;
+
+            /** @var array<int, int> assignment id => account that accepted its invitation, instead of the database */
+            public array $acceptedWith = [];
+
+            protected function isAcceptedWithAccount(int $invitedAid, int $uid): bool
+            {
+                return ($this->acceptedWith[$invitedAid] ?? null) === $uid;
+            }
 
             protected function getInvitationToken(): InvitationToken
             {
@@ -113,6 +122,7 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     private function assignment(bool $tmpUser = false)
     {
         $assignment = $this->createMock(Episciences_User_Assignment::class);
+        $assignment->method('getId')->willReturn(self::INVITED_AID);
         $assignment->method('getUid')->willReturn(self::INVITED_UID);
         $assignment->method('isTmp_user')->willReturn($tmpUser);
 
@@ -383,6 +393,26 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
 
         self::assertFalse($this->isAuthorized($this->invitation(null, false), $this->assignment()));
         self::assertSame('Vous avez déjà répondu à cette invitation.', $this->controller->view->errors);
+    }
+
+    public function testStatusRowTellsTheAccountCreatedOnAcceptingTheyAlreadyAnswered(): void
+    {
+        // invited without an account, the reviewer accepted by creating this one
+        $this->controller->acceptedWith[self::INVITED_AID] = self::OTHER_UID;
+        $this->logIn(self::OTHER_UID);
+
+        self::assertFalse($this->isAuthorized($this->invitation(null, false), $this->assignment(true)));
+        self::assertSame('Vous avez déjà répondu à cette invitation.', $this->controller->view->errors);
+    }
+
+    public function testStatusRowOfATemporaryUserTellsAnotherAccountOnlyThatAReplyWasSent(): void
+    {
+        $this->controller->acceptedWith[self::INVITED_AID] = self::OTHER_UID;
+        // same id as the temporary user: not the invitee either
+        $this->logIn(self::INVITED_UID);
+
+        self::assertFalse($this->isAuthorized($this->invitation(null, false), $this->assignment(true)));
+        self::assertSame("Il apparaît qu'une réponse a déjà été transmise.", $this->controller->view->errors);
     }
 
     // -------------------------------------------------------------------------

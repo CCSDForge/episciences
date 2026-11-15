@@ -541,8 +541,8 @@ test.describe('Reviewer invitation answer', () => {
 
             await test.step('the invitation can no longer be answered', async () => {
                 await page.goto(invitationPath);
-                // The invitation was sent to the temporary account, not to the one created from it
-                await expect(page.getByText('It appears that a reply has already been sent.')).toBeVisible();
+                // Sent to the temporary account, it was accepted with the account created from it: the invitee's
+                await expect(page.getByText("You've already answered this invitation.")).toBeVisible();
                 await expect(page.getByText('Invitation accepted on')).toBeVisible();
                 await expect(page.locator('#accept-button')).toHaveCount(0);
             });
