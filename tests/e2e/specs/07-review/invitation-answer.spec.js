@@ -3,6 +3,7 @@ const { E2E_PASSWORD } = require('../../helpers/login');
 const { runPhp } = require('../../helpers/app-cli');
 const {
     submitArxivPaper,
+    openPaperManagement,
     inviteKnownReviewer,
     inviteNewReviewer,
     createVolume,
@@ -315,6 +316,59 @@ test.describe('Reviewer invitation answer', () => {
             } finally {
                 await context.close();
             }
+        });
+    });
+
+    test('a cancelled invitation can no longer be answered', async ({ authorPage, adminPage, reviewerPage, mailpit }) => {
+        test.setTimeout(180000);
+        let docid;
+        let invitationPath;
+        let csrfToken;
+
+        await test.step('the editorial team invites a reviewer', async () => {
+            docid = await submitArxivPaper(authorPage, { arxivId: '1606.06565' });
+            invitationPath = await inviteReviewer({ adminPage, mailpit }, docid);
+
+            // The request token of the session, as the reviewer had the answer form open before the cancellation
+            await reviewerPage.goto(invitationPath);
+            const acceptForm = reviewerPage.locator('form', { has: reviewerPage.locator('#submitaccept') });
+            csrfToken = await acceptForm.locator('input[name="csrf_token"]').inputValue();
+        });
+
+        await test.step('the editorial team removes the reviewer before any answer', async () => {
+            await openPaperManagement(adminPage, docid);
+            // The pending invitations are collapsed
+            await adminPage.locator('[data-target="#pending-invitations"]').click();
+            const pending = adminPage.locator('#pending-invitations');
+            await expect(pending).toBeVisible();
+            await pending.locator('.reviewer', { hasText: /E2E Reviewer/i }).locator('.popover-link').click();
+            await adminPage.locator('.popover .context-menu a', { hasText: 'Remove this reviewer' }).click();
+
+            const removed = adminPage.waitForResponse(response => response.url().includes('/administratepaper/savereviewerremoval'));
+            await adminPage.locator('#submit-modal').click();
+            expect((await removed).ok()).toBeTruthy();
+            await expect(adminPage.locator('#pending-invitations .reviewer', { hasText: /E2E Reviewer/i })).toHaveCount(0);
+        });
+
+        await test.step('the reviewer is told the invitation was cancelled, and cannot answer it', async () => {
+            await reviewerPage.goto(invitationPath);
+            await expect(
+                reviewerPage.getByText("This invitation has been cancelled, you don't need to review this article anymore.")
+            ).toBeVisible();
+            await expect(reviewerPage.locator('#submitaccept')).toHaveCount(0);
+            await expect(reviewerPage.locator('#refuse-button')).toHaveCount(0);
+        });
+
+        await test.step('an acceptance posted from the form opened before is not stored', async () => {
+            const response = await reviewerPage.request.post(invitationPath, {
+                form: { submitaccept: '', csrf_token: csrfToken },
+                maxRedirects: 0,
+            });
+            // A stored acceptance redirects to the rating page
+            expect(response.status()).toBe(200);
+
+            await reviewerPage.goto(invitationPath);
+            await expect(reviewerPage.getByText('This invitation has been cancelled')).toBeVisible();
         });
     });
 
