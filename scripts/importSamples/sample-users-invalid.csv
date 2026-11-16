@@ -1,0 +1,7 @@
+firstname;lastname;email;role;lang
+Camille;Durand;camille.durand.example.org;;fr
+Dominique;;dominique.martin@example.org;editor;fr
+Alex;Smith;alex.smith@example.org;redactor;en
+Sam;O'Connor;sam.oconnor@example.org;reviewer;de
+Jordan;Nguyen;jordan.nguyen@example.org;secretary;
+Jordan;Nguyen;Jordan.Nguyen@example.org;reviewer;

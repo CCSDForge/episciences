@@ -68,6 +68,7 @@ require_once __DIR__ . '/ManuscriptProbeCommand.php';
 // Journal provisioning commands
 require_once __DIR__ . '/CreateJournalCommand.php';
 require_once __DIR__ . '/SeedJournalDemoCommand.php';
+require_once __DIR__ . '/ImportUsersCommand.php';
 
 use Symfony\Component\Console\Application;
 
@@ -164,5 +165,6 @@ $application->addCommand(new ManuscriptProbeCommand());
 // Journal provisioning commands
 $application->addCommand(new CreateJournalCommand());
 $application->addCommand(new SeedJournalDemoCommand());
+$application->addCommand(new ImportUsersCommand());
 
 $application->run();
