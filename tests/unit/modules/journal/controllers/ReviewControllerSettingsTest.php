@@ -298,7 +298,10 @@ final class ReviewControllerSettingsTest extends ControllerTestCase
     /**
      * @param array<string, mixed> $settings
      */
-    private function renderPage(array $settings = [], bool $canEditDoiSettings = false, string $language = 'fr'): string
+    /**
+     * @param array<string, string> $licenseNames code => name, as set by the controller
+     */
+    private function renderPage(array $settings = [], bool $canEditDoiSettings = false, string $language = 'fr', array $licenseNames = []): string
     {
         $previousTranslate = Zend_Registry::isRegistered('Zend_Translate') ? Zend_Registry::get('Zend_Translate') : null;
         $content = $language === 'en' ? require APPLICATION_PATH . '/languages/en/views.php' : ['x' => 'x'];
@@ -320,6 +323,7 @@ final class ReviewControllerSettingsTest extends ControllerTestCase
             $view->canEditDoiSettings = $canEditDoiSettings;
             $view->defaultLicense = $journal->getDefaultLicense();
             $view->allowedLicenses = $journal->getAllowedLicenses();
+            $view->licenseNames = $licenseNames;
 
             return $view->render('review/settings.phtml');
         } finally {
@@ -385,10 +389,22 @@ final class ReviewControllerSettingsTest extends ControllerTestCase
     {
         $html = $this->renderPage([
             Episciences_Review::SETTING_LICENSE_DEFAULT => self::LICENSE,
-            Episciences_Review::SETTING_LICENSES_ALLOWED => json_encode([self::LICENSE, 'CC0-1.0']),
-        ]);
+            Episciences_Review::SETTING_LICENSES_ALLOWED => json_encode(['CC0-1.0', 'MIT', self::LICENSE]),
+        ], false, 'fr', [self::LICENSE => 'Creative Commons Attribution 4.0', 'CC0-1.0' => 'Creative Commons Zero <v1.0>']);
 
-        self::assertStringContainsString('<code>CC-BY-4.0</code>, <code>CC0-1.0</code>', $html);
+        // folded by default, the summary tells how many licenses are allowed
+        self::assertMatchesRegularExpression('#<details class="journal-settings-licenses-allowed">\s*<summary>.*?3 licences\s*</summary>\s*<ul class="journal-settings-license-list">#s', $html);
+
+        preg_match('#<ul class="journal-settings-license-list">(.*?)</ul>#s', $html, $list);
+        preg_match_all('#<li>\s*(.*?)\s*</li>#s', $list[1] ?? '', $items);
+        $items = array_map(static fn(string $item): string => preg_replace('#\s+#', ' ', $item), $items[1]);
+
+        // the default license first, then the others by name; an unknown license shows its code only
+        self::assertSame([
+            '<span class="journal-settings-license-name">Creative Commons Attribution 4.0</span> <code>CC-BY-4.0</code> <span class="label label-primary">par défaut</span>',
+            '<span class="journal-settings-license-name">Creative Commons Zero &lt;v1.0&gt;</span> <code>CC0-1.0</code>',
+            '<code>MIT</code>',
+        ], $items);
         self::assertStringContainsString('href="/review/licenses"', $html);
     }
 

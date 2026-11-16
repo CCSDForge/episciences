@@ -38,12 +38,13 @@
     outline-offset: 2px;
 }
 
-.journal-settings-effects-chevron {
+/* chevron of the collapsible boxes, turning when open */
+.journal-settings-chevron {
     font-size: .85em;
     transition: transform .15s ease-in-out;
 }
 
-.journal-settings-effects[open] .journal-settings-effects-chevron {
+details[open] > summary .journal-settings-chevron {
     transform: rotate(90deg);
 }
 
@@ -167,6 +168,61 @@
 .journal-settings-summary dd {
     margin: 0;
     overflow-wrap: anywhere;
+}
+
+/* Allowed licenses: collapsible, one per line, name then code */
+.journal-settings-licenses-allowed summary {
+    display: inline-flex;
+    align-items: center;
+    gap: .4em;
+    color: #005a87;
+    list-style: none;
+    cursor: pointer;
+}
+
+.journal-settings-licenses-allowed summary::-webkit-details-marker {
+    display: none;
+}
+
+.journal-settings-licenses-allowed summary:hover {
+    text-decoration: underline;
+}
+
+.journal-settings-licenses-allowed summary:focus-visible {
+    outline: 2px solid #005a87;
+    outline-offset: 2px;
+}
+
+.journal-settings-licenses-allowed[open] summary {
+    margin-bottom: .4em;
+}
+
+.journal-settings-license-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.journal-settings-license-list li {
+    padding: .2em 0;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.journal-settings-license-list li:first-child {
+    padding-top: 0;
+}
+
+.journal-settings-license-list li:last-child {
+    border-bottom: 0;
+}
+
+.journal-settings-license-name {
+    margin-right: .3em;
+}
+
+.journal-settings-license-list .label {
+    margin-left: .3em;
+    vertical-align: middle;
 }
 
 .journal-settings-card-note {

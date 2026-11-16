@@ -2793,6 +2793,9 @@ return array(
     // Journal licenses settings
     "Licences" => "Licenses",
     "Licence par défaut" => "Default license",
+    "par défaut" => "default",
+    "%d licence" => "%d license",
+    "%d licences" => "%d licenses",
     "Pré-sélectionnée lors du choix de la licence d'un article qui n'en a pas encore" => "Pre-selected when choosing the license of an article that does not have one yet",
     "Licences autorisées" => "Allowed licenses",
     "Aucune sélection : toutes les licences recommandées sont proposées." => "No selection: all the recommended licenses are offered.",

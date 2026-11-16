@@ -20,6 +20,12 @@ $doiModes = [
     Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_DISABLED => 'Désactivé',
 ];
 $allowedLicenses = $this->allowedLicenses ?? [];
+// the default license first, then the others in the order of the names
+$licenseNames = $this->licenseNames ?? [];
+usort($allowedLicenses, fn(string $a, string $b): int => [$a !== $this->defaultLicense, $licenseNames[$a] ?? $a] <=> [$b !== $this->defaultLicense, $licenseNames[$b] ?? $b]);
+$licenseLabel = fn(string $code): string => isset($licenseNames[$code])
+    ? '<span class="journal-settings-license-name">' . $escape($licenseNames[$code]) . '</span> <code>' . $escape($code) . '</code>'
+    : '<code>' . $escape($code) . '</code>';
 ?>
 
 <?= $this->partial('partials/journal_settings_tabs.phtml', ['active' => 'general', 'canEditDoiSettings' => $this->canEditDoiSettings]) ?>
@@ -32,7 +38,7 @@ $allowedLicenses = $this->allowedLicenses ?? [];
 
     <details class="journal-settings-effects">
         <summary>
-            <span class="fa-solid fa-chevron-right journal-settings-effects-chevron" aria-hidden="true"></span>
+            <span class="fa-solid fa-chevron-right journal-settings-chevron" aria-hidden="true"></span>
             <span class="fa-regular fa-clock" aria-hidden="true"></span>
             <?= $this->translate('Quand une modification prend-elle effet ?') ?>
         </summary>
@@ -59,7 +65,7 @@ $allowedLicenses = $this->allowedLicenses ?? [];
                     <dt><?= $this->translate('Licence par défaut') ?></dt>
                     <dd>
                         <?php if ($this->defaultLicense) : ?>
-                            <code><?= $escape($this->defaultLicense) ?></code>
+                            <?= $licenseLabel($this->defaultLicense) ?>
                         <?php else : ?>
                             <em><?= $this->translate('Non renseignée') ?></em>
                         <?php endif; ?>
@@ -67,7 +73,22 @@ $allowedLicenses = $this->allowedLicenses ?? [];
                     <dt><?= $this->translate('Licences autorisées') ?></dt>
                     <dd>
                         <?php if ($allowedLicenses !== []) : ?>
-                            <?= implode(', ', array_map(static fn(string $code): string => '<code>' . htmlspecialchars($code, ENT_QUOTES) . '</code>', $allowedLicenses)) ?>
+                            <details class="journal-settings-licenses-allowed">
+                                <summary>
+                                    <span class="fa-solid fa-chevron-right journal-settings-chevron" aria-hidden="true"></span>
+                                    <?= $escape(sprintf($this->translate(count($allowedLicenses) === 1 ? '%d licence' : '%d licences'), count($allowedLicenses))) ?>
+                                </summary>
+                                <ul class="journal-settings-license-list">
+                                    <?php foreach ($allowedLicenses as $code) : ?>
+                                        <li>
+                                            <?= $licenseLabel($code) ?>
+                                            <?php if ($code === $this->defaultLicense) : ?>
+                                                <span class="label label-primary"><?= $this->translate('par défaut') ?></span>
+                                            <?php endif; ?>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </details>
                         <?php else : ?>
                             <em><?= $this->translate('Toutes les licences recommandées') ?></em>
                         <?php endif; ?>

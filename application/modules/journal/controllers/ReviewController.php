@@ -148,6 +148,24 @@ class ReviewController extends Zend_Controller_Action
         $this->view->canEditDoiSettings = Episciences_Auth::isRoot();
         $this->view->defaultLicense = $review->getDefaultLicense();
         $this->view->allowedLicenses = $review->getAllowedLicenses();
+        $this->view->licenseNames = self::licenseNames(array_merge(array_filter([$review->getDefaultLicense()]), $review->getAllowedLicenses()));
+    }
+
+    /**
+     * @param string[] $codes SPDX codes
+     * @return array<string, string> code => name of the known licenses (unknown codes are left out)
+     */
+    private static function licenseNames(array $codes): array
+    {
+        $names = [];
+        foreach (array_unique($codes) as $code) {
+            $name = \Episciences\Paper\Spdx\LicenseManager::getNameByIdentifier($code);
+            if ($name !== null && trim($name) !== '' && strcasecmp(trim($name), $code) !== 0) {
+                $names[$code] = trim($name);
+            }
+        }
+
+        return $names;
     }
 
     /**
