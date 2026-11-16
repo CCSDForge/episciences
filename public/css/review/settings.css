@@ -5,18 +5,54 @@
     color: #555;
 }
 
-/* When a change takes effect */
+/* When a change takes effect: the summary looks like a toggle button, with a chevron turning when open */
 .journal-settings-effects {
     margin: -0.5em 0 1.25em;
 }
 
 .journal-settings-effects summary {
+    display: inline-flex;
+    align-items: center;
+    gap: .5em;
+    padding: .45em .9em;
+    font-weight: 600;
+    color: #005a87;
+    list-style: none;
     cursor: pointer;
-    color: #007cba;
+    background: #eaf4fa;
+    border: 1px solid #007cba;
+    border-radius: 4px;
+}
+
+/* hide the native marker, replaced by the chevron */
+.journal-settings-effects summary::-webkit-details-marker {
+    display: none;
+}
+
+.journal-settings-effects summary:hover {
+    background: #d4e9f5;
+}
+
+.journal-settings-effects summary:focus-visible {
+    outline: 2px solid #005a87;
+    outline-offset: 2px;
+}
+
+.journal-settings-effects-chevron {
+    font-size: .85em;
+    transition: transform .15s ease-in-out;
+}
+
+.journal-settings-effects[open] .journal-settings-effects-chevron {
+    transform: rotate(90deg);
+}
+
+.journal-settings-effects[open] summary {
+    border-bottom-left-radius: 0;
 }
 
 .journal-settings-effects dl {
-    margin: 0.6em 0 0;
+    margin: 0;
     padding: 0.75em 1em;
     background: #f8f9fa;
     border-left: 3px solid #007cba;
@@ -50,8 +86,43 @@
     margin-right: 0.35em;
 }
 
-.journal-settings-tabs .nav-tabs > li.active > a {
+/* contrasted tabs: grey for the other pages, filled with the main color for the current one */
+.journal-settings-tabs .nav-tabs {
+    border-bottom: 2px solid #007cba;
+}
+
+.journal-settings-tabs .nav-tabs > li {
+    margin-bottom: 0;
+}
+
+.journal-settings-tabs .nav-tabs > li > a {
+    margin-right: 4px;
+    color: #212529;
+    background: #e9ecef;
+    border: 1px solid #ced4da;
+    border-bottom: 0;
+}
+
+.journal-settings-tabs .nav-tabs > li > a:hover,
+.journal-settings-tabs .nav-tabs > li > a:focus {
+    color: #005a87;
+    background: #d4e9f5;
+    border-color: #007cba;
+}
+
+.journal-settings-tabs .nav-tabs > li > a:focus-visible {
+    outline: 2px solid #005a87;
+    outline-offset: 2px;
+}
+
+.journal-settings-tabs .nav-tabs > li.active > a,
+.journal-settings-tabs .nav-tabs > li.active > a:hover,
+.journal-settings-tabs .nav-tabs > li.active > a:focus {
     font-weight: bold;
+    color: #fff;
+    background: #007cba;
+    border: 1px solid #007cba;
+    border-bottom: 0;
 }
 
 /* DOI and licenses summaries */

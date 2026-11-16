@@ -20,7 +20,7 @@ ce que fait chaque réglage et comment l'utiliser.
 ## Quand une modification prend-elle effet ?
 
 Toute modification compte dès l'enregistrement, mais pas de la même façon selon le réglage.
-La page Paramètres rappelle ces règles (lien **Quand une modification prend-elle effet ?** sous l'introduction).
+La page Paramètres rappelle ces règles (encadré dépliable **Quand une modification prend-elle effet ?** sous l'introduction).
 
 | Quand | Réglages concernés | Exemple |
 |---|---|---|

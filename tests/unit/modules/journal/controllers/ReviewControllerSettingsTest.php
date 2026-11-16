@@ -392,6 +392,14 @@ final class ReviewControllerSettingsTest extends ControllerTestCase
         self::assertStringContainsString('href="/review/licenses"', $html);
     }
 
+    public function testTheSummariesFollowTheOrderOfTheTabs(): void
+    {
+        $html = $this->renderPage([], true);
+
+        self::assertNotFalse(strpos($html, 'journal-settings-doi-title'));
+        self::assertLessThan(strpos($html, 'journal-settings-doi-title'), strpos($html, 'journal-settings-licenses-title'), 'licenses first, then DOI');
+    }
+
     public function testWithoutAllowedLicensesAllTheRecommendedOnesAreOffered(): void
     {
         self::assertStringContainsString('Toutes les licences recommandées', $this->renderPage());

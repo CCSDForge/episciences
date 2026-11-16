@@ -20,7 +20,7 @@ setting does and how to use it.
 ## When does a change take effect?
 
 Every change counts as soon as it is saved, but not in the same way for every setting.
-The Settings page recalls these rules (**When does a change take effect?** link under the introduction).
+The Settings page recalls these rules (**When does a change take effect?** collapsible box under the introduction).
 
 | When | Settings | Example |
 |---|---|---|
