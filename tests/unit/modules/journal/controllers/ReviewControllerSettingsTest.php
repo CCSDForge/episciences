@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace unit\modules\journal\controllers;
 
 use Episciences_Acl;
+use Episciences_Repositories;
 use Episciences_Review;
 use Episciences_Review_DoiSettings;
 use Episciences_ReviewsManager;
+use ReflectionProperty;
 use ReviewController;
 use unit\modules\ControllerTestCase;
 use Zend_Controller_Action_Helper_FlashMessenger;
@@ -30,15 +32,53 @@ final class ReviewControllerSettingsTest extends ControllerTestCase
         self::loadController('journal', 'ReviewController');
     }
 
+    /**
+     * Repositories offered by the form, whatever the test database holds.
+     */
+    private const METADATA_SOURCES = [
+        1 => [Episciences_Repositories::REPO_LABEL => 'HAL', Episciences_Repositories::REPO_TYPE => Episciences_Repositories::TYPE_PAPERS_REPOSITORY],
+    ];
+
+    private mixed $previousMetadataSources = null;
+
+    /** @var array<mixed> */
+    private array $previousRepositories = [];
+
     protected function setUp(): void
     {
         $this->logInAs([Episciences_Acl::ROLE_CHIEF_EDITOR]);
         $this->clearFlashMessages();
+
+        $this->previousMetadataSources = Zend_Registry::isRegistered('metadataSources') ? Zend_Registry::get('metadataSources') : null;
+        Zend_Registry::set('metadataSources', self::METADATA_SOURCES);
+        $this->previousRepositories = $this->repositoriesCache([]);
     }
 
     protected function tearDown(): void
     {
         $this->clearFlashMessages();
+
+        $this->repositoriesCache($this->previousRepositories);
+        if ($this->previousMetadataSources !== null) {
+            Zend_Registry::set('metadataSources', $this->previousMetadataSources);
+        } else {
+            Zend_Registry::getInstance()->offsetUnset('metadataSources');
+        }
+    }
+
+    /**
+     * Replaces the repositories cached by Episciences_Repositories with $cache.
+     *
+     * @param array<mixed> $cache
+     * @return array<mixed> the previous cache
+     */
+    private function repositoriesCache(array $cache): array
+    {
+        $property = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $current = $property->getValue();
+        $property->setValue(null, $cache);
+
+        return is_array($current) ? $current : [];
     }
 
     private function clearFlashMessages(): void
@@ -297,8 +337,6 @@ final class ReviewControllerSettingsTest extends ControllerTestCase
 
     /**
      * @param array<string, mixed> $settings
-     */
-    /**
      * @param array<string, string> $licenseNames code => name, as set by the controller
      */
     private function renderPage(array $settings = [], bool $canEditDoiSettings = false, string $language = 'fr', array $licenseNames = []): string
