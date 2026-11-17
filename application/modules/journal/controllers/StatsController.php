@@ -826,7 +826,7 @@ class StatsController extends Zend_Controller_Action
             $logDates = [];
 
             // the submission date of a submission: the one of its first version, as the API counts it (by DOCID: a
-            // refused paper submitted again is listed twice, with the same PAPERID)
+            // refused paper submitted again is listed twice, with the same PAPERID; a listed version may be obsolete)
             $firstSubmissionDates = in_array(self::COLUMN_SUBMISSION, $columns, true) ? self::getFirstSubmissionDates($paperIds) : [];
 
             // the dates read in the history of the papers: only those of the columns of the figure
@@ -849,13 +849,14 @@ class StatsController extends Zend_Controller_Action
     }
 
     /**
-     * Date of the first submission of each submission, by the DOCID of the version it ends with: the oldest
+     * Date of the first submission of each submission, by the DOCID of each of its versions: the oldest
      * SUBMISSION_DATE of its versions, as the API counts the submissions (PapersRepository::getSubmissions()).
      * A submission is the chain of the versions of a paper, by DOCID, up to its first non-obsolete version: a refused
      * paper submitted again is a new submission, dated by its new versions. The new versions of a paper do not always
      * keep the date of its first version (old data): the listed version can be dated after the year of the figure.
-     * @param array $paperIds
-     * @return array<int, string> DOCID of the last version of each submission => date of its first version
+     * The obsolete versions are dated too: a listed version can become obsolete when a new version is submitted.
+     * @param array<mixed> $paperIds
+     * @return array<int, string> DOCID of each version => date of the first version of its submission
      */
     public static function getFirstSubmissionDates(array $paperIds): array
     {
@@ -873,27 +874,42 @@ class StatsController extends Zend_Controller_Action
             ->order(['PAPERID', 'DOCID']);
 
         $dates = [];
-        $firstDates = []; // the oldest date of the current submission of each paper
+        $submissions = []; // the current submission of each paper: its versions and their oldest date
 
         foreach ($db->fetchAll($select) as $version) {
             $paperId = (int)$version['PAPERID'];
             $date = (string)$version['SUBMISSION_DATE'];
+            $submission = $submissions[$paperId] ?? ['docIds' => [], 'date' => null];
+            $submission['docIds'][] = (int)$version['DOCID'];
 
-            if ($date !== '' && (!isset($firstDates[$paperId]) || $date < $firstDates[$paperId])) {
-                $firstDates[$paperId] = $date;
+            if ($date !== '' && ($submission['date'] === null || $date < $submission['date'])) {
+                $submission['date'] = $date;
             }
+
+            $submissions[$paperId] = $submission;
 
             // a non-obsolete version ends the submission
             if ((int)$version['STATUS'] !== Episciences_Paper::STATUS_OBSOLETE) {
-                if (isset($firstDates[$paperId])) {
-                    $dates[(int)$version['DOCID']] = $firstDates[$paperId];
-                }
-
-                unset($firstDates[$paperId]);
+                $dates += self::datesOfSubmission($submission);
+                unset($submissions[$paperId]);
             }
         }
 
+        // the submissions without non-obsolete version
+        foreach ($submissions as $submission) {
+            $dates += self::datesOfSubmission($submission);
+        }
+
         return $dates;
+    }
+
+    /**
+     * @param array{docIds: int[], date: ?string} $submission
+     * @return array<int, string> DOCID of each version of the submission => date of its first version
+     */
+    private static function datesOfSubmission(array $submission): array
+    {
+        return $submission['date'] === null ? [] : array_fill_keys($submission['docIds'], $submission['date']);
     }
 
     /**
