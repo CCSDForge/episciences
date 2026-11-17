@@ -365,6 +365,8 @@ class DefaultController extends Zend_Controller_Action
     /**
      * HTTP client fetching the main document from its repository: HTTP(S) only,
      * public addresses only (every redirect included), bounded connect and transfer times.
+     * The overall timeout leaves room for large PDFs on slow repositories, while the
+     * low-speed limit drops a stalled transfer early instead of holding a PHP worker.
      *
      * @param callable|null $handler transport handler, the cURL one by default
      */
@@ -377,8 +379,12 @@ class DefaultController extends Zend_Controller_Action
             'handler' => $stack,
             'headers' => ['User-Agent' => DOMAIN],
             'connect_timeout' => 10,
-            'timeout' => 20,
+            'timeout' => 60,
             'allow_redirects' => ['max' => 5, 'protocols' => ['http', 'https']],
+            'curl' => [
+                CURLOPT_LOW_SPEED_LIMIT => 1024, // bytes per second
+                CURLOPT_LOW_SPEED_TIME => 15,
+            ],
         ]);
     }
 
