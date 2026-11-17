@@ -257,6 +257,19 @@ class Episciences_Review_DoiSettingsTest extends TestCase
         self::assertSame(['%S_INT[-]%.3', ''], $this->callReplaceIntegersTag('%S_INT[-]%.%V_INT[-]%', 'V', 'Volume 3'));
     }
 
+    public function testEveryTagIsReplacedWithItsOwnSeparator(): void
+    {
+        self::assertSame(
+            ['12-3.12.3', ''],
+            $this->callReplaceIntegersTag('%V_INT[-]%.%V_INT[.]%', 'V', 'Volume 12, issue 3')
+        );
+    }
+
+    public function testWithoutVolumeEveryTagWithSeparatorIsRemoved(): void
+    {
+        self::assertSame(['jcode..', ''], $this->callReplaceIntegersTag('jcode.%V_INT[-]%.%V_INT[_]%', 'V', ''));
+    }
+
     public function testCreateDoiWithTemplateWithoutVolumeNorSection(): void
     {
         $this->settings->setDoiPrefix('10.12345');

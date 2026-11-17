@@ -246,8 +246,8 @@ class Episciences_Review_DoiSettings
     }
 
     /**
-     * Replace the %V_INT[c]% (or %S_INT[c]%) tag of a DOI: the numbers of the volume (or section) name,
-     * separated with the character c.
+     * Replace the %V_INT[c]% (or %S_INT[c]%) tags of a DOI: the numbers of the volume (or section) name,
+     * separated with the character c. Each tag uses its own separator, taken literally.
      * @param string $doi DOI being built
      * @param string $letter 'V' (volume) or 'S' (section)
      * @param string $name name of the volume or section; '' without volume or section
@@ -256,17 +256,26 @@ class Episciences_Review_DoiSettings
      */
     private static function replaceIntegersTag(string $doi, string $letter, string $name): array
     {
-        $pattern = '/%' . $letter . '_INT\\[(.)\\]%/';
+        $count = 0;
+        $replaced = preg_replace_callback(
+            '/%' . $letter . '_INT\\[(.)\\]%/',
+            static fn(array $matches): string => $name === ''
+                ? ''
+                : (string)self::keepOnlyIntegersInTag($name, $matches[1]),
+            $doi,
+            -1,
+            $count
+        );
 
-        if ($name === '') {
-            return [(string)preg_replace($pattern, '', $doi), ''];
+        if ($replaced === null) {
+            return [$doi, ''];
         }
 
-        if (preg_match($pattern, $doi, $matches)) {
-            return [str_replace($matches[0], self::keepOnlyIntegersInTag($name, $matches[1]), $doi), ''];
+        if ($count > 0 || $name === '') {
+            return [$replaced, ''];
         }
 
-        return [$doi, self::keepOnlyIntegersInTag($name)];
+        return [$doi, (string)self::keepOnlyIntegersInTag($name)];
     }
 
     /**
