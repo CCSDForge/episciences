@@ -100,7 +100,7 @@ jobs:
           php scripts/console.php episciences:queue --transport=next_revalidation --setup
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: 'yarn'
