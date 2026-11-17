@@ -55,7 +55,8 @@ class UserAccountStore
         $user->setIs_valid();
         $user->setRegistrationDate();
 
-        if ($user->save(false, true, $rvId) === false) {
+        // the shared account is left untouched: rewriting it could restore an email changed meanwhile
+        if ($user->save(false, false, $rvId) === false) {
             throw new RuntimeException(sprintf('the Episciences data of account #%d cannot be saved', (int)$user->getUid()));
         }
 

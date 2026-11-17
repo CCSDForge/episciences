@@ -56,6 +56,7 @@ final class UserImportRowTest extends TestCase
             'no lastname' => [['lastname' => '  '], 'missing lastname'],
             'invalid email' => [['email' => 'ada.example.org'], 'invalid email "ada.example.org"'],
             'empty email' => [['email' => ''], 'invalid email ""'],
+            'email the sanitisation would change' => [['email' => 'ad a@example.org'], 'invalid email "ad a@example.org"'],
             'unknown role' => [['role' => 'editor,redactor'], 'unknown role "redactor"'],
             'unavailable language' => [['lang' => 'de'], 'unavailable language "de"'],
         ];

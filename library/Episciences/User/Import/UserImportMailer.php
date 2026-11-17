@@ -55,10 +55,24 @@ class UserImportMailer
             Episciences_Mail_Tags::TAG_LINK_VALIDITY => (string)self::linkValidityDays(),
         ];
 
-        $isSent = (new AccountActivationMailer($this->tokens, $this->urlBuilder))
-            ->sendWithPasswordChoice($user, Episciences_Mail_TemplatesManager::TYPE_USER_IMPORTED_ACCOUNT, $tags);
+        if (!$this->sendSetupLink($user, $tags)) {
+            // the link was not received: its token must not prevent the next import from sending a new one
+            $this->tokens->revokeAll((int)$user->getUid(), TokenPurpose::ACCOUNT_SETUP);
+            return MailOutcome::Failed;
+        }
 
-        return $isSent ? MailOutcome::Sent : MailOutcome::Failed;
+        return MailOutcome::Sent;
+    }
+
+    /**
+     * @param array<string, string> $tags
+     * @return bool false when the e-mail could not be sent
+     * @throws \Zend_Db_Exception when the token cannot be saved
+     */
+    protected function sendSetupLink(Episciences_User $user, array $tags): bool
+    {
+        return (new AccountActivationMailer($this->tokens, $this->urlBuilder))
+            ->sendWithPasswordChoice($user, Episciences_Mail_TemplatesManager::TYPE_USER_IMPORTED_ACCOUNT, $tags);
     }
 
     /**

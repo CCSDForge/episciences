@@ -77,6 +77,15 @@ final class UserCsvReaderTest extends TestCase
         self::assertSame('Ada', $rows[0]->firstname);
     }
 
+    public function testAUtf8BomBeforeAQuotedHeaderIsIgnored(): void
+    {
+        ['rows' => $rows, 'errors' => $errors] = $this->reader()->read(self::FIXTURES . 'bom-quoted-header.csv');
+
+        self::assertSame([], $errors);
+        self::assertSame('Ada', $rows[0]->firstname);
+        self::assertSame('ada.lovelace@example.org', $rows[0]->email);
+    }
+
     public function testColumnsAreFoundByTheirNameAndBlankLinesAreSkipped(): void
     {
         ['rows' => $rows, 'errors' => $errors] = $this->reader()->read(self::FIXTURES . 'reordered-columns.csv');

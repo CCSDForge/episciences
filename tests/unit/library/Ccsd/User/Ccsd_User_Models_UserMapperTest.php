@@ -2,6 +2,7 @@
 
 namespace unit\library\Ccsd\User;
 
+use Ccsd_User_Models_DbTable_User;
 use Ccsd_User_Models_User;
 use Ccsd_User_Models_UserMapper;
 use PHPUnit\Framework\TestCase;
@@ -107,4 +108,41 @@ class Ccsd_User_Models_UserMapperTest extends TestCase
         $this->assertSame('asmith', $result->USERNAME);
     }
 
+    // -------------------------------------------------------------------------
+    // findMostRecentByEmail() — query captured, no row fetched
+    // -------------------------------------------------------------------------
+
+    public function testTheAccountToReuseIsValidThenNotActivatedAndOtherStatusesAreIgnored(): void
+    {
+        $table = new class extends Ccsd_User_Models_DbTable_User {
+            public string $query = '';
+
+            /** @var array<string, array<string, mixed>> columns described here: the table is never read */
+            protected $_metadata = [
+                'UID' => ['PRIMARY' => true, 'IDENTITY' => true],
+                'EMAIL' => ['PRIMARY' => false, 'IDENTITY' => false],
+                'TIME_MODIFIED' => ['PRIMARY' => false, 'IDENTITY' => false],
+                'VALID' => ['PRIMARY' => false, 'IDENTITY' => false],
+            ];
+
+            /**
+             * @param string|array<int|string, mixed>|\Zend_Db_Table_Select|null $where
+             * @param string|array<int, string>|null $order
+             * @param int|null $offset
+             * @return null
+             */
+            public function fetchRow($where = null, $order = null, $offset = null)
+            {
+                $this->query = (string)$where;
+                return null;
+            }
+        };
+
+        $mapper = new Ccsd_User_Models_UserMapper();
+        $mapper->setDbTable($table);
+
+        $this->assertNull($mapper->findMostRecentByEmail('jdoe@example.com'));
+        $this->assertStringContainsString('(VALID IN (0, 1))', $table->query);
+        $this->assertMatchesRegularExpression('/ORDER BY .*VALID.* DESC, .*TIME_MODIFIED.* DESC, .*UID.* DESC/', $table->query);
+    }
 }

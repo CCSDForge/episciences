@@ -40,10 +40,12 @@ final readonly class UserImportRow
             throw new InvalidArgumentException('missing lastname');
         }
 
-        $email = EmailPolicy::normalize(trim($record['email'] ?? ''));
-        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw new InvalidArgumentException(sprintf('invalid email "%s"', $email));
+        // validated before normalize(): its sanitisation drops invalid characters ("ad a@x.org" would become "ada@x.org")
+        $rawEmail = trim($record['email'] ?? '');
+        if (filter_var($rawEmail, FILTER_VALIDATE_EMAIL) === false) {
+            throw new InvalidArgumentException(sprintf('invalid email "%s"', $rawEmail));
         }
+        $email = EmailPolicy::normalize($rawEmail);
 
         return new self(
             $line,

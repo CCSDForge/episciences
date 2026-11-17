@@ -50,6 +50,11 @@ final class UserCsvReader
      */
     private function readHandle($handle): array
     {
+        // the BOM is consumed before parsing: fgetcsv() only sees an enclosure at the start of a field
+        if (fread($handle, strlen(self::UTF8_BOM)) !== self::UTF8_BOM) {
+            rewind($handle);
+        }
+
         $header = fgetcsv($handle, 0, self::SEPARATOR, '"', '');
         $columns = is_array($header) ? $this->parseHeader($header) : null;
         if ($columns === null) {
@@ -94,10 +99,6 @@ final class UserCsvReader
      */
     private function parseHeader(array $header): ?array
     {
-        $header[0] = str_starts_with((string)$header[0], self::UTF8_BOM)
-            ? substr((string)$header[0], strlen(self::UTF8_BOM))
-            : $header[0];
-
         $columns = array_map(static fn(?string $name): string => strtolower(trim((string)$name)), $header);
 
         return array_diff(self::REQUIRED_COLUMNS, $columns) === [] ? $columns : null;

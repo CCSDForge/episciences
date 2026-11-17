@@ -319,7 +319,7 @@ seed-journal-demo: ## Seed a journal with demo submissions (requires rvcode=RVCO
 
 import-users: ## Add people to a journal from a CSV file (requires rvcode=RVCODE csv=PATH; optional: lang=fr|en no-mail=1 dry-run=1)
 	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php journal:import-users --rvcode=RVCODE --csv=PATH [options]
-	@if [ -z "$(rvcode)" ] || [ -z "$(csv)" ]; then \
+	@if [ -z $(call shell_quote,$(rvcode)) ] || [ -z $(call shell_quote,$(csv)) ]; then \
 		echo "Error: rvcode and csv parameters are required"; \
 		echo "Usage: make import-users rvcode=RVCODE csv=PATH [lang=fr|en] [no-mail=1] [dry-run=1]"; \
 		exit 1; \

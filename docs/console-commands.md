@@ -260,8 +260,8 @@ php scripts/console.php journal:seed-demo --rvcode=sandbox1 --uid=1
 ### `journal:import-users`
 
 Adds people to a journal from a CSV file. For each email, the account to reuse is the most
-recently modified valid account, otherwise the most recently modified account not activated yet;
-without any account, one is created **not activated**, with a random password nobody knows.
+recently modified valid account, otherwise the most recently modified account not activated yet
+(accounts with any other status are ignored); without any account, one is created **not activated**, with a random password nobody knows.
 Roles are only added: the roles already held in the journal are kept. An existing account is
 never changed (names, language); a name differing from the file is reported as a warning.
 Business logic lives in `Episciences\User\Import\*`.
@@ -300,7 +300,8 @@ Mails, in the language of each account:
 - **`user_imported_account`**: account created or not activated yet. Gives the login and the
   roles, and a link to choose the password, which also activates the account (the link proves
   the address). When the link has expired, "lost password" sends a new activation link.
-  No new link is sent when one was sent less than a day ago, so the import can be run again.
+  No new link is sent when one was sent less than a day ago, so the import can be run again;
+  a link whose mail could not be sent does not count.
 - **`user_added_to_journal`**: valid existing account, only when at least one role was added.
 
 Both templates need `src/mysql/2026-11-16-insert-user-import-mail-templates.sql` and can be
