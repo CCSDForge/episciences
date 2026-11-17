@@ -37,7 +37,9 @@ final class DefaultControllerDocumentHttpClientTest extends TestCase
 
         $options = $this->sent[0]['options'];
         self::assertSame(10, $options['connect_timeout']);
-        self::assertSame(20, $options['timeout']);
+        self::assertSame(60, $options['timeout']);
+        self::assertSame(1024, $options['curl'][CURLOPT_LOW_SPEED_LIMIT]);
+        self::assertSame(15, $options['curl'][CURLOPT_LOW_SPEED_TIME]);
         self::assertSame([self::PUBLIC_IP . ':443:' . self::PUBLIC_IP], $options['curl'][CURLOPT_RESOLVE]);
         self::assertSame(DOMAIN, $this->sent[0]['request']->getHeaderLine('User-Agent'));
         self::assertFalse($this->sent[0]['request']->hasHeader('timeout'), 'timeouts are transfer options, not headers');
