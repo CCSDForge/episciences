@@ -31,6 +31,28 @@ class Episciences_GridsManager
         return str_starts_with($key, self::REQUEST_TYPE_KEY_PREFIX) ? (int)substr($key, strlen(self::REQUEST_TYPE_KEY_PREFIX)) : null;
     }
 
+    /**
+     * Grid files to look for, in this order, for a report (#319): the grid of its request type, then the grid of the
+     * volume of the paper, then the default grid. A quick opinion skips the volume grid, made for the review reports.
+     * @return list<string>
+     */
+    public static function gridFilesFor(?int $requestTypeId, bool $isQuickOpinion, int $vid): array
+    {
+        $files = [];
+
+        if ($requestTypeId !== null) {
+            $files[] = self::filenameOf(self::requestTypeGridKey($requestTypeId));
+        }
+
+        if (!$isQuickOpinion) {
+            $files[] = self::filenameOf((string)$vid);
+        }
+
+        $files[] = self::filenameOf('0');
+
+        return array_values(array_unique($files));
+    }
+
     public static function filenameOf(string $key): string
     {
         return 'grid_' . $key . '.xml';

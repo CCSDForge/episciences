@@ -93,7 +93,6 @@ final class Episciences_Mail_TemplatesManager_RequestTypeTemplatesTest extends T
     {
         $keys = array_merge(Episciences_Mail_TemplatesManager::FRAGMENT_TEMPLATES, [
             Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_QUICK_OPINION,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_REVISION_CHECK,
             Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_GENERIC,
         ]);
 

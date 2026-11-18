@@ -103,8 +103,6 @@ return [
     // Review request types (#319)
     "paper_reviewer_invitation_quick_opinion_tpl_name" => "Invite a user to give a quick opinion on an article",
     "paper_reviewer_invitation_quick_opinion_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Request for a quick opinion on an article",
-    "paper_reviewer_invitation_revision_check_tpl_name" => "Invite a user to check a revised version of an article",
-    "paper_reviewer_invitation_revision_check_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Review of a revised version",
     "paper_reviewer_invitation_generic_tpl_name" => "Invite a user - base of the request types created by the journal",
     "paper_reviewer_invitation_generic_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - %%REVIEW_REQUEST_TYPE%%",
     "reviewer_invitation_account_hint_known_reviewer_tpl_name" => "Reviewer invitation - sign-in help: reviewer known by the journal",

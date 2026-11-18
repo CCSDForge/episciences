@@ -8,7 +8,7 @@ use Episciences\Reviewer\RequestTypeMailTemplate;
 use Episciences\Reviewer\RequestTypeRepository;
 
 /**
- * Review request types of the journal (#319): quick opinion, review report, revised version check...
+ * Review request types of the journal (#319): review report, quick opinion, and the types created by the journal
  * Each type selects the invitation e-mail sent to the reviewer, and its default due date.
  */
 class RequesttypeController extends Zend_Controller_Action

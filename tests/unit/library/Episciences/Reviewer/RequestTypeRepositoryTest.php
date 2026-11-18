@@ -45,11 +45,11 @@ final class RequestTypeRepositoryTest extends TestCase
 
     public function testCreateDefaultsIsIdempotent(): void
     {
-        self::assertSame(3, $this->repository->createDefaults(self::RVID));
+        self::assertSame(2, $this->repository->createDefaults(self::RVID));
         self::assertSame(0, $this->repository->createDefaults(self::RVID));
-        self::assertSame(3, $this->repository->createDefaults(self::OTHER_RVID));
+        self::assertSame(2, $this->repository->createDefaults(self::OTHER_RVID));
 
-        self::assertCount(3, $this->repository->findAllForJournal(self::RVID));
+        self::assertCount(2, $this->repository->findAllForJournal(self::RVID));
         self::assertNotNull($this->repository->findFullReport(self::RVID));
     }
 
@@ -57,7 +57,7 @@ final class RequestTypeRepositoryTest extends TestCase
     {
         $this->repository->save(RequestType::defaults(self::RVID)[1]);
 
-        self::assertSame(2, $this->repository->createDefaults(self::RVID));
+        self::assertSame(1, $this->repository->createDefaults(self::RVID));
     }
 
     public function testSaveInsertsThenUpdatesWithoutChangingTheCode(): void
@@ -143,7 +143,6 @@ final class RequestTypeRepositoryTest extends TestCase
         self::assertFalse($this->repository->delete((int)$fullReport?->getId(), self::RVID));
         // the default types stay available: never used, they still cannot be deleted
         self::assertFalse($this->repository->delete((int)$this->repository->findByCode(self::RVID, 'quick_opinion')?->getId(), self::RVID));
-        self::assertFalse($this->repository->delete((int)$this->repository->findByCode(self::RVID, 'revision_check')?->getId(), self::RVID));
         self::assertFalse($this->repository->delete((int)$used->getId(), self::RVID));
         self::assertFalse($this->repository->delete((int)$unused->getId(), self::OTHER_RVID));
         self::assertTrue($this->repository->delete((int)$unused->getId(), self::RVID));

@@ -9,7 +9,7 @@ use InvalidArgumentException;
 use JsonException;
 
 /**
- * Type of a review request (quick opinion, review report, revised version check...), defined per journal.
+ * Type of a review request (review report, quick opinion, or a type created by the journal), defined per journal.
  *
  * Every reviewer invitation is made for one type: it selects the invitation e-mail template, and the rating grid
  * when the journal created one for the type (grid_t<type id>.xml, see Episciences_GridsManager). A reviewer may hold
@@ -19,7 +19,6 @@ final class RequestType
 {
     public const CODE_FULL_REPORT = 'full_report';
     public const CODE_QUICK_OPINION = 'quick_opinion';
-    public const CODE_REVISION_CHECK = 'revision_check';
 
     /** Lower-case letters, digits and underscores, starting with a letter: the code is part of a mail template key */
     public const CODE_PATTERN = '/^[a-z][a-z0-9_]{0,29}$/';
@@ -41,14 +40,6 @@ final class RequestType
             'instructions' => [
                 'fr' => "Quelques lignes sur l'intérêt, l'originalité et la pertinence de l'article pour la revue suffisent ; il ne s'agit pas d'un rapport de relecture détaillé.",
                 'en' => 'A few lines on the interest, originality and relevance of the article for the journal are enough; this is not a detailed review report.',
-            ],
-        ],
-        self::CODE_REVISION_CHECK => [
-            'labels' => ['fr' => "Relecture d'une version révisée", 'en' => 'Revised version check'],
-            'deadline' => '3 week',
-            'instructions' => [
-                'fr' => 'Indiquez si la version révisée répond aux remarques formulées lors de la relecture précédente.',
-                'en' => 'Please tell us whether the revised version addresses the comments made during the previous review.',
             ],
         ],
     ];
@@ -250,6 +241,11 @@ final class RequestType
     public function isFullReport(): bool
     {
         return $this->code === self::CODE_FULL_REPORT;
+    }
+
+    public function isQuickOpinion(): bool
+    {
+        return $this->code === self::CODE_QUICK_OPINION;
     }
 
     public function isDefault(): bool

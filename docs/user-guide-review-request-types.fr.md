@@ -5,7 +5,7 @@
 ## Présentation
 
 Quand vous invitez un relecteur, vous choisissez désormais le **type de demande** : un rapport de relecture complet,
-un avis rapide, la relecture d'une version révisée, ou un type créé par votre revue. Le type détermine :
+un avis rapide, ou un type créé par votre revue (par exemple la relecture d'une version révisée). Le type détermine :
 
 - le message d'invitation envoyé au relecteur ;
 - la date limite proposée ;
@@ -25,13 +25,12 @@ Les types se gèrent dans la section **Types de demande** de la page **Relecture
 
 ## Types par défaut
 
-Chaque revue commence avec trois types :
+Chaque revue commence avec deux types :
 
 | Type | Délai par défaut | Usage |
 |---|---|---|
 | Rapport de relecture | réglage de la revue | relecture détaillée avec la grille d'évaluation (la relecture habituelle) |
 | Avis rapide | 2 semaines | quelques lignes sur l'intérêt et la pertinence de l'article |
-| Relecture d'une version révisée | 3 semaines | vérifier qu'une version révisée répond aux remarques précédentes |
 
 ## Gérer les types
 
@@ -49,9 +48,12 @@ qu'il utilise :
      (affichée seulement quand l'option est cochée ; elle est conservée si l'option est décochée).
 3. Cliquez sur **Enregistrer**.
 
-Les trois types par défaut restent toujours disponibles : ils ne peuvent pas être supprimés, seulement désactivés, afin
+Les deux types par défaut restent toujours disponibles : ils ne peuvent pas être supprimés, seulement désactivés, afin
 que chaque revue choisisse les types qu'elle propose. Un type créé par votre revue peut être supprimé tant qu'il n'a pas
 servi ; ensuite, désactivez-le. Le rapport de relecture est toujours proposé et exige toujours un compte.
+
+Pour d'autres besoins (relecture d'une version révisée, phases de relecture…), créez vos propres types, chacun avec sa
+grille si besoin.
 
 ## Inviter un relecteur
 
@@ -78,13 +80,16 @@ changent pas.
 
 La page **Relecture : grilles et types de demande** montre la grille par défaut, puis un bloc par type de demande, puis
 les grilles par volume. Le bloc d'un type affiche sa grille s'il en a une ; sinon, il indique que le type utilise la
-grille du volume, ou qu'il se répond sans compte. **Créer une grille**, dans le bloc d'un type, crée sa grille.
+grille du volume ou la grille par défaut, ou qu'il se répond sans compte. **Créer une grille**, dans le bloc d'un type, crée sa grille.
 Au-delà de cinq grilles de volume, elles sont repliées et un clic sur le titre d'un volume affiche sa grille.
 Un nouveau rapport utilise, dans l'ordre :
 
 1. la grille de son type de demande ;
-2. sinon, la grille du volume de l'article ;
+2. sinon, la grille du volume de l'article (sauf pour un avis rapide) ;
 3. sinon, la grille par défaut.
+
+Un avis rapide n'utilise donc jamais la grille d'un volume, faite pour les rapports de relecture : tant que la revue ne
+lui a pas créé de grille, il utilise la grille par défaut.
 
 Un rapport garde la grille avec laquelle il a été créé.
 
@@ -103,8 +108,7 @@ note moyenne. Les autres types sont affichés à titre d'information.
 ## Réponse sans compte
 
 Quand l'option est cochée sur un type, le lien de l'invitation ouvre une page où la personne invitée :
-- lit la consigne du type (par défaut, l'avis rapide demande quelques lignes sur l'intérêt de l'article, la relecture
-  de version révisée demande si la révision répond aux remarques précédentes) ;
+- lit la consigne du type (par défaut, l'avis rapide demande quelques lignes sur l'intérêt de l'article) ;
 - répond : un texte, un fichier (facultatif), ou les deux ;
 - ou refuse la demande.
 
@@ -115,8 +119,8 @@ La réponse n'est visible que par l'équipe éditoriale, dans la section **Répo
 l'article (et sous l'invitation, dans la section **Relecteurs**). Les auteurs ne la voient jamais.
 
 Sans compte, la personne invitée ne voit ni la grille ni ses rapports précédents. Le formulaire du type le rappelle
-quand l'option est cochée sur un autre type que l'avis rapide. Pour la relecture d'une version révisée, gardez la
-réponse avec compte si le relecteur doit s'appuyer sur son rapport précédent.
+quand l'option est cochée sur un autre type que l'avis rapide. Pour un type de relecture d'une version révisée, gardez
+la réponse avec compte si le relecteur doit s'appuyer sur son rapport précédent.
 
 ## Notifications par mail
 

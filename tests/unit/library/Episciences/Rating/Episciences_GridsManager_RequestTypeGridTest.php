@@ -16,6 +16,7 @@ use PHPUnit\Framework\TestCase;
  * @covers Episciences_GridsManager::requestTypeGridKey
  * @covers Episciences_GridsManager::requestTypeIdOfKey
  * @covers Episciences_GridsManager::filenameOf
+ * @covers Episciences_GridsManager::gridFilesFor
  * @covers Episciences_Rating_Grid::loadXML
  */
 final class Episciences_GridsManager_RequestTypeGridTest extends TestCase
@@ -69,6 +70,22 @@ final class Episciences_GridsManager_RequestTypeGridTest extends TestCase
         self::assertNull(Episciences_GridsManager::requestTypeIdOfKey('5'));
         self::assertNull(Episciences_GridsManager::requestTypeIdOfKey('0'));
         self::assertSame('grid_t5.xml', Episciences_GridsManager::filenameOf($key));
+    }
+
+    public function testAReportLooksForTheGridOfItsTypeThenOfTheVolumeThenTheDefaultGrid(): void
+    {
+        self::assertSame(['grid_t5.xml', 'grid_12.xml', 'grid_0.xml'], Episciences_GridsManager::gridFilesFor(5, false, 12));
+    }
+
+    public function testAQuickOpinionSkipsTheVolumeGrid(): void
+    {
+        self::assertSame(['grid_t5.xml', 'grid_0.xml'], Episciences_GridsManager::gridFilesFor(5, true, 12));
+    }
+
+    public function testAReportWithoutTypeOrVolumeLooksForTheDefaultGridOnce(): void
+    {
+        self::assertSame(['grid_12.xml', 'grid_0.xml'], Episciences_GridsManager::gridFilesFor(null, false, 12));
+        self::assertSame(['grid_0.xml'], Episciences_GridsManager::gridFilesFor(null, false, 0));
     }
 
     private function gridFile(string $filename): string

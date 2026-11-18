@@ -195,7 +195,6 @@ return array(
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_QUICK_OPINION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "invitation of a reviewer to give a quick opinion on an article (request type \"Quick opinion\")",
 
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_REVISION_CHECK][Episciences_Mail_TemplatesManager::DESCRIPTION] => "invitation of a reviewer to check the revised version of an article (request type \"Revised version check\")",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_GENERIC][Episciences_Mail_TemplatesManager::DESCRIPTION] => "base of the invitations of the request types created by the journal",
 

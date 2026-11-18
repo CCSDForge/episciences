@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences;
 
+use Episciences\Reviewer\RequestType;
 use Episciences\Reviewer\RequestTypeRepository;
 use Episciences_Paper;
 use Episciences_PapersManager;
@@ -182,10 +183,11 @@ final class Episciences_ReviewRequestTypeAssignmentsTest extends TestCase
 
     public function testUnassigningAReviewerEndsEachRequestInProgressOnly(): void
     {
-        $revisionCheck = (int)(new RequestTypeRepository($this->db))->findByCode(RVID, 'revision_check')?->getId();
+        // a type created by the journal, besides the two default types
+        $secondRound = (int)(new RequestTypeRepository($this->db))->save(new RequestType(null, RVID, 'second_round', ['en' => 'Second round']))->getId();
         $this->request($this->fullReport, [Assignment::STATUS_PENDING, Assignment::STATUS_ACTIVE]);
         $this->request($this->quickOpinion, [Assignment::STATUS_PENDING]);
-        $this->request($revisionCheck, [Assignment::STATUS_PENDING, Assignment::STATUS_DECLINED]);
+        $this->request($secondRound, [Assignment::STATUS_PENDING, Assignment::STATUS_DECLINED]);
 
         $this->paper()->unassign(self::UID, Assignment::ROLE_REVIEWER);
 
@@ -193,7 +195,7 @@ final class Episciences_ReviewRequestTypeAssignmentsTest extends TestCase
             $this->fullReport => Assignment::STATUS_INACTIVE,
             $this->quickOpinion => Assignment::STATUS_INACTIVE,
             // the declined request keeps its status
-            $revisionCheck => Assignment::STATUS_DECLINED,
+            $secondRound => Assignment::STATUS_DECLINED,
         ], $this->latestStatusByType());
         self::assertSame([], Episciences_User_AssignmentsManager::currentReviewerRequestTypeIds(self::UID, self::DOCID));
     }

@@ -4,8 +4,8 @@
 
 ## Overview
 
-When you invite a reviewer, you now choose the **type of request**: a full review report, a quick opinion, a check of a
-revised version, or a type created by your journal. The type sets:
+When you invite a reviewer, you now choose the **type of request**: a full review report, a quick opinion, or a type
+created by your journal (for example a revised version check). The type sets:
 
 - the invitation e-mail sent to the reviewer;
 - the suggested due date;
@@ -25,13 +25,12 @@ settings). The actions on the types are available to:
 
 ## Default Types
 
-Every journal starts with three types:
+Every journal starts with two types:
 
 | Type | Default due date | Use |
 |---|---|---|
 | Review report | journal setting | detailed review with the rating grid (the usual review) |
 | Quick opinion | 2 weeks | a few lines on the interest and relevance of the article |
-| Revised version check | 3 weeks | check that a revised version addresses the previous comments |
 
 ## Managing the Types
 
@@ -48,9 +47,11 @@ In the **Request types** section, each type is a block showing its default due d
      (shown only while the option is checked; they are kept when it is unchecked).
 3. Click **Save**.
 
-The three default types are always available: they cannot be deleted, only disabled, so that each journal chooses the
+The two default types are always available: they cannot be deleted, only disabled, so that each journal chooses the
 types it offers. A type created by your journal can be deleted as long as it has not been used; afterwards, disable it.
 The review report type is always offered and always requires an account.
+
+For other needs (revised version check, review stages…), create your own types, each with its grid if needed.
 
 ## Inviting a Reviewer
 
@@ -76,13 +77,16 @@ The **review report** keeps the three existing invitation templates: your curren
 
 The **Review: grids and request types** page shows the default grid, then one block per request type, then the grids
 per volume. The block of a type shows its grid if it has one; otherwise, it states that the type uses the volume grid,
-or that it is answered without an account. **Create an evaluation grid**, in the block of a type, creates its grid.
+or the default grid, or that it is answered without an account. **Create an evaluation grid**, in the block of a type, creates its grid.
 Beyond five volume grids, they are collapsed and a click on the title of a volume shows its grid. A new report uses, in
 this order:
 
 1. the grid of its request type;
-2. otherwise, the grid of the article's volume;
+2. otherwise, the grid of the article's volume (except for a quick opinion);
 3. otherwise, the default grid.
+
+A quick opinion therefore never uses the grid of a volume, made for review reports: until the journal creates a grid
+for it, it uses the default grid.
 
 A report keeps the grid it was created with.
 
@@ -102,7 +106,7 @@ average rating. The other types are shown for information.
 
 When the option is checked on a type, the invitation link opens a page where the invited person:
 - reads the instructions of the type (by default, the quick opinion asks for a few lines on the interest of the
-  article, the revised version check asks whether the revision addresses the previous comments);
+  article);
 - answers: a text, a file (optional), or both;
 - or declines the request.
 
@@ -113,8 +117,8 @@ The answer is shown only to the editorial staff, in the **Answers given without 
 administration page (and under the invitation in the **Reviewers** panel). Authors never see it.
 
 Without an account, the invited person sees neither the rating grid nor their previous reports. The type form reminds
-it when the option is checked on a type other than the quick opinion. For a revised version check, keep the answer
-with an account when the reviewer needs their previous report.
+it when the option is checked on a type other than the quick opinion. For a revised version check type, keep the
+answer with an account when the reviewer needs their previous report.
 
 ## Email Notifications
 

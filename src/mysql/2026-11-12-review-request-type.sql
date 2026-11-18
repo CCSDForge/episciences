@@ -1,4 +1,4 @@
--- Review request types (quick opinion, review report, revised version check...), defined per journal.
+-- Review request types (review report, quick opinion, and the types created by a journal), defined per journal.
 -- Each reviewer invitation is made for one type; a reviewer may hold several requests of different types
 -- on the same paper version.
 -- Created: 2026-11-12
@@ -24,9 +24,7 @@ CREATE TABLE IF NOT EXISTS `review_request_type` (
 INSERT IGNORE INTO `review_request_type` (`rvid`, `code`, `labels`, `default_deadline`, `position`)
 SELECT `RVID`, 'full_report', JSON_OBJECT('fr', 'Rapport de relecture', 'en', 'Review report'), NULL, 1 FROM `REVIEW`
 UNION ALL
-SELECT `RVID`, 'quick_opinion', JSON_OBJECT('fr', 'Avis rapide', 'en', 'Quick opinion'), '2 week', 2 FROM `REVIEW`
-UNION ALL
-SELECT `RVID`, 'revision_check', JSON_OBJECT('fr', 'Relecture d''une version révisée', 'en', 'Revised version check'), '3 week', 3 FROM `REVIEW`;
+SELECT `RVID`, 'quick_opinion', JSON_OBJECT('fr', 'Avis rapide', 'en', 'Quick opinion'), '2 week', 2 FROM `REVIEW`;
 
 -- Type of each reviewer request. The state of a reviewer on a paper is read on their latest assignment row
 -- for each type, so every reviewer row carries a type; other roles leave it NULL.

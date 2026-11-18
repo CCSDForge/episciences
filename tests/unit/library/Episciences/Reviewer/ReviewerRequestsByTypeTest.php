@@ -27,7 +27,7 @@ final class ReviewerRequestsByTypeTest extends TestCase
     private const RVID = 3;
     private const FULL_REPORT = 10;
     private const QUICK_OPINION = 11;
-    private const REVISION_CHECK = 12;
+    private const SECOND_ROUND = 12;
 
     public static function setUpBeforeClass(): void
     {
@@ -42,14 +42,14 @@ final class ReviewerRequestsByTypeTest extends TestCase
         return [
             new RequestType(self::FULL_REPORT, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report']),
             new RequestType(self::QUICK_OPINION, self::RVID, RequestType::CODE_QUICK_OPINION, ['en' => 'Quick opinion']),
-            new RequestType(self::REVISION_CHECK, self::RVID, RequestType::CODE_REVISION_CHECK, ['en' => 'Revised version check']),
+            new RequestType(self::SECOND_ROUND, self::RVID, 'second_round', ['en' => 'Second round']),
         ];
     }
 
     public function testOnlyTheReviewersBusyWithEveryEnabledTypeAreLeftOut(): void
     {
         $busy = [
-            1 => [self::FULL_REPORT, self::QUICK_OPINION, self::REVISION_CHECK],
+            1 => [self::FULL_REPORT, self::QUICK_OPINION, self::SECOND_ROUND],
             2 => [self::FULL_REPORT],
         ];
 

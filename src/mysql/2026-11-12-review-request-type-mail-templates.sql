@@ -9,10 +9,6 @@ SELECT NULL, NULL, NULL, 'paper_reviewer_invitation_quick_opinion', 'paper_revie
 WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'paper_reviewer_invitation_quick_opinion');
 
 INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
-SELECT NULL, NULL, NULL, 'paper_reviewer_invitation_revision_check', 'paper_review', NULL
-WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'paper_reviewer_invitation_revision_check');
-
-INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
 SELECT NULL, NULL, NULL, 'paper_reviewer_invitation_generic', 'paper_review', NULL
 WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'paper_reviewer_invitation_generic');
 

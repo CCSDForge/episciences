@@ -617,7 +617,7 @@ describe('invitereviewer-modal.js Test Suite', () => {
                 <select name="request_type_id">
                     <option value="10">Review report</option>
                     <option value="11">Quick opinion</option>
-                    <option value="12">Revised version check</option>
+                    <option value="12">Second round</option>
                 </select>`;
             return moduleUnderTest.requestTypeSelect();
         };
@@ -638,8 +638,8 @@ describe('invitereviewer-modal.js Test Suite', () => {
                 },
                 {
                     id: 12,
-                    code: 'revision_check',
-                    label: 'Revised version check',
+                    code: 'second_round',
+                    label: 'Second round',
                     rating_deadline: '2026-07-22',
                 },
             ];

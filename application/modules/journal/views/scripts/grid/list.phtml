@@ -36,7 +36,7 @@ $confirmDelete = json_encode($this->translate('Supprimer ce type de demande ?'),
 ?>
 
 <p class="help-block">
-    <?= $this->escape($this->translate("Grille utilisée pour un rapport : celle du type de demande, sinon celle du volume de l'article, sinon la grille par défaut.")) ?>
+    <?= $this->escape($this->translate("Grille utilisée pour un rapport : celle du type de demande, sinon celle du volume de l'article (sauf pour un avis rapide), sinon la grille par défaut.")) ?>
 </p>
 
 <h2 class="h3" id="default-grid-heading"><?= $this->escape($this->translate('Grille par défaut')) ?></h2>
@@ -106,6 +106,8 @@ $confirmDelete = json_encode($this->translate('Supprimer ce type de demande ?'),
                 <?php else : ?>
                     <p><?= $this->escape($this->translate("Aucune grille : réponse sans compte, depuis le lien de l'invitation.")) ?></p>
                 <?php endif; ?>
+            <?php elseif ($grid === null && $type->isQuickOpinion()) : ?>
+                <p><?= $this->escape($this->translate('Pas de grille propre : grille par défaut.')) ?></p>
             <?php elseif ($grid === null) : ?>
                 <p><?= $this->escape($this->translate("Pas de grille propre : grille du volume de l'article, sinon grille par défaut.")) ?></p>
             <?php endif; ?>
@@ -167,7 +169,7 @@ $confirmDelete = json_encode($this->translate('Supprimer ce type de demande ?'),
 
 <h2 class="h3"><?= $this->escape($this->translate('Grilles par volume')) ?></h2>
 <p class="help-block">
-    <?= $this->escape($this->translate("Les rapports des articles d'un volume utilisent sa grille, sauf si le type de demande a la sienne.")) ?>
+    <?= $this->escape($this->translate("Les rapports des articles d'un volume utilisent sa grille, sauf les avis rapides et les types de demande qui ont la leur.")) ?>
 </p>
 
 <?php $collapseVolumeGrids = count($volumeGrids) > GridController::VOLUME_GRIDS_SHOWN; ?>

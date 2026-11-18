@@ -60,7 +60,6 @@ class Episciences_Mail_TemplatesManager
     // The review report type keeps the three templates above.
     public const INVITATION_KEY_PREFIX = 'paper_reviewer_invitation_';
     public const TYPE_PAPER_REVIEWER_INVITATION_QUICK_OPINION = 'paper_reviewer_invitation_quick_opinion';
-    public const TYPE_PAPER_REVIEWER_INVITATION_REVISION_CHECK = 'paper_reviewer_invitation_revision_check';
     // base of the templates of the types created by a journal
     public const TYPE_PAPER_REVIEWER_INVITATION_GENERIC = 'paper_reviewer_invitation_generic';
     // texts of the %%INVITATION_ACCOUNT_HINT%% tag, according to the account of the invited person
@@ -1725,7 +1724,6 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_REVIEWER_INVITATION_KNOWN_USER => [self::DESCRIPTION => "notification d'invitation d'un nouveau relecteur (l'utilisateur n'a pas encore de profil sur le site de la revue, mais il connu par le système d'authentification du CCSD)", self::RECIPIENT => "nouveau relecteur"],
         self::TYPE_PAPER_REVIEWER_INVITATION_NEW_USER => [self::DESCRIPTION => "notification d'invitation d'un nouveau relecteur avec un compte temporaire. Dans ce cas spécifique et moment précis de l'acceptation de l'invitation, l'utilisateur sera invité à créer un nouveau compte pour accéder à la grille d'évaluation", self::RECIPIENT => "nouveau relecteur"],
         self::TYPE_PAPER_REVIEWER_INVITATION_QUICK_OPINION => [self::DESCRIPTION => "invitation d'un relecteur à donner un avis rapide sur un article (type de demande « Avis rapide »)", self::RECIPIENT => 'relecteur'],
-        self::TYPE_PAPER_REVIEWER_INVITATION_REVISION_CHECK => [self::DESCRIPTION => "invitation d'un relecteur à relire la version révisée d'un article (type de demande « Relecture d'une version révisée »)", self::RECIPIENT => 'relecteur'],
         self::TYPE_PAPER_REVIEWER_INVITATION_GENERIC => [self::DESCRIPTION => "modèle de départ des invitations pour les types de demande créés par la revue", self::RECIPIENT => 'relecteur'],
         self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_REVIEWER => [self::DESCRIPTION => "texte inséré par le tag %%INVITATION_ACCOUNT_HINT%% quand la personne invitée est déjà relecteur de la revue", self::RECIPIENT => 'relecteur'],
         self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_USER => [self::DESCRIPTION => "texte inséré par le tag %%INVITATION_ACCOUNT_HINT%% quand la personne invitée a déjà un compte", self::RECIPIENT => 'relecteur'],

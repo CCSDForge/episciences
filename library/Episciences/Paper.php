@@ -3995,17 +3995,14 @@ class Episciences_Paper
      */
     public function getGridPath(?int $requestTypeId = null)
     {
-        // the grid of the review request type of the report comes first (#319)
-        if ($requestTypeId !== null && ($typeGrid = Episciences_GridsManager::requestTypeGridPath($requestTypeId)) !== null) {
-            return $typeGrid;
-        }
+        // grid of the request type of the report, then of the volume (except for a quick opinion), then default (#319)
+        $isQuickOpinion = $requestTypeId !== null
+            && (new RequestTypeRepository())->findById($requestTypeId)?->isQuickOpinion() === true;
 
-        if (Episciences_GridsManager::gridExists('grid_' . $this->getVid() . '.xml')) {
-            return REVIEW_GRIDS_PATH . 'grid_' . $this->getVid() . '.xml';
-        }
-
-        if (Episciences_GridsManager::gridExists(REVIEW_GRID_NAME_DEFAULT)) {
-            return REVIEW_GRIDS_PATH . REVIEW_GRID_NAME_DEFAULT;
+        foreach (Episciences_GridsManager::gridFilesFor($requestTypeId, $isQuickOpinion, (int)$this->getVid()) as $file) {
+            if (Episciences_GridsManager::gridExists($file)) {
+                return REVIEW_GRIDS_PATH . $file;
+            }
         }
 
         return false;

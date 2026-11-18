@@ -16,15 +16,15 @@ final class RequestTypeTest extends TestCase
 {
     private const RVID = 3;
 
-    public function testDefaultsAreTheThreeTypesInOrder(): void
+    public function testDefaultsAreTheReviewReportThenTheQuickOpinion(): void
     {
         $types = RequestType::defaults(self::RVID);
 
         self::assertSame(
-            [RequestType::CODE_FULL_REPORT, RequestType::CODE_QUICK_OPINION, RequestType::CODE_REVISION_CHECK],
+            [RequestType::CODE_FULL_REPORT, RequestType::CODE_QUICK_OPINION],
             array_map(static fn(RequestType $type): string => $type->getCode(), $types)
         );
-        self::assertSame([1, 2, 3], array_map(static fn(RequestType $type): int => $type->getPosition(), $types));
+        self::assertSame([1, 2], array_map(static fn(RequestType $type): int => $type->getPosition(), $types));
 
         foreach ($types as $type) {
             self::assertSame(self::RVID, $type->getRvid());
@@ -40,7 +40,7 @@ final class RequestTypeTest extends TestCase
         // the instructions are shown on the page of the answer without an account
         self::assertSame('', $types[0]->getInstructions('fr'));
         self::assertNotSame('', $types[1]->getInstructions('fr'));
-        self::assertNotSame('', $types[2]->getInstructions('en'));
+        self::assertNotSame('', $types[1]->getInstructions('en'));
         self::assertSame('2 week', $types[1]->getDefaultDeadline());
     }
 
