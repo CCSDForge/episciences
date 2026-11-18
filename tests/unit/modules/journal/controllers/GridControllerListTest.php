@@ -11,8 +11,8 @@ use Zend_View;
 use Zend_View_Helper_Abstract;
 
 /**
- * Review settings page (#319): the rating grids, and a tab listing the review request types with the grid each one
- * uses, shown only to the users who manage the types.
+ * Review settings page (#319): the default grid, one block per review request type with the grid it uses (actions on
+ * the types for the users who manage them), then the volume grids.
  */
 final class GridControllerListTest extends ControllerTestCase
 {
@@ -49,45 +49,56 @@ final class GridControllerListTest extends ControllerTestCase
         parent::tearDown();
     }
 
-    public function testTheRequestTypesTabListsTheTypesWithTheGridTheyUse(): void
-    {
-        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
-
-        $html = $this->renderList(['tab' => 'types']);
-
-        self::assertStringContainsString('id="tab-types"', $html);
-        self::assertMatchesRegularExpression('/id="tabpanel-types"[^>]*class="tab-pane active"/', $html, 'the requested tab is shown');
-        self::assertMatchesRegularExpression('/id="tabpanel-grids"[^>]*hidden/', $html, 'the other tab is hidden');
-        self::assertStringContainsString('Phase &lt;two&gt;', $html, 'the labels are escaped');
-        self::assertStringContainsString('Aucune : réponse sans compte', $html);
-        self::assertStringContainsString('Grille du volume, sinon grille par défaut', $html);
-        // a grid can be created from the list for the types answered with an account only
-        self::assertStringContainsString('name="request_type" value="' . self::REPORT_TYPE_ID . '"', $html);
-        self::assertStringNotContainsString('name="request_type" value="' . self::LIGHT_TYPE_ID . '"', $html);
-        // only the unused journal types can be deleted
-        self::assertStringContainsString('name="id" value="' . self::CUSTOM_TYPE_ID . '"', $html);
-        self::assertStringNotContainsString('name="id" value="' . self::REPORT_TYPE_ID . '"', $html);
-    }
-
-    public function testTheGridsTabIsShownByDefault(): void
+    public function testEachRequestTypeIsABlockWithTheGridItUsesAndItsActions(): void
     {
         $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
 
         $html = $this->renderList();
 
-        self::assertMatchesRegularExpression('/id="tabpanel-grids"[^>]*class="tab-pane active"/', $html);
-        self::assertMatchesRegularExpression('/id="tabpanel-types"[^>]*hidden/', $html);
+        self::assertStringNotContainsString('role="tablist"', $html, 'the grids and the types are on one page');
+        self::assertStringContainsString('id="request-types-heading"', $html);
+        foreach ([self::REPORT_TYPE_ID, self::LIGHT_TYPE_ID, self::CUSTOM_TYPE_ID] as $typeId) {
+            self::assertStringContainsString('id="rating-grid-t' . $typeId . '"', $html);
+            self::assertStringContainsString('href="/requesttype/edit?id=' . $typeId . '"', $html);
+        }
+        self::assertStringContainsString('Phase &lt;two&gt;', $html, 'the labels are escaped');
+        self::assertStringContainsString("Aucune grille : réponse sans compte, depuis le lien de l'invitation.", $html);
+        self::assertStringContainsString("Pas de grille propre : grille du volume de l'article, sinon grille par défaut.", $html);
+        self::assertStringContainsString('href="/requesttype/edit"', $html, 'a type can be added');
+        // a grid can be created for the types answered with an account only
+        self::assertStringContainsString('name="request_type" value="' . self::REPORT_TYPE_ID . '"', $html);
+        self::assertStringNotContainsString('name="request_type" value="' . self::LIGHT_TYPE_ID . '"', $html);
+        // only the unused journal types can be deleted
+        self::assertStringContainsString('name="id" value="' . self::CUSTOM_TYPE_ID . '"', $html);
+        self::assertStringNotContainsString('name="id" value="' . self::REPORT_TYPE_ID . '"', $html);
         self::assertStringContainsString('Grilles par volume', $html);
     }
 
-    public function testAnEditorSeesTheGridsWithoutTheRequestTypesTab(): void
+    public function testATypeWithItsOwnGridShowsItInItsBlock(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+        $grids = $this->volumeGrids(0);
+        $typeGrid = new \Episciences_Rating_Grid();
+        $typeGrid->setId('t' . self::REPORT_TYPE_ID);
+        $grids['grid_t' . self::REPORT_TYPE_ID] = $typeGrid;
+
+        $html = $this->renderList([], ['grids' => $grids]);
+
+        self::assertStringNotContainsString('name="request_type" value="' . self::REPORT_TYPE_ID . '"', $html, 'no second grid');
+        self::assertStringContainsString('name="request_type" value="' . self::CUSTOM_TYPE_ID . '"', $html);
+        self::assertSame(1, substr_count($html, 'Pas de grille propre'), 'only the other type with an account has no grid');
+        self::assertStringContainsString('Aucune grille de volume.', $html, 'a type grid is not a volume grid');
+    }
+
+    public function testAnEditorSeesTheTypesAndTheGridsWithoutTheActionsOnTheTypes(): void
     {
         $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
 
-        $html = $this->renderList(['tab' => 'types']);
+        $html = $this->renderList();
 
-        self::assertStringNotContainsString('role="tablist"', $html);
+        self::assertStringContainsString('id="rating-grid-t' . self::REPORT_TYPE_ID . '"', $html);
         self::assertStringNotContainsString('/requesttype/', $html);
+        self::assertStringNotContainsString('action="/grid/add"', $html);
         self::assertStringContainsString('Grilles par volume', $html);
     }
 

@@ -17,8 +17,8 @@ avis rapide, puis un rapport complet.
 
 ## Qui peut gérer les types ?
 
-Les types se gèrent dans l'onglet **Types de demande** de **Relecture : grilles et types de demande** (paramètres de la
-revue). Cet onglet est accessible aux :
+Les types se gèrent dans la section **Types de demande** de la page **Relecture : grilles et types de demande**
+(paramètres de la revue). Les actions sur les types sont réservées aux :
 - **Administrateurs**
 - **Rédacteurs en chef**
 - **Secrétaires de rédaction**
@@ -35,9 +35,10 @@ Chaque revue commence avec trois types :
 
 ## Gérer les types
 
-Dans l'onglet **Types de demande** :
+Dans la section **Types de demande**, chaque type est un bloc qui indique son délai par défaut, son état et la grille
+qu'il utilise :
 
-1. Cliquez sur **Ajouter un type de demande**, ou sur **Modifier** pour un type existant.
+1. Cliquez sur **Ajouter un type de demande**, ou sur **Modifier ce type de demande** dans le bloc d'un type.
 2. Renseignez :
    - le **Code** : identifiant stable (lettres minuscules, chiffres, tirets bas), qui ne peut plus être modifié ensuite ;
    - le **Libellé** dans chaque langue de la revue ;
@@ -75,10 +76,10 @@ changent pas.
 
 ## Grilles de relecture
 
-La colonne **Grille de notation** de l'onglet **Types de demande** indique la grille utilisée par chaque type ;
-**Créer une grille** crée la grille d'un type. Dans l'onglet **Grilles de notation**, les grilles sont regroupées en
-grille par défaut, grilles par type de demande et grilles par volume, chaque groupe avec son formulaire de création ;
-au-delà de cinq grilles de volume, elles sont repliées et un clic sur le titre d'un volume affiche sa grille.
+La page **Relecture : grilles et types de demande** montre la grille par défaut, puis un bloc par type de demande, puis
+les grilles par volume. Le bloc d'un type affiche sa grille s'il en a une ; sinon, il indique que le type utilise la
+grille du volume, ou qu'il se répond sans compte. **Créer une grille**, dans le bloc d'un type, crée sa grille.
+Au-delà de cinq grilles de volume, elles sont repliées et un clic sur le titre d'un volume affiche sa grille.
 Un nouveau rapport utilise, dans l'ordre :
 
 1. la grille de son type de demande ;

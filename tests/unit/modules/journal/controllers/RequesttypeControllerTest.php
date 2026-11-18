@@ -104,14 +104,14 @@ final class RequesttypeControllerTest extends ControllerTestCase
     {
         $result = $this->call('list', $this->getRequest());
 
-        self::assertSame('/grid/list?tab=types', $result->redirectUrl());
+        self::assertSame('/grid/list#request-types-heading', $result->redirectUrl());
     }
 
     public function testAPostWithoutTheRequestTokenSavesNothing(): void
     {
         $result = $this->call('edit', $this->postRequest($this->validPost()));
 
-        self::assertSame('/grid/list?tab=types', $result->redirectUrl());
+        self::assertSame('/grid/list#request-types-heading', $result->redirectUrl());
         self::assertSame([], $this->typeWrites());
     }
 
@@ -119,7 +119,7 @@ final class RequesttypeControllerTest extends ControllerTestCase
     {
         $result = $this->call('edit', $this->postRequest($this->validPost(), true));
 
-        self::assertSame('/grid/list?tab=types', $result->redirectUrl());
+        self::assertSame('/grid/list#request-types-heading', $result->redirectUrl());
         $inserts = $this->typeWrites();
         self::assertCount(1, $inserts);
         self::assertSame(RVID, $inserts[0]['values']['rvid']);
@@ -147,7 +147,7 @@ final class RequesttypeControllerTest extends ControllerTestCase
     {
         $result = $this->call('delete', $this->postRequest(['id' => (string)self::TYPE_ID], true));
 
-        self::assertSame('/grid/list?tab=types', $result->redirectUrl());
+        self::assertSame('/grid/list#request-types-heading', $result->redirectUrl());
         $deletes = $this->typeWrites();
         self::assertCount(1, $deletes);
         self::assertArrayHasKey('where', $deletes[0]);

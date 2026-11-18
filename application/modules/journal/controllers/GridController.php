@@ -4,9 +4,6 @@ use Episciences\Reviewer\RequestTypeRepository;
 
 class GridController extends Zend_Controller_Action
 {
-    // tabs of the list page
-    public const TAB_GRIDS = 'grids';
-    public const TAB_TYPES = 'types';
     // beyond this number of volume grids, they are listed collapsed: only their titles are shown
     public const VOLUME_GRIDS_SHOWN = 5;
 
@@ -28,7 +25,8 @@ class GridController extends Zend_Controller_Action
     }
 
     /**
-     * Review settings page: the rating grids tab, and the review request types tab (#319) for the users who manage them
+     * Review settings page: the default grid, one block per review request type (#319) with the grid it uses, then
+     * the volume grids
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      * @throws JsonException
@@ -59,14 +57,8 @@ class GridController extends Zend_Controller_Action
         $this->view->requestTypes = $requestTypes;
         // types having their own grid
         $this->view->requestTypeGridIds = $gridTypeIds;
-        // a type answered without an account uses no grid: none is offered for it
-        $this->view->requestTypesWithoutGrid = array_filter(
-            $requestTypes,
-            static fn($requestType): bool => !$requestType->isLightAnswer() && !isset($gridTypeIds[(int)$requestType->getId()])
-        );
         $this->view->canManageTypes = $canManageTypes;
         $this->view->usedRequestTypes = $canManageTypes ? $this->usedRequestTypes($repository, array_keys($requestTypes)) : [];
-        $this->view->activeTab = $canManageTypes && $this->getRequest()->getParam('tab') === self::TAB_TYPES ? self::TAB_TYPES : self::TAB_GRIDS;
         $this->view->csrfToken = Episciences_Csrf_Helper::getSessionToken();
         $this->view->locale = Episciences_Tools::getLocale();
         $this->view->translator = Zend_Registry::get('Zend_Translate');

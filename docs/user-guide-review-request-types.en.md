@@ -17,8 +17,8 @@ a full report.
 
 ## Who Can Manage the Types?
 
-The types are managed in the **Request types** tab of **Review: grids and request types** (journal settings). This tab
-is available to:
+The types are managed in the **Request types** section of the **Review: grids and request types** page (journal
+settings). The actions on the types are available to:
 - **Administrators**
 - **Chief Editors**
 - **Secretaries**
@@ -35,9 +35,9 @@ Every journal starts with three types:
 
 ## Managing the Types
 
-In the **Request types** tab:
+In the **Request types** section, each type is a block showing its default due date, its state and the grid it uses:
 
-1. Click **Add a request type**, or **Edit** on an existing type.
+1. Click **Add a request type**, or **Edit this request type** in the block of a type.
 2. Fill in:
    - **Code**: a stable identifier (lower-case letters, digits, underscores), which cannot be changed later;
    - **Label** in each language of the journal;
@@ -74,10 +74,11 @@ The **review report** keeps the three existing invitation templates: your curren
 
 ## Rating Grids
 
-The **Rating grid** column of the **Request types** tab shows the grid each type uses; **Create a grid** creates the
-grid of a type. In the **Rating grids** tab, the grids are grouped into the default grid, the grids per request type and
-the grids per volume, each group with its creation form; beyond five volume grids, they are collapsed and a
-click on the title of a volume shows its grid. A new report uses, in this order:
+The **Review: grids and request types** page shows the default grid, then one block per request type, then the grids
+per volume. The block of a type shows its grid if it has one; otherwise, it states that the type uses the volume grid,
+or that it is answered without an account. **Create an evaluation grid**, in the block of a type, creates its grid.
+Beyond five volume grids, they are collapsed and a click on the title of a volume shows its grid. A new report uses, in
+this order:
 
 1. the grid of its request type;
 2. otherwise, the grid of the article's volume;

@@ -13,13 +13,13 @@ use Episciences\Reviewer\RequestTypeRepository;
  */
 class RequesttypeController extends Zend_Controller_Action
 {
-    // the types are listed in a tab of the rating grids page
-    private const LIST_URL = '/grid/list?tab=types';
+    // the types are listed in a section of the rating grids page
+    private const LIST_URL = '/grid/list#request-types-heading';
 
     private ?RequestTypeRepository $repository = null;
 
     /**
-     * Former list page of the types: they are now listed in a tab of the rating grids page
+     * Former list page of the types: they are now listed in a section of the rating grids page
      */
     public function listAction(): void
     {
