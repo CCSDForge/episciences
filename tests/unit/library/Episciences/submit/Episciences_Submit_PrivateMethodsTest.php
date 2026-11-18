@@ -760,6 +760,7 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
             'no prefix' => ['2409.09809', '2409.09809'],
             'old-style identifier without prefix' => ['math/0601001', 'math/0601001'],
             'prefix not at the start' => ['2409.09809arXiv:', '2409.09809arXiv:'],
+            'non-breaking spaces around the prefix' => ["\u{00A0}arXiv\u{00A0}:\u{00A0}2409.09809", '2409.09809'],
         ];
     }
 

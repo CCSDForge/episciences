@@ -1106,7 +1106,7 @@ class Episciences_Submit
      */
     private static function stripArxivPrefix(string $id): string
     {
-        return (string)preg_replace('/^arxiv\s*:\s*/i', '', $id);
+        return (string)preg_replace('/^[\s\x{00A0}]*arxiv[\s\x{00A0}]*:[\s\x{00A0}]*/iu', '', $id);
     }
 
     /**
