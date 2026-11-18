@@ -396,6 +396,86 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
     }
 
     /**
+     * An id typed as ORCID wins over an untyped id; an untyped id is an ORCID only in the ORCID format.
+     */
+    public function testContributorsProcessOrcid(): void
+    {
+        $contrib = static fn(string $ids): string => '<contrib contrib-type="author"><name><surname>Doe</surname><given-names>Jane</given-names></name>' . $ids . '</contrib>';
+
+        $doc = self::jats(
+            '<contrib-group>'
+            . $contrib('<contrib-id>local-42</contrib-id><contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-1825-009x</contrib-id>')
+            . $contrib('<contrib-id>http://orcid.org/0000-0001-8887-2548</contrib-id>')
+            . $contrib('<contrib-id>local-42</contrib-id><contrib-id contrib-id-type="other">0000-0001-8887-2548</contrib-id>')
+            . '</contrib-group>'
+        );
+
+        $contributors = self::callPrivate('contributorsProcess', $doc);
+
+        self::assertSame('0000-0002-1825-009X', $contributors[0]['orcid']);
+        self::assertSame('0000-0001-8887-2548', $contributors[1]['orcid']);
+        self::assertArrayNotHasKey('orcid', $contributors[2]);
+    }
+
+    /**
+     * The Creative Commons grant may follow a copyright notice in another paragraph.
+     */
+    public function testLicenseProcessReadsEveryParagraph(): void
+    {
+        $doc = self::jats(
+            '<permissions><license><p>Copyright the authors.</p>'
+            . '<p>This pre-print is available under a Creative Commons License (Attribution 4.0 International), CC BY 4.0, as described at http://creativecommons.org/licenses/by/4.0/</p>'
+            . '</license></permissions>'
+        );
+
+        self::assertSame('https://creativecommons.org/licenses/by/4.0', self::callPrivate('licenseProcess', $doc));
+
+        $allRightsReserved = self::jats('<permissions><license><p> </p><p>All rights reserved.</p></license></permissions>');
+
+        self::assertSame('[CC_NO] All rights reserved.', self::callPrivate('licenseProcess', $allRightsReserved));
+    }
+
+    /**
+     * Version selection, JATS enrichment and Dublin Core, from a local JATS file:
+     * keywords are published even when they are the only metadata of the JATS.
+     */
+    public function testJatsEnrichmentReachesTheDublinCore(): void
+    {
+        $jatsFile = tempnam(sys_get_temp_dir(), 'jats');
+        self::assertIsString($jatsFile);
+
+        try {
+            file_put_contents($jatsFile, '<article><front><article-meta><kwd-group>'
+                . '<kwd>r/<italic>K</italic>-selection</kwd><kwd>ecology</kwd></kwd-group></article-meta></front></article>');
+
+            $version = self::callStatic('getRequestedVersionFromCollection', [[
+                ['version' => '1', 'doi' => '10.1101/abc', 'server' => 'bioRxiv', 'category' => 'ecology', 'jatsxml' => $jatsFile],
+                ['version' => '2', 'doi' => '10.1101/abc', 'server' => 'bioRxiv', 'category' => 'ecology'],
+            ], 1]);
+
+            self::assertSame(['r/K-selection', 'ecology'], $version['enrichment']['kwd']);
+
+            $dublinCore = self::callStatic('toDublinCore', [$version]);
+
+            self::assertStringContainsString('<dc:subject>r/K-selection</dc:subject>', $dublinCore);
+            self::assertStringContainsString('<dc:identifier>https://www.bioRxiv.org/content/10.1101/abc</dc:identifier>', $dublinCore);
+        } finally {
+            unlink($jatsFile);
+        }
+    }
+
+    /**
+     * @param array<int, mixed> $args
+     */
+    private static function callStatic(string $method, array $args): mixed
+    {
+        $reflection = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, $method);
+        $reflection->setAccessible(true);
+
+        return $reflection->invokeArgs(null, $args);
+    }
+
+    /**
      * The subject area ("hwp-journal-coll") is not a type: medRxiv got "hwp-journal-coll" as its type.
      */
     public function testTypeProcess(): void

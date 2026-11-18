@@ -23,6 +23,8 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
     private const ARTICLE_META_PATH = '/article/front/article-meta';
     /** subj-group types holding the document type, in order of precedence */
     private const TYPE_SUBJECT_GROUPS = ['author-type', 'heading'];
+    private const ORCID_PATTERN = '/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/';
+    private const CC_LICENSE_URL = 'https://creativecommons.org/licenses/';
 
 
     private string $doiPrefix = self::DOI_PREFIX;
@@ -285,6 +287,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
         if (
             !empty($contributors) ||
             !empty($license) ||
+            !empty($kwd) ||
             !empty($citations) ||
             !empty($type)
         ) {
@@ -358,17 +361,35 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
             'email' => self::nodeText($contrib, 'email'),
         ];
 
-        $orcid = (string)preg_replace(
-            '#^https?://orcid.org/#',
-            '',
-            self::nodeText($contrib, 'contrib-id[@contrib-id-type="orcid" or not(@contrib-id-type)]')
-        );
+        $orcid = self::orcidProcess($contrib);
 
         if ($orcid !== '') {
-            $contributor['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($orcid);
+            $contributor['orcid'] = $orcid;
         }
 
         return $contributor;
+    }
+
+    /**
+     * ORCID of a contributor: an id typed as ORCID first, otherwise an untyped id in the ORCID format.
+     */
+    private static function orcidProcess(SimpleXMLElement $contrib): string
+    {
+        $orcid = self::nodeText($contrib, 'contrib-id[@contrib-id-type="orcid"][normalize-space()]');
+
+        if ($orcid !== '') {
+            return Episciences_Paper_AuthorsManager::normalizeOrcid($orcid);
+        }
+
+        foreach ($contrib->xpath('contrib-id[not(@contrib-id-type)]') ?: [] as $id) {
+            $candidate = Episciences_Paper_AuthorsManager::normalizeOrcid(self::normalizeText($id));
+
+            if (preg_match(self::ORCID_PATTERN, $candidate)) {
+                return $candidate;
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -448,11 +469,31 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
         return array_values(array_unique(array_filter($keywords, static fn(string $kwd): bool => $kwd !== '')));
     }
 
+    /**
+     * Licence of the first paragraph granting a Creative Commons licence, otherwise of the first paragraph.
+     */
     private static function licenseProcess(SimpleXMLElement $doc): string
     {
-        $statement = self::nodeText($doc, self::ARTICLE_META_PATH . '/permissions/license/p');
+        $licenses = [];
 
-        return $statement === '' ? '' : self::extractLicenseFromString($statement);
+        foreach ($doc->xpath(self::ARTICLE_META_PATH . '/permissions/license/p') ?: [] as $paragraph) {
+
+            $statement = self::normalizeText($paragraph);
+
+            if ($statement === '') {
+                continue;
+            }
+
+            $license = self::extractLicenseFromString($statement);
+
+            if (str_starts_with($license, self::CC_LICENSE_URL)) {
+                return $license;
+            }
+
+            $licenses[] = $license;
+        }
+
+        return $licenses[0] ?? '';
     }
 
     /**
@@ -548,7 +589,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
 
         if (strtolower($explodedStr[0]) === 'cc') {
 
-            $license = 'https://creativecommons.org/licenses/';
+            $license = self::CC_LICENSE_URL;
 
             if (isset($explodedStr[1])) {
                 $license .= (strtolower($explodedStr[1]) . '/');
