@@ -32,25 +32,16 @@ final class FeedControllerTest extends TestCase
     }
 
     /**
+     * PREFIX_URL is always defined on this branch (journals are served behind a "/<journal code>/"
+     * prefix), and the test bootstrap defines it before any test runs, so the redirect is checked
+     * against its current value.
+     *
      * @dataProvider actionProvider
      */
-    public function testActionPermanentlyRedirectsToJournalPapersFeed(string $action): void
+    public function testActionRedirectsToJournalPapersFeedWithUrlPrefix(string $action): void
     {
-        self::assertFalse(defined('PREFIX_URL'), 'this case covers deployments without URL prefix');
-        self::assertSame([301, '/rss/papers'], $this->dispatch($action));
-    }
-
-    /**
-     * Journals served behind a "/<journal code>/" prefix (PREFIX_URL) keep it in the redirect.
-     *
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
-    public function testRedirectKeepsJournalUrlPrefix(): void
-    {
-        define('PREFIX_URL', '/dev/');
-
-        self::assertSame([301, '/dev/rss/papers'], $this->dispatch('indexAction'));
+        self::assertTrue(defined('PREFIX_URL'));
+        self::assertSame([301, PREFIX_URL . 'rss/papers'], $this->dispatch($action));
     }
 
     /**
