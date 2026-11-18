@@ -364,7 +364,9 @@ class DefaultController extends Episciences_Controller_Action
      * HTTP client fetching the main document from its repository: HTTP(S) only,
      * public addresses only (every redirect included), bounded connect and transfer times.
      * The overall timeout leaves room for large PDFs on slow repositories, while the
-     * low-speed limit drops a stalled transfer early instead of holding a PHP worker.
+     * low-speed limit drops a stalled transfer before it holds a PHP worker until the timeout.
+     * cURL also counts the wait for the first byte in the low-speed window: some repositories
+     * (Zenodo's /content endpoint) take tens of seconds to start sending a file.
      *
      * @param callable|null $handler transport handler, the cURL one by default
      */
@@ -377,11 +379,11 @@ class DefaultController extends Episciences_Controller_Action
             'handler' => $stack,
             'headers' => ['User-Agent' => DOMAIN],
             'connect_timeout' => 10,
-            'timeout' => 60,
+            'timeout' => 240,
             'allow_redirects' => ['max' => 5, 'protocols' => ['http', 'https']],
             'curl' => [
                 CURLOPT_LOW_SPEED_LIMIT => 1024, // bytes per second
-                CURLOPT_LOW_SPEED_TIME => 15,
+                CURLOPT_LOW_SPEED_TIME => 120,
             ],
         ]);
     }
