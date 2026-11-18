@@ -1083,6 +1083,11 @@ class Episciences_Submit
     private static function cleanIdentifier(string $id, $repoId): string
     {
         $id = trim($id);
+
+        if (Episciences_Repositories::isFromArxivRepository((int)$repoId)) {
+            $id = self::stripArxivPrefix($id);
+        }
+
         $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', [
             'id' => $id,
             'repoId' => $repoId,
@@ -1093,6 +1098,15 @@ class Episciences_Submit
         }
 
         return $id;
+    }
+
+    /**
+     * Remove the "arXiv:" prefix (any case) that authors often copy with the identifier,
+     * e.g. "arXiv:2409.09809" -> "2409.09809". arXiv tolerates it, but the stored identifier must not carry it.
+     */
+    private static function stripArxivPrefix(string $id): string
+    {
+        return (string)preg_replace('/^arxiv\s*:\s*/i', '', $id);
     }
 
     /**
