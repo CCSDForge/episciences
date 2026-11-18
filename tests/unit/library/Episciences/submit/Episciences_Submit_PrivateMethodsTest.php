@@ -736,4 +736,57 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
 
         self::assertSame($recipients, $this->invoke('removeConflictingRecipients', [$recipients, []]));
     }
+
+    // =========================================================================
+    // cleanIdentifier() / stripArxivPrefix() - issue #1481
+    // =========================================================================
+
+    /**
+     * @dataProvider arxivPrefixProvider
+     */
+    public function testStripArxivPrefix(string $input, string $expected): void
+    {
+        self::assertSame($expected, $this->invoke('stripArxivPrefix', [$input]));
+    }
+
+    public static function arxivPrefixProvider(): array
+    {
+        return [
+            'capitalized prefix' => ['arXiv:2409.09809', '2409.09809'],
+            'lowercase prefix' => ['arxiv:2409.09809', '2409.09809'],
+            'uppercase prefix with spaces' => ['ARXIV : 2409.09809', '2409.09809'],
+            'prefix with version' => ['arXiv:2409.09809v3', '2409.09809v3'],
+            'old-style identifier' => ['arXiv:math/0601001', 'math/0601001'],
+            'no prefix' => ['2409.09809', '2409.09809'],
+            'old-style identifier without prefix' => ['math/0601001', 'math/0601001'],
+            'prefix not at the start' => ['2409.09809arXiv:', '2409.09809arXiv:'],
+            'non-breaking spaces around the prefix' => ["\u{00A0}arXiv\u{00A0}:\u{00A0}2409.09809", '2409.09809'],
+        ];
+    }
+
+    public function testCleanIdentifierStripsArxivPrefixForArxiv(): void
+    {
+        self::assertSame(
+            '2409.09809',
+            $this->invoke('cleanIdentifier', [' arXiv:2409.09809 ', Episciences_Repositories::ARXIV_REPO_ID])
+        );
+    }
+
+    public function testCleanIdentifierKeepsPrefixForOtherRepositories(): void
+    {
+        self::assertSame(
+            'arXiv:2409.09809',
+            $this->invoke('cleanIdentifier', ['arXiv:2409.09809', Episciences_Repositories::HAL_REPO_ID])
+        );
+    }
+
+    public function testArxivPrefixIsStrippedBeforeVersionExtraction(): void
+    {
+        $id = $this->invoke('cleanIdentifier', ['arXiv:2409.09809v3', Episciences_Repositories::ARXIV_REPO_ID]);
+        $version = null;
+        $this->invoke('extractVersionSuffix', [&$id, &$version]);
+
+        self::assertSame('2409.09809', $id);
+        self::assertEquals(3, $version);
+    }
 }

@@ -161,13 +161,14 @@ class Episciences_Import
 
         $paper = new Episciences_Paper();
         $paper->setDoi($this->getDoi());
-        $paper->setIdentifier($this->getId());
+        // getDoc() cleans $id and $version by reference (prefix, version suffix)
+        $paper->setIdentifier($id);
         $paper->setRvid($this->getRvid());
         $paper->setVid(($this->getVolume()) ? $this->getVolume() : 0);
         $paper->setSid(($this->getSection()) ? $this->getSection() : 0);
         $paper->setUid($this->getUid());
         $paper->setStatus(($this->getStatus()) ? $this->getStatus() : Episciences_Paper::STATUS_PUBLISHED);
-        $paper->setVersion(($this->getVersion()) ? $this->getVersion() : 1);
+        $paper->setVersion($version ?: 1);
         $paper->setRepoid($this->getRepoid());
         
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
