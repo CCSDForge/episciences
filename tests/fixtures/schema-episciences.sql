@@ -1136,6 +1136,7 @@ CREATE TABLE `review_request_type` (
   `default_deadline` varchar(20) DEFAULT NULL,
   `position` smallint unsigned NOT NULL DEFAULT '0',
   `enabled` tinyint unsigned NOT NULL DEFAULT '1',
+  `counts_as_report` tinyint unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_rvid_code` (`rvid`, `code`),
   KEY `idx_rvid_position` (`rvid`, `position`)

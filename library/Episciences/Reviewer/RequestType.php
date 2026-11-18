@@ -50,10 +50,14 @@ final class RequestType
     /** @var array<string, string> instructions per language, shown to the invited person (answer without an account) */
     private array $instructions;
 
+    private bool $countsAsReport;
+
     /**
      * @param array<string, string> $labels label per language, at least one
      * @param string|null $defaultDeadline stored interval ("2 week"); null = journal setting
      * @param array<string, string> $instructions instructions per language (answer without an account)
+     * @param bool $countsAsReport whether its reports count like review reports (reviewed status, required number of
+     *     reports, average rating); always for the review report, never for a type answered without an account
      * @throws InvalidArgumentException on an invalid code, label or deadline
      */
     public function __construct(
@@ -65,7 +69,8 @@ final class RequestType
         private readonly ?string $defaultDeadline = null,
         private readonly int $position = 0,
         private readonly bool $enabled = true,
-        array $instructions = []
+        array $instructions = [],
+        bool $countsAsReport = false
     ) {
         if (preg_match(self::CODE_PATTERN, $code) !== 1 || in_array($code, self::RESERVED_CODES, true)) {
             throw new InvalidArgumentException(sprintf('Invalid review request type code "%s"', $code));
@@ -85,8 +90,14 @@ final class RequestType
             throw new InvalidArgumentException('The review report type cannot be answered without an account');
         }
 
+        if ($lightAnswer && $countsAsReport) {
+            // an answer without an account is not a rating report
+            throw new InvalidArgumentException('A type answered without an account cannot count as a review report');
+        }
+
         $this->labels = self::cleanLabels($labels);
         $this->instructions = self::cleanInstructions($instructions);
+        $this->countsAsReport = $code === self::CODE_FULL_REPORT || $countsAsReport;
     }
 
     /**
@@ -131,7 +142,8 @@ final class RequestType
             isset($row['default_deadline']) && $row['default_deadline'] !== '' ? (string)$row['default_deadline'] : null,
             (int)($row['position'] ?? 0),
             (bool)($row['enabled'] ?? true),
-            is_array($instructions) ? $instructions : []
+            is_array($instructions) ? $instructions : [],
+            (bool)($row['counts_as_report'] ?? false)
         );
     }
 
@@ -150,24 +162,36 @@ final class RequestType
             'default_deadline' => $this->defaultDeadline,
             'position' => $this->position,
             'enabled' => (int)$this->enabled,
+            'counts_as_report' => (int)$this->countsAsReport,
         ];
     }
 
     public function withId(int $id): self
     {
-        return new self($id, $this->rvid, $this->code, $this->labels, $this->lightAnswer, $this->defaultDeadline, $this->position, $this->enabled, $this->instructions);
+        return new self(
+            $id, $this->rvid, $this->code, $this->labels, $this->lightAnswer, $this->defaultDeadline, $this->position, $this->enabled,
+            $this->instructions, $this->countsAsReport
+        );
     }
 
     /**
      * @param array<string, string> $labels
      * @param bool|null $lightAnswer null: unchanged
      * @param array<string, string>|null $instructions null: unchanged
+     * @param bool|null $countsAsReport null: unchanged
      */
-    public function withSettings(array $labels, ?string $defaultDeadline, int $position, bool $enabled, ?bool $lightAnswer = null, ?array $instructions = null): self
-    {
+    public function withSettings(
+        array $labels,
+        ?string $defaultDeadline,
+        int $position,
+        bool $enabled,
+        ?bool $lightAnswer = null,
+        ?array $instructions = null,
+        ?bool $countsAsReport = null
+    ): self {
         return new self(
             $this->id, $this->rvid, $this->code, $labels, $lightAnswer ?? $this->lightAnswer, $defaultDeadline, $position, $enabled,
-            $instructions ?? $this->instructions
+            $instructions ?? $this->instructions, $countsAsReport ?? $this->countsAsReport
         );
     }
 
@@ -241,6 +265,14 @@ final class RequestType
     public function isFullReport(): bool
     {
         return $this->code === self::CODE_FULL_REPORT;
+    }
+
+    /**
+     * Whether its reports count like review reports: reviewed status, required number of reports, average rating
+     */
+    public function countsAsReport(): bool
+    {
+        return $this->countsAsReport;
     }
 
     public function isQuickOpinion(): bool

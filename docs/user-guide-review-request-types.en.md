@@ -43,6 +43,7 @@ In the **Request types** section, each type is a block showing its default due d
    - **Default deadline** (leave empty to use the journal setting);
    - **Position** in the list;
    - **Offer this type when inviting a reviewer** (uncheck to hide it);
+   - **Count its reports as review reports** (see "Reports");
    - **Answer without an account, from the invitation link** (see below), and its **Instructions** in each language
      (shown only while the option is checked; they are kept when it is unchecked).
 3. Click **Save**.
@@ -99,8 +100,11 @@ Each request has its own report. On the paper's administration page:
 - the **Reviewers** panel shows the type of each invitation;
 - the **Reviews** panel shows the type of the reports other than review reports.
 
-Only the **review reports** count for the "reviewed" status of the article, the required number of reviewers and the
-average rating. The other types are shown for information.
+Only the **review reports**, and those of the types where **Count its reports as review reports** is checked, count for
+the "reviewed" status of the article, the minimum number of reviews, the average rating and the "not enough reviewers"
+reminder. The other types are shown for information. Check this option, for example, for the review stages your journal
+creates as types ("Phase 2", "Revised version check"…). It has no effect for a type answered without an account, which
+produces no report. On the grids page, these types show the **Counts as a review report** badge.
 
 ## Answer Without an Account
 

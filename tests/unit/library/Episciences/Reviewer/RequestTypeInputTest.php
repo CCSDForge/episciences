@@ -121,6 +121,20 @@ final class RequestTypeInputTest extends TestCase
         self::assertFalse((new RequestTypeInput($this->post(['light_answer' => '1']), self::RVID, self::LANGUAGES, $fullReport))->getType()?->isLightAnswer());
     }
 
+    public function testTheCountAsReviewReportBoxIsIgnoredWithAnAnswerWithoutAnAccount(): void
+    {
+        self::assertTrue((new RequestTypeInput($this->post(['counts_as_report' => '1']), self::RVID, self::LANGUAGES))->getType()?->countsAsReport());
+        self::assertFalse((new RequestTypeInput($this->post(), self::RVID, self::LANGUAGES))->getType()?->countsAsReport());
+
+        $type = (new RequestTypeInput($this->post(['counts_as_report' => '1', 'light_answer' => '1']), self::RVID, self::LANGUAGES))->getType();
+        self::assertNotNull($type);
+        self::assertTrue($type->isLightAnswer());
+        self::assertFalse($type->countsAsReport());
+
+        $fullReport = new RequestType(1, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report']);
+        self::assertTrue((new RequestTypeInput($this->post(), self::RVID, self::LANGUAGES, $fullReport))->getType()?->countsAsReport());
+    }
+
     public function testInstructionsAreOptionalAndLimited(): void
     {
         $type = (new RequestTypeInput($this->post(['instructions' => ['fr' => 'Indiquez votre avis.', 'en' => '']]), self::RVID, self::LANGUAGES))->getType();

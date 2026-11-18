@@ -13,6 +13,7 @@ use InvalidArgumentException;
  *
  * Posted fields: code (new type only), label[<lang>], deadline + deadline_unit (both empty: journal setting),
  * position, enabled (absent: disabled), light_answer (absent: answered with an account and the rating grid),
+ * counts_as_report (absent: the reports inform only; ignored for the review report and with light_answer),
  * instructions[<lang>] (optional).
  */
 final class RequestTypeInput
@@ -24,6 +25,8 @@ final class RequestTypeInput
     public const FIELD_ENABLED = 'enabled';
     /** answered from the invitation link, without an account (#319); never for the review report */
     public const FIELD_LIGHT_ANSWER = 'light_answer';
+    /** the reports of the type count like review reports (#319) */
+    public const FIELD_COUNTS_AS_REPORT = 'counts_as_report';
     /** instructions[<lang>], shown on the page of the answer without an account; optional */
     public const FIELD_INSTRUCTIONS = 'instructions';
 
@@ -48,6 +51,8 @@ final class RequestTypeInput
         $enabled = ($existing?->isFullReport() ?? false) || !empty($post[self::FIELD_ENABLED]);
         $isFullReport = $existing?->isFullReport() ?? ($code === RequestType::CODE_FULL_REPORT);
         $lightAnswer = !$isFullReport && !empty($post[self::FIELD_LIGHT_ANSWER]);
+        // an answer without an account is not a rating report: it never counts
+        $countsAsReport = $isFullReport || (!$lightAnswer && !empty($post[self::FIELD_COUNTS_AS_REPORT]));
 
         if ($existing === null && (preg_match(RequestType::CODE_PATTERN, $code) !== 1 || in_array($code, RequestType::RESERVED_CODES, true))) {
             $this->errors[self::FIELD_CODE] = 'Le code doit commencer par une lettre minuscule et ne contenir que des lettres minuscules, des chiffres et des tirets bas (30 caractères au plus).';
@@ -59,8 +64,8 @@ final class RequestTypeInput
 
         try {
             $this->type = $existing !== null
-                ? $existing->withSettings($labels, $deadline, $position, $enabled, $lightAnswer, $instructions)
-                : new RequestType(null, $rvid, $code, $labels, $lightAnswer, $deadline, $position, $enabled, $instructions);
+                ? $existing->withSettings($labels, $deadline, $position, $enabled, $lightAnswer, $instructions, $countsAsReport)
+                : new RequestType(null, $rvid, $code, $labels, $lightAnswer, $deadline, $position, $enabled, $instructions, $countsAsReport);
         } catch (InvalidArgumentException) {
             $this->errors[self::FIELD_CODE] = "Ce type de demande n'a pas pu être enregistré.";
         }

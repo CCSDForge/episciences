@@ -54,6 +54,26 @@ describe('review request type form (#319)', () => {
         ).toBe('Consigne');
     });
 
+    test('counting as review reports is disabled while the answer without an account is checked', () => {
+        const { checkbox } = render(true);
+        document
+            .querySelector('form')
+            .insertAdjacentHTML(
+                'beforeend',
+                '<input type="checkbox" id="counts_as_report" name="counts_as_report" value="1" checked>'
+            );
+        const countsAsReport = document.getElementById('counts_as_report');
+        initLightAnswerInstructions(document);
+
+        expect(countsAsReport.disabled).toBe(true);
+
+        checkbox.checked = false;
+        checkbox.dispatchEvent(new Event('change'));
+        expect(countsAsReport.disabled).toBe(false);
+        // the choice made before is kept
+        expect(countsAsReport.checked).toBe(true);
+    });
+
     test('a form without the option (review report) is left unchanged', () => {
         document.body.innerHTML =
             '<form><input type="text" name="code"></form>';

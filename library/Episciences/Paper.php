@@ -2582,8 +2582,8 @@ class Episciences_Paper
      */
     public function getAverageRating(int $precision = 0)
     {
-        // only the review reports are rated together (#319)
-        $ratings = self::reviewReportsOf($this->getRatings());
+        // only the reports counting as review reports are rated together (#319)
+        $ratings = self::countedReportsOf($this->getRatings());
         if (empty($ratings)) {
             return false;
         }
@@ -2646,14 +2646,14 @@ class Episciences_Paper
     }
 
     /**
-     * The review reports among the reports: only they count for the reviewed status, the required number of
-     * reviewers and the average rating (#319)
+     * The reports that count like review reports: the review reports, and those of the request types set to count
+     * (#319). Only they count for the reviewed status, the required number of reports and the average rating.
      * @param array<int|string, Episciences_Rating_Report> $reports
      * @return array<int|string, Episciences_Rating_Report>
      */
-    public static function reviewReportsOf(array $reports): array
+    public static function countedReportsOf(array $reports): array
     {
-        return array_filter($reports, static fn(Episciences_Rating_Report $report): bool => $report->isReviewReport());
+        return array_filter($reports, static fn(Episciences_Rating_Report $report): bool => $report->countsAsReviewReport());
     }
 
     public function filterReportsByReviewer(array $reports, $uid): array
@@ -3370,8 +3370,8 @@ class Episciences_Paper
     public function isReviewed(): bool
     {
 
-        // only the review reports make a paper reviewed; the other request types inform (#319)
-        $reports = self::reviewReportsOf($this->getReports());
+        // only the reports counting as review reports make a paper reviewed; the other request types inform (#319)
+        $reports = self::countedReportsOf($this->getReports());
 
         if (!$reports) {
             // if there isn't any report, paper is not reviewed
@@ -3383,7 +3383,7 @@ class Episciences_Paper
         $this->loadRatings(null, Episciences_Rating_Report::STATUS_COMPLETED);
 
         if ($review->getSetting('requiredReviewers')) {
-            return (count(self::reviewReportsOf($this->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED))) >= (int)$review->getSetting('requiredReviewers'));
+            return (count(self::countedReportsOf($this->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED))) >= (int)$review->getSetting('requiredReviewers'));
         }
 
         $completed_reports = 0;

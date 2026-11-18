@@ -26,6 +26,7 @@ final class RequestTypeTestDatabase
                 default_deadline TEXT NULL,
                 position INTEGER NOT NULL DEFAULT 0,
                 enabled INTEGER NOT NULL DEFAULT 1,
+                counts_as_report INTEGER NOT NULL DEFAULT 0,
                 UNIQUE (rvid, code)
             )'
         );

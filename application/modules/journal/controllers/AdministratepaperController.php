@@ -826,7 +826,7 @@ class AdministratepaperController extends PaperDefaultController
         $paper->loadRatings(null, Episciences_Rating_Report::STATUS_COMPLETED);
 
         // only the review reports count (#319)
-        $isRequiredReviewersOk = (int)$review->getSetting('requiredReviewers') <= count(Episciences_Paper::reviewReportsOf($paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED)));
+        $isRequiredReviewersOk = (int)$review->getSetting('requiredReviewers') <= count(Episciences_Paper::countedReportsOf($paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED)));
         $this->view->isRequiredReviewersOk = $isRequiredReviewersOk;
         $this->view->isAllowedToSeeReportDetails = !$paper->isOwner() && (
                 Episciences_Auth::isSecretary() ||

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Rating;
 
+use Episciences\Reviewer\RequestType;
 use Episciences\Reviewer\RequestTypeRepository;
 use Episciences_Merge_MergingManager;
 use Episciences_Paper;
@@ -24,7 +25,8 @@ use Zend_Db_Table_Abstract;
  * @covers Episciences_Reviewer::hasCompletedEveryReport
  * @covers Episciences_Merge_MergingManager::reportKeyParts
  * @covers Episciences_Paper::reportKey
- * @covers Episciences_Paper::reviewReportsOf
+ * @covers Episciences_Paper::countedReportsOf
+ * @covers \Episciences\Reviewer\RequestTypeRepository::countsAsReportId
  */
 final class Episciences_Rating_ReportRequestTypeTest extends TestCase
 {
@@ -144,6 +146,22 @@ final class Episciences_Rating_ReportRequestTypeTest extends TestCase
         self::assertFalse($this->reportObject($this->quickOpinion)->isReviewReport());
     }
 
+    public function testTheReportsOfATypeSetToCountAreCountedToo(): void
+    {
+        $phase = (int)(new RequestTypeRepository($this->db))->save(
+            new RequestType(null, RVID, 'phase_two', ['en' => 'Phase two'], false, null, 3, true, [], true)
+        )->getId();
+        $report = $this->reportObject($phase);
+        $report->setUid(self::UID);
+        $quick = $this->reportObject($this->quickOpinion);
+        $quick->setUid(self::UID);
+
+        self::assertFalse($report->isReviewReport(), 'its files stay apart from the review report');
+        self::assertTrue($report->countsAsReviewReport());
+        self::assertFalse($quick->countsAsReviewReport());
+        self::assertSame(['a' => $report], Episciences_Paper::countedReportsOf(['a' => $report, 'b' => $quick]));
+    }
+
     public function testOnlyTheReviewReportsCountAndEachReportHasItsOwnKey(): void
     {
         $review = $this->reportObject($this->fullReport);
@@ -155,6 +173,6 @@ final class Episciences_Rating_ReportRequestTypeTest extends TestCase
         self::assertSame(self::UID . '_' . $this->quickOpinion, Episciences_Paper::reportKey($quick));
 
         $reports = [Episciences_Paper::reportKey($review) => $review, Episciences_Paper::reportKey($quick) => $quick];
-        self::assertSame([self::UID => $review], Episciences_Paper::reviewReportsOf($reports));
+        self::assertSame([self::UID => $review], Episciences_Paper::countedReportsOf($reports));
     }
 }

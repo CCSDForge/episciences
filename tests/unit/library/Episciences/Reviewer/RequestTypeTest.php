@@ -115,6 +115,32 @@ final class RequestTypeTest extends TestCase
         new RequestType(null, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report'], true);
     }
 
+    public function testOnlyTheReviewReportCountsByDefault(): void
+    {
+        self::assertTrue(RequestType::defaults(self::RVID)[0]->countsAsReport());
+        self::assertFalse(RequestType::defaults(self::RVID)[1]->countsAsReport());
+        // the review report always counts, whatever is given
+        self::assertTrue((new RequestType(null, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report'], false, null, 1, true, [], false))->countsAsReport());
+    }
+
+    public function testATypeOfTheJournalCanCountAsReviewReportAndKeepsItInItsRow(): void
+    {
+        $phase = new RequestType(8, self::RVID, 'phase_two', ['en' => 'Phase two'], false, null, 3, true, [], true);
+
+        self::assertTrue($phase->countsAsReport());
+        self::assertSame(1, $phase->toRow()['counts_as_report']);
+        self::assertTrue(RequestType::fromRow($phase->toRow() + ['id' => 8])->countsAsReport());
+        self::assertTrue($phase->withId(9)->countsAsReport());
+        self::assertFalse($phase->withSettings(['en' => 'Phase 2'], null, 3, true, null, null, false)->countsAsReport());
+        self::assertTrue($phase->withSettings(['en' => 'Phase 2'], null, 3, true)->countsAsReport(), 'unchanged when not given');
+    }
+
+    public function testATypeAnsweredWithoutAnAccountCannotCountAsReviewReport(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new RequestType(null, self::RVID, 'phase_two', ['en' => 'Phase two'], true, null, 0, true, [], true);
+    }
+
     public function testRowRoundTrip(): void
     {
         $type = new RequestType(7, self::RVID, 'phase_two', ['fr' => 'Phase 2 « détaillée »', 'en' => 'Phase two'], true, '1 month', 4, false, ['fr' => ' Consigne ', 'en' => '']);

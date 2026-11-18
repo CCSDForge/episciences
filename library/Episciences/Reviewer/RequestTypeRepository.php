@@ -25,6 +25,9 @@ class RequestTypeRepository
     /** @var array<int, bool> whether the type is a review report type, by type id (cache of isFullReportId()) */
     private static array $isFullReport = [];
 
+    /** @var array<int, bool> whether the reports of the type count as review reports, by type id (cache of countsAsReportId()) */
+    private static array $countsAsReport = [];
+
     /**
      * @param ?Zend_Db_Adapter_Abstract $db defaults to the application database
      */
@@ -84,12 +87,26 @@ class RequestTypeRepository
     }
 
     /**
-     * Forgets the values cached by fullReportIdOf() and isFullReportId() (tests, creation of the default types)
+     * Whether the reports of the type count like review reports, read once per request
+     */
+    public static function countsAsReportId(int $id, ?self $repository = null): bool
+    {
+        if (!array_key_exists($id, self::$countsAsReport)) {
+            self::$countsAsReport[$id] = (bool)($repository ?? new self())->findById($id)?->countsAsReport();
+        }
+
+        return self::$countsAsReport[$id];
+    }
+
+    /**
+     * Forgets the values cached by fullReportIdOf(), isFullReportId() and countsAsReportId() (tests, creation of the
+     * default types, update of a type)
      */
     public static function clearCache(): void
     {
         self::$fullReportIds = [];
         self::$isFullReport = [];
+        self::$countsAsReport = [];
     }
 
     /**
@@ -153,6 +170,7 @@ class RequestTypeRepository
         // the code identifies the mail template of the type: it never changes
         unset($row['code'], $row['rvid']);
         $db->update(self::TABLE_NAME, $row, ['id = ?' => $id]);
+        unset(self::$countsAsReport[$id]);
 
         return $type;
     }

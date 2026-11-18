@@ -95,6 +95,9 @@ $confirmDelete = json_encode($this->translate('Supprimer ce type de demande ?'),
                 <?php else : ?>
                     <span class="label label-default"><?= $this->escape($this->translate('Désactivé')) ?></span>
                 <?php endif; ?>
+                <?php if ($type->countsAsReport()) : ?>
+                    <span class="label label-info"><?= $this->escape($this->translate('Compte comme rapport de relecture')) ?></span>
+                <?php endif; ?>
             </h3>
         </div>
         <div class="panel-body in">

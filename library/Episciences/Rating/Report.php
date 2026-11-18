@@ -480,6 +480,19 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
     }
 
     /**
+     * Whether the report counts like a review report (reviewed status, required number of reports, average rating):
+     * a review report, or a report of a request type set to count (#319)
+     */
+    public function countsAsReviewReport(): bool
+    {
+        if ($this->isReviewReport()) {
+            return true;
+        }
+
+        return RequestTypeRepository::countsAsReportId((int)$this->getRequest_type_id());
+    }
+
+    /**
      * Request type to save: the given one, else the review report type of the journal of the paper
      */
     private function resolveRequestTypeId(): int

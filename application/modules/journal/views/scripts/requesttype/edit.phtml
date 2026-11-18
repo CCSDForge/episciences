@@ -124,6 +124,27 @@ $error = function (string $field) use ($errors): string {
         </div>
     </div>
 
+    <?php $isFullReport = !$isNew && $type->isFullReport(); ?>
+    <div class="form-group">
+        <div class="col-md-6 col-md-offset-3">
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" id="counts_as_report" name="counts_as_report" value="1"<?= ($isFullReport || !empty($values['counts_as_report'])) ? ' checked' : '' ?>
+                           aria-describedby="counts_as_report-help"<?= $isFullReport ? ' disabled' : '' ?>>
+                    <?= $this->escape($this->translate('Compter ses rapports comme des rapports de relecture')) ?>
+                </label>
+                <span id="counts_as_report-help" class="help-block">
+                    <?= $this->escape($this->translate("Ils comptent alors pour le statut « relu » de l'article, le nombre minimum de relectures et la note moyenne.")) ?>
+                    <?php if ($isFullReport) : ?>
+                        <?= $this->escape($this->translate('Les rapports de relecture comptent toujours.')) ?>
+                    <?php else : ?>
+                        <?= $this->escape($this->translate("Sans effet pour une réponse sans compte, qui n'est pas un rapport.")) ?>
+                    <?php endif; ?>
+                </span>
+            </div>
+        </div>
+    </div>
+
     <?php if ($isNew || !$type->isFullReport()) : ?>
         <div class="form-group">
             <div class="col-md-6 col-md-offset-3">

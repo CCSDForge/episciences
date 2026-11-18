@@ -1005,7 +1005,8 @@ class Episciences_Mail_Reminder
         /** @var Episciences_Paper $paper */
         foreach ($papers as $paper) {
             // L'ajout d'une relecture supplémentaire ne passe pas par les invitations, on doit donc d'abord vérifier cela :
-            $nbReports = count($paper->getReports());
+            // only the reports counting as review reports (#319)
+            $nbReports = count(Episciences_Paper::countedReportsOf($paper->getReports()));
 
             if ($nbReports >= $requiredReviewers) {
                 continue;

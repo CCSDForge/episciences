@@ -44,6 +44,7 @@ qu'il utilise :
    - le **Délai par défaut** (laisser vide pour utiliser le réglage de la revue) ;
    - la **Position** dans la liste ;
    - **Proposer ce type à l'invitation d'un relecteur** (décocher pour le masquer) ;
+   - **Compter ses rapports comme des rapports de relecture** (voir « Rapports ») ;
    - **Réponse sans compte, depuis le lien de l'invitation** (voir plus bas), et sa **Consigne** dans chaque langue
      (affichée seulement quand l'option est cochée ; elle est conservée si l'option est décochée).
 3. Cliquez sur **Enregistrer**.
@@ -102,8 +103,12 @@ Chaque demande a son propre rapport. Sur la page de gestion de l'article :
 - la section **Relecteurs** indique le type de chaque invitation ;
 - la section **Évaluations** indique le type des rapports autres que les rapports de relecture.
 
-Seuls les **rapports de relecture** comptent pour le statut « relu » de l'article, le nombre de relecteurs requis et la
-note moyenne. Les autres types sont affichés à titre d'information.
+Seuls les **rapports de relecture**, et ceux des types où **Compter ses rapports comme des rapports de relecture** est
+coché, comptent pour le statut « relu » de l'article, le nombre minimum de relectures, la note moyenne et la relance
+« pas assez de relecteurs ». Les autres types sont affichés à titre d'information. Cochez cette option, par exemple, pour
+les phases de relecture que votre revue crée comme types (« Phase 2 », « Relecture d'une version révisée »…). Elle est
+sans effet pour un type à réponse sans compte, qui ne produit pas de rapport. Sur la page des grilles, ces types portent
+le badge **Compte comme rapport de relecture**.
 
 ## Réponse sans compte
 
