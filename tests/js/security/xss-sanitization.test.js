@@ -114,7 +114,7 @@ describe('XSS Sanitization Security Tests', () => {
 });
 
 describe('Integration with modified files', () => {
-    describe('es.contacts-list.js patterns', () => {
+    describe('server response HTML', () => {
         test('should safely handle server response HTML', () => {
             const serverResponse =
                 '<div class="contact"><span>John Doe</span></div><script>stealCookies()</script>';

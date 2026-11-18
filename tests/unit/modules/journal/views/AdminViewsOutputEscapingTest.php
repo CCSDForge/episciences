@@ -90,44 +90,6 @@ final class AdminViewsOutputEscapingTest extends TestCase
         self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $html);
     }
 
-    /**
-     * The target ends up in a <script> block: whatever it holds must stay a JS string literal.
-     *
-     * @return array<string, array{string}>
-     */
-    public static function scriptBreakingTargetProvider(): array
-    {
-        return [
-            'closing script tag' => ['</script><img src=x onerror=alert(1)>'],
-            'quote and statement' => ["';alert(1);//"],
-            'double quote' => ['";alert(1);//'],
-            'line separator' => ["a\u{2028}b"],
-        ];
-    }
-
-    /**
-     * @dataProvider scriptBreakingTargetProvider
-     */
-    public function testContactsTargetCannotBreakOutOfTheScriptBlock(string $target): void
-    {
-        $view = $this->view();
-        $view->target = $target;
-        $view->js_contacts = '[]';
-
-        // The template declares a global constant: a second render in the same process warns about it
-        set_error_handler(static fn(int $no, string $str): bool => str_contains($str, 'JS_PREFIX already defined'), E_WARNING);
-        try {
-            $html = $view->render('administratemail/getcontacts.phtml');
-        } finally {
-            restore_error_handler();
-        }
-
-        self::assertSame(1, preg_match('/^\s*var target = (.*);$/m', $html, $matches), 'the target is assigned once');
-        self::assertSame($target, json_decode($matches[1], true, 512, JSON_THROW_ON_ERROR), 'a valid JS string literal holding the target');
-        self::assertStringNotContainsString('</script><img', $html);
-        self::assertSame(1, substr_count(strtolower($html), '</script>'), 'only the closing tag of the block itself');
-    }
-
     private function newVersionLink(?string $zIdentifier): string
     {
         $request = new \Zend_Controller_Request_HttpTestCase();

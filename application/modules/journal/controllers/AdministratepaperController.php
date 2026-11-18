@@ -924,9 +924,7 @@ class AdministratepaperController extends PaperDefaultController
             'title' => $paper->getAllTitles(),
             'repository' => (int)$paper->getRepoid()]);
         $this->view->js_contributor = Zend_Json::encode($contributor->toArray());
-        $this->view->js_sender = Zend_Json::encode(['fullname' => Episciences_Auth::getFullName(), 'screen_name' => Episciences_Auth::getScreenName(), 'email' => Episciences_Auth::getEmail()]);
-        // Recipients autocomplete in paper status modals
-        $this->view->js_users = Zend_Json::encode(array_values(RecipientSuggestions::fromUsers($review::getUsers())));
+        $this->view->js_sender = RecipientSuggestions::senderJson();
         $this->view->available_languages = Zend_Json::encode(Episciences_Tools::getLanguages());
 
         $this->view->paper = $paper;

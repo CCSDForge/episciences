@@ -410,7 +410,7 @@ $(function () {
     }
 
     // Encode a value for safe inclusion in markup by relying on the browser's
-    // text-node encoding (mirrors the helper used in public/js/administratemail/get-contacts.js).
+    // text-node encoding (mirrors the helper used elsewhere in public/js).
     function escapeHtml(value) {
         const div = document.createElement('div');
         div.textContent =

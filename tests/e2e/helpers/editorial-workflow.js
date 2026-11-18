@@ -137,8 +137,8 @@ async function inviteKnownReviewer(page, docid, username) {
     await page.locator(`#invite_reviewer_${docid}`).click();
     await expect(page).toHaveURL(/administratepaper\/invitereviewer/);
 
-    // The table is paged: a journal with many reviewers may not list this one on the first page
-    await page.locator('#known-reviewers_filter input').fill(username);
+    // The table is paginated: on a journal with many reviewers, the reviewer is not on its first page
+    await page.getByRole('searchbox', { name: 'Filter reviewers' }).fill(username);
     await page.locator('#known-reviewers tbody tr', { hasText: username }).click();
     await submitInvitation(page, docid);
 }

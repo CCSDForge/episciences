@@ -517,4 +517,8 @@ return [
     "Maintenance commencée le %s." => "Maintenance commencée le %s.",
     "Maintenance à venir : le site restera consultable, mais les connexions, soumissions et modifications seront temporairement suspendues." => "Maintenance à venir : le site restera consultable, mais les connexions, soumissions et modifications seront temporairement suspendues.",
     "Début de maintenance prévu : %s." => "Début de maintenance prévu : %s.",
+
+    // Mail recipients: French name of the Bcc field
+    "Bcc" => "Cci",
+    "%d destinataires au maximum (À, Cc et Bcc)." => "%d destinataires au maximum (À, Cc et Cci).",
 ];
