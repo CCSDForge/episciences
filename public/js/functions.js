@@ -118,8 +118,9 @@ $(document).ready(function ($) {
 
     // close popovers when clicking somewhere in the page
     $(document).on('click', function (e) {
-        let isPopover = $(e.target).is('.popover-link');
-        let inPopover = $(e.target).closest('.popover').length > 0;
+        // closest(): the click target may be a child of the trigger (e.g. its caret icon)
+        let isPopover = e.target.closest('.popover-link') !== null;
+        let inPopover = e.target.closest('.popover') !== null;
         if (!isPopover && !inPopover) {
             openedPopover = null;
             $('.popover-link').popover('destroy');

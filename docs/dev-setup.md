@@ -250,6 +250,12 @@ make test
 # Run all tests with coverage reports
 make test-coverage
 
+# Run PHP coverage only (supports SUITE=, FILTER=, TEST=, HTML=1)
+make test-php-coverage
+
+# Check new-code PHP line coverage (85% target) against origin/main
+make test-diff-coverage
+
 # Run only PHP tests
 make test-php
 
@@ -257,7 +263,7 @@ make test-php
 make test-js
 ```
 
-PHP coverage is generated in `build/coverage` (if Xdebug/PCOV is available).
+PHP Clover coverage is generated in `build/coverage.xml` using Xdebug (pre-installed in `php-fpm`, enabled via `XDEBUG_MODE=coverage`); add `HTML=1` to `make test-php-coverage` for an HTML report in `build/coverage-html/index.html`.
 JS coverage is generated in `coverage/lcov-report/index.html`.
 
 ---

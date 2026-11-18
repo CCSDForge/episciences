@@ -9,7 +9,7 @@ JEST_CONFIG := jest.config.js
 # =============================================================================
 # Test Commands
 # =============================================================================
-.PHONY: test test-all test-php test-js test-php-unit test-php-integration test-js-unit test-js-watch test-js-coverage test-e2e test-e2e-restore test-coverage lint-php check-source-reading-tests check-hardcoded-urls check-yarn
+.PHONY: test test-all test-php test-js test-php-unit test-php-integration test-php-coverage test-diff-coverage test-js-unit test-js-watch test-js-coverage test-e2e test-e2e-restore test-coverage lint-php check-source-reading-tests check-hardcoded-urls check-yarn
 
 check-yarn:
 	@if ! command -v yarn >/dev/null 2>&1; then \
@@ -37,8 +37,8 @@ test-php: ## Run PHP tests (PHPUnit, usage: make test-php [SUITE=unit|integratio
 	@echo "Running PHP tests..."
 	@if [ -f $(PHPUNIT_CONFIG) ]; then \
 		echo "Using PHPUnit configuration: $(PHPUNIT_CONFIG)"; \
-		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/build && \
-		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod 777 $(CNTR_APP_DIR)/build; \
+		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/build $(CNTR_APP_DIR)/.phpunit.cache && \
+		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod -R 777 $(CNTR_APP_DIR)/build $(CNTR_APP_DIR)/.phpunit.cache; \
 		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=off -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit --no-coverage $(if $(SUITE),--testsuite $(SUITE)) $(if $(FILTER),--filter $(FILTER)); \
 	else \
 		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP tests"; \
@@ -81,15 +81,25 @@ test-e2e: check-yarn ## Run Playwright E2E tests (usage: make test-e2e [APP_MODE
 test-e2e-restore: ## Restore journal settings backed up before E2E tests
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:e2e-seed --restore-settings
 
+test-php-coverage: ## Run PHP tests with Xdebug coverage (usage: make test-php-coverage [SUITE=unit|integration] [FILTER=pattern] [TEST=path] [HTML=1])
+	@echo "Running PHP tests with coverage..."
+	@if [ -f $(PHPUNIT_CONFIG) ]; then \
+		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/build $(CNTR_APP_DIR)/.phpunit.cache && \
+		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod -R 777 $(CNTR_APP_DIR)/build $(CNTR_APP_DIR)/.phpunit.cache; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=coverage -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit $(if $(SUITE),--testsuite $(SUITE)) $(if $(FILTER),--filter $(FILTER)) $(if $(HTML),--coverage-html build/coverage-html) $(TEST); \
+	else \
+		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP coverage"; \
+	fi
+
+test-diff-coverage: ## Check new-code PHP line coverage against build/coverage.xml (usage: make test-diff-coverage [BASE=origin/main] [THRESHOLD=85])
+	@git diff --unified=0 --diff-filter=AM $(if $(filter HEAD,$(BASE)),HEAD,$(or $(BASE),origin/main)...HEAD) -- application library scripts src | \
+		$(DOCKER_COMPOSE) exec -T -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php .github/scripts/check-diff-coverage.php --stdin $(if $(THRESHOLD),--threshold=$(THRESHOLD))
+
 test-coverage: ## Run all tests with coverage (where available)
 	@echo "Running tests with coverage..."
 	@echo "================================"
 	@echo "PHP Tests:"
-	@if [ -f $(PHPUNIT_CONFIG) ]; then \
-		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=coverage -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit || true; \
-	else \
-		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP coverage"; \
-	fi
+	@$(MAKE) test-php-coverage || true
 	@echo ""
 	@echo "JavaScript Tests:"
 	@if [ -f package.json ]; then \

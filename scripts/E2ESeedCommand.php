@@ -189,6 +189,8 @@ class E2ESeedCommand extends Command
             Episciences_Review::SETTING_CAN_PICK_EDITOR => '',
             // Section choice is optional (1) so submissions without section do not get blocked
             Episciences_Review::SETTING_CAN_PICK_SECTION => '1',
+            // A revision request must not wait for a deadline the decision helpers do not fill in
+            Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE => '0',
         ];
     }
 

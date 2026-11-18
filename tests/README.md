@@ -26,7 +26,7 @@ make test-php SUITE=unit
 make test-js
 
 # End-to-end tests (Playwright), see tests/e2e/README.md
-yarn test:e2e
+make test-e2e   # or: yarn test:e2e
 ```
 
 ## PHP tests (PHPUnit)
@@ -86,16 +86,34 @@ google-chrome coverage/index.html
 ```
 The report shows statement, branch, and line coverage percentages, with visual highlighting (green = covered, red = uncovered lines).
 
-#### PHP (PHPUnit) HTML report
+#### PHP (PHPUnit + Xdebug)
+
+Xdebug is pre-installed in the `php-fpm` container (`xdebug.mode=off` by default) and enabled on demand with `XDEBUG_MODE=coverage`.
+
 ```bash
-# Generate clover XML & console summary
+# Generate Clover XML (build/coverage.xml) & console summary for all suites
 make test-coverage
 
-# Or generate a navigable visual HTML report
-docker compose exec -u www-data -e XDEBUG_MODE=coverage php-fpm ./vendor/bin/phpunit --coverage-html build/coverage-html
+# Target a single test file or suite (much faster than running the full suite)
+make test-php-coverage TEST=tests/unit/library/Episciences/Tca/Manuscript/RepositoryManuscriptSourceTest.php
+
+# Generate a navigable visual HTML report (build/coverage-html/index.html)
+make test-php-coverage TEST=tests/unit/library/Episciences/Tca/Manuscript/RepositoryManuscriptSourceTest.php HTML=1
 
 # Open in your browser
 xdg-open build/coverage-html/index.html
+```
+
+#### New-code coverage check (85% target)
+
+After generating `build/coverage.xml` (with `make test-php-coverage` or `make test-coverage`), check line coverage on added/modified PHP lines against a base branch:
+
+```bash
+# Compare against origin/main with the default 85% threshold
+make test-diff-coverage
+
+# Custom base branch or threshold
+make test-diff-coverage BASE=main THRESHOLD=85
 ```
 
 #### Online Coverage (Codecov)
@@ -108,10 +126,10 @@ On every pull request, coverage reports are uploaded to Codecov:
 
 ```bash
 # Default level
-make lint-php
+make phpstan
 
-# Override level (0–9)
-make lint-php LEVEL=5
+# Target a specific file/directory and override level (0–9)
+make phpstan TARGET=library/Episciences/Tca LEVEL=6
 ```
 
 ## JavaScript tests (Jest)
@@ -133,21 +151,24 @@ JS test files live alongside the source files and follow the `*.test.js` convent
 
 ```
 tests/
+├── config/                       # Test configuration templates
+├── e2e/                          # Playwright end-to-end tests
+├── fixtures/                     # SQL schemas, seeds, and sample data
+├── integration/                  # Integration tests
+├── js/                           # JavaScript unit test helpers/suites
 └── unit/
-    └── library/
-        ├── Episciences/          # Tests for library/Episciences/
-        │   ├── paper/
-        │   ├── user/
-        │   └── View/
-        │       └── Helper/
-        └── Ccsd/                 # Tests for library/Ccsd/
+    ├── library/
+    │   ├── Episciences/          # Tests for library/Episciences/
+    │   └── Ccsd/                 # Tests for library/Ccsd/
+    ├── modules/                  # Controller & module tests (ControllerTestCase)
+    └── scripts/                  # CLI/worker script tests
 ```
 
 ## Writing new tests
 
-- PHP test classes extend `PHPUnit\Framework\TestCase`.
-- The class name must match the filename: `Episciences_ToolsTest` → `Episciences_ToolsTest.php`.
-- Place the file under `tests/unit/library/` mirroring the source path under `library/`.
+- PHP test classes extend `PHPUnit\Framework\TestCase` (or `ControllerTestCase` for controller actions).
+- Use namespaces matching the source structure and match the class name to the filename (e.g. `RepositoryManuscriptSourceTest` → `RepositoryManuscriptSourceTest.php`).
+- Place the file under `tests/unit/` mirroring the source path (`library/`, `modules/`, `scripts/`).
 - **DB-dependent tests** should be avoided in unit tests. Use mocks or skip with `$this->markTestSkipped()` when a real DB adapter is required.
 - After creating a test file, set its permissions: `chmod 644 <file>`.
 
