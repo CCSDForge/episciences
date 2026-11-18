@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Reviewer;
 
+use Episciences\Reviewer\DefaultRequestType;
 use Episciences\Reviewer\RequestType;
 use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -21,8 +21,8 @@ final class RequestTypeTest extends TestCase
         $types = RequestType::defaults(self::RVID);
 
         self::assertSame(
-            [RequestType::CODE_FULL_REPORT, RequestType::CODE_QUICK_OPINION],
-            array_map(static fn(RequestType $type): string => $type->getCode(), $types)
+            [DefaultRequestType::FullReport, DefaultRequestType::QuickOpinion],
+            array_map(static fn(RequestType $type): ?DefaultRequestType => $type->getDefaultType(), $types)
         );
         self::assertSame([1, 2], array_map(static fn(RequestType $type): int => $type->getPosition(), $types));
 
@@ -46,17 +46,17 @@ final class RequestTypeTest extends TestCase
 
     public function testLabelFallsBackToTheFallbackLanguageThenToTheFirstLabel(): void
     {
-        $type = new RequestType(null, self::RVID, 'phase_one', ['fr' => 'Phase 1', 'en' => 'Phase one']);
+        $type = new RequestType(null, self::RVID, null, ['fr' => 'Phase 1', 'en' => 'Phase one']);
         self::assertSame('Phase 1', $type->getLabel('fr'));
         self::assertSame('Phase one', $type->getLabel('de'));
 
-        $frenchOnly = new RequestType(null, self::RVID, 'phase_one', ['fr' => 'Phase 1']);
+        $frenchOnly = new RequestType(null, self::RVID, null, ['fr' => 'Phase 1']);
         self::assertSame('Phase 1', $frenchOnly->getLabel('es'));
     }
 
     public function testLabelsAreTrimmedAndEmptyOrInvalidOnesDropped(): void
     {
-        $type = new RequestType(null, self::RVID, 'phase_one', ['fr' => '  Phase 1 ', 'en' => '   ', 'english' => 'x', 3 => 'y']);
+        $type = new RequestType(null, self::RVID, null, ['fr' => '  Phase 1 ', 'en' => '   ', 'english' => 'x', 3 => 'y']);
 
         self::assertSame(['fr' => 'Phase 1'], $type->getLabels());
     }
@@ -64,55 +64,46 @@ final class RequestTypeTest extends TestCase
     public function testAtLeastOneLabelIsRequired(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new RequestType(null, self::RVID, 'phase_one', ['fr' => ' ']);
+        new RequestType(null, self::RVID, null, ['fr' => ' ']);
     }
 
     public function testTooLongLabelIsRefused(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new RequestType(null, self::RVID, 'phase_one', ['en' => str_repeat('a', RequestType::LABEL_MAX_LENGTH + 1)]);
+        new RequestType(null, self::RVID, null, ['en' => str_repeat('a', RequestType::LABEL_MAX_LENGTH + 1)]);
     }
 
-    /**
-     * @return array<string, array{string}>
-     */
-    public static function invalidCodes(): array
+    public function testTheDefaultTypesMapToFixedValuesAndCodes(): void
     {
-        return [
-            'empty' => [''],
-            'upper case' => ['Quick'],
-            'starts with a digit' => ['1st_phase'],
-            'space' => ['quick opinion'],
-            'dash' => ['quick-opinion'],
-            'too long' => [str_repeat('a', 31)],
-            'path' => ['../x'],
-            'reserved' => ['generic'],
-        ];
+        self::assertSame(1, DefaultRequestType::FullReport->value);
+        self::assertSame(2, DefaultRequestType::QuickOpinion->value);
+        self::assertSame('full_report', DefaultRequestType::FullReport->code());
+        self::assertSame('quick_opinion', DefaultRequestType::QuickOpinion->code());
     }
 
-    #[DataProvider('invalidCodes')]
-    public function testInvalidCodeIsRefused(string $code): void
+    public function testTheInvitationTemplateOfADefaultTypeIsNamedByItsCodeAndOtherwiseByItsId(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        new RequestType(null, self::RVID, $code, ['en' => 'Label']);
+        self::assertSame('quick_opinion', (new RequestType(4, self::RVID, DefaultRequestType::QuickOpinion, ['en' => 'Quick']))->invitationKeySuffix());
+        self::assertSame('type_12', (new RequestType(12, self::RVID, null, ['en' => 'Phase two']))->invitationKeySuffix());
+        self::assertNull((new RequestType(null, self::RVID, null, ['en' => 'Phase two']))->invitationKeySuffix(), 'not saved yet');
     }
 
     public function testInvalidDeadlineIsRefused(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new RequestType(null, self::RVID, 'phase_one', ['en' => 'Label'], false, '2 fortnight');
+        new RequestType(null, self::RVID, null, ['en' => 'Label'], false, '2 fortnight');
     }
 
     public function testReviewReportTypeCannotBeDisabled(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new RequestType(null, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report'], false, null, 1, false);
+        new RequestType(null, self::RVID, DefaultRequestType::FullReport, ['en' => 'Review report'], false, null, 1, false);
     }
 
     public function testReviewReportTypeCannotBeAnsweredWithoutAnAccount(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new RequestType(null, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report'], true);
+        new RequestType(null, self::RVID, DefaultRequestType::FullReport, ['en' => 'Review report'], true);
     }
 
     public function testOnlyTheReviewReportCountsByDefault(): void
@@ -120,12 +111,12 @@ final class RequestTypeTest extends TestCase
         self::assertTrue(RequestType::defaults(self::RVID)[0]->countsAsReport());
         self::assertFalse(RequestType::defaults(self::RVID)[1]->countsAsReport());
         // the review report always counts, whatever is given
-        self::assertTrue((new RequestType(null, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report'], false, null, 1, true, [], false))->countsAsReport());
+        self::assertTrue((new RequestType(null, self::RVID, DefaultRequestType::FullReport, ['en' => 'Review report'], false, null, 1, true, [], false))->countsAsReport());
     }
 
     public function testATypeOfTheJournalCanCountAsReviewReportAndKeepsItInItsRow(): void
     {
-        $phase = new RequestType(8, self::RVID, 'phase_two', ['en' => 'Phase two'], false, null, 3, true, [], true);
+        $phase = new RequestType(8, self::RVID, null, ['en' => 'Phase two'], false, null, 3, true, [], true);
 
         self::assertTrue($phase->countsAsReport());
         self::assertSame(1, $phase->toRow()['counts_as_report']);
@@ -138,12 +129,12 @@ final class RequestTypeTest extends TestCase
     public function testATypeAnsweredWithoutAnAccountCannotCountAsReviewReport(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new RequestType(null, self::RVID, 'phase_two', ['en' => 'Phase two'], true, null, 0, true, [], true);
+        new RequestType(null, self::RVID, null, ['en' => 'Phase two'], true, null, 0, true, [], true);
     }
 
     public function testRowRoundTrip(): void
     {
-        $type = new RequestType(7, self::RVID, 'phase_two', ['fr' => 'Phase 2 « détaillée »', 'en' => 'Phase two'], true, '1 month', 4, false, ['fr' => ' Consigne ', 'en' => '']);
+        $type = new RequestType(7, self::RVID, null, ['fr' => 'Phase 2 « détaillée »', 'en' => 'Phase two'], true, '1 month', 4, false, ['fr' => ' Consigne ', 'en' => '']);
 
         $row = $type->toRow() + ['id' => 7];
         $copy = RequestType::fromRow($row);
@@ -152,20 +143,24 @@ final class RequestTypeTest extends TestCase
         self::assertEquals($type, $copy);
     }
 
-    public function testRowWithUnreadableLabelsFallsBackToTheCode(): void
+    public function testRowWithUnreadableLabelsFallsBackToTheCodeOrTheId(): void
     {
-        $type = RequestType::fromRow(['id' => 1, 'rvid' => self::RVID, 'code' => 'phase_one', 'labels' => '{broken']);
+        $quick = RequestType::fromRow(['id' => 1, 'rvid' => self::RVID, 'default_type' => 2, 'labels' => '{broken']);
+        $phase = RequestType::fromRow(['id' => 7, 'rvid' => self::RVID, 'default_type' => null, 'labels' => '{broken']);
 
-        self::assertSame('phase_one', $type->getLabel('fr'));
+        self::assertSame(DefaultRequestType::QuickOpinion, $quick->getDefaultType());
+        self::assertSame('quick_opinion', $quick->getLabel('fr'));
+        self::assertNull($phase->getDefaultType());
+        self::assertSame('#7', $phase->getLabel('fr'));
     }
 
     public function testWithSettingsKeepsIdentity(): void
     {
-        $type = new RequestType(5, self::RVID, 'phase_one', ['en' => 'Phase one']);
+        $type = new RequestType(5, self::RVID, null, ['en' => 'Phase one']);
         $changed = $type->withSettings(['en' => 'Phase 1'], '2 week', 9, false);
 
         self::assertSame(5, $changed->getId());
-        self::assertSame('phase_one', $changed->getCode());
+        self::assertNull($changed->getDefaultType());
         self::assertSame('Phase 1', $changed->getLabel('en'));
         self::assertSame('2 week', $changed->getDefaultDeadline());
         self::assertSame(9, $changed->getPosition());
@@ -175,14 +170,14 @@ final class RequestTypeTest extends TestCase
 
     public function testInstructionsAreTrimmedFallBackAndAreLimited(): void
     {
-        $type = new RequestType(null, self::RVID, 'phase_one', ['en' => 'Phase one'], true, null, 0, true, ['fr' => '  Consigne  ', 'en' => ' ']);
+        $type = new RequestType(null, self::RVID, null, ['en' => 'Phase one'], true, null, 0, true, ['fr' => '  Consigne  ', 'en' => ' ']);
 
         self::assertSame(['fr' => 'Consigne'], $type->getAllInstructions());
         self::assertSame('Consigne', $type->getInstructions('de'));
         self::assertSame('{"fr":"Consigne"}', $type->toRow()['instructions']);
-        self::assertNull((new RequestType(null, self::RVID, 'phase_one', ['en' => 'Phase one']))->toRow()['instructions']);
+        self::assertNull((new RequestType(null, self::RVID, null, ['en' => 'Phase one']))->toRow()['instructions']);
 
         $this->expectException(InvalidArgumentException::class);
-        new RequestType(null, self::RVID, 'phase_one', ['en' => 'Phase one'], true, null, 0, true, ['en' => str_repeat('a', RequestType::INSTRUCTIONS_MAX_LENGTH + 1)]);
+        new RequestType(null, self::RVID, null, ['en' => 'Phase one'], true, null, 0, true, ['en' => str_repeat('a', RequestType::INSTRUCTIONS_MAX_LENGTH + 1)]);
     }
 }

@@ -39,7 +39,6 @@ qu'il utilise :
 
 1. Cliquez sur **Ajouter un type de demande**, ou sur **Modifier ce type de demande** dans le bloc d'un type.
 2. Renseignez :
-   - le **Code** : identifiant stable (lettres minuscules, chiffres, tirets bas), qui ne peut plus être modifié ensuite ;
    - le **Libellé** dans chaque langue de la revue ;
    - le **Délai par défaut** (laisser vide pour utiliser le réglage de la revue) ;
    - la **Position** dans la liste ;

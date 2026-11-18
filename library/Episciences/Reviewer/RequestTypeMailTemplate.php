@@ -6,6 +6,7 @@ namespace Episciences\Reviewer;
 
 use Episciences_Mail_Template;
 use Episciences_Mail_TemplatesManager;
+use LogicException;
 use Zend_Db_Adapter_Exception;
 use Zend_Exception;
 
@@ -13,14 +14,19 @@ use Zend_Exception;
  * Invitation template of a review request type created by a journal (#319).
  *
  * The default types have their own default template. A type created by a journal gets, at its creation, a custom
- * template of the journal (paper_reviewer_invitation_<code>) copied from the generic one, which the journal can
+ * template of the journal (paper_reviewer_invitation_type_<id>) copied from the generic one, which the journal can
  * then edit in the mail templates screen like any other template.
  */
 final class RequestTypeMailTemplate
 {
+    /**
+     * @throws LogicException for a type not saved yet: the key of a type created by a journal holds its id
+     */
     public static function key(RequestType $type): string
     {
-        return Episciences_Mail_TemplatesManager::INVITATION_KEY_PREFIX . $type->getCode();
+        $suffix = $type->invitationKeySuffix() ?? throw new LogicException('The review request type has no id yet');
+
+        return Episciences_Mail_TemplatesManager::INVITATION_KEY_PREFIX . $suffix;
     }
 
     /**

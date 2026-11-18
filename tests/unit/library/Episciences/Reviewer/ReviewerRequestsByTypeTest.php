@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Reviewer;
 
+use Episciences\Reviewer\DefaultRequestType;
 use AdministratepaperController;
 use Episciences\Reviewer\RequestType;
 use Episciences_PapersManager;
@@ -40,9 +41,9 @@ final class ReviewerRequestsByTypeTest extends TestCase
     private function types(): array
     {
         return [
-            new RequestType(self::FULL_REPORT, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report']),
-            new RequestType(self::QUICK_OPINION, self::RVID, RequestType::CODE_QUICK_OPINION, ['en' => 'Quick opinion']),
-            new RequestType(self::SECOND_ROUND, self::RVID, 'second_round', ['en' => 'Second round']),
+            new RequestType(self::FULL_REPORT, self::RVID, DefaultRequestType::FullReport, ['en' => 'Review report']),
+            new RequestType(self::QUICK_OPINION, self::RVID, DefaultRequestType::QuickOpinion, ['en' => 'Quick opinion']),
+            new RequestType(self::SECOND_ROUND, self::RVID, null, ['en' => 'Second round']),
         ];
     }
 

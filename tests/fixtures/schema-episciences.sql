@@ -1129,7 +1129,7 @@ DROP TABLE IF EXISTS `review_request_type`;
 CREATE TABLE `review_request_type` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `rvid` int unsigned NOT NULL,
-  `code` varchar(30) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `default_type` tinyint unsigned DEFAULT NULL,
   `labels` json NOT NULL,
   `instructions` json DEFAULT NULL,
   `light_answer` tinyint unsigned NOT NULL DEFAULT '0',
@@ -1138,7 +1138,7 @@ CREATE TABLE `review_request_type` (
   `enabled` tinyint unsigned NOT NULL DEFAULT '1',
   `counts_as_report` tinyint unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_rvid_code` (`rvid`, `code`),
+  UNIQUE KEY `uniq_rvid_default_type` (`rvid`, `default_type`),
   KEY `idx_rvid_position` (`rvid`, `position`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

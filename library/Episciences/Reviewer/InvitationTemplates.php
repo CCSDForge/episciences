@@ -122,7 +122,7 @@ final class InvitationTemplates
             return self::REVIEW_REPORT_KEYS[$state];
         }
 
-        $key = Episciences_Mail_TemplatesManager::INVITATION_KEY_PREFIX . $type->getCode();
+        $key = Episciences_Mail_TemplatesManager::INVITATION_KEY_PREFIX . $type->invitationKeySuffix();
 
         return $this->load($key) !== null ? $key : Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_GENERIC;
     }

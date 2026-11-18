@@ -626,19 +626,16 @@ describe('invitereviewer-modal.js Test Suite', () => {
             global.request_types = [
                 {
                     id: 10,
-                    code: 'full_report',
                     label: 'Review report',
                     rating_deadline: '2026-09-01',
                 },
                 {
                     id: 11,
-                    code: 'quick_opinion',
                     label: 'Quick opinion',
                     rating_deadline: '2026-07-15',
                 },
                 {
                     id: 12,
-                    code: 'second_round',
                     label: 'Second round',
                     rating_deadline: '2026-07-22',
                 },
@@ -674,7 +671,7 @@ describe('invitereviewer-modal.js Test Suite', () => {
             expect(select.options[0].disabled).toBe(true);
             expect(select.options[1].disabled).toBe(false);
             expect(select.value).toBe('11');
-            expect(requestType.code).toBe('quick_opinion');
+            expect(requestType.id).toBe(11);
         });
 
         test('the default deadline of the type is applied', () => {

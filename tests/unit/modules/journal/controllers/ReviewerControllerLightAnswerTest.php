@@ -111,7 +111,7 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
     public function testAnAnswerWithoutMessageNorFileIsNotSaved(): void
     {
         $assignment = $this->createMock(Episciences_User_Assignment::class);
-        $type = new RequestType(11, RVID, 'quick_opinion', ['en' => 'Quick opinion'], true);
+        $type = new RequestType(11, RVID, null, ['en' => 'Quick opinion'], true);
 
         $saved = $this->call(
             'saveLightAnswer',
@@ -145,7 +145,7 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
     {
         $request = $this->postRequest([LightAnswerForm::MESSAGE => 'Opinion', LightAnswerForm::SUBMIT => '1'], true);
         $this->controller->setRequest($request);
-        $type = new RequestType(11, RVID, 'quick_opinion', ['en' => 'Quick opinion'], true);
+        $type = new RequestType(11, RVID, null, ['en' => 'Quick opinion'], true);
 
         $this->call('lightAnswerProcess', $request, $this->invitation(token: null), $this->assignment(self::UID + 1, true), $type);
 

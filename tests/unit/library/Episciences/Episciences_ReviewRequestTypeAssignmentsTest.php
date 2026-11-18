@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences;
 
+use Episciences\Reviewer\DefaultRequestType;
 use Episciences\Reviewer\RequestType;
 use Episciences\Reviewer\RequestTypeRepository;
 use Episciences_Paper;
@@ -53,7 +54,7 @@ final class Episciences_ReviewRequestTypeAssignmentsTest extends TestCase
         $repository = new RequestTypeRepository($this->db);
         $repository->createDefaults(RVID);
         $this->fullReport = (int)$repository->findFullReport(RVID)?->getId();
-        $this->quickOpinion = (int)$repository->findByCode(RVID, 'quick_opinion')?->getId();
+        $this->quickOpinion = (int)$repository->findDefault(RVID, DefaultRequestType::QuickOpinion)?->getId();
 
         $this->db->insert(T_USERS, [
             'UID' => self::UID,
@@ -184,7 +185,7 @@ final class Episciences_ReviewRequestTypeAssignmentsTest extends TestCase
     public function testUnassigningAReviewerEndsEachRequestInProgressOnly(): void
     {
         // a type created by the journal, besides the two default types
-        $secondRound = (int)(new RequestTypeRepository($this->db))->save(new RequestType(null, RVID, 'second_round', ['en' => 'Second round']))->getId();
+        $secondRound = (int)(new RequestTypeRepository($this->db))->save(new RequestType(null, RVID, null, ['en' => 'Second round']))->getId();
         $this->request($this->fullReport, [Assignment::STATUS_PENDING, Assignment::STATUS_ACTIVE]);
         $this->request($this->quickOpinion, [Assignment::STATUS_PENDING]);
         $this->request($secondRound, [Assignment::STATUS_PENDING, Assignment::STATUS_DECLINED]);

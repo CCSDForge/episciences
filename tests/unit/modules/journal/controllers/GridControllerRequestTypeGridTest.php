@@ -30,7 +30,7 @@ final class GridControllerRequestTypeGridTest extends ControllerTestCase
         $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
 
         $this->db->respondTo('/FROM `review_request_type` WHERE \(id = /', [[
-            'id' => self::LIGHT_TYPE_ID, 'rvid' => RVID, 'code' => 'quick_opinion', 'labels' => '{"en":"Quick opinion"}',
+            'id' => self::LIGHT_TYPE_ID, 'rvid' => RVID, 'default_type' => 2, 'labels' => '{"en":"Quick opinion"}',
             'light_answer' => 1, 'position' => 2, 'enabled' => 1,
         ]]);
     }

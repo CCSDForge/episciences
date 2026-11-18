@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Rating;
 
+use Episciences\Reviewer\DefaultRequestType;
 use Episciences\Reviewer\RequestType;
 use Episciences\Reviewer\RequestTypeRepository;
 use Episciences_Merge_MergingManager;
@@ -50,7 +51,7 @@ final class Episciences_Rating_ReportRequestTypeTest extends TestCase
         $repository = new RequestTypeRepository($this->db);
         $repository->createDefaults(RVID);
         $this->fullReport = (int)$repository->findFullReport(RVID)?->getId();
-        $this->quickOpinion = (int)$repository->findByCode(RVID, 'quick_opinion')?->getId();
+        $this->quickOpinion = (int)$repository->findDefault(RVID, DefaultRequestType::QuickOpinion)?->getId();
     }
 
     protected function tearDown(): void
@@ -149,7 +150,7 @@ final class Episciences_Rating_ReportRequestTypeTest extends TestCase
     public function testTheReportsOfATypeSetToCountAreCountedToo(): void
     {
         $phase = (int)(new RequestTypeRepository($this->db))->save(
-            new RequestType(null, RVID, 'phase_two', ['en' => 'Phase two'], false, null, 3, true, [], true)
+            new RequestType(null, RVID, null, ['en' => 'Phase two'], false, null, 3, true, [], true)
         )->getId();
         $report = $this->reportObject($phase);
         $report->setUid(self::UID);

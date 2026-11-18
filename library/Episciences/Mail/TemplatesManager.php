@@ -2188,7 +2188,7 @@ class Episciences_Mail_TemplatesManager
 
         foreach ($types as $type) {
             if (!$type->isEnabled()) {
-                $key = self::INVITATION_KEY_PREFIX . $type->getCode();
+                $key = self::INVITATION_KEY_PREFIX . $type->invitationKeySuffix();
                 $keys[] = $key;
                 $keys[] = self::CUSTOM_KEY_PREFIX . $key;
             }

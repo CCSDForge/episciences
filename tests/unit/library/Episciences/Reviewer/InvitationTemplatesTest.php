@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Reviewer;
 
+use Episciences\Reviewer\DefaultRequestType;
 use Episciences\Reviewer\InvitationTemplates;
 use Episciences\Reviewer\RequestType;
 use Episciences_Mail_TemplatesManager as Templates;
@@ -68,14 +69,17 @@ final class InvitationTemplatesTest extends TestCase
         });
     }
 
-    private function type(string $code, bool $lightAnswer = false, int $id = 1): RequestType
+    /**
+     * @param DefaultRequestType|null $defaultType null: a type created by the journal
+     */
+    private function type(?DefaultRequestType $defaultType, bool $lightAnswer = false, int $id = 1): RequestType
     {
-        return new RequestType($id, self::RVID, $code, ['en' => 'Phase <1> & co', 'fr' => 'Phase 1'], $lightAnswer);
+        return new RequestType($id, self::RVID, $defaultType, ['en' => 'Phase <1> & co', 'fr' => 'Phase 1'], $lightAnswer);
     }
 
     public function testReviewReportKeepsTheThreeTemplatesOfTheAccountStates(): void
     {
-        $templates = $this->templates()->forType($this->type(RequestType::CODE_FULL_REPORT));
+        $templates = $this->templates()->forType($this->type(DefaultRequestType::FullReport));
 
         self::assertSame(InvitationTemplates::ACCOUNT_STATES, array_keys($templates));
         self::assertSame('Report 2', $templates[InvitationTemplates::ACCOUNT_KNOWN_USER]['subject']['en']);
@@ -86,7 +90,7 @@ final class InvitationTemplatesTest extends TestCase
 
     public function testOtherTypeUsesItsTemplateWithTheHintOfEachAccountStateInEachLanguage(): void
     {
-        $templates = $this->templates()->forType($this->type(RequestType::CODE_QUICK_OPINION));
+        $templates = $this->templates()->forType($this->type(DefaultRequestType::QuickOpinion));
 
         self::assertSame('Quick [hint reviewer]', $templates[InvitationTemplates::ACCOUNT_KNOWN_REVIEWER]['body']['en']);
         self::assertSame('Rapide [aide relecteur]', $templates[InvitationTemplates::ACCOUNT_KNOWN_REVIEWER]['body']['fr']);
@@ -97,7 +101,7 @@ final class InvitationTemplatesTest extends TestCase
 
     public function testLightAnswerTypeUsesTheNoAccountHintWhateverTheAccount(): void
     {
-        $templates = $this->templates()->forType($this->type(RequestType::CODE_QUICK_OPINION, true));
+        $templates = $this->templates()->forType($this->type(DefaultRequestType::QuickOpinion, true));
 
         foreach (InvitationTemplates::ACCOUNT_STATES as $state) {
             self::assertSame('Quick [hint light]', $templates[$state]['body']['en']);
@@ -106,10 +110,11 @@ final class InvitationTemplatesTest extends TestCase
 
     public function testTypeWithoutTemplateUsesTheGenericOneWithItsLabel(): void
     {
-        $templates = $this->templates()->forType($this->type('phase_two'));
+        $templates = $this->templates()->forType($this->type(null, false, 12));
         $knownUser = $templates[InvitationTemplates::ACCOUNT_KNOWN_USER];
 
-        self::assertContains(Templates::INVITATION_KEY_PREFIX . 'phase_two', $this->requestedKeys);
+        // the template of a type created by the journal is named by the id of the type
+        self::assertContains(Templates::INVITATION_KEY_PREFIX . 'type_12', $this->requestedKeys);
         // plain text subject, HTML body: the label is escaped in the body only
         self::assertSame('Request: Phase <1> & co', $knownUser['subject']['en']);
         self::assertSame('Generic Phase &lt;1&gt; &amp; co [hint user]', $knownUser['body']['en']);
@@ -119,7 +124,7 @@ final class InvitationTemplatesTest extends TestCase
     {
         unset($this->store[Templates::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_NEW_USER]);
 
-        $templates = $this->templates()->forType($this->type(RequestType::CODE_QUICK_OPINION));
+        $templates = $this->templates()->forType($this->type(DefaultRequestType::QuickOpinion));
 
         self::assertSame('Quick []', $templates[InvitationTemplates::ACCOUNT_NEW_USER]['body']['en']);
     }
@@ -128,7 +133,7 @@ final class InvitationTemplatesTest extends TestCase
     {
         $this->store[Templates::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_USER] = ['subject' => [], 'body' => ['fr' => 'aide compte']];
 
-        $templates = $this->templates()->forType($this->type(RequestType::CODE_QUICK_OPINION));
+        $templates = $this->templates()->forType($this->type(DefaultRequestType::QuickOpinion));
 
         self::assertSame('Quick [aide compte]', $templates[InvitationTemplates::ACCOUNT_KNOWN_USER]['body']['en']);
     }
@@ -137,7 +142,7 @@ final class InvitationTemplatesTest extends TestCase
     {
         unset($this->store[Templates::TYPE_PAPER_REVIEWER_INVITATION_NEW_USER]);
 
-        $templates = $this->templates()->forType($this->type(RequestType::CODE_FULL_REPORT));
+        $templates = $this->templates()->forType($this->type(DefaultRequestType::FullReport));
 
         self::assertSame([InvitationTemplates::ACCOUNT_KNOWN_REVIEWER, InvitationTemplates::ACCOUNT_KNOWN_USER], array_keys($templates));
     }
@@ -145,8 +150,8 @@ final class InvitationTemplatesTest extends TestCase
     public function testTemplatesAreLoadedOnceAndIndexedByTypeId(): void
     {
         $templates = $this->templates()->forTypes([
-            $this->type(RequestType::CODE_QUICK_OPINION, false, 7),
-            $this->type(RequestType::CODE_FULL_REPORT, false, 5),
+            $this->type(DefaultRequestType::QuickOpinion, false, 7),
+            $this->type(DefaultRequestType::FullReport, false, 5),
         ]);
 
         self::assertSame([7, 5], array_keys($templates));

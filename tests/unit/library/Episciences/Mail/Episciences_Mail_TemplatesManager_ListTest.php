@@ -97,18 +97,21 @@ final class Episciences_Mail_TemplatesManager_ListTest extends TestCase
     public function testTheInvitationTemplatesOfADisabledRequestTypeAreNotListed(): void
     {
         $this->db->insert('review_request_type', [
-            'rvid' => self::RVID, 'code' => 'phase_two', 'labels' => '{"en":"Phase two"}', 'position' => 1, 'enabled' => 0,
+            'rvid' => self::RVID, 'labels' => '{"en":"Phase two"}', 'position' => 1, 'enabled' => 0,
         ]);
+        $disabled = (int)$this->db->lastInsertId('review_request_type', 'id');
         $this->db->insert('review_request_type', [
-            'rvid' => self::RVID, 'code' => 'phase_three', 'labels' => '{"en":"Phase three"}', 'position' => 2, 'enabled' => 1,
+            'rvid' => self::RVID, 'labels' => '{"en":"Phase three"}', 'position' => 2, 'enabled' => 1,
         ]);
+        $enabled = (int)$this->db->lastInsertId('review_request_type', 'id');
+        // the template of a type created by the journal is named by the id of the type
         $generic = $this->template('list_test_generic');
-        $this->template('custom_paper_reviewer_invitation_phase_two', $generic, self::RVID);
-        $this->template('custom_paper_reviewer_invitation_phase_three', $generic, self::RVID);
+        $this->template('custom_paper_reviewer_invitation_type_' . $disabled, $generic, self::RVID);
+        $this->template('custom_paper_reviewer_invitation_type_' . $enabled, $generic, self::RVID);
 
         $keys = $this->listedKeys();
 
-        self::assertNotContains('custom_paper_reviewer_invitation_phase_two', $keys);
-        self::assertContains('custom_paper_reviewer_invitation_phase_three', $keys);
+        self::assertNotContains('custom_paper_reviewer_invitation_type_' . $disabled, $keys);
+        self::assertContains('custom_paper_reviewer_invitation_type_' . $enabled, $keys);
     }
 }

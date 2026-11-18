@@ -77,7 +77,7 @@ class RequesttypeController extends Zend_Controller_Action
             try {
                 $saved = $this->getRepository()->save($typeToSave);
             } catch (LogicException) {
-                $errors[RequestTypeInput::FIELD_CODE] = 'Ce code est déjà utilisé par un autre type de demande de la revue.';
+                $errors[RequestTypeInput::ERROR_FORM] = "Ce type de demande n'a pas pu être enregistré.";
             }
         }
 
@@ -128,7 +128,7 @@ class RequesttypeController extends Zend_Controller_Action
     }
 
     /**
-     * @return array{code: string, label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool, counts_as_report: bool, instructions: array<string, string>}
+     * @return array{label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool, counts_as_report: bool, instructions: array<string, string>}
      */
     private static function formValues(?RequestType $type): array
     {
@@ -137,7 +137,6 @@ class RequesttypeController extends Zend_Controller_Action
             : null;
 
         return [
-            'code' => $type?->getCode() ?? '',
             'label' => $type?->getLabels() ?? [],
             'deadline' => $deadline !== null ? (string)$deadline[0] : '',
             'deadline_unit' => $deadline[1] ?? 'week',
@@ -152,7 +151,7 @@ class RequesttypeController extends Zend_Controller_Action
     /**
      * Posted values, shown again with the errors
      * @param array<string, mixed> $post
-     * @return array{code: string, label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool, counts_as_report: bool, instructions: array<string, string>}
+     * @return array{label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool, counts_as_report: bool, instructions: array<string, string>}
      */
     private static function postedValues(array $post, ?RequestType $type): array
     {
@@ -166,7 +165,6 @@ class RequesttypeController extends Zend_Controller_Action
         $string = static fn(mixed $value): string => is_string($value) ? $value : '';
 
         return [
-            'code' => $type?->getCode() ?? $string($post[RequestTypeInput::FIELD_CODE] ?? ''),
             'label' => $labels,
             'deadline' => $string($post[RequestTypeInput::FIELD_DEADLINE] ?? ''),
             'deadline_unit' => $string($post[RequestTypeInput::FIELD_DEADLINE . '_unit'] ?? 'week'),

@@ -34,9 +34,9 @@ final class GridControllerListTest extends ControllerTestCase
         $this->givenJournal();
 
         $this->db->respondTo('/FROM `review_request_type` WHERE \(rvid = /', [
-            ['id' => self::REPORT_TYPE_ID, 'rvid' => RVID, 'code' => 'full_report', 'labels' => '{"en":"Review report"}', 'light_answer' => 0, 'position' => 1, 'enabled' => 1],
-            ['id' => self::LIGHT_TYPE_ID, 'rvid' => RVID, 'code' => 'quick_opinion', 'labels' => '{"en":"Quick opinion"}', 'light_answer' => 1, 'position' => 2, 'enabled' => 1],
-            ['id' => self::CUSTOM_TYPE_ID, 'rvid' => RVID, 'code' => 'phase_two', 'labels' => '{"en":"Phase <two>"}', 'light_answer' => 0, 'position' => 3, 'enabled' => 0],
+            ['id' => self::REPORT_TYPE_ID, 'rvid' => RVID, 'default_type' => 1, 'labels' => '{"en":"Review report"}', 'light_answer' => 0, 'position' => 1, 'enabled' => 1],
+            ['id' => self::LIGHT_TYPE_ID, 'rvid' => RVID, 'default_type' => 2, 'labels' => '{"en":"Quick opinion"}', 'light_answer' => 1, 'position' => 2, 'enabled' => 1],
+            ['id' => self::CUSTOM_TYPE_ID, 'rvid' => RVID, 'labels' => '{"en":"Phase <two>"}', 'light_answer' => 0, 'position' => 3, 'enabled' => 0],
         ]);
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-use Episciences\Reviewer\RequestType;
+use Episciences\Reviewer\DefaultRequestType;
 use Episciences\Reviewer\RequestTypeRepository;
 
 // rating report (reviewer rating grid + reviewer rating values)
@@ -53,7 +53,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         } else {
             $sql->join(
                 ['t' => RequestTypeRepository::TABLE_NAME],
-                't.id = r.REQUEST_TYPE_ID AND t.code = ' . $db->quote(RequestType::CODE_FULL_REPORT),
+                't.id = r.REQUEST_TYPE_ID AND t.default_type = ' . DefaultRequestType::FullReport->value,
                 []
             );
         }

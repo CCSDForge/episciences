@@ -37,27 +37,14 @@ $error = function (string $field) use ($errors): string {
 <?php if ($errors !== []) : ?>
     <div class="alert alert-danger" role="alert">
         <?= $this->escape($this->translate('Le formulaire contient des erreurs.')) ?>
+        <?php if (isset($errors[\Episciences\Reviewer\RequestTypeInput::ERROR_FORM])) : ?>
+            <?= $this->escape($this->translate($errors[\Episciences\Reviewer\RequestTypeInput::ERROR_FORM])) ?>
+        <?php endif; ?>
     </div>
 <?php endif; ?>
 
 <form method="post" action="/requesttype/edit<?= $isNew ? '' : '?id=' . (int)$type->getId() ?>" class="form-horizontal" novalidate>
     <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
-
-    <div class="form-group<?= isset($errors['code']) ? ' has-error' : '' ?>">
-        <label for="code" class="col-md-3 control-label"><?= $this->escape($this->translate('Code')) ?></label>
-        <div class="col-md-6">
-            <?php if ($isNew) : ?>
-                <input type="text" id="code" name="code" class="form-control" maxlength="30" required
-                       pattern="[a-z][a-z0-9_]{0,29}" value="<?= $this->escape($values['code']) ?>"<?= $describedBy('code', true) ?>>
-                <span id="code-help" class="help-block">
-                    <?= $this->escape($this->translate("Identifiant stable du type (ex. : phase_2) : lettres minuscules, chiffres et tirets bas. Il ne peut plus être modifié ensuite.")) ?>
-                </span>
-            <?php else : ?>
-                <p id="code" class="form-control-static"><code><?= $this->escape($values['code']) ?></code></p>
-            <?php endif; ?>
-            <?= $error('code') ?>
-        </div>
-    </div>
 
     <?php foreach ($this->languages as $lang) : ?>
         <?php $field = 'label_' . $lang; ?>
@@ -167,7 +154,7 @@ $error = function (string $field) use ($errors): string {
         </div>
         <?php // shown only with the answer without an account (public/js/requesttype/edit.js); kept when hidden ?>
         <div id="light-answer-instructions">
-        <?php if ($isNew || $type->getCode() !== \Episciences\Reviewer\RequestType::CODE_QUICK_OPINION) : ?>
+        <?php if ($isNew || !$type->isQuickOpinion()) : ?>
             <div class="form-group">
                 <div class="col-md-6 col-md-offset-3">
                     <div class="alert alert-warning">

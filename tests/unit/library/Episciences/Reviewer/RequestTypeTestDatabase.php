@@ -19,7 +19,7 @@ final class RequestTypeTestDatabase
             'CREATE TABLE review_request_type (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 rvid INTEGER NOT NULL,
-                code TEXT NOT NULL,
+                default_type INTEGER NULL,
                 labels TEXT NOT NULL,
                 instructions TEXT NULL,
                 light_answer INTEGER NOT NULL DEFAULT 0,
@@ -27,7 +27,7 @@ final class RequestTypeTestDatabase
                 position INTEGER NOT NULL DEFAULT 0,
                 enabled INTEGER NOT NULL DEFAULT 1,
                 counts_as_report INTEGER NOT NULL DEFAULT 0,
-                UNIQUE (rvid, code)
+                UNIQUE (rvid, default_type)
             )'
         );
         $db->query(

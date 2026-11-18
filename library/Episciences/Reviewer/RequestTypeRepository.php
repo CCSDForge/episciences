@@ -44,11 +44,14 @@ class RequestTypeRepository
         return $row ? RequestType::fromRow($row) : null;
     }
 
-    public function findByCode(int $rvid, string $code): ?RequestType
+    /**
+     * The default type of the journal (one of each per journal)
+     */
+    public function findDefault(int $rvid, DefaultRequestType $defaultType): ?RequestType
     {
         $db = $this->getDb();
         $row = $db->fetchRow(
-            $db->select()->from(self::TABLE_NAME)->where('rvid = ?', $rvid)->where('code = ?', $code)
+            $db->select()->from(self::TABLE_NAME)->where('rvid = ?', $rvid)->where('default_type = ?', $defaultType->value)
         );
 
         return $row ? RequestType::fromRow($row) : null;
@@ -59,7 +62,7 @@ class RequestTypeRepository
      */
     public function findFullReport(int $rvid): ?RequestType
     {
-        return $this->findByCode($rvid, RequestType::CODE_FULL_REPORT);
+        return $this->findDefault($rvid, DefaultRequestType::FullReport);
     }
 
     /**
@@ -142,7 +145,7 @@ class RequestTypeRepository
      * Inserts a new type, or updates the type with the same id in the same journal
      * @return RequestType the saved type, with its id
      * @throws JsonException
-     * @throws LogicException when the code is already used in the journal, or the type belongs to another journal
+     * @throws LogicException when the journal already has this default type, or the type belongs to another journal
      */
     public function save(RequestType $type): RequestType
     {
@@ -150,10 +153,11 @@ class RequestTypeRepository
         $row = $type->toRow();
         $id = $type->getId();
 
-        $sameCode = $this->findByCode($type->getRvid(), $type->getCode());
+        $defaultType = $type->getDefaultType();
+        $sameDefault = $defaultType === null ? null : $this->findDefault($type->getRvid(), $defaultType);
 
-        if ($sameCode !== null && $sameCode->getId() !== $id) {
-            throw new LogicException(sprintf('The code "%s" is already used in this journal', $type->getCode()));
+        if ($sameDefault !== null && $sameDefault->getId() !== $id) {
+            throw new LogicException(sprintf('The journal already has the default type "%s"', $defaultType->code()));
         }
 
         if ($id === null) {
@@ -167,8 +171,8 @@ class RequestTypeRepository
             throw new LogicException(sprintf('Unknown review request type #%d in this journal', $id));
         }
 
-        // the code identifies the mail template of the type: it never changes
-        unset($row['code'], $row['rvid']);
+        // a type never changes journal, nor becomes or stops being a default type
+        unset($row['default_type'], $row['rvid']);
         $db->update(self::TABLE_NAME, $row, ['id = ?' => $id]);
         unset(self::$countsAsReport[$id]);
 
@@ -185,7 +189,7 @@ class RequestTypeRepository
         $created = 0;
 
         foreach (RequestType::defaults($rvid) as $type) {
-            if ($this->findByCode($rvid, $type->getCode()) === null) {
+            if ($this->findDefault($rvid, $type->getDefaultType() ?? DefaultRequestType::FullReport) === null) {
                 $this->save($type);
                 $created++;
             }

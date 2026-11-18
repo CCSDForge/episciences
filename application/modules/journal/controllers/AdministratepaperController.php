@@ -1218,7 +1218,6 @@ class AdministratepaperController extends PaperDefaultController
             $interval = $requestType->getDefaultDeadline() ?? $review->getSetting(Episciences_Review::SETTING_RATING_DEADLINE);
             $data[] = [
                 'id' => (int)$requestType->getId(),
-                'code' => $requestType->getCode(),
                 'label' => $requestType->getLabel($locale),
                 'rating_deadline' => Episciences_Tools::addDateInterval(date('Y-m-d'), $interval),
             ];
@@ -1922,7 +1921,7 @@ class AdministratepaperController extends PaperDefaultController
                 'uid' => $uid,
                 'pool' => ($vid) ? $vid : null,
                 'user' => ['fullname' => $reviewer['full_name']],
-                'request_type' => ['id' => $requestType->getId(), 'code' => $requestType->getCode(), 'labels' => $requestType->getLabels()]]);
+                'request_type' => ['id' => $requestType->getId(), 'labels' => $requestType->getLabels()]]);
         if (!$log) {
             $errors[] = "Le log de l'invitation de relecteur n'a pas pu être enregistré";
         }

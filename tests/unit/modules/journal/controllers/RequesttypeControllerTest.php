@@ -39,9 +39,9 @@ final class RequesttypeControllerTest extends ControllerTestCase
 
         $this->db->respondTo('/FROM `review_request_type` WHERE \(id = /', function (string $sql, array $bind): array {
             $rows = [
-                self::TYPE_ID => ['id' => self::TYPE_ID, 'rvid' => RVID, 'code' => 'phase_two', 'labels' => '{"fr":"Phase 2","en":"Phase two"}'],
-                self::USED_TYPE_ID => ['id' => self::USED_TYPE_ID, 'rvid' => RVID, 'code' => 'phase_one', 'labels' => '{"en":"Phase one"}'],
-                self::OTHER_JOURNAL_TYPE_ID => ['id' => self::OTHER_JOURNAL_TYPE_ID, 'rvid' => RVID + 1, 'code' => 'elsewhere', 'labels' => '{"en":"Elsewhere"}'],
+                self::TYPE_ID => ['id' => self::TYPE_ID, 'rvid' => RVID, 'labels' => '{"fr":"Phase 2","en":"Phase two"}'],
+                self::USED_TYPE_ID => ['id' => self::USED_TYPE_ID, 'rvid' => RVID, 'labels' => '{"en":"Phase one"}'],
+                self::OTHER_JOURNAL_TYPE_ID => ['id' => self::OTHER_JOURNAL_TYPE_ID, 'rvid' => RVID + 1, 'labels' => '{"en":"Elsewhere"}'],
             ];
 
             foreach ($rows as $id => $row) {
@@ -81,7 +81,6 @@ final class RequesttypeControllerTest extends ControllerTestCase
     private function validPost(): array
     {
         return [
-            'code' => 'phase_three',
             'label' => ['fr' => 'Phase 3', 'en' => 'Phase three'],
             'deadline' => '2',
             'deadline_unit' => 'week',
@@ -100,7 +99,7 @@ final class RequesttypeControllerTest extends ControllerTestCase
         return array_values(array_filter($writes, static fn(array $write): bool => $write['table'] === 'review_request_type'));
     }
 
-    public function testTheFormerListPageOpensTheTypesTabOfTheGridsPage(): void
+    public function testTheFormerListPageOpensTheTypesSectionOfTheGridsPage(): void
     {
         $result = $this->call('list', $this->getRequest());
 
@@ -123,13 +122,18 @@ final class RequesttypeControllerTest extends ControllerTestCase
         $inserts = $this->typeWrites();
         self::assertCount(1, $inserts);
         self::assertSame(RVID, $inserts[0]['values']['rvid']);
-        self::assertSame('phase_three', $inserts[0]['values']['code']);
+        // a type created by the journal is never a default type
+        self::assertNull($inserts[0]['values']['default_type']);
+        self::assertEqualsCanonicalizing(
+            ['fr' => 'Phase 3', 'en' => 'Phase three'],
+            json_decode((string)$inserts[0]['values']['labels'], true, 4, JSON_THROW_ON_ERROR)
+        );
         self::assertSame('2 week', $inserts[0]['values']['default_deadline']);
     }
 
     public function testAnInvalidTypeIsNotSaved(): void
     {
-        $result = $this->call('edit', $this->postRequest(['code' => 'Bad code', 'label' => []] + $this->validPost(), true));
+        $result = $this->call('edit', $this->postRequest(['label' => []] + $this->validPost(), true));
 
         self::assertNull($result->redirectUrl());
         self::assertSame([], $this->typeWrites());

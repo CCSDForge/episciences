@@ -12,4 +12,4 @@ UPDATE `review_request_type`
 SET `instructions` = JSON_OBJECT(
     'fr', 'Quelques lignes sur l''intérêt, l''originalité et la pertinence de l''article pour la revue suffisent ; il ne s''agit pas d''un rapport de relecture détaillé.',
     'en', 'A few lines on the interest, originality and relevance of the article for the journal are enough; this is not a detailed review report.')
-WHERE `code` = 'quick_opinion' AND `instructions` IS NULL;
+WHERE `default_type` = 2 AND `instructions` IS NULL;

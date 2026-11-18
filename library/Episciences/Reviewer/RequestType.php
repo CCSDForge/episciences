@@ -17,24 +17,20 @@ use JsonException;
  */
 final class RequestType
 {
-    public const CODE_FULL_REPORT = 'full_report';
-    public const CODE_QUICK_OPINION = 'quick_opinion';
-
-    /** Lower-case letters, digits and underscores, starting with a letter: the code is part of a mail template key */
-    public const CODE_PATTERN = '/^[a-z][a-z0-9_]{0,29}$/';
     public const LABEL_MAX_LENGTH = 100;
     /** Longest instructions, in characters */
     public const INSTRUCTIONS_MAX_LENGTH = 1000;
-    /** Codes that would clash with an existing mail template key (paper_reviewer_invitation_<code>) */
-    public const RESERVED_CODES = ['generic'];
+    /** Suffix of the invitation template key of a type created by a journal: paper_reviewer_invitation_type_<id> */
+    public const JOURNAL_TYPE_KEY_PREFIX = 'type_';
 
+    /** Settings of the default types, by DefaultRequestType value */
     private const DEFAULTS = [
-        self::CODE_FULL_REPORT => [
+        DefaultRequestType::FullReport->value => [
             'labels' => ['fr' => 'Rapport de relecture', 'en' => 'Review report'],
             'deadline' => null,
             'instructions' => [],
         ],
-        self::CODE_QUICK_OPINION => [
+        DefaultRequestType::QuickOpinion->value => [
             'labels' => ['fr' => 'Avis rapide', 'en' => 'Quick opinion'],
             'deadline' => '2 week',
             'instructions' => [
@@ -53,17 +49,18 @@ final class RequestType
     private bool $countsAsReport;
 
     /**
+     * @param DefaultRequestType|null $defaultType the default type it is, null for a type created by the journal
      * @param array<string, string> $labels label per language, at least one
      * @param string|null $defaultDeadline stored interval ("2 week"); null = journal setting
      * @param array<string, string> $instructions instructions per language (answer without an account)
      * @param bool $countsAsReport whether its reports count like review reports (reviewed status, required number of
      *     reports, average rating); always for the review report, never for a type answered without an account
-     * @throws InvalidArgumentException on an invalid code, label or deadline
+     * @throws InvalidArgumentException on an invalid label or deadline, or settings a default type cannot have
      */
     public function __construct(
         private readonly ?int $id,
         private readonly int $rvid,
-        private readonly string $code,
+        private readonly ?DefaultRequestType $defaultType,
         array $labels,
         private readonly bool $lightAnswer = false,
         private readonly ?string $defaultDeadline = null,
@@ -72,20 +69,18 @@ final class RequestType
         array $instructions = [],
         bool $countsAsReport = false
     ) {
-        if (preg_match(self::CODE_PATTERN, $code) !== 1 || in_array($code, self::RESERVED_CODES, true)) {
-            throw new InvalidArgumentException(sprintf('Invalid review request type code "%s"', $code));
-        }
-
         if ($defaultDeadline !== null && DeadlineUnit::parseStoredInterval($defaultDeadline) === null) {
             throw new InvalidArgumentException(sprintf('Invalid default deadline "%s"', $defaultDeadline));
         }
 
-        if ($code === self::CODE_FULL_REPORT && !$enabled) {
+        $isFullReport = $defaultType === DefaultRequestType::FullReport;
+
+        if ($isFullReport && !$enabled) {
             // the review report is the type of every request made before the types existed
             throw new InvalidArgumentException('The review report type cannot be disabled');
         }
 
-        if ($code === self::CODE_FULL_REPORT && $lightAnswer) {
+        if ($isFullReport && $lightAnswer) {
             // a review report is written with the rating grid, by a reviewer with an account
             throw new InvalidArgumentException('The review report type cannot be answered without an account');
         }
@@ -97,7 +92,7 @@ final class RequestType
 
         $this->labels = self::cleanLabels($labels);
         $this->instructions = self::cleanInstructions($instructions);
-        $this->countsAsReport = $code === self::CODE_FULL_REPORT || $countsAsReport;
+        $this->countsAsReport = $isFullReport || $countsAsReport;
     }
 
     /**
@@ -109,8 +104,11 @@ final class RequestType
         $types = [];
         $position = 1;
 
-        foreach (self::DEFAULTS as $code => $default) {
-            $types[] = new self(null, $rvid, $code, $default['labels'], false, $default['deadline'], $position++, true, $default['instructions']);
+        foreach (self::DEFAULTS as $value => $default) {
+            $types[] = new self(
+                null, $rvid, DefaultRequestType::from($value), $default['labels'], false, $default['deadline'], $position++, true,
+                $default['instructions']
+            );
         }
 
         return $types;
@@ -133,11 +131,17 @@ final class RequestType
             $instructions = [];
         }
 
+        $id = isset($row['id']) ? (int)$row['id'] : null;
+        $defaultType = isset($row['default_type']) && $row['default_type'] !== ''
+            ? DefaultRequestType::tryFrom((int)$row['default_type'])
+            : null;
+
         return new self(
-            isset($row['id']) ? (int)$row['id'] : null,
+            $id,
             (int)$row['rvid'],
-            (string)$row['code'],
-            is_array($labels) && $labels !== [] ? $labels : ['en' => (string)$row['code']],
+            $defaultType,
+            // unreadable labels: a label is required, the type stays identifiable
+            is_array($labels) && $labels !== [] ? $labels : ['en' => $defaultType?->code() ?? '#' . $id],
             (bool)($row['light_answer'] ?? false),
             isset($row['default_deadline']) && $row['default_deadline'] !== '' ? (string)$row['default_deadline'] : null,
             (int)($row['position'] ?? 0),
@@ -155,7 +159,7 @@ final class RequestType
     {
         return [
             'rvid' => $this->rvid,
-            'code' => $this->code,
+            'default_type' => $this->defaultType?->value,
             'labels' => json_encode($this->labels, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
             'instructions' => $this->instructions === [] ? null : json_encode($this->instructions, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
             'light_answer' => (int)$this->lightAnswer,
@@ -169,7 +173,7 @@ final class RequestType
     public function withId(int $id): self
     {
         return new self(
-            $id, $this->rvid, $this->code, $this->labels, $this->lightAnswer, $this->defaultDeadline, $this->position, $this->enabled,
+            $id, $this->rvid, $this->defaultType, $this->labels, $this->lightAnswer, $this->defaultDeadline, $this->position, $this->enabled,
             $this->instructions, $this->countsAsReport
         );
     }
@@ -190,7 +194,7 @@ final class RequestType
         ?bool $countsAsReport = null
     ): self {
         return new self(
-            $this->id, $this->rvid, $this->code, $labels, $lightAnswer ?? $this->lightAnswer, $defaultDeadline, $position, $enabled,
+            $this->id, $this->rvid, $this->defaultType, $labels, $lightAnswer ?? $this->lightAnswer, $defaultDeadline, $position, $enabled,
             $instructions ?? $this->instructions, $countsAsReport ?? $this->countsAsReport
         );
     }
@@ -237,9 +241,22 @@ final class RequestType
         return $this->rvid;
     }
 
-    public function getCode(): string
+    public function getDefaultType(): ?DefaultRequestType
     {
-        return $this->code;
+        return $this->defaultType;
+    }
+
+    /**
+     * Suffix of the key of its invitation template (paper_reviewer_invitation_<suffix>): the code of a default type,
+     * "type_<id>" for a type created by the journal; null for a type created by the journal and not saved yet
+     */
+    public function invitationKeySuffix(): ?string
+    {
+        if ($this->defaultType !== null) {
+            return $this->defaultType->code();
+        }
+
+        return $this->id === null ? null : self::JOURNAL_TYPE_KEY_PREFIX . $this->id;
     }
 
     public function isLightAnswer(): bool
@@ -264,7 +281,7 @@ final class RequestType
 
     public function isFullReport(): bool
     {
-        return $this->code === self::CODE_FULL_REPORT;
+        return $this->defaultType === DefaultRequestType::FullReport;
     }
 
     /**
@@ -277,12 +294,12 @@ final class RequestType
 
     public function isQuickOpinion(): bool
     {
-        return $this->code === self::CODE_QUICK_OPINION;
+        return $this->defaultType === DefaultRequestType::QuickOpinion;
     }
 
     public function isDefault(): bool
     {
-        return array_key_exists($this->code, self::DEFAULTS);
+        return $this->defaultType !== null;
     }
 
     /**

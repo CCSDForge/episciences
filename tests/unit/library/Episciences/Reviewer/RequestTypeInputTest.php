@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Reviewer;
 
+use Episciences\Reviewer\DefaultRequestType;
 use Episciences\Reviewer\RequestType;
 use Episciences\Reviewer\RequestTypeInput;
 use PHPUnit\Framework\TestCase;
@@ -23,7 +24,6 @@ final class RequestTypeInputTest extends TestCase
     private function post(array $changes = []): array
     {
         return $changes + [
-            'code' => 'phase_two',
             'label' => ['fr' => 'Phase 2', 'en' => 'Phase two'],
             'deadline' => '3',
             'deadline_unit' => 'week',
@@ -41,7 +41,7 @@ final class RequestTypeInputTest extends TestCase
         self::assertNotNull($type);
         self::assertNull($type->getId());
         self::assertSame(self::RVID, $type->getRvid());
-        self::assertSame('phase_two', $type->getCode());
+        self::assertNull($type->getDefaultType(), 'a type created by the journal');
         self::assertSame(['fr' => 'Phase 2', 'en' => 'Phase two'], $type->getLabels());
         self::assertSame('3 week', $type->getDefaultDeadline());
         self::assertSame(4, $type->getPosition());
@@ -63,7 +63,6 @@ final class RequestTypeInputTest extends TestCase
     public function testEachFieldErrorIsReported(): void
     {
         $input = new RequestTypeInput($this->post([
-            'code' => 'Phase 2',
             'label' => ['fr' => ' ', 'en' => str_repeat('a', RequestType::LABEL_MAX_LENGTH + 1)],
             'deadline' => '2',
             'deadline_unit' => 'year',
@@ -72,33 +71,34 @@ final class RequestTypeInputTest extends TestCase
 
         self::assertFalse($input->isValid());
         self::assertNull($input->getType());
-        self::assertEqualsCanonicalizing(['code', 'label_fr', 'label_en', 'deadline', 'position'], array_keys($input->getErrors()));
+        self::assertEqualsCanonicalizing(['label_fr', 'label_en', 'deadline', 'position'], array_keys($input->getErrors()));
         self::assertStringContainsString((string)RequestType::LABEL_MAX_LENGTH, $input->getErrors()['label_en']);
     }
 
-    public function testAReservedCodeIsRefused(): void
+    public function testAPostedCodeIsIgnored(): void
     {
-        $input = new RequestTypeInput($this->post(['code' => 'generic']), self::RVID, self::LANGUAGES);
+        $type = (new RequestTypeInput($this->post(['code' => 'full_report']), self::RVID, self::LANGUAGES))->getType();
 
-        self::assertArrayHasKey('code', $input->getErrors());
+        self::assertNotNull($type);
+        self::assertNull($type->getDefaultType(), 'a journal cannot create a default type');
     }
 
-    public function testTheCodeAndTheJournalOfAnExistingTypeNeverChange(): void
+    public function testTheDefaultTypeAndTheJournalOfAnExistingTypeNeverChange(): void
     {
-        $existing = new RequestType(8, self::RVID, 'phase_one', ['fr' => 'Phase 1', 'en' => 'Phase one']);
+        $existing = new RequestType(8, self::RVID, DefaultRequestType::QuickOpinion, ['fr' => 'Avis', 'en' => 'Opinion']);
 
-        $type = (new RequestTypeInput($this->post(['code' => 'hijacked']), 99, self::LANGUAGES, $existing))->getType();
+        $type = (new RequestTypeInput($this->post(), 99, self::LANGUAGES, $existing))->getType();
 
         self::assertNotNull($type);
         self::assertSame(8, $type->getId());
-        self::assertSame('phase_one', $type->getCode());
+        self::assertSame(DefaultRequestType::QuickOpinion, $type->getDefaultType());
         self::assertSame(self::RVID, $type->getRvid());
         self::assertSame('Phase 2', $type->getLabel('fr'));
     }
 
     public function testTheReviewReportStaysEnabled(): void
     {
-        $fullReport = new RequestType(1, self::RVID, RequestType::CODE_FULL_REPORT, ['fr' => 'Rapport', 'en' => 'Report']);
+        $fullReport = new RequestType(1, self::RVID, DefaultRequestType::FullReport, ['fr' => 'Rapport', 'en' => 'Report']);
         $post = $this->post();
         unset($post['enabled']);
 
@@ -107,9 +107,9 @@ final class RequestTypeInputTest extends TestCase
 
     public function testNonStringValuesAreIgnored(): void
     {
-        $input = new RequestTypeInput($this->post(['code' => ['x'], 'label' => 'not an array']), self::RVID, self::LANGUAGES);
+        $input = new RequestTypeInput($this->post(['label' => 'not an array']), self::RVID, self::LANGUAGES);
 
-        self::assertEqualsCanonicalizing(['label_fr', 'label_en', 'code'], array_keys($input->getErrors()));
+        self::assertEqualsCanonicalizing(['label_fr', 'label_en'], array_keys($input->getErrors()));
     }
 
     public function testATypeCanBeAnsweredWithoutAnAccountButNeverTheReviewReport(): void
@@ -117,7 +117,7 @@ final class RequestTypeInputTest extends TestCase
         self::assertTrue((new RequestTypeInput($this->post(['light_answer' => '1']), self::RVID, self::LANGUAGES))->getType()?->isLightAnswer());
         self::assertFalse((new RequestTypeInput($this->post(), self::RVID, self::LANGUAGES))->getType()?->isLightAnswer());
 
-        $fullReport = new RequestType(1, self::RVID, RequestType::CODE_FULL_REPORT, ['fr' => 'Rapport', 'en' => 'Report']);
+        $fullReport = new RequestType(1, self::RVID, DefaultRequestType::FullReport, ['fr' => 'Rapport', 'en' => 'Report']);
         self::assertFalse((new RequestTypeInput($this->post(['light_answer' => '1']), self::RVID, self::LANGUAGES, $fullReport))->getType()?->isLightAnswer());
     }
 
@@ -131,7 +131,7 @@ final class RequestTypeInputTest extends TestCase
         self::assertTrue($type->isLightAnswer());
         self::assertFalse($type->countsAsReport());
 
-        $fullReport = new RequestType(1, self::RVID, RequestType::CODE_FULL_REPORT, ['en' => 'Review report']);
+        $fullReport = new RequestType(1, self::RVID, DefaultRequestType::FullReport, ['en' => 'Review report']);
         self::assertTrue((new RequestTypeInput($this->post(), self::RVID, self::LANGUAGES, $fullReport))->getType()?->countsAsReport());
     }
 

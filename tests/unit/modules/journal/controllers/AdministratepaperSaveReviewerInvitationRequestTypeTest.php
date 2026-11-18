@@ -50,8 +50,8 @@ final class AdministratepaperSaveReviewerInvitationRequestTypeTest extends Contr
         ]]);
 
         $this->db->respondTo('/FROM `review_request_type`/', [
-            ['id' => self::FULL_REPORT, 'rvid' => RVID, 'code' => 'full_report', 'labels' => '{"en":"Review report"}', 'position' => 1, 'enabled' => 1],
-            ['id' => self::QUICK_OPINION, 'rvid' => RVID, 'code' => 'quick_opinion', 'labels' => '{"en":"Quick opinion"}', 'position' => 2, 'enabled' => 1],
+            ['id' => self::FULL_REPORT, 'rvid' => RVID, 'default_type' => 1, 'labels' => '{"en":"Review report"}', 'position' => 1, 'enabled' => 1],
+            ['id' => self::QUICK_OPINION, 'rvid' => RVID, 'default_type' => 2, 'labels' => '{"en":"Quick opinion"}', 'position' => 2, 'enabled' => 1],
         ]);
     }
 

@@ -991,7 +991,7 @@ function requestTypeSelect() {
  * Disables the types of the pending or accepted requests of the reviewer, selects an available type,
  * then applies its default deadline
  * @param user the invited person
- * @returns {object|null} the selected request type (id, code, label, rating_deadline)
+ * @returns {object|null} the selected request type (id, label, rating_deadline)
  */
 function applyRequestType(user) {
     const select = requestTypeSelect();

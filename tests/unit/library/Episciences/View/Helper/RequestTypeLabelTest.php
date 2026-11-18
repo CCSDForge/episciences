@@ -29,7 +29,7 @@ final class RequestTypeLabelTest extends TestCase
     {
         $repository = $this->createMock(RequestTypeRepository::class);
         $repository->expects(self::once())->method('findAllForJournal')->with(self::RVID)->willReturn([
-            new RequestType(11, self::RVID, 'phase_two', ['fr' => 'Phase <2>', 'en' => 'Phase "two"']),
+            new RequestType(11, self::RVID, null, ['fr' => 'Phase <2>', 'en' => 'Phase "two"']),
         ]);
         $helper = $this->helper($repository);
 

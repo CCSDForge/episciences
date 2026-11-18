@@ -38,7 +38,6 @@ In the **Request types** section, each type is a block showing its default due d
 
 1. Click **Add a request type**, or **Edit this request type** in the block of a type.
 2. Fill in:
-   - **Code**: a stable identifier (lower-case letters, digits, underscores), which cannot be changed later;
    - **Label** in each language of the journal;
    - **Default deadline** (leave empty to use the journal setting);
    - **Position** in the list;

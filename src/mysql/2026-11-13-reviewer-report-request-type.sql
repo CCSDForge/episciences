@@ -11,7 +11,7 @@ ALTER TABLE `REVIEWER_REPORT`
 -- Existing reports are review reports
 UPDATE `REVIEWER_REPORT` r
     INNER JOIN `PAPERS` p ON p.`DOCID` = r.`DOCID`
-    INNER JOIN `review_request_type` t ON t.`rvid` = p.`RVID` AND t.`code` = 'full_report'
+    INNER JOIN `review_request_type` t ON t.`rvid` = p.`RVID` AND t.`default_type` = 1
 SET r.`REQUEST_TYPE_ID` = t.`id`
 WHERE r.`REQUEST_TYPE_ID` IS NULL;
 
