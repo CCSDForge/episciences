@@ -4012,7 +4012,7 @@ class Episciences_Paper
 
     public function manageNewVersionErrors(array $options = []): array|string
     {
-        $viewHelper = new Zend_View_Helper_Url();
+        $viewHelper = new Episciences_View_Helper_Url();
         $translator = Zend_Registry::get('Zend_Translate');
         $isFromCli = Ccsd_Tools::isFromCli();
         $isEpiNotify = !empty($options['isEpiNotify']);
