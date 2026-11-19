@@ -19,6 +19,7 @@ use Episciences\Paper\ManagementRefusal;
 use Episciences\Paper\RequiredReviews;
 use Episciences\Reviewer\NextVersionRequestType;
 use Episciences\Paper\RevisionRequests;
+use Episciences\Reviewer\Workload;
 use Episciences\Paper\RepositoryVersionsService;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
@@ -1372,6 +1373,16 @@ class AdministratepaperController extends PaperDefaultController
 
                 $this->view->reviewers = $oReviewers;
             }
+
+            // how much each reviewer of the journal is already asked (git #320)
+            $workloads = Workload::ofJournal(RVID, (int)$docId);
+            $this->view->reviewerWorkloads = $workloads;
+            $this->view->js_reviewer_workloads = Zend_Json::encode(
+                (object)array_map(static fn(Workload $workload): array => $workload->toArray(), array_filter(
+                    $workloads,
+                    static fn(Workload $workload): bool => !$workload->isEmpty()
+                ))
+            );
 
             // Tous les relecteurs (utilisateurs temp. compris)
             foreach ($allReviewers as $uid => $reviewer) {

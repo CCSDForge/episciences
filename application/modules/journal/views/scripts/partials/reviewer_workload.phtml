@@ -1,0 +1,42 @@
+<?php
+/**
+ * How much a reviewer is already asked in the journal (git #320): content of a table cell.
+ *
+ * @var Zend_View $this
+ * @var Episciences\Reviewer\Workload|null $this->workload
+ */
+
+use Episciences\Reviewer\Workload;
+
+$answers = [
+    Workload::ANSWER_PENDING => 'sans réponse pour le moment',
+    Workload::ANSWER_ACCEPTED => 'acceptée',
+    Workload::ANSWER_DECLINED => 'refusée',
+    Workload::ANSWER_CANCELLED => 'annulée',
+    Workload::ANSWER_EXPIRED => 'expirée',
+];
+
+/** @var Workload|null $workload */
+$workload = $this->workload;
+?>
+<?php if ($workload === null || $workload->isEmpty()) : ?>
+    <span class="text-muted"><?= $this->escape($this->translate('Jamais invité')) ?></span>
+<?php else : ?>
+    <ul class="list-unstyled" style="margin: 0">
+        <?php if ($workload->getReviewsInProgress() > 0) : ?>
+            <li><span class="label label-warning"><?= $this->escape(sprintf($this->translate('Relectures en cours : %d'), $workload->getReviewsInProgress())) ?></span></li>
+        <?php endif; ?>
+        <?php if ($workload->getPendingInvitations() > 0) : ?>
+            <li><span class="label label-info"><?= $this->escape(sprintf($this->translate('Invitations en attente : %d'), $workload->getPendingInvitations())) ?></span></li>
+        <?php endif; ?>
+        <?php if ($workload->getLastInvitationDate() !== null) : ?>
+            <li>
+                <?= $this->escape(sprintf(
+                    $this->translate('Dernière invitation : %s (%s)'),
+                    $this->Date($workload->getLastInvitationDate(), Episciences_Tools::getLocale()),
+                    $this->translate($answers[$workload->getLastInvitationAnswer()] ?? '')
+                )) ?>
+            </li>
+        <?php endif; ?>
+    </ul>
+<?php endif; ?>

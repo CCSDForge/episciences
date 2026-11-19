@@ -362,4 +362,14 @@ return [
 
     // File upload
     "Le téléversement du fichier a échoué. Veuillez le retirer et réessayer." => 'The file upload failed. Please remove it and try again.',
+    // Reviewer invitation: what the reviewer is already asked in the journal (git #320)
+    'Sollicitations de ce relecteur dans la revue' => 'Requests already made to this reviewer in the journal',
+    'Relectures en cours : %d' => 'Reviews in progress: %d',
+    'Invitations en attente : %d' => 'Pending invitations: %d',
+    'Dernière invitation : %s (%s)' => 'Latest invitation: %s (%s)',
+    'sans réponse pour le moment' => 'not answered yet',
+    'acceptée' => 'accepted',
+    'refusée' => 'declined',
+    'annulée' => 'cancelled',
+    'expirée' => 'expired',
 ];

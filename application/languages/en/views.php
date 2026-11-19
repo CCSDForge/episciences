@@ -3007,4 +3007,13 @@ return array(
     "Réponse reçue le" => "Answer received on",
     "Consigne pour la réponse sans compte" => "Instructions for the answer without an account",
     "La consigne ne doit pas dépasser 1000 caractères." => "The instructions must not exceed 1000 characters.",
+    // Reviewer invitation: what the reviewer is already asked in the journal (git #320)
+    "Sollicitations dans la revue" => "Requests in the journal",
+    "Jamais invité" => "Never invited",
+    "Relectures en cours : %d" => "Reviews in progress: %d",
+    "Invitations en attente : %d" => "Pending invitations: %d",
+    "Dernière invitation : %s (%s)" => "Latest invitation: %s (%s)",
+    "sans réponse pour le moment" => "not answered yet",
+    "refusée" => "declined",
+    "annulée" => "cancelled",
 );

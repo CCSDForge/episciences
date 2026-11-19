@@ -85,6 +85,7 @@ $invitation_panel_title = '';
                             <th><?php echo $this->translate('E-mail'); ?></th>
                             <th><?php echo $this->translate('Identifiant'); ?></th>
                             <th><?php echo $this->translate('Langue'); ?></th>
+                            <th><?= $this->escape($this->translate('Sollicitations dans la revue')) ?></th>
                             </thead>
                             <tbody>
                             <?php /** @var Episciences_Reviewer $reviewer */
@@ -94,11 +95,13 @@ $invitation_panel_title = '';
                                         data-toggle="tooltip" title="<?php echo $this->translate('Inviter ce relecteur') ?>&hellip;"
                                         data-placement="top"
                                 >
-                                    <td><?php echo $reviewer->getFirstname() ?></td>
-                                    <td><?php echo $reviewer->getLastname() ?></td>
-                                    <td><?php echo $reviewer->getEmail() ?></td>
-                                    <td><?php echo $reviewer->getUsername() ?></td>
-                                    <td><?php echo ucfirst(Zend_Locale::getTranslation($reviewer->getLangueid(), 'language', Episciences_Tools::getLocale())); ?></td>
+                                    <td><?= $this->escape($reviewer->getFirstname()) ?></td>
+                                    <td><?= $this->escape($reviewer->getLastname()) ?></td>
+                                    <td><?= $this->escape($reviewer->getEmail()) ?></td>
+                                    <td><?= $this->escape($reviewer->getUsername()) ?></td>
+                                    <td><?= $this->escape(ucfirst((string)Zend_Locale::getTranslation($reviewer->getLangueid(), 'language', Episciences_Tools::getLocale()))) ?></td>
+                                    <?php $workload = $this->reviewerWorkloads[(int)$reviewer->getUid()] ?? null; ?>
+                                    <td data-order="<?= $this->escape((string)$workload?->getLastInvitationDate()) ?>"><?= $this->partial('partials/reviewer_workload.phtml', ['workload' => $workload]) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                             </tbody>
@@ -181,6 +184,7 @@ $invitation_panel_title = '';
                 <h2 class="panel-title"><?php echo $this->translate('Inviter ce relecteur'); ?></h2>
             </div>
             <div class="panel-body in">
+                <div id="reviewer-workload-alert" class="alert alert-warning" role="status" hidden></div>
                 <br>
                 <?php echo $this->invitation_form ?>
                 <div class="form-errors"></div>

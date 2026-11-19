@@ -436,6 +436,7 @@ function setInvitationValues(user, type) {
 
     user.invitation_type = type;
     $('#reviewer').val(JSON.stringify(user));
+    showReviewerWorkload(user);
 
     const requestType = applyRequestType(user);
     let tpl = invitationTemplate(requestType, type);
@@ -935,6 +936,86 @@ function ajaxAlertFail() {
     return false;
 }
 
+/**
+ * What the reviewer is already asked in the journal (git #320), as a sentence; empty when nothing is known
+ * @param {object|null|undefined} workload reviews_in_progress, pending_invitations, last_invitation_date, last_invitation_answer
+ * @returns {string}
+ */
+function reviewerWorkloadMessage(workload) {
+    if (!workload) {
+        return '';
+    }
+
+    const answers = {
+        pending: translate('sans réponse pour le moment'),
+        accepted: translate('acceptée'),
+        declined: translate('refusée'),
+        cancelled: translate('annulée'),
+        expired: translate('expirée'),
+    };
+    const parts = [];
+
+    if (workload.reviews_in_progress > 0) {
+        parts.push(
+            translate('Relectures en cours : %d').replace(
+                '%d',
+                String(workload.reviews_in_progress)
+            )
+        );
+    }
+
+    if (workload.pending_invitations > 0) {
+        parts.push(
+            translate('Invitations en attente : %d').replace(
+                '%d',
+                String(workload.pending_invitations)
+            )
+        );
+    }
+
+    if (workload.last_invitation_date) {
+        parts.push(
+            translate('Dernière invitation : %s (%s)')
+                .replace('%s', workload.last_invitation_date.substring(0, 10))
+                .replace('%s', answers[workload.last_invitation_answer] || '')
+        );
+    }
+
+    if (parts.length === 0) {
+        return '';
+    }
+
+    return (
+        translate('Sollicitations de ce relecteur dans la revue') +
+        ' : ' +
+        parts.join(' ; ') +
+        '.'
+    );
+}
+
+/**
+ * Shows above the invitation message what the chosen person is already asked in the journal (git #320)
+ * @param {object} user the invited person (id: UID, when they have an account)
+ */
+function showReviewerWorkload(user) {
+    const alert = document.getElementById('reviewer-workload-alert');
+
+    if (!alert) {
+        return;
+    }
+
+    const workloads =
+        typeof reviewer_workloads !== 'undefined' && reviewer_workloads
+            ? reviewer_workloads
+            : {};
+    const message = reviewerWorkloadMessage(
+        user && user.id ? workloads[user.id] : null
+    );
+
+    alert.textContent = message;
+    alert.hidden = message === '';
+}
+
 function translateInvitationDeadline(str, locale) {
     let sStr = str.split(' ');
     return sStr[0] + ' ' + translate(sStr[1], locale);
@@ -951,6 +1032,8 @@ if (typeof module !== 'undefined' && module.exports) {
         step2,
         validate_step2,
         setInvitationValues,
+        reviewerWorkloadMessage,
+        showReviewerWorkload,
         replaceTags,
         show_errors,
         reviewers_init,

@@ -356,6 +356,7 @@ function prepareDOM() {
         <input id="subject" />
         <textarea id="body"></textarea>
         <div class="form-errors"></div>
+        <div id="reviewer-workload-alert" role="status" hidden></div>
     `;
 }
 
@@ -845,5 +846,81 @@ describe('invitereviewer-modal.js Test Suite', () => {
             expect(jQueryMock.ajax).toHaveBeenCalled();
             expect(jQueryMock.ajax.lastCall.type).toBe('POST');
         });
+    });
+});
+
+describe('invitereviewer-modal.js: what the reviewer is already asked in the journal (git #320)', () => {
+    let moduleUnderTest;
+
+    beforeEach(() => {
+        jest.resetModules();
+        prepareDOM();
+        global.translate.mockImplementation((s) => s);
+        global.reviewer_workloads = {
+            7: {
+                reviews_in_progress: 1,
+                pending_invitations: 2,
+                last_invitation_date: '2026-10-20 09:00:00',
+                last_invitation_answer: 'accepted',
+            },
+            8: {
+                reviews_in_progress: 0,
+                pending_invitations: 0,
+                last_invitation_date: '2025-01-05 10:00:00',
+                last_invitation_answer: 'expired',
+            },
+        };
+        moduleUnderTest = require('../../../public/js/administratepaper/invitereviewer-modal');
+    });
+
+    afterEach(() => {
+        delete global.reviewer_workloads;
+    });
+
+    test('the message lists the reviews in progress, the pending invitations and the latest invitation', () => {
+        expect(moduleUnderTest.reviewerWorkloadMessage(global.reviewer_workloads[7])).toBe(
+            'Sollicitations de ce relecteur dans la revue : Relectures en cours : 1 ; Invitations en attente : 2 ; ' +
+                'Dernière invitation : 2026-10-20 (acceptée).'
+        );
+        expect(moduleUnderTest.reviewerWorkloadMessage(global.reviewer_workloads[8])).toBe(
+            'Sollicitations de ce relecteur dans la revue : Dernière invitation : 2025-01-05 (expirée).'
+        );
+    });
+
+    test('nothing is said about a person the journal never asked', () => {
+        expect(moduleUnderTest.reviewerWorkloadMessage(undefined)).toBe('');
+        expect(
+            moduleUnderTest.reviewerWorkloadMessage({
+                reviews_in_progress: 0,
+                pending_invitations: 0,
+                last_invitation_date: null,
+                last_invitation_answer: null,
+            })
+        ).toBe('');
+    });
+
+    test('choosing a reviewer shows the alert above the message, as text', () => {
+        const alert = document.getElementById('reviewer-workload-alert');
+
+        moduleUnderTest.showReviewerWorkload({ id: 7 });
+        expect(alert.hidden).toBe(false);
+        expect(alert.textContent).toContain('Relectures en cours : 1');
+        expect(alert.children).toHaveLength(0);
+
+        // a person without an account, or without any invitation, hides it again
+        moduleUnderTest.showReviewerWorkload({ email: 'new@example.org' });
+        expect(alert.hidden).toBe(true);
+        expect(alert.textContent).toBe('');
+    });
+
+    test('setting the invitation values shows the workload of the chosen reviewer', () => {
+        moduleUnderTest.setInvitationValues(
+            { id: 8, email: 'r@example.org', full_name: 'Rev Iewer', locale: 'fr' },
+            1
+        );
+
+        const alert = document.getElementById('reviewer-workload-alert');
+        expect(alert.hidden).toBe(false);
+        expect(alert.textContent).toContain('2025-01-05');
     });
 });

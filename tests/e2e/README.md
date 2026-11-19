@@ -87,7 +87,8 @@ tests/e2e/
 │   ├── 05-comments/           comment attachment deletion security
 │   ├── 06-submission/         submission from arXiv
 │   ├── 07-review/             reviewer invitation by email, acceptance (also by the editor on behalf
-│   │                          of the reviewer), review with a volume grid
+│   │                          of the reviewer), review with a volume grid, requests already made to
+│   │                          a reviewer in the journal
 │   ├── 08-editorial-decisions/ acceptance, rejection, minimum number of reviews per review round
 │   ├── 09-revisions/          minor revision with a new version, major revision answered as is,
 │   │                          request type of the next version
