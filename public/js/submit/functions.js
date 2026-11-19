@@ -344,11 +344,15 @@ $(function () {
                     message = resultAlert(
                         newVersionErrors.canBeReplaced ? 'warning' : 'danger',
                         translate(
-                            'Ce document a déjà été soumis à la revue :'
-                        ) +
-                            ' <code>' +
-                            htmlEntities(newVersionErrors.oldIdentifier) +
-                            '</code>',
+                            'Le document %s a déjà été soumis à la revue.'
+                        ).replace(
+                            '%s',
+                            // a function: the identifier is inserted as is ("$&" is not a pattern)
+                            () =>
+                                '<code>' +
+                                htmlEntities(newVersionErrors.oldIdentifier) +
+                                '</code>'
+                        ),
                         newVersionErrors.message,
                         'result_message'
                     );

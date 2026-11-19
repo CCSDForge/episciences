@@ -358,7 +358,7 @@ return [
 
     // Search of the document to submit
     "Erreur" => "Error",
-    "Ce document a déjà été soumis à la revue :" => "This document has already been submitted to the journal:",
+    "Le document %s a déjà été soumis à la revue." => "The document %s has already been submitted to this journal.",
 
     // File upload
     "Le téléversement du fichier a échoué. Veuillez le retirer et réessayer." => 'The file upload failed. Please remove it and try again.',
