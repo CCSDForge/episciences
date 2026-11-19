@@ -150,12 +150,10 @@ class GridController extends Zend_Controller_Action
                 return;
             }
 
-            if ($requestType !== null) {
-                $filename = Episciences_GridsManager::filenameOf(Episciences_GridsManager::requestTypeGridKey((int)$requestType->getId()));
-            } else {
-                $id = (is_numeric($request->getPost('volume'))) ? (int)$request->getPost('volume') : 0;
-                $filename = 'grid_' . $id . '.xml';
-            }
+            $key = $requestType !== null
+                ? Episciences_GridsManager::requestTypeGridKey((int)$requestType->getId())
+                : (string)(is_numeric($request->getPost('volume')) ? (int)$request->getPost('volume') : 0);
+            $filename = Episciences_GridsManager::filenameOf($key);
 
             $grid = new Episciences_Rating_Grid;
             $grid->setFilename($filename);
@@ -169,10 +167,24 @@ class GridController extends Zend_Controller_Action
             } else {
                 $message = '<strong>' . $this->view->translate("La grille n'a pas pu être créée.") . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                $this->_helper->redirector('list', 'grid');
+                return;
             }
+
+            // back on the grid, opened even when the volume grids are collapsed
+            $this->_helper->redirector->gotoUrl(self::gridListUrl($key));
+            return;
         }
 
         $this->_helper->redirector('list', 'grid');
+    }
+
+    /**
+     * The grids page, scrolled to a grid: its panel is opened when the volume grids are collapsed (functions.js)
+     */
+    public static function gridListUrl(string $key): string
+    {
+        return '/grid/list#rating-grid-' . rawurlencode($key);
     }
 
     /**

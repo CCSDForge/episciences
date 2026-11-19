@@ -50,4 +50,11 @@ final class GridControllerRequestTypeGridTest extends ControllerTestCase
         $flash->clearCurrentMessages();
         self::assertNotEmpty($messages);
     }
+
+    public function testAfterItsCreationTheGridsPageOpensOnTheGrid(): void
+    {
+        // the anchor targets the panel of the grid, which functions.js opens when the volume grids are collapsed
+        self::assertSame('/grid/list#rating-grid-12', \GridController::gridListUrl('12'));
+        self::assertSame('/grid/list#rating-grid-t5', \GridController::gridListUrl(Episciences_GridsManager::requestTypeGridKey(5)));
+    }
 }
