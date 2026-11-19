@@ -434,6 +434,72 @@ class SubmitTest extends TestCase
         self::assertStringNotContainsString('%s', $result['error']);
     }
 
+    /**
+     * @return array<string, array{string, int}> error message, position of the example identifier in the arguments
+     */
+    public static function identifierExampleProvider(): array
+    {
+        return [
+            'document not found' => [Ccsd_Error::ID_DOES_NOT_EXIST_CODE . ':', 0],
+            'version not found' => [Ccsd_Error::ARXIV_VERSION_DOES_NOT_EXIST_CODE . ':', 0],
+            'other error' => ['some unexpected error', 1],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('identifierExampleProvider')]
+    public function testTheExampleIdentifierComesBeforeTheRepository(string $message): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
+        $method->setAccessible(true);
+
+        $repoId = 2;
+        $result = $method->invoke(null, new Ccsd_Error($message), $repoId);
+
+        // The identifier no longer follows the name of the repository and a colon, where it read as a label
+        self::assertStringContainsString(
+            sprintf(
+                '(for example %s for a document submitted in %s).',
+                Episciences_Repositories::getIdentifierExemple($repoId),
+                Episciences_Repositories::getLabel($repoId)
+            ),
+            $result['error']
+        );
+    }
+
+    /**
+     * @return array<string, array{string, list<string>}> source message, arguments
+     */
+    public static function frenchIdentifierExampleProvider(): array
+    {
+        return [
+            'document not found' => [
+                (new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE . ':'))->parseError(),
+                ['support@example.org', 'arXiv', '2101.00001'],
+            ],
+            'other error' => [
+                (new Ccsd_Error('some unexpected error'))->parseError(),
+                ['some unexpected error', 'support@example.org', 'arXiv', '2101.00001'],
+            ],
+        ];
+    }
+
+    /**
+     * @param list<string> $arguments
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('frenchIdentifierExampleProvider')]
+    public function testTheFrenchMessageGivesTheExampleIdentifierBeforeTheRepository(string $source, array $arguments): void
+    {
+        // The application dictionaries (the translator of the tests is empty)
+        $translator = \Episciences\Translation\TranslatorFactory::create(APPLICATION_PATH . '/languages', null, 'fr');
+        $translated = $translator->translate($source, 'fr');
+
+        self::assertNotSame($source, $translated, 'the message is translated');
+        self::assertStringContainsString(
+            '(par exemple 2101.00001 pour un document déposé dans arXiv).',
+            sprintf($translated, ...$arguments)
+        );
+    }
+
     public function testRepositoryTimeoutMessageIsFormattedWhenTheTranslatorIsMissing(): void
     {
         $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
