@@ -318,7 +318,7 @@ return array(
     "Nombre minimum de relectures avant de pouvoir accepter un article." => "Minimum reviews count required for accepting an article.",
     "Laisser vide pour appliquer le minimum à toutes les versions. Chaque nouvelle version d'un article (y compris une version temporaire) est un nouveau tour de relecture." => "Leave empty to apply the minimum to every version. Each new version of an article (a temporary version included) is a new review round.",
     "Minimum appliqué aux N premiers tours de relecture" => "Minimum applied to the first N review rounds",
-    "Minimum de relectures requis à partir du tour suivant ces N premiers tours." => "Minimum reviews count required from the round after these first N rounds.",
+    "Minimum de relectures requis à partir du tour suivant ces N premiers tours. Laisser vide (ou 0) pour n'en exiger aucune." => "Minimum reviews count required from the round after these first N rounds. Leave empty (or 0) to require none.",
     "Minimum de relectures aux tours suivants" => "Minimum reviews count in later rounds",
     "Vous devez saisir une estimation de temps valide." => "Invalid estimated time",
     "Le délai de relecture par défaut ne peut pas être supérieur au délai de relecture maximum." => "Default reviewing deadline cannot be greater than maximum reviewing deadline",

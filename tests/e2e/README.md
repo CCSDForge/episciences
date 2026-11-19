@@ -38,10 +38,12 @@ Before the tests, `global-setup.js` runs `php scripts/console.php app:e2e-seed -
   and section whose English title starts with `E2E `, with the rating grid of each removed volume.
   Nothing else is touched;
 - it sets the journal settings the suite relies on: one completed review at least before a paper can
-  be accepted, published or sent back for revision (`requiredReviewers`). The specs have the paper
-  reviewed first (`completeReview()` in `helpers/editorial-workflow.js`). Reviewers can send
-  messages to authors (`reviewersCanCommentArticles`), and the conflict of interest declaration
-  (`isCoiEnabled`) follows `E2E_COI`. The initial settings are restored after the run.
+  be accepted, published or sent back for revision (`requiredReviewers`), in the first review round
+  only (`requiredReviewersRounds` = 1, `requiredReviewersLaterRounds` empty, that is none); editors may accept papers
+  (`editorsCanAcceptPapers`). The specs have the paper reviewed first (`completeReview()` in
+  `helpers/editorial-workflow.js`). Reviewers can send messages to authors (`reviewersCanCommentArticles`),
+  and the conflict of interest declaration (`isCoiEnabled`) follows `E2E_COI`. The initial settings are
+  restored after the run.
 
 Environment variables:
 
@@ -86,7 +88,7 @@ tests/e2e/
 │   ├── 06-submission/         submission from arXiv
 │   ├── 07-review/             reviewer invitation by email, acceptance (also by the editor on behalf
 │   │                          of the reviewer), review with a volume grid
-│   ├── 08-editorial-decisions/ acceptance, rejection
+│   ├── 08-editorial-decisions/ acceptance, rejection, minimum number of reviews per review round
 │   ├── 09-revisions/          minor revision with a new version, major revision answered as is
 │   ├── 10-publication/        publication in a volume, copy editing by the author
 │   ├── 11-journal-configuration/ rating grid lifecycle, journal settings

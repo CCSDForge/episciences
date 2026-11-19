@@ -1642,7 +1642,7 @@ class Episciences_Review
 
         $form->addElement('text', self::SETTING_REQUIRED_REVIEWERS_LATER_ROUNDS, [
                 'label' => "Minimum de relectures aux tours suivants",
-                'description' => "Minimum de relectures requis à partir du tour suivant ces N premiers tours.",
+                'description' => "Minimum de relectures requis à partir du tour suivant ces N premiers tours. Laisser vide (ou 0) pour n'en exiger aucune.",
                 'value' => 0,
                 'class' => 'journal-settings-number',
                 'filters' => ['StringTrim'],

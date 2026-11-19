@@ -204,8 +204,14 @@ class E2ESeedCommand extends Command
             Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => $isCoiEnabled ? '1' : '',
             // Reviewers can send messages to the author: the rating page then holds one more editor
             Episciences_Review::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES => '1',
-            // A paper needs a completed review before it can be accepted, published or sent back for revision
+            // A paper needs a completed review before it can be accepted, published or sent back for revision,
+            // in its first review round only: later versions need none (git #239)
             Episciences_Review::SETTING_REQUIRED_REVIEWERS => '1',
+            Episciences_Review::SETTING_REQUIRED_REVIEWERS_ROUNDS => '1',
+            // empty means none, and is what the settings form stores for 0
+            Episciences_Review::SETTING_REQUIRED_REVIEWERS_LATER_ROUNDS => '',
+            // Editors may accept papers, so that the minimum can hold them back
+            Episciences_Review::SETTING_EDITORS_CAN_ACCEPT_PAPERS => '1',
             // Author editor choice must not be mandatory during E2E submissions
             Episciences_Review::SETTING_CAN_PICK_EDITOR => '',
             // Section choice is optional (1) so submissions without section do not get blocked
