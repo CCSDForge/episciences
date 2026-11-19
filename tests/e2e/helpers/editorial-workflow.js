@@ -401,6 +401,27 @@ async function createVolumeGrid(page, vid) {
 }
 
 /**
+ * Fills a multilingual text field of a form (Ccsd_Form_Element_MultiTextSimpleLang) in every language of the journal:
+ * a required field needs a value in each of them. Each language is chosen in the menu, typed, then added with "+".
+ * @param {import('@playwright/test').Page} page
+ * @param {string} fieldId id of the text input (the element group is "<id>-element")
+ * @param {string} value the same value for every language
+ */
+async function fillEveryLanguage(page, fieldId, value) {
+    const group = page.locator(`#${fieldId}-element`);
+    const languages = await group
+        .locator('ul.dropdown-menu a[val]')
+        .evaluateAll(links => links.map(link => link.getAttribute('val')));
+
+    for (const language of languages) {
+        await group.locator('button.dropdown-toggle').click();
+        await group.locator(`ul.dropdown-menu a[val="${language}"]`).click();
+        await group.locator(`#${fieldId}`).fill(value);
+        await group.locator('button:has(.glyphicon-plus)').click();
+    }
+}
+
+/**
  * Adds a criterion to a rating grid.
  * @param {import('@playwright/test').Page} page editorial page
  * @param {number} rgid volume id of the grid, 0 for the default grid
@@ -422,7 +443,8 @@ async function addCriterion(
     { title, description, type = 'quantitative', visibility = 'public', scale = '5', coef, options, comment = true, upload = false }
 ) {
     await page.goto(`grid/addcriterion?rgid=${rgid}`);
-    await page.locator('#critere').fill(title);
+    // the name is required in every language of the journal
+    await fillEveryLanguage(page, 'critere', title);
     await page.locator('#description').fill(description);
     await page.locator('#visibility').selectOption(visibility);
     await page.locator('#evaluation_type').selectOption(type);
@@ -498,6 +520,7 @@ module.exports = {
     createVolume,
     assignMasterVolume,
     createVolumeGrid,
+    fillEveryLanguage,
     addCriterion,
     addQuantitativeCriterion,
     addSeparator,

@@ -38,8 +38,9 @@ test.describe('Journal configuration', () => {
 
             await adminPage.locator(`a[href^="/grid/editcriterion?rgid=${vid}&"]`).first().click();
             const name = adminPage.locator('#critere-element');
-            // Multilingual field: the pencil moves the value back into the input, the visible button saves it
-            await name.locator('button:has(.glyphicon-pencil)').click();
+            // Multilingual field: the pencil moves the value back into the input, the visible button saves it;
+            // the name is given in every language of the journal, English first
+            await name.locator('button:has(.glyphicon-pencil)').first().click();
             await name.locator('input[type="text"]').fill(`${criterionTitle} (renamed)`);
             await name.locator('span.input-group-btn:visible > button.btn-primary').click();
             await adminPage.locator('#submit').click();
@@ -53,11 +54,13 @@ test.describe('Journal configuration', () => {
         });
 
         await test.step('the criterion, then the grid are removed', async () => {
-            await adminPage.goto('grid/list');
+            // the anchor opens the grid, collapsed when the journal has many volume grids
+            await adminPage.goto(`grid/list#rating-grid-${vid}`);
             await adminPage.locator(`a.delete[href^="/grid/deletecriterion?rgid=${vid}&"]`).first().click();
             await adminPage.locator('.bootbox-confirm .bootbox-accept').click();
             await expect(adminPage.getByText(`${criterionTitle} (renamed)`)).toHaveCount(0);
 
+            await adminPage.goto(`grid/list#rating-grid-${vid}`);
             await gridActions.locator(`a.delete[href="/grid/delete?rgid=${vid}"]`).click();
             await adminPage.locator('.bootbox-confirm .bootbox-accept').click();
             await expect(adminPage.locator(`a[href*="rgid=${vid}"]`)).toHaveCount(0);
