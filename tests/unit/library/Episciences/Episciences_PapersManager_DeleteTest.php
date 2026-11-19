@@ -309,7 +309,6 @@ final class Episciences_PapersManager_DeleteTest extends TestCase
             'request_type_id' => 1,
             'uid' => $tmpUserId,
             'tmp_user' => 1,
-            'message' => 'quick opinion',
             'created_at' => self::DATE,
         ]);
         $this->db->insert(T_USER_INVITATIONS, [
