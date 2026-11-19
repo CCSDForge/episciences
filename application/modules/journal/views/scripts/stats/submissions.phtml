@@ -70,7 +70,7 @@ $rateNotes = [
                             <?php // the articles and the submissions above count the imported papers, the figures below do not ?>
                             <li class="stat-note">
                                 <span class="fas fa-info-circle fa-sm" aria-hidden="true"></span>
-                                <?= $this->translate("Les articles importés ne sont pas inclus dans les indicateurs ci-dessous") ?>
+                                <?= $this->escape($this->translate("Les articles importés ne sont pas inclus dans les indicateurs ci-dessous")) ?>
                             </li>
 
                         <?php endif; ?>
