@@ -6,6 +6,7 @@ use Episciences\Paper\Files\DocumentFilePolicy;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Paper\RevisionRequests;
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Reviewer\NextVersionRequestType;
 use Episciences\Reviewer\RequestTypeRepository;
 use Episciences\Security\AccessLog;
 use Episciences\Submit\SubmittedRecord;
@@ -1538,7 +1539,7 @@ class PaperController extends PaperDefaultController
             if (!$sender->findWithCAS($requestComment->getUid())) {
                 $sender = null;
             }
-            $this->reinviteReviewers($reviewers, $paper, $tmpPaper, $sender, self::TMP_VERSION_TYPE);
+            $this->reinviteReviewers($reviewers, $paper, $tmpPaper, $sender, self::TMP_VERSION_TYPE, NextVersionRequestType::ofRequest($requestComment));
         }
 
         $recipients = [];
@@ -1734,7 +1735,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    private function reinviteReviewers(array $reviewers, Episciences_Paper $paper1, Episciences_Paper $paper2, Episciences_User $sender = null, string $submissionType = self::NEW_VERSION_TYPE): bool
+    private function reinviteReviewers(array $reviewers, Episciences_Paper $paper1, Episciences_Paper $paper2, Episciences_User $sender = null, string $submissionType = self::NEW_VERSION_TYPE, ?int $chosenRequestTypeId = null): bool
     {
 
         if ($submissionType === self::NEW_VERSION_TYPE) {
@@ -1757,14 +1758,19 @@ class PaperController extends PaperDefaultController
         // settings for new invitation / assignment
         $oReview = Episciences_ReviewsManager::find(RVID);
         $oReview->loadSettings();
-        // new deadline is today + default deadline interval (journal setting)
-        $deadline = Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting(Episciences_Review::SETTING_RATING_DEADLINE));
+        // type chosen in the revision request (#319), if it can still be used
+        $requestTypes = new RequestTypeRepository();
+        $chosenRequestType = $chosenRequestTypeId !== null ? $requestTypes->findUsable($chosenRequestTypeId, RVID) : null;
+        // new deadline is today + default deadline of the chosen type, else of the journal
+        $deadline = Episciences_Tools::addDateInterval(date('Y-m-d'), NextVersionRequestType::deadlineInterval($chosenRequestType, $oReview));
         $sender_uid = ($sender && is_a($sender, self::CLASS_EPI_USER_NAME)) ? $sender->getUid() : 666;
 
         // loop through each reviewer
         // one invitation for each request of the reviewer: a reviewer may hold one request of each type (#319)
         /** @var Episciences_Reviewer $reviewer */
-        foreach (Episciences_ReviewersManager::reviewerRequests($reviewers) as [$reviewer, $requestTypeId]) {
+        // with a type chosen in the revision request, a single request of this type per reviewer
+        $requests = NextVersionRequestType::requestsFor(Episciences_ReviewersManager::reviewerRequests($reviewers), $chosenRequestType?->getId());
+        foreach ($requests as [$reviewer, $requestTypeId]) {
 
             // assign reviewer to tmp version (replicate invitation process)
             // reviewer invitation ******************************
@@ -1816,6 +1822,8 @@ class PaperController extends PaperDefaultController
             $mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_URL, $invitation_url);
             $mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_DEADLINE, $this->view->Date($invitation_deadline, $locale));
             $mail->addTag(Episciences_Mail_Tags::TAG_RATING_DEADLINE, $this->view->Date($rating_deadline, $locale));
+            $requestType = $requestTypeId !== null ? $requestTypes->findById((int)$requestTypeId) : null;
+            $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_REQUEST_TYPE, $requestType?->getLabel((string)$locale) ?? '');
 
             if ($submissionType === self::TMP_VERSION_TYPE) {
 
@@ -2734,7 +2742,7 @@ class PaperController extends PaperDefaultController
             if (!$sender->findWithCAS($requestComment->getUid())) {
                 $sender = null;
             }
-            $this->reinviteReviewers($reviewers, $paper, $newPaper, $sender);
+            $this->reinviteReviewers($reviewers, $paper, $newPaper, $sender, self::NEW_VERSION_TYPE, NextVersionRequestType::ofRequest($requestComment));
         }
 
         if ($editors) {

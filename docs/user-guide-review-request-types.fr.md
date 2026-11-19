@@ -63,6 +63,21 @@ grille si besoin.
 
 Les types que le relecteur a déjà en cours pour cet article sont grisés.
 
+## Demander des modifications : type de la version suivante
+
+Dans le formulaire de demande de modifications (mineures ou majeures), la liste **Type de la nouvelle demande aux
+relecteurs** indique ce qui sera demandé aux relecteurs sur la version que l'auteur va déposer (par exemple un avis
+rapide après un premier rapport).
+
+- **Même type que la demande en cours** (choix par défaut) : rien ne change. Si **Réassigner les relecteurs à la
+  nouvelle version de l'article** est coché, chaque relecteur est réinvité avec le type de chacune de ses demandes, et
+  le délai de la revue.
+- **Un type choisi** : si la case de réassignation est cochée, chaque relecteur reçoit **une** invitation de ce type sur
+  la nouvelle version (ou la version temporaire), avec le délai par défaut du type (sinon celui de la revue).
+- Dans les deux cas, en invitant un relecteur sur la nouvelle version, le type choisi est proposé en premier.
+
+Les messages de réinvitation peuvent afficher le type avec la balise `%%REVIEW_REQUEST_TYPE%%`.
+
 ## Messages d'invitation
 
 Chaque type a son propre modèle de message, que vous pouvez personnaliser dans l'écran des modèles de mail, comme

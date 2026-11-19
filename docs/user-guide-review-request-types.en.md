@@ -61,6 +61,20 @@ For other needs (revised version check, review stages…), create your own types
 
 The types that the reviewer already has in progress for this article are greyed out.
 
+## Asking for a Revision: Type of the Next Version
+
+In the revision request form (minor or major), the **Type of the new request to the reviewers** list sets what the
+reviewers will be asked on the version the author is going to submit (for instance a quick opinion after a first
+report).
+
+- **Same type as the current request** (default): nothing changes. When **Automatically reassign the same reviewers when the new version of the article is submitted** is
+  checked, each reviewer is invited again with the type of each of their requests, and the journal's deadline.
+- **A chosen type**: when the reassignment box is checked, each reviewer receives **one** invitation of this type on the
+  new version (or the temporary version), with the type's default deadline (else the journal's).
+- In both cases, when you invite a reviewer on the new version, the chosen type is offered first.
+
+The re-invitation e-mails can show the type with the `%%REVIEW_REQUEST_TYPE%%` tag.
+
 ## Invitation E-mails
 
 Each type has its own e-mail template, which you can customise in the mail templates screen, like any other template.

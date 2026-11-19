@@ -89,7 +89,8 @@ tests/e2e/
 │   ├── 07-review/             reviewer invitation by email, acceptance (also by the editor on behalf
 │   │                          of the reviewer), review with a volume grid
 │   ├── 08-editorial-decisions/ acceptance, rejection, minimum number of reviews per review round
-│   ├── 09-revisions/          minor revision with a new version, major revision answered as is
+│   ├── 09-revisions/          minor revision with a new version, major revision answered as is,
+│   │                          request type of the next version
 │   ├── 10-publication/        publication in a volume, copy editing by the author
 │   ├── 11-journal-configuration/ rating grid lifecycle, journal settings
 │   └── 12-conflict-of-interest/ declaration of conflicts of interest (one test per E2E_COI mode)

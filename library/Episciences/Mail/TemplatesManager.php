@@ -974,6 +974,7 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_URL,
         Episciences_Mail_Tags::TAG_TMP_PAPER_URL,
+        Episciences_Mail_Tags::TAG_REVIEW_REQUEST_TYPE,
     ];
     public const paper_tmp_version_submitted_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
@@ -1036,7 +1037,8 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_PAPER_URL,
         Episciences_Mail_Tags::TAG_INVITATION_URL,
         Episciences_Mail_Tags::TAG_INVITATION_DEADLINE,
-        Episciences_Mail_Tags::TAG_RATING_DEADLINE
+        Episciences_Mail_Tags::TAG_RATING_DEADLINE,
+        Episciences_Mail_Tags::TAG_REVIEW_REQUEST_TYPE,
     ];
 
     public const paper_accepted_published_refused_revision_request_stop_pending_reviewing_tags = [

@@ -17,6 +17,7 @@ require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultControl
 use Episciences\Mail\RecipientSuggestions;
 use Episciences\Paper\ManagementRefusal;
 use Episciences\Paper\RequiredReviews;
+use Episciences\Reviewer\NextVersionRequestType;
 use Episciences\Paper\RevisionRequests;
 use Episciences\Paper\RepositoryVersionsService;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
@@ -1454,6 +1455,11 @@ class AdministratepaperController extends PaperDefaultController
             }
             $invitationForm = Episciences_PapersManager::getReviewerInvitationForm($docId, $page, $referer, $params);
             $invitationForm->setDefault('deadline', $review['rating_deadline']);
+            // type chosen for this version in the revision request of the previous one (#319)
+            $nextRequestTypeId = NextVersionRequestType::forVersion($oPaper);
+            if ($nextRequestTypeId !== null && isset($params['request_types'][$nextRequestTypeId])) {
+                $invitationForm->setDefault('request_type_id', $nextRequestTypeId);
+            }
             $this->view->invitation_form = $invitationForm;
             $this->view->user_form = Episciences_PapersManager::getTmpReviewerForm();
             $this->view->js_allAuthors = json_encode($oPaper->formatAuthorsMetadata());
@@ -5204,6 +5210,14 @@ class AdministratepaperController extends PaperDefaultController
 
             if (array_key_exists('auto_reassign', $data)) {
                 $options['reassign_reviewers'] = (bool)$data['auto_reassign'];
+            }
+
+            // type of the new request made to the reviewers on the next version (#319); none: the same types
+            $nextRequestTypeId = ($isMinorRevision || $isMajorRevision)
+                ? NextVersionRequestType::fromPost($data[NextVersionRequestType::OPTION] ?? null, RVID)
+                : null;
+            if ($nextRequestTypeId !== null) {
+                $options[NextVersionRequestType::OPTION] = $nextRequestTypeId;
             }
 
             $options['isAlreadyAccepted'] = $isAlreadyAccepted;

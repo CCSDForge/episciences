@@ -2,6 +2,7 @@
 
 use Episciences\Paper\Record\TitleNormalizer;
 use Episciences\Reviewer\LightAnswerRepository;
+use Episciences\Reviewer\NextVersionRequestType;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LogLevel;
@@ -2470,6 +2471,20 @@ class Episciences_PapersManager
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]);
 
+            // type of the new request made to the reviewers on the next version (#319)
+            $nextTypeChoices = NextVersionRequestType::choices($review?->getRvid() ?? RVID, Episciences_Tools::getLocale());
+            if (count($nextTypeChoices) > 1) {
+                $nextTypeId = NextVersionRequestType::OPTION . '_' . $type;
+                $form->addElement('select', NextVersionRequestType::OPTION, [
+                    'id' => $nextTypeId,
+                    'label' => 'Type de la nouvelle demande aux relecteurs',
+                    'class' => 'form-control',
+                    'multiOptions' => $nextTypeChoices,
+                    'description' => 'Utilisé pour réinviter les relecteurs à la nouvelle version, et proposé par défaut pour inviter un relecteur sur cette version.',
+                    'aria-describedby' => $nextTypeId . '-description',
+                ]);
+                $form->getElement(NextVersionRequestType::OPTION)?->getDecorator('Description')?->setOption('id', $nextTypeId . '-description');
+            }
         }
 
         self::addHiddenDocIdElement($form, $formId, $default['id']);

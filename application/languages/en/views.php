@@ -2922,6 +2922,9 @@ return array(
     "Paramètres des licences" => "License settings",
     // Review request types (#319)
     "Type de demande" => "Request type",
+    "Type de la nouvelle demande aux relecteurs" => "Type of the new request to the reviewers",
+    "Même type que la demande en cours" => "Same type as the current request",
+    "Utilisé pour réinviter les relecteurs à la nouvelle version, et proposé par défaut pour inviter un relecteur sur cette version." => "Used to invite the reviewers again on the new version, and offered by default to invite a reviewer on this version.",
     "Le message et la date limite proposés dépendent du type de demande." => "The suggested message and due date depend on the request type.",
     "Ce type de demande n'est pas disponible." => "This request type is not available.",
     "Ce relecteur a déjà une demande de ce type en cours pour cet article." => "This reviewer already has a request of this type in progress for this article.",
