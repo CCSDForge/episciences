@@ -132,6 +132,36 @@ final class WorkloadTest extends ControllerTestCase
         self::assertSame([], Workload::fromRows([], [], self::CURRENT_DOCID, self::NOW));
     }
 
+    public function testPeopleInvitedWithoutAnAccountAreGroupedByAddress(): void
+    {
+        $tmp = static fn(int $tmpId, string $email, int $docId, string $status, string $sent): array => [
+            'UID' => $tmpId, 'TMP_USER' => 1, 'TMP_EMAIL' => $email, 'ITEMID' => $docId,
+            'PAPER_STATUS' => Episciences_Paper::STATUS_BEING_REVIEWED, 'STATUS' => $status,
+            'SENDING_DATE' => $sent, 'EXPIRATION_DATE' => '2026-12-31 00:00:00',
+        ];
+
+        $workloads = Workload::fromRows([], [
+            // each invitation without an account creates a new temporary user
+            $tmp(501, 'Jane.Doe@Example.org', 1, 'pending', '2026-11-01 09:00:00'),
+            $tmp(502, ' jane.doe@example.org', 2, 'declined', '2026-11-10 09:00:00'),
+            // same id as an account, but not the same person
+            $tmp(self::REVIEWER_UID, 'other@example.org', 3, 'pending', '2026-11-02 09:00:00'),
+            $tmp(503, '', 4, 'pending', '2026-11-03 09:00:00'),
+        ], self::CURRENT_DOCID, self::NOW);
+
+        self::assertSame(['email:jane.doe@example.org', 'email:other@example.org'], array_keys($workloads));
+        $jane = $workloads['email:jane.doe@example.org'];
+        self::assertSame(1, $jane->getPendingInvitations());
+        self::assertSame('2026-11-10 09:00:00', $jane->getLastInvitationDate());
+        self::assertSame(Workload::ANSWER_DECLINED, $jane->getLastInvitationAnswer());
+
+        [$byUid, $byEmailHash] = Workload::splitByAccount($workloads + [self::REVIEWER_UID => new Workload(1)]);
+        self::assertSame([self::REVIEWER_UID], array_keys($byUid));
+        // the page never lists the addresses: only their hash, which the address typed for a new reviewer gives too
+        self::assertSame($jane, $byEmailHash[hash('sha256', 'jane.doe@example.org')]);
+        self::assertCount(2, $byEmailHash);
+    }
+
     public function testTheWholeJournalIsReadWithTwoQueries(): void
     {
         $this->db
@@ -147,6 +177,8 @@ final class WorkloadTest extends ControllerTestCase
         self::assertMatchesRegularExpression('/GROUP BY `ITEMID`,\s*`UID`/', $assignments);
         self::assertStringContainsString('a.RVID = ' . RVID, $invitations);
         self::assertStringContainsString('GROUP BY `i`.`AID`', $invitations);
+        self::assertStringNotContainsString('TMP_USER = 0', $invitations);
+        self::assertStringContainsString('LEFT JOIN `USER_TMP` AS `t` ON a.TMP_USER = 1 AND t.ID = a.UID', $invitations);
 
         self::assertSame(1, $workloads[self::REVIEWER_UID]->getReviewsInProgress());
         self::assertSame(1, $workloads[self::REVIEWER_UID]->getPendingInvitations());

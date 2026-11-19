@@ -1375,14 +1375,21 @@ class AdministratepaperController extends PaperDefaultController
             }
 
             // how much each reviewer of the journal is already asked (git #320)
-            $workloads = Workload::ofJournal(RVID, (int)$docId);
+            [$workloads, $workloadsByEmailHash] = Workload::splitByAccount(Workload::ofJournal(RVID, (int)$docId));
             $this->view->reviewerWorkloads = $workloads;
-            $this->view->js_reviewer_workloads = Zend_Json::encode(
-                (object)array_map(static fn(Workload $workload): array => $workload->toArray(), array_filter(
-                    $workloads,
-                    static fn(Workload $workload): bool => !$workload->isEmpty()
-                ))
-            );
+            $locale = Episciences_Tools::getLocale();
+            $toJson = fn(array $byKey): string => Zend_Json::encode((object)array_map(
+                // the date as written in the known reviewers table
+                fn(Workload $workload): array => $workload->toArray() + [
+                    'last_invitation_date_label' => $workload->getLastInvitationDate() !== null
+                        ? (string)$this->view->Date($workload->getLastInvitationDate(), $locale)
+                        : null,
+                ],
+                array_filter($byKey, static fn(Workload $workload): bool => !$workload->isEmpty())
+            ));
+            $this->view->js_reviewer_workloads = $toJson($workloads);
+            // people invited without an account: matched by the address typed for a new reviewer
+            $this->view->js_reviewer_workloads_by_email = $toJson($workloadsByEmailHash);
 
             // Tous les relecteurs (utilisateurs temp. compris)
             foreach ($allReviewers as $uid => $reviewer) {

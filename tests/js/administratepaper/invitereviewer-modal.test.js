@@ -877,26 +877,36 @@ describe('invitereviewer-modal.js: what the reviewer is already asked in the jou
         delete global.reviewer_workloads;
     });
 
-    test('the message lists the reviews in progress, the pending invitations and the latest invitation', () => {
-        expect(moduleUnderTest.reviewerWorkloadMessage(global.reviewer_workloads[7])).toBe(
-            'Sollicitations de ce relecteur dans la revue : Relectures en cours : 1 ; Invitations en attente : 2 ; ' +
-                'Dernière invitation : 2026-10-20 (acceptée).'
-        );
-        expect(moduleUnderTest.reviewerWorkloadMessage(global.reviewer_workloads[8])).toBe(
-            'Sollicitations de ce relecteur dans la revue : Dernière invitation : 2025-01-05 (expirée).'
-        );
+    test('one line for the reviews in progress, the pending invitations and the latest invitation', () => {
+        expect(moduleUnderTest.reviewerWorkloadLines(global.reviewer_workloads[7])).toEqual([
+            'Relectures en cours : 1',
+            'Invitations en attente : 2',
+            'Dernière invitation : 2026-10-20 (acceptée)',
+        ]);
+        expect(moduleUnderTest.reviewerWorkloadLines(global.reviewer_workloads[8])).toEqual([
+            'Dernière invitation : 2025-01-05 (expirée)',
+        ]);
+    });
+
+    test('the date is written as in the known reviewers table when the page gives it', () => {
+        expect(
+            moduleUnderTest.reviewerWorkloadLines({
+                ...global.reviewer_workloads[8],
+                last_invitation_date_label: 'January 5, 2025',
+            })
+        ).toEqual(['Dernière invitation : January 5, 2025 (expirée)']);
     });
 
     test('nothing is said about a person the journal never asked', () => {
-        expect(moduleUnderTest.reviewerWorkloadMessage(undefined)).toBe('');
+        expect(moduleUnderTest.reviewerWorkloadLines(undefined)).toEqual([]);
         expect(
-            moduleUnderTest.reviewerWorkloadMessage({
+            moduleUnderTest.reviewerWorkloadLines({
                 reviews_in_progress: 0,
                 pending_invitations: 0,
                 last_invitation_date: null,
                 last_invitation_answer: null,
             })
-        ).toBe('');
+        ).toEqual([]);
     });
 
     test('choosing a reviewer shows the alert above the message, as text', () => {
@@ -904,13 +914,84 @@ describe('invitereviewer-modal.js: what the reviewer is already asked in the jou
 
         moduleUnderTest.showReviewerWorkload({ id: 7 });
         expect(alert.hidden).toBe(false);
-        expect(alert.textContent).toContain('Relectures en cours : 1');
-        expect(alert.children).toHaveLength(0);
+        expect(alert.querySelector('strong').textContent).toBe('Sollicitations de ce relecteur dans la revue');
+        expect([...alert.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
+            'Relectures en cours : 1',
+            'Invitations en attente : 2',
+            'Dernière invitation : 2026-10-20 (acceptée)',
+        ]);
+
+        // the values are written as text
+        global.reviewer_workloads[9] = { ...global.reviewer_workloads[8], last_invitation_date_label: '<img src=x>' };
+        moduleUnderTest.showReviewerWorkload({ id: 9 });
+        expect(alert.querySelector('img')).toBeNull();
+        expect(alert.textContent).toContain('<img src=x>');
 
         // a person without an account, or without any invitation, hides it again
         moduleUnderTest.showReviewerWorkload({ email: 'new@example.org' });
         expect(alert.hidden).toBe(true);
         expect(alert.textContent).toBe('');
+    });
+
+    describe('a person invited without an account, found by e-mail address', () => {
+        const nodeCrypto = require('crypto');
+        const { TextEncoder } = require('util');
+        const sha256 = (text) => nodeCrypto.createHash('sha256').update(text).digest('hex');
+        let previousCrypto;
+        let previousTextEncoder;
+
+        beforeEach(() => {
+            previousCrypto = globalThis.crypto;
+            previousTextEncoder = globalThis.TextEncoder;
+            Object.defineProperty(globalThis, 'crypto', { value: nodeCrypto.webcrypto, configurable: true });
+            globalThis.TextEncoder = TextEncoder;
+            global.reviewer_workloads_by_email = {
+                [sha256('jane.doe@example.org')]: {
+                    reviews_in_progress: 0,
+                    pending_invitations: 1,
+                    last_invitation_date: '2026-11-10 09:00:00',
+                    last_invitation_answer: 'pending',
+                },
+            };
+        });
+
+        afterEach(() => {
+            Object.defineProperty(globalThis, 'crypto', { value: previousCrypto, configurable: true });
+            globalThis.TextEncoder = previousTextEncoder;
+            delete global.reviewer_workloads_by_email;
+        });
+
+        test('the hash is the one of the address in lower case', async () => {
+            await expect(moduleUnderTest.emailHash(' Jane.Doe@Example.org ')).resolves.toBe(sha256('jane.doe@example.org'));
+        });
+
+        test('the address typed for a new reviewer shows their earlier invitations', async () => {
+            const alert = document.getElementById('reviewer-workload-alert');
+
+            await moduleUnderTest.showReviewerWorkload({ id: null, email: 'Jane.Doe@example.org' });
+
+            expect(alert.hidden).toBe(false);
+            expect(alert.textContent).toContain('Invitations en attente : 1');
+            expect(alert.textContent).toContain('2026-11-10');
+        });
+
+        test('an unknown address shows nothing', async () => {
+            const alert = document.getElementById('reviewer-workload-alert');
+
+            await moduleUnderTest.showReviewerWorkload({ id: null, email: 'someone@example.org' });
+
+            expect(alert.hidden).toBe(true);
+        });
+
+        test('a later choice is not overwritten by the answer computed for an earlier one', async () => {
+            const alert = document.getElementById('reviewer-workload-alert');
+
+            const earlier = moduleUnderTest.showReviewerWorkload({ id: null, email: 'jane.doe@example.org' });
+            await moduleUnderTest.showReviewerWorkload({ id: 404, email: 'other@example.org' });
+            await earlier;
+
+            expect(alert.hidden).toBe(true);
+        });
     });
 
     test('setting the invitation values shows the workload of the chosen reviewer', () => {

@@ -3,11 +3,14 @@ const {
     submitArxivPaper,
     openPaperManagement,
     inviteKnownReviewer,
+    inviteNewReviewer,
 } = require('../../helpers/editorial-workflow');
 
 // Papers not used by any other spec (parallel workers)
 const FIRST_ARXIV_ID = '1409.4842';
 const SECOND_ARXIV_ID = '1412.3555';
+const THIRD_ARXIV_ID = '1312.4400';
+const FOURTH_ARXIV_ID = '1505.00387';
 const REVIEWER_USERNAME = 'e2e_reviewer';
 
 test.describe('Requests already made to a reviewer in the journal (#320)', () => {
@@ -67,6 +70,68 @@ test.describe('Requests already made to a reviewer in the journal (#320)', () =>
                 'Requests already made to this reviewer in the journal'
             );
             await expect(alert).toContainText('Pending invitations:');
+        });
+    });
+
+    test('the new reviewer panel shows it too, for an account found by search and for an address invited before', async ({
+        authorPage,
+        adminPage,
+    }) => {
+        test.setTimeout(240000);
+        const stamp = Date.now();
+        const withoutAccount = {
+            email: `e2e-workload-${stamp}@example.org`,
+            lastname: `E2eworkload${stamp}`,
+        };
+        const firstDocid = await submitArxivPaper(authorPage, {
+            arxivId: THIRD_ARXIV_ID,
+        });
+        const secondDocid = await submitArxivPaper(authorPage, {
+            arxivId: FOURTH_ARXIV_ID,
+        });
+
+        await test.step('a person without an account and the reviewer are invited on a first paper', async () => {
+            await inviteNewReviewer(adminPage, firstDocid, withoutAccount);
+            await inviteKnownReviewer(adminPage, firstDocid, REVIEWER_USERNAME);
+        });
+
+        const alert = adminPage.locator('#reviewer-workload-alert');
+        const openNewReviewerPanel = async () => {
+            await openPaperManagement(adminPage, secondDocid);
+            await adminPage.locator(`#invite_reviewer_${secondDocid}`).click();
+            await expect(adminPage).toHaveURL(
+                /administratepaper\/invitereviewer/
+            );
+            await adminPage.locator('#new_user_button').click();
+        };
+
+        await test.step('an account found by search', async () => {
+            await openNewReviewerPanel();
+            await adminPage.locator('#autocomplete').fill(REVIEWER_USERNAME);
+            await adminPage
+                .locator('.modern-autocomplete-item', {
+                    hasText: 'e2e_reviewer@example.org',
+                })
+                .first()
+                .click();
+
+            await expect(adminPage.locator('#step-2')).toBeVisible();
+            await expect(alert).toBeVisible();
+            await expect(alert).toContainText('Pending invitations:');
+        });
+
+        await test.step('the address of a person invited before without an account', async () => {
+            await openNewReviewerPanel();
+            await adminPage
+                .locator('#email')
+                .fill(withoutAccount.email.toUpperCase());
+            await adminPage.locator('#lastname').fill(withoutAccount.lastname);
+            await adminPage.locator('#next').click();
+
+            await expect(adminPage.locator('#step-2')).toBeVisible();
+            await expect(alert).toBeVisible();
+            await expect(alert).toContainText('Pending invitations: 1');
+            await expect(alert).toContainText('not answered yet');
         });
     });
 });

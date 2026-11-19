@@ -71,6 +71,7 @@ $description .= ' - ' . $this->escape($this->paper->getTitle());
     var available_languages = <?php echo $this->available_languages?>;
     var allJsReviewers = <?php if ($this->allJsReviewers) : ?><?php echo $this->allJsReviewers; ?><?php else:?>null<?php endif;?>;
     var reviewer_workloads = <?= $this->js_reviewer_workloads ?: '{}' ?>;
+    var reviewer_workloads_by_email = <?= $this->js_reviewer_workloads_by_email ?: '{}' ?>;
     //git #180 : ajout d'un nouveau tag : les noms des auteurs
     let allAuthors = <?=  $this->js_allAuthors ?>;
 

@@ -937,13 +937,14 @@ function ajaxAlertFail() {
 }
 
 /**
- * What the reviewer is already asked in the journal (git #320), as a sentence; empty when nothing is known
- * @param {object|null|undefined} workload reviews_in_progress, pending_invitations, last_invitation_date, last_invitation_answer
- * @returns {string}
+ * What the reviewer is already asked in the journal (git #320), one line per fact; empty when nothing is known
+ * @param {object|null|undefined} workload reviews_in_progress, pending_invitations, last_invitation_date,
+ *   last_invitation_date_label (the date as written in the known reviewers table), last_invitation_answer
+ * @returns {string[]}
  */
-function reviewerWorkloadMessage(workload) {
+function reviewerWorkloadLines(workload) {
     if (!workload) {
-        return '';
+        return [];
     }
 
     const answers = {
@@ -953,10 +954,10 @@ function reviewerWorkloadMessage(workload) {
         cancelled: translate('annulée'),
         expired: translate('expirée'),
     };
-    const parts = [];
+    const lines = [];
 
     if (workload.reviews_in_progress > 0) {
-        parts.push(
+        lines.push(
             translate('Relectures en cours : %d').replace(
                 '%d',
                 String(workload.reviews_in_progress)
@@ -965,7 +966,7 @@ function reviewerWorkloadMessage(workload) {
     }
 
     if (workload.pending_invitations > 0) {
-        parts.push(
+        lines.push(
             translate('Invitations en attente : %d').replace(
                 '%d',
                 String(workload.pending_invitations)
@@ -974,46 +975,119 @@ function reviewerWorkloadMessage(workload) {
     }
 
     if (workload.last_invitation_date) {
-        parts.push(
+        lines.push(
             translate('Dernière invitation : %s (%s)')
-                .replace('%s', workload.last_invitation_date.substring(0, 10))
+                .replace(
+                    '%s',
+                    workload.last_invitation_date_label ||
+                        workload.last_invitation_date.substring(0, 10)
+                )
                 .replace('%s', answers[workload.last_invitation_answer] || '')
         );
     }
 
-    if (parts.length === 0) {
-        return '';
-    }
-
-    return (
-        translate('Sollicitations de ce relecteur dans la revue') +
-        ' : ' +
-        parts.join(' ; ') +
-        '.'
-    );
+    return lines;
 }
 
 /**
- * Shows above the invitation message what the chosen person is already asked in the journal (git #320)
- * @param {object} user the invited person (id: UID, when they have an account)
+ * Fills the alert with a title and the list of the facts, as text (no HTML is parsed)
+ * @param {HTMLElement} alert
+ * @param {string[]} lines
+ */
+function renderReviewerWorkload(alert, lines) {
+    alert.replaceChildren();
+    alert.hidden = lines.length === 0;
+
+    if (lines.length === 0) {
+        return;
+    }
+
+    const title = document.createElement('strong');
+    title.textContent = translate(
+        'Sollicitations de ce relecteur dans la revue'
+    );
+    const list = document.createElement('ul');
+    list.className = 'list-unstyled';
+    list.style.margin = '0';
+
+    for (const line of lines) {
+        const item = document.createElement('li');
+        item.textContent = line;
+        list.appendChild(item);
+    }
+
+    alert.append(title, list);
+}
+
+/**
+ * SHA-256 hash, in hexadecimal, of an e-mail address in lower case: the key of the people invited without an account
+ * (Workload::splitByAccount())
+ * @param {string} email
+ * @returns {Promise<string>}
+ */
+async function emailHash(email) {
+    const data = new TextEncoder().encode(email.trim().toLowerCase());
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', data);
+
+    return Array.from(new Uint8Array(digest))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+/**
+ * Shows above the invitation message what the chosen person is already asked in the journal (git #320): a reviewer
+ * with an account is found by UID, a person invited without one by e-mail address
+ * @param {object} user the invited person (id: UID, when they have an account; email)
+ * @returns {Promise<void>} settled once the alert is up to date
  */
 function showReviewerWorkload(user) {
     const alert = document.getElementById('reviewer-workload-alert');
 
     if (!alert) {
-        return;
+        return Promise.resolve();
     }
 
-    const workloads =
+    const render = workload =>
+        renderReviewerWorkload(alert, reviewerWorkloadLines(workload));
+    const byUid =
         typeof reviewer_workloads !== 'undefined' && reviewer_workloads
             ? reviewer_workloads
             : {};
-    const message = reviewerWorkloadMessage(
-        user && user.id ? workloads[user.id] : null
-    );
+    const byEmail =
+        typeof reviewer_workloads_by_email !== 'undefined' &&
+        reviewer_workloads_by_email
+            ? reviewer_workloads_by_email
+            : {};
+    const email = user && !user.id && user.email ? String(user.email) : '';
 
-    alert.textContent = message;
-    alert.hidden = message === '';
+    // the latest choice wins over an answer still being computed for a previous one
+    alert.dataset.for = user && user.id ? 'uid:' + user.id : 'email:' + email;
+
+    if (user && user.id) {
+        render(byUid[user.id]);
+        return Promise.resolve();
+    }
+
+    render(null);
+
+    if (
+        email === '' ||
+        Object.keys(byEmail).length === 0 ||
+        !globalThis.crypto ||
+        !globalThis.crypto.subtle
+    ) {
+        return Promise.resolve();
+    }
+
+    const expected = alert.dataset.for;
+
+    return emailHash(email)
+        .then(hash => {
+            if (alert.dataset.for === expected) {
+                render(byEmail[hash]);
+            }
+        })
+        .catch(() => render(null));
 }
 
 function translateInvitationDeadline(str, locale) {
@@ -1032,8 +1106,10 @@ if (typeof module !== 'undefined' && module.exports) {
         step2,
         validate_step2,
         setInvitationValues,
-        reviewerWorkloadMessage,
+        reviewerWorkloadLines,
+        renderReviewerWorkload,
         showReviewerWorkload,
+        emailHash,
         replaceTags,
         show_errors,
         reviewers_init,

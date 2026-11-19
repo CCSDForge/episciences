@@ -82,11 +82,16 @@ final class Workload
         ];
     }
 
+    /** Key prefix of the people invited without an account, followed by their e-mail address in lower case */
+    public const EMAIL_KEY_PREFIX = 'email:';
+
     /**
-     * Workload of every reviewer of the journal who has an account, keyed by UID. Reviews and invitations are only in
-     * progress on papers still being reviewed; the paper being handled is left out of them.
+     * Workload of every reviewer of the journal, keyed by UID, and of every person invited without an account, keyed by
+     * EMAIL_KEY_PREFIX + e-mail address (each invitation without an account creates a new temporary user: the address
+     * is what they have in common). Reviews and invitations are only in progress on papers still being reviewed; the
+     * paper being handled is left out of them.
      *
-     * @return array<int, self>
+     * @return array<int|string, self>
      */
     public static function ofJournal(int $rvid, int $currentDocId, ?Zend_Db_Adapter_Abstract $db = null, ?string $now = null): array
     {
@@ -102,12 +107,12 @@ final class Workload
 
     /**
      * @param list<array<string, mixed>> $assignments latest assignment of each (paper, reviewer): UID, ITEMID, PAPER_STATUS, STATUS, REPORT_DONE
-     * @param list<array<string, mixed>> $invitations latest row of each invitation: UID, ITEMID, PAPER_STATUS, STATUS, SENDING_DATE, EXPIRATION_DATE
-     * @return array<int, self>
+     * @param list<array<string, mixed>> $invitations latest row of each invitation: UID, TMP_USER, TMP_EMAIL, ITEMID, PAPER_STATUS, STATUS, SENDING_DATE, EXPIRATION_DATE
+     * @return array<int|string, self>
      */
     public static function fromRows(array $assignments, array $invitations, int $currentDocId, string $now): array
     {
-        /** @var array<int, array{int, int, string|null, string|null}> $byUid in progress, pending, last date, last answer */
+        /** @var array<int|string, array{int, int, string|null, string|null}> $byUid in progress, pending, last date, last answer */
         $byUid = [];
 
         foreach ($assignments as $row) {
@@ -124,7 +129,10 @@ final class Workload
         }
 
         foreach ($invitations as $row) {
-            $uid = (int)$row['UID'];
+            $uid = self::keyOf($row);
+            if ($uid === null) {
+                continue;
+            }
             $byUid[$uid] ??= [0, 0, null, null];
             $answer = self::answerOf((string)$row['STATUS'], (string)$row['EXPIRATION_DATE'], $now);
 
@@ -143,6 +151,43 @@ final class Workload
             static fn(array $values): self => new self(...$values),
             $byUid
         );
+    }
+
+    /**
+     * Workloads of the people with an account (by UID), and of the people invited without one, by SHA-256 hash of their
+     * e-mail address in lower case: the page can match the address typed for a new reviewer without listing addresses.
+     *
+     * @param array<int|string, self> $workloads
+     * @return array{array<int, self>, array<string, self>}
+     */
+    public static function splitByAccount(array $workloads): array
+    {
+        $byUid = [];
+        $byEmailHash = [];
+
+        foreach ($workloads as $key => $workload) {
+            if (is_int($key)) {
+                $byUid[$key] = $workload;
+            } else {
+                $byEmailHash[hash('sha256', substr($key, strlen(self::EMAIL_KEY_PREFIX)))] = $workload;
+            }
+        }
+
+        return [$byUid, $byEmailHash];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private static function keyOf(array $row): int|string|null
+    {
+        if (!(int)($row['TMP_USER'] ?? 0)) {
+            return (int)$row['UID'];
+        }
+
+        $email = mb_strtolower(trim((string)($row['TMP_EMAIL'] ?? '')));
+
+        return $email === '' ? null : self::EMAIL_KEY_PREFIX . $email;
     }
 
     /**
@@ -197,7 +242,8 @@ final class Workload
     }
 
     /**
-     * Latest row of each invitation sent to a reviewer with an account in the journal.
+     * Latest row of each invitation sent to a reviewer in the journal, with the address of the people invited without an
+     * account.
      */
     private static function invitationsQuery(Zend_Db_Adapter_Abstract $db, int $rvid): \Zend_Db_Select
     {
@@ -206,13 +252,13 @@ final class Workload
             ->join(['a' => T_ASSIGNMENTS], 'a.ID = i.AID', [])
             ->where('a.RVID = ?', $rvid)
             ->where('a.ROLEID = ?', Episciences_User_Assignment::ROLE_REVIEWER)
-            ->where('a.TMP_USER = 0')
             ->group('i.AID');
 
         return $db->select()
             ->from(['i' => T_USER_INVITATIONS], ['STATUS' => 'i.STATUS', 'SENDING_DATE' => 'i.SENDING_DATE', 'EXPIRATION_DATE' => 'i.EXPIRATION_DATE'])
             ->join(['l' => $latest], 'i.ID = l.LAST_ID', [])
-            ->join(['a' => T_ASSIGNMENTS], 'a.ID = i.AID', ['UID' => 'a.UID', 'ITEMID' => 'a.ITEMID'])
+            ->join(['a' => T_ASSIGNMENTS], 'a.ID = i.AID', ['UID' => 'a.UID', 'TMP_USER' => 'a.TMP_USER', 'ITEMID' => 'a.ITEMID'])
+            ->joinLeft(['t' => T_TMP_USER], 'a.TMP_USER = 1 AND t.ID = a.UID', ['TMP_EMAIL' => 't.EMAIL'])
             ->joinLeft(['p' => T_PAPERS], 'p.DOCID = a.ITEMID', ['PAPER_STATUS' => 'p.STATUS']);
     }
 }
