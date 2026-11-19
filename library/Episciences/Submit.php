@@ -1662,7 +1662,8 @@ class Episciences_Submit
         } elseif (str_contains($parsedError, Ccsd_Error::DEFAULT_PREFIX_CODE)) {
             $error = sprintf(
                 $error,
-                htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'),
+                // HTML on the web; the raw diagnostic from the command line, where it is only logged
+                Ccsd_Tools::isFromCli() ? $e->getMessage() : htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'),
                 $mailToStr,
                 Episciences_Repositories::getLabel($repoId),
                 Episciences_Repositories::getIdentifierExemple($repoId)

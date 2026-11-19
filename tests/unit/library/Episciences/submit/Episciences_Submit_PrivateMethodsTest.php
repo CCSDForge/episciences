@@ -389,12 +389,31 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         self::assertStringContainsString('operation ended', $result['error']);
     }
 
-    public function testBuildCcsdErrorResultEscapesTheRawErrorMessage(): void
+    public function testBuildCcsdErrorResultEscapesTheRawErrorMessageOnTheWeb(): void
     {
-        $e = new Ccsd_Error('unexpected <b>answer</b> & more');
-        $result = $this->invoke('buildCcsdErrorResult', [$e, 9999]);
+        $hadServerSoftware = array_key_exists('SERVER_SOFTWARE', $_SERVER);
+        $previousServerSoftware = $_SERVER['SERVER_SOFTWARE'] ?? null;
+        $_SERVER['SERVER_SOFTWARE'] = 'Apache';
+
+        try {
+            $result = $this->invoke('buildCcsdErrorResult', [new Ccsd_Error('unexpected <b>answer</b> & more'), 9999]);
+        } finally {
+            if ($hadServerSoftware) {
+                $_SERVER['SERVER_SOFTWARE'] = $previousServerSoftware;
+            } else {
+                unset($_SERVER['SERVER_SOFTWARE']);
+            }
+        }
+
         self::assertStringContainsString('unexpected &lt;b&gt;answer&lt;/b&gt; &amp; more', $result['error']);
         self::assertStringNotContainsString('<b>answer</b>', $result['error']);
+    }
+
+    public function testBuildCcsdErrorResultKeepsTheRawErrorMessageFromTheCommandLine(): void
+    {
+        $result = $this->invoke('buildCcsdErrorResult', [new Ccsd_Error('unexpected <b>answer</b> & more'), 9999]);
+
+        self::assertStringContainsString('unexpected <b>answer</b> & more', $result['error']);
     }
 
     // =========================================================================
