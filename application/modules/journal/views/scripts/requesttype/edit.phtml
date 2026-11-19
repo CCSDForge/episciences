@@ -79,7 +79,7 @@ $error = function (string $field) use ($errors): string {
         </div>
         <div class="col-md-6 col-md-offset-3">
             <span id="deadline-help" class="help-block">
-                <?= $this->escape($this->translate("Date limite proposée à l'invitation. Laisser vide pour utiliser le réglage de la revue.")) ?>
+                <?= $this->escape($this->translate("Date limite proposée à l'invitation, dans la limite des délais minimum et maximum de la revue. Laisser vide pour utiliser le réglage de la revue.")) ?>
             </span>
             <?= $error('deadline') ?>
         </div>

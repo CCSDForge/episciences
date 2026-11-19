@@ -116,4 +116,14 @@ final class AdministratepaperSaveReviewerInvitationRequestTypeTest extends Contr
             'Ce relecteur a déjà une demande de ce type en cours pour cet article.'
         );
     }
+
+    public function testTheDueDateOfATypeStaysWithinTheRangeOfTheJournal(): void
+    {
+        // a quick opinion due in two weeks, for a journal that asks for one to nine months
+        self::assertSame('2026-12-19', \AdministratepaperController::dateWithinRange('2026-12-03', '2026-12-19', '2027-08-19'));
+        self::assertSame('2027-08-19', \AdministratepaperController::dateWithinRange('2028-01-01', '2026-12-19', '2027-08-19'));
+        self::assertSame('2027-01-15', \AdministratepaperController::dateWithinRange('2027-01-15', '2026-12-19', '2027-08-19'));
+        // no range set by the journal
+        self::assertSame('2026-12-03', \AdministratepaperController::dateWithinRange('2026-12-03', null, ''));
+    }
 }

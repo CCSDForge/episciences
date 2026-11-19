@@ -1207,11 +1207,16 @@ class AdministratepaperController extends PaperDefaultController
     /**
      * Data of the request types for the invitation form script
      * @param list<RequestType> $requestTypes
-     * @return list<array{id: int, code: string, label: string, rating_deadline: string}>
+     * @return list<array{id: int, label: string, rating_deadline: string}>
      */
     private function requestTypesForInvitationForm(array $requestTypes, Episciences_Review $review): array
     {
         $locale = Episciences_Tools::getLocale();
+        $today = date('Y-m-d');
+        $minInterval = $review->getSetting(Episciences_Review::SETTING_RATING_DEADLINE_MIN);
+        $maxInterval = $review->getSetting(Episciences_Review::SETTING_RATING_DEADLINE_MAX);
+        $minDate = $minInterval ? Episciences_Tools::addDateInterval($today, $minInterval) : null;
+        $maxDate = $maxInterval ? Episciences_Tools::addDateInterval($today, $maxInterval) : null;
         $data = [];
 
         foreach ($requestTypes as $requestType) {
@@ -1219,11 +1224,28 @@ class AdministratepaperController extends PaperDefaultController
             $data[] = [
                 'id' => (int)$requestType->getId(),
                 'label' => $requestType->getLabel($locale),
-                'rating_deadline' => Episciences_Tools::addDateInterval(date('Y-m-d'), $interval),
+                // the due date of a type stays within the range the journal allows, which the form checks
+                'rating_deadline' => self::dateWithinRange(Episciences_Tools::addDateInterval($today, $interval), $minDate, $maxDate),
             ];
         }
 
         return $data;
+    }
+
+    /**
+     * The date, moved to the nearest bound when it is out of the range (dates "Y-m-d"; an empty bound is no bound)
+     */
+    public static function dateWithinRange(string $date, ?string $min, ?string $max): string
+    {
+        if ($min !== null && $min !== '' && $date < $min) {
+            return $min;
+        }
+
+        if ($max !== null && $max !== '' && $date > $max) {
+            return $max;
+        }
+
+        return $date;
     }
 
     public function invitereviewerAction(): void

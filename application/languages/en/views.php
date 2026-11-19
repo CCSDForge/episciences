@@ -2945,7 +2945,7 @@ return array(
     "Les types par défaut et les types déjà utilisés ne peuvent pas être supprimés : désactivez-les pour ne plus les proposer (leur modèle de message n'est alors plus listé). Le message d'invitation de chaque type se modifie dans les modèles de mail." => "The default types and the types already used cannot be deleted: disable them so that they are no longer offered (their message template is then no longer listed). The invitation message of each type is edited in the mail templates.",
     "Le formulaire contient des erreurs." => "The form contains errors.",
     "Unité du délai" => "Deadline unit",
-    "Date limite proposée à l'invitation. Laisser vide pour utiliser le réglage de la revue." => "Due date suggested in the invitation. Leave empty to use the journal setting.",
+    "Date limite proposée à l'invitation, dans la limite des délais minimum et maximum de la revue. Laisser vide pour utiliser le réglage de la revue." => "Due date suggested in the invitation, within the minimum and maximum deadlines of the journal. Leave empty to use the journal setting.",
     "Proposer ce type à l'invitation d'un relecteur" => "Offer this type when inviting a reviewer",
     "Le rapport de relecture reste toujours proposé." => "The review report is always offered.",
     "Cette grille de notation existe déjà." => "This rating grid already exists.",
