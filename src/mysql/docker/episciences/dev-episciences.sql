@@ -9605,6 +9605,156 @@ ALTER TABLE `paper_datasets`
 --
 ALTER TABLE `paper_projects`
     ADD CONSTRAINT `paper_projects_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `metadata_sources` (`id`);
+
+-- --------------------------------------------------------
+--
+-- Review request types (#319): the migrations below, replayed on the data of this dump, in this order.
+-- Keep in sync with src/mysql/2026-11-1x-*.sql.
+--
+
+-- src/mysql/2026-11-12-review-request-type.sql
+-- Review request types (review report, quick opinion, and the types created by a journal), defined per journal.
+-- Each reviewer invitation is made for one type; a reviewer may hold several requests of different types
+-- on the same paper version.
+-- Created: 2026-11-12
+
+-- The labels hold non-ASCII characters: whatever the default character set of the client
+
+CREATE TABLE IF NOT EXISTS `review_request_type` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `rvid` int unsigned NOT NULL COMMENT 'Journal',
+  `default_type` tinyint unsigned DEFAULT NULL COMMENT 'Default type (Episciences\\Reviewer\\DefaultRequestType): 1 = review report, 2 = quick opinion; NULL = created by the journal',
+  `labels` json NOT NULL COMMENT 'Label per language, e.g. {"fr": "...", "en": "..."}',
+  `light_answer` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '1 = answered from the invitation link, without an account',
+  `default_deadline` varchar(20) DEFAULT NULL COMMENT 'Default rating deadline, e.g. "2 week"; NULL = journal setting',
+  `position` smallint unsigned NOT NULL DEFAULT '0',
+  `enabled` tinyint unsigned NOT NULL DEFAULT '1',
+  `counts_as_report` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '1 = its reports count like review reports (reviewed status, required number, average rating)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_rvid_default_type` (`rvid`, `default_type`),
+  KEY `idx_rvid_position` (`rvid`, `position`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Review request types, per journal';
+
+-- Default types for every existing journal (new journals get them when they are created)
+INSERT IGNORE INTO `review_request_type` (`rvid`, `default_type`, `labels`, `default_deadline`, `position`, `counts_as_report`)
+SELECT `RVID`, 1, JSON_OBJECT('fr', 'Rapport de relecture', 'en', 'Review report'), NULL, 1, 1 FROM `REVIEW`
+UNION ALL
+SELECT `RVID`, 2, JSON_OBJECT('fr', 'Avis rapide', 'en', 'Quick opinion'), '2 week', 2, 0 FROM `REVIEW`;
+
+-- Type of each reviewer request. The state of a reviewer on a paper is read on their latest assignment row
+-- for each type, so every reviewer row carries a type; other roles leave it NULL.
+ALTER TABLE `USER_ASSIGNMENT`
+    ADD COLUMN `REQUEST_TYPE_ID` int unsigned DEFAULT NULL COMMENT 'Review request type (reviewer rows only)' AFTER `ROLEID`,
+    ADD KEY `idx_request_type` (`REQUEST_TYPE_ID`);
+
+-- Existing reviewer requests are review reports
+UPDATE `USER_ASSIGNMENT` a
+    INNER JOIN `review_request_type` t ON t.`rvid` = a.`RVID` AND t.`default_type` = 1
+SET a.`REQUEST_TYPE_ID` = t.`id`
+WHERE a.`ROLEID` = 'reviewer'
+  AND a.`REQUEST_TYPE_ID` IS NULL;
+
+-- src/mysql/2026-11-12-review-request-type-mail-templates.sql
+-- Default mail templates of the review request types (#319): one invitation template per type, a base for the
+-- types created by a journal, and the texts of the %%INVITATION_ACCOUNT_HINT%% tag (fragments, without subject).
+-- Created: 2026-11-12
+
+
+INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
+SELECT NULL, NULL, NULL, 'paper_reviewer_invitation_quick_opinion', 'paper_review', NULL
+WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'paper_reviewer_invitation_quick_opinion');
+
+INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
+SELECT NULL, NULL, NULL, 'paper_reviewer_invitation_generic', 'paper_review', NULL
+WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'paper_reviewer_invitation_generic');
+
+INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
+SELECT NULL, NULL, NULL, 'reviewer_invitation_account_hint_known_reviewer', 'paper_review', NULL
+WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'reviewer_invitation_account_hint_known_reviewer');
+
+INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
+SELECT NULL, NULL, NULL, 'reviewer_invitation_account_hint_known_user', 'paper_review', NULL
+WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'reviewer_invitation_account_hint_known_user');
+
+INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
+SELECT NULL, NULL, NULL, 'reviewer_invitation_account_hint_new_user', 'paper_review', NULL
+WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'reviewer_invitation_account_hint_new_user');
+
+INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
+SELECT NULL, NULL, NULL, 'reviewer_invitation_account_hint_light_answer', 'paper_review', NULL
+WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'reviewer_invitation_account_hint_light_answer');
+
+-- Editors told that an invitation answered without an account has no rating grid to fill in
+INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
+SELECT NULL, NULL, NULL, 'paper_reviewer_light_answer_without_grid_editor_copy', 'paper_review', NULL
+WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'paper_reviewer_light_answer_without_grid_editor_copy');
+
+-- src/mysql/2026-11-13-reviewer-report-request-type.sql
+-- Rating reports by review request type (#319): a reviewer may hold one request of each type on a paper version,
+-- each with its own report. The unique key (UID, DOCID) becomes (UID, DOCID, REQUEST_TYPE_ID).
+-- Requires 2026-11-12-review-request-type.sql.
+-- Created: 2026-11-13
+
+
+ALTER TABLE `REVIEWER_REPORT`
+    ADD COLUMN `REQUEST_TYPE_ID` int unsigned DEFAULT NULL COMMENT 'Review request type of the report' AFTER `DOCID`;
+
+-- Existing reports are review reports
+UPDATE `REVIEWER_REPORT` r
+    INNER JOIN `PAPERS` p ON p.`DOCID` = r.`DOCID`
+    INNER JOIN `review_request_type` t ON t.`rvid` = p.`RVID` AND t.`default_type` = 1
+SET r.`REQUEST_TYPE_ID` = t.`id`
+WHERE r.`REQUEST_TYPE_ID` IS NULL;
+
+-- Reports of a paper that no longer exists: no type (0), they are never displayed
+UPDATE `REVIEWER_REPORT` SET `REQUEST_TYPE_ID` = 0 WHERE `REQUEST_TYPE_ID` IS NULL;
+
+-- NOT NULL: a unique key accepts duplicates on NULL values
+ALTER TABLE `REVIEWER_REPORT`
+    MODIFY `REQUEST_TYPE_ID` int unsigned NOT NULL COMMENT 'Review request type of the report (0: paper deleted before the types)',
+    DROP INDEX `UID`,
+    ADD UNIQUE KEY `uniq_uid_docid_request_type` (`UID`, `DOCID`, `REQUEST_TYPE_ID`),
+    ADD KEY `idx_request_type` (`REQUEST_TYPE_ID`);
+
+-- src/mysql/2026-11-13-review-light-answer.sql
+-- Answers given without an account to a review request of a "light answer" type (#319): the rating grid of the type
+-- filled in from the invitation link. One answer per invitation, editable until the due date of the request.
+-- The filled grid (report.xml) and its attached files are kept in <docid>/reports/light_<aid>/.
+-- Kept apart from REVIEWER_REPORT, whose UID is an account: the invited person may have no account.
+-- Created: 2026-11-13
+
+
+CREATE TABLE IF NOT EXISTS `review_light_answer` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `aid` int unsigned NOT NULL COMMENT 'Original (pending) assignment of the invitation: USER_INVITATION.AID',
+  `rvid` int unsigned NOT NULL,
+  `docid` int unsigned NOT NULL,
+  `request_type_id` int unsigned NOT NULL,
+  `uid` int unsigned NOT NULL COMMENT 'Invited person: account UID, or temporary user id when tmp_user = 1',
+  `tmp_user` tinyint unsigned NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_aid` (`aid`),
+  KEY `idx_docid` (`docid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Review answers given without an account';
+
+-- src/mysql/2026-11-13-review-request-type-instructions.sql
+-- Instructions of a review request type (#319), shown to the invited person on the page of the answer without an
+-- account; default instructions for the quick opinion.
+-- Requires 2026-11-12-review-request-type.sql.
+-- Created: 2026-11-13
+
+
+ALTER TABLE `review_request_type`
+    ADD COLUMN `instructions` json DEFAULT NULL COMMENT 'Instructions per language, e.g. {"fr": "...", "en": "..."}' AFTER `labels`;
+
+UPDATE `review_request_type`
+SET `instructions` = JSON_OBJECT(
+    'fr', 'Quelques lignes sur l''intérêt, l''originalité et la pertinence de l''article pour la revue suffisent ; il ne s''agit pas d''un rapport de relecture détaillé.',
+    'en', 'A few lines on the interest, originality and relevance of the article for the journal are enough; this is not a detailed review report.')
+WHERE `default_type` = 2 AND `instructions` IS NULL;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

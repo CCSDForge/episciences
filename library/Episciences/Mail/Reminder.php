@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Reviewer\RequestTypeRepository;
 
 class Episciences_Mail_Reminder
 {
@@ -984,6 +985,21 @@ class Episciences_Mail_Reminder
      * @throws Zend_Exception
      */
 
+    /**
+     * The invitations of the request types whose reports count as review reports (#319); an invitation without a type
+     * is a review report
+     * @param array<int|string, mixed> $invitations
+     * @return array<int|string, mixed>
+     */
+    public static function countedInvitations(array $invitations): array
+    {
+        return array_filter($invitations, static function (mixed $invitation): bool {
+            $requestTypeId = is_array($invitation) ? ($invitation['REQUEST_TYPE_ID'] ?? null) : null;
+
+            return $requestTypeId === null || RequestTypeRepository::countsAsReportId((int)$requestTypeId);
+        });
+    }
+
     private function getNotEnoughReviewersRecipients($debug, $date, $filters): array
     {
         $recipients = [];
@@ -1018,14 +1034,15 @@ class Episciences_Mail_Reminder
                 $review->getRvid()
             );
 
-            $acceptedInvitations = $pendingAndAcceptedInvitations[Episciences_User_Assignment::STATUS_ACTIVE] ?? [];
+            // only the requests whose reports count as review reports (#319)
+            $acceptedInvitations = self::countedInvitations($pendingAndAcceptedInvitations[Episciences_User_Assignment::STATUS_ACTIVE] ?? []);
             $nbAcceptedInvitations = count($acceptedInvitations);
 
             if ($nbAcceptedInvitations >= $requiredReviewers) {
                 continue;
             }
 
-            $pendingInvitations = $pendingAndAcceptedInvitations[Episciences_User_Assignment::STATUS_PENDING] ?? [];
+            $pendingInvitations = self::countedInvitations($pendingAndAcceptedInvitations[Episciences_User_Assignment::STATUS_PENDING] ?? []);
 
             /** @var Episciences_Editor $editor */
             foreach ($paper->getEditors() as $editor) {
