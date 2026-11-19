@@ -274,7 +274,7 @@ final class ReplacementLookupTest extends TestCase
 
         $result = $this->manageFromTheWebAsOwner($paper, ['version' => 2, 'isNewVersionOf' => false]);
 
-        self::assertStringContainsString('/id/' . $docId . '#answer"', $result['message']);
+        self::assertStringContainsString('/paper/view?id=' . $docId . '#answer"', $result['message']);
     }
 
     public function testTheRevisionButtonOfAnObsoleteVersionOpensTheCopyEditingOfTheLatestVersion(): void
@@ -294,7 +294,7 @@ final class ReplacementLookupTest extends TestCase
 
         $result = $this->manageFromTheWebAsOwner($paper, ['version' => 3, 'isNewVersionOf' => false]);
 
-        self::assertStringContainsString('/id/' . $latestDocId . '#copy-editing"', $result['message']);
+        self::assertStringContainsString('/paper/view?id=' . $latestDocId . '#copy-editing"', $result['message']);
     }
 
     public function testTheBackButtonOfTheNewVersionPageGoesBackToTheRevisionRequestsOfThePaper(): void
@@ -307,6 +307,6 @@ final class ReplacementLookupTest extends TestCase
         $result = $this->manageFromTheWebAsOwner($paper, ['version' => 1, 'isNewVersionOf' => true]);
 
         self::assertFalse($result['canBeReplaced']);
-        self::assertStringContainsString('/id/' . $docId . '#answer"', $result['message']);
+        self::assertStringContainsString('/paper/view?id=' . $docId . '#answer"', $result['message']);
     }
 }

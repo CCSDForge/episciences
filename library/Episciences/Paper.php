@@ -4271,7 +4271,7 @@ class Episciences_Paper
     private function newVersionExitUrl(bool $isMainSubmission): string
     {
         if ($isMainSubmission) {
-            return (new Zend_View_Helper_Url())->url(['controller' => 'submit', 'action' => 'index']);
+            return (new Episciences_View_Helper_Url())->url(['controller' => 'submit', 'action' => 'index']);
         }
 
         return $this->newVersionRequestUrl();
@@ -4292,7 +4292,7 @@ class Episciences_Paper
             $paper = $latest instanceof self ? $latest : $this;
         }
 
-        $url = (new Zend_View_Helper_Url())->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]);
+        $url = (new Episciences_View_Helper_Url())->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]);
         $section = $paper->requestSection();
 
         return $section === null ? $url : $url . '#' . $section;
