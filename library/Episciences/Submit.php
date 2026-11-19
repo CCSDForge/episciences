@@ -1425,7 +1425,7 @@ class Episciences_Submit
         } else {
             $error = $translator->translate(
                     "Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : "
-                ) . '<strong class="alert-warning">' . $displayDate . '</strong>';
+                ) . '<strong>' . $displayDate . '</strong>';
         }
 
         throw new Ccsd_Error('docUnderEmbargo: ' . $error);
@@ -1631,11 +1631,15 @@ class Episciences_Submit
     {
         $result = ['status' => 0];
 
+        $isFromCli = Ccsd_Tools::isFromCli();
         $parsedError = $e->parseError();
-        $mailToStr = sprintf('<a href="mailto:%s">%s</a>', EPISCIENCES_SUPPORT, EPISCIENCES_SUPPORT);
+        // From the command line the message is only logged: plain text, without markup
+        $mailToStr = $isFromCli
+            ? EPISCIENCES_SUPPORT
+            : sprintf('<a href="mailto:%s">%s</a>', EPISCIENCES_SUPPORT, EPISCIENCES_SUPPORT);
 
         try {
-            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
+            $translator = $isFromCli ? null : Zend_Registry::get('Zend_Translate');
         } catch (Zend_Exception $registryException) {
             // Keep $e: the error to report is the original one, not the failed translator lookup
             Episciences_View_Helper_Log::log($registryException->getMessage());
@@ -1643,6 +1647,11 @@ class Episciences_Submit
         }
 
         $error = $translator ? $translator->translate($parsedError) : $parsedError;
+
+        if ($isFromCli) {
+            // Markup of the message itself only: the values inserted below are kept as they are
+            $error = html_entity_decode(strip_tags($error), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
 
         if (
             str_contains($e->getMessage(), Ccsd_Error::ID_DOES_NOT_EXIST_CODE) ||
@@ -1662,17 +1671,14 @@ class Episciences_Submit
         } elseif (str_contains($parsedError, Ccsd_Error::DEFAULT_PREFIX_CODE)) {
             $error = sprintf(
                 $error,
-                $e->getMessage(),
+                $isFromCli ? $e->getMessage() : htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'),
                 $mailToStr,
                 Episciences_Repositories::getLabel($repoId),
                 Episciences_Repositories::getIdentifierExemple($repoId)
             );
         }
 
-        if ($translator) {
-            $error = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $error;
-        }
-
+        // On the web, the message is displayed under an "Error" heading (see public/js/submit/functions.js)
         $result['error'] = $error;
 
         return $result;
@@ -1683,22 +1689,10 @@ class Episciences_Submit
      */
     private static function buildGenericErrorResult(Exception $e): array
     {
-        $result = ['status' => 0];
+        // HTML on the web, plain text from the command line
+        $error = Ccsd_Tools::isFromCli() ? $e->getMessage() : htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
 
-        try {
-            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
-        } catch (Zend_Exception $e) {
-            Episciences_View_Helper_Log::log($e->getMessage());
-            $translator = null;
-        }
-
-        if ($translator) {
-            $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
-        } else {
-            $result['error'] = $e->getMessage();
-        }
-
-        return $result;
+        return ['status' => 0, 'error' => $error];
     }
 
 

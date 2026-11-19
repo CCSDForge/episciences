@@ -389,6 +389,36 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         self::assertStringContainsString('operation ended', $result['error']);
     }
 
+    public function testBuildCcsdErrorResultEscapesTheRawErrorMessageOnTheWeb(): void
+    {
+        $hadServerSoftware = array_key_exists('SERVER_SOFTWARE', $_SERVER);
+        $previousServerSoftware = $_SERVER['SERVER_SOFTWARE'] ?? null;
+        $_SERVER['SERVER_SOFTWARE'] = 'Apache';
+
+        try {
+            $result = $this->invoke('buildCcsdErrorResult', [new Ccsd_Error('unexpected <b>answer</b> & more'), 9999]);
+        } finally {
+            if ($hadServerSoftware) {
+                $_SERVER['SERVER_SOFTWARE'] = $previousServerSoftware;
+            } else {
+                unset($_SERVER['SERVER_SOFTWARE']);
+            }
+        }
+
+        self::assertStringContainsString('unexpected &lt;b&gt;answer&lt;/b&gt; &amp; more', $result['error']);
+        self::assertStringNotContainsString('<b>answer</b>', $result['error']);
+    }
+
+    public function testBuildCcsdErrorResultKeepsTheRawErrorMessageFromTheCommandLine(): void
+    {
+        $result = $this->invoke('buildCcsdErrorResult', [new Ccsd_Error('unexpected <b>answer</b> & more'), 9999]);
+
+        // The diagnostic is kept as it is, the markup of the message itself is removed
+        self::assertStringContainsString('[unexpected <b>answer</b> & more]', $result['error']);
+        self::assertStringNotContainsString('<strong>', $result['error']);
+        self::assertStringNotContainsString('<a ', $result['error']);
+    }
+
     // =========================================================================
     // GROUP A — assertNewVersionConsistency()
     // =========================================================================
