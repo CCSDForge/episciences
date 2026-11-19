@@ -68,8 +68,6 @@ class LightAnswerRepository
 
         // the invitation, the paper and the person never change
         $db->update(self::TABLE_NAME, [
-            'message' => $row['message'],
-            'file' => $row['file'],
             'updated_at' => $row['updated_at'],
         ], ['id = ?' => $answer->getId(), 'aid = ?' => $answer->getAid()]);
 

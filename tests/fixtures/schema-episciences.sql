@@ -1114,8 +1114,6 @@ CREATE TABLE `review_light_answer` (
   `request_type_id` int unsigned NOT NULL,
   `uid` int unsigned NOT NULL,
   `tmp_user` tinyint unsigned NOT NULL DEFAULT '0',
-  `message` mediumtext COLLATE utf8mb4_unicode_ci,
-  `file` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),

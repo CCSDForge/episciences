@@ -59,16 +59,6 @@ class Episciences_GridsManager
     }
 
     /**
-     * Path of the grid of a review request type, null when the journal has not created it
-     */
-    public static function requestTypeGridPath(int $requestTypeId): ?string
-    {
-        $filename = self::filenameOf(self::requestTypeGridKey($requestTypeId));
-
-        return self::gridExists($filename) ? REVIEW_GRIDS_PATH . $filename : null;
-    }
-
-    /**
      * returns a list of all the rating grids
      * @return array
      */

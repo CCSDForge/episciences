@@ -80,7 +80,7 @@ changent pas.
 
 La page **Relecture : grilles et types de demande** montre la grille par défaut, puis un bloc par type de demande, puis
 les grilles par volume. Le bloc d'un type affiche sa grille s'il en a une ; sinon, il indique que le type utilise la
-grille du volume ou la grille par défaut, ou qu'il se répond sans compte. **Créer une grille**, dans le bloc d'un type, crée sa grille.
+grille du volume ou la grille par défaut ; un type à réponse sans compte le signale aussi. **Créer une grille**, dans le bloc d'un type, crée sa grille.
 Au-delà de cinq grilles de volume, elles sont repliées et un clic sur le titre d'un volume affiche sa grille.
 Un nouveau rapport utilise, dans l'ordre :
 
@@ -93,8 +93,8 @@ lui a pas créé de grille, il utilise la grille par défaut.
 
 Un rapport garde la grille avec laquelle il a été créé.
 
-Un type à réponse sans compte n'utilise pas de grille : on ne peut pas lui en créer une, et une grille créée avant de
-cocher l'option n'est pas utilisée tant que l'option reste cochée.
+Un type à réponse sans compte utilise sa grille de la même façon : la personne invitée la remplit depuis le lien de
+l'invitation (voir « Réponse sans compte »).
 
 ## Rapports
 
@@ -113,16 +113,23 @@ le badge **Compte comme rapport de relecture**.
 
 Quand l'option est cochée sur un type, le lien de l'invitation ouvre une page où la personne invitée :
 - lit la consigne du type (par défaut, l'avis rapide demande quelques lignes sur l'intérêt de l'article) ;
-- répond : un texte, un fichier (facultatif), ou les deux ;
+- remplit la grille de la demande (choix, commentaires et fichiers selon les critères), choisie comme pour un rapport :
+  grille du type, sinon du volume (sauf pour un avis rapide), sinon grille par défaut ;
 - ou refuse la demande.
 
+Si aucune grille n'est configurée, la page l'indique à la personne invitée, qui ne peut pas encore répondre, et les
+rédacteurs de l'article sont prévenus par mail (une fois par invitation) ; l'historique de l'article le garde. Créez
+alors une grille pour le type, ou une grille par défaut : le lien de l'invitation reste valable.
+
 Aucun compte n'est nécessaire. Le premier envoi vaut acceptation de l'invitation et prévient les rédacteurs par mail.
-La personne peut modifier sa réponse depuis le même lien jusqu'à la date limite.
+La personne peut modifier sa réponse depuis le même lien jusqu'à la date limite ; un nouveau fichier remplace celui
+déjà envoyé pour le même critère.
 
 La réponse n'est visible que par l'équipe éditoriale, dans la section **Réponses données sans compte** de la page de gestion de
 l'article (et sous l'invitation, dans la section **Relecteurs**). Les auteurs ne la voient jamais.
 
-Sans compte, la personne invitée ne voit ni la grille ni ses rapports précédents. Le formulaire du type le rappelle
+Sans compte, la personne invitée ne voit pas ses rapports précédents, et sa réponse ne compte pas comme rapport de
+relecture. Le formulaire du type le rappelle
 quand l'option est cochée sur un autre type que l'avis rapide. Pour un type de relecture d'une version révisée, gardez
 la réponse avec compte si le relecteur doit s'appuyer sur son rapport précédent.
 
@@ -131,7 +138,8 @@ la réponse avec compte si le relecteur doit s'appuyer sur son rapport précéde
 | Événement | Destinataires |
 |---|---|
 | Invitation | la personne invitée (modèle du type de demande) |
-| Réponse donnée sans compte | les rédacteurs de l'article (même mail que pour une relecture terminée) |
+| Réponse donnée sans compte | les rédacteurs de l'article (même mail que pour une relecture terminée, avec la grille remplie et ses fichiers) |
+| Réponse sans compte impossible : aucune grille configurée | les rédacteurs de l'article (une fois par invitation) |
 
 ## Historique de l'article
 

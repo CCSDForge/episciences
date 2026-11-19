@@ -39,15 +39,11 @@ $paper = $this->paper;
             </h3>
         </div>
         <div class="panel-body">
-            <?php if ($answer->getMessage() !== '') : ?>
-                <p><?= nl2br($this->escape($answer->getMessage())) ?></p>
-            <?php endif; ?>
-            <?php if ($answer->getFile() !== null) : ?>
-                <p>
-                    <span class="glyphicon glyphicon-paperclip" aria-hidden="true"></span>
-                    <a href="/file/lightanswer?aid=<?= (int)$answer->getAid() ?>"><?= $this->escape($answer->getFile()) ?></a>
-                </p>
-            <?php endif; ?>
+            <?= $this->partial('partials/light_answer_report.phtml', [
+                'report' => \Episciences\Reviewer\LightAnswerReport::ofAnswer($answer),
+                'aid' => $answer->getAid(),
+                'withLinks' => true,
+            ]) ?>
         </div>
     </div>
 <?php endforeach; ?>

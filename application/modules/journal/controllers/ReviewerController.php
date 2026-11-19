@@ -1,9 +1,7 @@
 <?php
 
-use Episciences\Files\File;
-use Episciences\Files\Uploader;
 use Episciences\Reviewer\LightAnswer;
-use Episciences\Reviewer\LightAnswerForm;
+use Episciences\Reviewer\LightAnswerReport;
 use Episciences\Reviewer\LightAnswerRepository;
 use Episciences\Reviewer\RequestType;
 use Episciences\Reviewer\RequestTypeRepository;
@@ -850,33 +848,28 @@ class ReviewerController extends PaperDefaultController
 
         $deadline = $assignment->getDeadline();
         $isEditable = LightAnswer::isEditable($deadline !== null ? (string)$deadline : null, new DateTimeImmutable());
-        $form = LightAnswerForm::create($answer);
+        $report = LightAnswerReport::load($paper, (int)$requestType->getId(), (int)$invitation->getAid());
+        $form = $report !== null ? LightAnswerReport::form($report) : null;
+        if ($form !== null) {
+            $form->addElement('hidden', 'csrf_token', ['value' => Episciences_Csrf_Helper::getSessionToken(), 'decorators' => ['ViewHelper']]);
+            $form->getElement(LightAnswerReport::SUBMIT)?->setLabel($answer === null ? 'Envoyer ma réponse' : 'Enregistrer les modifications');
+        }
         $refuseForm = $answer === null ? Episciences_ReviewersManager::refuseInvitationForm() : null;
-        $post = $request->isPost() ? $request->getPost() : [];
 
-        if ($post !== [] && $isEditable) {
-            if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
-                $this->addSessionExpiredMessage();
-            } elseif (array_key_exists(LightAnswerForm::SUBMIT, $post)) {
-                if ($this->saveLightAnswer($form, $post, $answer, $invitation, $assignment, $paper, $requestType)) {
-                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
-                        ->addMessage($this->view->translate('Merci, votre réponse a bien été transmise au comité éditorial.'));
-                    $this->redirect($this->invitationUrl($invitation));
-                    return;
-                }
-            } elseif ($refuseForm !== null && array_key_exists('submitrefuse', $post)) {
-                if ($refuseForm->isValid($post)) {
-                    $this->saveanswer($invitation, $assignment, $paper, array_merge($post, $refuseForm->getValues()));
-                    return;
-                }
-                Episciences_ReviewersManager::describeRefusalFormErrors($refuseForm);
-                $this->view->invalid_refuse_form = true;
-            }
+        if ($form === null && $answer === null) {
+            // no grid is configured: the invited person cannot answer, the editorial committee is told once
+            $this->notifyLightAnswerWithoutGrid($invitation, $assignment, $paper, $requestType);
+        }
+
+        if ($request->isPost() && $isEditable
+            && $this->lightAnswerPost($request, $form, $report, $refuseForm, $answer, $invitation, $assignment, $paper, $requestType)) {
+            return;
         }
 
         $paper->setXslt($paper->getXml(), 'partial_paper');
         $this->view->paper = $paper;
         $this->view->lightAnswer = $answer;
+        $this->view->lightAnswerReport = $report;
         $this->view->lightAnswerForm = $form;
         $this->view->refuse_form = $refuseForm;
         $this->view->isEditable = $isEditable;
@@ -885,6 +878,57 @@ class ReviewerController extends PaperDefaultController
         $this->view->requestTypeInstructions = $requestType->getInstructions(Episciences_Tools::getLocale());
         $this->view->csrfToken = Episciences_Csrf_Helper::getSessionToken();
         $this->renderScript('reviewer/light_answer.phtml');
+    }
+
+    /**
+     * Handles a posted answer or refusal of the light answer page
+     * @return bool whether the request is answered (redirected or rendered)
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     * @throws Zend_Mail_Exception
+     */
+    private function lightAnswerPost(
+        Zend_Controller_Request_Http $request,
+        ?Zend_Form $form,
+        ?Episciences_Rating_Report $report,
+        ?Zend_Form $refuseForm,
+        ?LightAnswer $answer,
+        Episciences_User_Invitation $invitation,
+        Episciences_User_Assignment $assignment,
+        Episciences_Paper $paper,
+        RequestType $requestType
+    ): bool {
+        $post = $request->getPost();
+
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->addSessionExpiredMessage();
+            return false;
+        }
+
+        if ($form !== null && $report !== null && array_key_exists(LightAnswerReport::SUBMIT, $post)) {
+            if (!$this->saveLightAnswer($form, $report, $post, $answer, $invitation, $assignment, $paper, $requestType)) {
+                return false;
+            }
+
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
+                ->addMessage($this->view->translate('Merci, votre réponse a bien été transmise au comité éditorial.'));
+            $this->redirect($this->invitationUrl($invitation));
+            return true;
+        }
+
+        if ($refuseForm !== null && array_key_exists('submitrefuse', $post)) {
+            if ($refuseForm->isValid($post)) {
+                $this->saveanswer($invitation, $assignment, $paper, array_merge($post, $refuseForm->getValues()));
+                return true;
+            }
+            Episciences_ReviewersManager::describeRefusalFormErrors($refuseForm);
+            $this->view->invalid_refuse_form = true;
+        }
+
+        return false;
     }
 
     /**
@@ -909,18 +953,18 @@ class ReviewerController extends PaperDefaultController
     }
 
     /**
-     * Saves the posted opinion; the first one accepts the invitation and informs the editorial committee
+     * Saves the filled grid; the first answer accepts the invitation and informs the editorial committee
      * @param array<string, mixed> $post
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Form_Exception
      * @throws Zend_Mail_Exception
      */
     private function saveLightAnswer(
         Zend_Form $form,
+        Episciences_Rating_Report $report,
         array $post,
         ?LightAnswer $answer,
         Episciences_User_Invitation $invitation,
@@ -928,28 +972,10 @@ class ReviewerController extends PaperDefaultController
         Episciences_Paper $paper,
         RequestType $requestType
     ): bool {
-        if (!$form->isValid($post)) {
+        $uploads = $form->isValid($post) ? $this->uploadLightAnswerFiles($report) : null;
+
+        if ($uploads === null || !LightAnswerReport::save($report, $post, $uploads)) {
             $this->view->lightAnswerErrors = true;
-            return false;
-        }
-
-        $aid = (int)$invitation->getAid();
-        $folderPath = REVIEW_FILES_PATH . $paper->getDocid() . '/reports/light_' . $aid . '/';
-        $file = $answer?->getFile();
-        $uploaded = $this->uploadLightAnswerFile($folderPath);
-
-        if ($uploaded !== null) {
-            // one file per answer: a new file replaces the former one
-            if ($file !== null && $file !== $uploaded && is_file($folderPath . $file)) {
-                unlink($folderPath . $file);
-            }
-            $file = $uploaded;
-        }
-
-        $message = LightAnswer::cleanMessage($form->getValue(LightAnswerForm::MESSAGE));
-
-        if ($message === '' && $file === null) {
-            $this->view->lightAnswerMissing = true;
             return false;
         }
 
@@ -957,39 +983,47 @@ class ReviewerController extends PaperDefaultController
         $repository = new LightAnswerRepository();
 
         if ($answer !== null) {
-            $repository->save($answer->edited($message, $file, $now));
+            $repository->save($answer->edited($now));
             return true;
         }
 
         $answer = $repository->save(new LightAnswer(
-            null, $aid, (int)$paper->getRvid(), (int)$paper->getDocid(), (int)$requestType->getId(),
-            (int)$assignment->getUid(), (bool)$assignment->isTmp_user(), $message, $file, $now
+            null, (int)$invitation->getAid(), (int)$paper->getRvid(), (int)$paper->getDocid(), (int)$requestType->getId(),
+            (int)$assignment->getUid(), (bool)$assignment->isTmp_user(), $now
         ));
         $this->acceptWithoutAccount($invitation, $assignment, $paper);
-        $this->notifyLightAnswer($answer, $assignment, $paper, $folderPath);
+        $this->notifyLightAnswer($report, $assignment, $paper);
 
         return true;
     }
 
     /**
-     * @return string|null name of the uploaded file, null when none was sent
-     * @throws Zend_File_Transfer_Exception
+     * Receives the files of the grid
+     * @return array<string, array{name: string}>|null name of each received file by field; null when a file is sent
+     *     outside the file fields of the grid, which the form does not check
      */
-    private function uploadLightAnswerFile(string $folderPath): ?string
+    private function uploadLightAnswerFiles(Episciences_Rating_Report $report): ?array
     {
-        if (empty($_FILES[LightAnswerForm::FILE]['size'])) {
+        $sent = array_filter($_FILES, static fn(mixed $file): bool => is_array($file) && !empty($file['size']));
+
+        if ($sent === []) {
+            return [];
+        }
+
+        if (array_diff(array_keys($_FILES), LightAnswerReport::fileFields($report)) !== []) {
             return null;
         }
 
-        // only the file field of the form is checked by the form: the uploader would store any other one
-        if (array_diff(array_keys($_FILES), [LightAnswerForm::FILE]) !== []) {
-            return null;
+        $received = [];
+        $uploads = Episciences_Tools::uploadFiles($report->getPath(), $report->getAttachments() + ['file_unique_id' => uniqid('Answer_', false)]);
+
+        foreach ($uploads as $field => $upload) {
+            if (empty($upload['errors']) && isset($upload['name'])) {
+                $received[(string)$field] = ['name' => (string)$upload['name']];
+            }
         }
 
-        $info = (new Uploader($folderPath))->upload()->getInfo();
-        $uploaded = $info[Uploader::UPLOADED_FILES_KEY][LightAnswerForm::FILE] ?? null;
-
-        return $uploaded instanceof File ? $uploaded->getName() : null;
+        return $received;
     }
 
     /**
@@ -1042,11 +1076,60 @@ class ReviewerController extends PaperDefaultController
     }
 
     /**
-     * Informs the editors of the paper of a new answer, with the message and the file
+     * Informs the editors of the paper of a new answer, with the filled criteria and the attached files
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    private function notifyLightAnswer(LightAnswer $answer, Episciences_User_Assignment $assignment, Episciences_Paper $paper, string $folderPath): void
+    private function notifyLightAnswer(Episciences_Rating_Report $report, Episciences_User_Assignment $assignment, Episciences_Paper $paper): void
+    {
+        $attachments = [];
+        foreach (LightAnswerReport::attachments($report) as $file) {
+            $attachments[$file] = (string)$report->getPath();
+        }
+
+        $this->notifyLightAnswerEditors($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY, [
+            Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $this->invitedScreenName($assignment),
+            Episciences_Mail_Tags::TAG_PAPER_RATING => LightAnswerReport::summaryHtml($report),
+        ], $attachments);
+    }
+
+    /**
+     * No rating grid for the request (#319): the invited person cannot answer without an account. The editors of the
+     * paper are told once per invitation, and the paper history keeps it.
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    private function notifyLightAnswerWithoutGrid(
+        Episciences_User_Invitation $invitation,
+        Episciences_User_Assignment $assignment,
+        Episciences_Paper $paper,
+        RequestType $requestType
+    ): void {
+        if (Episciences_Paper_Logger::hasLogOfInvitation((int)$paper->getDocid(), Episciences_Paper_Logger::CODE_LIGHT_ANSWER_WITHOUT_GRID, (int)$invitation->getId())) {
+            return;
+        }
+
+        $reviewer = $this->invitedScreenName($assignment);
+        $this->notifyLightAnswerEditors($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_LIGHT_ANSWER_WITHOUT_GRID_EDITOR_COPY, [
+            Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer,
+            Episciences_Mail_Tags::TAG_REVIEW_REQUEST_TYPE => $requestType->getLabel(Episciences_Tools::getLocale()),
+        ]);
+
+        $paper->log(Episciences_Paper_Logger::CODE_LIGHT_ANSWER_WITHOUT_GRID, null, [
+            'invitation_id' => (int)$invitation->getId(),
+            'request_type' => ['id' => $requestType->getId(), 'labels' => $requestType->getLabels()],
+            'user' => ['fullname' => $reviewer],
+        ]);
+    }
+
+    /**
+     * Sends a mail to the editors of the paper (without conflict), the other editorial staff in copy
+     * @param array<string, string> $tags tags of the mail, besides those of the paper and of the recipient
+     * @param array<string, string> $attachments folder of each attached file, by file name
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    private function notifyLightAnswerEditors(Episciences_Paper $paper, string $templateKey, array $tags, array $attachments = []): void
     {
         $recipients = $paper->getEditors(true, true);
         Episciences_Review::checkReviewNotifications($recipients);
@@ -1058,17 +1141,12 @@ class ReviewerController extends PaperDefaultController
             $cc = [];
         }
 
-        $attachments = $answer->getFile() !== null ? [$answer->getFile() => $folderPath] : [];
-        $answerHtml = nl2br(htmlspecialchars($answer->getMessage(), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-
         /** @var Episciences_User $recipient */
         foreach ($recipients as $recipient) {
             $locale = $recipient->getLangueid();
-            Episciences_Mail_Send::sendMailFromReview($recipient, Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWED_EDITOR_COPY, [
+            Episciences_Mail_Send::sendMailFromReview($recipient, $templateKey, $tags + [
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $this->invitedScreenName($assignment),
-                Episciences_Mail_Tags::TAG_PAPER_RATING => $answerHtml,
                 Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $recipient->getUsername(),
                 Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $recipient->getScreenName(),
                 Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $recipient->getFullName(),

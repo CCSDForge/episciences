@@ -27,3 +27,8 @@ WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'reviewer_invitation
 INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
 SELECT NULL, NULL, NULL, 'reviewer_invitation_account_hint_light_answer', 'paper_review', NULL
 WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'reviewer_invitation_account_hint_light_answer');
+
+-- Editors told that an invitation answered without an account has no rating grid to fill in
+INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
+SELECT NULL, NULL, NULL, 'paper_reviewer_light_answer_without_grid_editor_copy', 'paper_review', NULL
+WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'paper_reviewer_light_answer_without_grid_editor_copy');

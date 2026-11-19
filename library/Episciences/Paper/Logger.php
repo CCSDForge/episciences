@@ -15,6 +15,8 @@ class Episciences_Paper_Logger
     public const CODE_REVIEWER_UNASSIGNMENT = 'reviewer_unassignment';
     public const CODE_REVIEWING_IN_PROGRESS = 'reviewing_in_progress';
     public const CODE_REVIEWING_COMPLETED = 'reviewing_completed';
+    // an invitation answered without an account has no rating grid to fill in (#319)
+    public const CODE_LIGHT_ANSWER_WITHOUT_GRID = 'light_answer_without_grid';
     public const CODE_MAIL_SENT = 'mail_sent';
     public const CODE_REMINDER_SENT = 'reminder_sent';
     // master volume selection
@@ -157,6 +159,7 @@ class Episciences_Paper_Logger
         self::CODE_REVIEWER_INVITATION_LINKED           => self::WARNING,
         self::CODE_REVIEWER_UNASSIGNMENT                => self::WARNING,
         self::CODE_REVIEWING_COMPLETED                  => self::WARNING,
+        self::CODE_LIGHT_ANSWER_WITHOUT_GRID            => self::DANGER,
         self::CODE_REVIEWING_IN_PROGRESS                => self::WARNING,
         self::CODE_SECTION_SELECTION                    => self::VIOLET,
         self::CODE_STATUS                               => self::SUCCESS,
@@ -224,6 +227,7 @@ class Episciences_Paper_Logger
         self::CODE_REVIEWER_INVITATION_LINKED           => "Invitation de relecture associée à un autre compte",
         self::CODE_REVIEWER_UNASSIGNMENT                => "Suppression d'un relecteur",
         self::CODE_REVIEWING_COMPLETED                  => "Relecture terminée",
+        self::CODE_LIGHT_ANSWER_WITHOUT_GRID            => "Réponse sans compte impossible : aucune grille de relecture configurée",
         self::CODE_REVIEWING_IN_PROGRESS                => "Relecture en cours",
         self::CODE_SECTION_SELECTION                    => "Déplacé dans une rubrique",
         self::CODE_STATUS                               => 'Nouveau statut',
@@ -298,6 +302,7 @@ class Episciences_Paper_Logger
         self::CODE_REVIEWER_INVITATION_LINKED           => self::CATEGORY_REVIEW,
         self::CODE_REVIEWER_UNASSIGNMENT                => self::CATEGORY_REVIEW,
         self::CODE_REVIEWING_COMPLETED                  => self::CATEGORY_REVIEW,
+        self::CODE_LIGHT_ANSWER_WITHOUT_GRID            => self::CATEGORY_REVIEW,
         self::CODE_REVIEWING_IN_PROGRESS                => self::CATEGORY_REVIEW,
         self::CODE_SECTION_SELECTION                    => self::CATEGORY_EDITORIAL,
         self::CODE_STATUS                               => self::CATEGORY_EDITORIAL,
@@ -352,6 +357,7 @@ class Episciences_Paper_Logger
         self::CODE_REVIEWER_INVITATION_LINKED => 'glyphicon-link',
         self::CODE_REVIEWING_IN_PROGRESS => 'glyphicon-time',
         self::CODE_REVIEWING_COMPLETED => 'glyphicon-ok-circle',
+        self::CODE_LIGHT_ANSWER_WITHOUT_GRID => 'glyphicon-warning-sign',
         self::CODE_ALTER_REPORT_STATUS => 'glyphicon-pencil',
         self::CODE_STATUS => 'fa-regular fa-flag',
         self::CODE_RESTORATION_OF_STATUS => 'fa-regular fa-flag',
@@ -547,6 +553,22 @@ class Episciences_Paper_Logger
             'DATE' => $date ?? new Zend_Db_Expr('NOW()')
         ];
         return (bool)$db->insert(T_LOGS, $data);
+    }
+
+    /**
+     * Whether the paper version already has a log of this action for this invitation (detail "invitation_id")
+     */
+    public static function hasLogOfInvitation(int $docid, string $action, int $invitationId): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_LOGS, ['LOGID'])
+            ->where('DOCID = ?', $docid)
+            ->where('ACTION = ?', $action)
+            ->where("JSON_EXTRACT(DETAIL, '$.invitation_id') = ?", $invitationId)
+            ->limit(1);
+
+        return (bool)$db->fetchOne($select);
     }
 
     public static function getLogTypes(): array

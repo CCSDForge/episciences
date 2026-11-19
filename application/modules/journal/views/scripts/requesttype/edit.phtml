@@ -143,11 +143,8 @@ $error = function (string $field) use ($errors): string {
                         <?= $this->escape($this->translate("Réponse sans compte, depuis le lien de l'invitation")) ?>
                     </label>
                     <span id="light_answer-help" class="help-block">
-                        <?= $this->escape($this->translate("La personne invitée répond (texte et fichier facultatif) directement depuis le lien reçu, sans créer de compte ni remplir de grille. La réponse n'est visible que par le comité éditorial.")) ?>
-                        <?= $this->escape($this->translate("La consigne ci-dessous s'affiche sur la page de réponse.")) ?>
-                        <?php if ($this->hasGrid) : ?>
-                            <br><?= $this->escape($this->translate("Ce type a une grille de relecture : elle n'est pas utilisée tant que cette option est cochée.")) ?>
-                        <?php endif; ?>
+                        <?= $this->escape($this->translate("La personne invitée remplit la grille de la demande directement depuis le lien reçu, sans créer de compte. La réponse n'est visible que par le comité éditorial.")) ?>
+                        <?= $this->escape($this->translate("La consigne ci-dessous s'affiche au-dessus de la grille.")) ?>
                     </span>
                 </div>
             </div>
@@ -158,7 +155,7 @@ $error = function (string $field) use ($errors): string {
             <div class="form-group">
                 <div class="col-md-6 col-md-offset-3">
                     <div class="alert alert-warning">
-                        <?= $this->escape($this->translate("Sans compte, la personne invitée ne voit ni la grille ni ses rapports précédents, et sa réponse n'est pas un rapport de relecture. Réservez cette option aux demandes qui n'en ont pas besoin.")) ?>
+                        <?= $this->escape($this->translate("Sans compte, la personne invitée ne voit pas ses rapports précédents, et sa réponse ne compte pas comme rapport de relecture. Réservez cette option aux demandes qui n'en ont pas besoin.")) ?>
                     </div>
                 </div>
             </div>

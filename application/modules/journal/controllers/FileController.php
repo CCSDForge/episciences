@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Reviewer\LightAnswerReport;
 use Episciences\Reviewer\LightAnswerRepository;
 
 use GuzzleHttp\Client;
@@ -465,16 +466,22 @@ class FileController extends DefaultController
     }
 
     /**
-     * File attached to an answer given without an account (#319): editorial staff of the paper only
+     * File attached to a criterion of a grid filled in without an account (#319): editorial staff of the paper only;
+     * only a file named in the filled grid is served
      */
     public function lightanswerAction(): void
     {
         $request = $this->getRequest();
         $aid = (int)$request->getParam('aid');
         $answer = $aid > 0 ? (new LightAnswerRepository())->findByAid($aid) : null;
-        $paper = $answer !== null && $answer->getFile() !== null ? Episciences_PapersManager::get($answer->getDocid()) : null;
+        // an answer of another journal is not read
+        $answer = $answer !== null && $answer->getRvid() === RVID ? $answer : null;
+        $report = $answer !== null ? LightAnswerReport::ofAnswer($answer) : null;
+        $requested = (string)$request->getParam('file', '');
+        $isAttached = $report !== null && $requested !== '' && in_array($requested, LightAnswerReport::attachments($report), true);
+        $paper = $isAttached ? Episciences_PapersManager::get($answer->getDocid()) : null;
 
-        if ($answer === null || !$paper || $answer->getRvid() !== RVID) {
+        if ($answer === null || !$paper) {
             $this->renderNotFound();
             return;
         }
@@ -495,7 +502,7 @@ class FileController extends DefaultController
 
         // the stored file name only, confined to the folder of the answer
         $filepath = $isAllowed
-            ? $this->resolveSafePath(rtrim(REVIEW_FILES_PATH . $answer->getDocid() . '/' . $answer->folder(), '/'), (string)$answer->getFile())
+            ? $this->resolveSafePath(rtrim(REVIEW_FILES_PATH . $answer->getDocid() . '/' . $answer->folder(), '/'), $requested)
             : null;
 
         if ($filepath === null) {

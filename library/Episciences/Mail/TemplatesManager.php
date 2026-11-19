@@ -62,6 +62,8 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_REVIEWER_INVITATION_QUICK_OPINION = 'paper_reviewer_invitation_quick_opinion';
     // base of the templates of the types created by a journal
     public const TYPE_PAPER_REVIEWER_INVITATION_GENERIC = 'paper_reviewer_invitation_generic';
+    // an invitation answered without an account has no rating grid to fill in (#319): the editors are told
+    public const TYPE_PAPER_REVIEWER_LIGHT_ANSWER_WITHOUT_GRID_EDITOR_COPY = 'paper_reviewer_light_answer_without_grid_editor_copy';
     // texts of the %%INVITATION_ACCOUNT_HINT%% tag, according to the account of the invited person
     public const TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_REVIEWER = 'reviewer_invitation_account_hint_known_reviewer';
     public const TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_USER = 'reviewer_invitation_account_hint_known_user';
@@ -641,6 +643,21 @@ class Episciences_Mail_TemplatesManager
     public const paper_reviewed_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME,
         Episciences_Mail_Tags::TAG_PAPER_RATING,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL // paper administration page url
+    ];
+    public const paper_reviewer_light_answer_without_grid_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME,
+        Episciences_Mail_Tags::TAG_REVIEW_REQUEST_TYPE,
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -1725,6 +1742,7 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_REVIEWER_INVITATION_NEW_USER => [self::DESCRIPTION => "notification d'invitation d'un nouveau relecteur avec un compte temporaire. Dans ce cas spécifique et moment précis de l'acceptation de l'invitation, l'utilisateur sera invité à créer un nouveau compte pour accéder à la grille d'évaluation", self::RECIPIENT => "nouveau relecteur"],
         self::TYPE_PAPER_REVIEWER_INVITATION_QUICK_OPINION => [self::DESCRIPTION => "invitation d'un relecteur à donner un avis rapide sur un article (type de demande « Avis rapide »)", self::RECIPIENT => 'relecteur'],
         self::TYPE_PAPER_REVIEWER_INVITATION_GENERIC => [self::DESCRIPTION => "modèle de départ des invitations pour les types de demande créés par la revue", self::RECIPIENT => 'relecteur'],
+        self::TYPE_PAPER_REVIEWER_LIGHT_ANSWER_WITHOUT_GRID_EDITOR_COPY => [self::DESCRIPTION => "notification prévenant les rédacteurs qu'une personne invitée à répondre sans compte ne peut pas le faire : aucune grille de relecture n'est configurée pour la demande", self::RECIPIENT => self::EDITORS_RECEP_EXP],
         self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_REVIEWER => [self::DESCRIPTION => "texte inséré par le tag %%INVITATION_ACCOUNT_HINT%% quand la personne invitée est déjà relecteur de la revue", self::RECIPIENT => 'relecteur'],
         self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_USER => [self::DESCRIPTION => "texte inséré par le tag %%INVITATION_ACCOUNT_HINT%% quand la personne invitée a déjà un compte", self::RECIPIENT => 'relecteur'],
         self::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_NEW_USER => [self::DESCRIPTION => "texte inséré par le tag %%INVITATION_ACCOUNT_HINT%% quand la personne invitée n'a pas encore de compte", self::RECIPIENT => 'relecteur'],
@@ -1806,6 +1824,7 @@ class Episciences_Mail_TemplatesManager
     ];
 
     public const AUTOMATIC_TEMPLATES = [
+        self::TYPE_PAPER_REVIEWER_LIGHT_ANSWER_WITHOUT_GRID_EDITOR_COPY,
         self::TYPE_REVIEWER_PAPER_REFUSED_REQUEST_STOP_PENDING_REVIEWING,
         self::TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY,
         self::TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY,
@@ -2250,6 +2269,7 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_PUBLISHED_AUTHOR_COPY => self::paper_published_author_copy_tags,
             self::TYPE_PAPER_REFUSED => self::paper_refused_tags,
             self::TYPE_PAPER_REVIEWED_EDITOR_COPY => self::paper_reviewed_editor_copy_tags,
+            self::TYPE_PAPER_REVIEWER_LIGHT_ANSWER_WITHOUT_GRID_EDITOR_COPY => self::paper_reviewer_light_answer_without_grid_editor_copy_tags,
             self::TYPE_PAPER_REVIEWED_REVIEWER_COPY => self::paper_reviewed_reviewer_copy_tags,
             self::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY => self::paper_reviewer_acceptation_editor_copy_tags,
             self::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY => self::paper_reviewer_acceptation_reviewer_copy_tags,

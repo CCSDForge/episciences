@@ -196,8 +196,10 @@ $tag = $this->tag;
         ]);
         break;
 
-    // Reviewer invitation: user action, then the review request type recorded at the time of the invitation (#319)
+    // Reviewer invitation: user action, then the review request type recorded at the time of the invitation (#319);
+    // same details when an invitation answered without an account has no rating grid
     case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION:
+    case Episciences_Paper_Logger::CODE_LIGHT_ANSWER_WITHOUT_GRID:
         echo $this->partial('partials/paper_history_logs_user_action.phtml', [
             'fullName' => $fullName,
             'tag' => $tag,

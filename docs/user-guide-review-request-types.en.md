@@ -77,7 +77,7 @@ The **review report** keeps the three existing invitation templates: your curren
 
 The **Review: grids and request types** page shows the default grid, then one block per request type, then the grids
 per volume. The block of a type shows its grid if it has one; otherwise, it states that the type uses the volume grid,
-or the default grid, or that it is answered without an account. **Create an evaluation grid**, in the block of a type, creates its grid.
+or the default grid; a type answered without an account says so too. **Create an evaluation grid**, in the block of a type, creates its grid.
 Beyond five volume grids, they are collapsed and a click on the title of a volume shows its grid. A new report uses, in
 this order:
 
@@ -90,8 +90,8 @@ for it, it uses the default grid.
 
 A report keeps the grid it was created with.
 
-A type answered without an account uses no grid: no grid can be created for it, and a grid created before the option
-was checked is not used while the option stays checked.
+A type answered without an account uses its grid the same way: the invited person fills it in from the invitation
+link (see "Answer Without an Account").
 
 ## Reports
 
@@ -110,16 +110,22 @@ produces no report. On the grids page, these types show the **Counts as a review
 When the option is checked on a type, the invitation link opens a page where the invited person:
 - reads the instructions of the type (by default, the quick opinion asks for a few lines on the interest of the
   article);
-- answers: a text, a file (optional), or both;
+- fills in the grid of the request (options, comments and files according to the criteria), chosen as for a report:
+  grid of the type, else of the volume (except for a quick opinion), else the default grid;
 - or declines the request.
 
+When no grid is configured, the page tells the invited person, who cannot answer yet, and the editors of the article
+are told by e-mail (once per invitation); the history of the article keeps it. Then create a grid for the type, or a
+default grid: the invitation link remains valid.
+
 No account is needed. The first answer accepts the invitation and informs the editors by e-mail. The person can edit
-their answer from the same link until the due date.
+their answer from the same link until the due date; a new file replaces the one already sent for the same criterion.
 
 The answer is shown only to the editorial staff, in the **Answers given without an account** panel of the paper's
 administration page (and under the invitation in the **Reviewers** panel). Authors never see it.
 
-Without an account, the invited person sees neither the rating grid nor their previous reports. The type form reminds
+Without an account, the invited person does not see their previous reports, and their answer does not count as a
+review report. The type form reminds
 it when the option is checked on a type other than the quick opinion. For a revised version check type, keep the
 answer with an account when the reviewer needs their previous report.
 
@@ -128,7 +134,8 @@ answer with an account when the reviewer needs their previous report.
 | Event | Recipients |
 |---|---|
 | Invitation | the invited person (template of the request type) |
-| Answer given without an account | the editors of the article (same e-mail as a completed review) |
+| Answer given without an account | the editors of the article (same e-mail as a completed review, with the filled grid and its files) |
+| Answer without an account impossible: no grid configured | the editors of the article (once per invitation) |
 
 ## Paper History
 

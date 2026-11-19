@@ -76,7 +76,7 @@ $confirmDelete = json_encode($this->translate('Supprimer ce type de demande ?'),
     $label = $type->getLabel($this->locale);
     $grid = $typeGrids[$id] ?? null;
     $deadline = \Episciences\Form\Validate\DeadlineUnit::parseStoredInterval($type->getDefaultDeadline());
-    $mayCreateGrid = $isSecretary && $grid === null && !$type->isLightAnswer();
+    $mayCreateGrid = $isSecretary && $grid === null;
     // the default types and the used types can only be disabled
     $mayDelete = $canManageTypes && !$type->isDefault() && empty($this->usedRequestTypes[$id]);
     ?>
@@ -102,14 +102,9 @@ $confirmDelete = json_encode($this->translate('Supprimer ce type de demande ?'),
         </div>
         <div class="panel-body in">
             <?php if ($type->isLightAnswer()) : ?>
-                <?php if ($grid !== null) : ?>
-                    <div class="alert alert-warning" role="status">
-                        <?= $this->escape($this->translate("Ce type se répond sans compte : cette grille n'est pas utilisée tant que l'option reste cochée.")) ?>
-                    </div>
-                <?php else : ?>
-                    <p><?= $this->escape($this->translate("Aucune grille : réponse sans compte, depuis le lien de l'invitation.")) ?></p>
-                <?php endif; ?>
-            <?php elseif ($grid === null && $type->isQuickOpinion()) : ?>
+                <p><?= $this->escape($this->translate("Réponse sans compte : la personne invitée remplit cette grille depuis le lien de l'invitation.")) ?></p>
+            <?php endif; ?>
+            <?php if ($grid === null && $type->isQuickOpinion()) : ?>
                 <p><?= $this->escape($this->translate('Pas de grille propre : grille par défaut.')) ?></p>
             <?php elseif ($grid === null) : ?>
                 <p><?= $this->escape($this->translate("Pas de grille propre : grille du volume de l'article, sinon grille par défaut.")) ?></p>

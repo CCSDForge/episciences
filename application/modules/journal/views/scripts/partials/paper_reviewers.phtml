@@ -197,15 +197,11 @@ try {
                                                     <?php endif; ?>
                                                 </summary>
                                                 <div class="well well-sm">
-                                                    <?php if ($lightAnswer->getMessage() !== '') : ?>
-                                                        <p><?= nl2br($this->escape($lightAnswer->getMessage())) ?></p>
-                                                    <?php endif; ?>
-                                                    <?php if ($lightAnswer->getFile() !== null) : ?>
-                                                        <p>
-                                                            <span class="glyphicon glyphicon-paperclip" aria-hidden="true"></span>
-                                                            <a href="/file/lightanswer?aid=<?= (int)$lightAnswer->getAid() ?>"><?= $this->escape($lightAnswer->getFile()) ?></a>
-                                                        </p>
-                                                    <?php endif; ?>
+                                                    <?= $this->partial('partials/light_answer_report.phtml', [
+                                                        'report' => \Episciences\Reviewer\LightAnswerReport::ofAnswer($lightAnswer),
+                                                        'aid' => $lightAnswer->getAid(),
+                                                        'withLinks' => true,
+                                                    ]) ?>
                                                 </div>
                                             </details>
                                         <?php endif; ?>

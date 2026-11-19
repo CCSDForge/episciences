@@ -1,17 +1,14 @@
 <?php
 /**
- * Answer without an account to a review request (#319): opinion (message and/or file) or refusal, from the invitation
- * link. Expected view vars: paper, lightAnswer (null before the first answer), lightAnswerForm, refuse_form (null once
- * answered), isEditable, rating_deadline, requestTypeLabel, csrfToken.
+ * Answer without an account to a review request (#319): the rating grid of the request filled in from the invitation
+ * link, or a refusal. Expected view vars: paper, lightAnswer (null before the first answer), lightAnswerReport (the
+ * grid, null when none is configured), lightAnswerForm (null when no grid is configured), refuse_form (null once
+ * answered), isEditable, rating_deadline, requestTypeLabel, requestTypeInstructions, lightAnswerErrors.
  */
 /** @var \Episciences\Reviewer\LightAnswer|null $answer */
 $answer = $this->lightAnswer;
-/** @var Zend_Form $form */
+/** @var Zend_Form|null $form */
 $form = $this->lightAnswerForm;
-$messageElement = $form->getElement(\Episciences\Reviewer\LightAnswerForm::MESSAGE);
-$fileElement = $form->getElement(\Episciences\Reviewer\LightAnswerForm::FILE);
-$messageErrors = $messageElement ? $messageElement->getMessages() : [];
-$fileErrors = $fileElement ? $fileElement->getMessages() : [];
 $this->layout()->pageTitle = $this->translate('Votre réponse à la demande de relecture');
 ?>
 
@@ -27,83 +24,52 @@ $this->layout()->pageTitle = $this->translate('Votre réponse à la demande de r
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $this->paper]) ?>
 </div>
 
-<?php if ($answer !== null && !$this->isEditable) : ?>
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->escape($this->translate('Votre réponse')) ?></h2>
-        </div>
-        <div class="panel-body">
-            <p class="text-muted"><?= $this->escape($this->translate("La date limite est passée : votre réponse ne peut plus être modifiée.")) ?></p>
-            <p><?= nl2br($this->escape($answer->getMessage())) ?></p>
-            <?php if ($answer->getFile() !== null) : ?>
-                <p><?= $this->escape($this->translate('Fichier joint')) ?> : <?= $this->escape($answer->getFile()) ?></p>
-            <?php endif; ?>
-        </div>
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->escape($this->translate('Votre réponse')) ?></h2>
     </div>
-<?php else : ?>
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->escape($this->translate('Votre réponse')) ?></h2>
-        </div>
-        <div class="panel-body">
+    <div class="panel-body">
+        <?php if ($answer !== null && !$this->isEditable) : ?>
+            <p class="text-muted"><?= $this->escape($this->translate("La date limite est passée : votre réponse ne peut plus être modifiée.")) ?></p>
+            <?= $this->partial('partials/light_answer_report.phtml', ['report' => $this->lightAnswerReport, 'aid' => $answer->getAid(), 'withLinks' => false]) ?>
+        <?php elseif ($form === null) : ?>
+            <div class="alert alert-warning" role="status">
+                <?= $this->escape($this->translate("Aucune grille de relecture n'est configurée pour cette demande : vous ne pouvez pas y répondre pour le moment. Le comité éditorial en a été informé ; votre lien d'invitation reste valable.")) ?>
+            </div>
+        <?php else : ?>
             <?php if ($this->requestTypeInstructions !== '') : ?>
                 <p class="lead"><?= nl2br($this->escape($this->requestTypeInstructions)) ?></p>
             <?php endif; ?>
-            <p><?= $this->escape($this->translate('Vous pouvez saisir un texte, déposer un fichier, ou les deux. Aucun compte n\'est nécessaire.')) ?></p>
+            <p><?= $this->escape($this->translate("Remplissez la grille ci-dessous. Aucun compte n'est nécessaire.")) ?></p>
             <?php if ($answer !== null) : ?>
                 <p class="text-muted">
-                    <?= $this->escape($this->translate('Vous pouvez modifier votre réponse jusqu\'à la date limite.')) ?>
+                    <?= $this->escape($this->translate("Vous pouvez modifier votre réponse jusqu'à la date limite. Un nouveau fichier remplace celui déjà envoyé pour le même critère.")) ?>
                 </p>
+                <?php $sentFiles = \Episciences\Reviewer\LightAnswerReport::attachments($this->lightAnswerReport); ?>
+                <?php if ($sentFiles !== []) : ?>
+                    <p>
+                        <?= $this->escape($this->translate('Fichiers déjà envoyés')) ?> :
+                        <?= $this->escape(implode(', ', $sentFiles)) ?>
+                    </p>
+                <?php endif; ?>
             <?php endif; ?>
 
-            <?php if ($this->lightAnswerMissing) : ?>
-                <div class="alert alert-danger" role="alert" id="opinion-missing">
-                    <?= $this->escape($this->translate('Merci de saisir une réponse ou de déposer un fichier.')) ?>
+            <?php if ($this->lightAnswerErrors) : ?>
+                <div class="alert alert-danger" role="alert">
+                    <?= $this->escape($this->translate("Votre réponse n'a pas pu être enregistrée : vérifiez les champs signalés et les fichiers joints.")) ?>
                 </div>
             <?php endif; ?>
 
-            <form method="post" enctype="multipart/form-data" id="light-answer-form" novalidate>
-                <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
-
-                <div class="form-group<?= $messageErrors ? ' has-error' : '' ?>">
-                    <label for="opinion" class="control-label"><?= $this->escape($this->translate('Votre réponse')) ?></label>
-                    <textarea id="opinion" name="opinion" rows="10" class="form-control"
-                              maxlength="<?= \Episciences\Reviewer\LightAnswer::MESSAGE_MAX_LENGTH ?>"
-                        <?= $messageErrors ? 'aria-invalid="true" aria-describedby="opinion-error"' : ($this->lightAnswerMissing ? 'aria-describedby="opinion-missing"' : '') ?>><?= $this->escape((string)($messageElement ? $messageElement->getValue() : '')) ?></textarea>
-                    <?php if ($messageErrors) : ?>
-                        <span id="opinion-error" class="help-block"><?= $this->escape(implode(' ', array_map([$this, 'translate'], $messageErrors))) ?></span>
-                    <?php endif; ?>
-                </div>
-
-                <div class="form-group<?= $fileErrors ? ' has-error' : '' ?>">
-                    <label for="opinion_file" class="control-label"><?= $this->escape($this->translate('Fichier (facultatif)')) ?></label>
-                    <?php if ($answer !== null && $answer->getFile() !== null) : ?>
-                        <p class="form-control-static">
-                            <?= $this->escape($this->translate('Fichier actuel')) ?> : <?= $this->escape($answer->getFile()) ?>
-                            (<?= $this->escape($this->translate('un nouveau fichier le remplace')) ?>)
-                        </p>
-                    <?php endif; ?>
-                    <input type="file" id="opinion_file" name="opinion_file"
-                           aria-describedby="opinion_file-help<?= $fileErrors ? ' opinion_file-error' : '' ?>"<?= $fileErrors ? ' aria-invalid="true"' : '' ?>>
-                    <span id="opinion_file-help" class="help-block"><?= Episciences_Tools::buildAttachedFilesDescription() ?></span>
-                    <?php if ($fileErrors) : ?>
-                        <span id="opinion_file-error" class="help-block"><?= $this->escape(implode(' ', array_map([$this, 'translate'], $fileErrors))) ?></span>
-                    <?php endif; ?>
-                </div>
-
-                <button type="submit" name="submitopinion" value="1" class="btn btn-primary">
-                    <?= $this->escape($this->translate($answer === null ? 'Envoyer ma réponse' : 'Enregistrer les modifications')) ?>
-                </button>
-            </form>
-        </div>
+            <?= $form ?>
+        <?php endif; ?>
     </div>
+</div>
 
-    <?php if ($this->refuse_form) : ?>
-        <details class="panel panel-default"<?= $this->invalid_refuse_form ? ' open' : '' ?>>
-            <summary class="panel-heading"><?= $this->escape($this->translate("Je ne souhaite pas répondre à cette demande")) ?></summary>
-            <div class="panel-body">
-                <?= $this->refuse_form ?>
-            </div>
-        </details>
-    <?php endif; ?>
+<?php if ($this->refuse_form && ($answer === null || $this->isEditable)) : ?>
+    <details class="panel panel-default"<?= $this->invalid_refuse_form ? ' open' : '' ?>>
+        <summary class="panel-heading"><?= $this->escape($this->translate("Je ne souhaite pas répondre à cette demande")) ?></summary>
+        <div class="panel-body">
+            <?= $this->refuse_form ?>
+        </div>
+    </details>
 <?php endif; ?>

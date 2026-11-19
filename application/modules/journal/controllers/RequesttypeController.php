@@ -49,8 +49,6 @@ class RequesttypeController extends Zend_Controller_Action
 
         $languages = array_keys(Episciences_Tools::getLanguages()) ?: [Episciences_Review::DEFAULT_LANG];
         $this->view->type = $type;
-        // a grid created for the type is not used while the type is answered without an account
-        $this->view->hasGrid = $type !== null && Episciences_GridsManager::requestTypeGridPath((int)$type->getId()) !== null;
         $this->view->languages = $languages;
         $this->view->errors = [];
         $this->view->values = self::formValues($type);

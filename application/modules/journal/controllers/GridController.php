@@ -142,9 +142,9 @@ class GridController extends Zend_Controller_Action
                 ? (new RequestTypeRepository())->findById((int)$requestTypeId)
                 : null;
 
-            if ($requestTypeId !== null && $requestTypeId !== '' && ($requestType === null || $requestType->getRvid() !== RVID || $requestType->isLightAnswer())) {
-                // unknown type, or a type answered without an account: it uses no grid
-                $message = '<strong>' . $this->view->translate("Ce type de demande n'utilise pas de grille de relecture.") . '</strong>';
+            if ($requestTypeId !== null && $requestTypeId !== '' && ($requestType === null || $requestType->getRvid() !== RVID)) {
+                // unknown type, or a type of another journal
+                $message = '<strong>' . $this->view->translate("Ce type de demande n'existe pas.") . '</strong>';
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 $this->_helper->redirector('list', 'grid');
                 return;

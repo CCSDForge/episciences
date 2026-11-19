@@ -10,11 +10,11 @@ use Episciences_GridsManager;
 use unit\modules\ControllerTestCase;
 
 /**
- * Grid of a review request type (#319): a type answered without an account uses no grid, none is created for it.
+ * Grid of a review request type (#319): only a type of the journal gets one.
  */
 final class GridControllerRequestTypeGridTest extends ControllerTestCase
 {
-    private const LIGHT_TYPE_ID = 31;
+    private const OTHER_JOURNAL_TYPE_ID = 31;
 
     protected function setUp(): void
     {
@@ -30,16 +30,16 @@ final class GridControllerRequestTypeGridTest extends ControllerTestCase
         $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
 
         $this->db->respondTo('/FROM `review_request_type` WHERE \(id = /', [[
-            'id' => self::LIGHT_TYPE_ID, 'rvid' => RVID, 'default_type' => 2, 'labels' => '{"en":"Quick opinion"}',
+            'id' => self::OTHER_JOURNAL_TYPE_ID, 'rvid' => RVID + 1, 'default_type' => 2, 'labels' => '{"en":"Quick opinion"}',
             'light_answer' => 1, 'position' => 2, 'enabled' => 1,
         ]]);
     }
 
-    public function testNoGridIsCreatedForATypeAnsweredWithoutAnAccount(): void
+    public function testNoGridIsCreatedForATypeOfAnotherJournal(): void
     {
-        $gridFile = REVIEW_GRIDS_PATH . Episciences_GridsManager::filenameOf(Episciences_GridsManager::requestTypeGridKey(self::LIGHT_TYPE_ID));
+        $gridFile = REVIEW_GRIDS_PATH . Episciences_GridsManager::filenameOf(Episciences_GridsManager::requestTypeGridKey(self::OTHER_JOURNAL_TYPE_ID));
 
-        $result = $this->dispatch(\GridController::class, 'add', $this->postRequest(['request_type' => (string)self::LIGHT_TYPE_ID, 'submit' => '1'], true));
+        $result = $this->dispatch(\GridController::class, 'add', $this->postRequest(['request_type' => (string)self::OTHER_JOURNAL_TYPE_ID, 'submit' => '1'], true));
 
         self::assertNotNull($result->redirectUrl());
         self::assertFileDoesNotExist($gridFile);

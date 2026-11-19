@@ -116,9 +116,9 @@ class Episciences_Rating_Manager
                 $max = count($options) - 1;
 
                 $cOptions = $options;
-                // user language
-                $userLanguage = Episciences_Auth::getLangueid();
                 $locale = Episciences_Tools::getLocale();
+                // user language; the language of the interface for a person without an account (#319)
+                $userLanguage = Episciences_Auth::isLogged() ? Episciences_Auth::getLangueid() : $locale;
 
                 foreach ($cOptions as $i => $option) {
                     $label = '';

@@ -197,6 +197,7 @@ return array(
 
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_INVITATION_GENERIC][Episciences_Mail_TemplatesManager::DESCRIPTION] => "base of the invitations of the request types created by the journal",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_LIGHT_ANSWER_WITHOUT_GRID_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification telling the editors that a person invited to answer without an account cannot do it: no rating grid is configured for the request",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_REVIEWER_INVITATION_ACCOUNT_HINT_KNOWN_REVIEWER][Episciences_Mail_TemplatesManager::DESCRIPTION] => "text inserted by the %%INVITATION_ACCOUNT_HINT%% tag when the invited person is already a reviewer of the journal",
 

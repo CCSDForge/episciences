@@ -106,6 +106,8 @@ return [
     "paper_reviewer_invitation_quick_opinion_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Demande d'avis rapide sur un article",
     "paper_reviewer_invitation_generic_tpl_name" => "Inviter un utilisateur - modèle de départ des types de demande créés par la revue",
     "paper_reviewer_invitation_generic_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - %%REVIEW_REQUEST_TYPE%%",
+    "paper_reviewer_light_answer_without_grid_editor_copy_tpl_name" => "Copie rédacteurs : réponse sans compte impossible, aucune grille de relecture",
+    "paper_reviewer_light_answer_without_grid_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Aucune grille de relecture pour une demande sans compte",
     "reviewer_invitation_account_hint_known_reviewer_tpl_name" => "Invitation d'un relecteur - aide à la connexion : relecteur connu de la revue",
     "reviewer_invitation_account_hint_known_user_tpl_name" => "Invitation d'un relecteur - aide à la connexion : compte existant",
     "reviewer_invitation_account_hint_new_user_tpl_name" => "Invitation d'un relecteur - aide à la connexion : pas encore de compte",

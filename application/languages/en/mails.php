@@ -105,6 +105,8 @@ return [
     "paper_reviewer_invitation_quick_opinion_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Request for a quick opinion on an article",
     "paper_reviewer_invitation_generic_tpl_name" => "Invite a user - base of the request types created by the journal",
     "paper_reviewer_invitation_generic_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - %%REVIEW_REQUEST_TYPE%%",
+    "paper_reviewer_light_answer_without_grid_editor_copy_tpl_name" => "Editors copy: answer without an account impossible, no rating grid",
+    "paper_reviewer_light_answer_without_grid_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - No rating grid for a request without an account",
     "reviewer_invitation_account_hint_known_reviewer_tpl_name" => "Reviewer invitation - sign-in help: reviewer known by the journal",
     "reviewer_invitation_account_hint_known_user_tpl_name" => "Reviewer invitation - sign-in help: existing account",
     "reviewer_invitation_account_hint_new_user_tpl_name" => "Reviewer invitation - sign-in help: no account yet",

@@ -62,12 +62,14 @@ final class GridControllerListTest extends ControllerTestCase
             self::assertStringContainsString('href="/requesttype/edit?id=' . $typeId . '"', $html);
         }
         self::assertStringContainsString('Phase &lt;two&gt;', $html, 'the labels are escaped');
-        self::assertStringContainsString("Aucune grille : réponse sans compte, depuis le lien de l'invitation.", $html);
+        self::assertStringContainsString("Réponse sans compte : la personne invitée remplit cette grille depuis le lien de l'invitation.", $html);
+        // the quick opinion without a grid of its own uses the default grid
+        self::assertStringContainsString('Pas de grille propre : grille par défaut.', $html);
         self::assertStringContainsString("Pas de grille propre : grille du volume de l'article, sinon grille par défaut.", $html);
         self::assertStringContainsString('href="/requesttype/edit"', $html, 'a type can be added');
-        // a grid can be created for the types answered with an account only
+        // a grid can be created for every type, also those answered without an account
         self::assertStringContainsString('name="request_type" value="' . self::REPORT_TYPE_ID . '"', $html);
-        self::assertStringNotContainsString('name="request_type" value="' . self::LIGHT_TYPE_ID . '"', $html);
+        self::assertStringContainsString('name="request_type" value="' . self::LIGHT_TYPE_ID . '"', $html);
         // only the unused journal types can be deleted
         self::assertStringContainsString('name="id" value="' . self::CUSTOM_TYPE_ID . '"', $html);
         self::assertStringNotContainsString('name="id" value="' . self::REPORT_TYPE_ID . '"', $html);
@@ -86,7 +88,8 @@ final class GridControllerListTest extends ControllerTestCase
 
         self::assertStringNotContainsString('name="request_type" value="' . self::REPORT_TYPE_ID . '"', $html, 'no second grid');
         self::assertStringContainsString('name="request_type" value="' . self::CUSTOM_TYPE_ID . '"', $html);
-        self::assertSame(1, substr_count($html, 'Pas de grille propre'), 'only the other type with an account has no grid');
+        // the quick opinion (default grid) and the type of the journal (volume grid) have no grid of their own
+        self::assertSame(2, substr_count($html, 'Pas de grille propre'));
         self::assertStringContainsString('Aucune grille de volume.', $html, 'a type grid is not a volume grid');
     }
 

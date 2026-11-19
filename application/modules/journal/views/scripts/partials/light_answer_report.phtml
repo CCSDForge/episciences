@@ -1,0 +1,43 @@
+<?php
+/**
+ * Rating grid filled in without an account (#319), read-only.
+ * Expected view vars: report (Episciences_Rating_Report|null), aid (int), withLinks (bool: links to the attached
+ * files, for the editorial staff only).
+ */
+/** @var Episciences_Rating_Report|null $report */
+$report = $this->report;
+?>
+<?php if ($report === null) : ?>
+    <p class="text-muted"><?= $this->escape($this->translate("La grille remplie n'a pas pu être lue.")) ?></p>
+<?php else : ?>
+    <dl>
+        <?php foreach ($report->getCriteria() ?? [] as $criterion) : ?>
+            <?php /** @var Episciences_Rating_Criterion $criterion */
+            if ($criterion->isSeparator() || $criterion->isEmpty()) {
+                continue;
+            }
+            $note = $criterion->getNote();
+            ?>
+            <dt><?= $this->escape((string)$criterion->getLabel()) ?></dt>
+            <dd>
+                <?php if ($criterion->allowsNote() && is_numeric($note)) : ?>
+                    <p><?= $this->escape((string)($criterion->getOptionLabel($note) ?: $note)) ?></p>
+                <?php endif; ?>
+                <?php if ($criterion->getComment()) : ?>
+                    <?php // purified when the grid was filled in ?>
+                    <div><?= $criterion->getComment() ?></div>
+                <?php endif; ?>
+                <?php if ($criterion->hasAttachment()) : ?>
+                    <p>
+                        <span class="glyphicon glyphicon-paperclip" aria-hidden="true"></span>
+                        <?php if ($this->withLinks) : ?>
+                            <a href="/file/lightanswer?aid=<?= (int)$this->aid ?>&amp;file=<?= $this->escape(rawurlencode((string)$criterion->getAttachment())) ?>"><?= $this->escape((string)$criterion->getAttachment()) ?></a>
+                        <?php else : ?>
+                            <?= $this->escape((string)$criterion->getAttachment()) ?>
+                        <?php endif; ?>
+                    </p>
+                <?php endif; ?>
+            </dd>
+        <?php endforeach; ?>
+    </dl>
+<?php endif; ?>

@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace unit\modules\journal\controllers;
 
 use Episciences\Reviewer\LightAnswer;
-use Episciences\Reviewer\LightAnswerForm;
+use Episciences\Reviewer\LightAnswerReport;
 use Episciences\Reviewer\RequestType;
 use Episciences_Paper;
+use Episciences_Rating_Criterion;
+use Episciences_Rating_Grid;
+use Episciences_Rating_Report;
 use Episciences_User_Assignment;
 use Episciences_User_Invitation;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -41,12 +44,43 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
         $this->controller = new \ReviewerController(new Zend_Controller_Request_HttpTestCase(), new Zend_Controller_Response_HttpTestCase());
         $this->controller->view = new Zend_View();
         // a browser always posts the file field, empty when no file is chosen
-        $_FILES = [LightAnswerForm::FILE => ['name' => '', 'type' => '', 'tmp_name' => '', 'error' => UPLOAD_ERR_NO_FILE, 'size' => 0]];
+        $_FILES = ['file_item_0' => ['name' => '', 'type' => '', 'tmp_name' => '', 'error' => UPLOAD_ERR_NO_FILE, 'size' => 0]];
+        $this->dir = sys_get_temp_dir() . '/light-answer-test-' . bin2hex(random_bytes(4)) . '/';
     }
 
     protected function tearDown(): void
     {
         $_FILES = [];
+        @unlink($this->dir . 'grid_t11.xml');
+        @rmdir($this->dir . 'answer');
+        @rmdir($this->dir);
+    }
+
+    private string $dir = '';
+
+    /**
+     * The grid of the request, with one criterion (option, comment, file), ready to be filled in
+     */
+    private function report(): Episciences_Rating_Report
+    {
+        $criterion = new Episciences_Rating_Criterion();
+        $criterion->setType(Episciences_Rating_Criterion::TYPE_CRITERION);
+        $criterion->setId('item_0');
+        $criterion->setLabels(['fr' => 'Pertinence']);
+        $criterion->setOptions([['value' => 0, 'label' => ['fr' => 'Faible']], ['value' => 1, 'label' => ['fr' => 'Forte']]]);
+        $criterion->setComment_setting(true);
+        $criterion->setAttachment_setting(true);
+        $criterion->setVisibility(Episciences_Rating_Criterion::VISIBILITY_EDITORS);
+        $grid = new Episciences_Rating_Grid();
+        $grid->setFilename('grid_t11.xml');
+        $grid->setCriteria([$criterion]);
+        self::assertTrue($grid->save($this->dir));
+
+        $report = new Episciences_Rating_Report();
+        $report->setPath($this->dir . 'answer/');
+        self::assertTrue($report->loadXML($this->dir . 'grid_t11.xml'));
+
+        return $report;
     }
 
     private function call(string $method, mixed ...$arguments): mixed
@@ -88,7 +122,7 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
 
     private function answer(): LightAnswer
     {
-        return new LightAnswer(1, self::AID, RVID, self::DOCID, 11, 42, true, 'Interesting', null, new \DateTimeImmutable('2026-01-01'));
+        return new LightAnswer(1, self::AID, RVID, self::DOCID, 11, 42, true, new \DateTimeImmutable('2026-01-01'));
     }
 
     public function testTheFirstAnswerNeedsAnOpenInvitationOnAPaperStillToReview(): void
@@ -108,15 +142,18 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
         self::assertNotNull($this->call('lightAnswerError', $this->invitation(cancelled: true), $this->answer(), $this->paper()));
     }
 
-    public function testAnAnswerWithoutMessageNorFileIsNotSaved(): void
+    public function testAnInvalidGridIsNotSaved(): void
     {
         $assignment = $this->createMock(Episciences_User_Assignment::class);
         $type = new RequestType(11, RVID, null, ['en' => 'Quick opinion'], true);
+        $report = $this->report();
 
         $saved = $this->call(
             'saveLightAnswer',
-            LightAnswerForm::create(),
-            [LightAnswerForm::MESSAGE => '  <b></b> ', LightAnswerForm::SUBMIT => '1'],
+            LightAnswerReport::form($report),
+            $report,
+            // not an option of the criterion
+            ['note_item_0' => '9', LightAnswerReport::SUBMIT => '1'],
             null,
             $this->invitation(),
             $assignment,
@@ -125,8 +162,9 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
         );
 
         self::assertFalse($saved);
-        self::assertTrue($this->controller->view->lightAnswerMissing);
+        self::assertTrue($this->controller->view->lightAnswerErrors);
         self::assertSame([], $this->db->inserts());
+        self::assertFileDoesNotExist($this->dir . 'answer/' . LightAnswerReport::REPORT_FILE);
     }
 
     /**
@@ -143,7 +181,7 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
 
     public function testAnInvitationWithoutLinkTokenIsNotAnsweredWithoutAnAccount(): void
     {
-        $request = $this->postRequest([LightAnswerForm::MESSAGE => 'Opinion', LightAnswerForm::SUBMIT => '1'], true);
+        $request = $this->postRequest(['note_item_0' => '1', LightAnswerReport::SUBMIT => '1'], true);
         $this->controller->setRequest($request);
         $type = new RequestType(11, RVID, null, ['en' => 'Quick opinion'], true);
 
@@ -154,12 +192,18 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
         self::assertSame(['token_invalid'], array_map(static fn($record): string => (string)$record->message, $this->securityLogRecords()));
     }
 
-    public function testAPostWithAnotherFileFieldStoresNoFile(): void
+    public function testAPostWithAFileOutsideTheGridStoresNoFile(): void
     {
+        $report = $this->report();
         $file = ['name' => 'opinion.pdf', 'type' => 'application/pdf', 'tmp_name' => '/nonexistent', 'error' => UPLOAD_ERR_OK, 'size' => 10];
-        $_FILES = [LightAnswerForm::FILE => $file, 'other' => $file];
+        $_FILES = ['file_item_0' => $file, 'other' => $file];
 
-        self::assertNull($this->call('uploadLightAnswerFile', sys_get_temp_dir() . '/light-answer-test/'));
-        self::assertDirectoryDoesNotExist(sys_get_temp_dir() . '/light-answer-test/');
+        self::assertNull($this->call('uploadLightAnswerFiles', $report));
+        self::assertDirectoryDoesNotExist($this->dir . 'answer/');
+    }
+
+    public function testWithoutFileTheGridIsSavedWithoutUpload(): void
+    {
+        self::assertSame([], $this->call('uploadLightAnswerFiles', $this->report()));
     }
 }

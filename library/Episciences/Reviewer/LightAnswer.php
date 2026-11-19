@@ -5,17 +5,15 @@ declare(strict_types=1);
 namespace Episciences\Reviewer;
 
 use DateTimeImmutable;
-use InvalidArgumentException;
 
 /**
- * Answer given without an account to a review request of a "light answer" type (#319): a quick opinion typed and/or
- * uploaded from the invitation link. One answer per invitation, identified by the original assignment of the
- * invitation (USER_INVITATION.AID). Only the editorial committee reads it.
+ * Answer given without an account to a review request of a "light answer" type (#319): the rating grid of the type
+ * filled in from the invitation link. One answer per invitation, identified by the original assignment of the
+ * invitation (USER_INVITATION.AID). The filled grid and its attached files are kept in the folder of the answer
+ * (see LightAnswerReport). Only the editorial committee reads it.
  */
 final class LightAnswer
 {
-    /** Longest message accepted, in characters */
-    public const MESSAGE_MAX_LENGTH = 20000;
     private const DATE_FORMAT = 'Y-m-d H:i:s';
 
     public function __construct(
@@ -26,18 +24,9 @@ final class LightAnswer
         private readonly int $requestTypeId,
         private readonly int $uid,
         private readonly bool $tmpUser,
-        private readonly string $message,
-        private readonly ?string $file,
         private readonly DateTimeImmutable $createdAt,
         private readonly ?DateTimeImmutable $updatedAt = null
     ) {
-        if ($message === '' && ($file === null || $file === '')) {
-            throw new InvalidArgumentException('An answer needs a message or a file');
-        }
-
-        if (mb_strlen($message) > self::MESSAGE_MAX_LENGTH) {
-            throw new InvalidArgumentException(sprintf('Message longer than %d characters', self::MESSAGE_MAX_LENGTH));
-        }
     }
 
     /**
@@ -56,22 +45,6 @@ final class LightAnswer
     }
 
     /**
-     * Plain text of a posted message: tags removed, line breaks normalised, trimmed
-     */
-    public static function cleanMessage(mixed $posted): string
-    {
-        if (!is_string($posted)) {
-            return '';
-        }
-
-        // the content of scripts and styles is not text
-        $text = strip_tags(preg_replace('#<(script|style)\b[^>]*>.*?</\1\s*>#is', '', $posted) ?? $posted);
-        $text = str_replace(["\r\n", "\r"], "\n", $text);
-
-        return trim($text);
-    }
-
-    /**
      * @param array<string, mixed> $row a row of the review_light_answer table
      */
     public static function fromRow(array $row): self
@@ -84,8 +57,6 @@ final class LightAnswer
             (int)$row['request_type_id'],
             (int)$row['uid'],
             (bool)$row['tmp_user'],
-            (string)($row['message'] ?? ''),
-            isset($row['file']) && $row['file'] !== '' ? (string)$row['file'] : null,
             new DateTimeImmutable((string)$row['created_at']),
             !empty($row['updated_at']) ? new DateTimeImmutable((string)$row['updated_at']) : null
         );
@@ -103,21 +74,19 @@ final class LightAnswer
             'request_type_id' => $this->requestTypeId,
             'uid' => $this->uid,
             'tmp_user' => (int)$this->tmpUser,
-            'message' => $this->message,
-            'file' => $this->file,
             'created_at' => $this->createdAt->format(self::DATE_FORMAT),
             'updated_at' => $this->updatedAt?->format(self::DATE_FORMAT),
         ];
     }
 
     /**
-     * The same answer with a new message and file, edited at $now
+     * The same answer, edited at $now
      */
-    public function edited(string $message, ?string $file, DateTimeImmutable $now): self
+    public function edited(DateTimeImmutable $now): self
     {
         return new self(
             $this->id, $this->aid, $this->rvid, $this->docid, $this->requestTypeId, $this->uid, $this->tmpUser,
-            $message, $file, $this->createdAt, $now
+            $this->createdAt, $now
         );
     }
 
@@ -125,16 +94,24 @@ final class LightAnswer
     {
         return new self(
             $id, $this->aid, $this->rvid, $this->docid, $this->requestTypeId, $this->uid, $this->tmpUser,
-            $this->message, $this->file, $this->createdAt, $this->updatedAt
+            $this->createdAt, $this->updatedAt
         );
     }
 
     /**
-     * Folder of the attached file, relative to the files of the paper
+     * Folder of the filled grid and of its attached files, relative to the files of the paper
      */
     public function folder(): string
     {
-        return 'reports/light_' . $this->aid . '/';
+        return self::folderOf($this->aid);
+    }
+
+    /**
+     * Folder of the answer of an invitation, relative to the files of the paper
+     */
+    public static function folderOf(int $aid): string
+    {
+        return 'reports/light_' . $aid . '/';
     }
 
     public function getId(): ?int
@@ -170,16 +147,6 @@ final class LightAnswer
     public function isTmpUser(): bool
     {
         return $this->tmpUser;
-    }
-
-    public function getMessage(): string
-    {
-        return $this->message;
-    }
-
-    public function getFile(): ?string
-    {
-        return $this->file;
     }
 
     public function getCreatedAt(): DateTimeImmutable
