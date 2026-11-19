@@ -4055,7 +4055,7 @@ class Episciences_Paper
             $warning .= ' ';
             $link = $isMainSubmission
                 ? $viewHelper->url(['controller' => 'submit', 'action' => 'index'])
-                : $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $id], withSegmentedParameters: true);
+                : $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $id]);
 
             $exitLink = '&nbsp;&nbsp;&nbsp;';
             $exitLink .= '<a class="' . $style . '" href="' . $link . '">';
@@ -4157,7 +4157,7 @@ class Episciences_Paper
 
                 } else {
 
-                    $url = $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $this->getDocid()], withSegmentedParameters: true);
+                    $url = $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $this->getDocid()]);
                     $selfMsg = $result['message'];
                     $selfMsg .= $translator
                         ? $translator->translate(
