@@ -70,7 +70,7 @@ class Ccsd_Error extends Exception
                 $message = 'The metadata format is not supported by this repository.';
                 break;
             case self::ID_DOES_NOT_EXIST_CODE :
-                $message = "To submit your document, please make sure it is online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).";
+                $message = "To submit your document, please make sure it is online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (for example %3\$s for a document submitted in %2\$s).";
                 break;
             case 'noRecordsMatch' :
                 $message = 'The combination of the given values results in an empty list.';
@@ -85,7 +85,7 @@ class Ccsd_Error extends Exception
                 $message = 'You can not submit an empty record: you must first modify the deposit on the open archive to attach the PDF file of your article without formatting.';
                 break;
             case self::ARXIV_VERSION_DOES_NOT_EXIST_CODE :
-                $message = "This version of the document does not exist or is not online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).";
+                $message = "This version of the document does not exist or is not online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (for example %3\$s for a document submitted in %2\$s).";
                 break;
             case self::REPOSITORY_TIMEOUT_CODE :
                 $message = "The open archive %s did not respond in time. Please try again in a few moments. If the problem persists, please contact the support at %s.";
@@ -102,7 +102,7 @@ class Ccsd_Error extends Exception
 
                 $message = self::DEFAULT_PREFIX_CODE;
                 $message .= ' ';
-                $message .= "Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).";
+                $message .= "Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (for example %4\$s for a document submitted in %3\$s).";
         }
 
         return $message;

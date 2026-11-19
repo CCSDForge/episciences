@@ -247,6 +247,9 @@ class Episciences_Paper
         self::STATUS_SUBMITTED,
         self::STATUS_OK_FOR_REVIEWING,
     ];
+    /** Sections of the page of a paper (panel ids), see paper/view.phtml */
+    private const PAPER_VIEW_SECTION_REVISION_REQUESTS = 'answer';
+    private const PAPER_VIEW_SECTION_COPY_EDITING = 'copy-editing';
     public const All_STATUS_WAITING_FOR_FINAL_VERSION = [
         self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
         self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
@@ -4004,308 +4007,37 @@ class Episciences_Paper
     }
 
     /**
+     * Tells what can be done when the document being submitted is already in the journal.
+     *
+     * The message is plain text from the command line; on the web, it is HTML: one paragraph of text,
+     * followed by a paragraph of actions (buttons) when some are offered.
+     *
      * @param array<string, mixed> $options
      * @return array<string, mixed>|string the result as an array from the command line, JSON encoded otherwise
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-
     public function manageNewVersionErrors(array $options = []): array|string
     {
-        $viewHelper = new Episciences_View_Helper_Url();
-        $translator = Zend_Registry::get('Zend_Translate');
         $isFromCli = Ccsd_Tools::isFromCli();
-        $isEpiNotify = !empty($options['isEpiNotify']);
-        $rvId = $options['rvId'] ?? RVID;
-
-        $docId = $this->getDocid();
-        $status = $this->getStatus();
-        $identifier = $this->getIdentifier();
-        $version = $this->getVersion();
-        $repoId = $this->getRepoid();
-
-        $id = $docId;
-        if ($this->isObsolete()) {
-            $this->loadVersionsIds();
-            $versionIds = $this->getVersionsIds();
-            $id = $versionIds[array_key_last($versionIds)];
-        }
-
         $isMainSubmission = array_key_exists('isNewVersionOf', $options) && !$options['isNewVersionOf']; // first submission
-        // The submission form only replaces a paper in place: a paper further in the publication process is not offered
-        // and is reported as such (no new version requested by the journal, so no new version page to point to)
-        $isReplaceable = ($isMainSubmission && !$isEpiNotify) ? $this->canBeReplacedInPlace() : $this->canBeReplaced();
 
-        // Base UI helpers
-        $span = $isFromCli ? '' : '<span class="fas fa-exclamation-circle"></span>';
-        $warning = $span;
-        $style = 'btn btn-default btn-xs';
-
-        $submittedMsg = $translator
-            ? $translator->translate("Vous êtes connecté avec un compte différent de celui ayant été utilisé pour soumettre ce document. Veuillez vous déconnecter et vous reconnecter avec le bon compte pour continuer.")
-            : "You’re signed in with a different account than the one used to submit this document. Please sign out and log in with the correct account to continue.";
-        $cannotChangeMsg = $translator
-            ? $translator->translate('Vous ne pouvez pas le modifier.')
-            : 'You can not change it.';
-
-        $confirmHtml = '';
-        $link = '';
-
-        if (!$isFromCli) {
-            $warning .= ' ';
-            $link = $isMainSubmission
-                ? $viewHelper->url(['controller' => 'submit', 'action' => 'index'])
-                : $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $id]);
-
-            $exitLink = '&nbsp;&nbsp;&nbsp;';
-            $exitLink .= '<a class="' . $style . '" href="' . $link . '">';
-            $exitLink .= '<span class="glyphicon glyphicon-remove-circle"></span>&nbsp;';
-            $exitLink .= $translator ? $translator->translate('Annuler') : 'Cancel';
-            $exitLink .= '</a>';
-
-            $confirmHtml = '<p style="margin:1em;">';
-            $confirmHtml .= '<button class="' . $style . '" onclick="hideResultMessage();">';
-            $confirmHtml .= '<span class="glyphicon glyphicon-ok-circle"></span>&nbsp;';
-            $confirmHtml .= $translator ? $translator->translate('Remplacer') : 'Replace';
-            $confirmHtml .= '</button>';
-            $confirmHtml .= $exitLink;
-            $confirmHtml .= '</p>';
-        }
-
-        $canReplace = false;
-        $result = [];
-
-        // Permission check
-        $hasPermission =
-            Episciences_Auth::isLogged()
-            && (
-                $this->getUid() === Episciences_Auth::getUid()
-                || (
-                    (
-                        Episciences_Auth::isSecretary()
-                        || $this->getEditor(Episciences_Auth::getUid())
-                        || $this->getCopyEditor(Episciences_Auth::getUid())
-                    )
-                    && !$isMainSubmission
-                )
-            );
-
-        if ($isFromCli || $hasPermission) {
-
-            $review = Episciences_ReviewsManager::find($rvId);
-            $question = $translator
-                ? $translator->translate('Souhaitez-vous remplacer la version précédente ?')
-                : 'Do you want to replace the previous version?';
-
-            $result['message'] = $warning;
-
-            // 1. Abandoned
-            if ($status === self::STATUS_ABANDONED) {
-                $result['message'] = $translator
-                    ? $translator->translate(
-                        "On ne peut pas re-proposer un article <strong>abandonné</strong>, " .
-                        "Pour de plus amples renseignements, veuillez contacter le comité éditorial."
-                    )
-                    : "You can't re-propose an abandoned article. For more information please contact the editorial committee.";
-
-                // 2. Can be replaced
-            } elseif (
-                isset($options['version']) &&
-                $options['version'] > $this->getVersion() &&
-                $isReplaceable
-            ) {
-                $msg = $result['message'];
-                $msg .= $isEpiNotify ? ' *** The previous version will be replaced ***' : $question;
-                $msg .= $confirmHtml;
-
-                $result['message'] = $msg;
-                $result['oldPaperId'] = $this->getPaperid();
-                $result['submissionDate'] = $this->getSubmission_date();
-                $result['oldVid'] = $this->getVid();
-                $result['oldSid'] = $this->getSid();
-                $result['oldConceptIdentifier'] = $this->getConcept_identifier();
-                $canReplace = true;
-
-                if ($isEpiNotify) {
-                    $result[InboxNotifications::PAPER_CONTEXT] = $this;
-                    $result['message'] = '*** Update Version ***';
-                }
-
-                // 3. New submission in expected revision / final version / obsolete
-            } elseif ( // cas où la personne tente de répondre à une demande de révision via l'interface de soumission prévue pour les soumissions principales
-                $isMainSubmission
-                && (
-                    in_array($status, self::STATUS_WITH_EXPECTED_REVISION, true)
-                    || in_array($status, self::All_STATUS_WAITING_FOR_FINAL_VERSION, true)
-                    || $status === self::STATUS_OBSOLETE
-                )
-            ) {
-
-                if ($isEpiNotify) {
-
-                    if ($status === self::STATUS_OBSOLETE) {
-                        $latestVersionId = $this->getLatestVersionId();
-                        if ($latestVersionId) {
-                            $result[InboxNotifications::PAPER_CONTEXT] =
-                                Episciences_PapersManager::get($latestVersionId, false);
-                        }
-                    } else {
-                        $result[InboxNotifications::PAPER_CONTEXT] = $this;
-                    }
-
-                    $result['message'] = '*** New version ***';
-
-                } else {
-
-                    $url = $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $this->getDocid()]);
-                    $selfMsg = $result['message'];
-                    $selfMsg .= $translator
-                        ? $translator->translate(
-                            'Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel ' .
-                            'qui vous a été envoyé par la revue, '
-                        )
-                        : "To submit your new version, please use the link in the email you received from the journal, ";
-
-                    if (!$isFromCli) {
-                        $selfMsg .= '<br>';
-                        $selfMsg .= $translator ? $translator->translate('ou') : 'or';
-                        $selfMsg .= '<span style="margin-right: 3px;"></span>';
-                        $selfMsg .= '<a class="' . $style . '" href="' . $url . '">';
-                        $selfMsg .= '<span class="fa-solid fa-link" style="margin-right: 3px;"></span>';
-                        $selfMsg .= $translator ? $translator->translate("Cliquer ici") : "Click here";
-                        $selfMsg .= '</a>';
-                        $selfMsg .= '<span style="margin-left: 3px;"></span>';
-                        $selfMsg .= $translator
-                            ? $translator->translate('pour répondre à la demande de modification.')
-                            : "to meet the demand of requested changes.";
-                    }
-
-                    $result['message'] = $selfMsg;
-                }
-
-                // 4. Being reviewed
-            } elseif ($status === self::STATUS_BEING_REVIEWED) {
-                $msg = $result['message'];
-                $msg .= $translator
-                    ? $translator->translate('Cet article a déjà été soumis et il est en cours de relecture.')
-                    : "This article has been submitted and is waiting for reviewing.";
-                $msg .= $cannotChangeMsg;
-                $result['message'] = $msg;
-
-                // 5. Reviewed
-            } elseif ($status === self::STATUS_REVIEWED) {
-                $msg = $result['message'];
-                $msg .= $translator
-                    ? $translator->translate("Cet article est en cours d'évaluation.")
-                    : "This article is under review.";
-                $msg .= $cannotChangeMsg;
-                $result['message'] = $msg;
-
-                // 6. Accepted
-            } elseif ($status === self::STATUS_ACCEPTED) {
-                $msg = $result['message'];
-                $msg .= $translator
-                    ? $translator->translate('Cet article a été accepté.')
-                    : "This article has been accepted.";
-                $msg .= $cannotChangeMsg;
-                $result['message'] = $msg;
-
-                // 7. Refused
-            } elseif ($status === self::STATUS_REFUSED) {
-
-                if ($review->getSetting(Episciences_Review::SETTING_CAN_RESUBMIT_REFUSED_PAPER)) {
-
-                    $msg = $result['message'];
-                    $msg .= $translator
-                        ? $translator->translate(
-                            'Cet article a déjà été soumis et refusé. ' .
-                            'Avez-vous apporté des modifications majeures au document ?'
-                        )
-                        : "This article has already been submitted and refused. Have you made any major changes to the document?";
-                    $msg .= $isFromCli ? '' : $confirmHtml;
-
-                    $result['message'] = $msg;
-                    $result['oldPaperId'] = $this->getPaperid();
-                    $result['oldVid'] = $this->getVid();
-                    $result['oldSid'] = $this->getSid();
-                    $canReplace = true;
-
-                    if ($isEpiNotify) {
-                        $result[InboxNotifications::PAPER_CONTEXT] = $this;
-                        $result['message'] =
-                            '*** Previous paper has been refused: new submission ***';
-                    }
-
-                } else {
-
-                    $msg = $isFromCli ? '' : $warning;
-                    $msg .= $cannotChangeMsg . ' ';
-                    $msg .= $translator
-                        ? $translator->translate(
-                            'Cet article a déjà été soumis et refusé, ' .
-                            'merci de contacter le comité editorial.'
-                        )
-                        : "This article has already been submitted and refused, please contact the editorial committee.";
-
-                    $result['message'] = $msg;
-                }
-
-                // 8. Version already exists
-            } elseif (isset($options['version']) && $options['version'] <= $this->getVersion()) {
-
-                $selfMsg = $translator ? $translator->translate('Cette version') : 'This version';
-                $selfMsg .= sprintf(
-                    ' [%sv%s%s] ',
-                    $isFromCli ? '' : '<strong>',
-                    $this->getVersion(),
-                    $isFromCli ? '' : '</strong>'
-                );
-                $selfMsg .= $translator
-                    ? $translator->translate('du document existe déjà dans la revue.')
-                    : "of the document already exists in journal.";
-
-                if (!$isFromCli) {
-                    $selfMsg .= '&nbsp;';
-                    $selfMsg .= '<a class="btn btn-default btn-sm" href="' . $link . '">';
-                    $selfMsg .= '<span class="fas fa-redo" style="margin-right: 5px;"></span>';
-                    $selfMsg .= $translator ? $translator->translate('Retour') : "Back";
-                    $selfMsg .= '</a>';
-                }
-
-                // Note: original code translates the whole message again
-                $result['message'] = $warning . ' ' . ($translator ? $translator->translate($selfMsg) : $selfMsg);
-
-                // 9. Other statuses
-            } else {
-                $result['message'] = $translator
-                    ? $translator->translate(
-                        "Le processus de publication de cet article est en cours, " .
-                        "vous ne pourrez donc pas le remplacer."
-                    )
-                    : "The publication process of this article is in progress, so you will not be able to replace it.";
-            }
-
-            $result['oldDocId'] = (int)$docId;
-            $result['oldPaperStatus'] = (int)$status;
-
+        if ($isFromCli || $this->canManageNewVersion($isMainSubmission)) {
+            $result = $this->newVersionOutcome($options, $isMainSubmission, $isFromCli);
         } else {
-            // Not author, no extra info about status
-            $message = $span;
-            $message .= $translator ? $translator->translate('Erreur') : "Erreur";
-            $message .= $translator ? $translator->translate(': ') : ':';
-            $message .= $submittedMsg;
-
-            $result['message'] = $message;
+            // Not the author: no information about the status of the paper
+            $result = [
+                'canBeReplaced' => false,
+                'message' => self::formatNewVersionMessage([self::translateOr(
+                    "Vous êtes connecté avec un compte différent de celui ayant été utilisé pour soumettre ce document. Veuillez vous déconnecter et vous reconnecter avec le bon compte pour continuer.",
+                    "You’re signed in with a different account than the one used to submit this document. Please sign out and log in with the correct account to continue."
+                )], [], $isFromCli),
+            ];
         }
 
-        if (!$isFromCli) {
-            $result['message'] .= '</span>';
-        }
-
-        $result['canBeReplaced'] = $canReplace;
-        $result['oldIdentifier'] = $identifier;
-        $result['oldVersion'] = $version;
-        $result['oldRepoId'] = $repoId;
+        $result['oldIdentifier'] = $this->getIdentifier();
+        $result['oldVersion'] = $this->getVersion();
+        $result['oldRepoId'] = $this->getRepoid();
 
         try {
             $jResult = $isFromCli ? $result : json_encode($result, JSON_THROW_ON_ERROR);
@@ -4315,6 +4047,331 @@ class Episciences_Paper
         }
 
         return $jResult;
+    }
+
+    /**
+     * The author, or (new version page only) a secretary, an editor or a copy editor of the paper
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function canManageNewVersion(bool $isMainSubmission): bool
+    {
+        if (!Episciences_Auth::isLogged()) {
+            return false;
+        }
+
+        $uid = Episciences_Auth::getUid();
+
+        if ($this->getUid() === $uid) {
+            return true;
+        }
+
+        return !$isMainSubmission
+            && (Episciences_Auth::isSecretary() || $this->getEditor($uid) || $this->getCopyEditor($uid));
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    private function newVersionOutcome(array $options, bool $isMainSubmission, bool $isFromCli): array
+    {
+        $isEpiNotify = !empty($options['isEpiNotify']);
+        $status = $this->getStatus();
+        $requestedVersion = $options['version'] ?? null;
+        // The submission form only replaces a paper in place: a paper further in the publication process is not offered
+        // and is reported as such (no new version requested by the journal, so no new version page to point to)
+        $isReplaceable = ($isMainSubmission && !$isEpiNotify) ? $this->canBeReplacedInPlace() : $this->canBeReplaced();
+
+        $result = ['canBeReplaced' => false];
+        $sentences = [];
+        $actions = [];
+
+        if ($status === self::STATUS_ABANDONED) {
+            $sentences[] = self::translateOr(
+                "Cet article a été abandonné : il ne peut pas être soumis de nouveau. Pour plus d'informations, veuillez contacter le comité éditorial.",
+                "This article has been abandoned and cannot be submitted again. For more information, please contact the editorial committee."
+            );
+        } elseif ($requestedVersion !== null && $requestedVersion > $this->getVersion() && $isReplaceable) {
+            $result = $this->replacementValues($isEpiNotify, true);
+            $sentences[] = self::translateOr('Souhaitez-vous remplacer la version précédente ?', 'Do you want to replace the previous version?');
+            $actions = $isFromCli ? [] : $this->replacementActions($isMainSubmission);
+        } elseif ($isMainSubmission && $this->isAwaitingNewVersion()) {
+            // The author tries to answer a revision request with the form meant for first submissions
+            [$result, $sentences, $actions] = $this->awaitingNewVersionOutcome($isEpiNotify, $isFromCli);
+        } elseif (in_array($status, [self::STATUS_BEING_REVIEWED, self::STATUS_REVIEWED, self::STATUS_ACCEPTED], true)) {
+            $sentences = [self::statusSentence($status), self::translateOr('Vous ne pouvez pas le modifier.', 'You can not change it.')];
+        } elseif ($status === self::STATUS_REFUSED) {
+            [$result, $sentences, $actions] = $this->refusedPaperOutcome($options, $isEpiNotify, $isMainSubmission, $isFromCli);
+        } elseif ($requestedVersion !== null && $requestedVersion <= $this->getVersion()) {
+            $version = 'v' . $this->getVersion();
+            $sentences[] = sprintf(
+                '%s %s %s',
+                self::translateOr('Cette version', 'This version'),
+                $isFromCli ? $version : '<strong>' . $version . '</strong>',
+                self::translateOr('du document existe déjà dans la revue.', 'of the document already exists in journal.')
+            );
+            if (!$isFromCli) {
+                $actions[] = self::newVersionButton(
+                    $this->newVersionExitUrl($isMainSubmission),
+                    'fas fa-redo',
+                    self::translateOr('Retour', 'Back')
+                );
+            }
+        } else {
+            $sentences[] = self::translateOr(
+                Episciences_Submit::REPLACEMENT_ERROR_NOT_REPLACEABLE,
+                'The publication process of this article is in progress, so you will not be able to replace it.'
+            );
+        }
+
+        $result['message'] ??= self::formatNewVersionMessage($sentences, $actions, $isFromCli);
+        $result['oldDocId'] = (int)$this->getDocid();
+        $result['oldPaperStatus'] = (int)$status;
+
+        return $result;
+    }
+
+    private function isAwaitingNewVersion(): bool
+    {
+        $status = $this->getStatus();
+
+        return in_array($status, self::STATUS_WITH_EXPECTED_REVISION, true)
+            || in_array($status, self::All_STATUS_WAITING_FOR_FINAL_VERSION, true)
+            || $status === self::STATUS_OBSOLETE;
+    }
+
+    /**
+     * @return array{array<string, mixed>, list<string>, list<string>} result values, sentences, actions
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function awaitingNewVersionOutcome(bool $isEpiNotify, bool $isFromCli): array
+    {
+        $result = ['canBeReplaced' => false];
+
+        if ($isEpiNotify) {
+            if (!$this->isObsolete()) {
+                $result[InboxNotifications::PAPER_CONTEXT] = $this;
+            } elseif ($latestVersionId = $this->getLatestVersionId()) {
+                $result[InboxNotifications::PAPER_CONTEXT] = Episciences_PapersManager::get($latestVersionId, false);
+            }
+
+            $result['message'] = '*** New version ***';
+
+            return [$result, [], []];
+        }
+
+        if ($isFromCli) {
+            return [$result, [self::translateOr(
+                'Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue.',
+                'To submit your new version, please use the link in the email you received from the journal.'
+            )], []];
+        }
+
+        return [
+            $result,
+            [self::translateOr(
+                'Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, ou le bouton ci-dessous.',
+                'To submit your new version, please use the link in the email you received from the journal, or the button below.'
+            )],
+            [self::newVersionButton(
+                $this->newVersionRequestUrl(),
+                'fa-solid fa-link',
+                self::translateOr('Répondre à la demande de modification', 'Respond to the revision request'),
+                'btn btn-primary btn-sm'
+            )],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array{array<string, mixed>, list<string>, list<string>} result values, sentences, actions
+     * @throws Zend_Exception
+     */
+    private function refusedPaperOutcome(array $options, bool $isEpiNotify, bool $isMainSubmission, bool $isFromCli): array
+    {
+        $review = Episciences_ReviewsManager::find($options['rvId'] ?? RVID);
+
+        if (!$review->getSetting(Episciences_Review::SETTING_CAN_RESUBMIT_REFUSED_PAPER)) {
+            return [['canBeReplaced' => false], [self::translateOr(
+                'Cet article a déjà été soumis et refusé, merci de contacter le comité editorial.',
+                'This article has already been submitted and refused, please contact the editorial committee.'
+            )], []];
+        }
+
+        $result = $this->replacementValues($isEpiNotify, false);
+
+        if ($isEpiNotify) {
+            $result['message'] = '*** Previous paper has been refused: new submission ***';
+        }
+
+        return [
+            $result,
+            [self::translateOr(
+                'Cet article a déjà été soumis et refusé. Avez-vous apporté des modifications majeures au document ?',
+                'This article has already been submitted and refused. Have you made any major changes to the document?'
+            )],
+            $isFromCli ? [] : $this->replacementActions($isMainSubmission),
+        ];
+    }
+
+    /**
+     * Values of the paper to replace, sent back with the submission form
+     * @param bool $isNewVersion false for the resubmission of a refused paper
+     * @return array<string, mixed>
+     */
+    private function replacementValues(bool $isEpiNotify, bool $isNewVersion): array
+    {
+        $result = [
+            'canBeReplaced' => true,
+            'oldPaperId' => $this->getPaperid(),
+            'oldVid' => $this->getVid(),
+            'oldSid' => $this->getSid(),
+        ];
+
+        if ($isNewVersion) {
+            $result['submissionDate'] = $this->getSubmission_date();
+            $result['oldConceptIdentifier'] = $this->getConcept_identifier();
+        }
+
+        if ($isEpiNotify) {
+            $result[InboxNotifications::PAPER_CONTEXT] = $this;
+            $result['message'] = '*** Update Version ***';
+        }
+
+        return $result;
+    }
+
+    /**
+     * "Replace" (shows the submission form) and "Cancel" buttons
+     * @return list<string>
+     */
+    private function replacementActions(bool $isMainSubmission): array
+    {
+        $replace = '<button type="button" class="btn btn-primary btn-sm" onclick="hideResultMessage();">';
+        $replace .= '<span class="glyphicon glyphicon-ok-circle" aria-hidden="true"></span> ';
+        $replace .= htmlspecialchars(self::translateOr('Remplacer', 'Replace'), ENT_QUOTES, 'UTF-8');
+        $replace .= '</button>';
+
+        return [
+            $replace,
+            self::newVersionButton(
+                $this->newVersionExitUrl($isMainSubmission),
+                'glyphicon glyphicon-remove-circle',
+                self::translateOr('Annuler', 'Cancel')
+            ),
+        ];
+    }
+
+    /**
+     * Back to the submission form, or to the request of the journal on the page of the paper
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function newVersionExitUrl(bool $isMainSubmission): string
+    {
+        if ($isMainSubmission) {
+            return (new Zend_View_Helper_Url())->url(['controller' => 'submit', 'action' => 'index']);
+        }
+
+        return $this->newVersionRequestUrl();
+    }
+
+    /**
+     * Page of the latest version of the paper, opened on the section where the author answers the journal
+     * (the page unfolds the panel named in the URL fragment)
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function newVersionRequestUrl(): string
+    {
+        $paper = $this;
+
+        if ($this->isObsolete()) {
+            $latestDocId = $this->getLatestVersionId();
+            $latest = $latestDocId ? Episciences_PapersManager::get((int)$latestDocId, false) : null;
+            $paper = $latest instanceof self ? $latest : $this;
+        }
+
+        $url = (new Zend_View_Helper_Url())->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]);
+        $section = $paper->requestSection();
+
+        return $section === null ? $url : $url . '#' . $section;
+    }
+
+    /**
+     * Section of the page of the paper where the author answers the current request of the journal
+     */
+    private function requestSection(): ?string
+    {
+        $status = $this->getStatus();
+
+        if (in_array($status, self::STATUS_WITH_EXPECTED_REVISION, true)) {
+            return self::PAPER_VIEW_SECTION_REVISION_REQUESTS;
+        }
+
+        if (in_array($status, self::All_STATUS_WAITING_FOR_FINAL_VERSION, true)) {
+            return self::PAPER_VIEW_SECTION_COPY_EDITING;
+        }
+
+        return null;
+    }
+
+    private static function newVersionButton(string $url, string $icon, string $label, string $class = 'btn btn-default btn-sm'): string
+    {
+        return sprintf(
+            '<a class="%s" href="%s"><span class="%s" aria-hidden="true"></span> %s</a>',
+            $class,
+            htmlspecialchars($url, ENT_QUOTES, 'UTF-8'),
+            $icon,
+            htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
+        );
+    }
+
+    private static function statusSentence(int $status): string
+    {
+        return match ($status) {
+            self::STATUS_BEING_REVIEWED => self::translateOr(
+                'Cet article a déjà été soumis et il est en cours de relecture.',
+                'This article has been submitted and is waiting for reviewing.'
+            ),
+            self::STATUS_REVIEWED => self::translateOr("Cet article est en cours d'évaluation.", 'This article is under review.'),
+            default => self::translateOr('Cet article a été accepté.', 'This article has been accepted.'),
+        };
+    }
+
+    /**
+     * @param list<string> $sentences
+     * @param list<string> $actions HTML buttons, web only
+     */
+    private static function formatNewVersionMessage(array $sentences, array $actions, bool $isFromCli): string
+    {
+        $text = implode(' ', $sentences);
+
+        if ($isFromCli) {
+            return $text;
+        }
+
+        $html = '<p>' . $text . '</p>';
+
+        if ($actions !== []) {
+            $html .= '<p class="new-version-actions">' . implode(' ', $actions) . '</p>';
+        }
+
+        return $html;
+    }
+
+    /**
+     * Translation of $text, $fallback when no translator is registered
+     */
+    private static function translateOr(string $text, string $fallback): string
+    {
+        try {
+            $translator = Zend_Registry::isRegistered('Zend_Translate') ? Zend_Registry::get('Zend_Translate') : null;
+        } catch (Zend_Exception) {
+            $translator = null;
+        }
+
+        return $translator ? (string)$translator->translate($text) : $fallback;
     }
 
     /**
