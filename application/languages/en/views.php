@@ -1600,8 +1600,9 @@ return array(
     "Souhaitez-vous remplacer la version précédente ?" => "Do you want to replace the previous version?",
     "ou" => 'or',
     "Attention : " => "Warning: ",
-    "Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, " => "To submit your new version, please use the link in the email you received from the journal, ",
-    "pour répondre à la demande de modification." => "to meet the demand of requested changes.",
+    "Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue." => "To submit your new version, please use the link in the email you received from the journal.",
+    "Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, ou le bouton ci-dessous." => "To submit your new version, please use the link in the email you received from the journal, or the button below.",
+    "Répondre à la demande de modification" => "Respond to the revision request",
     "Vous ne pouvez pas le modifier." => "You can not change it.",
 
     "Cet article a déjà été soumis et il est en cours de relecture." => "This article has been submitted and is waiting for review.",
@@ -1637,7 +1638,7 @@ return array(
     "Échec de l'enregistrement de votre suggestion de relecteurs non souhaités." => "Failed to save your suggestion of unwanted reviewers.",
     "Échec de l'enregistrement de votre suggestion de rédacteurs." => "Failed to save your suggestion of editors.",
 
-    "On ne peut pas re-proposer un article <strong>abandonné</strong>, Pour de plus amples renseignements, veuillez contacter le comité éditorial." => "You can't re-propose an <strong>abandoned</strong> article , For more information please contact the editorial committee.",
+    "Cet article a été abandonné : il ne peut pas être soumis de nouveau. Pour plus d'informations, veuillez contacter le comité éditorial." => "This article has been abandoned and cannot be submitted again. For more information, please contact the editorial committee.",
 
     'en attente des sources auteurs' => "waiting for author's sources",
     'en attente de la mise en forme par la revue' => 'waiting for formatting by the journal',

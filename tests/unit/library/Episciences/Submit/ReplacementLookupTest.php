@@ -121,7 +121,7 @@ final class ReplacementLookupTest extends TestCase
             $newer['message']
         );
         self::assertStringNotContainsString(
-            $translator->translate('pour répondre à la demande de modification.'),
+            $translator->translate('Répondre à la demande de modification'),
             $newer['message']
         );
         // A version that is not newer is still reported as already existing
@@ -157,5 +157,74 @@ final class ReplacementLookupTest extends TestCase
 
         // All the versions of a paper share its concept identifier: the latest one is the paper
         self::assertSame($newDocId, $lookup->findExistingDocId());
+    }
+
+    public function testSentencesOfTheMessageAreSeparated(): void
+    {
+        $docId = $this->insertPaper(RVID, self::OWNER_UID, Episciences_Paper::STATUS_BEING_REVIEWED);
+        $paper = Episciences_PapersManager::partialGet($docId, RVID);
+        self::assertNotNull($paper);
+        $translator = \Zend_Registry::get('Zend_Translate');
+
+        $result = $paper->manageNewVersionErrors(['version' => 1, 'isNewVersionOf' => false, 'rvId' => RVID]);
+
+        self::assertIsArray($result);
+        self::assertFalse($result['canBeReplaced']);
+        // Plain text from the command line
+        self::assertSame(
+            $translator->translate('Cet article a déjà été soumis et il est en cours de relecture.')
+            . ' ' . $translator->translate('Vous ne pouvez pas le modifier.'),
+            $result['message']
+        );
+    }
+
+    public function testAnAbandonedPaperCannotBeSubmittedAgain(): void
+    {
+        $docId = $this->insertPaper(RVID, self::OWNER_UID, Episciences_Paper::STATUS_ABANDONED);
+        $paper = Episciences_PapersManager::partialGet($docId, RVID);
+        self::assertNotNull($paper);
+        $translator = \Zend_Registry::get('Zend_Translate');
+
+        $result = $paper->manageNewVersionErrors(['version' => 2, 'isNewVersionOf' => false, 'rvId' => RVID]);
+
+        self::assertIsArray($result);
+        self::assertFalse($result['canBeReplaced']);
+        self::assertSame(
+            $translator->translate("Cet article a été abandonné : il ne peut pas être soumis de nouveau. Pour plus d'informations, veuillez contacter le comité éditorial."),
+            $result['message']
+        );
+        self::assertSame(Episciences_Paper::STATUS_ABANDONED, $result['oldPaperStatus']);
+    }
+
+    public function testOnTheWebTheMessageIsAParagraphWithoutStrayMarkup(): void
+    {
+        $docId = $this->insertPaper(RVID, self::OWNER_UID, Episciences_Paper::STATUS_BEING_REVIEWED);
+        $paper = Episciences_PapersManager::partialGet($docId, RVID);
+        self::assertNotNull($paper);
+        $translator = \Zend_Registry::get('Zend_Translate');
+
+        // Web context, nobody signed in: the status of the paper is not disclosed
+        $hadServerSoftware = array_key_exists('SERVER_SOFTWARE', $_SERVER);
+        $previousServerSoftware = $_SERVER['SERVER_SOFTWARE'] ?? null;
+        $_SERVER['SERVER_SOFTWARE'] = 'Apache';
+
+        try {
+            $json = $paper->manageNewVersionErrors(['version' => 2, 'isNewVersionOf' => false, 'rvId' => RVID]);
+        } finally {
+            if ($hadServerSoftware) {
+                $_SERVER['SERVER_SOFTWARE'] = $previousServerSoftware;
+            } else {
+                unset($_SERVER['SERVER_SOFTWARE']);
+            }
+        }
+
+        self::assertIsString($json);
+        $result = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        self::assertFalse($result['canBeReplaced']);
+        self::assertArrayNotHasKey('oldPaperStatus', $result);
+        self::assertSame(
+            '<p>' . $translator->translate("Vous êtes connecté avec un compte différent de celui ayant été utilisé pour soumettre ce document. Veuillez vous déconnecter et vous reconnecter avec le bon compte pour continuer.") . '</p>',
+            $result['message']
+        );
     }
 }

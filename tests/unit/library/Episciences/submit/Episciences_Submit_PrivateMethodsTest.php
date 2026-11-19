@@ -389,6 +389,14 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         self::assertStringContainsString('operation ended', $result['error']);
     }
 
+    public function testBuildCcsdErrorResultEscapesTheRawErrorMessage(): void
+    {
+        $e = new Ccsd_Error('unexpected <b>answer</b> & more');
+        $result = $this->invoke('buildCcsdErrorResult', [$e, 9999]);
+        self::assertStringContainsString('unexpected &lt;b&gt;answer&lt;/b&gt; &amp; more', $result['error']);
+        self::assertStringNotContainsString('<b>answer</b>', $result['error']);
+    }
+
     // =========================================================================
     // GROUP A — assertNewVersionConsistency()
     // =========================================================================

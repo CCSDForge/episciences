@@ -1425,7 +1425,7 @@ class Episciences_Submit
         } else {
             $error = $translator->translate(
                     "Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : "
-                ) . '<strong class="alert-warning">' . $displayDate . '</strong>';
+                ) . '<strong>' . $displayDate . '</strong>';
         }
 
         throw new Ccsd_Error('docUnderEmbargo: ' . $error);
@@ -1662,17 +1662,14 @@ class Episciences_Submit
         } elseif (str_contains($parsedError, Ccsd_Error::DEFAULT_PREFIX_CODE)) {
             $error = sprintf(
                 $error,
-                $e->getMessage(),
+                htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'),
                 $mailToStr,
                 Episciences_Repositories::getLabel($repoId),
                 Episciences_Repositories::getIdentifierExemple($repoId)
             );
         }
 
-        if ($translator) {
-            $error = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $error;
-        }
-
+        // On the web, the message is displayed under an "Error" heading (see public/js/submit/functions.js)
         $result['error'] = $error;
 
         return $result;
@@ -1683,22 +1680,10 @@ class Episciences_Submit
      */
     private static function buildGenericErrorResult(Exception $e): array
     {
-        $result = ['status' => 0];
+        // HTML on the web, plain text from the command line
+        $error = Ccsd_Tools::isFromCli() ? $e->getMessage() : htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
 
-        try {
-            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
-        } catch (Zend_Exception $e) {
-            Episciences_View_Helper_Log::log($e->getMessage());
-            $translator = null;
-        }
-
-        if ($translator) {
-            $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
-        } else {
-            $result['error'] = $e->getMessage();
-        }
-
-        return $result;
+        return ['status' => 0, 'error' => $error];
     }
 
 
