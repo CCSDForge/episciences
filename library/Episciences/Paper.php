@@ -247,6 +247,9 @@ class Episciences_Paper
         self::STATUS_SUBMITTED,
         self::STATUS_OK_FOR_REVIEWING,
     ];
+    /** Sections of the page of a paper (panel ids), see paper/view.phtml */
+    private const PAPER_VIEW_SECTION_REVISION_REQUESTS = 'answer';
+    private const PAPER_VIEW_SECTION_COPY_EDITING = 'copy-editing';
     public const All_STATUS_WAITING_FOR_FINAL_VERSION = [
         self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
         self::STATUS_CE_WAITING_AUTHOR_FINAL_VERSION,
@@ -4165,8 +4168,6 @@ class Episciences_Paper
             )], []];
         }
 
-        $url = (new Zend_View_Helper_Url())->url(['controller' => 'paper', 'action' => 'view', 'id' => $this->getDocid()]);
-
         return [
             $result,
             [self::translateOr(
@@ -4174,7 +4175,7 @@ class Episciences_Paper
                 'To submit your new version, please use the link in the email you received from the journal, or the button below.'
             )],
             [self::newVersionButton(
-                $url,
+                $this->newVersionRequestUrl(),
                 'fa-solid fa-link',
                 self::translateOr('Répondre à la demande de modification', 'Respond to the revision request'),
                 'btn btn-primary btn-sm'
@@ -4263,26 +4264,55 @@ class Episciences_Paper
     }
 
     /**
-     * Back to the submission form, or to the latest version of the paper
+     * Back to the submission form, or to the request of the journal on the page of the paper
      * @throws Zend_Db_Statement_Exception
      */
     private function newVersionExitUrl(bool $isMainSubmission): string
     {
-        $viewHelper = new Zend_View_Helper_Url();
-
         if ($isMainSubmission) {
-            return $viewHelper->url(['controller' => 'submit', 'action' => 'index']);
+            return (new Zend_View_Helper_Url())->url(['controller' => 'submit', 'action' => 'index']);
         }
 
-        $id = $this->getDocid();
+        return $this->newVersionRequestUrl();
+    }
+
+    /**
+     * Page of the latest version of the paper, opened on the section where the author answers the journal
+     * (the page unfolds the panel named in the URL fragment)
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function newVersionRequestUrl(): string
+    {
+        $paper = $this;
 
         if ($this->isObsolete()) {
-            $this->loadVersionsIds();
-            $versionIds = $this->getVersionsIds();
-            $id = $versionIds[array_key_last($versionIds)];
+            $latestDocId = $this->getLatestVersionId();
+            $latest = $latestDocId ? Episciences_PapersManager::get((int)$latestDocId, false) : null;
+            $paper = $latest instanceof self ? $latest : $this;
         }
 
-        return $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $id]);
+        $url = (new Zend_View_Helper_Url())->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]);
+        $section = $paper->requestSection();
+
+        return $section === null ? $url : $url . '#' . $section;
+    }
+
+    /**
+     * Section of the page of the paper where the author answers the current request of the journal
+     */
+    private function requestSection(): ?string
+    {
+        $status = $this->getStatus();
+
+        if (in_array($status, self::STATUS_WITH_EXPECTED_REVISION, true)) {
+            return self::PAPER_VIEW_SECTION_REVISION_REQUESTS;
+        }
+
+        if (in_array($status, self::All_STATUS_WAITING_FOR_FINAL_VERSION, true)) {
+            return self::PAPER_VIEW_SECTION_COPY_EDITING;
+        }
+
+        return null;
     }
 
     private static function newVersionButton(string $url, string $icon, string $label, string $class = 'btn btn-default btn-sm'): string
