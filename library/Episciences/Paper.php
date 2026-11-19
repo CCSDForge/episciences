@@ -4012,7 +4012,7 @@ class Episciences_Paper
 
     public function manageNewVersionErrors(array $options = []): array|string
     {
-        $viewHelper = new Zend_View_Helper_Url();
+        $viewHelper = new Episciences_View_Helper_Url();
         $translator = Zend_Registry::get('Zend_Translate');
         $isFromCli = Ccsd_Tools::isFromCli();
         $isEpiNotify = !empty($options['isEpiNotify']);
@@ -4055,7 +4055,7 @@ class Episciences_Paper
             $warning .= ' ';
             $link = $isMainSubmission
                 ? $viewHelper->url(['controller' => 'submit', 'action' => 'index'])
-                : $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $id]);
+                : $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $id], withSegmentedParameters: true);
 
             $exitLink = '&nbsp;&nbsp;&nbsp;';
             $exitLink .= '<a class="' . $style . '" href="' . $link . '">';
@@ -4157,7 +4157,7 @@ class Episciences_Paper
 
                 } else {
 
-                    $url = $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $this->getDocid()]);
+                    $url = $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $this->getDocid()], withSegmentedParameters: true);
                     $selfMsg = $result['message'];
                     $selfMsg .= $translator
                         ? $translator->translate(
