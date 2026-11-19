@@ -430,8 +430,32 @@ class SubmitTest extends TestCase
             sprintf('The open archive %s did not respond in time', Episciences_Repositories::getLabel($repoId)),
             $result['error']
         );
-        self::assertStringContainsString('mailto:' . EPISCIENCES_SUPPORT, $result['error']);
+        // From the command line the message is plain text: the address of the support, without a link
+        self::assertStringContainsString(EPISCIENCES_SUPPORT, $result['error']);
+        self::assertSame(strip_tags($result['error']), $result['error']);
         self::assertStringNotContainsString('%s', $result['error']);
+    }
+
+    public function testOnTheWebTheRepositoryErrorLinksToTheSupport(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
+        $method->setAccessible(true);
+
+        $hadServerSoftware = array_key_exists('SERVER_SOFTWARE', $_SERVER);
+        $previousServerSoftware = $_SERVER['SERVER_SOFTWARE'] ?? null;
+        $_SERVER['SERVER_SOFTWARE'] = 'Apache';
+
+        try {
+            $result = $method->invoke(null, new Ccsd_Error(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, CURLE_OPERATION_TIMEDOUT), 2);
+        } finally {
+            if ($hadServerSoftware) {
+                $_SERVER['SERVER_SOFTWARE'] = $previousServerSoftware;
+            } else {
+                unset($_SERVER['SERVER_SOFTWARE']);
+            }
+        }
+
+        self::assertStringContainsString('<a href="mailto:' . EPISCIENCES_SUPPORT . '">', $result['error']);
     }
 
     /**
@@ -1013,7 +1037,7 @@ class SubmitTest extends TestCase
 
         self::assertSame(0, $result['status']);
         self::assertStringContainsString('arXiv', $result['error']);
-        self::assertStringContainsString('mailto:' . EPISCIENCES_SUPPORT, $result['error']);
+        self::assertStringContainsString(EPISCIENCES_SUPPORT, $result['error']);
         self::assertStringNotContainsString('%s', $result['error']);
         self::assertStringNotContainsString('The operation ended with this error', $result['error']);
     }

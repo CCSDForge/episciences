@@ -413,7 +413,10 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
     {
         $result = $this->invoke('buildCcsdErrorResult', [new Ccsd_Error('unexpected <b>answer</b> & more'), 9999]);
 
-        self::assertStringContainsString('unexpected <b>answer</b> & more', $result['error']);
+        // The diagnostic is kept as it is, the markup of the message itself is removed
+        self::assertStringContainsString('[unexpected <b>answer</b> & more]', $result['error']);
+        self::assertStringNotContainsString('<strong>', $result['error']);
+        self::assertStringNotContainsString('<a ', $result['error']);
     }
 
     // =========================================================================

@@ -1631,11 +1631,15 @@ class Episciences_Submit
     {
         $result = ['status' => 0];
 
+        $isFromCli = Ccsd_Tools::isFromCli();
         $parsedError = $e->parseError();
-        $mailToStr = sprintf('<a href="mailto:%s">%s</a>', EPISCIENCES_SUPPORT, EPISCIENCES_SUPPORT);
+        // From the command line the message is only logged: plain text, without markup
+        $mailToStr = $isFromCli
+            ? EPISCIENCES_SUPPORT
+            : sprintf('<a href="mailto:%s">%s</a>', EPISCIENCES_SUPPORT, EPISCIENCES_SUPPORT);
 
         try {
-            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
+            $translator = $isFromCli ? null : Zend_Registry::get('Zend_Translate');
         } catch (Zend_Exception $registryException) {
             // Keep $e: the error to report is the original one, not the failed translator lookup
             Episciences_View_Helper_Log::log($registryException->getMessage());
@@ -1643,6 +1647,11 @@ class Episciences_Submit
         }
 
         $error = $translator ? $translator->translate($parsedError) : $parsedError;
+
+        if ($isFromCli) {
+            // Markup of the message itself only: the values inserted below are kept as they are
+            $error = html_entity_decode(strip_tags($error), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
 
         if (
             str_contains($e->getMessage(), Ccsd_Error::ID_DOES_NOT_EXIST_CODE) ||
@@ -1662,8 +1671,7 @@ class Episciences_Submit
         } elseif (str_contains($parsedError, Ccsd_Error::DEFAULT_PREFIX_CODE)) {
             $error = sprintf(
                 $error,
-                // HTML on the web; the raw diagnostic from the command line, where it is only logged
-                Ccsd_Tools::isFromCli() ? $e->getMessage() : htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'),
+                $isFromCli ? $e->getMessage() : htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'),
                 $mailToStr,
                 Episciences_Repositories::getLabel($repoId),
                 Episciences_Repositories::getIdentifierExemple($repoId)
