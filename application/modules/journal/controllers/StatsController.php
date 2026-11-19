@@ -3,6 +3,7 @@
 use Episciences\Api\DelegatedTokenClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\NullLogger;
 
@@ -212,27 +213,12 @@ class StatsController extends Zend_Controller_Action
                 return;
             }
 
-            $evaluationQuery = self::getEvaluationQuery($yearQuery, $startStatsAfterDate);
-            $evaluations = null;
+            $evaluations = $this->loadEvaluations(self::getEvaluationQuery($yearQuery, $startStatsAfterDate), $token, $logger);
 
-            // the reviews counted by the figures (journal administrators only)
-            if ($token !== null && self::canSeePapers()) {
-                try {
-                    // an unusable answer falls back to the public figures as well
-                    $evaluations = $this->getEvaluations(array_merge($evaluationQuery, [self::WITH_PAPERS_PARAM => 'true']), $token) ?: null;
-                } catch (GuzzleException|JsonException $e) {
-                    // falls back to the figures without the reviews
-                    $logger?->warning(sprintf('Statistics of %s: the reviews are not available: %s', RVCODE, $e->getMessage()));
-                }
-            }
-
-            try {
-                // the figures of the evaluation are public: no token
-                $evaluations ??= $this->getEvaluations($evaluationQuery, null);
-                $this->processEvaluationStats($evaluations, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
-            } catch (GuzzleException|JsonException $e) {
+            if ($evaluations === null) {
                 $this->view->errorMessage = $errorMessage;
-                $logger?->warning($e->getMessage());
+            } else {
+                $this->processEvaluationStats($evaluations, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
             }
         }
 
@@ -1314,6 +1300,69 @@ class StatsController extends Zend_Controller_Action
         }
 
         return $query;
+    }
+
+    /**
+     * The evaluation statistics of the journal, with the reviews they count for the journal administrators
+     * @param array<string, int|string> $evaluationQuery see getEvaluationQuery()
+     * @param string|null $token the delegated token (see getDelegatedToken())
+     * @param Monolog\Logger|null $logger
+     * @return array<mixed>|null null: not available
+     */
+    private function loadEvaluations(array $evaluationQuery, ?string $token, ?Monolog\Logger $logger): ?array
+    {
+        // the reviews counted by the figures (journal administrators only)
+        if ($token !== null && self::canSeePapers()) {
+            try {
+                // an unusable answer falls back to the public figures as well
+                $evaluations = $this->getEvaluations(array_merge($evaluationQuery, [self::WITH_PAPERS_PARAM => 'true']), $token);
+
+                if ($evaluations !== []) {
+                    return $evaluations;
+                }
+            } catch (GuzzleException|JsonException $e) {
+                if (self::isRefusedQuery($e)) {
+                    // the same query without the reviews would be refused as well
+                    return self::noEvaluation($e, $logger);
+                }
+
+                // falls back to the figures without the reviews
+                $logger?->warning(sprintf('Statistics of %s: the reviews are not available: %s', RVCODE, $e->getMessage()));
+            }
+        }
+
+        try {
+            // the figures of the evaluation are public: no token
+            return $this->getEvaluations($evaluationQuery, null);
+        } catch (GuzzleException|JsonException $e) {
+            if (self::isRefusedQuery($e)) {
+                return self::noEvaluation($e, $logger);
+            }
+
+            $logger?->warning(sprintf('Statistics of %s: the evaluation is not available: %s', RVCODE, $e->getMessage()));
+
+            return null;
+        }
+    }
+
+    /**
+     * Whether the API refused the query (422), e.g. a year without any paper for the evaluation statistics:
+     * no figure, and not an error
+     */
+    public static function isRefusedQuery(Throwable $e): bool
+    {
+        return $e instanceof RequestException && $e->getResponse()?->getStatusCode() === 422;
+    }
+
+    /**
+     * No evaluation figure for a refused query (see isRefusedQuery())
+     * @return array{}
+     */
+    private static function noEvaluation(Throwable $e, ?Monolog\Logger $logger): array
+    {
+        $logger?->notice(sprintf('Statistics of %s: no evaluation figure for this query: %s', RVCODE, $e->getMessage()));
+
+        return [];
     }
 
     /**
