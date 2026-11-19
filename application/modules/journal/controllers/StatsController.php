@@ -249,7 +249,7 @@ class StatsController extends Zend_Controller_Action
 
         // Figure 1 > At a glance
 
-        // all(Sub.., Pub.., Acce..., Aru..., Oth... ) : Imported articles are not included
+        // the submissions include the imported papers (nbImported); the published, accepted, refused and other ones do not
         $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS] ?? null;
         $allPublications = $dashboard['value'][self::NB_PUBLISHED] ?? null;
         $allAcceptations = $dashboard['value'][self::NB_ACCEPTED];

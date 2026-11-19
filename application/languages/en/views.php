@@ -2276,7 +2276,7 @@ return array(
     'Moyenne [en %s]' => 'Average [in %s]',
     'Médiane [en %s]' => 'Median [in %s]',
     'autre' => 'other',
-    "Les articles importés ne sont pas inclus" => "Imported articles are not included",
+    "Les articles importés ne sont pas inclus dans les indicateurs ci-dessous" => "Imported articles are not included in the indicators below",
     "Évaluation" => "Review",
     "Évaluations" => "Reviews",
     "articles acceptés (non encore publiés)" => "accepted articles (not yet published)",
