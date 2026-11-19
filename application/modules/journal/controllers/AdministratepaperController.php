@@ -16,6 +16,7 @@ require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultControl
 
 use Episciences\Mail\RecipientSuggestions;
 use Episciences\Paper\ManagementRefusal;
+use Episciences\Paper\RequiredReviews;
 use Episciences\Paper\RevisionRequests;
 use Episciences\Paper\RepositoryVersionsService;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
@@ -825,9 +826,9 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->grid = $paper->getGrid();
         $paper->loadRatings(null, Episciences_Rating_Report::STATUS_COMPLETED);
 
-        // only the review reports count (#319)
-        $isRequiredReviewersOk = (int)$review->getSetting('requiredReviewers') <= count(Episciences_Paper::countedReportsOf($paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED)));
-        $this->view->isRequiredReviewersOk = $isRequiredReviewersOk;
+        // minimum number of completed reviews for this version (review round)
+        $this->view->requiredReviewers = RequiredReviews::requiredFor($paper, $review);
+        $this->view->isRequiredReviewersOk = RequiredReviews::isReached($paper, $review);
         $this->view->isAllowedToSeeReportDetails = !$paper->isOwner() && (
                 Episciences_Auth::isSecretary() ||
                 Episciences_Auth::isEditor() ||
@@ -1098,6 +1099,26 @@ class AdministratepaperController extends PaperDefaultController
             ];
         }
 
+    }
+
+    /**
+     * Same rule as the status menu: an editor (not a secretary) may not accept, publish or ask for a revision
+     * before the minimum number of reviews of the version is reached. Redirects to the paper with the given
+     * message (it has one %s placeholder for the minimum) when the logged user is held back.
+     * @return bool true when the action is refused (the response is already a redirection)
+     */
+    private function refuseWithoutRequiredReviews(Episciences_Paper $paper, Episciences_Review $review, string $message): bool
+    {
+        if (!RequiredReviews::blocksLoggedEditor($paper, $review)) {
+            return false;
+        }
+
+        $this->_helper->FlashMessenger
+            ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+            ->addMessage(sprintf($this->view->translate($message), RequiredReviews::requiredFor($paper, $review)));
+        $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $paper->getDocid()]));
+
+        return true;
     }
 
     /**
@@ -2035,6 +2056,10 @@ class AdministratepaperController extends PaperDefaultController
                 return;
             }
 
+            if ($this->refuseWithoutRequiredReviews($paper, $journal, "Vous ne pouvez pas accepter cet article, car le nombre minimum de relectures (%s) n'a pas été atteint.")) {
+                return;
+            }
+
             $doneByUid = Episciences_Auth::getUid();
 
             $data = $request->getPost();
@@ -2219,6 +2244,10 @@ class AdministratepaperController extends PaperDefaultController
             $post = $request->getPost();
             if (!Episciences_Csrf_Helper::validateFormToken($csrfName, $post, 'unique')) {
                 $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                return;
+            }
+
+            if ($this->refuseWithoutRequiredReviews($paper, $journal, "Vous ne pouvez pas publier cet article, car le nombre minimum de relectures (%s) n'a pas été atteint.")) {
                 return;
             }
 
@@ -5119,6 +5148,13 @@ class AdministratepaperController extends PaperDefaultController
             $post = $request->getPost();
             if (!Episciences_Csrf_Helper::validateFormToken($csrfName, $post, 'unique')) {
                 $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                return;
+            }
+
+            if (
+                ($isMinorRevision || $isMajorRevision) &&
+                $this->refuseWithoutRequiredReviews($paper, $review, "Vous ne pouvez faire de demande de modifications, car le nombre minimum de relectures (%s) n'a pas été atteint.")
+            ) {
                 return;
             }
 

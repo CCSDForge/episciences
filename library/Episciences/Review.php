@@ -44,6 +44,9 @@ class Episciences_Review
     public const SETTING_CAN_SUGGEST_REVIEWERS = 'canSuggestReviewers';
     public const SETTING_REVIEWERS_CAN_COMMENT_ARTICLES = 'reviewersCanCommentArticles';
     public const SETTING_REQUIRED_REVIEWERS = 'requiredReviewers';
+    // git #239: the minimum applies to the first N review rounds (empty: every round), then the later minimum
+    public const SETTING_REQUIRED_REVIEWERS_ROUNDS = 'requiredReviewersRounds';
+    public const SETTING_REQUIRED_REVIEWERS_LATER_ROUNDS = 'requiredReviewersLaterRounds';
     public const SETTING_ENCAPSULATE_EDITORS = 'encapsulateEditors';
     public const SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'canAbandonContinuePublicationProcess';
     // git #155
@@ -208,6 +211,8 @@ class Episciences_Review
             self::SETTING_CAN_SUGGEST_REVIEWERS,
             self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES,
             self::SETTING_REQUIRED_REVIEWERS,
+            self::SETTING_REQUIRED_REVIEWERS_ROUNDS,
+            self::SETTING_REQUIRED_REVIEWERS_LATER_ROUNDS,
             self::SETTING_ENCAPSULATE_EDITORS,
             //self::SETTING_EDITORS_CAN_MAKE_DECISIONS,
             self::SETTING_EDITORS_CAN_ACCEPT_PAPERS,
@@ -1085,6 +1090,8 @@ class Episciences_Review
                 self::SETTING_RATING_DEADLINE_MIN,
                 self::SETTING_RATING_DEADLINE_MAX,
                 self::SETTING_REQUIRED_REVIEWERS,
+                self::SETTING_REQUIRED_REVIEWERS_ROUNDS,
+                self::SETTING_REQUIRED_REVIEWERS_LATER_ROUNDS,
                 self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES,
                 self::SETTING_SHOW_RATINGS,
                 self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
@@ -1623,6 +1630,27 @@ class Episciences_Review
             ]
         );
 
+        $form->addElement('text', self::SETTING_REQUIRED_REVIEWERS_ROUNDS, [
+                'label' => "Minimum appliqué aux N premiers tours de relecture",
+                'description' => "Laisser vide pour appliquer le minimum à toutes les versions. Chaque nouvelle version d'un article (y compris une version temporaire) est un nouveau tour de relecture.",
+                'class' => 'journal-settings-number',
+                'filters' => ['StringTrim'],
+                'validators' => [['Digits', true], ['GreaterThan', true, ['min' => 0]]],
+                'decorators' => self::settingsFieldDecorators(),
+            ]
+        );
+
+        $form->addElement('text', self::SETTING_REQUIRED_REVIEWERS_LATER_ROUNDS, [
+                'label' => "Minimum de relectures aux tours suivants",
+                'description' => "Minimum de relectures requis à partir du tour suivant ces N premiers tours.",
+                'value' => 0,
+                'class' => 'journal-settings-number',
+                'filters' => ['StringTrim'],
+                'validators' => [['Digits', true], ['LessThan', true, ['max' => 100]]],
+                'decorators' => self::settingsFieldDecorators(),
+            ]
+        );
+
         // reviewers can comment paper
         $form->addElement('checkbox', self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES, [
                 'label' => "Permettre aux relecteurs d'envoyer des messages à l'auteur",
@@ -2092,7 +2120,8 @@ class Episciences_Review
             self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS, self::SETTING_CAN_PICK_EDITOR,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION, self::SETTING_CAN_ANSWER_WITH_TMP_VERSION,
             self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES, self::SETTING_SHOW_RATINGS,
-            self::SETTING_REQUIRED_REVIEWERS, self::SETTING_ENCAPSULATE_EDITORS,
+            self::SETTING_REQUIRED_REVIEWERS, self::SETTING_REQUIRED_REVIEWERS_ROUNDS,
+            self::SETTING_REQUIRED_REVIEWERS_LATER_ROUNDS, self::SETTING_ENCAPSULATE_EDITORS,
             self::SETTING_EDITORS_CAN_ACCEPT_PAPERS, self::SETTING_EDITORS_CAN_PUBLISH_PAPERS,
             self::SETTING_EDITORS_CAN_REJECT_PAPERS, self::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS,
             self::SETTING_EDITORS_CAN_EDIT_TEMPLATES, self::SETTING_SPECIAL_ISSUE_ACCESS_CODE,

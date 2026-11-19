@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Paper\RequiredReviews;
 use Episciences\Reviewer\InvitationToken;
 use Episciences\Reviewer\RequestTypeRepository;
 
@@ -1005,9 +1006,7 @@ class Episciences_Mail_Reminder
         $recipients = [];
         $review = Episciences_ReviewsManager::find($this->getRvid());
 
-        $requiredReviewers = (int)$review->getSetting('requiredReviewers');
-
-        if ($requiredReviewers <= 0) {
+        if (!RequiredReviews::isEnabled($review)) {
             return $recipients;
         }
 
@@ -1020,6 +1019,13 @@ class Episciences_Mail_Reminder
 
         /** @var Episciences_Paper $paper */
         foreach ($papers as $paper) {
+            // minimum of this version (review round)
+            $requiredReviewers = RequiredReviews::requiredFor($paper, $review);
+
+            if ($requiredReviewers <= 0) {
+                continue;
+            }
+
             // L'ajout d'une relecture supplémentaire ne passe pas par les invitations, on doit donc d'abord vérifier cela :
             // only the reports counting as review reports (#319)
             $nbReports = count(Episciences_Paper::countedReportsOf($paper->getReports()));

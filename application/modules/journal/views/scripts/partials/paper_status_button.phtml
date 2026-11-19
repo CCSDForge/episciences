@@ -255,8 +255,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 
             <?php if ($canPublish && $this->review->getSetting('editorsCanPublishPapers')) :    // editors have permission to publish papers ?>
                 <?php if (
-                        $this->isRequiredReviewersOk ||
-                        !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
+                        $this->isRequiredReviewersOk // the minimum number of reviews of this version (review round) is reached, or there is none
                 ) : ?>
 
                     <?php // PUBLISH PAPER?>
@@ -268,7 +267,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php else : // if there is not enough rating reports, display a notice ?>
                     <li data-toggle="tooltip"
                         data-placement="right"
-                        title="<?= $this->translate("Vous ne pouvez pas publier cet article, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->review->getSetting('requiredReviewers')) ?>">
+                        title="<?= $this->translate("Vous ne pouvez pas publier cet article, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->requiredReviewers) ?>">
                         <a class="disabled"><?= $this->translate($publishMsg) ?></a>
                     </li>
                 <?php endif; ?>
@@ -329,9 +328,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             <?php else: ?>
                 <?php if (!$isInRevision && $copyEditingNotStarted && $this->review->getSetting('editorsCanAcceptPapers')) :    // editors have permission to accept papers ?>
                     <?php if (
-                        $this->isRequiredReviewersOk ||
-                        !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
-
+                        $this->isRequiredReviewersOk // the minimum number of reviews of this version (review round) is reached, or there is none
                     ) : ?>
                         <li>
                             <a href="#" data-toggle="modal"
@@ -340,7 +337,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                     <?php else : // if there is not enough rating reports, display a notice ?>
                         <li data-toggle="tooltip"
                             data-placement="right"
-                            title="<?= $this->translate("Vous ne pouvez pas accepter cet article, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->review->getSetting('requiredReviewers')) ?>">
+                            title="<?= $this->translate("Vous ne pouvez pas accepter cet article, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->requiredReviewers) ?>">
                             <a class="disabled"><?= $this->translate($acceptMsg) ?></a>
                         </li>
                     <?php endif; ?>
@@ -378,9 +375,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             <?php // ASK FOR A REVISION ************    ?>
             <?php if ($copyEditingNotStarted && $this->review->getSetting('editorsCanAskPaperRevisions')) :    // editors have permission to ask for a revision ?>
                 <?php if (
-                    $this->isRequiredReviewersOk ||
-                    !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
-
+                    $this->isRequiredReviewersOk // the minimum number of reviews of this version (review round) is reached, or there is none
                 ) : ?>
                     <?php if (!$isInRevision) : ?>
                         <li>
@@ -394,7 +389,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php else : // if there is not enough rating reports, display a notice ?>
                     <li data-toggle="tooltip"
                         data-placement="right"
-                        title="<?= $this->translate("Vous ne pouvez faire de demande de modifications, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->review->getSetting('requiredReviewers')) ?>">
+                        title="<?= $this->translate("Vous ne pouvez faire de demande de modifications, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->requiredReviewers) ?>">
                         <a class="disabled"><?= $this->translate("Demander des modifications") ?></a>
                     </li>
                 <?php endif; ?>

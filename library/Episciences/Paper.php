@@ -7,6 +7,7 @@ use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\Export;
 use Episciences\Paper\Funding\FundingReference;
 use Episciences\Paper\Funding\FundingReferenceFactory;
+use Episciences\Paper\RequiredReviews;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\Paper\Spdx\LicenseCodeManager;
@@ -2592,8 +2593,8 @@ class Episciences_Paper
 
     /**
      * return paper rating reports (can be filtered)
-     * @param null $reviewer_uid : if reviewer_uid is given, filter reports that were not emitted by this reviewer
-     * @param null $status : if status is given, filter reports that do not match
+     * @param int|null $reviewer_uid : if reviewer_uid is given, filter reports that were not emitted by this reviewer
+     * @param int|null $status : if status is given, filter reports that do not match
      * @param Episciences_User|null $user : if user is given, remove criteria that this user is not allowed to see
      * @return Episciences_Rating_Report[]
      * @throws Zend_Db_Statement_Exception
@@ -3380,10 +3381,10 @@ class Episciences_Paper
 
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
-        $this->loadRatings(null, Episciences_Rating_Report::STATUS_COMPLETED);
+        $requiredReviews = RequiredReviews::requiredFor($this, $review);
 
-        if ($review->getSetting('requiredReviewers')) {
-            return (count(self::countedReportsOf($this->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED))) >= (int)$review->getSetting('requiredReviewers'));
+        if ($requiredReviews > 0) {
+            return RequiredReviews::completedFor($this) >= $requiredReviews;
         }
 
         $completed_reports = 0;
@@ -3455,8 +3456,8 @@ class Episciences_Paper
 
     /**
      * load rating reports
-     * @param null $uid
-     * @param null $status
+     * @param int|null $uid
+     * @param int|null $status
      * @return Episciences_Paper
      */
     public function loadRatings($uid = null, $status = null): \Episciences_Paper

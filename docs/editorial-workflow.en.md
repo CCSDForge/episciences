@@ -106,7 +106,9 @@ Five status constants exist in `Paper.php` but are **never written by any code p
 
 | Setting constant | String key | Gates |
 |---|---|---|
-| `SETTING_REQUIRED_REVIEWERS` | `requiredReviewers` | Threshold for the 2→3 auto-transition (`isReviewed()`); also gates whether ordinary editors (not Secretary) can see Accept/Refuse/Revision buttons at all before enough reports are in |
+| `SETTING_REQUIRED_REVIEWERS` | `requiredReviewers` | Minimum number of completed reports of a version, computed by `Episciences\Paper\RequiredReviews` for the round of the version (see the two settings below): threshold for the 2→3 auto-transition (`isReviewed()`); ordinary editors (not Secretary) cannot accept, publish or ask for a revision before it is reached, in the status menu and on the server side (`acceptAction()`, `publishAction()`, `revisionAction()` minor/major); also used by the "not enough reviewers" reminder |
+| `SETTING_REQUIRED_REVIEWERS_ROUNDS` | `requiredReviewersRounds` | Number of first review rounds `requiredReviewers` applies to; empty: every round. A round is the rank of the version among the versions of the paper, temporary versions included |
+| `SETTING_REQUIRED_REVIEWERS_LATER_ROUNDS` | `requiredReviewersLaterRounds` | Minimum of the rounds after the first `requiredReviewersRounds` ones |
 | `SETTING_EDITORS_CAN_ACCEPT_PAPERS` | `editorsCanAcceptPapers` | Enables `acceptAction()` for ordinary editors (Secretary always bypasses) |
 | `SETTING_EDITORS_CAN_REJECT_PAPERS` | `editorsCanRejectPapers` | Enables `refuseAction()` for ordinary editors |
 | `SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS` | `editorsCanAskPaperRevisions` | Enables `revisionAction()` (minor/major) for ordinary editors |

@@ -106,7 +106,9 @@ Cinq constantes de statut existent dans `Paper.php` mais ne sont **jamais écrit
 
 | Constante de réglage | Clé texte | Contrôle |
 |---|---|---|
-| `SETTING_REQUIRED_REVIEWERS` | `requiredReviewers` | Seuil pour la transition automatique 2→3 (`isReviewed()`) ; contrôle aussi si les éditeurs ordinaires (hors Secrétaire) voient les boutons Accepter/Refuser/Révision avant que suffisamment de rapports soient rentrés |
+| `SETTING_REQUIRED_REVIEWERS` | `requiredReviewers` | Nombre minimum de rapports complétés d'une version, calculé par `Episciences\Paper\RequiredReviews` selon le tour de la version (voir les deux réglages suivants) : seuil pour la transition automatique 2→3 (`isReviewed()`) ; les éditeurs ordinaires (hors Secrétaire) ne peuvent ni accepter, ni publier, ni demander des modifications avant qu'il soit atteint, dans le menu des statuts et côté serveur (`acceptAction()`, `publishAction()`, `revisionAction()` mineure/majeure) ; utilisé aussi par la relance « pas assez de relecteurs » |
+| `SETTING_REQUIRED_REVIEWERS_ROUNDS` | `requiredReviewersRounds` | Nombre de premiers tours de relecture auxquels s'applique `requiredReviewers` ; vide : tous les tours. Un tour est le rang de la version parmi les versions de l'article, versions temporaires comprises |
+| `SETTING_REQUIRED_REVIEWERS_LATER_ROUNDS` | `requiredReviewersLaterRounds` | Minimum des tours suivant les `requiredReviewersRounds` premiers |
 | `SETTING_EDITORS_CAN_ACCEPT_PAPERS` | `editorsCanAcceptPapers` | Active `acceptAction()` pour les éditeurs ordinaires (le Secrétaire contourne toujours) |
 | `SETTING_EDITORS_CAN_REJECT_PAPERS` | `editorsCanRejectPapers` | Active `refuseAction()` pour les éditeurs ordinaires |
 | `SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS` | `editorsCanAskPaperRevisions` | Active `revisionAction()` (mineure/majeure) pour les éditeurs ordinaires |
