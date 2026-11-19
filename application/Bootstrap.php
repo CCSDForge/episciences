@@ -281,18 +281,24 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
         if (defined('PREFIX_URL') && PREFIX_URL !== PORTAL_PREFIX_URL) {
             $router->removeDefaultRoutes();
-            $route = sprintf(':%s/:controller/:action/*/*', PREFIX_ROUTE);
-            $router->addRoute(
-                'default',
-                new Zend_Controller_Router_Route($route, [
-                        'controller' => 'index',
-                        'action' => 'index'
-                    ],
-                ));
+            $router->addRoute('default', self::createJournalPrefixRoute(PREFIX_ROUTE));
 
             // $this->_helper->url($action, $controller) bypasses the router: keep the journal prefix
             Zend_Controller_Action_HelperBroker::addHelper(new Episciences_Controller_Action_Helper_Url());
         }
+    }
+
+    /**
+     * Default route of journals served behind a "/<journal code>/" path prefix.
+     * A single wildcard: with a second one, assemble() writes the parameters twice
+     * (url(['id' => 2632]) gives ".../id/id/2632").
+     */
+    public static function createJournalPrefixRoute(string $prefixRoute): Zend_Controller_Router_Route
+    {
+        return new Zend_Controller_Router_Route(
+            sprintf(':%s/:controller/:action/*', $prefixRoute),
+            ['controller' => 'index', 'action' => 'index']
+        );
     }
 
     /**
