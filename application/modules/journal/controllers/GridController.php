@@ -180,6 +180,21 @@ class GridController extends Zend_Controller_Action
     }
 
     /**
+     * Back to the grids page, on the grid of the given key when it is valid
+     */
+    private function redirectToGrid(mixed $rgid): void
+    {
+        $key = Episciences_GridsManager::gridKey($rgid);
+
+        if ($key === null) {
+            $this->_helper->redirector('list', 'grid');
+            return;
+        }
+
+        $this->_helper->redirector->gotoUrl(self::gridListUrl($key));
+    }
+
+    /**
      * The grids page, scrolled to a grid: its panel is opened when the volume grids are collapsed (functions.js)
      */
     public static function gridListUrl(string $key): string
@@ -225,7 +240,7 @@ class GridController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
         }
 
-        $this->_helper->redirector('list', 'grid');
+        $this->redirectToGrid($request->getPost('to'));
 
     }
 
@@ -310,7 +325,7 @@ class GridController extends Zend_Controller_Action
                     $message = '<strong>' . $this->view->translate("Le nouveau critère n'a pas pu être ajouté.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector('list', 'grid');
+                $this->redirectToGrid($params['rgid'] ?? null);
 
             } else {
                 $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
@@ -420,7 +435,7 @@ class GridController extends Zend_Controller_Action
                     $message = '<strong>' . $this->view->translate("Le nouveau séparateur n'a pas pu être ajouté.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector('list', 'grid');
+                $this->redirectToGrid($params['rgid'] ?? null);
 
             } else {
                 $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
@@ -473,7 +488,7 @@ class GridController extends Zend_Controller_Action
                     $message = '<strong>' . $this->view->translate("Le séparateur n'a pas pu être modifié.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector('list', 'grid');
+                $this->redirectToGrid($params['rgid'] ?? null);
 
             } else {
                 $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
@@ -531,7 +546,7 @@ class GridController extends Zend_Controller_Action
                     $message = '<strong>' . $this->view->translate("Le critère n'a pas pu être modifié.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
-                $this->_helper->redirector('list', 'grid');
+                $this->redirectToGrid($params['rgid'] ?? null);
 
             } else {
                 $message = '<strong>' . ($isTokenValid ? $this->view->translate("Ce formulaire comporte des erreurs.") : $this->view->translate('Votre session a expiré, veuillez réessayer.')) . '</strong>';
@@ -571,7 +586,7 @@ class GridController extends Zend_Controller_Action
         $oGrid->loadXML(REVIEW_GRIDS_PATH . $filename);
         $oGrid->removeCriterion($item_id);
         $oGrid->save();
-        // la redirection vers "grid/list" est faite dans "js/grid/es.dataTables.delete-buttons.js"
+        // back to the grid of the criterion: done by js/library/es.dataTables.delete-buttons.js
         $message = '<strong>' . $this->view->translate("La modification a été effectuée avec succès.") . '</strong>';
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
 

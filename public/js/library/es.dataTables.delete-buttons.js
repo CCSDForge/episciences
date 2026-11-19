@@ -22,10 +22,21 @@ $(document).ready(function () {
             if (result) {
                 $.post(action, data, function (respond) {
                     if (respond == 1) {
-                        if (
-                            isDeleteGridAction ||
-                            action === '/grid/deletecriterion'
-                        ) {
+                        if (action === '/grid/deletecriterion') {
+                            // back on the grid of the criterion, opened even when the volume grids are folded:
+                            // the page is loaded again, also when only its anchor changes
+                            window.history.replaceState(
+                                null,
+                                '',
+                                '/grid/list' +
+                                    (params.rgid
+                                        ? '#rating-grid-' +
+                                          encodeURIComponent(params.rgid)
+                                        : '')
+                            );
+                            window.location.reload();
+                            return false;
+                        } else if (isDeleteGridAction) {
                             window.location.replace('/grid/list');
                             return false;
                         } else {
