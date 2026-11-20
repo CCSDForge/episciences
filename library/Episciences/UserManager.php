@@ -9,43 +9,6 @@
 class Episciences_UserManager
 {
     /**
-     * Retourne le nombre de rapports de relecture deposés
-     * @param $uid
-     * @return mixed
-     */
-
-    public static function countRatings($uid): mixed
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db?->select()
-            ->from(T_REVIEWER_REPORTS, ['stats_ratings_nbr' => 'COUNT(*)'])
-            ->where('UID = ?', $uid)
-            ->where('STATUS = ?', Episciences_Rating_Report::STATUS_COMPLETED);
-        return $db?->fetchRow($select);
-
-    }
-
-    /**
-     * Returns the number of invitations sent to a user by the current journal: one by invitation, as an answer or a
-     * cancellation inserts another USER_INVITATION row with the same AID (the assignment created with the invitation)
-     * @param $uid
-     * @return mixed
-     */
-
-    public static function countInvitations($uid): mixed
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db?->select()
-            ->from(['ua' => T_ASSIGNMENTS], ['stats_invitations_nbr' => new Zend_Db_Expr('COUNT(DISTINCT ui.AID)')])
-            ->join(['ui' => T_USER_INVITATIONS], 'ua.ID = ui.AID', [])
-            ->where('ua.UID = ?', $uid)
-            // the people invited without an account have ids of their own, which may be the UID of an account
-            ->where('ua.TMP_USER = 0')
-            ->where('ua.RVID = ?', RVID);
-        return $db?->fetchRow($select);
-    }
-
-    /**
      * get submitted DOCID query
      * @param int $uid
      * @return Zend_Db_Select
