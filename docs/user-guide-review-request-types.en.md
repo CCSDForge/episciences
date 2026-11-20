@@ -173,6 +173,17 @@ their answer from the same link until the due date; a new file replaces the one 
 The answer is shown only to the editorial staff, in the **Answers given without an account** panel of the paper's
 administration page (and under the invitation in the **Reviewers** panel). Authors never see it.
 
+### Associate the answer with an account
+
+A person who answered without an account can then associate their answer with their account: signed in, they open the
+invitation link. If their account uses the address of the invitation, the answer is associated with it at once;
+otherwise, the **Associate this answer with my account** button does it. The answer is then listed in **My reviews**
+(**Answers given from an invitation link** section), where it opens without the link, and can be edited until the due
+date.
+
+It stays an answer without an account: shown only to the editorial staff, who see the associated account, it does not
+become a review report and still does not count as one. The paper history keeps the association.
+
 Without an account, the invited person does not see their previous reports, and their answer does not count as a
 review report. The type form reminds
 it when the option is checked on a type other than the quick opinion. For a revised version check type, keep the

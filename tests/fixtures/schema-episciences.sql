@@ -1115,11 +1115,14 @@ CREATE TABLE `review_light_answer` (
   `request_type_id` int unsigned NOT NULL,
   `uid` int unsigned NOT NULL,
   `tmp_user` tinyint unsigned NOT NULL DEFAULT '0',
+  `linked_uid` int unsigned DEFAULT NULL,
+  `linked_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_aid` (`aid`),
-  KEY `idx_docid` (`docid`)
+  KEY `idx_docid` (`docid`),
+  KEY `idx_linked_uid` (`linked_uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `review_request_type`;

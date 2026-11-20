@@ -378,6 +378,7 @@ test.describe('Review request types (#319)', () => {
     test('a person invited for a quick opinion answers without an account by filling in its grid', async ({
         authorPage,
         adminPage,
+        reviewerPage,
         mailpit,
         browser,
         baseURL,
@@ -395,6 +396,7 @@ test.describe('Review request types (#319)', () => {
         const criterionTitle = `E2E interest ${stamp}`;
         let gridCreated = false;
         let docid;
+        let invitationPath;
 
         try {
             await test.step('the quick opinion is answered without an account, with a grid of its own', async () => {
@@ -450,6 +452,7 @@ test.describe('Review request types (#319)', () => {
                     .find(url => url.includes('/reviewer/invitation/'));
                 expect(link).toBeTruthy();
                 const url = new URL(link);
+                invitationPath = url.pathname.replace(/^\//, '') + url.search;
 
                 const context = await newLoggedOutContext(browser, baseURL);
                 try {
@@ -488,6 +491,34 @@ test.describe('Review request types (#319)', () => {
                     }),
                 });
                 await expect(answers).toContainText(comment);
+            });
+
+            await test.step('signed in with another address, the person associates the answer with their account', async () => {
+                await reviewerPage.goto(invitationPath);
+                await reviewerPage
+                    .getByRole('button', { name: 'Associate this answer with my account' })
+                    .click();
+                await expect(
+                    reviewerPage.getByText('This answer is associated with your account').first()
+                ).toBeVisible();
+
+                // their reviews list it, and open it without the invitation link
+                await reviewerPage.goto('paper/ratings');
+                const row = reviewerPage.locator('#light-answers tbody tr', {
+                    hasText: String(docid),
+                });
+                await expect(row).toContainText(QUICK_OPINION);
+                await row.getByRole('link', { name: `View my answer on article ${docid}` }).click();
+                await expect(reviewerPage).not.toHaveURL(/token/);
+                await expect(
+                    reviewerPage.getByText('This answer is associated with your account').first()
+                ).toBeVisible();
+
+                // the editorial team sees the account, the answer stays an answer without an account
+                await openPaperManagement(adminPage, docid);
+                await expect(
+                    adminPage.locator('.light-answer-linked-account').first()
+                ).toContainText('associated with the account');
             });
         } finally {
             // the journal settings are left as they were

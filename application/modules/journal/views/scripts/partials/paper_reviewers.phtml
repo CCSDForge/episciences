@@ -199,6 +199,9 @@ try {
                                                     <?php if ($lightAnswer->getUpdatedAt() !== null) : ?>
                                                         (<?= $this->escape($this->translate('modifié le')) ?> <?= $this->Date($lightAnswer->getUpdatedAt()->format('Y-m-d')) ?>)
                                                     <?php endif; ?>
+                                                    <?php if ($lightAnswer->getLinkedUid() !== null) : ?>
+                                                        — <?= $this->escape($this->translate('associée au compte')) ?> [ UID <code><?= (int)$lightAnswer->getLinkedUid() ?></code> ]
+                                                    <?php endif; ?>
                                                 </summary>
                                                 <div class="well well-sm">
                                                     <?= $this->partial('partials/light_answer_report.phtml', [

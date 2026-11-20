@@ -17,6 +17,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use ReflectionMethod;
 use unit\library\Episciences\Reviewer\RequestTypeTestDatabase;
 use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+use unit\modules\support\ResponseSent;
 use unit\modules\ControllerTestCase;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
@@ -165,6 +166,130 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
 
         // sent with an account, the option of the type checked since: still answered with an account
         self::assertNull($this->lightAnswerTypeAfterTheOptionChanged(false));
+    }
+
+    // ------------------------------------------------------------------
+    // Answer associated with an account (#319, lot E)
+    // ------------------------------------------------------------------
+
+    private const TMP_UID = 500;
+    private const INVITED_EMAIL = 'invited@example.org';
+
+    /**
+     * An answer given by a person without an account (temporary user TMP_UID), saved
+     */
+    private function tmpAnswer(?int $linkedUid = null): LightAnswer
+    {
+        return new LightAnswer(1, self::AID, RVID, self::DOCID, 11, self::TMP_UID, true, new \DateTimeImmutable('2026-01-01'), null, $linkedUid);
+    }
+
+    private function tmpAssignment(): Episciences_User_Assignment
+    {
+        return new Episciences_User_Assignment(['id' => self::AID, 'uid' => self::TMP_UID, 'tmp_user' => 1, 'rvid' => RVID]);
+    }
+
+    /**
+     * The signed-in account (self::UID), with this address; the temporary invited person has INVITED_EMAIL
+     */
+    private function signedInWith(string $email): void
+    {
+        $this->logInAs([\Episciences_Acl::ROLE_MEMBER])->setEmail($email);
+        $this->db->respondTo('/FROM `USER_TMP`/', [['ID' => self::TMP_UID, 'EMAIL' => self::INVITED_EMAIL, 'LASTNAME' => 'Invited']]);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function linkWrites(): array
+    {
+        return array_values(array_filter($this->db->updates(), static fn(array $update): bool => $update['table'] === 'review_light_answer'));
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     */
+    private function link(LightAnswer $answer, ?array $post = null, bool $withRequestToken = true): ?LightAnswer
+    {
+        $request = $post === null ? $this->getRequest() : $this->postRequest($post, $withRequestToken);
+
+        return $this->call('linkLightAnswer', $request, $answer, $this->invitation(), $this->tmpAssignment(), $this->paper());
+    }
+
+    public function testAnAccountHoldingTheInvitedAddressIsAssociatedWithTheAnswerAtOnce(): void
+    {
+        $this->signedInWith('Invited@Example.org');
+
+        $linked = $this->link($this->tmpAnswer());
+
+        self::assertInstanceOf(LightAnswer::class, $linked);
+        self::assertTrue($linked->isOfAccount(self::UID));
+        self::assertCount(1, $this->linkWrites());
+        self::assertSame(self::UID, $this->linkWrites()[0]['values']['linked_uid']);
+        self::assertTrue($this->controller->view->answerLinkedNow);
+    }
+
+    public function testAnotherAccountIsOfferedToAssociateTheAnswer(): void
+    {
+        $this->signedInWith('someone.else@example.org');
+
+        $answer = $this->link($this->tmpAnswer());
+
+        self::assertInstanceOf(LightAnswer::class, $answer);
+        self::assertFalse($answer->isOfAccount(self::UID));
+        self::assertSame([], $this->linkWrites());
+        self::assertTrue($this->controller->view->canLinkAnswer);
+    }
+
+    public function testAnotherAccountAssociatesTheAnswerOnRequest(): void
+    {
+        $this->signedInWith('someone.else@example.org');
+        // the page of the invitation is loaded again: its URL is built by the router
+        \Zend_Controller_Front::getInstance()->getRouter()->addDefaultRoutes();
+
+        try {
+            $this->link($this->tmpAnswer(), ['link_light_answer' => '1']);
+            self::fail('the page is loaded again once the answer is associated');
+        } catch (ResponseSent) {
+        }
+
+        self::assertCount(1, $this->linkWrites());
+        self::assertSame(self::UID, $this->linkWrites()[0]['values']['linked_uid']);
+    }
+
+    public function testARequestWithoutTheRequestTokenAssociatesNothing(): void
+    {
+        $this->signedInWith('someone.else@example.org');
+
+        $this->link($this->tmpAnswer(), ['link_light_answer' => '1'], false);
+
+        self::assertSame([], $this->linkWrites());
+        self::assertTrue($this->controller->view->canLinkAnswer);
+    }
+
+    public function testAnAnswerAlreadyOfTheAccountIsLeftAsItIs(): void
+    {
+        $this->signedInWith('someone.else@example.org');
+
+        $answer = $this->link($this->tmpAnswer(self::UID), ['link_light_answer' => '1']);
+
+        self::assertInstanceOf(LightAnswer::class, $answer);
+        self::assertSame([], $this->linkWrites());
+        self::assertTrue($this->controller->view->answerOfAccount);
+    }
+
+    public function testTheAccountOfAnAnswerOpensItWithoutTheLink(): void
+    {
+        $this->db->respondTo('/FROM `review_light_answer`/', [[
+            'id' => 1, 'aid' => self::AID, 'rvid' => RVID, 'docid' => self::DOCID, 'request_type_id' => 11,
+            'uid' => self::TMP_UID, 'tmp_user' => 1, 'linked_uid' => self::UID, 'created_at' => '2026-01-01 00:00:00',
+        ]]);
+        self::assertFalse($this->call('isAccountOfLightAnswer', self::AID), 'signed out');
+
+        $this->logInAs([\Episciences_Acl::ROLE_MEMBER]);
+        self::assertTrue($this->call('isAccountOfLightAnswer', self::AID));
+
+        $this->logInAs([\Episciences_Acl::ROLE_MEMBER], self::UID + 1);
+        self::assertFalse($this->call('isAccountOfLightAnswer', self::AID));
     }
 
     public function testTheFirstAnswerNeedsAnOpenInvitationOnAPaperStillToReview(): void

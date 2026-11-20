@@ -2,6 +2,41 @@
 <?php $this->layout()->description = $this->translate("Liste des articles pour lesquels je suis relecteur"); ?>
 <?php $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName(); ?>
 <?php $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName(); ?>
+<?php // answers given from an invitation link, by the account or associated with it (#319) ?>
+<?php if (!empty($this->lightAnswers)) : ?>
+    <section class="panel panel-default" aria-labelledby="light-answers-heading">
+        <div class="panel-heading">
+            <h2 class="panel-title" id="light-answers-heading"><?= $this->escape($this->translate("Réponses données depuis un lien d'invitation")) ?></h2>
+        </div>
+        <table class="table" id="light-answers">
+            <thead>
+            <tr>
+                <th scope="col"><?= $this->escape($this->translate('Id')) ?></th>
+                <th scope="col"><?= $this->escape($this->translate('Titre')) ?></th>
+                <th scope="col"><?= $this->escape($this->translate('Type de demande')) ?></th>
+                <th scope="col"><?= $this->escape($this->translate('Réponse du')) ?></th>
+                <th scope="col"><span class="sr-only"><?= $this->escape($this->translate('Actions')) ?></span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($this->lightAnswers as $row) : ?>
+                <tr>
+                    <td><?= (int)$row['docid'] ?></td>
+                    <td><?= $this->escape($row['title']) ?></td>
+                    <td><?= $this->requestTypeLabel($row['request_type_id']) ?></td>
+                    <td><?= $this->Date($row['date']) ?></td>
+                    <td>
+                        <a href="<?= $this->escape($this->url(['controller' => 'reviewer', 'action' => 'invitation', 'id' => (int)$row['invitation_id']], null, true)) ?>"
+                           aria-label="<?= $this->escape(sprintf($this->translate('Voir ma réponse sur l\'article %d'), (int)$row['docid'])) ?>">
+                            <?= $this->escape($this->translate('Voir ma réponse')) ?>
+                        </a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </section>
+<?php endif; ?>
 <?php
 /** @var Zend_Form $form */
 $form = $this->paperFilter();

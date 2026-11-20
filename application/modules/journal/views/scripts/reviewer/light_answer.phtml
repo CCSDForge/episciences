@@ -19,6 +19,29 @@ $this->layout()->pageTitle = $this->translate('Votre réponse à la demande de r
     <?php endif; ?>
 </p>
 
+<?php // answer associated with the signed-in account, or the form to associate it (#319) ?>
+<?php if ($answer !== null && $this->answerOfAccount) : ?>
+    <div class="alert alert-info" role="status">
+        <?php if ($this->answerLinkedNow) : ?>
+            <?= $this->escape($this->translate("Votre compte utilise l'adresse de l'invitation : votre réponse lui a été associée.")) ?>
+        <?php endif; ?>
+        <?= $this->escape($this->translate('Cette réponse est associée à votre compte : vous la retrouvez dans « Mes relectures ».')) ?>
+    </div>
+<?php elseif ($answer !== null && $this->canLinkAnswer) : ?>
+    <form method="post" action="" class="well well-sm" id="link-light-answer">
+        <input type="hidden" name="csrf_token" value="<?= $this->escape($this->csrfToken) ?>">
+        <p id="link-light-answer-help">
+            <?= $this->escape(sprintf(
+                $this->translate("Vous êtes connecté avec le compte %s. Associez cette réponse à votre compte pour la retrouver dans « Mes relectures » ; elle reste une réponse sans compte, visible seulement du comité éditorial."),
+                (string)Episciences_Auth::getScreenName()
+            )) ?>
+        </p>
+        <button type="submit" name="link_light_answer" value="1" class="btn btn-default" aria-describedby="link-light-answer-help">
+            <?= $this->escape($this->translate('Associer cette réponse à mon compte')) ?>
+        </button>
+    </form>
+<?php endif; ?>
+
 <div>
     <?= $this->paper->getXslt() ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $this->paper]) ?>

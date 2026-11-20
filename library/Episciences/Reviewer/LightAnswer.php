@@ -25,7 +25,9 @@ final class LightAnswer
         private readonly int $uid,
         private readonly bool $tmpUser,
         private readonly DateTimeImmutable $createdAt,
-        private readonly ?DateTimeImmutable $updatedAt = null
+        private readonly ?DateTimeImmutable $updatedAt = null,
+        private readonly ?int $linkedUid = null,
+        private readonly ?DateTimeImmutable $linkedAt = null
     ) {
     }
 
@@ -58,7 +60,9 @@ final class LightAnswer
             (int)$row['uid'],
             (bool)$row['tmp_user'],
             new DateTimeImmutable((string)$row['created_at']),
-            !empty($row['updated_at']) ? new DateTimeImmutable((string)$row['updated_at']) : null
+            !empty($row['updated_at']) ? new DateTimeImmutable((string)$row['updated_at']) : null,
+            !empty($row['linked_uid']) ? (int)$row['linked_uid'] : null,
+            !empty($row['linked_at']) ? new DateTimeImmutable((string)$row['linked_at']) : null
         );
     }
 
@@ -74,6 +78,8 @@ final class LightAnswer
             'request_type_id' => $this->requestTypeId,
             'uid' => $this->uid,
             'tmp_user' => (int)$this->tmpUser,
+            'linked_uid' => $this->linkedUid,
+            'linked_at' => $this->linkedAt?->format(self::DATE_FORMAT),
             'created_at' => $this->createdAt->format(self::DATE_FORMAT),
             'updated_at' => $this->updatedAt?->format(self::DATE_FORMAT),
         ];
@@ -86,15 +92,35 @@ final class LightAnswer
     {
         return new self(
             $this->id, $this->aid, $this->rvid, $this->docid, $this->requestTypeId, $this->uid, $this->tmpUser,
-            $this->createdAt, $now
+            $this->createdAt, $now, $this->linkedUid, $this->linkedAt
         );
+    }
+
+    /**
+     * The same answer, associated at $now with the account of the invited person, signed in: it stays an answer
+     * without an account, only shown with the account
+     */
+    public function linkedTo(int $uid, DateTimeImmutable $now): self
+    {
+        return new self(
+            $this->id, $this->aid, $this->rvid, $this->docid, $this->requestTypeId, $this->uid, $this->tmpUser,
+            $this->createdAt, $this->updatedAt, $uid, $now
+        );
+    }
+
+    /**
+     * Whether the answer belongs to this account: given by the invited account itself, or associated with it
+     */
+    public function isOfAccount(int $uid): bool
+    {
+        return $uid > 0 && ((!$this->tmpUser && $this->uid === $uid) || $this->linkedUid === $uid);
     }
 
     public function withId(int $id): self
     {
         return new self(
             $id, $this->aid, $this->rvid, $this->docid, $this->requestTypeId, $this->uid, $this->tmpUser,
-            $this->createdAt, $this->updatedAt
+            $this->createdAt, $this->updatedAt, $this->linkedUid, $this->linkedAt
         );
     }
 
@@ -157,5 +183,15 @@ final class LightAnswer
     public function getUpdatedAt(): ?DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function getLinkedUid(): ?int
+    {
+        return $this->linkedUid;
+    }
+
+    public function getLinkedAt(): ?DateTimeImmutable
+    {
+        return $this->linkedAt;
     }
 }

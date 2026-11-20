@@ -47,6 +47,11 @@ class ReviewerController extends PaperDefaultController
     private const INVITATION_NOT_FOUND = "Cette invitation n'existe pas !";
 
     /**
+     * Field of the form that associates an answer given without an account with the signed-in account (#319)
+     */
+    private const LINK_LIGHT_ANSWER_FIELD = 'link_light_answer';
+
+    /**
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -282,7 +287,8 @@ class ReviewerController extends PaperDefaultController
             return true;
         }
 
-        if ($isInvitee) {
+        // the account an answer without an account was associated with opens it without the link (#319)
+        if ($isInvitee || $this->isAccountOfLightAnswer((int)$invitation->getAid())) {
             return true;
         }
 
@@ -834,7 +840,7 @@ class ReviewerController extends PaperDefaultController
         // without an account, holding the signed link is the only proof: an invitation without link token is only
         // answered here by the invited account itself, signed in
         $isInvitee = Episciences_Auth::isLogged() && !$assignment->isTmp_user() && (int)$assignment->getUid() === (int)Episciences_Auth::getUid();
-        if ($invitation->getToken() === null && !$isInvitee) {
+        if ($invitation->getToken() === null && !$isInvitee && !$this->isAccountOfLightAnswer((int)$invitation->getAid())) {
             AccessLog::denied(AccessLog::TOKEN_INVALID, 'light_answer_without_link_token', ['invitation_id' => (int)$invitation->getId()]);
             $this->view->errors = 'Lien non valide; le jeton transmis dans la requête est erroné.';
             return;
@@ -849,6 +855,13 @@ class ReviewerController extends PaperDefaultController
             $this->view->displayInvitationDetails = $paper !== false && $paper !== null;
             $this->view->errors = $error;
             return;
+        }
+
+        if ($answer !== null && Episciences_Auth::isLogged()) {
+            $answer = $this->linkLightAnswer($request, $answer, $invitation, $assignment, $paper);
+            if ($answer === null) {
+                return; // redirected
+            }
         }
 
         $deadline = $assignment->getDeadline();
@@ -883,6 +896,78 @@ class ReviewerController extends PaperDefaultController
         $this->view->requestTypeInstructions = $requestType->getInstructions(Episciences_Tools::getLocale());
         $this->view->csrfToken = Episciences_Csrf_Helper::getSessionToken();
         $this->renderScript('reviewer/light_answer.phtml');
+    }
+
+    /**
+     * Whether the signed-in account is the one of the answer without an account of this invitation (#319)
+     */
+    private function isAccountOfLightAnswer(int $aid): bool
+    {
+        return Episciences_Auth::isLogged()
+            && (bool)(new LightAnswerRepository())->findByAid($aid)?->isOfAccount((int)Episciences_Auth::getUid());
+    }
+
+    /**
+     * Associates an answer given without an account with the signed-in account (#319): at once when the account holds
+     * the invited address, on request otherwise. The answer stays an answer without an account: the assignment is
+     * unchanged, so the account is not asked for a rating report.
+     * @return LightAnswer|null the answer, null when the request has been redirected
+     */
+    private function linkLightAnswer(
+        Zend_Controller_Request_Http $request,
+        LightAnswer $answer,
+        Episciences_User_Invitation $invitation,
+        Episciences_User_Assignment $assignment,
+        Episciences_Paper $paper
+    ): ?LightAnswer {
+        $uid = (int)Episciences_Auth::getUid();
+        $this->view->answerOfAccount = $answer->isOfAccount($uid);
+
+        if ($this->view->answerOfAccount) {
+            return $answer;
+        }
+
+        $invited = $assignment->isTmp_user() ? Episciences_TmpUsersManager::findById((int)$assignment->getUid()) : null;
+        $sameAddress = $invited instanceof Episciences_User_Tmp
+            && mb_strtolower(trim((string)$invited->getEmail())) === mb_strtolower(trim((string)Episciences_Auth::getEmail()));
+        $requested = $request->isPost() && array_key_exists(self::LINK_LIGHT_ANSWER_FIELD, $request->getPost());
+
+        if (!$sameAddress && !$requested) {
+            $this->view->canLinkAnswer = true;
+            return $answer;
+        }
+
+        if ($requested && !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->addSessionExpiredMessage();
+            $this->view->canLinkAnswer = true;
+            return $answer;
+        }
+
+        $linked = (new LightAnswerRepository())->link($answer, $uid, new DateTimeImmutable());
+        $this->logLinkedInvitation($assignment, $paper, $invited ?? $this->invitedAccount($assignment), (int)$invitation->getId(), (int)$assignment->getUid(), (bool)$assignment->isTmp_user(), $sameAddress, true);
+
+        if ($requested) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
+                ->addMessage($this->view->translate('Votre réponse est maintenant associée à votre compte.'));
+            $this->redirect($this->invitationUrl($invitation));
+            return null;
+        }
+
+        // associated at once: the page says so
+        $this->view->answerOfAccount = true;
+        $this->view->answerLinkedNow = true;
+        return $linked;
+    }
+
+    /**
+     * The account an invitation was sent to (an empty user when it cannot be read)
+     */
+    private function invitedAccount(Episciences_User_Assignment $assignment): Episciences_User
+    {
+        $user = new Episciences_User();
+        $user->findWithCAS((int)$assignment->getUid());
+
+        return $user;
     }
 
     /**
@@ -1556,7 +1641,8 @@ class ReviewerController extends PaperDefaultController
         int                         $invitationId,
         int                         $invitedUid,
         bool                        $invitedIsTmp,
-        bool                        $automatic
+        bool                        $automatic,
+        bool                        $lightAnswer = false
     ): void
     {
         $loggedUid = (int)Episciences_Auth::getUid();
@@ -1580,7 +1666,7 @@ class ReviewerController extends PaperDefaultController
                 ],
                 'linked_to' => $linkedTo,
                 'automatic' => $automatic,
-            ]);
+            ] + ($lightAnswer ? ['light_answer' => true] : []));
         } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
         }

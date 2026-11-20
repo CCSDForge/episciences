@@ -177,6 +177,16 @@ déjà envoyé pour le même critère.
 La réponse n'est visible que par l'équipe éditoriale, dans la section **Réponses données sans compte** de la page de gestion de
 l'article (et sous l'invitation, dans la section **Relecteurs**). Les auteurs ne la voient jamais.
 
+### Associer la réponse à un compte
+
+Une personne qui a répondu sans compte peut ensuite associer sa réponse à son compte : connectée, elle ouvre le lien de
+l'invitation. Si son compte utilise l'adresse de l'invitation, la réponse lui est associée aussitôt ; sinon, le bouton
+**Associer cette réponse à mon compte** le fait. La réponse figure alors dans **Mes relectures** (section **Réponses
+données depuis un lien d'invitation**), d'où elle s'ouvre sans le lien, et reste modifiable jusqu'à la date limite.
+
+Elle reste une réponse sans compte : visible seulement de l'équipe éditoriale, qui voit le compte associé, elle ne
+devient pas un rapport de relecture et ne compte toujours pas comme tel. L'historique de l'article garde l'association.
+
 Sans compte, la personne invitée ne voit pas ses rapports précédents, et sa réponse ne compte pas comme rapport de
 relecture. Le formulaire du type le rappelle
 quand l'option est cochée sur un autre type que l'avis rapide. Pour un type de relecture d'une version révisée, gardez

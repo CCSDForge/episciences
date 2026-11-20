@@ -95,4 +95,16 @@ final class PaperLightAnswersViewTest extends TestCase
 
         self::assertStringContainsString("La grille remplie n'a pas pu être lue.", $html);
     }
+
+    public function testTheAccountAnAnswerIsAssociatedWithIsShown(): void
+    {
+        $answer = new LightAnswer(1, 999701, RVID, 999702, 999703, 999704, true, new DateTimeImmutable('2026-01-01 10:00:00'), null, 999705);
+        $notLinked = new LightAnswer(2, 999706, RVID, 999702, 999703, 999704, true, new DateTimeImmutable('2026-01-01 10:00:00'));
+        $paper = (new Episciences_Paper())->setDocid(999702)->setRvid(RVID);
+
+        $html = $this->view()->partial('partials/paper_light_answers.phtml', ['paper' => $paper, 'answers' => [$answer, $notLinked]]);
+
+        self::assertSame(1, substr_count($html, 'light-answer-linked-account'));
+        self::assertStringContainsString('<code>999705</code>', $html);
+    }
 }

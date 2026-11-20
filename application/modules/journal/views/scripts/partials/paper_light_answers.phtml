@@ -18,6 +18,12 @@ $paper = $this->paper;
         $person = $person->findWithCAS($answer->getUid()) ? $person : null;
     }
     $personName = $person ? (string)$person->getScreenName() : '';
+    // account the invited person associated the answer with
+    $linkedAccount = null;
+    if ($answer->getLinkedUid() !== null) {
+        $linkedAccount = new Episciences_User();
+        $linkedAccount = $linkedAccount->findWithCAS($answer->getLinkedUid()) ? $linkedAccount : null;
+    }
     $typeLabel = $this->requestTypeLabel($answer->getRequestTypeId(), (int)$paper->getRvid());
     ?>
     <div class="panel panel-default">
@@ -29,6 +35,13 @@ $paper = $this->paper;
                 <strong><?= $this->escape($personName) ?></strong>
                 <?php if ($answer->isTmpUser()) : ?>
                     (<?= $this->escape($this->translate('compte temporaire')) ?>)
+                <?php endif; ?>
+                <?php if ($answer->getLinkedUid() !== null) : ?>
+                    <span class="light-answer-linked-account">
+                        — <?= $this->escape($this->translate('associée au compte')) ?>
+                        <?= $this->escape($linkedAccount ? (string)$linkedAccount->getScreenName() : '') ?>
+                        [ UID <code><?= (int)$answer->getLinkedUid() ?></code> ]
+                    </span>
                 <?php endif; ?>
                 <span class="grey pull-right">
                     <?= $this->Date($answer->getCreatedAt()->format('Y-m-d')) ?>

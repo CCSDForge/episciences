@@ -6,6 +6,7 @@ use Episciences\Paper\Files\DocumentFilePolicy;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Paper\RevisionRequests;
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Reviewer\LightAnswerRepository;
 use Episciences\Reviewer\NextVersionRequestType;
 use Episciences\Reviewer\RequestTypeRepository;
 use Episciences\Security\AccessLog;
@@ -2939,102 +2940,127 @@ class PaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        if ($request->isXmlHttpRequest()) {
-
-            $this->_helper->layout()->disableLayout();
-            $this->_helper->viewRenderer->setNoRender();
-
-            $dataTableColumns = [
-                '0' => '', // ***
-                '1' => '', // ***
-                '2' => '', // ***
-                '3' => self::DOC_ID_STR,
-                '4' => '', //( *** )désactiver dans js/paper/submitted.js, sinon prévoir une jointure si nécessaire
-                '5' => '',
-                '6' => 'vid',
-                '7' => 'sid',
-                '8' => 'when'
-
-            ];
-
-            $post = $request->getParams();
-            $limit = Ccsd_Tools::ifsetor($post['length'], '10');
-            $offset = Ccsd_Tools::ifsetor($post['start'], '0');
-            $list_search = Ccsd_Tools::ifsetor($post['search']['value'], '');
-            $ratingStatus = Ccsd_Tools::ifsetor($post['ratingStatus'], []);
-
-            // L'ordre est un tableau de tableaux, chaque tableau intérieur étant composé de deux éléments:
-            // index de la colonne et la direction
-            $requestOrder = Ccsd_Tools::ifsetor($post[self::ORDER_STR], []);
-
-            $settings = [
-                'is' => ['rvid' => RVID] + Episciences_PapersManager::getFiltersParams(),
-                'limit' => $limit,
-                '$offset' => $offset
-            ];
-
-            $journal = Episciences_ReviewsManager::find(RVID);
-            $volumes = $journal->getVolumes();
-            $sections = $journal->getSections();
-
-            $journal->loadSettings();
-            $uid = Episciences_Auth::getUid();
-            $reviewer = new Episciences_Reviewer;
-            $reviewer->find($uid);
-
-            // Pour limiter le nombre de requêtes SQL
-            if (!empty($volumes)) {
-                $settings['volumes'] = $volumes;
-            }
-
-            if (!empty($sections)) {
-                $settings['sections'] = $sections;
-            }
-
-            if (!empty($requestOrder)) {
-                $settings[self::ORDER_STR] = Episciences_Tools::dataTableOrder($requestOrder, $dataTableColumns);
-            }
-
-            if (!empty($ratingStatus)) {
-                $settings['ratingStatus'] = $ratingStatus;
-            }
-
-            $list_search = trim($list_search);
-
-            if ($list_search !== '') {
-                $settings['list_search'] = $list_search;
-            }
-
-            // Total des articles assignés
-            $allPapersCount = count($reviewer->getAssignedPapers($settings, true));
-            // Total des articles assignés après filtrage
-            $allPapersFiltredCount = count($reviewer->getAssignedPapers($settings, true, true, false));
-
-            // Liste des articles à afficher
-            $papers = $reviewer->getAssignedPapers($settings, true, true);
-
-            /** @var Episciences_Paper $paper */
-            foreach ($papers as $paper) {
-                $reviewer->getReviewing($paper->getDocid());
-            }
-
-            foreach ($papers as &$paper) {
-                $paper->getPreviousVersions();
-            }
-            unset($paper);
-
-            $tbody = (count($papers) > 0) ?
-                $this->view->partial('partials/datatable_ratings.phtml', [
-                    'reviewer' => $reviewer,
-                    'papers' => $papers,
-                    self::VOLUMES_STR => $volumes,
-                    self::SECTIONS_STR => $sections,
-                    'review_deadline' => $journal->getSetting('rating_deadline')
-                ]) :
-                '';
-
-            echo Episciences_Tools::getDataTableData($tbody, $post['draw'], $allPapersCount, $allPapersFiltredCount);
+        if (!$request->isXmlHttpRequest()) {
+            $this->view->lightAnswers = $this->lightAnswersOfAccount();
+            return;
         }
+
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        $dataTableColumns = [
+            '0' => '', // ***
+            '1' => '', // ***
+            '2' => '', // ***
+            '3' => self::DOC_ID_STR,
+            '4' => '', //( *** )désactiver dans js/paper/submitted.js, sinon prévoir une jointure si nécessaire
+            '5' => '',
+            '6' => 'vid',
+            '7' => 'sid',
+            '8' => 'when'
+
+        ];
+
+        $post = $request->getParams();
+        $limit = Ccsd_Tools::ifsetor($post['length'], '10');
+        $offset = Ccsd_Tools::ifsetor($post['start'], '0');
+        $list_search = Ccsd_Tools::ifsetor($post['search']['value'], '');
+        $ratingStatus = Ccsd_Tools::ifsetor($post['ratingStatus'], []);
+
+        // L'ordre est un tableau de tableaux, chaque tableau intérieur étant composé de deux éléments:
+        // index de la colonne et la direction
+        $requestOrder = Ccsd_Tools::ifsetor($post[self::ORDER_STR], []);
+
+        $settings = [
+            'is' => ['rvid' => RVID] + Episciences_PapersManager::getFiltersParams(),
+            'limit' => $limit,
+            '$offset' => $offset
+        ];
+
+        $journal = Episciences_ReviewsManager::find(RVID);
+        $volumes = $journal->getVolumes();
+        $sections = $journal->getSections();
+
+        $journal->loadSettings();
+        $uid = Episciences_Auth::getUid();
+        $reviewer = new Episciences_Reviewer;
+        $reviewer->find($uid);
+
+        // Pour limiter le nombre de requêtes SQL
+        if (!empty($volumes)) {
+            $settings['volumes'] = $volumes;
+        }
+
+        if (!empty($sections)) {
+            $settings['sections'] = $sections;
+        }
+
+        if (!empty($requestOrder)) {
+            $settings[self::ORDER_STR] = Episciences_Tools::dataTableOrder($requestOrder, $dataTableColumns);
+        }
+
+        if (!empty($ratingStatus)) {
+            $settings['ratingStatus'] = $ratingStatus;
+        }
+
+        $list_search = trim($list_search);
+
+        if ($list_search !== '') {
+            $settings['list_search'] = $list_search;
+        }
+
+        // Total des articles assignés
+        $allPapersCount = count($reviewer->getAssignedPapers($settings, true));
+        // Total des articles assignés après filtrage
+        $allPapersFiltredCount = count($reviewer->getAssignedPapers($settings, true, true, false));
+
+        // Liste des articles à afficher
+        $papers = $reviewer->getAssignedPapers($settings, true, true);
+
+        /** @var Episciences_Paper $paper */
+        foreach ($papers as $paper) {
+            $reviewer->getReviewing($paper->getDocid());
+        }
+
+        foreach ($papers as &$paper) {
+            $paper->getPreviousVersions();
+        }
+        unset($paper);
+
+        $tbody = (count($papers) > 0) ?
+            $this->view->partial('partials/datatable_ratings.phtml', [
+                'reviewer' => $reviewer,
+                'papers' => $papers,
+                self::VOLUMES_STR => $volumes,
+                self::SECTIONS_STR => $sections,
+                'review_deadline' => $journal->getSetting('rating_deadline')
+            ]) :
+            '';
+
+        echo Episciences_Tools::getDataTableData($tbody, $post['draw'], $allPapersCount, $allPapersFiltredCount);
+    }
+
+    /**
+     * Answers given from an invitation link that belong to the signed-in account (#319): given by the invited account,
+     * or associated with it
+     * @return list<array{docid: int, title: string, request_type_id: int, date: string, invitation_id: int}>
+     */
+    private function lightAnswersOfAccount(): array
+    {
+        $rows = [];
+
+        foreach ((new LightAnswerRepository())->findForAccount((int)Episciences_Auth::getUid(), RVID) as ['answer' => $answer, 'invitation_id' => $invitationId]) {
+            $paper = Episciences_PapersManager::get($answer->getDocid(), false);
+            $rows[] = [
+                'docid' => $answer->getDocid(),
+                'title' => $paper instanceof Episciences_Paper ? (string)$paper->getTitle(null, true) : '',
+                'request_type_id' => $answer->getRequestTypeId(),
+                'date' => ($answer->getUpdatedAt() ?? $answer->getCreatedAt())->format('Y-m-d'),
+                'invitation_id' => $invitationId,
+            ];
+        }
+
+        return $rows;
     }
 
     /**
