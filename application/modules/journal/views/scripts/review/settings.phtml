@@ -1,16 +1,157 @@
-<?php 
-	$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
-	$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
-	$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
-	
-	echo $this->form; 
+<?php
+/**
+ * Journal settings page: see ReviewController::settingsAction() and Episciences_Review::settingsForm().
+ * The DOI settings (doi/settings) and the licenses (review/licenses) have their own page: they are summed up here.
+ * @var Zend_View $this
+ */
+
+$this->jQuery()
+    ->addStylesheet('/css/review/settings.css')
+    ->addJavascriptFile('/js/review/settings.js');
+
+$escape = fn(?string $text): string => $this->escape((string)$text);
+$sections = $this->sections ?? [];
+
+/** @var Episciences_Review_DoiSettings|null $doiSettings */
+$doiSettings = $this->doiSettings ?? null;
+$doiModes = [
+    Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO => 'Automatique',
+    Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_MANUAL => 'Manuel',
+    Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_DISABLED => 'Désactivé',
+];
+$allowedLicenses = $this->allowedLicenses ?? [];
+// the default license first, then the others in the order of the names
+$licenseNames = $this->licenseNames ?? [];
+usort($allowedLicenses, fn(string $a, string $b): int => [$a !== $this->defaultLicense, $licenseNames[$a] ?? $a] <=> [$b !== $this->defaultLicense, $licenseNames[$b] ?? $b]);
+$licenseLabel = fn(string $code): string => isset($licenseNames[$code])
+    ? '<span class="journal-settings-license-name">' . $escape($licenseNames[$code]) . '</span> <code>' . $escape($code) . '</code>'
+    : '<code>' . $escape($code) . '</code>';
 ?>
 
-<script>
-	__initMCE ('textarea:not(#journalDescription)', undefined, {
-		theme: 'silver',
-		plugins: "link image code",
-		toolbar1: "bold italic underline | link image | code",
-		menubar: false
-	});
-</script>
+<?= $this->partial('partials/journal_settings_tabs.phtml', ['active' => 'general', 'canEditDoiSettings' => $this->canEditDoiSettings]) ?>
+
+<div class="journal-settings">
+
+    <p class="journal-settings-intro">
+        <?= $this->translate("Ces paramètres s'appliquent à toute la revue, dès l'enregistrement.") ?>
+    </p>
+
+    <details class="journal-settings-effects">
+        <summary>
+            <span class="fa-solid fa-chevron-right journal-settings-chevron" aria-hidden="true"></span>
+            <span class="fa-regular fa-clock" aria-hidden="true"></span>
+            <?= $this->translate('Quand une modification prend-elle effet ?') ?>
+        </summary>
+        <dl>
+            <dt><?= $this->translate('Tout de suite, pour tous les articles, y compris ceux en cours ou déjà publiés') ?></dt>
+            <dd><?= $this->translate("Ce que chacun peut faire ou voir : droits et cloisonnement des rédacteurs et des préparateurs de copie, possibilités des auteurs (version temporaire, abandon, nouvelle version d'un article refusé, messages), déclaration de conflit d'intérêts. Affichage sur le site : rapports de relecture des articles publiés, volumes, statistiques, pied de page. Métadonnées diffusées (OAI-PMH, exports).") ?></dd>
+
+            <dt><?= $this->translate('À la prochaine action concernée') ?></dt>
+            <dd><?= $this->translate("Délais : fixés à l'envoi de chaque invitation. Formulaire de soumission et assignation automatique des rédacteurs : à chaque nouvelle soumission. Notifications : aux prochains courriels. Réassignation des relecteurs et délai de révision : à la prochaine demande de modifications.") ?></dd>
+
+            <dt><?= $this->translate('Jamais rétroactivement') ?></dt>
+            <dd><?= $this->translate('Les invitations déjà envoyées gardent leur délai et leur date limite, les rédacteurs déjà assignés restent assignés, les courriels déjà envoyés ne sont pas renvoyés.') ?></dd>
+        </dl>
+    </details>
+
+    <div class="row journal-settings-related">
+        <div class="col-md-6">
+            <section class="journal-settings-card" aria-labelledby="journal-settings-licenses-title">
+                <h2 id="journal-settings-licenses-title" class="journal-settings-card-title">
+                    <span class="fa-solid fa-scale-balanced" aria-hidden="true"></span>
+                    <?= $this->translate('Licences') ?>
+                </h2>
+                <dl class="journal-settings-summary">
+                    <dt><?= $this->translate('Licence par défaut') ?></dt>
+                    <dd>
+                        <?php if ($this->defaultLicense) : ?>
+                            <?= $licenseLabel($this->defaultLicense) ?>
+                        <?php else : ?>
+                            <em><?= $this->translate('Non renseignée') ?></em>
+                        <?php endif; ?>
+                    </dd>
+                    <dt><?= $this->translate('Licences autorisées') ?></dt>
+                    <dd>
+                        <?php if ($allowedLicenses !== []) : ?>
+                            <details class="journal-settings-licenses-allowed">
+                                <summary>
+                                    <span class="fa-solid fa-chevron-right journal-settings-chevron" aria-hidden="true"></span>
+                                    <?= $escape(sprintf($this->translate(count($allowedLicenses) === 1 ? '%d licence' : '%d licences'), count($allowedLicenses))) ?>
+                                </summary>
+                                <ul class="journal-settings-license-list">
+                                    <?php foreach ($allowedLicenses as $code) : ?>
+                                        <li>
+                                            <?= $licenseLabel($code) ?>
+                                            <?php if ($code === $this->defaultLicense) : ?>
+                                                <span class="label label-primary"><?= $this->translate('par défaut') ?></span>
+                                            <?php endif; ?>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </details>
+                        <?php else : ?>
+                            <em><?= $this->translate('Toutes les licences recommandées') ?></em>
+                        <?php endif; ?>
+                    </dd>
+                </dl>
+                <a class="btn btn-default btn-sm" href="/review/licenses">
+                    <span class="fa-solid fa-pen" aria-hidden="true"></span>
+                    <?= $this->translate('Modifier les licences') ?>
+                </a>
+            </section>
+        </div>
+
+        <?php if ($doiSettings instanceof Episciences_Review_DoiSettings) : ?>
+            <div class="col-md-6">
+                <section class="journal-settings-card" aria-labelledby="journal-settings-doi-title">
+                    <h2 id="journal-settings-doi-title" class="journal-settings-card-title">
+                        <span class="fa-solid fa-fingerprint" aria-hidden="true"></span>
+                        <?= $this->translate('DOI des articles') ?>
+                    </h2>
+                    <dl class="journal-settings-summary">
+                        <dt><?= $this->translate('Assignation') ?></dt>
+                        <dd><?= $escape($this->translate($doiModes[$doiSettings->getDoiAssignMode()] ?? $doiSettings->getDoiAssignMode())) ?></dd>
+                        <dt><?= $this->translate('Préfixe DOI') ?></dt>
+                        <dd>
+                            <?php if ($doiSettings->getDoiPrefix() !== '') : ?>
+                                <code><?= $escape($doiSettings->getDoiPrefix()) ?></code>
+                            <?php else : ?>
+                                <em><?= $this->translate('Non renseigné : aucun DOI ne peut être attribué') ?></em>
+                            <?php endif; ?>
+                        </dd>
+                        <dt><?= $this->translate('Format du DOI') ?></dt>
+                        <dd><code><?= $escape($doiSettings->getDoiFormat()) ?></code></dd>
+                    </dl>
+                    <?php if ($this->canEditDoiSettings) : ?>
+                        <a class="btn btn-default btn-sm" href="/doi/settings">
+                            <span class="fa-solid fa-pen" aria-hidden="true"></span>
+                            <?= $this->translate('Modifier les paramètres DOI') ?>
+                        </a>
+                    <?php else : ?>
+                        <p class="journal-settings-card-note">
+                            <?= $this->translate("Ces paramètres sont gérés par l'équipe d'Episciences : contactez-la pour les modifier.") ?>
+                        </p>
+                    <?php endif; ?>
+                </section>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <div class="row">
+        <?php if ($sections !== []) : ?>
+            <nav class="col-md-3 journal-settings-toc" aria-labelledby="journal-settings-toc-title">
+                <h2 id="journal-settings-toc-title" class="journal-settings-toc-title"><?= $this->translate('Sommaire') ?></h2>
+                <ol>
+                    <?php foreach ($sections as $id => $section) : ?>
+                        <li><a href="#fieldset-<?= $escape($id) ?>"><?= $escape($this->translate($section['legend'])) ?></a></li>
+                    <?php endforeach; ?>
+                </ol>
+            </nav>
+        <?php endif; ?>
+
+        <div class="<?= $sections !== [] ? 'col-md-9' : 'col-md-12' ?>">
+            <?= $this->partial('partials/unsaved_changes_warning.phtml') ?>
+            <?= $this->form ?>
+        </div>
+    </div>
+</div>

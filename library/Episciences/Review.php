@@ -1020,6 +1020,190 @@ class Episciences_Review
     }
 
     /**
+     * Sections of the journal settings form (review/settings): fieldset id => [legend, description, element names].
+     * The order is the display order; the page builds its table of contents from these sections.
+     */
+    public const SETTINGS_FORM_SECTIONS = [
+        'identity' => [
+            'legend' => 'Identité de la revue',
+            'description' => 'Informations bibliographiques de la revue : elles sont reprises dans le pied de page du site, les exports et les métadonnées diffusées (OAI-PMH, Crossref, DOAJ…).',
+            'elements' => [
+                self::SETTING_ISSN,
+                self::SETTING_ISSN_PRINT,
+                self::SETTING_JOURNAL_DOI,
+                self::SETTING_JOURNAL_PUBLISHER,
+                self::SETTING_JOURNAL_PUBLISHER_LOC,
+                self::SETTING_JOURNAL_CREATION_YEAR,
+                self::SETTING_JOURNAL_DESCRIPTION,
+                self::SETTING_JOURNAL_KEYWORDS,
+            ],
+        ],
+        'contacts' => [
+            'legend' => 'Contacts et courriels',
+            'description' => 'Liens et adresses affichés dans le pied de page du site, et réglages des courriels automatiques.',
+            'elements' => [
+                self::SETTING_CONTACT_JOURNAL,
+                self::SETTING_JOURNAL_NOTICE,
+                self::SETTING_CONTACT_JOURNAL_EMAIL,
+                self::SETTING_CONTACT_TECH_SUPPORT_EMAIL,
+                self::SETTING_MAIL_DISPLAY_CODE,
+                self::SETTING_CONTACT_ERROR_MAIL,
+            ],
+        ],
+        'submission' => [
+            'legend' => 'Soumission',
+            'description' => "Ce que l'auteur peut ou doit renseigner dans le formulaire de soumission.",
+            'elements' => [
+                self::SETTING_REPOSITORIES,
+                self::SETTING_COVER_LETTER_REQUIREMENT,
+                self::SETTING_CAN_PICK_SECTION,
+                self::SETTING_CAN_CHOOSE_VOLUME,
+                self::SETTING_CAN_PICK_EDITOR,
+                self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
+                self::SETTING_CAN_SUGGEST_REVIEWERS,
+                self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS,
+                self::SETTING_ARXIV_PAPER_PASSWORD,
+            ],
+        ],
+        'authors' => [
+            'legend' => 'Auteurs',
+            'description' => "Ce que l'auteur peut faire après la soumission de son article.",
+            'elements' => [
+                self::SETTING_CAN_ANSWER_WITH_TMP_VERSION,
+                self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+                self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
+                self::SETTING_AUTHOR_EDITOR_COMMUNICATION,
+                self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
+            ],
+        ],
+        'reviewing' => [
+            'legend' => 'Relecture',
+            'description' => "Délais proposés aux relecteurs et déroulement de l'évaluation.",
+            'elements' => [
+                self::SETTING_INVITATION_DEADLINE,
+                self::SETTING_RATING_DEADLINE,
+                self::SETTING_RATING_DEADLINE_MIN,
+                self::SETTING_RATING_DEADLINE_MAX,
+                self::SETTING_REQUIRED_REVIEWERS,
+                self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES,
+                self::SETTING_SHOW_RATINGS,
+                self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
+            ],
+        ],
+        'editors' => [
+            'legend' => 'Rédacteurs',
+            'description' => 'Ce que les rédacteurs peuvent faire sur les articles qui leur sont assignés, et leur assignation automatique.',
+            'elements' => [
+                self::SETTING_ENCAPSULATE_EDITORS,
+                self::SETTING_EDITORS_CAN_ACCEPT_PAPERS,
+                self::SETTING_EDITORS_CAN_REJECT_PAPERS,
+                self::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS,
+                self::SETTING_EDITORS_CAN_PUBLISH_PAPERS,
+                self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+                self::SETTING_EDITORS_CAN_EDIT_TEMPLATES,
+                self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
+            ],
+        ],
+        'decisions' => [
+            'legend' => 'Décisions éditoriales',
+            'description' => 'Demandes de modifications et révisions après acceptation.',
+            'elements' => [
+                self::SETTING_TO_REQUIRE_REVISION_DEADLINE,
+                self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
+            ],
+        ],
+        'coi' => [
+            'legend' => "Conflits d'intérêts",
+            'description' => "Déclaration de conflit d'intérêts (CI) demandée aux rédacteurs avant l'accès aux articles.",
+            'elements' => [
+                self::SETTING_SYSTEM_IS_COI_ENABLED,
+                self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED,
+            ],
+        ],
+        'notifications' => [
+            'legend' => 'Notifications',
+            'description' => 'Courriels automatiques envoyés au comité éditorial et aux relecteurs.',
+            'elements' => [
+                self::SETTING_SYSTEM_NOTIFICATIONS,
+                self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
+            ],
+        ],
+        'volumes' => [
+            'legend' => 'Volumes et volumes spéciaux',
+            'description' => 'Affichage des volumes sur le site et règles propres aux volumes spéciaux.',
+            'elements' => [
+                self::SETTING_DISPLAY_EMPTY_VOLUMES,
+                self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
+                self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
+                self::SETTING_SPECIAL_ISSUE_ACCESS_CODE,
+                self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES,
+            ],
+        ],
+        'copyEditors' => [
+            'legend' => 'Préparation de copie',
+            'description' => 'Accès des préparateurs de copie aux articles.',
+            'elements' => [
+                self::SETTING_ENCAPSULATE_COPY_EDITORS,
+            ],
+        ],
+        'statistics' => [
+            'legend' => 'Statistiques',
+            'description' => 'Visibilité de la page des statistiques de la revue et période prise en compte.',
+            'elements' => [
+                self::SETTING_DISPLAY_STATISTICS,
+                self::SETTING_START_STATS_AFTER_DATE,
+            ],
+        ],
+    ];
+
+    /**
+     * Decorators of a text, select or textarea element of the settings form:
+     * label on the left, help text under the field
+     */
+    private static function settingsFieldDecorators(): array
+    {
+        return [
+            ['ViewHelper', ['class' => 'form-control input-sm']],
+            ['Description', ['tag' => 'p', 'class' => 'help-block', 'placement' => 'APPEND', 'escape' => false]],
+            ['Errors', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9']],
+            ['Label', ['tag' => 'label', 'class' => 'col-md-3 control-label', 'escape' => false]],
+        ];
+    }
+
+    /**
+     * Decorators of a checkbox of the settings form: the box inside its label, aligned with the fields,
+     * help text under the label
+     */
+    private static function settingsCheckboxDecorators(): array
+    {
+        return [
+            'ViewHelper',
+            ['Label', ['placement' => 'IMPLICIT_APPEND', 'escape' => false]],
+            [['box' => 'HtmlTag'], ['tag' => 'div', 'class' => 'checkbox']],
+            ['Description', ['tag' => 'p', 'class' => 'help-block', 'placement' => 'APPEND', 'escape' => false]],
+            ['Errors', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+        ];
+    }
+
+    /**
+     * Decorators of a group of checkboxes of the settings form: label on the left, one box per line
+     */
+    private static function settingsMultiCheckboxDecorators(): array
+    {
+        return [
+            'ViewHelper',
+            ['Description', ['tag' => 'p', 'class' => 'help-block', 'placement' => 'APPEND', 'escape' => false]],
+            ['Errors', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 journal-settings-choices']],
+            ['Label', ['tag' => 'label', 'class' => 'col-md-3 control-label', 'escape' => false]],
+        ];
+    }
+
+    /**
+     * Journal settings form (review/settings).
+     * The DOI settings (doi/settings) and the licenses (review/licenses) have their own page.
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
@@ -1027,93 +1211,174 @@ class Episciences_Review
     public function settingsForm(): Ccsd_Form
     {
         $form = new Ccsd_Form();
-        $form->setAttrib('class', 'form-horizontal');
+        $form->setAttrib('class', 'form-horizontal journal-settings-form');
+        $form->setAttrib('id', 'journal-settings-form');
+        $form->setAttrib('data-unsaved-warning', '1');
         $form->getDecorator('FormRequired')->setOption('style', 'float: none;');
 
-        // global settings **********************************************
+        $form = $this->addJournalIdentitySettingsForm($form);
+        $form = $this->addContactsSettingsForm($form);
+        $form = $this->addRepositoriesSettingsForm($form);
+        $form = $this->addContributorsSettingsForm($form);
+        $form = $this->addRatingSettingsForm($form);
+        $form = $this->addEditorsSettingsForm($form);
+        $form = $this->addSpecialIssueSettingsForm($form);
+        $form = $this->addVolumeSettingsForm($form);
+        $form = $this->addNotificationSettingsForm($form);
+        $form = $this->addCopyEditorForm($form);
+        $form = $this->addCoiForm($form);
+        $form = $this->addFinalDecisionForm($form);
+        $form = $this->toRequireRevisionDeadlineForm($form);
+        $form = $this->addStatisticsForm($form);
+        $form = $this->addRedirectionMailError($form);
+
+        foreach (self::SETTINGS_FORM_SECTIONS as $id => $section) {
+            $form->addDisplayGroup($section['elements'], $id, [
+                'legend' => $section['legend'],
+                'description' => $section['description'],
+                'class' => 'journal-settings-section',
+            ]);
+            $form->getDisplayGroup($id)->setDecorators([
+                'FormElements',
+                ['Description', ['tag' => 'p', 'class' => 'journal-settings-section-description', 'placement' => 'PREPEND']],
+                'Fieldset',
+            ]);
+        }
+
+        // submit button
+        $form->setActions(true)->createSubmitButton('submit', [
+                'label' => 'Enregistrer les paramètres',
+                'class' => 'btn btn-primary'
+            ]
+        );
+
+        return $form;
+    }
+
+    /**
+     * Bibliographic information of the journal
+     * @throws Zend_Form_Exception
+     */
+    private function addJournalIdentitySettingsForm(Ccsd_Form $form): Ccsd_Form
+    {
+        $issnValidators = [
+            (new Zend_Validate_Regex('/^\d{4}-\d{3}[\dX]$/i'))
+                ->setMessage("Format attendu : 1234-5678 (le dernier caractère peut être X)", Zend_Validate_Regex::NOT_MATCH),
+        ];
+
         $form->addElement('text', self::SETTING_ISSN, [
                 'label' => '<abbr title="International Standard Serial Number">eISSN</abbr> (online)',
-                'description' => 'Format attendu : <code>1234-5678</code>',
-                'validators' => [new Zend_Validate_StringLength(['max' => 9, 'min' => 9])]
+                'description' => "ISSN de la version électronique. Format attendu : <code>1234-5678</code>",
+                'filters' => ['StringTrim'],
+                'validators' => $issnValidators,
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
         $form->addElement('text', self::SETTING_ISSN_PRINT, [
                 'label' => '<abbr title="International Standard Serial Number">ISSN</abbr> (print)',
-                'description' => 'Format attendu : <code>1234-5678</code>',
-                'validators' => [new Zend_Validate_StringLength(['max' => 9, 'min' => 9])]
+                'description' => "ISSN de la version imprimée, s'il y en a une. Format attendu : <code>1234-5678</code>",
+                'filters' => ['StringTrim'],
+                'validators' => $issnValidators,
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
 
         $form->addElement('text', self::SETTING_JOURNAL_DOI, [
-                'label' => 'Le DOI de votre revue',
-                'description' => 'À renseigner si la revue possède un DOI',
-                'validators' => [new Zend_Validate_StringLength(['max' => 255])]
+                'label' => 'DOI de la revue',
+                'description' => "DOI attribué à la revue elle-même (pas celui des articles), par exemple <code>10.46298/jtcam</code>. À laisser vide si la revue n'en a pas.",
+                'filters' => ['StringTrim'],
+                'validators' => [new Zend_Validate_StringLength(['max' => 255])],
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
 
         $form->addElement('text', self::SETTING_JOURNAL_PUBLISHER, [
                 'label' => 'Éditeur',
-                'description' => "Nom de l'éditeur de la revue",
-                'validators' => [new Zend_Validate_StringLength(['max' => 255])]
+                'description' => "Nom de l'éditeur de la revue. Obligatoire si le lieu de publication est renseigné.",
+                'validators' => [new Zend_Validate_StringLength(['max' => 255])],
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
 
         $form->addElement('text', self::SETTING_JOURNAL_PUBLISHER_LOC, [
                 'label' => 'Lieu de publication',
                 'description' => 'Ville, Pays',
-                'validators' => [new Zend_Validate_StringLength(['max' => 255])]
-            ]
-        );
-        $form->addElement('text', self::SETTING_CONTACT_JOURNAL, [
-                'label' => 'Page de contact de la revue',
-                'description' => 'URL',
-                'validators' => [new Zend_Validate_StringLength(['max' => 255])]
-            ]
-        );
-
-        $form->addElement('text', self::SETTING_JOURNAL_NOTICE, [
-                'label' => 'Page de la notice dans le catalogue',
-                'description' => 'URL',
-                'validators' => [new Zend_Validate_StringLength(['max' => 255])]
-            ]
-        );
-
-        $form->addElement('text', self::SETTING_CONTACT_JOURNAL_EMAIL, [
-                'label' => 'Courriel de contact de la revue',
-                'description' => 'Adresse de courriel',
-                'validators' => [new Zend_Validate_EmailAddress()]
-            ]
-        );
-
-        $form->addElement('text', self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, [
-                'label' => 'Courriel de contact du support technique',
-                'description' => 'Adresse de courriel',
-                'validators' => [new Zend_Validate_EmailAddress()]
-            ]
-        );
-
-        $form->addElement('textarea', self::SETTING_JOURNAL_DESCRIPTION, [
-                'label' => 'Description de la revue',
-                'description' => 'Courte description (utilisée dans les flux OAI-PMH)',
-                'rows' => 4,
-                'validators' => [new Zend_Validate_StringLength(['max' => 2000])]
-            ]
-        );
-
-        $form->addElement('text', self::SETTING_JOURNAL_KEYWORDS, [
-                'label' => 'Mots-clés',
-                'description' => 'Séparés par des points-virgules (ex. : mathématiques ; physique)',
-                'validators' => [new Zend_Validate_StringLength(['max' => 1000])]
+                'validators' => [new Zend_Validate_StringLength(['max' => 255])],
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
 
         $form->addElement('text', self::SETTING_JOURNAL_CREATION_YEAR, [
                 'label' => 'Année de création',
                 'description' => 'Année de création de la revue (format : AAAA)',
+                'maxlength' => '4',
                 'validators' => [
                     new Zend_Validate_Digits(),
                     new Zend_Validate_StringLength(['min' => 4, 'max' => 4]),
                 ],
+                'decorators' => self::settingsFieldDecorators(),
+            ]
+        );
+
+        $form->addElement('textarea', self::SETTING_JOURNAL_DESCRIPTION, [
+                'label' => 'Description de la revue',
+                'description' => 'Courte description en texte brut (utilisée dans les flux OAI-PMH), 2000 caractères maximum.',
+                'rows' => 4,
+                'validators' => [new Zend_Validate_StringLength(['max' => 2000])],
+                'decorators' => self::settingsFieldDecorators(),
+            ]
+        );
+
+        $form->addElement('text', self::SETTING_JOURNAL_KEYWORDS, [
+                'label' => 'Mots-clés',
+                'description' => 'Séparés par des points-virgules (ex. : mathématiques ; physique)',
+                'validators' => [new Zend_Validate_StringLength(['max' => 1000])],
+                'decorators' => self::settingsFieldDecorators(),
+            ]
+        );
+
+        return $form;
+    }
+
+    /**
+     * Contact links and addresses, automatic emails
+     * @throws Zend_Form_Exception
+     */
+    private function addContactsSettingsForm(Ccsd_Form $form): Ccsd_Form
+    {
+        $form->addElement('text', self::SETTING_CONTACT_JOURNAL, [
+                'label' => 'Page de contact de la revue',
+                'description' => 'Adresse web complète (https://…), affichée dans le pied de page du site',
+                'filters' => ['StringTrim'],
+                'validators' => [new Zend_Validate_StringLength(['max' => 255])],
+                'decorators' => self::settingsFieldDecorators(),
+            ]
+        );
+
+        $form->addElement('text', self::SETTING_JOURNAL_NOTICE, [
+                'label' => 'Page de la notice dans le catalogue',
+                'description' => "Adresse web complète (https://…) de la notice de la revue dans un catalogue (ex. : le portail ISSN), affichée dans le pied de page du site",
+                'filters' => ['StringTrim'],
+                'validators' => [new Zend_Validate_StringLength(['max' => 255])],
+                'decorators' => self::settingsFieldDecorators(),
+            ]
+        );
+
+        $form->addElement('text', self::SETTING_CONTACT_JOURNAL_EMAIL, [
+                'label' => 'Courriel de contact de la revue',
+                'description' => 'Affiché dans le pied de page du site',
+                'filters' => ['StringTrim'],
+                'validators' => [new Zend_Validate_EmailAddress()],
+                'decorators' => self::settingsFieldDecorators(),
+            ]
+        );
+
+        $form->addElement('text', self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, [
+                'label' => 'Courriel de contact du support technique',
+                'description' => 'Affiché dans le pied de page du site',
+                'filters' => ['StringTrim'],
+                'validators' => [new Zend_Validate_EmailAddress()],
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
 
@@ -1121,156 +1386,8 @@ class Episciences_Review
                 'label' => "Code affiché dans les courriels",
                 'description' => "Remplace le code de la revue dans le sujet et le corps des courriels automatiques. Laisser vide pour utiliser le code par défaut. 100 caractères maximum.",
                 'maxlength' => '100',
-                'validators' => [new Zend_Validate_StringLength(['max' => 100])]
-            ]
-        );
-
-        $form->getElement(self::SETTING_ISSN)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_ISSN_PRINT)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_JOURNAL_DOI)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_JOURNAL_PUBLISHER)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_JOURNAL_PUBLISHER_LOC)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_CONTACT_JOURNAL)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_JOURNAL_NOTICE)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_CONTACT_JOURNAL_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_CONTACT_TECH_SUPPORT_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_JOURNAL_DESCRIPTION)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_JOURNAL_KEYWORDS)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_JOURNAL_CREATION_YEAR)->getDecorator('label')->setOption('class', 'col-md-2');
-        $form->getElement(self::SETTING_MAIL_DISPLAY_CODE)->getDecorator('label')->setOption('class', 'col-md-2');
-
-        // display group: global settings
-        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, self::SETTING_JOURNAL_DESCRIPTION, self::SETTING_JOURNAL_KEYWORDS, self::SETTING_JOURNAL_CREATION_YEAR, self::SETTING_MAIL_DISPLAY_CODE], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
-        $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
-
-        // publication settings **********************************************
-        //Repositories settings
-        $form = $this->addRepositoriesSettingsForm($form);
-
-        //contributors settings
-        $form = $this->addContributorsSettingsForm($form);
-
-        //rating settings
-        $form = $this->addRatingSettingsForm($form);
-
-        // editor settings **********************************************
-        $form = $this->addEditorsSettingsForm($form);
-
-        // special issue settings **********************************************
-        $form = $this->addSpecialIssueSettingsForm($form);
-
-        // volume settings **********************************************
-        $form = $this->addVolumeSettingsForm($form);
-
-        $form = $this->addNotificationSettingsForm($form);
-
-        //Copy editing checkBox
-        $form = $this->addCopyEditorForm($form);
-
-        //COI
-        $form = $this->addCoiForm($form);
-
-        // Allow post-acceptance revisions of articles
-
-        $form = $this->addFinalDecisionForm($form);
-        $form = $this->toRequireRevisionDeadlineForm($form);
-        $form = $this->addStatisticsForm($form);
-
-        //redirection mail for errors
-
-        $form = $this->addRedirectionMailError($form);
-
-
-        // display group: publication settings
-        $form->addDisplayGroup([
-            self::SETTING_REPOSITORIES,
-            self::SETTING_CAN_PICK_SECTION,
-            self::SETTING_CAN_PICK_EDITOR,
-            self::SETTING_COVER_LETTER_REQUIREMENT,
-            self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
-            self::SETTING_CAN_SUGGEST_REVIEWERS,
-            self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS,
-            self::SETTING_CAN_ANSWER_WITH_TMP_VERSION,
-            self::SETTING_CAN_CHOOSE_VOLUME,
-            self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
-            self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
-            self::SETTING_ARXIV_PAPER_PASSWORD
-        ], 'publication', ["legend" => "Paramètres de soumission"]);
-        $form->getDisplayGroup('publication')->removeDecorator('DtDdWrapper');
-
-        // display group : rating settings
-        $form->addDisplayGroup([
-            self::SETTING_INVITATION_DEADLINE,
-            self::SETTING_RATING_DEADLINE,
-            self::SETTING_RATING_DEADLINE_MIN,
-            self::SETTING_RATING_DEADLINE_MAX,
-            self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES,
-            self::SETTING_SHOW_RATINGS,
-            self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION
-        ], 'reviewing', ["legend" => "Paramètres de relecture"]);
-        $form->getDisplayGroup('publication')->removeDecorator('DtDdWrapper');
-
-        // display group : editor settings
-        $form->addDisplayGroup([
-            self::SETTING_REQUIRED_REVIEWERS,
-            self::SETTING_ENCAPSULATE_EDITORS,
-            self::SETTING_EDITORS_CAN_ACCEPT_PAPERS,
-            self::SETTING_EDITORS_CAN_PUBLISH_PAPERS,
-            self::SETTING_EDITORS_CAN_REJECT_PAPERS,
-            self::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS,
-            self::SETTING_EDITORS_CAN_EDIT_TEMPLATES,
-            self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
-            self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
-            self::SETTING_AUTHOR_EDITOR_COMMUNICATION,
-            self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
-        ], 'editors', ["legend" => "Paramètres des rédacteurs"]);
-        $form->getDisplayGroup('editors')->removeDecorator('DtDdWrapper');
-
-        $form->addDisplayGroup([
-            self::SETTING_SYSTEM_NOTIFICATIONS,
-            self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS
-        ], 'notifications', ['legend' => "Paramètres de notification"]);
-        $form->getDisplayGroup('notifications')->removeDecorator('DtDdWrapper');
-
-        // display group : special issues settings
-        $form->addDisplayGroup([
-            self::SETTING_SPECIAL_ISSUE_ACCESS_CODE,
-            self::SETTING_ENCAPSULATE_REVIEWERS,
-            self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES
-        ], 'special_issues', ["legend" => "Paramètres des volumes spéciaux"]);
-        $form->getDisplayGroup('special_issues')->removeDecorator('DtDdWrapper');
-
-        // display group : volume settings
-        $form->addDisplayGroup([
-            self::SETTING_DISPLAY_EMPTY_VOLUMES,
-            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
-            self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE
-        ], 'volumes', ["legend" => "Paramètres des volumes"]);
-        $form->getDisplayGroup('volumes')->removeDecorator('DtDdWrapper');
-
-
-        // display group : copy editors settings
-        $form->addDisplayGroup([
-            self::SETTING_ENCAPSULATE_COPY_EDITORS
-        ], 'copyEditors', ["legend" => "Préparation de copie"]);
-        $form->getDisplayGroup('copyEditors')->removeDecorator('DtDdWrapper');
-
-        $form->addDisplayGroup([
-            self::SETTING_TO_REQUIRE_REVISION_DEADLINE,
-            self::SETTING_SYSTEM_IS_COI_ENABLED,
-            self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED,
-            self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
-            self::SETTING_DISPLAY_STATISTICS,
-            self::SETTING_START_STATS_AFTER_DATE,
-            self::SETTING_CONTACT_ERROR_MAIL
-        ], 'additionalParams', ['legend' => 'Paramètres supplémentaires']);
-
-        $form->getDisplayGroup('additionalParams')->removeDecorator('DtDdWrapper');
-
-        // submit button
-        $form->setActions(true)->createSubmitButton('submit', [
-                'label' => 'Enregistrer les paramètres',
-                'class' => 'btn btn-primary'
+                'validators' => [new Zend_Validate_StringLength(['max' => 100])],
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
 
@@ -1285,7 +1402,6 @@ class Episciences_Review
      */
     private function addRepositoriesSettingsForm(Ccsd_Form $form): \Ccsd_form
     {
-        $translator = Zend_Registry::get('Zend_Translate');
         // enabled repositories
         $repositories = [];
         foreach (Episciences_Repositories::getRepositories() as $repoId => $repo) {
@@ -1294,38 +1410,31 @@ class Episciences_Review
             }
         }
 
+        $decorators = self::settingsFieldDecorators();
+        $decorators[0] = ['ViewHelper', ['class' => 'form-control']];
+
         $form->addElement('multiselect', self::SETTING_REPOSITORIES, [
             'label' => 'Archives disponibles',
-            'description' => 'Liste des archives disponibles pour la soumission d\'articles.',
+            'description' => "Archives (au moins une) depuis lesquelles les auteurs peuvent soumettre un article. Maintenir Ctrl (ou Cmd) pour en sélectionner plusieurs.",
             'multiOptions' => $repositories,
             'value' => array_keys($repositories),
             'required' => true,
-        ]);
-
-        $form->getElement(self::SETTING_REPOSITORIES)->getDecorator('label')->setOptions([
-            'class' => 'col-md-2',
-            'data-toggle' => 'tooltip',
-            'title' => $translator->translate('Choisissez les archives (au moins une) qui seront disponibles pour la soumission d\'articles.')
+            'size' => min(count($repositories), 10),
+            'decorators' => $decorators,
         ]);
 
         return $form;
     }
 
     /**
+     * Submission form and authors
      * @param Ccsd_Form $form
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
     private function addContributorsSettingsForm(Ccsd_Form $form): \Ccsd_Form
     {
-
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
+        $checkboxDecorators = self::settingsCheckboxDecorators();
 
         // contributor can choose the volume
         $form->addElement('checkbox', self::SETTING_CAN_CHOOSE_VOLUME, [
@@ -1342,10 +1451,10 @@ class Episciences_Review
                     '0' => "L'auteur ne peut pas choisir la rubrique",
                     '1' => "L'auteur peut choisir la rubrique",
                     '2' => "L'auteur doit choisir la rubrique"
-                ]]
+                ],
+                'decorators' => self::settingsFieldDecorators(),
+            ]
         );
-
-        $form->getElement(self::SETTING_CAN_PICK_SECTION)->getDecorator('label')->setOption('class', 'col-md-2');
 
         // contributor can suggest reviewers
         $form->addElement('checkbox', self::SETTING_CAN_SUGGEST_REVIEWERS, [
@@ -1370,14 +1479,24 @@ class Episciences_Review
                     '1' => "L'auteur peut choisir des rédacteurs",
                     '2' => "L'auteur doit choisir des rédacteurs",
                     '3' => "L'auteur doit choisir un et un seul rédacteur"
-                ]]
+                ],
+                'decorators' => self::settingsFieldDecorators(),
+            ]
         );
 
-        $form->getElement(self::SETTING_CAN_PICK_EDITOR)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->addElement('checkbox', self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION, [
+                'label' => "Ne pas permettre le choix d'un rédacteur en chef",
+                'description' => "S'applique quand l'auteur peut choisir un rédacteur (voir « Choix du rédacteur ») : les rédacteurs en chef ne lui sont pas proposés.",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators,
+                'data-depends-on' => self::SETTING_CAN_PICK_EDITOR,
+            ]
+        );
 
         // contributor can answer with a tmp version
         $form->addElement('checkbox', self::SETTING_CAN_ANSWER_WITH_TMP_VERSION, [
             'label' => 'Permettre aux auteurs de répondre à une demande de modifications par une version temporaire',
+            'description' => "La version temporaire est un fichier déposé directement sur la revue, en attendant la nouvelle version dans l'archive.",
             'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
             'decorators' => $checkboxDecorators]);
 
@@ -1400,32 +1519,46 @@ class Episciences_Review
                 'label' => 'Permettre aux auteurs de partager le mot de passe papier arXiv',
                 'description' => "L’auteur peut déléguer à la revue la mise à jour de sa soumission publiée sur arXiv",
                 'value' => 0,
-
                 'multioptions' => [
                     0 => 'Non',
                     1 => 'Facultatif',
                     2 => 'Requis',
                 ],
-
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
 
         // Cover letter requirement (controls only the file, comment is always optional)
         $form->addElement('select', self::SETTING_COVER_LETTER_REQUIREMENT, [
                 'label' => "Lettre d'accompagnement",
+                'description' => "Fichier joint à la soumission. Le commentaire à l'attention de la revue reste toujours facultatif.",
                 'value' => self::COVER_LETTER_REQUIREMENT_OPTIONAL,
                 'multioptions' => [
                     self::COVER_LETTER_REQUIREMENT_DISABLED => 'Désactivée',
                     self::COVER_LETTER_REQUIREMENT_OPTIONAL => 'Facultative',
                     self::COVER_LETTER_REQUIREMENT_REQUIRED => 'Requise',
                 ],
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
 
-        $form->getElement(self::SETTING_COVER_LETTER_REQUIREMENT)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->addElement('checkbox', self::SETTING_AUTHOR_EDITOR_COMMUNICATION, [
+                'label' => "Permettre la communication entre auteurs et rédacteurs",
+                'description' => "Si activé, les auteurs et les rédacteurs assignés peuvent s'envoyer des messages directement",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators,
+            ]
+        );
+
+        $form->addElement('checkbox', self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS, [
+                'label' => "Afficher les noms des rédacteurs aux auteurs",
+                'description' => "Si activé, les auteurs peuvent voir les noms des rédacteurs assignés à leur article",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators,
+            ]
+        );
 
         return $form;
-
     }
 
     /**
@@ -1436,61 +1569,57 @@ class Episciences_Review
      */
     private function addRatingSettingsForm(Ccsd_form $form)
     {
-        $translator = Zend_Registry::get('Zend_Translate');
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
+        $checkboxDecorators = self::settingsCheckboxDecorators();
+        $deadlineDecorators = [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]];
 
         // delay before invitation expires (default: one month)
         $form->addElement('text', self::SETTING_INVITATION_DEADLINE, [
                 'label' => "Délai avant expiration d'une invitation",
-                'style' => 'width: 40px',
+                'description' => "Passé ce délai, le relecteur ne peut plus accepter l'invitation.",
                 'required' => true,
-                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
+                'decorators' => $deadlineDecorators,
                 'validators' => self::getDeadlineValueValidators(self::SETTING_INVITATION_DEADLINE_UNIT)
             ]
         );
 
         // default delay between invitation date and rating deadline (default: 2 months)
-        $tooltipMsg = $translator->translate("Délai laissé au relecteur pour rendre son rapport d'évaluation. La date limite est calculée à partir de la date d'envoi de l'invitation.");
-        $tooltip = '<span class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';
-        $label = $translator->translate("Délai de relecture par défaut");
         $form->addElement('text', self::SETTING_RATING_DEADLINE, [
-                'label' => $tooltip . $label,
-                'style' => 'width: 40px',
+                'label' => "Délai de relecture par défaut",
+                'description' => "Délai laissé au relecteur pour rendre son rapport d'évaluation. La date limite est calculée à partir de la date d'envoi de l'invitation.",
                 'required' => true,
-                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
+                'decorators' => $deadlineDecorators,
                 'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_UNIT), [new Episciences_Form_Validate_CheckDefaultRatingDeadline()])
             ]
         );
 
         // minimum delay between invitation date and rating deadline (default: 2 months)
-        $tooltipMsg = $translator->translate("Les rédacteurs ont la possibilité de modifier le délai de relecture pour chacun des relecteurs d'un article dont ils ont la charge. Ce délai modifié ne peut pas être inférieur au paramètre <strong>Délai de relecture minimum</strong>.");
-        $tooltip = '<span class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';
-        $label = $translator->translate("Délai de relecture minimum");
         $form->addElement('text', self::SETTING_RATING_DEADLINE_MIN, [
-                'label' => $tooltip . $label,
-                'style' => 'width: 40px',
+                'label' => "Délai de relecture minimum",
+                'description' => "Les rédacteurs peuvent modifier le délai de relecture de chaque relecteur, sans descendre sous ce minimum.",
                 'required' => true,
-                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
+                'decorators' => $deadlineDecorators,
                 'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_MIN_UNIT), [new Episciences_Form_Validate_CheckMinimumDeadlineDelay()])
             ]
         );
 
         // maximum delay between invitation date and rating deadline (default: 6 months)
-        $tooltipMsg = $translator->translate("Les rédacteurs ont la possibilité de modifier le délai de relecture pour chacun des relecteurs d'un article dont ils ont la charge. Ce délai modifié ne peut pas être supérieur au paramètre <strong>Délai de relecture maximum</strong>.");
-        $tooltip = '<span class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';
-        $label = $translator->translate("Délai de relecture maximum");
         $form->addElement('text', self::SETTING_RATING_DEADLINE_MAX, [
-                'label' => $tooltip . $label,
-                'style' => 'width: 40px',
+                'label' => "Délai de relecture maximum",
+                'description' => "Les rédacteurs peuvent modifier le délai de relecture de chaque relecteur, sans dépasser ce maximum.",
                 'required' => true,
-                'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
+                'decorators' => $deadlineDecorators,
                 'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_MAX_UNIT), [new Episciences_Form_Validate_CheckMaximumDeadlineDelay()])
+            ]
+        );
+
+        $form->addElement('text', self::SETTING_REQUIRED_REVIEWERS, [
+                'label' => "Minimum de relectures requis",
+                'description' => "Nombre de rapports terminés pour que l'article passe au statut « relu » ; en dessous, les rédacteurs sont relancés pour inviter des relecteurs. 0 : tous les relecteurs ayant accepté doivent rendre leur rapport.",
+                'value' => 0,
+                'class' => 'journal-settings-number',
+                'filters' => ['StringTrim'],
+                'validators' => [['Digits', true], ['LessThan', true, ['max' => 100]]],
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
 
@@ -1523,24 +1652,17 @@ class Episciences_Review
      */
     private function AddAutomaticallyReassignSameReviewersSettingsForm(Ccsd_Form $form): \Ccsd_Form
     {
-        $translator = Zend_Registry::get('Zend_Translate');
-        $description = $translator->translate("Réassigner automatiquement les mêmes relecteurs quand une nouvelle version est soumise");
-        $twoPoints = $translator->translate(" :");
-        $mjrLabel = $translator->translate("En cas de demande de modifications majeures");
-        $mrLabel = $translator->translate("En cas de demande de modifications mineures");
-        $multiCheckboxOptions = [self::MAJOR_REVISION_ASSIGN_REVIEWERS => $mjrLabel, self::MINOR_REVISION_ASSIGN_REVIEWERS => $mrLabel];
-        $multiCheckboxDecorators = [
-            'ViewHelper',
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9']],
-            ['Description', ['tag' => 'span', 'class' => 'hint']],
-            ['Errors', ['placement' => 'APPEND']],
-            ['Label', ['tag' => 'label', 'class' => "col-md-9 control-label"]]
+        $multiCheckboxOptions = [
+            self::MAJOR_REVISION_ASSIGN_REVIEWERS => 'En cas de demande de modifications majeures',
+            self::MINOR_REVISION_ASSIGN_REVIEWERS => 'En cas de demande de modifications mineures',
         ];
 
         return $form->addElement('multiCheckbox', self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION, [
-            'description' => $description . $twoPoints,
+            'label' => 'Réassigner automatiquement les mêmes relecteurs quand une nouvelle version est soumise',
+            'description' => 'Choix proposé par défaut au rédacteur lors de la demande de modifications ; il peut le changer à chaque demande.',
             'multiOptions' => $multiCheckboxOptions,
-            'decorators' => $multiCheckboxDecorators
+            'separator' => '',
+            'decorators' => self::settingsMultiCheckboxDecorators(),
         ]);
     }
 
@@ -1552,25 +1674,7 @@ class Episciences_Review
      */
     private function addEditorsSettingsForm(Ccsd_Form $form): \Ccsd_Form
     {
-
-        $translator = Zend_Registry::get('Zend_Translate');
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
-
-
-        $tooltipMsg = $translator->translate("Nombre minimum de relectures avant de pouvoir accepter un article.");
-        $tooltip = '<span class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';
-        $label = $translator->translate("Minimum de relectures requis");
-        $form->addElement('text', self::SETTING_REQUIRED_REVIEWERS, [
-                'label' => $tooltip . $label,
-                'value' => 0,
-                'style' => 'width: 40px']
-        );
+        $checkboxDecorators = self::settingsCheckboxDecorators();
 
         $form->addElement('checkbox', self::SETTING_ENCAPSULATE_EDITORS, [
                 'label' => "Cloisonner les rédacteurs",
@@ -1616,50 +1720,6 @@ class Episciences_Review
                 'decorators' => $checkboxDecorators]
         );
 
-        $form->addElement('checkbox', self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES, [
-                'label' => "Les rédacteurs peuvent réattribuer la gestion de l'article",
-                //'description'    =>    "",
-                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => $checkboxDecorators]
-        );
-
-        $form->addElement('checkbox', self::SETTING_AUTHOR_EDITOR_COMMUNICATION, [
-                'label' => "Permettre la communication entre auteurs et rédacteurs",
-                'description' => "Si activé, les auteurs et les rédacteurs assignés peuvent s'envoyer des messages directement",
-                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => [
-                    'ViewHelper',
-                    'Description',
-                    ['Label', ['placement' => 'APPEND']],
-                    ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3', 'id' => 'authorEditorCommunication-wrapper']],
-                    ['Errors', ['placement' => 'APPEND']]
-                ]]
-        );
-
-        $form->addElement('checkbox', self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS, [
-                'label' => "Afficher les noms des rédacteurs aux auteurs",
-                'description' => "Si activé, les auteurs peuvent voir les noms des rédacteurs assignés à leur article",
-                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => $checkboxDecorators]
-        );
-
-        $form->addElement('checkbox', self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION, [
-                'label' => "Ne pas permettre le choix d'un rédacteur en chef",
-                'description' => "Quand l'auteur a la possibilité de proposer un rédacteur lors de la soumission",
-                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => [
-                    'ViewHelper',
-                    'Description',
-                    ['Label', ['placement' => 'APPEND']],
-                    ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-10 col-md-offset-2']],
-                    ['Errors', ['placement' => 'APPEND']]
-                ]
-            ]
-        );
-
-        // TODO
-        // editor can reassign paper to another editor
-
         // assignation auto des rédacteurs
         return $this->addAutoAssignationEditorsSettingsForm($form);
     }
@@ -1672,58 +1732,45 @@ class Episciences_Review
      */
     private function addAutoAssignationEditorsSettingsForm(Ccsd_Form $form): \Ccsd_Form
     {
-        $translator = Zend_Registry::get('Zend_Translate');
-
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
-
-        $chiefEditorsCheckBox = $translator->translate('Rédacteurs en chef');
-        $sectionCheckBox = $translator->translate("Rédacteurs de rubrique");
-        $volumeCheckBox = $translator->translate("Rédacteurs de volume (hors volume spécial)");
-        $suggestedEditorsCheckBox = $translator->translate("Rédacteurs suggérés par le contributeur");
-        $specialVolumeCheckBox = $translator->translate("Rédacteurs de volume spécial");
-
         $multiCheckboxOptions = [
-            self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS => $chiefEditorsCheckBox,
-            self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS => $sectionCheckBox,
-            self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS => $volumeCheckBox,
-            self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS => $suggestedEditorsCheckBox,
-            self::SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS => $specialVolumeCheckBox
+            self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS => 'Rédacteurs en chef',
+            self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS => 'Rédacteurs de rubrique',
+            self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS => 'Rédacteurs de volume (hors volume spécial)',
+            self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS => 'Rédacteurs suggérés par le contributeur',
+            self::SETTING_SYSTEM_CAN_ASSIGN_SPECIAL_VOLUME_EDITORS => 'Rédacteurs de volume spécial',
         ];
 
         $form->addElement('multiCheckbox', self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT, [
-            'description' => $translator->translate("Lorsqu'un article est soumis, assigner les") . $translator->translate(" :"),
+            'label' => "Lorsqu'un article est soumis, assigner automatiquement les",
+            'description' => 'Aucune case cochée : aucun rédacteur n\'est assigné automatiquement.',
             'multiOptions' => $multiCheckboxOptions,
-            'separator' => '<br>',
-            'decorators' => $checkboxDecorators
+            'separator' => '',
+            'decorators' => self::settingsMultiCheckboxDecorators(),
         ]);
 
         return $form;
     }
 
     /**
+     * Special issues
      * @param Ccsd_Form $form
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
     private function addSpecialIssueSettingsForm(Ccsd_Form $form): \Ccsd_Form
     {
-
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
+        $checkboxDecorators = self::settingsCheckboxDecorators();
 
         $form->addElement('checkbox', self::SETTING_SPECIAL_ISSUE_ACCESS_CODE, [
                 'label' => "Protéger la soumission dans les volumes spéciaux par un code d'accès",
+                'description' => "Les auteurs doivent saisir le code d'accès du volume spécial pour y soumettre un article.",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES, [
+                'label' => "Les rédacteurs peuvent réattribuer la gestion de l'article",
+                'description' => "Dans un volume spécial, un rédacteur assigné à l'article peut le confier à un autre rédacteur de ce volume.",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );
@@ -1733,17 +1780,11 @@ class Episciences_Review
          * Nous ne voyons pas l'intérêt de ce paramètre ;
          * désactivez-le pour l'instant et voyons si nous pouvons le supprimer définitivement si personne ne le demande
          * De plus, ce paramètre n'a plus aucun effet depuis un certain temps en raison d'un bug (@see commit 76909f4a1c254dcc69372d90b5f0372aa1a050ec)
+         * (SETTING_ENCAPSULATE_REVIEWERS: "Cloisonner les relecteurs")
          */
 
-//        $form->addElement('checkbox', self::SETTING_ENCAPSULATE_REVIEWERS, [
-//                'label' => "Cloisonner les relecteurs",
-//                'description' => "Lorsque les relecteurs sont cloisonnés, et qu’un article appartient à un volume spécial avec cette option activée, seuls les relecteurs attribués à ce volume seront proposés pour l’évaluation dans la section des relecteurs connus de la revue",
-//                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-//                'decorators' => $checkboxDecorators]
-//        );
-
         $form->addElement('checkbox', self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS, [
-            'label' => "Activer la fonctionnalité",
+            'label' => "Transmettre aux relecteurs le message de refus envoyé aux auteurs",
             'description' => "En cas de refus d'un article, le message envoyé aux auteurs/autrices expliquant la décision finale prise par le rédacteur/la rédactrice responsable est transmise automatiquement aux relecteurs/relectrices.",
             'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
             'decorators' => $checkboxDecorators
@@ -1760,33 +1801,25 @@ class Episciences_Review
      */
     private function addVolumeSettingsForm(Ccsd_Form $form): Ccsd_Form
     {
-        $translator = Zend_Registry::get('Zend_Translate');
-
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
+        $checkboxDecorators = self::settingsCheckboxDecorators();
 
         $form->addElement('checkbox', self::SETTING_DISPLAY_EMPTY_VOLUMES, [
-                'label' => $translator->translate("Autoriser l'affichage des volumes vides"),
-                'description' => $translator->translate("Si activé, les volumes sans articles seront visibles sur le site"),
+                'label' => "Autoriser l'affichage des volumes vides",
+                'description' => "Si activé, les volumes sans articles seront visibles sur le site",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );
 
         $form->addElement('checkbox', self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, [
-                'label' => $translator->translate("Autoriser la modification du titre du volume avec des articles publiés"),
-                'description' => $translator->translate("Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés"),
+                'label' => "Autoriser la modification du titre du volume avec des articles publiés",
+                'description' => "Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );
 
         $form->addElement('checkbox', self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE, [
-                'label' => $translator->translate("Afficher les volumes secondaires sur la page publique de l'article"),
-                'description' => $translator->translate("Si activé, les volumes secondaires seront visibles sur la page publique de l'article"),
+                'label' => "Afficher les volumes secondaires sur la page publique de l'article",
+                'description' => "Si activé, les volumes secondaires seront visibles sur la page publique de l'article",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );
@@ -1802,28 +1835,19 @@ class Episciences_Review
      */
     private function addNotificationSettingsForm(Ccsd_Form $form): Zend_Form
     {
-        $translator = Zend_Registry::get('Zend_Translate');
-        $twoPoints = $translator->translate(" :");
-
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
+        $multiCheckboxOptions = [
+            self::SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS => 'Rédacteurs en chef',
+            self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS => 'Administrateurs',
+            self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES => 'Secrétaires de rédaction',
         ];
-        $chiefEditorsCheckBox = $translator->translate('Rédacteurs en chef');
-        $adminCheckBox = $translator->translate("Administrateurs");
-        $secretaryCheckBox = $translator->translate("Secrétaires de rédaction");
-        $multiCheckboxOptions = [self::SETTING_SYSTEM_CAN_NOTIFY_CHIEF_EDITORS => $chiefEditorsCheckBox, self::SETTING_SYSTEM_CAN_NOTIFY_ADMINISTRATORS => $adminCheckBox, self::SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES => $secretaryCheckBox];
 
         return $form->addElement('multiCheckbox', self::SETTING_SYSTEM_NOTIFICATIONS, [
-            'description' => $translator->translate("Lorsqu'un article est soumis, mis à jour ou refusé, notifier les") . $twoPoints,
+            'label' => "Lorsqu'un article est soumis, mis à jour ou refusé, notifier les",
+            'description' => "Ces rôles sont prévenus en plus des rédacteurs assignés à l'article. Aucune case cochée : les trois rôles sont quand même prévenus d'une nouvelle soumission.",
             'multiOptions' => $multiCheckboxOptions,
-            'separator' => '<br>',
-            'decorators' => $checkboxDecorators
+            'separator' => '',
+            'decorators' => self::settingsMultiCheckboxDecorators(),
         ]);
-
     }
 
     /**
@@ -1833,20 +1857,11 @@ class Episciences_Review
      */
     private function addCopyEditorForm(Ccsd_Form $form): \Ccsd_Form
     {
-
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
-
         return $form->addElement('checkbox', self::SETTING_ENCAPSULATE_COPY_EDITORS, [
                 'label' => "Cloisonner les préparateurs de copie",
                 'description' => "S'ils sont cloisonnés, les préparateurs de copie ne peuvent voir que les articles qui leur sont assignés",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => $checkboxDecorators]
+                'decorators' => self::settingsCheckboxDecorators()]
         );
     }
 
@@ -1857,14 +1872,8 @@ class Episciences_Review
      */
     private function addCoiForm(Ccsd_Form $form): \Ccsd_Form
     {
+        $checkboxDecorators = self::settingsCheckboxDecorators();
 
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
         $form->addElement('checkbox', self::SETTING_SYSTEM_IS_COI_ENABLED, [
                 'label' => "Activer la déclaration CI",
                 'description' => "Le mode conflit d'intérêts (CI) aura les effets suivants : toutes les informations non publiques concernant une soumission ne sont pas accessibles aux éditeurs en chef et aux éditeurs tant qu'ils n'auront pas déclaré l'absence de tout conflit d'intérêts.",
@@ -1873,9 +1882,11 @@ class Episciences_Review
         );
         return $form->addElement('checkbox', self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED, [
                 'label' => "Les rédacteurs reçoivent les 'commentaires pour les rédacteurs' avant la déclaration d'un conflit d'intérêt",
-                'description' => "Activer pour permettre aux éditeurs de recevoir des commentaires sur l'article avant d'avoir déclaré un conflit d'intérêts.",
+                'description' => "Ne s'applique que si la déclaration CI est activée : les rédacteurs reçoivent les commentaires sur l'article avant d'avoir déclaré un conflit d'intérêts.",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => $checkboxDecorators]
+                'decorators' => $checkboxDecorators,
+                'data-depends-on' => self::SETTING_SYSTEM_IS_COI_ENABLED,
+            ]
         );
     }
 
@@ -1886,25 +1897,17 @@ class Episciences_Review
      */
     private function addFinalDecisionForm(Ccsd_Form $form): \Ccsd_Form
     {
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
-
         return $form->addElement('checkbox', self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION, [
                 'label' => "Permettre la demande de revision",
                 'description' => "Cette option permet de réviser les articles après leur acceptation, par exemple en demandant de nouvelles versions des prépublications acceptées",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => $checkboxDecorators]
+                'decorators' => self::settingsCheckboxDecorators()]
         );
     }
 
     private function addRedirectionMailError(Ccsd_Form $form): \Ccsd_Form
     {
-        // Possibility to share the paper password for arxiv submissions
+        // address receiving the delivery failures of the emails sent by the journal
         return $form->addElement('select', self::SETTING_CONTACT_ERROR_MAIL, [
                 'label' => 'Courriel de retour',
                 'description' => "Sélectionner l'adresse qui recevra les échecs d'envoi de courriels",
@@ -1913,7 +1916,7 @@ class Episciences_Review
                     0 => 'error@' . DOMAIN,
                     1 => $this->getCode() . '-error@' . DOMAIN,
                 ],
-
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
     }
@@ -1926,60 +1929,39 @@ class Episciences_Review
 
     private function toRequireRevisionDeadlineForm(Ccsd_Form $form): \Ccsd_Form
     {
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
-
         return $form->addElement('checkbox', self::SETTING_TO_REQUIRE_REVISION_DEADLINE, [
                 'label' => "Exiger que la demande de révision soit assortie d'un délai",
-                'description' => "",
+                'description' => "Le rédacteur doit fixer une date limite à l'auteur pour chaque demande de modifications.",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => $checkboxDecorators]
+                'decorators' => self::settingsCheckboxDecorators()]
         );
     }
 
     private function addStatisticsForm(Ccsd_Form $form): \Ccsd_Form
     {
-        $checkboxDecorators = [
-            'ViewHelper',
-            'Description',
-            ['Label', ['placement' => 'APPEND']],
-            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-            ['Errors', ['placement' => 'APPEND']]
-        ];
-
-
         $form->addElement('select', self::SETTING_DISPLAY_STATISTICS, [
                 'label' => 'Visibilité des statistiques',
-                'description' => "",
+                'description' => "Page des statistiques de la revue : masquée, ouverte à tous, ou réservée aux administrateurs de la revue.",
                 'value' => 0,
-                'placeholder' => '',
-
                 'multioptions' => [
                     0 => 'Par défaut (cachée)',
                     1 => 'Publique',
                     2 => 'Réservée aux administrateurs',
                 ],
-
+                'decorators' => self::settingsFieldDecorators(),
             ]
         );
 
-
         $form->addElement('date', self::SETTING_START_STATS_AFTER_DATE, [
             'id' => self::SETTING_START_STATS_AFTER_DATE,
-            'label' => '',
+            'label' => 'Début des statistiques',
             'value' => '',
-            'placeholder' => 'YYYY-MM-DD',
-            'style' => 'width: 18%',
+            'placeholder' => 'AAAA-MM-JJ',
+            'class' => 'journal-settings-date',
             'size' => '10',
             'maxlength' => '10',
-            'maxsizelignt' => '10',
-            'description' => "Il est possible de renseigner une date de début de statistiques au format: AAAA-MM-JJ",
-            'decorators' => $checkboxDecorators,
+            'description' => "Facultatif. Seules les données postérieures à cette date sont prises en compte (format : AAAA-MM-JJ).",
+            'decorators' => self::settingsFieldDecorators(),
             'pattern' => '\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])',
             // Zend_Filter_StringTrim would cast a posted array to "Array" (with a PHP warning): only trim strings
             'filters' => [new Zend_Filter_Callback(static fn($value) => is_string($value) ? trim($value) : $value)],
@@ -1993,8 +1975,6 @@ class Episciences_Review
         ]);
 
         return $form;
-
-
     }
 
     /**
@@ -2004,6 +1984,8 @@ class Episciences_Review
     {
         $form = new Ccsd_Form();
         $form->setAttrib('class', 'form-horizontal');
+        $form->setAttrib('id', 'licenses-settings-form');
+        $form->setAttrib('data-unsaved-warning', '1');
         $form->getDecorator('FormRequired')->setOption('style', 'float: none;');
 
         $licenses = \Episciences\Paper\Spdx\LicenseManager::fetchRecommendedOptions();

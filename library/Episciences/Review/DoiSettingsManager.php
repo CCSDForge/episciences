@@ -3,6 +3,10 @@
 
 class Episciences_Review_DoiSettingsManager
 {
+    /**
+     * A DOI prefix: "10." followed by the registrant code (digits, possibly with dot-separated subdivisions)
+     */
+    public const DOI_PREFIX_PATTERN = '/^10\.\d{4,}(\.\d+)*$/';
 
     /**
      * Form settings for journal DOI
@@ -15,47 +19,59 @@ class Episciences_Review_DoiSettingsManager
 
         $form = new Ccsd_Form();
         $form->setAttrib('class', 'form-horizontal');
+        $form->setAttrib('id', 'doi-settings-form');
+        $form->setAttrib('data-unsaved-warning', '1');
         $form->getDecorator('FormRequired')->setOption('style', 'float: none;');
 
 
-        $translator = Zend_Registry::get('Zend_Translate');
+        $fieldDecorators = [
+            ['ViewHelper', ['class' => 'form-control input-sm']],
+            ['Description', ['tag' => 'p', 'class' => 'help-block', 'placement' => 'APPEND', 'escape' => false]],
+            ['Errors', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9']],
+            ['Label', ['tag' => 'label', 'class' => 'col-md-3 control-label']],
+        ];
 
         // DOI RA
         $form->addElement('select', Episciences_Review_DoiSettings::SETTING_DOI_REGISTRATION_AGENCY, [
             'label' => "Agence d'enregistrement pour les DOI",
-            'style' => 'width: auto;',
             'multioptions' => [
                 'crossref' => "Crossref"
-            ]]);
+            ],
+            'decorators' => $fieldDecorators,
+        ]);
 
         $form->addElement('select', Episciences_Review_DoiSettings::SETTING_DOI_ASSIGN_MODE, [
             'label' => "Assignation automatique des DOI",
-            'style' => 'width: auto;',
+            'description' => "<strong>Automatique</strong> : le DOI est créé à l'acceptation de l'article. <strong>Manuel</strong> : la revue le demande depuis la page de l'article (bouton « Demander un DOI »). <strong>Désactivé</strong> : aucun DOI n'est créé à partir du format, la revue saisit le DOI de chaque article.",
             'multioptions' => [
                 Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO => "Automatique",
                 Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_MANUAL => "Manuel",
                 Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_DISABLED => "Désactivé"
-            ]]);
-
-
-        $tooltipMsg = $translator->translate("Préfixe pour l'assignation de DOI");
-        $tooltip = '<span class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';
-        $label = Zend_Registry::get('Zend_Translate')->translate("Préfixe DOI");
-        $form->addElement('text', Episciences_Review_DoiSettings::SETTING_DOI_PREFIX, [
-            'label' => $tooltip . $label,
-            'description' => $translator->translate('Un préfixe DOI commence toujours par "10." et se poursuit par un nombre.'),
-            'placeholder' => $translator->translate('Par exemple') . ' 10.12345',
-            'style' => 'width: 200px',
-            'required' => false
+            ],
+            'decorators' => $fieldDecorators,
         ]);
 
-        $tooltipMsg = $translator->translate("Modèle de format pour la création de DOI");
-        $tooltip = '<span class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';
-        $label = Zend_Registry::get('Zend_Translate')->translate("Format du DOI");
-        $form->addElement('text', Episciences_Review_DoiSettings::SETTING_DOI_FORMAT, [
-            'label' => $tooltip . $label,
-            'style' => 'width: 300px',
+        $form->addElement('text', Episciences_Review_DoiSettings::SETTING_DOI_PREFIX, [
+            'label' => "Préfixe DOI",
+            'description' => 'Préfixe attribué à la revue par l\'agence d\'enregistrement. Un préfixe DOI commence toujours par "10." et se poursuit par un nombre. Sans préfixe, aucun DOI ne peut être créé.',
+            'placeholder' => '10.12345',
+            'filters' => ['StringTrim'],
+            'validators' => [
+                (new Zend_Validate_Regex(self::DOI_PREFIX_PATTERN))
+                    ->setMessage('Un préfixe DOI commence toujours par "10." et se poursuit par un nombre.', Zend_Validate_Regex::NOT_MATCH),
+            ],
             'required' => false,
+            'decorators' => $fieldDecorators,
+        ]);
+
+        $form->addElement('text', Episciences_Review_DoiSettings::SETTING_DOI_FORMAT, [
+            'label' => "Format du DOI",
+            'filters' => ['StringTrim'],
+            'validators' => [
+                new Zend_Validate_StringLength(['max' => 255]),
+            ],
+            'required' => true,
             'decorators' => [['ViewScript', ['viewScript' => '/doi/doi_format.phtml']]],
         ]);
 
@@ -66,6 +82,7 @@ class Episciences_Review_DoiSettingsManager
             Episciences_Review_DoiSettings::SETTING_DOI_PREFIX,
             Episciences_Review_DoiSettings::SETTING_DOI_FORMAT
         ], 'doi', ["legend" => "Paramètres pour l'assignation de DOI"]);
+        $form->getDisplayGroup('doi')->setDecorators(['FormElements', 'Fieldset']);
         $form->getDisplayGroup('doi')->removeDecorator('DtDdWrapper');
 
         // submit button

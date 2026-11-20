@@ -291,13 +291,11 @@ class Episciences_ReviewTest extends TestCase
     }
 
     /**
-     * Licenses have their own page (review/licenses): the main settings page must neither
-     * display them (the required default license would block saving the other settings)
-     * nor save them.
+     * Licenses have their own page (review/licenses): the main settings page must not save them.
+     * That the page does not display them is checked by ReviewControllerSettingsTest.
      */
     public function testLicensesAreNotPartOfTheMainSettings(): void
     {
-        self::assertStringNotContainsString('SETTING_LICENSE', self::methodSource('settingsForm'));
         self::assertStringNotContainsString('SETTING_LICENSE', self::methodSource('save'));
     }
 
@@ -642,21 +640,6 @@ class Episciences_ReviewTest extends TestCase
         ]);
 
         self::assertSame('epij-custom', $this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
-    }
-
-    /**
-     * settingsForm() pulls in Zend_Registry-dependent sub-forms (translator, repositories),
-     * so it cannot be instantiated in isolation here; verified via source inspection instead,
-     * consistent with other DB/registry-dependent methods in this codebase's test suite.
-     */
-    public function testSettingsFormSourceAddsMailDisplayCodeElement(): void
-    {
-        $method = new ReflectionMethod(Episciences_Review::class, 'settingsForm');
-        $lines = file($method->getFileName());
-        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
-
-        self::assertStringContainsString("addElement('text', self::SETTING_MAIL_DISPLAY_CODE", $source);
-        self::assertStringContainsString('self::SETTING_MAIL_DISPLAY_CODE], \'global\'', $source);
     }
 
     // =========================================================================

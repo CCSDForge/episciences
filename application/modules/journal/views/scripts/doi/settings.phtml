@@ -1,2 +1,18 @@
 <?php
-echo $this->form;
+/**
+ * DOI settings of the journal: see DoiController::settingsAction() and Episciences_Review_DoiSettingsManager::getSettingsForm().
+ * @var Zend_View $this
+ */
+$this->jQuery()
+    ->addStylesheet('/css/review/settings.css')
+    ->addJavascriptFile('/js/doi/settings.js')
+    ->addJavascriptFile('/js/review/settings.js');
+?>
+<?= $this->partial('partials/journal_settings_tabs.phtml', ['active' => 'doi']) ?>
+
+<p class="journal-settings-intro">
+    <?= $this->translate("Ces paramètres déterminent comment les DOI des articles de la revue sont créés. Les DOI déjà attribués ne sont pas modifiés.") ?>
+</p>
+
+<?= $this->partial('partials/unsaved_changes_warning.phtml') ?>
+<?= $this->form ?>

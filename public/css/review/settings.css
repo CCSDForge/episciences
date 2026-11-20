@@ -1,0 +1,397 @@
+/* Journal settings page (review/settings) */
+
+.journal-settings-intro {
+    margin-bottom: 1.25em;
+    color: #555;
+}
+
+/* When a change takes effect: the summary looks like a toggle button, with a chevron turning when open */
+.journal-settings-effects {
+    margin: -0.5em 0 1.25em;
+}
+
+.journal-settings-effects summary {
+    display: inline-flex;
+    align-items: center;
+    gap: .5em;
+    padding: .45em .9em;
+    font-weight: 600;
+    color: #005a87;
+    list-style: none;
+    cursor: pointer;
+    background: #eaf4fa;
+    border: 1px solid #007cba;
+    border-radius: 4px;
+}
+
+/* hide the native marker, replaced by the chevron */
+.journal-settings-effects summary::-webkit-details-marker {
+    display: none;
+}
+
+.journal-settings-effects summary:hover {
+    background: #d4e9f5;
+}
+
+.journal-settings-effects summary:focus-visible {
+    outline: 2px solid #005a87;
+    outline-offset: 2px;
+}
+
+/* chevron of the collapsible boxes, turning when open */
+.journal-settings-chevron {
+    font-size: .85em;
+    transition: transform .15s ease-in-out;
+}
+
+details[open] > summary .journal-settings-chevron {
+    transform: rotate(90deg);
+}
+
+.journal-settings-effects[open] summary {
+    border-bottom-left-radius: 0;
+}
+
+.journal-settings-effects dl {
+    margin: 0;
+    padding: 0.75em 1em;
+    background: #f8f9fa;
+    border-left: 3px solid #007cba;
+}
+
+.journal-settings-effects dt {
+    margin-top: 0.5em;
+}
+
+.journal-settings-effects dt:first-child {
+    margin-top: 0;
+}
+
+.journal-settings-effects dd {
+    margin: 0.2em 0 0;
+    color: #555;
+}
+
+/* Tabs linking the general settings, licenses and DOI settings pages */
+/* the tabs stay visible while scrolling, below the fixed top navbar (51px, as the other sticky elements) */
+.journal-settings-tabs {
+    position: sticky;
+    top: 51px;
+    z-index: 3;
+    margin-bottom: 1.2em;
+    padding-top: .5em;
+    background: #fff;
+}
+
+.journal-settings-tabs .fa-solid {
+    margin-right: 0.35em;
+}
+
+/* contrasted tabs: grey for the other pages, filled with the main color for the current one */
+.journal-settings-tabs .nav-tabs {
+    border-bottom: 2px solid #007cba;
+}
+
+.journal-settings-tabs .nav-tabs > li {
+    margin-bottom: 0;
+}
+
+.journal-settings-tabs .nav-tabs > li > a {
+    margin-right: 4px;
+    color: #212529;
+    background: #e9ecef;
+    border: 1px solid #ced4da;
+    border-bottom: 0;
+}
+
+.journal-settings-tabs .nav-tabs > li > a:hover,
+.journal-settings-tabs .nav-tabs > li > a:focus {
+    color: #005a87;
+    background: #d4e9f5;
+    border-color: #007cba;
+}
+
+.journal-settings-tabs .nav-tabs > li > a:focus-visible {
+    outline: 2px solid #005a87;
+    outline-offset: 2px;
+}
+
+.journal-settings-tabs .nav-tabs > li.active > a,
+.journal-settings-tabs .nav-tabs > li.active > a:hover,
+.journal-settings-tabs .nav-tabs > li.active > a:focus {
+    font-weight: bold;
+    color: #fff;
+    background: #007cba;
+    border: 1px solid #007cba;
+    border-bottom: 0;
+}
+
+/* DOI and licenses summaries */
+.journal-settings-related {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 1em;
+}
+
+.journal-settings-card {
+    height: 100%;
+    margin-bottom: 1em;
+    padding: .9em 1.1em;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.journal-settings-card-title {
+    margin: 0 0 .6em;
+    font-size: 15px;
+    line-height: 1.4;
+    color: #333;
+}
+
+.journal-settings-card-title .fa-solid {
+    margin-right: .35em;
+    color: #007cba;
+}
+
+.journal-settings-summary {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: .3em 1em;
+    margin: 0 0 .8em;
+}
+
+.journal-settings-summary dt {
+    font-weight: 600;
+}
+
+.journal-settings-summary dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Allowed licenses: collapsible, one per line, name then code */
+.journal-settings-licenses-allowed summary {
+    display: inline-flex;
+    align-items: center;
+    gap: .4em;
+    color: #005a87;
+    list-style: none;
+    cursor: pointer;
+}
+
+.journal-settings-licenses-allowed summary::-webkit-details-marker {
+    display: none;
+}
+
+.journal-settings-licenses-allowed summary:hover {
+    text-decoration: underline;
+}
+
+.journal-settings-licenses-allowed summary:focus-visible {
+    outline: 2px solid #005a87;
+    outline-offset: 2px;
+}
+
+.journal-settings-licenses-allowed[open] summary {
+    margin-bottom: .4em;
+}
+
+.journal-settings-license-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.journal-settings-license-list li {
+    padding: .2em 0;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.journal-settings-license-list li:first-child {
+    padding-top: 0;
+}
+
+.journal-settings-license-list li:last-child {
+    border-bottom: 0;
+}
+
+.journal-settings-license-name {
+    margin-right: .3em;
+}
+
+.journal-settings-license-list .label {
+    margin-left: .3em;
+    vertical-align: middle;
+}
+
+.journal-settings-card-note {
+    margin: 0;
+    font-size: 12px;
+    color: #666;
+}
+
+/* Table of contents */
+.journal-settings-toc {
+    position: sticky;
+    top: calc(51px + 4.5em);
+    margin-bottom: 1em;
+}
+
+.journal-settings-toc-title {
+    margin: 0 0 .5em;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.journal-settings-toc ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-left: 2px solid #e5e5e5;
+}
+
+.journal-settings-toc a {
+    display: block;
+    margin-left: -2px;
+    padding: .25em .75em;
+    color: #555;
+    border-left: 2px solid transparent;
+}
+
+.journal-settings-toc a:hover,
+.journal-settings-toc a:focus {
+    color: #007cba;
+    text-decoration: none;
+    background: #f5f9fc;
+}
+
+.journal-settings-toc a[aria-current="true"] {
+    font-weight: 600;
+    color: #007cba;
+    border-left-color: #007cba;
+}
+
+/* Sections of the form */
+.journal-settings-form .journal-settings-section {
+    margin-bottom: 1.5em;
+    padding: 0 1.1em .5em;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    /* below the fixed top navbar and the sticky tabs */
+    scroll-margin-top: calc(51px + 4.5em);
+}
+
+.journal-settings-form .journal-settings-section legend {
+    width: auto;
+    margin: 0 0 .25em -.4em;
+    padding: 0 .4em;
+    font-size: 17px;
+    font-weight: 600;
+    color: #007cba;
+    border: 0;
+}
+
+.journal-settings-section-description {
+    margin: 0 0 1em;
+    color: #666;
+}
+
+.journal-settings-form .help-block {
+    margin: .3em 0 0;
+    font-size: 12px;
+}
+
+.journal-settings-form .checkbox {
+    margin: 0;
+}
+
+.journal-settings-form .checkbox label {
+    font-weight: normal;
+}
+
+.journal-settings-form .checkbox + .help-block {
+    margin-left: 20px;
+}
+
+/* Settings closer to each other than in the other forms */
+.journal-settings-form .form-group {
+    margin-bottom: 10px;
+}
+
+/* Groups of checkboxes: one per line */
+.journal-settings-choices label {
+    display: block;
+    margin: 0 0 .2em;
+    font-weight: normal;
+}
+
+.journal-settings-choices input[type="checkbox"] {
+    margin-right: .4em;
+}
+
+/* Short fields */
+.journal-settings-form .journal-settings-number {
+    display: inline-block;
+    width: 6em;
+}
+
+.journal-settings-form .journal-settings-date {
+    display: inline-block;
+    width: 11em;
+}
+
+.journal-settings-deadline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5em;
+}
+
+.journal-settings-deadline .journal-settings-unit {
+    width: auto;
+}
+
+/* Errors */
+.journal-settings-form .errors {
+    margin: .3em 0 0;
+    padding: 0;
+    list-style: none;
+    color: #a94442;
+}
+
+/* Setting without effect with the current value of the setting it depends on */
+.journal-settings-inactive {
+    opacity: .55;
+}
+
+/* Unsaved changes and save button always reachable */
+/* shown only while the form differs from the saved values (the script removes the hidden attribute) */
+.journal-settings-unsaved[hidden],
+[data-unsaved-warning] .form-actions .journal-settings-unsaved[hidden] {
+    display: none;
+}
+
+[data-unsaved-warning] .form-actions .journal-settings-unsaved {
+    display: inline-block;
+    margin: 0 1em 0 0;
+    padding: .4em .8em;
+    vertical-align: middle;
+}
+
+[data-unsaved-warning] .form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding: .75em 0;
+    background: #fff;
+    border-top: 1px solid #ddd;
+}
+
+@media print {
+    .journal-settings-tabs,
+    .journal-settings-toc,
+    .journal-settings-unsaved,
+    [data-unsaved-warning] .form-actions {
+        display: none;
+    }
+}

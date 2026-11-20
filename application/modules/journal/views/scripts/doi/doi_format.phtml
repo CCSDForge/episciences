@@ -1,83 +1,87 @@
 <?php
 /**
- * Template form for DOI format
+ * DOI format of the DOI settings form (doi/settings): the field, the available tags and a preview.
+ * @var Zend_View $this
  */
-$name = $this->element->getName();
-?>
+$element = $this->element;
+$name = $element->getName();
+$labelClasses = trim('col-md-3 control-label' . ($element->hasErrors() ? ' error' : '') . ($element->isRequired() ? ' required' : ''));
 
-<label class="col-md-3 control-label
-				<?php if ($this->element->hasErrors()): ?> error<?php endif; ?>
-				<?php if ($this->element->isRequired()): ?> required<?php endif; ?>"
-       for="<?php echo $name; ?>">
-    <?php echo $this->element->getLabel(); ?>
+// saved value (or default value)
+$doiFormat = $element->getValue() ?: Episciences_Review_DoiSettings::SETTING_DOI_DEFAULT_DOI_FORMAT;
+
+// tag => [description, example value used by the preview]
+$tags = [
+    Episciences_Review_DoiSettings::DOI_FORMAT_REVIEW_CODE => ['Code de la revue', mb_strtolower(RVCODE)],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME => ["Volume de l'article", 'Volume 12'],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_INT => ["Volume de l'article (seulement les nombres)", '12'],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_INT_REPLACEMENT_CHAR => ["Volume de l'article (seulement les nombres, séparés par le caractère entre crochets)", ''],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_BIB_REF => ["Volume de l'article (Référence bibliographique du volume)", 'vol12'],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_ORDER => ["Numéro de l'article dans un volume (ordre)", '3'],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_SECTION => ["Rubrique de l'article", 'Section 2'],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_SECTION_INT => ["Rubrique de l'article (seulement les nombres)", '2'],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_SECTION_INT_REPLACEMENT_CHAR => ["Rubrique de l'article (seulement les nombres, séparés par le caractère entre crochets)", ''],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_ID => ["Numéro de l'article (Identifiant pérenne)", '12345'],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_YEAR => ['Année de publication', date('Y')],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_YEAR_SHORT => ['Année de publication (2 chiffres)', date('y')],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_MONTH => ['Mois de publication', date('m')],
+    Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_AUTOINCREMENT => ['Auto-incrément basé sur le DOI précédent', '7'],
+];
+$examples = [];
+foreach ($tags as $tag => [, $example]) {
+    if ($example !== '') {
+        $examples[$tag] = $example;
+    }
+}
+?>
+<label class="<?= $labelClasses ?>" for="<?= $this->escape($name) ?>">
+    <?= $this->escape($this->translate((string)$element->getLabel())) ?>
 </label>
 
-<div class="col-md-6">
-
-    <?php if ($this->element->hasErrors()): ?>
-        <span class="help-block error"><?php echo $this->formErrors($this->element->getMessages()); ?></span>
-    <?php endif ?>
-
-    <?php
-    // Valeur enregistrées (ou par défaut)
-    $doiFormat = ($this->element->getValue()) ? $this->element->getValue() : constant('Episciences_Review_DoiSettings::SETTING_DOI_DEFAULT_DOI_FORMAT');
-    ?>
-
-    <input name="<?php echo $name; ?>"
-           id="<?php echo $name; ?>"
+<div class="col-md-9">
+    <input name="<?= $this->escape($name) ?>"
+           id="<?= $this->escape($name) ?>"
            type="text"
-           class="form-control input-sm"
-           style="display: inline-block; width: 300px"
-           value="<?php echo $doiFormat; ?>"/>
-</div>
+           required
+           class="form-control input-sm doi-format-input"
+           aria-describedby="<?= $this->escape($name) ?>-preview"
+           data-doi-examples="<?= $this->escape(json_encode($examples, JSON_UNESCAPED_UNICODE)) ?>"
+           value="<?= $this->escape((string)$doiFormat) ?>"/>
 
+    <?php if ($element->hasErrors()) : ?>
+        <div class="help-block error"><?= $this->formErrors($element->getMessages()) ?></div>
+    <?php endif; ?>
 
-<div class="col-md-6">
-    <dl class="dl-horizontal">
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_REVIEW_CODE ?></code></dt>
-        <dd><?php echo $this->translate('Code de la revue') ?>&nbsp;<em>(<?php echo mb_strtolower(RVCODE); ?>)</em></dd>
+    <p class="help-block doi-format-preview" id="<?= $this->escape($name) ?>-preview" aria-live="polite">
+        <?= $this->translate('Exemple de DOI obtenu') ?> :
+        <code class="doi-format-preview-value"></code>
+    </p>
+    <p class="help-block">
+        <?= $this->translate("Le DOI est mis en minuscules ; les espaces sont supprimés.") ?>
+    </p>
 
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME ?></code></dt>
-        <dd><?php echo $this->translate("Volume de l'article") ?></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_INT ?></code></dt>
-        <dd><?php echo $this->translate("Volume de l'article (seulement les nombres)") ?></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_INT_REPLACEMENT_CHAR ?></code></dt>
-        <dd><?php echo $this->translate("Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]") ?></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_BIB_REF ?></code></dt>
-        <dd><?php echo $this->translate("Volume de l'article (Référence bibliographique du volume)") ?></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_VOLUME_ORDER ?></code></dt>
-        <dd><?php echo $this->translate("Numéro de l'article dans un volume (ordre)") ?></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_SECTION ?></code></dt>
-        <dd><?php echo $this->translate("Rubrique de l'article") ?></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_SECTION_INT ?></code></dt>
-        <dd><?php echo $this->translate("Rubrique de l'article (seulement les nombres)") ?></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_SECTION_INT_REPLACEMENT_CHAR ?></code></dt>
-        <dd><?php echo $this->translate("Rubrique de l'article (seulement les nombres) [Caractère de remplacement des espaces]") ?></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_ID ?></code></dt>
-        <dd><?php echo $this->translate("Numéro de l'article (Identifiant pérenne)") ?></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_YEAR ?></code></dt>
-        <dd><?php echo $this->translate('Année de publication') ?>&nbsp;<em>(<?php echo date('Y'); ?>)</em></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_YEAR_SHORT ?></code></dt>
-        <dd><?php echo $this->translate('Année de publication') ?>&nbsp;<em>(<?php echo date('y'); ?>)</em></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_MONTH ?></code></dt>
-        <dd><?php echo $this->translate('Mois de publication') ?>&nbsp;<em>(<?php echo date('m'); ?>)</em></dd>
-
-        <dt><code><?php echo Episciences_Review_DoiSettings::DOI_FORMAT_PAPER_AUTOINCREMENT ?></code></dt>
-        <dd><?php echo $this->translate("Auto-incrément basé sur le DOI précédent") ?>&nbsp;<em>(7)</em></dd>
-
-        <dt><code>%%</code></dt>
-        <dd><?php echo $this->translate("le caractère <kbd>%</kbd>"); ?></dd>
-    </dl>
-
+    <table class="table table-condensed doi-format-tags">
+        <caption><?= $this->translate('Balises utilisables') ?></caption>
+        <thead>
+        <tr>
+            <th scope="col"><?= $this->translate('Balise') ?></th>
+            <th scope="col"><?= $this->translate('Valeur') ?></th>
+            <th scope="col"><?= $this->translate('Exemple') ?></th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($tags as $tag => [$description, $example]) : ?>
+            <tr>
+                <th scope="row"><code><?= $this->escape($tag) ?></code></th>
+                <td><?= $this->escape($this->translate($description)) ?></td>
+                <td><?= $example !== '' ? '<code>' . $this->escape($example) . '</code>' : '' ?></td>
+            </tr>
+        <?php endforeach; ?>
+        <tr>
+            <th scope="row"><code>%%</code></th>
+            <td><?= $this->translate('le caractère <kbd>%</kbd>') ?></td>
+            <td><code>%</code></td>
+        </tr>
+        </tbody>
+    </table>
 </div>

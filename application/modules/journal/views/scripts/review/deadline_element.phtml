@@ -1,39 +1,54 @@
-<?php $name = $this->element->getName(); ?>
-<label 	class="col-md-3 control-label 
-				<?php if ($this->element->hasErrors()): ?> error<?php endif; ?>
-				<?php if ($this->element->isRequired()): ?> required<?php endif; ?>" 
-			for="<?php echo $name; ?>">
-		<?php echo $this->element->getLabel(); ?>
+<?php
+/**
+ * Deadline setting of the journal settings form (review/settings): a number and a unit (day, week, month).
+ * @var Zend_View $this
+ * @var Zend_Form_Element $element
+ */
+$element = $this->element;
+$name = $element->getName();
+$labelClasses = trim('col-md-3 control-label' . ($element->hasErrors() ? ' error' : '') . ($element->isRequired() ? ' required' : ''));
+
+// saved value (or default value)
+$delay = (!empty(trim((string)$element->getValue()))) ? $element->getValue() : constant('Episciences_Review::DEFAULT_' . mb_strtoupper($name));
+$value = explode(' ', trim((string)$delay));
+$delayValue = $value[0];
+$delayUnit = $value[1] ?? '';
+
+$delayUnits = ['day' => 'jour(s)', 'week' => 'semaine(s)', 'month' => 'mois'];
+$description = (string)$element->getDescription();
+$descriptionId = $name . '-description';
+?>
+<label class="<?= $labelClasses ?>" for="<?= $this->escape($name) ?>">
+    <?= $this->escape($this->translate((string)$element->getLabel())) ?>
 </label>
-			
+
 <div class="col-md-9">
-	
-		<?php if ($this->element->hasErrors()): ?>
-		<span class="help-block error"><?php echo $this->formErrors($this->element->getMessages()); ?></span>
-		<?php endif?>
-		
-		<?php 
-		// Valeurs enregistrées (ou par défaut)
-		$delay = (!empty(trim($this->element->getValue()))) ? $this->element->getValue() : constant('Episciences_Review::DEFAULT_' . mb_strtoupper($name));
-		$value = explode(' ', trim($delay));
-		$delay_value = $value[0];
-		$delay_unit = $value[1] ?? '';
-		
-		// Valeurs possibles du select
-		$delay_units = array('day'=>'jour(s)', 'week'=>'semaine(s)', 'month'=>'mois');
-		?>
-	
-		<input 	name="<?php echo $name; ?>"
-				id="<?php echo $name; ?>" 
-				type="text" 
-				class="form-control input-sm" 
-				style="display: inline-block; width: 40px"
-				value="<?php echo $this->escape((string)$delay_value); ?>" />
-	
-		<select name="<?php echo $name; ?>_unit" class="form-control input-sm" style="display: inline-block; width: 200px">
-		<?php foreach ($delay_units as $value=>$label) : ?>
-			<option value="<?php echo $value?>"<?php if ($value === $delay_unit) { echo ' selected="selected"'; } ?>><?php echo $this->translate($label)?></option>
-		<?php endforeach; ?>
-		</select>
-	
+    <div class="journal-settings-deadline">
+        <input name="<?= $this->escape($name) ?>"
+               id="<?= $this->escape($name) ?>"
+               type="number"
+               min="1"
+               max="<?= Episciences_Review::DEADLINE_VALUE_MAX ?>"
+               step="1"
+               required
+               class="form-control input-sm journal-settings-number"
+               <?php if ($description !== '') : ?>aria-describedby="<?= $this->escape($descriptionId) ?>"<?php endif; ?>
+               value="<?= $this->escape((string)$delayValue) ?>"/>
+
+        <select name="<?= $this->escape($name) ?>_unit"
+                class="form-control input-sm journal-settings-unit"
+                aria-label="<?= $this->escape($this->translate('Unité')) ?>">
+            <?php foreach ($delayUnits as $unit => $unitLabel) : ?>
+                <option value="<?= $unit ?>"<?= $unit === $delayUnit ? ' selected="selected"' : '' ?>><?= $this->translate($unitLabel) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+
+    <?php if ($description !== '') : ?>
+        <p class="help-block" id="<?= $this->escape($descriptionId) ?>"><?= $this->escape($this->translate($description)) ?></p>
+    <?php endif; ?>
+
+    <?php if ($element->hasErrors()) : ?>
+        <div class="help-block error"><?= $this->formErrors($element->getMessages()) ?></div>
+    <?php endif; ?>
 </div>

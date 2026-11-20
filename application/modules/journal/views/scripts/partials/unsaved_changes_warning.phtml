@@ -1,0 +1,11 @@
+<?php
+/**
+ * Warning shown while a settings form differs from the saved values: see public/js/review/settings.js,
+ * which moves it next to the save button.
+ * @var Zend_View $this
+ */
+?>
+<p class="journal-settings-unsaved alert alert-warning" role="status" hidden>
+    <span class="fa-solid fa-triangle-exclamation" aria-hidden="true"></span>
+    <?= $this->translate('Des modifications ne sont pas enregistrées.') ?>
+</p>
