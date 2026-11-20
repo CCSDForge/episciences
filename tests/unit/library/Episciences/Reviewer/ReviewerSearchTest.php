@@ -121,6 +121,16 @@ final class ReviewerSearchTest extends ControllerTestCase
         self::assertSame([], array_filter($this->db->selects(), static fn(string $sql): bool => str_contains($sql, 'USER_TMP')));
     }
 
+    public function testTheReviewersOfTheJournalAreCountedAsTheyAreListed(): void
+    {
+        $this->db->respondTo('/COUNT\(\*\)/', [['NB' => 1597]]);
+
+        self::assertSame(1597, $this->search()->countJournalReviewers(RVID));
+        $sql = $this->db->selects()[0];
+        self::assertStringContainsString('r.RVID = ' . RVID, $sql);
+        self::assertStringContainsString("r.ROLEID = 'reviewer'", $sql);
+    }
+
     public function testTheReviewersOfTheJournalCanBeBrowsedPageByPage(): void
     {
         $this->db->respondTo('/FROM `USER` AS `u`/', [

@@ -128,7 +128,13 @@ test.describe('Inviting a reviewer in one step, with their requests in the journ
         await openInvitationPage(adminPage, secondDocid);
 
         await test.step('the reviewers of the journal are browsed page by page', async () => {
-            await adminPage.locator('#reviewer-browse summary').click();
+            const summary = adminPage.locator('#reviewer-browse summary');
+            await expect(summary).toHaveText(
+                /^Browse the [\d,]+ reviewers of the journal$/
+            );
+            await expect(summary).toHaveAttribute('title', 'Expand');
+            await summary.click();
+            await expect(summary).toHaveAttribute('title', 'Collapse');
             await expect(
                 adminPage.locator('#reviewer-browse-status')
             ).toContainText('Reviewers of the journal:');

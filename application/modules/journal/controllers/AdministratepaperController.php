@@ -1576,6 +1576,8 @@ class AdministratepaperController extends PaperDefaultController
             // reviewers of the previous versions, who may be invited again on this one (git #1387)
             $previousReviewers = $this->previousReviewersRows($oPaper);
             $this->view->previousReviewers = $previousReviewers;
+            // reviewers of the journal, for the browsable list of the search (git #900)
+            $this->view->reviewersCount = (new ReviewerSearch())->countJournalReviewers(RVID);
             $this->view->js_previous_reviewers = Zend_Json::encode(
                 (object)array_column(array_filter($previousReviewers, static fn(array $row): bool => $row['can_reinvite']), 'user', 'key')
             );

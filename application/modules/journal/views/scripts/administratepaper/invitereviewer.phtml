@@ -34,6 +34,7 @@ $description .= ' - ' . $this->escape($this->paper->getTitle());
             'reviewers' => $this->reviewers,
             'reviewerWorkloads' => $this->reviewerWorkloads ?? [],
             'previousReviewers' => $this->previousReviewers ?? [],
+            'reviewersCount' => $this->reviewersCount ?? 0,
             'user_form' => $this->user_form,
             'invitation_form' => $this->invitation_form,
             'referer' => $this->referer,

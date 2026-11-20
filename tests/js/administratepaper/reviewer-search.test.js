@@ -24,7 +24,7 @@ function page() {
             <form id="reviewer-search-form"><input id="reviewer-search-term"></form>
             <p id="reviewer-search-status"></p>
             <div id="reviewer-search-results"></div>
-            <details id="reviewer-browse"><summary>Browse</summary>
+            <details id="reviewer-browse"><summary title="Déplier">Browse</summary>
                 <select id="reviewer-browse-order"><option value="name">Name</option><option value="least_requested">Least</option></select>
                 <p id="reviewer-browse-status"></p><div id="reviewer-browse-results"></div>
                 <nav id="reviewer-browse-pages" hidden><button id="reviewer-browse-previous"></button><span id="reviewer-browse-page"></span><button id="reviewer-browse-next"></button></nav>
@@ -217,4 +217,18 @@ describe('reviewer-search.js', () => {
         expect(document.getElementById('reviewer-browse-page').textContent).toBe('Page 1 sur 2');
     });
 
+    test('the title of the browsable list tells what a click does', () => {
+        global.fetch.mockReturnValue(answer({ people: [], total: 0, page: 1, per_page: 25, order: 'name' }));
+        search.initReviewerSearch(document.getElementById('reviewer-search'));
+        const details = document.getElementById('reviewer-browse');
+        const summary = details.querySelector('summary');
+
+        details.open = true;
+        details.dispatchEvent(new Event('toggle'));
+        expect(summary.getAttribute('title')).toBe('Replier');
+
+        details.open = false;
+        details.dispatchEvent(new Event('toggle'));
+        expect(summary.getAttribute('title')).toBe('Déplier');
+    });
 });

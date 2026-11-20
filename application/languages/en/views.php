@@ -3041,7 +3041,8 @@ return array(
     // Invitation page in one step (git #900)
     "Rechercher une personne : nom, prénom ou adresse e-mail" => "Search for a person: last name, first name or e-mail address",
     "Les relecteurs de la revue, les autres comptes Episciences, et les personnes déjà invitées sans compte (par leur adresse)." => "The reviewers of the journal, the other Episciences accounts, and the people already invited without an account (by their address).",
-    "Parcourir les relecteurs de la revue" => "Browse the reviewers of the journal",
+    "Parcourir les %s relecteurs de la revue" => "Browse the %s reviewers of the journal",
+    "Déplier" => "Expand",
     "Trier par" => "Sort by",
     "Les moins sollicités d'abord" => "Least requested first",
     "Dernière invitation" => "Latest invitation",

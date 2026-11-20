@@ -372,6 +372,13 @@ function initReviewerBrowse(root, docid) {
     };
 
     details.addEventListener('toggle', () => {
+        // the title tells what a click does, as on the other collapsible panels
+        details
+            .querySelector('summary')
+            .setAttribute(
+                'title',
+                translate(details.open ? 'Replier' : 'Déplier')
+            );
         if (details.open && results.childElementCount === 0) {
             load();
         }

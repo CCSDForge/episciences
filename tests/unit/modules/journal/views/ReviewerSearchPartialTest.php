@@ -46,14 +46,14 @@ final class ReviewerSearchPartialTest extends TestCase
         }
     }
 
-    private function render(): string
+    private function render(int $reviewersCount = 1597): string
     {
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getDocid')->willReturn(12);
         $view = new Zend_View();
         $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/');
 
-        return $view->partial('partials/reviewer_search.phtml', ['paper' => $paper]);
+        return $view->partial('partials/reviewer_search.phtml', ['paper' => $paper, 'reviewersCount' => $reviewersCount]);
     }
 
     public function testOneSearchFieldWithItsLabelAndHelp(): void
@@ -71,10 +71,18 @@ final class ReviewerSearchPartialTest extends TestCase
     {
         $html = $this->render();
 
-        self::assertStringContainsString('<summary>Browse the reviewers of the journal</summary>', $html);
+        // collapsible, with the chevron of the other collapsible panels (down when folded, up when open) and the
+        // number of reviewers
+        self::assertStringContainsString('<summary title="Expand">Browse the 1,597 reviewers of the journal<span class="glyphicon glyphicon-chevron-down reviewer-browse-arrow" aria-hidden="true"></span></summary>', $html);
+        self::assertStringContainsString('#reviewer-browse[open] .reviewer-browse-arrow', $html);
         foreach (['name', 'least_requested', 'last_invitation'] as $order) {
             self::assertStringContainsString('<option value="' . $order . '">', $html);
         }
+    }
+
+    public function testNoBrowsableListWithoutReviewers(): void
+    {
+        self::assertStringNotContainsString('id="reviewer-browse"', $this->render(0));
     }
 
     public function testANewPersonHasAnOptionalFirstNameAndRequiredAddressAndName(): void

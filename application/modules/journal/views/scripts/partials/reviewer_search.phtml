@@ -6,11 +6,40 @@
  *
  * @var Zend_View $this
  * @var Episciences_Paper $this->paper
+ * @var int $this->reviewersCount reviewers of the journal (the browsable list is shown when there are some)
  */
 
 $languages = Episciences_Tools::getLanguages();
 $locale = Episciences_Tools::getLocale();
 ?>
+<style>
+    #reviewer-browse > summary {
+        display: inline-block;
+        cursor: pointer;
+        color: #337ab7;
+        list-style: none;
+        margin: 10px 0;
+    }
+
+    #reviewer-browse > summary::-webkit-details-marker {
+        display: none;
+    }
+
+    #reviewer-browse > summary:hover,
+    #reviewer-browse > summary:focus {
+        text-decoration: underline;
+    }
+
+    #reviewer-browse .reviewer-browse-arrow {
+        margin-left: 8px;
+        font-size: 0.85em;
+        transition: transform 0.2s;
+    }
+
+    #reviewer-browse[open] .reviewer-browse-arrow {
+        transform: rotate(180deg);
+    }
+</style>
 <div id="reviewer-search" class="panel panel-default" data-docid="<?= (int)$this->paper->getDocid() ?>">
     <div class="panel-heading">
         <h2 class="panel-title"><?= $this->escape($this->translate('Inviter un relecteur')) ?></h2>
@@ -30,8 +59,14 @@ $locale = Episciences_Tools::getLocale();
         <p id="reviewer-search-status" class="text-muted" role="status" aria-live="polite"></p>
         <div id="reviewer-search-results"></div>
 
+        <?php $reviewersCount = (int)($this->reviewersCount ?? 0); ?>
+        <?php if ($reviewersCount > 0) : ?>
         <details id="reviewer-browse">
-            <summary><?= $this->escape($this->translate('Parcourir les relecteurs de la revue')) ?></summary>
+            <?php // collapsible, with the chevron of the other collapsible panels: down when folded, up when open ?>
+            <summary title="<?= $this->escape($this->translate('Déplier')) ?>"><?= $this->escape(sprintf(
+                $this->translate('Parcourir les %s relecteurs de la revue'),
+                Zend_Locale_Format::toNumber($reviewersCount, ['locale' => Episciences_Tools::getLocale()])
+            )) ?><span class="glyphicon glyphicon-chevron-down reviewer-browse-arrow" aria-hidden="true"></span></summary>
             <div class="form-inline" style="margin: 10px 0">
                 <label for="reviewer-browse-order"><?= $this->escape($this->translate('Trier par')) ?></label>
                 <select id="reviewer-browse-order" class="form-control input-sm">
@@ -48,6 +83,7 @@ $locale = Episciences_Tools::getLocale();
                 <button type="button" id="reviewer-browse-next" class="btn btn-default btn-sm"><?= $this->escape($this->translate('Suivant')) ?></button>
             </nav>
         </details>
+        <?php endif; ?>
 
         <hr>
         <button type="button" id="new-person-toggle" class="btn btn-default" aria-expanded="false" aria-controls="new-person">

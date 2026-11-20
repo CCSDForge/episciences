@@ -71,7 +71,7 @@ $invitation_panel_title = '';
                 'reviewerWorkloads' => $this->reviewerWorkloads ?? [],
             ]) ?>
             <?php // one search for the person to invite, the reviewers of the journal page by page, a new person (git #900) ?>
-            <?= $this->partial('partials/reviewer_search.phtml', ['paper' => $this->paper]) ?>
+            <?= $this->partial('partials/reviewer_search.phtml', ['paper' => $this->paper, 'reviewersCount' => $this->reviewersCount ?? 0]) ?>
         </div><?php // fin panel-group 1?>
 
     <div id="new-user-footer" class="panel-body">

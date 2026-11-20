@@ -106,6 +106,20 @@ final class ReviewerSearch
         ];
     }
 
+    /**
+     * Number of reviewers of the journal, as listed by browse()
+     */
+    public function countJournalReviewers(int $rvid): int
+    {
+        $select = $this->db->select()
+            ->from(['u' => T_USERS], ['NB' => new \Zend_Db_Expr('COUNT(*)')])
+            ->join(['r' => T_USER_ROLES], 'r.UID = u.UID', [])
+            ->where('r.RVID = ?', $rvid)
+            ->where('r.ROLEID = ?', Episciences_Acl::ROLE_REVIEWER);
+
+        return (int)$this->db->fetchOne($select);
+    }
+
     public static function isEmail(string $term): bool
     {
         return str_contains($term, '@');
