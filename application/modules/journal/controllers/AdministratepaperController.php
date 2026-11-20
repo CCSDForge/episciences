@@ -1147,11 +1147,7 @@ class AdministratepaperController extends PaperDefaultController
             return [];
         }
 
-        $eligibility = InvitationEligibility::forVersion(
-            $paper,
-            (int)Episciences_Auth::getUid(),
-            array_map('intval', array_keys($this->usersWithReportedCoiProcessing($paper)))
-        );
+        $eligibility = $this->invitationEligibility($paper);
         $listed = [];
         $rows = [];
 
@@ -1457,9 +1453,15 @@ class AdministratepaperController extends PaperDefaultController
             // load journal detail
             $oReview = Episciences_ReviewsManager::find(RVID);
             $oReview->loadSettings();
-            // the reviewers of the journal who may still be invited on this paper: a reviewer invited again after an
-            // expired invitation gets the template of a known reviewer when they are one of them
-            $invitableReviewers = $this->invitableJournalReviewerUids($oPaper);
+            // review request types (#319)
+            $requestTypes = $this->enabledRequestTypes();
+            // a reviewer may hold one pending or accepted request of each type (#319): the types in progress are
+            // disabled in the form, only the reviewers busy with every type may not be invited
+            $busyTypes = Episciences_User_AssignmentsManager::requestTypesInProgressByReviewer((int)$oPaper->getDocid());
+            $this->view->js_busy_request_types = Zend_Json::encode((object)$busyTypes);
+            // a reviewer invited again after an expired invitation: the template depends on the account only (a reviewer
+            // of the journal, another account, no account); whether they may be invited is checked below
+            $journalReviewers = array_flip(array_map('intval', array_keys(Episciences_Review::getReviewers() ?: [])));
             $allJsReviewers = [];
             $allReviewers = Episciences_PapersManager::getReviewers($docId, ['pending'], true);
 
@@ -1476,7 +1478,7 @@ class AdministratepaperController extends PaperDefaultController
                 if (!is_numeric($uid)) {
                     $uid = substr($uid, 4); // UID === tmp_id
                     $allJsReviewers[$uid]['type'] = 3; // Utilisateur temporaire
-                } elseif (!isset($invitableReviewers[(int)$uid])) {
+                } elseif (!isset($journalReviewers[(int)$uid])) {
                     $allJsReviewers[$uid]['type'] = 2; // Utilisateur connu par le CAS
                 } else {
                     $allJsReviewers[$uid]['type'] = 1; // Relecteur connu par Episciences.
@@ -1490,6 +1492,12 @@ class AdministratepaperController extends PaperDefaultController
             }
 
             $this->view->allJsReviewers = Zend_Json::encode($allJsReviewers);
+            // a reviewer who may not be invited again: step 1 shows the reason instead of the message
+            $reinviteRefusal = $this->reinvitationRefusal($oPaper, $allJsReviewers, $this->view->js_uid);
+            if ($reinviteRefusal !== null) {
+                $this->view->reinviteRefusal = self::invitationRefusalMessage($reinviteRefusal);
+                $this->view->js_uid = null;
+            }
             // load templates
             for ($i = 1; $i <= 3; $i++) {
                 $oTemplate = new Episciences_Mail_Template();
@@ -1586,31 +1594,53 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
-     * The reviewers of the journal who may be invited on the paper: neither its author, nor the logged user, nor a
-     * reviewer who reported a conflict of interest, nor one with an active or pending invitation on it.
+     * Why the reviewer of an expired invitation may not be invited again, null when they may (or nobody is)
      *
-     * @return array<int, int> uid => uid
+     * @param array<int|string, array<string, mixed>> $allJsReviewers the reviewers of the paper, by UID (tmp id for
+     *     the people without an account, type 3)
      * @throws Zend_Db_Statement_Exception
      */
-    private function invitableJournalReviewerUids(Episciences_Paper $paper): array
+    private function reinvitationRefusal(Episciences_Paper $paper, array $allJsReviewers, mixed $reinvitedUid): ?string
     {
-        $uids = array_map('intval', array_keys(Episciences_Review::getReviewers() ?: []));
-        $excluded = [(int)$paper->getUid(), (int)Episciences_Auth::getUid()];
-
-        foreach (array_keys($this->usersWithReportedCoiProcessing($paper)) as $uid) {
-            $excluded[] = (int)$uid;
+        if (!is_numeric($reinvitedUid) || !isset($allJsReviewers[(int)$reinvitedUid])) {
+            return null;
         }
 
-        $invitations = $paper->getInvitations([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING], true);
-        foreach ([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING] as $status) {
-            foreach ($invitations[$status] ?? [] as $invitation) {
-                $excluded[] = (int)$invitation['UID'];
-            }
-        }
+        $reviewer = $allJsReviewers[(int)$reinvitedUid];
+        $isAccount = (int)$reviewer['type'] !== 3;
 
-        $invitable = array_diff($uids, $excluded);
+        return $this->invitationEligibility($paper)->refusalFor($isAccount ? (int)$reinvitedUid : null, (string)$reviewer['email']);
+    }
 
-        return array_combine($invitable, $invitable);
+    /**
+     * What the editor is told when a person may not be invited (InvitationEligibility::REASON_*), to be translated
+     */
+    public static function invitationRefusalMessage(string $reason): string
+    {
+        return match ($reason) {
+            InvitationEligibility::REASON_AUTHOR => "L'auteur de l'article ne peut pas être invité à le relire.",
+            InvitationEligibility::REASON_SELF => 'Vous ne pouvez pas vous inviter vous-même à relire cet article.',
+            InvitationEligibility::REASON_CONFLICT => "Cette personne a déclaré un conflit d'intérêts avec cet article : elle ne peut pas être invitée.",
+            default => "Cette personne est déjà invitée sur cette version de l'article.",
+        };
+    }
+
+    /**
+     * Who may be invited on the paper (search, reviewers of the previous versions): an account is already invited
+     * when it holds a pending or accepted request of every enabled type (#319); the form disables the other types.
+     *
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function invitationEligibility(Episciences_Paper $paper): InvitationEligibility
+    {
+        $busyTypes = Episciences_User_AssignmentsManager::requestTypesInProgressByReviewer((int)$paper->getDocid());
+
+        return InvitationEligibility::forVersion(
+            $paper,
+            (int)Episciences_Auth::getUid(),
+            array_map('intval', array_keys($this->usersWithReportedCoiProcessing($paper))),
+            busyAccountUids: self::reviewersBusyWithEveryType($busyTypes, $this->enabledRequestTypes())
+        );
     }
 
     /**
@@ -1985,6 +2015,17 @@ class AdministratepaperController extends PaperDefaultController
                 ? $translator->translate("Ce type de demande n'est pas disponible.")
                 : $translator->translate('Ce relecteur a déjà une demande de ce type en cours pour cet article.');
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            $this->_helper->redirector->gotoUrl($referer);
+            return false;
+        }
+
+        // who may not be invited (author, logged user, conflict of interest, a person without an account already
+        // invited): the same rules as the invitation page, the editor is told why
+        $isAccount = $invitedUid > 0 && (int)($reviewer['invitation_type'] ?? 0) !== 3;
+        $refusal = $this->invitationEligibility($paper)->refusalFor($isAccount ? $invitedUid : null, (string)($reviewer['email'] ?? ''));
+        if ($refusal !== null) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($translator->translate(self::invitationRefusalMessage($refusal)));
             $this->_helper->redirector->gotoUrl($referer);
             return false;
         }
@@ -4423,11 +4464,7 @@ class AdministratepaperController extends PaperDefaultController
     {
         [$workloads, $workloadsByEmailHash] = Workload::splitByAccount(Workload::ofJournal(RVID, (int)$paper->getDocid()));
         [$presented, $presentedByEmailHash] = $this->presentWorkloads($workloads, $workloadsByEmailHash, $review);
-        $eligibility = InvitationEligibility::forVersion(
-            $paper,
-            (int)Episciences_Auth::getUid(),
-            array_map('intval', array_keys($this->usersWithReportedCoiProcessing($paper)))
-        );
+        $eligibility = $this->invitationEligibility($paper);
         $row = fn(array $person): array => self::invitationCandidate($person, $eligibility, $presented, $presentedByEmailHash);
         $search = new ReviewerSearch();
 

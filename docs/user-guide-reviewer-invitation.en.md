@@ -114,6 +114,16 @@ The **Profile** link opens the person's profile (accounts only).
 > revision request. The table is for inviting only some of them, or
 > doing it later.
 
+## Inviting Again a Reviewer whose Invitation Expired
+
+On the paper's administration page, the menu of a reviewer whose invitation expired offers **Re-invite this reviewer**.
+The message offered depends on their account: reviewer of the journal, other account, or person without an account.
+
+If the person may no longer be invited on this version (conflict of interest declared, or a request in progress of
+every type), the invitation page shows the reason instead of the message.
+
+Sending an invitation checks these rules again: a refused invitation is not sent and the reason is shown.
+
 ## Frequently Asked Questions
 
 **I cannot find a person who has an account.**

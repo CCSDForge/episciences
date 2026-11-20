@@ -115,6 +115,16 @@ Le lien **Profil** ouvre la fiche de la personne (comptes uniquement).
 > **Réassigner les relecteurs à la nouvelle version de l'article** de la demande de modifications. Le tableau sert à
 > n'en réinviter que certains, ou à le faire plus tard.
 
+## Réinviter un relecteur après expiration de son invitation
+
+Sur la page de gestion de l'article, le menu d'un relecteur dont l'invitation a expiré propose **Réinviter ce
+relecteur**. Le message proposé dépend de son compte : relecteur de la revue, autre compte, ou personne sans compte.
+
+Si la personne ne peut plus être invitée sur cette version (conflit d'intérêts déclaré, ou demande en cours de chaque
+type), la page d'invitation affiche le motif au lieu du message.
+
+L'envoi d'une invitation vérifie de nouveau ces règles : une invitation refusée n'est pas envoyée et le motif s'affiche.
+
 ## Questions fréquentes
 
 **Je ne trouve pas une personne qui a un compte.**

@@ -42,6 +42,12 @@ $invitation_panel_title = '';
     <?php endif; ?>
 
 <span id="step-1" style="display: none;">
+        <?php if (!empty($this->reinviteRefusal)) : ?>
+            <?php // a reviewer of an expired invitation who may not be invited again: the reason, instead of the message ?>
+            <div id="reinvite-refusal" class="alert alert-warning" role="alert">
+                <?= $this->escape($this->translate($this->reinviteRefusal)) ?>
+            </div>
+        <?php endif; ?>
         <div class="panel-group">
             <?php if ($this->paper->getSetting(Episciences_Paper::SETTING_SUGGESTED_REVIEWER) || $this->paper->getSetting(Episciences_Paper::SETTING_UNWANTED_REVIEWER)) : ?>
                 <div class="panel panel-warning collapsable">
