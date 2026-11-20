@@ -225,8 +225,10 @@ foreach ($this->list as $paper) : ?>
                                     <div class="smaller"
                                          style="float: left; margin-right: 10px; cursor: pointer">
                                         <a class="modal-opener"
-                                           title="<?= $this->translate('Envoyer un message au relecteur') ?>"
-                                           href="/administratepaper/contactreviewer?docid=<?= $paper->getDocid() ?>&id=<?= $reviewer->getUid() ?>">
+                                           data-width="50%"
+                                           title="<?= $this->escape($this->translate('Envoyer un message au relecteur')) ?>"
+                                           aria-label="<?= $this->escape($this->translate('Envoyer un message au relecteur')) ?>"
+                                           href="/administratemail/send/recipient/<?= (int)$reviewer->getUid() ?>/paper/<?= (int)$paper->getDocid() ?>">
                                                     <span data-toggle="tooltip"
                                                           data-original-title="<?= $this->translate('Envoyer un message au relecteur') ?>"
                                                           class="icon-envelope"></span>

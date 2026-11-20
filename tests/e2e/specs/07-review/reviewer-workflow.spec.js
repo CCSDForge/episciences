@@ -82,5 +82,22 @@ test.describe('Reviewer invitation and review', () => {
             await expect(statusPanel(adminPage)).toContainText('Reviewed pending editorial decision');
             await expect(adminPage.locator('#history')).toContainText('Review completed');
         });
+
+        await test.step('the papers list offers to send a message to the reviewer', async () => {
+            await adminPage.goto('administratepaper/list');
+            const searchInput = adminPage.locator('#papers_filter input[type="search"]');
+            await searchInput.fill(String(docid));
+            await searchInput.press('Enter');
+
+            // DataTables rebuilds the rows without their id: the row is the one whose first cell is the docid
+            const row = adminPage
+                .locator('#papers tbody tr')
+                .filter({ has: adminPage.locator('td:first-child', { hasText: new RegExp(`^\\s*${docid}\\s*$`) }) });
+            const contact = row.locator('a[aria-label="Send a message to the reviewer"]');
+            await expect(contact).toHaveAttribute('href', new RegExp(`^/administratemail/send/recipient/\\d+/paper/${docid}$`));
+            // the message form exists (the former link led to a missing page)
+            const response = await adminPage.request.get((await contact.getAttribute('href')).replace(/^\//, ''));
+            expect(response.status()).toBe(200);
+        });
     });
 });
