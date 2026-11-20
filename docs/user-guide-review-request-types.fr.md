@@ -132,6 +132,10 @@ les phases de relecture que votre revue crée comme types (« Phase 2 », « Rel
 sans effet pour un type à réponse sans compte, qui ne produit pas de rapport. Sur la page des grilles, ces types portent
 le badge **Compte comme rapport de relecture**.
 
+La même règle vaut pour les statistiques de la page **Statistiques** : les **évaluations demandées** ne comptent que les
+invitations pour un rapport de relecture ou pour un type qui compte comme tel, et les **évaluations reçues** et le
+nombre médian d'évaluations par article ne comptent que les rapports de ces types. Les avis rapides n'y figurent pas.
+
 ## Rapports transmis à l'auteur
 
 L'option **Transmettre ses rapports à l'auteur** décide si les rapports d'un type sortent de la rédaction :

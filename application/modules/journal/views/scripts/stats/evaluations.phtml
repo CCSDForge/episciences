@@ -5,7 +5,7 @@
             <?= $this->partial('stats/stat-item.phtml', [
                     'itemLabel' => 'Évaluations demandées',
                     'itemValue' => $this->reviewsRequested,
-                    'help' => ['message' => "Invitations envoyées aux relecteurs, quelle que soit leur réponse (hors invitations annulées), comptées à leur date d'envoi.", 'isTooltip' => true],
+                    'help' => ['message' => "Invitations envoyées aux relecteurs pour un rapport de relecture, ou pour un type de demande qui compte comme tel (pas pour un avis rapide), quelle que soit leur réponse (hors invitations annulées), comptées à leur date d'envoi.", 'isTooltip' => true],
                     'paperList' => $this->paperLists[StatsController::REVIEWS_REQUESTED] ?? null,
                     'paperListLabel' => 'Voir les invitations (%s)',
             ]) ?>
@@ -13,7 +13,7 @@
             <?= $this->partial('stats/stat-item.phtml', [
                     'itemLabel' => 'Évaluations reçues',
                     'itemValue' => $this->reviewsReceived,
-                    'help' => ['message' => 'Rapports de relecture terminés, comptés à leur date de validation.', 'isTooltip' => true],
+                    'help' => ['message' => 'Rapports de relecture terminés, et ceux des types de demande qui comptent comme tels (pas les avis rapides), comptés à leur date de validation.', 'isTooltip' => true],
                     'paperList' => $this->paperLists[StatsController::REVIEWS_RECEIVED] ?? null,
                     'paperListLabel' => 'Voir les rapports (%s)',
             ]) ?>
@@ -21,7 +21,7 @@
             <?= $this->partial('stats/stat-item.phtml', [
                     'itemLabel' => "Nombre médian d'évaluations par article évalué",
                     'itemValue' => $this->medianReviewsNumber,
-                    'help' => ['message' => 'Rapports terminés de chaque article, toutes versions confondues, parmi les articles ayant reçu au moins un rapport.', 'isTooltip' => true],
+                    'help' => ['message' => 'Rapports terminés de chaque article qui comptent comme rapports de relecture, toutes versions confondues, parmi les articles ayant reçu au moins un rapport.', 'isTooltip' => true],
             ]) ?>
 
         </ul>

@@ -128,6 +128,10 @@ reminder. The other types are shown for information. Check this option, for exam
 creates as types ("Phase 2", "Revised version check"…). It has no effect for a type answered without an account, which
 produces no report. On the grids page, these types show the **Counts as a review report** badge.
 
+The same rule applies to the **Statistics** page: the **reviews requested** only count the invitations for a review
+report or for a type that counts as one, and the **reviews received** and the median number of reviews per article only
+count the reports of these types. Quick opinions are not included.
+
 ## Reports Passed On to the Author
 
 The **Pass its reports on to the author** option decides whether the reports of a type leave the editorial team:
