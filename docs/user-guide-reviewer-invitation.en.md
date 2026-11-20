@@ -6,6 +6,8 @@
 
 The **Invite a reviewer** page (button on the paper's administration page) helps you choose whom to invite:
 
+- a **single search** finds the person, whether they are a reviewer of the journal, have an Episciences account or were
+  already invited without an account; if they cannot be found, you invite them as a **new person**;
 - for each person, it shows what they are **already asked in the journal**, so that the same reviewers are not asked
   too often;
 - on a new version of a paper, it lists the **reviewers of the previous versions** and lets you **invite some of them
@@ -13,10 +15,45 @@ The **Invite a reviewer** page (button on the paper's administration page) helps
 
 This information is only shown to the editorial team managing the paper.
 
+## Choosing the Person to Invite
+
+### Searching for a Person
+
+Type a last name, a first name or an e-mail address (two characters at least) in **Search for a person**. The results
+are shown as you type, in three groups:
+
+| Group | Content | How the person is found |
+|---|---|---|
+| **Reviewers of the journal** | the people who have the reviewer role in the journal | a word of their last name, first name or username, or their full address |
+| **Other Episciences accounts** | the other accounts (of other journals, or without a role) | the **start** of their last name, first name or username (at least one word of three letters), or their full address |
+| **Already invited without an account** | the people the journal invited without an account | their full address only |
+
+Case and accents are ignored: "muller" finds "Müller". Each row gives the name, the address, the username and the
+**Requests in the journal** (see below). Click **Invite** to go on to the invitation message.
+
+When a person may not be invited, the reason replaces the button: **Already invited on this version**, **Author of the
+article**, **Yourself** or **Conflict of interest declared**.
+
+### Browsing the Reviewers of the Journal
+
+Below the search, **Browse the N reviewers of the journal** (click to expand) lists all the reviewers of the journal,
+25 per page. You can sort them by **Name**, **Least requested first** (to share out the requests) or **Latest
+invitation**.
+
+### Inviting a New Person
+
+If the person was not found, click **Invite a new person…**, then type their e-mail address, their last name (both
+required), their first name (optional) and the language of the invitation. **Invite this person…** opens the
+invitation message.
+
+The address is checked first: if an account already uses it, this account is offered instead (**An account already
+uses this address: invite this account.**), which avoids creating a duplicate. A person invited without an account can
+create one when answering the invitation.
+
 ## Requests in the Journal
 
-The **Requests in the journal** column is shown in the table of the reviewers known to the journal, in the table of the
-accounts found for a new reviewer, and in the table of the reviewers of the previous versions. It shows:
+The **Requests in the journal** column is shown in the search results, in the list of the reviewers of the journal,
+and in the table of the reviewers of the previous versions. It shows:
 
 - **Reviews in progress**: accepted reviews not submitted yet;
 - **Pending invitations**: invitations not answered yet and not expired;
@@ -34,8 +71,8 @@ Good to know:
 When you choose a person, the same information is shown **above the invitation message**: you can adapt your message,
 for instance to thank a reviewer who is already much asked.
 
-This also applies to a person **without an account** already invited by the journal: type their address in **Invite a
-new user**, their previous invitations are found from it.
+This also applies to a person **without an account** already invited by the journal: search for their address, they
+are shown in **Already invited without an account** with their previous invitations.
 
 ## Inviting Again a Reviewer of a Previous Version
 
@@ -68,6 +105,10 @@ The **Profile** link opens the person's profile (accounts only).
 > doing it later.
 
 ## Frequently Asked Questions
+
+**I cannot find a person who has an account.**
+For the accounts that are not reviewers of the journal, type the start of their last name or first name (at least
+three letters), or their full address: part of an address is not enough.
 
 **Why is the "Requests" column of a person empty?**
 They were never invited by the journal ("Never invited").

@@ -6,6 +6,8 @@
 
 La page **Inviter un relecteur** (bouton depuis la page de gestion d'un article) vous aide à choisir qui inviter :
 
+- une **seule recherche** retrouve la personne, qu'elle soit relecteur de la revue, titulaire d'un compte Episciences
+  ou déjà invitée sans compte ; si elle est introuvable, vous l'invitez comme **nouvelle personne** ;
 - pour chaque personne, elle indique ce qui lui est **déjà demandé dans la revue**, pour éviter de solliciter trop
   souvent les mêmes relecteurs ;
 - sur une nouvelle version d'un article, elle liste les **relecteurs des versions précédentes** et vous permet d'en
@@ -13,11 +15,45 @@ La page **Inviter un relecteur** (bouton depuis la page de gestion d'un article)
 
 Ces informations sont réservées à l'équipe éditoriale qui gère l'article.
 
+## Choisir la personne à inviter
+
+### Rechercher une personne
+
+Saisissez dans **Rechercher une personne** un nom, un prénom ou une adresse e-mail (deux caractères au moins). Les
+résultats s'affichent pendant la saisie, en trois groupes :
+
+| Groupe | Contenu | Comment la personne est trouvée |
+|---|---|---|
+| **Relecteurs de la revue** | les personnes qui ont le rôle de relecteur dans la revue | un mot du nom, du prénom ou de l'identifiant, ou l'adresse complète |
+| **Autres comptes Episciences** | les autres comptes (d'autres revues, ou sans rôle) | le **début** du nom, du prénom ou de l'identifiant (au moins un mot de trois lettres), ou l'adresse complète |
+| **Déjà invités sans compte** | les personnes invitées par la revue sans avoir de compte | l'adresse complète uniquement |
+
+Majuscules et accents sont ignorés : « muller » trouve « Müller ». Chaque ligne donne le nom, l'adresse, l'identifiant
+et les **Sollicitations dans la revue** (voir plus bas). Cliquez sur **Inviter** pour passer au message d'invitation.
+
+Quand une personne ne peut pas être invitée, le motif remplace le bouton : **Déjà invité sur cette version**,
+**Auteur de l'article**, **Vous-même** ou **Conflit d'intérêts déclaré**.
+
+### Parcourir les relecteurs de la revue
+
+Sous la recherche, **Parcourir les N relecteurs de la revue** (cliquez pour déplier) liste tous les relecteurs de la
+revue, 25 par page. Vous pouvez les trier par **Nom**, **Les moins sollicités d'abord** (pour répartir les demandes) ou
+**Dernière invitation**.
+
+### Inviter une nouvelle personne
+
+Si la personne n'a pas été trouvée, cliquez sur **Inviter une nouvelle personne…**, puis saisissez son adresse e-mail,
+son nom (obligatoires), son prénom (facultatif) et la langue de l'invitation. **Inviter cette personne…** ouvre le
+message d'invitation.
+
+Avant cela, l'adresse est vérifiée : si un compte l'utilise déjà, il vous est proposé à la place (**Un compte utilise
+déjà cette adresse : invitez ce compte.**), ce qui évite de créer un doublon. La personne invitée sans compte pourra en
+créer un en répondant à l'invitation.
+
 ## Sollicitations dans la revue
 
-La colonne **Sollicitations dans la revue** apparaît dans le tableau des relecteurs connus de la revue, dans le
-tableau des comptes trouvés pour un nouveau relecteur, et dans le tableau des relecteurs des versions précédentes.
-Elle indique :
+La colonne **Sollicitations dans la revue** apparaît dans les résultats de la recherche, dans la liste des relecteurs
+de la revue, et dans le tableau des relecteurs des versions précédentes. Elle indique :
 
 - **Relectures en cours** : relectures acceptées et pas encore rendues ;
 - **Invitations en attente** : invitations sans réponse, pas encore expirées ;
@@ -37,8 +73,8 @@ Bon à savoir :
 Quand vous choisissez une personne, les mêmes informations s'affichent **au-dessus du message d'invitation** : vous
 pouvez adapter votre message, par exemple pour remercier un relecteur déjà très sollicité.
 
-Cela vaut aussi pour une personne **sans compte** déjà invitée par la revue : saisissez son adresse dans **Inviter un
-nouvel utilisateur**, ses invitations précédentes sont retrouvées à partir de cette adresse.
+Cela vaut aussi pour une personne **sans compte** déjà invitée par la revue : recherchez son adresse, elle apparaît
+dans **Déjà invités sans compte** avec ses invitations précédentes.
 
 ## Réinviter un relecteur d'une version précédente
 
@@ -70,6 +106,10 @@ Le lien **Profil** ouvre la fiche de la personne (comptes uniquement).
 > n'en réinviter que certains, ou à le faire plus tard.
 
 ## Questions fréquentes
+
+**Je ne trouve pas une personne qui a un compte.**
+Pour les comptes qui ne sont pas relecteurs de la revue, saisissez le début de son nom ou de son prénom (au moins trois
+lettres), ou son adresse complète : un morceau d'adresse ne suffit pas.
 
 **Pourquoi une personne n'a-t-elle pas de colonne « Sollicitations » remplie ?**
 Elle n'a jamais été invitée par la revue (« Jamais invité »).
