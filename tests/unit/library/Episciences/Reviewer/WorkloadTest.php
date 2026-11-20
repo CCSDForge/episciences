@@ -71,6 +71,23 @@ final class WorkloadTest extends ControllerTestCase
         self::assertSame('2026-11-10 10:00:00', $workload->getLastInvitationDate());
     }
 
+    public function testThePapersOfTheReviewsAndInvitationsInProgressAreKept(): void
+    {
+        $review = self::assignment(1, 'active') + ['DEADLINE' => '2026-12-15 00:00:00'];
+        $workload = self::workload([$review, self::assignment(2, 'active', true)], [
+            self::invitation(3, 'pending', '2026-11-15 09:00:00'),
+            self::invitation(4, 'declined', '2026-11-18 09:00:00'),
+        ]);
+
+        self::assertSame([
+            ['docid' => 1, 'kind' => Workload::PAPER_REVIEW, 'date' => '2026-12-15 00:00:00'],
+            ['docid' => 3, 'kind' => Workload::PAPER_INVITATION, 'date' => '2026-11-15 09:00:00'],
+        ], $workload->getPapers());
+        // the latest invitation, declined, is about paper 4
+        self::assertSame(4, $workload->getLastInvitationDocId());
+        self::assertSame([1, 3], Workload::paperDocIds([self::REVIEWER_UID => $workload, 'email:x@example.org' => new Workload(0, 1, null, null, [['docid' => 3, 'kind' => Workload::PAPER_INVITATION, 'date' => null]])]));
+    }
+
     public function testThePaperBeingHandledIsLeftOut(): void
     {
         $workload = self::workload(

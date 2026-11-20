@@ -34,12 +34,55 @@ final class Workload
         Episciences_Paper::STATUS_TMP_VERSION,
     ];
 
+    /** Kinds of the papers of a workload */
+    public const PAPER_REVIEW = 'review';
+    public const PAPER_INVITATION = 'invitation';
+
+    /**
+     * @param list<array{docid: int, kind: string, date: string|null}> $papers the reviews in progress (date: due date)
+     *        and the pending invitations (date: sending date)
+     */
     public function __construct(
         private readonly int $reviewsInProgress = 0,
         private readonly int $pendingInvitations = 0,
         private readonly ?string $lastInvitationDate = null,
-        private readonly ?string $lastInvitationAnswer = null
+        private readonly ?string $lastInvitationAnswer = null,
+        private readonly array $papers = [],
+        private readonly ?int $lastInvitationDocId = null
     ) {
+    }
+
+    /**
+     * @return list<array{docid: int, kind: string, date: string|null}>
+     */
+    public function getPapers(): array
+    {
+        return $this->papers;
+    }
+
+    /** Paper of the latest invitation, null if never invited */
+    public function getLastInvitationDocId(): ?int
+    {
+        return $this->lastInvitationDocId;
+    }
+
+    /**
+     * Papers of the reviews in progress and of the pending invitations of all the given workloads
+     *
+     * @param array<int|string, self> $workloads
+     * @return list<int>
+     */
+    public static function paperDocIds(array $workloads): array
+    {
+        $docIds = [];
+
+        foreach ($workloads as $workload) {
+            foreach ($workload->getPapers() as $paper) {
+                $docIds[$paper['docid']] = $paper['docid'];
+            }
+        }
+
+        return array_values($docIds);
     }
 
     public function getReviewsInProgress(): int
@@ -112,12 +155,12 @@ final class Workload
      */
     public static function fromRows(array $assignments, array $invitations, int $currentDocId, string $now): array
     {
-        /** @var array<int|string, array{int, int, string|null, string|null}> $byUid in progress, pending, last date, last answer */
+        /** @var array<int|string, array{int, int, string|null, string|null, list<array{docid: int, kind: string, date: string|null}>, int|null}> $byUid in progress, pending, last date, last answer, papers, last paper */
         $byUid = [];
 
         foreach ($assignments as $row) {
             $uid = (int)$row['UID'];
-            $byUid[$uid] ??= [0, 0, null, null];
+            $byUid[$uid] ??= [0, 0, null, null, [], null];
 
             if (!self::isInProgressOn($row, $currentDocId)) {
                 continue;
@@ -125,6 +168,7 @@ final class Workload
 
             if ($row['STATUS'] === Episciences_User_Assignment::STATUS_ACTIVE && !(int)$row['REPORT_DONE']) {
                 $byUid[$uid][0]++;
+                $byUid[$uid][4][] = ['docid' => (int)$row['ITEMID'], 'kind' => self::PAPER_REVIEW, 'date' => self::dateOrNull($row['DEADLINE'] ?? null)];
             }
         }
 
@@ -133,17 +177,19 @@ final class Workload
             if ($uid === null) {
                 continue;
             }
-            $byUid[$uid] ??= [0, 0, null, null];
+            $byUid[$uid] ??= [0, 0, null, null, [], null];
             $answer = self::answerOf((string)$row['STATUS'], (string)$row['EXPIRATION_DATE'], $now);
+            $sendingDate = (string)$row['SENDING_DATE'];
 
             if ($answer === self::ANSWER_PENDING && self::isInProgressOn($row, $currentDocId)) {
                 $byUid[$uid][1]++;
+                $byUid[$uid][4][] = ['docid' => (int)$row['ITEMID'], 'kind' => self::PAPER_INVITATION, 'date' => $sendingDate];
             }
 
-            $sendingDate = (string)$row['SENDING_DATE'];
             if ($byUid[$uid][2] === null || $sendingDate > $byUid[$uid][2]) {
                 $byUid[$uid][2] = $sendingDate;
                 $byUid[$uid][3] = $answer;
+                $byUid[$uid][5] = (int)$row['ITEMID'];
             }
         }
 
@@ -200,6 +246,11 @@ final class Workload
             && in_array((int)$row['PAPER_STATUS'], self::REVIEWING_STATUSES, true);
     }
 
+    private static function dateOrNull(mixed $value): ?string
+    {
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
     private static function answerOf(string $status, string $expirationDate, string $now): string
     {
         return match ($status) {
@@ -235,6 +286,7 @@ final class Workload
                 'UID' => 'a.UID',
                 'ITEMID' => 'a.ITEMID',
                 'STATUS' => 'a.STATUS',
+                'DEADLINE' => 'a.DEADLINE',
                 'REPORT_DONE' => new Zend_Db_Expr('EXISTS(' . $reportDone->assemble() . ')'),
             ])
             ->join(['l' => $latest], 'a.ID = l.LAST_ID', [])

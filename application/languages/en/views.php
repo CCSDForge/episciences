@@ -3016,4 +3016,8 @@ return array(
     "sans réponse pour le moment" => "not answered yet",
     "refusée" => "declined",
     "annulée" => "cancelled",
+    "relecture à rendre le %s" => "review due on %s",
+    "invitation envoyée le %s" => "invitation sent on %s",
+    "Autres articles : %d" => "Other papers: %d",
+    "nouvel onglet" => "new tab",
 );

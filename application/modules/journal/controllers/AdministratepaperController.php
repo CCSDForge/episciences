@@ -20,6 +20,7 @@ use Episciences\Paper\RequiredReviews;
 use Episciences\Reviewer\NextVersionRequestType;
 use Episciences\Paper\RevisionRequests;
 use Episciences\Reviewer\Workload;
+use Episciences\Reviewer\WorkloadPresenter;
 use Episciences\Paper\RepositoryVersionsService;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
@@ -1124,6 +1125,41 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * The papers among these that the logged user may manage (same rule as the paper management page)
+     *
+     * @param list<int> $docIds
+     * @return list<int>
+     */
+    private function manageablePapers(array $docIds, Episciences_Review $review): array
+    {
+        if ($docIds === []) {
+            return [];
+        }
+
+        return $this->manageableDocIds(
+            Episciences_PapersManager::getList(['is' => ['RVID' => RVID, 'DOCID' => $docIds]], false, false),
+            $review
+        );
+    }
+
+    /**
+     * @param Episciences_Paper[] $papers
+     * @return list<int>
+     */
+    private function manageableDocIds(array $papers, Episciences_Review $review): array
+    {
+        $docIds = [];
+
+        foreach ($papers as $paper) {
+            if ($this->findManagementRefusal($review, $paper) === null) {
+                $docIds[] = (int)$paper->getDocid();
+            }
+        }
+
+        return $docIds;
+    }
+
+    /**
      * @param Episciences_Paper $paper
      * @return bool
      */
@@ -1376,20 +1412,21 @@ class AdministratepaperController extends PaperDefaultController
 
             // how much each reviewer of the journal is already asked (git #320)
             [$workloads, $workloadsByEmailHash] = Workload::splitByAccount(Workload::ofJournal(RVID, (int)$docId));
-            $this->view->reviewerWorkloads = $workloads;
             $locale = Episciences_Tools::getLocale();
-            $toJson = fn(array $byKey): string => Zend_Json::encode((object)array_map(
-                // the date as written in the known reviewers table
-                fn(Workload $workload): array => $workload->toArray() + [
-                    'last_invitation_date_label' => $workload->getLastInvitationDate() !== null
-                        ? (string)$this->view->Date($workload->getLastInvitationDate(), $locale)
-                        : null,
-                ],
+            // the papers are only shown to who may manage them; the others are only counted
+            $presenter = new WorkloadPresenter(
+                $this->manageablePapers(Workload::paperDocIds($workloads + $workloadsByEmailHash), $oReview),
+                fn(string $date): string => (string)$this->view->Date($date, $locale)
+            );
+            $present = static fn(array $byKey): array => array_map(
+                [$presenter, 'present'],
                 array_filter($byKey, static fn(Workload $workload): bool => !$workload->isEmpty())
-            ));
-            $this->view->js_reviewer_workloads = $toJson($workloads);
+            );
+            $presentedWorkloads = $present($workloads);
+            $this->view->reviewerWorkloads = $presentedWorkloads;
+            $this->view->js_reviewer_workloads = Zend_Json::encode((object)$presentedWorkloads);
             // people invited without an account: matched by the address typed for a new reviewer
-            $this->view->js_reviewer_workloads_by_email = $toJson($workloadsByEmailHash);
+            $this->view->js_reviewer_workloads_by_email = Zend_Json::encode((object)$present($workloadsByEmailHash));
 
             // Tous les relecteurs (utilisateurs temp. compris)
             foreach ($allReviewers as $uid => $reviewer) {

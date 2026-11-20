@@ -1,12 +1,13 @@
 <?php
 /**
- * How much a reviewer is already asked in the journal (git #320): content of a table cell.
+ * How much a reviewer is already asked in the journal (git #320): content of a cell of the known reviewers table.
  *
  * @var Zend_View $this
- * @var Episciences\Reviewer\Workload|null $this->workload
+ * @var array<string, mixed>|null $this->workload as given by Episciences\Reviewer\WorkloadPresenter::present()
  */
 
 use Episciences\Reviewer\Workload;
+use Episciences\Reviewer\WorkloadPresenter;
 
 $answers = [
     Workload::ANSWER_PENDING => 'sans réponse pour le moment',
@@ -16,26 +17,48 @@ $answers = [
     Workload::ANSWER_EXPIRED => 'expirée',
 ];
 
-/** @var Workload|null $workload */
+/** @var array<string, mixed>|null $workload */
 $workload = $this->workload;
+// in a new tab: the editor keeps the invitation page
+$paperLink = fn(array $paper): string => sprintf(
+    '<a href="%s" target="_blank" rel="noopener">#%d<span class="sr-only"> (%s)</span></a>',
+    $this->escape($paper['url']),
+    (int)$paper['docid'],
+    $this->escape($this->translate('nouvel onglet'))
+);
 ?>
-<?php if ($workload === null || $workload->isEmpty()) : ?>
+<?php if (empty($workload)) : ?>
     <span class="text-muted"><?= $this->escape($this->translate('Jamais invité')) ?></span>
 <?php else : ?>
     <ul class="list-unstyled" style="margin: 0">
-        <?php if ($workload->getReviewsInProgress() > 0) : ?>
-            <li><span class="label label-warning"><?= $this->escape(sprintf($this->translate('Relectures en cours : %d'), $workload->getReviewsInProgress())) ?></span></li>
+        <?php if ($workload['reviews_in_progress'] > 0) : ?>
+            <li><span class="label label-warning"><?= $this->escape(sprintf($this->translate('Relectures en cours : %d'), $workload['reviews_in_progress'])) ?></span></li>
         <?php endif; ?>
-        <?php if ($workload->getPendingInvitations() > 0) : ?>
-            <li><span class="label label-info"><?= $this->escape(sprintf($this->translate('Invitations en attente : %d'), $workload->getPendingInvitations())) ?></span></li>
+        <?php if ($workload['pending_invitations'] > 0) : ?>
+            <li><span class="label label-info"><?= $this->escape(sprintf($this->translate('Invitations en attente : %d'), $workload['pending_invitations'])) ?></span></li>
         <?php endif; ?>
-        <?php if ($workload->getLastInvitationDate() !== null) : ?>
+        <?php foreach (array_slice($workload['papers'], 0, WorkloadPresenter::TABLE_PAPERS) as $paper) : ?>
+            <li>
+                <?= $paperLink($paper) ?>
+                <span class="text-muted">(<?= $this->escape($paper['kind'] === Workload::PAPER_REVIEW
+                    ? sprintf($this->translate('relecture à rendre le %s'), (string)$paper['date_label'])
+                    : sprintf($this->translate('invitation envoyée le %s'), (string)$paper['date_label'])) ?>)</span>
+            </li>
+        <?php endforeach; ?>
+        <?php $notListed = max(0, count($workload['papers']) - WorkloadPresenter::TABLE_PAPERS) + $workload['other_papers']; ?>
+        <?php if ($notListed > 0) : ?>
+            <li class="text-muted"><?= $this->escape(sprintf($this->translate('Autres articles : %d'), $notListed)) ?></li>
+        <?php endif; ?>
+        <?php if ($workload['last_invitation_date'] !== null) : ?>
             <li>
                 <?= $this->escape(sprintf(
                     $this->translate('Dernière invitation : %s (%s)'),
-                    $this->Date($workload->getLastInvitationDate(), Episciences_Tools::getLocale()),
-                    $this->translate($answers[$workload->getLastInvitationAnswer()] ?? '')
+                    (string)$workload['last_invitation_date_label'],
+                    $this->translate($answers[$workload['last_invitation_answer']] ?? '')
                 )) ?>
+                <?php if ($workload['last_invitation_paper'] !== null) : ?>
+                    &ndash; <?= $paperLink($workload['last_invitation_paper']) ?>
+                <?php endif; ?>
             </li>
         <?php endif; ?>
     </ul>

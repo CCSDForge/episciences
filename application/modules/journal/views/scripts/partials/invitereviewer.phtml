@@ -101,7 +101,7 @@ $invitation_panel_title = '';
                                     <td><?= $this->escape($reviewer->getUsername()) ?></td>
                                     <td><?= $this->escape(ucfirst((string)Zend_Locale::getTranslation($reviewer->getLangueid(), 'language', Episciences_Tools::getLocale()))) ?></td>
                                     <?php $workload = $this->reviewerWorkloads[(int)$reviewer->getUid()] ?? null; ?>
-                                    <td data-order="<?= $this->escape((string)$workload?->getLastInvitationDate()) ?>"><?= $this->partial('partials/reviewer_workload.phtml', ['workload' => $workload]) ?></td>
+                                    <td data-order="<?= $this->escape((string)($workload['last_invitation_date'] ?? '')) ?>"><?= $this->partial('partials/reviewer_workload.phtml', ['workload' => $workload]) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                             </tbody>

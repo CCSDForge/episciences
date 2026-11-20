@@ -877,36 +877,64 @@ describe('invitereviewer-modal.js: what the reviewer is already asked in the jou
         delete global.reviewer_workloads;
     });
 
-    test('one line for the reviews in progress, the pending invitations and the latest invitation', () => {
-        expect(moduleUnderTest.reviewerWorkloadLines(global.reviewer_workloads[7])).toEqual([
+    const texts = (items) => items.map((item) => item.text);
+
+    test('one item for the reviews in progress, the pending invitations and the latest invitation', () => {
+        expect(texts(moduleUnderTest.reviewerWorkloadItems(global.reviewer_workloads[7]))).toEqual([
             'Relectures en cours : 1',
             'Invitations en attente : 2',
             'Dernière invitation : 2026-10-20 (acceptée)',
         ]);
-        expect(moduleUnderTest.reviewerWorkloadLines(global.reviewer_workloads[8])).toEqual([
+        expect(texts(moduleUnderTest.reviewerWorkloadItems(global.reviewer_workloads[8]))).toEqual([
             'Dernière invitation : 2025-01-05 (expirée)',
         ]);
     });
 
-    test('the date is written as in the known reviewers table when the page gives it', () => {
-        expect(
-            moduleUnderTest.reviewerWorkloadLines({
-                ...global.reviewer_workloads[8],
-                last_invitation_date_label: 'January 5, 2025',
-            })
-        ).toEqual(['Dernière invitation : January 5, 2025 (expirée)']);
+    test('the papers the user may see are listed, the others counted, the date written as in the table', () => {
+        const items = moduleUnderTest.reviewerWorkloadItems({
+            reviews_in_progress: 2,
+            pending_invitations: 0,
+            last_invitation_date: '2026-11-18 09:00:00',
+            last_invitation_date_label: 'November 18, 2026',
+            last_invitation_answer: 'accepted',
+            last_invitation_paper: { docid: 10, url: '/administratepaper/view/id/10' },
+            papers: [{ docid: 10, url: '/administratepaper/view/id/10', kind: 'review', date_label: 'December 15, 2026' }],
+            other_papers: 1,
+        });
+
+        expect(texts(items)).toEqual([
+            'Relectures en cours : 2',
+            ' (relecture à rendre le December 15, 2026)',
+            'Autres articles : 1',
+            'Dernière invitation : November 18, 2026 (acceptée) – ',
+        ]);
+        expect(items[1].paper.docid).toBe(10);
+        expect(items[1].paperFirst).toBe(true);
+        expect(items[3].paper.docid).toBe(10);
+        expect(items[3].paperFirst).toBe(false);
     });
 
     test('nothing is said about a person the journal never asked', () => {
-        expect(moduleUnderTest.reviewerWorkloadLines(undefined)).toEqual([]);
+        expect(moduleUnderTest.reviewerWorkloadItems(undefined)).toEqual([]);
         expect(
-            moduleUnderTest.reviewerWorkloadLines({
+            moduleUnderTest.reviewerWorkloadItems({
                 reviews_in_progress: 0,
                 pending_invitations: 0,
                 last_invitation_date: null,
                 last_invitation_answer: null,
+                papers: [],
+                other_papers: 0,
             })
         ).toEqual([]);
+    });
+
+    test('a paper link shows the number of the paper only, and opens in a new tab', () => {
+        const link = moduleUnderTest.workloadPaperLink({ docid: 12, url: '/administratepaper/view/id/12' });
+
+        expect(link.getAttribute('href')).toBe('/administratepaper/view/id/12');
+        expect(link.target).toBe('_blank');
+        expect(link.rel).toBe('noopener');
+        expect(link.textContent).toBe('#12 (nouvel onglet)');
     });
 
     test('choosing a reviewer shows the alert above the message, as text', () => {

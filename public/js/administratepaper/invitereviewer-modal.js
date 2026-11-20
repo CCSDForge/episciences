@@ -659,7 +659,11 @@ function show_errors(errors) {
 
 function reviewers_init(self_users) {
     $('.dataTable.hover tr').each(function () {
-        $(this).click(function () {
+        $(this).click(function (event) {
+            // a link of the row (paper of the reviewer's workload) opens the paper, it does not choose the reviewer
+            if (event && event.target && event.target.closest('a')) {
+                return;
+            }
             let uid = $(this)
                 .attr('id')
                 .match(/(\d+)$/)[1];
@@ -937,12 +941,12 @@ function ajaxAlertFail() {
 }
 
 /**
- * What the reviewer is already asked in the journal (git #320), one line per fact; empty when nothing is known
- * @param {object|null|undefined} workload reviews_in_progress, pending_invitations, last_invitation_date,
- *   last_invitation_date_label (the date as written in the known reviewers table), last_invitation_answer
- * @returns {string[]}
+ * What the reviewer is already asked in the journal (git #320), one item per line; empty when nothing is known.
+ * An item is a text, with the paper it is about when the logged user may see it (link before or after the text).
+ * @param {object|null|undefined} workload as given by WorkloadPresenter::present()
+ * @returns {{text: string, paper: (object|null), paperFirst: boolean}[]}
  */
-function reviewerWorkloadLines(workload) {
+function reviewerWorkloadItems(workload) {
     if (!workload) {
         return [];
     }
@@ -954,51 +958,89 @@ function reviewerWorkloadLines(workload) {
         cancelled: translate('annulée'),
         expired: translate('expirée'),
     };
-    const lines = [];
+    const items = [];
+    const count = (label, value) =>
+        items.push({
+            text: translate(label).replace('%d', String(value)),
+            paper: null,
+            paperFirst: false,
+        });
 
     if (workload.reviews_in_progress > 0) {
-        lines.push(
-            translate('Relectures en cours : %d').replace(
-                '%d',
-                String(workload.reviews_in_progress)
-            )
-        );
+        count('Relectures en cours : %d', workload.reviews_in_progress);
     }
 
     if (workload.pending_invitations > 0) {
-        lines.push(
-            translate('Invitations en attente : %d').replace(
-                '%d',
-                String(workload.pending_invitations)
-            )
-        );
+        count('Invitations en attente : %d', workload.pending_invitations);
+    }
+
+    for (const paper of workload.papers || []) {
+        const label =
+            paper.kind === 'review'
+                ? 'relecture à rendre le %s'
+                : 'invitation envoyée le %s';
+        items.push({
+            text:
+                ' (' +
+                translate(label).replace('%s', paper.date_label || '') +
+                ')',
+            paper: paper,
+            paperFirst: true,
+        });
+    }
+
+    if (workload.other_papers > 0) {
+        count('Autres articles : %d', workload.other_papers);
     }
 
     if (workload.last_invitation_date) {
-        lines.push(
-            translate('Dernière invitation : %s (%s)')
-                .replace(
-                    '%s',
-                    workload.last_invitation_date_label ||
-                        workload.last_invitation_date.substring(0, 10)
-                )
-                .replace('%s', answers[workload.last_invitation_answer] || '')
-        );
+        const text = translate('Dernière invitation : %s (%s)')
+            .replace(
+                '%s',
+                workload.last_invitation_date_label ||
+                    workload.last_invitation_date.substring(0, 10)
+            )
+            .replace('%s', answers[workload.last_invitation_answer] || '');
+        const paper = workload.last_invitation_paper || null;
+        items.push({
+            text: paper ? text + ' – ' : text,
+            paper: paper,
+            paperFirst: false,
+        });
     }
 
-    return lines;
+    return items;
 }
 
 /**
- * Fills the alert with a title and the list of the facts, as text (no HTML is parsed)
- * @param {HTMLElement} alert
- * @param {string[]} lines
+ * Link to a paper of the workload, in a new tab: the editor keeps the invitation page
+ * @param {{docid: number, url: string}} paper
+ * @returns {HTMLAnchorElement}
  */
-function renderReviewerWorkload(alert, lines) {
-    alert.replaceChildren();
-    alert.hidden = lines.length === 0;
+function workloadPaperLink(paper) {
+    const link = document.createElement('a');
+    link.href = paper.url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = '#' + paper.docid;
+    const newTab = document.createElement('span');
+    newTab.className = 'sr-only';
+    newTab.textContent = ' (' + translate('nouvel onglet') + ')';
+    link.appendChild(newTab);
 
-    if (lines.length === 0) {
+    return link;
+}
+
+/**
+ * Fills the alert with a title and the list of the items, as text (no HTML is parsed)
+ * @param {HTMLElement} alert
+ * @param {{text: string, paper: (object|null), paperFirst: boolean}[]} items
+ */
+function renderReviewerWorkload(alert, items) {
+    alert.replaceChildren();
+    alert.hidden = items.length === 0;
+
+    if (items.length === 0) {
         return;
     }
 
@@ -1010,10 +1052,19 @@ function renderReviewerWorkload(alert, lines) {
     list.className = 'list-unstyled';
     list.style.margin = '0';
 
-    for (const line of lines) {
-        const item = document.createElement('li');
-        item.textContent = line;
-        list.appendChild(item);
+    for (const item of items) {
+        const line = document.createElement('li');
+        const text = document.createTextNode(item.text);
+
+        if (item.paper && item.paperFirst) {
+            line.append(workloadPaperLink(item.paper), text);
+        } else if (item.paper) {
+            line.append(text, workloadPaperLink(item.paper));
+        } else {
+            line.append(text);
+        }
+
+        list.appendChild(line);
     }
 
     alert.append(title, list);
@@ -1048,7 +1099,7 @@ function showReviewerWorkload(user) {
     }
 
     const render = workload =>
-        renderReviewerWorkload(alert, reviewerWorkloadLines(workload));
+        renderReviewerWorkload(alert, reviewerWorkloadItems(workload));
     const byUid =
         typeof reviewer_workloads !== 'undefined' && reviewer_workloads
             ? reviewer_workloads
@@ -1106,7 +1157,8 @@ if (typeof module !== 'undefined' && module.exports) {
         step2,
         validate_step2,
         setInvitationValues,
-        reviewerWorkloadLines,
+        reviewerWorkloadItems,
+        workloadPaperLink,
         renderReviewerWorkload,
         showReviewerWorkload,
         emailHash,

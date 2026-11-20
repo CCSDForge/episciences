@@ -58,6 +58,20 @@ test.describe('Requests already made to a reviewer in the journal (#320)', () =>
                 return reviewerRow;
             });
 
+        await test.step('a paper of the row opens in a new tab, without choosing the reviewer', async () => {
+            const paperLink = row
+                .locator('a[href^="/administratepaper/view/id/"]')
+                .first();
+            await expect(paperLink).toHaveAttribute('target', '_blank');
+
+            const [paperTab] = await Promise.all([
+                adminPage.context().waitForEvent('page'),
+                paperLink.click(),
+            ]);
+            await paperTab.close();
+            await expect(adminPage.locator('#step-2')).toBeHidden();
+        });
+
         await test.step('choosing the reviewer repeats it above the invitation message', async () => {
             const alert = adminPage.locator('#reviewer-workload-alert');
             await expect(alert).toBeHidden();
@@ -70,6 +84,14 @@ test.describe('Requests already made to a reviewer in the journal (#320)', () =>
                 'Requests already made to this reviewer in the journal'
             );
             await expect(alert).toContainText('Pending invitations:');
+            // the alert lists every paper the user may manage, the first one of this test included
+            await expect(
+                alert
+                    .locator(
+                        `a[href="/administratepaper/view/id/${firstDocid}"]`
+                    )
+                    .first()
+            ).toContainText(`#${firstDocid}`);
         });
     });
 
