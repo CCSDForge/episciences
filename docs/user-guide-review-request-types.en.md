@@ -150,6 +150,10 @@ On the grids page, each type shows the **Passed on to the author** or **Editoria
 
 ## Answer Without an Account
 
+The option is set type by type: check it on each type that may be answered without an account (all of them or only
+some, for instance the quick opinion); there is no global setting. It does not exist for the review report, which
+always requires an account.
+
 When the option is checked on a type, the invitation link opens a page where the invited person:
 - reads the instructions of the type (by default, the quick opinion asks for a few lines on the interest of the
   article);

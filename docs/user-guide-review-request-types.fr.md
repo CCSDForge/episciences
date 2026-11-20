@@ -154,6 +154,10 @@ Sur la page des grilles, chaque type porte le badge **Transmis à l'auteur** ou 
 
 ## Réponse sans compte
 
+L'option se règle type par type : cochez-la sur chaque type qui doit pouvoir être rendu sans compte (tous ou seulement
+certains, par exemple l'avis rapide) ; il n'y a pas de réglage global. Elle n'existe pas pour le rapport de relecture,
+qui exige toujours un compte.
+
 Quand l'option est cochée sur un type, le lien de l'invitation ouvre une page où la personne invitée :
 - lit la consigne du type (par défaut, l'avis rapide demande quelques lignes sur l'intérêt de l'article) ;
 - remplit la grille de la demande (choix, commentaires et fichiers selon les critères), choisie comme pour un rapport :
