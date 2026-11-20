@@ -3437,7 +3437,10 @@ class Episciences_Submit
                         continue;
                     }
 
-                    $entryOptions['relationship'] = $datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+                    // Outside the DataCite shaped repositories, the relation is one of the linked data vocabulary ("references" otherwise)
+                    $entryOptions['relationship'] = $isDataCiteShaped
+                        ? ($datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE)
+                        : TeiLinkedDataParser::relationship(is_string($datasets['relation'] ?? null) ? $datasets['relation'] : '');
                 }
 
                 try {

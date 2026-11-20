@@ -100,6 +100,19 @@ final class HalTeiLinkedDataTest extends TestCase
         self::assertSame([], $this->inserts);
     }
 
+    public function testARelationOutsideTheVocabularyIsStoredAsReferences(): void
+    {
+        $affectedRows = Episciences_Submit::processDatasets($this->halPaper(), [
+            ['identifier' => self::SWHID, 'relation' => 'Is supplemented by <b>'],
+            ['identifier' => self::HANDLE, 'relation' => ['not', 'a', 'string']],
+        ]);
+
+        self::assertSame(2, $affectedRows);
+        self::assertStringContainsString("'references'", $this->inserts[0]);
+        self::assertStringNotContainsString('Is supplemented by', $this->inserts[0]);
+        self::assertStringContainsString("'references'", $this->inserts[1]);
+    }
+
     private function halClient(string $tei): Client
     {
         return new Client(['handler' => HandlerStack::create(new MockHandler([new Response(200, [], $tei)]))]);
