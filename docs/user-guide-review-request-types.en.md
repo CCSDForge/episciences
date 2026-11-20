@@ -157,6 +157,10 @@ When the option is checked on a type, the invitation link opens a page where the
   grid of the type, else of the volume (except for a quick opinion), else the default grid;
 - or declines the request.
 
+The option applies to the invitations sent afterwards: an invitation keeps the mode of answer (with or without an
+account) the type had when it was sent. Checking or unchecking the option therefore does not change the invitations
+in progress.
+
 When no grid is configured, the page tells the invited person, who cannot answer yet, and the editors of the article
 are told by e-mail (once per invitation); the history of the article keeps it. Then create a grid for the type, or a
 default grid: the invitation link remains valid.

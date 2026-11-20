@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\AppRegistry;
+use Episciences\Reviewer\RequestTypeRepository;
 use Episciences\User\UserNotFoundException;
 
 class Episciences_User_Assignment
@@ -109,6 +111,12 @@ class Episciences_User_Assignment
      */
     protected ?int $_request_type_id = null;
 
+    /**
+     * Answered without an account, from the invitation link (#319): the option of the request type when the row is
+     * written, kept afterwards (null until then)
+     */
+    protected ?bool $_light_answer = null;
+
 
     // METHODES ******************************************************************
 
@@ -171,6 +179,9 @@ class Episciences_User_Assignment
 
         // Création: We timestamp the creation
         $values['WHEN'] = new Zend_Db_Expr('NOW()');
+        // the mode of answer is fixed when the request is sent: never updated afterwards
+        $this->_light_answer ??= $this->lightAnswerOfRequestType();
+        $values['LIGHT_ANSWER'] = (int)$this->_light_answer;
 
         if ($db->insert(T_ASSIGNMENTS, $values)) {
             $this->setId((int)$db->lastInsertId());
@@ -242,6 +253,36 @@ class Episciences_User_Assignment
     {
         $this->_request_type_id = ($requestTypeId === null || $requestTypeId === '') ? null : (int)$requestTypeId;
         return $this;
+    }
+
+    public function isLight_answer(): bool
+    {
+        return (bool)$this->_light_answer;
+    }
+
+    public function setLight_answer(bool|int|string|null $lightAnswer): self
+    {
+        $this->_light_answer = ($lightAnswer === null || $lightAnswer === '') ? null : (bool)$lightAnswer;
+        return $this;
+    }
+
+    /**
+     * Current option "answered without an account" of the request type of a reviewer row; false for the other rows
+     */
+    private function lightAnswerOfRequestType(): bool
+    {
+        if ($this->getRoleid() !== self::ROLE_REVIEWER || !$this->getRequest_type_id()) {
+            return false;
+        }
+
+        try {
+            return (bool)(new RequestTypeRepository())->findById($this->getRequest_type_id())?->isLightAnswer();
+        } catch (Throwable $e) {
+            AppRegistry::getMonoLogger()?->warning(sprintf('Review request type unavailable: %s', $e->getMessage()), [
+                'request_type_id' => $this->getRequest_type_id(),
+            ]);
+            return false;
+        }
     }
 
     public function getFrom_uid(): ?int

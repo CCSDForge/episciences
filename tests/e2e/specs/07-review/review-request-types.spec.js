@@ -422,6 +422,11 @@ test.describe('Review request types (#319)', () => {
                 ).toBeAttached();
             });
 
+            await test.step('the mode of answer is the one of the request when it was sent', async () => {
+                // the invitations already sent keep answering without an account
+                await setLightAnswer(adminPage, quickOpinion, false);
+            });
+
             await test.step('the invitee fills in the grid from the link, without an account', async () => {
                 const email = await mailpit.waitForEmail({
                     to: invitee.email,

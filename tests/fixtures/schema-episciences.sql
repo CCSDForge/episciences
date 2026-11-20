@@ -392,6 +392,7 @@ CREATE TABLE `USER_ASSIGNMENT` (
   `TMP_USER` tinyint unsigned NOT NULL DEFAULT '0',
   `ROLEID` varchar(50) NOT NULL,
   `REQUEST_TYPE_ID` int unsigned DEFAULT NULL COMMENT 'Review request type (reviewer rows only)',
+  `LIGHT_ANSWER` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '1 = answered without an account, from the invitation link (reviewer rows only, set when the row is written)',
   `STATUS` varchar(20) NOT NULL,
   `WHEN` datetime NOT NULL,
   `DEADLINE` datetime DEFAULT NULL,

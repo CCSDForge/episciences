@@ -801,10 +801,15 @@ class ReviewerController extends PaperDefaultController
      */
     private function lightAnswerType(Episciences_User_Assignment $assignment): ?RequestType
     {
+        // the mode was fixed when the request was sent: a later change of the option of the type does not affect it
+        if (!$assignment->isLight_answer()) {
+            return null;
+        }
+
         $requestTypeId = $assignment->getRequest_type_id();
         $requestType = $requestTypeId ? (new RequestTypeRepository())->findById($requestTypeId) : null;
 
-        return $requestType !== null && $requestType->isLightAnswer() && $requestType->getRvid() === (int)$assignment->getRvid()
+        return $requestType !== null && $requestType->getRvid() === (int)$assignment->getRvid()
             ? $requestType
             : null;
     }

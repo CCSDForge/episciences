@@ -15,10 +15,12 @@ use Episciences_User_Assignment;
 use Episciences_User_Invitation;
 use PHPUnit\Framework\MockObject\MockObject;
 use ReflectionMethod;
+use unit\library\Episciences\Reviewer\RequestTypeTestDatabase;
 use unit\library\Episciences\Security\SecurityLogCaptureTrait;
 use unit\modules\ControllerTestCase;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
+use Zend_Db_Table_Abstract;
 use Zend_View;
 
 /**
@@ -123,6 +125,46 @@ final class ReviewerControllerLightAnswerTest extends ControllerTestCase
     private function answer(): LightAnswer
     {
         return new LightAnswer(1, self::AID, RVID, self::DOCID, 11, 42, true, new \DateTimeImmutable('2026-01-01'));
+    }
+
+    /**
+     * The request type found by the answer page for a request sent with the given mode, once the option of its type
+     * has been set to the other value
+     */
+    private function lightAnswerTypeAfterTheOptionChanged(bool $sentWithoutAccount): ?RequestType
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $db = RequestTypeTestDatabase::create();
+        Zend_Db_Table_Abstract::setDefaultAdapter($db);
+
+        try {
+            $db->insert('review_request_type', [
+                'rvid' => RVID,
+                'labels' => '{"en": "Quick opinion"}',
+                'light_answer' => (int)!$sentWithoutAccount,
+            ]);
+            $assignment = new Episciences_User_Assignment([
+                'rvid' => RVID,
+                'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
+                'request_type_id' => (int)$db->lastInsertId(),
+                'light_answer' => $sentWithoutAccount,
+            ]);
+
+            return $this->call('lightAnswerType', $assignment);
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
+
+    public function testTheModeOfAnswerIsTheOneOfTheRequestWhenItWasSent(): void
+    {
+        // sent without an account, the option of the type unchecked since: still answered without an account
+        $type = $this->lightAnswerTypeAfterTheOptionChanged(true);
+        self::assertInstanceOf(RequestType::class, $type);
+        self::assertFalse($type->isLightAnswer());
+
+        // sent with an account, the option of the type checked since: still answered with an account
+        self::assertNull($this->lightAnswerTypeAfterTheOptionChanged(false));
     }
 
     public function testTheFirstAnswerNeedsAnOpenInvitationOnAPaperStillToReview(): void
