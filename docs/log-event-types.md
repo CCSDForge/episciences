@@ -14,6 +14,7 @@ This document lists the various log event types used in the Episciences platform
 | `reviewer_invitation` | `CODE_REVIEWER_INVITATION` | Reviewer invitation | Invitation d'un relecteur | warning |
 | `reviewer_invitation_accepted` | `CODE_REVIEWER_INVITATION_ACCEPTED` | Accepted invitation | Invitation de relecture acceptée | warning |
 | `reviewer_invitation_declined` | `CODE_REVIEWER_INVITATION_DECLINED` | Declined invitation | Invitation de relecture refusée | warning |
+| `light_answer_without_grid` | `CODE_LIGHT_ANSWER_WITHOUT_GRID` | Answer without an account impossible: no rating grid configured | Réponse sans compte impossible : aucune grille de relecture configurée | danger |
 | `reviewer_assignment` | `CODE_REVIEWER_ASSIGNMENT` | Reviewer assignment | Assignation d'un relecteur | warning |
 | `reviewer_unassignment` | `CODE_REVIEWER_UNASSIGNMENT` | Reviewer unassignment | Suppression d'un relecteur | warning |
 | `reviewer_invitation_linked` | `CODE_REVIEWER_INVITATION_LINKED` | Invitation linked to another account | Invitation de relecture associée à un autre compte | warning |
@@ -78,6 +79,17 @@ This document lists the various log event types used in the Episciences platform
 
 ### Log Detail
 Some actions include additional information in the `DETAIL` column (JSON encoded).
+
+Review request types (#319) add the following fields:
+
+| Code | Field | Content |
+| :--- | :--- | :--- |
+| `reviewer_invitation` | `request_type` | Type of the review request: `id` and `labels` (by language), as at the time of the invitation |
+| `light_answer_without_grid` | `invitation_id`, `request_type`, `user.fullname` | The invitation concerned, its request type, and the invited person. Logged once per invitation, when a person invited without an account cannot answer because the request type has no rating grid; the editors of the paper are also notified by e-mail |
+| `minor_revision_request`, `major_revision_request` | `reassign_reviewers` | Whether the reviewers are invited again automatically on the next version (boolean) |
+| `minor_revision_request`, `major_revision_request` | `next_request_type` | Type of the new request to the reviewers on the next version: `id` and `labels`; absent when the same type as the current request is kept |
+
+Entries logged before these changes do not hold these fields.
 
 ### Detecting that a reminder was sent
 Automatic reminders (`scripts/reminders.php`) are recorded with `CODE_REMINDER_SENT` (`reminder_sent`); this is the source of truth, not the subject text of `MAIL_LOG`.
