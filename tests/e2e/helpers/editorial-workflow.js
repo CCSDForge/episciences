@@ -9,27 +9,29 @@ const { expect } = require('@playwright/test');
  * announcement to HAL: the suite must never trigger it.
  */
 
+const HAL_REPO_ID = '1';
 const ARXIV_REPO_ID = '2';
 const REVIEWER_USERNAME = 'e2e_reviewer';
 const REVIEWER_EMAIL = 'e2e_reviewer@example.org';
 const MINIMAL_PDF = path.resolve(__dirname, '..', 'fixtures', 'files', 'minimal.pdf');
 
-// Fetching metadata from arXiv goes over the network
+// Fetching metadata from arXiv or HAL goes over the network
 const REPOSITORY_TIMEOUT = 60000;
 
 /**
- * Submits an arXiv preprint as the logged-in author.
+ * Submits a preprint from a repository as the logged-in author.
  * @param {import('@playwright/test').Page} page author page
  * @param {Object} options
- * @param {string} options.arxivId arXiv identifier, without version
+ * @param {string} options.repoId repository identifier
+ * @param {string} options.docId document identifier, without version
  * @param {number} [options.version=1]
  * @param {string} [options.sectionTitle] section to submit in, when the journal lets authors pick one
  * @returns {Promise<number>} docid of the submitted paper
  */
-async function submitArxivPaper(page, { arxivId, version = 1, sectionTitle }) {
+async function submitRepositoryPaper(page, { repoId, docId, version = 1, sectionTitle }) {
     await page.goto('submit');
-    await page.locator('#search_doc-repoId').selectOption(ARXIV_REPO_ID);
-    await page.locator('#search_doc-docId').fill(arxivId);
+    await page.locator('#search_doc-repoId').selectOption(repoId);
+    await page.locator('#search_doc-docId').fill(docId);
     await page.locator('#search_doc-version').fill(String(version));
     await page.locator('#search_doc-getPaper').click();
 
@@ -51,6 +53,34 @@ async function submitArxivPaper(page, { arxivId, version = 1, sectionTitle }) {
 
     await expect(page).toHaveURL(/\/paper\/view\/id\/\d+/, { timeout: REPOSITORY_TIMEOUT });
     return Number(page.url().match(/\/paper\/view\/id\/(\d+)/)[1]);
+}
+
+/**
+ * Submits an arXiv preprint as the logged-in author.
+ * @param {import('@playwright/test').Page} page author page
+ * @param {Object} options
+ * @param {string} options.arxivId arXiv identifier, without version
+ * @param {number} [options.version=1]
+ * @param {string} [options.sectionTitle] section to submit in, when the journal lets authors pick one
+ * @returns {Promise<number>} docid of the submitted paper
+ */
+async function submitArxivPaper(page, { arxivId, version = 1, sectionTitle }) {
+    return submitRepositoryPaper(page, { repoId: ARXIV_REPO_ID, docId: arxivId, version, sectionTitle });
+}
+
+/**
+ * Submits a HAL preprint as the logged-in author.
+ * Never publish a paper submitted with this helper: publishing a HAL paper sends a COAR Notify
+ * announcement to HAL.
+ * @param {import('@playwright/test').Page} page author page
+ * @param {Object} options
+ * @param {string} options.halId HAL identifier, without version (e.g. "hal-05428815")
+ * @param {number} [options.version=1]
+ * @param {string} [options.sectionTitle] section to submit in, when the journal lets authors pick one
+ * @returns {Promise<number>} docid of the submitted paper
+ */
+async function submitHalPaper(page, { halId, version = 1, sectionTitle }) {
+    return submitRepositoryPaper(page, { repoId: HAL_REPO_ID, docId: halId, version, sectionTitle });
 }
 
 /**
@@ -300,8 +330,9 @@ async function createVolumeGrid(page, vid) {
  * @param {string} criterion.title
  * @param {string} criterion.description
  * @param {'public'|'contributor'|'editors'} [criterion.visibility='public']
+ * @param {boolean} [criterion.upload=false] allow attaching a file to this criterion
  */
-async function addQuantitativeCriterion(page, rgid, { title, description, visibility = 'public' }) {
+async function addQuantitativeCriterion(page, rgid, { title, description, visibility = 'public', upload = false }) {
     await page.goto(`grid/addcriterion?rgid=${rgid}`);
     await page.locator('#critere').fill(title);
     await page.locator('#description').fill(description);
@@ -309,6 +340,9 @@ async function addQuantitativeCriterion(page, rgid, { title, description, visibi
     await page.locator('#evaluation_type').selectOption('quantitative');
     await page.locator('#quantitative_rating_type').selectOption('2'); // 0-5 scale
     await page.locator('#comment').selectOption('1');
+    if (upload) {
+        await page.locator('#upload').selectOption('1');
+    }
     await page.locator('#submit').click();
     await expect(page).toHaveURL(/grid\/list/);
 }
@@ -317,6 +351,7 @@ module.exports = {
     MINIMAL_PDF,
     REPOSITORY_TIMEOUT,
     submitArxivPaper,
+    submitHalPaper,
     openPaperManagement,
     statusPanel,
     applyDecision,
