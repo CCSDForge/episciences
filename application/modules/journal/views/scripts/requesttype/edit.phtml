@@ -165,6 +165,7 @@ $error = function (string $field) use ($errors): string {
                     <span id="light_answer-help" class="help-block">
                         <?= $this->escape($this->translate("La personne invitée remplit la grille de la demande directement depuis le lien reçu, sans créer de compte. La réponse n'est visible que par le comité éditorial.")) ?>
                         <?= $this->escape($this->translate("La consigne ci-dessous s'affiche au-dessus de la grille.")) ?>
+                        <?= $this->escape($this->translate("Ce réglage vaut pour les invitations envoyées ensuite : les invitations déjà envoyées gardent leur mode de réponse.")) ?>
                     </span>
                 </div>
             </div>

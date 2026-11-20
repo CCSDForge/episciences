@@ -60,7 +60,17 @@ $locale = Episciences_Tools::getLocale();
                                 <?= $this->escape(sprintf($this->translate('Version %s'), (string)$row['version'])) ?>
                             <?php endif; ?>
                         </td>
-                        <td><span class="label <?= $this->escape($statusClass) ?>"><?= $this->escape($this->translate($statusLabel)) ?></span></td>
+                        <td>
+                            <span class="label <?= $this->escape($statusClass) ?>"><?= $this->escape($this->translate($statusLabel)) ?></span>
+                            <?php // request type of the request (#319) ?>
+                            <?php $requestTypeLabel = ($row['request_type_id'] ?? null) !== null ? $this->requestTypeLabel($row['request_type_id']) : ''; ?>
+                            <?php if ($requestTypeLabel !== '') : ?>
+                                <br><small class="text-muted"><span class="sr-only"><?= $this->escape($this->translate('Type de demande')) ?> : </span><?= $requestTypeLabel ?></small>
+                            <?php endif; ?>
+                            <?php if (!empty($row['light_answer'])) : ?>
+                                <span class="label label-default light-answer-mode"><?= $this->escape($this->translate('Sans compte')) ?></span>
+                            <?php endif; ?>
+                        </td>
                         <td><?= $row['date'] !== null ? $this->escape((string)$this->Date($row['date'], $locale)) : '' ?></td>
                         <td>
                             <?php if (!$row['tmp_user']) : ?>

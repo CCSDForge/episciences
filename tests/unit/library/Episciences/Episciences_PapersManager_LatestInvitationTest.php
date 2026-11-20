@@ -45,8 +45,9 @@ final class Episciences_PapersManager_LatestInvitationTest extends TestCase
      * An invitation and its answers, all in the same second: one assignment and one invitation row by step.
      *
      * @param array<int, array{0: string, 1: string}> $steps (status of the invitation, status of the assignment)
+     * @param bool $lightAnswer mode of answer of the invitation, kept on its original assignment (#319)
      */
-    private function insertInvitation(int $uid, bool $isTmpUser, array $steps): void
+    private function insertInvitation(int $uid, bool $isTmpUser, array $steps, bool $lightAnswer = false): void
     {
         $aid = null;
 
@@ -60,6 +61,7 @@ final class Episciences_PapersManager_LatestInvitationTest extends TestCase
                 'ROLEID' => 'reviewer',
                 'STATUS' => $assignmentStatus,
                 'WHEN' => self::DATE,
+                'LIGHT_ANSWER' => (int)($lightAnswer && $aid === null),
             ]);
             $assignmentId = (int)$this->db->lastInsertId();
             $aid ??= $assignmentId;
@@ -90,6 +92,18 @@ final class Episciences_PapersManager_LatestInvitationTest extends TestCase
         $this->assertCount(1, $rows);
         $this->assertSame('accepted', $rows[0]['INVITATION_STATUS']);
         $this->assertSame(Episciences_User_Assignment::STATUS_ACTIVE, $rows[0]['ASSIGNMENT_STATUS']);
+    }
+
+    public function testTheModeOfAnswerIsTheOneOfTheOriginalAssignment(): void
+    {
+        // the rows written after the invitation (answers) do not carry the mode
+        $this->insertInvitation(self::UID, false, [['pending', 'pending'], ['accepted', 'active']], true);
+
+        $rows = $this->db->fetchAll(Episciences_PapersManager::getLatestInvitationByDocIdQuery(self::DOCID));
+
+        $this->assertCount(1, $rows);
+        $this->assertSame(Episciences_User_Assignment::STATUS_ACTIVE, $rows[0]['ASSIGNMENT_STATUS']);
+        $this->assertSame(1, (int)$rows[0]['INVITATION_LIGHT_ANSWER']);
     }
 
     public function testATemporaryReviewerWhoAcceptedInTheSameSecondIsNotPending(): void

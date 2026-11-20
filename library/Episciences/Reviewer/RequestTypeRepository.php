@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Episciences\Reviewer;
 
+use Episciences_User_Assignment;
+use Episciences_User_Invitation;
 use JsonException;
 use LogicException;
 use Zend_Db_Adapter_Abstract;
+use Zend_Db_Expr;
 use Zend_Db_Table_Abstract;
 
 /**
@@ -16,6 +19,7 @@ class RequestTypeRepository
 {
     public const TABLE_NAME = 'review_request_type';
     private const ASSIGNMENTS_TABLE = 'USER_ASSIGNMENT';
+    private const INVITATIONS_TABLE = 'USER_INVITATION';
 
     private ?Zend_Db_Adapter_Abstract $db;
 
@@ -227,6 +231,31 @@ class RequestTypeRepository
 
         return (bool)$db->fetchOne(
             $db->select()->from(self::ASSIGNMENTS_TABLE, ['ID'])->where('REQUEST_TYPE_ID = ?', $id)->limit(1)
+        );
+    }
+
+    /**
+     * Invitations of this type still waiting for an answer (latest row pending, not expired at $now) and sent with the
+     * given mode of answer: they keep it when the option of the type changes
+     * @param string $now 'Y-m-d H:i:s'
+     */
+    public function countPendingInvitations(int $id, bool $lightAnswer, string $now): int
+    {
+        $db = $this->getDb();
+        $latestRow = $db->select()
+            ->from(['l' => self::INVITATIONS_TABLE], [new Zend_Db_Expr('MAX(l.ID)')])
+            ->where('l.AID = o.ID');
+
+        return (int)$db->fetchOne(
+            $db->select()
+                ->from(['o' => self::ASSIGNMENTS_TABLE], [new Zend_Db_Expr('COUNT(*)')])
+                ->join(['i' => self::INVITATIONS_TABLE], 'i.AID = o.ID', [])
+                ->where('o.REQUEST_TYPE_ID = ?', $id)
+                ->where('o.ROLEID = ?', Episciences_User_Assignment::ROLE_REVIEWER)
+                ->where('o.LIGHT_ANSWER = ?', (int)$lightAnswer)
+                ->where('i.ID = (' . $latestRow . ')')
+                ->where('i.STATUS = ?', Episciences_User_Invitation::STATUS_PENDING)
+                ->where('i.EXPIRATION_DATE > ?', $now)
         );
     }
 

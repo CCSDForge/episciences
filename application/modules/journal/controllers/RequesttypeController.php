@@ -90,7 +90,30 @@ class RequesttypeController extends Zend_Controller_Action
         }
 
         $this->flash(Ccsd_View_Helper_Message::MSG_SUCCESS, 'Le type de demande a été enregistré.');
+
+        if ($type !== null && $type->isLightAnswer() !== $saved->isLightAnswer()) {
+            $this->flashPendingInvitationsKeepTheirMode((int)$saved->getId(), $type->isLightAnswer());
+        }
+
         $this->_helper->redirector->gotoUrl(self::LIST_URL);
+    }
+
+    /**
+     * Tells how many invitations waiting for an answer keep the mode of answer they were sent with, once the option
+     * "answered without an account" of their type has changed (#319)
+     */
+    private function flashPendingInvitationsKeepTheirMode(int $typeId, bool $previousLightAnswer): void
+    {
+        $count = $this->getRepository()->countPendingInvitations($typeId, $previousLightAnswer, date('Y-m-d H:i:s'));
+
+        if ($count === 0) {
+            return;
+        }
+
+        $message = $count === 1
+            ? $this->view->translate("1 invitation en attente de réponse garde le mode de réponse de son envoi.")
+            : sprintf($this->view->translate("%d invitations en attente de réponse gardent le mode de réponse de leur envoi."), $count);
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_INFO)->addMessage($message);
     }
 
     /**

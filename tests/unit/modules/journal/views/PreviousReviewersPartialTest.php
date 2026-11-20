@@ -50,6 +50,7 @@ final class PreviousReviewersPartialTest extends TestCase
     }
 
     /**
+     * @param array<string, mixed> $overrides
      * @return array<string, mixed>
      */
     private static function row(array $overrides = []): array
@@ -94,6 +95,13 @@ final class PreviousReviewersPartialTest extends TestCase
         self::assertStringNotContainsString('/user/view/userid/', $html);
         self::assertStringContainsString('Temporary version of', $html);
         self::assertStringContainsString('Invitation declined', $html);
+    }
+
+    public function testARequestAnsweredWithoutAnAccountSaysSo(): void
+    {
+        $html = $this->render([self::row(['light_answer' => true]), self::row(['key' => 'r1', 'uid' => 2, 'light_answer' => false])]);
+
+        self::assertSame(1, substr_count($html, 'Without an account'));
     }
 
     public function testNamesAreEscaped(): void

@@ -8,7 +8,7 @@ use Zend_Db_Adapter_Pdo_Sqlite;
 
 /**
  * In-memory SQLite copy of the review_request_type table and of the columns of USER_ASSIGNMENT the review
- * request type code reads and Episciences_User_Assignment::save() writes
+ * request type code reads and Episciences_User_Assignment::save() writes, and of USER_INVITATION
  */
 final class RequestTypeTestDatabase
 {
@@ -47,6 +47,15 @@ final class RequestTypeTestDatabase
                 STATUS TEXT NOT NULL,
                 "WHEN" TEXT NULL,
                 DEADLINE TEXT NULL
+            )'
+        );
+        $db->query(
+            'CREATE TABLE USER_INVITATION (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                AID INTEGER NOT NULL,
+                STATUS TEXT NOT NULL,
+                SENDING_DATE TEXT NULL,
+                EXPIRATION_DATE TEXT NULL
             )'
         );
         // Episciences_User_Assignment::save() timestamps a new row with the MySQL function NOW()

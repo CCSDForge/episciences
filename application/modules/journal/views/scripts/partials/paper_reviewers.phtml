@@ -182,6 +182,10 @@ try {
                                                 <?php if ($requestTypeLabel !== '') : ?>
                                                     <span class="label label-info"><span class="sr-only"><?= $this->escape($this->translate('Type de demande')) ?> : </span><?= $requestTypeLabel ?></span>
                                                 <?php endif; ?>
+                                                <?php // mode of answer fixed when the invitation was sent (#319) ?>
+                                                <?php if (!empty($invitation['INVITATION_LIGHT_ANSWER'])) : ?>
+                                                    <span class="label label-default light-answer-mode"><?= $this->escape($this->translate('Sans compte')) ?></span>
+                                                <?php endif; ?>
                                                 </span>
 
                                         </div>

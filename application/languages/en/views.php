@@ -2918,6 +2918,10 @@ return array(
     "Paramètres des licences" => "License settings",
     // Review request types (#319)
     "Type de demande" => "Request type",
+    "Sans compte" => "Without an account",
+    "Ce réglage vaut pour les invitations envoyées ensuite : les invitations déjà envoyées gardent leur mode de réponse." => "This setting applies to the invitations sent afterwards: the invitations already sent keep their mode of answer.",
+    "1 invitation en attente de réponse garde le mode de réponse de son envoi." => "1 invitation waiting for an answer keeps the mode of answer it was sent with.",
+    "%d invitations en attente de réponse gardent le mode de réponse de leur envoi." => "%d invitations waiting for an answer keep the mode of answer they were sent with.",
     "Type de la nouvelle demande aux relecteurs" => "Type of the new request to the reviewers",
     "Même type que la demande en cours" => "Same type as the current request",
     "Nouvelle demande aux relecteurs :" => "New request to the reviewers:",

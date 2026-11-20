@@ -357,6 +357,10 @@ test.describe('Review request types (#319)', () => {
         await test.step('an answer without an account cannot count as a review report', async () => {
             await adminPage.goto(`requesttype/edit?id=${quickOpinion}`);
             await expect(adminPage.locator('#code')).toHaveCount(0);
+            // the option applies to the invitations sent afterwards (#319)
+            await expect(adminPage.locator('#light_answer-help')).toContainText(
+                'the invitations already sent keep their mode of answer'
+            );
             const counts = adminPage.locator('#counts_as_report');
             const lightAnswer = adminPage.locator('#light_answer');
             const initiallyChecked = await lightAnswer.isChecked();
@@ -419,6 +423,12 @@ test.describe('Review request types (#319)', () => {
                     adminPage
                         .locator('span.label.label-info', { hasText: QUICK_OPINION })
                         .first()
+                ).toBeAttached();
+                // and so is its mode of answer, fixed when it was sent
+                await expect(
+                    adminPage.locator('#reviewers .light-answer-mode', {
+                        hasText: 'Without an account',
+                    })
                 ).toBeAttached();
             });
 
@@ -530,6 +540,8 @@ test.describe('Review request types (#319)', () => {
                     REVIEWER_USERNAME,
                     quickOpinion
                 );
+                // a request answered with an account has no mention of the mode
+                await expect(adminPage.locator('#reviewers .light-answer-mode')).toHaveCount(0);
                 const email = await mailpit.waitForEmail({
                     to: REVIEWER_EMAIL,
                     subjectContains: [`#${docid} `, 'Request for a quick opinion'],

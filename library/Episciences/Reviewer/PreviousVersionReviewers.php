@@ -29,7 +29,7 @@ final class PreviousVersionReviewers
      * @return list<array{
      *     docid: int, version: float, tmp_version: bool, version_date: string, uid: int, tmp_user: bool,
      *     firstname: string, lastname: string, email: string, screen_name: string, username: string, locale: string,
-     *     status: string, date: string|null
+     *     status: string, date: string|null, request_type_id: int|null, light_answer: bool
      * }> latest version first
      */
     public static function ofPaper(Episciences_Paper $paper, ?Zend_Db_Adapter_Abstract $db = null): array
@@ -91,7 +91,7 @@ final class PreviousVersionReviewers
      * @return list<array{
      *     docid: int, version: float, tmp_version: bool, version_date: string, uid: int, tmp_user: bool,
      *     firstname: string, lastname: string, email: string, screen_name: string, username: string, locale: string,
-     *     status: string, date: string|null
+     *     status: string, date: string|null, request_type_id: int|null, light_answer: bool
      * }>
      */
     public static function fromRows(array $versions, array $reviewers): array
@@ -125,6 +125,9 @@ final class PreviousVersionReviewers
                     'locale' => (string)($row['LANGUEID'] ?? ''),
                     'status' => $status,
                     'date' => $date,
+                    'request_type_id' => isset($row['REQUEST_TYPE_ID']) ? (int)$row['REQUEST_TYPE_ID'] : null,
+                    // mode of answer fixed when the invitation was sent (#319)
+                    'light_answer' => (bool)(int)($row['LIGHT_ANSWER'] ?? 0),
                 ];
             }
         }
@@ -180,12 +183,21 @@ final class PreviousVersionReviewers
             ->where('ITEM = ?', Episciences_User_Assignment::ITEM_PAPER)
             ->where('ROLEID = ?', Episciences_User_Assignment::ROLE_REVIEWER)
             ->where('STATUS != ?', Episciences_User_Assignment::STATUS_INACTIVE)
-            ->group(['ITEMID', 'UID', 'TMP_USER']);
+            // a reviewer may hold one request of each type on a version (#319)
+            ->group(['ITEMID', 'UID', 'TMP_USER', 'REQUEST_TYPE_ID']);
 
         return $db->select()
-            ->from(['a' => T_ASSIGNMENTS], ['ITEMID' => 'a.ITEMID', 'UID' => 'a.UID', 'TMP_USER' => 'a.TMP_USER', 'STATUS' => 'a.STATUS', 'WHEN' => 'a.WHEN'])
+            ->from(['a' => T_ASSIGNMENTS], ['ITEMID' => 'a.ITEMID', 'UID' => 'a.UID', 'TMP_USER' => 'a.TMP_USER', 'STATUS' => 'a.STATUS', 'WHEN' => 'a.WHEN', 'REQUEST_TYPE_ID' => 'a.REQUEST_TYPE_ID'])
             ->join(['l' => $latest], 'a.ID = l.LAST_ID', [])
-            ->joinLeft(['r' => T_REVIEWER_REPORTS], 'a.TMP_USER = 0 AND r.UID = a.UID AND r.DOCID = a.ITEMID', ['REPORT_STATUS' => 'r.STATUS', 'REPORT_DATE' => 'r.UPDATE_DATE'])
+            // the mode of answer is kept on the original assignment of the invitation (#319)
+            ->joinLeft(['i' => T_USER_INVITATIONS], 'i.ID = a.INVITATION_ID', [])
+            ->joinLeft(['o' => T_ASSIGNMENTS], 'o.ID = i.AID', ['LIGHT_ANSWER' => 'o.LIGHT_ANSWER'])
+            // the report of this request type; an assignment saved before the types matches any report
+            ->joinLeft(
+                ['r' => T_REVIEWER_REPORTS],
+                'a.TMP_USER = 0 AND r.UID = a.UID AND r.DOCID = a.ITEMID AND (a.REQUEST_TYPE_ID IS NULL OR r.REQUEST_TYPE_ID = a.REQUEST_TYPE_ID)',
+                ['REPORT_STATUS' => 'r.STATUS', 'REPORT_DATE' => 'r.UPDATE_DATE']
+            )
             ->joinLeft(['u' => T_USERS], 'a.TMP_USER = 0 AND u.UID = a.UID', [])
             ->joinLeft(['t' => T_TMP_USER], 'a.TMP_USER = 1 AND t.ID = a.UID', [])
             ->columns([

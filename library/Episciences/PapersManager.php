@@ -1170,6 +1170,12 @@ class Episciences_PapersManager
                     'EXPIRATION_DATE' => 'i.EXPIRATION_DATE'
                 ]
             )
+            // the mode of answer is kept on the original assignment of the invitation (#319)
+            ->joinLeft(
+                ['o' => 'USER_ASSIGNMENT'],
+                'o.ID = i.AID',
+                ['INVITATION_LIGHT_ANSWER' => 'o.LIGHT_ANSWER']
+            )
             ->where('a.ITEM = ?', 'paper')
             ->where('a.ITEMID = ?', $docId)
             ->where('a.ROLEID = ?', 'reviewer')

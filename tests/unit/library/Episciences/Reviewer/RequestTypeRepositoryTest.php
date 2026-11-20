@@ -44,6 +44,45 @@ final class RequestTypeRepositoryTest extends TestCase
         ]);
     }
 
+    /**
+     * An invitation of a type, its original assignment carrying the mode of answer, then one invitation row per step
+     * @param list<string> $statuses status of each invitation row, the latest last
+     */
+    private function addInvitation(int $requestTypeId, bool $lightAnswer, array $statuses, string $expiration = '2026-12-31 00:00:00', string $role = 'reviewer'): void
+    {
+        $this->db->insert('USER_ASSIGNMENT', [
+            'RVID' => self::RVID, 'ITEMID' => 10, 'UID' => 20, 'ROLEID' => $role,
+            'REQUEST_TYPE_ID' => $requestTypeId, 'LIGHT_ANSWER' => (int)$lightAnswer, 'STATUS' => 'pending',
+        ]);
+        $aid = (int)$this->db->lastInsertId();
+
+        foreach ($statuses as $status) {
+            $this->db->insert('USER_INVITATION', ['AID' => $aid, 'STATUS' => $status, 'EXPIRATION_DATE' => $expiration]);
+        }
+    }
+
+    public function testThePendingInvitationsSentWithAModeAreCounted(): void
+    {
+        $type = (int)$this->repository->save(RequestType::defaults(self::RVID)[1])->getId();
+        $other = (int)$this->repository->save(RequestType::defaults(self::OTHER_RVID)[1])->getId();
+        $now = '2026-11-20 12:00:00';
+
+        $this->addInvitation($type, true, ['pending']);
+        $this->addInvitation($type, true, ['pending']);
+        // answered, then cancelled: their latest row is not pending
+        $this->addInvitation($type, true, ['pending', 'accepted']);
+        $this->addInvitation($type, true, ['pending', 'cancelled']);
+        // expired
+        $this->addInvitation($type, true, ['pending'], '2026-11-01 00:00:00');
+        // sent with an account, of another type, not a reviewer row
+        $this->addInvitation($type, false, ['pending']);
+        $this->addInvitation($other, true, ['pending']);
+        $this->addInvitation($type, true, ['pending'], '2026-12-31 00:00:00', 'editor');
+
+        self::assertSame(2, $this->repository->countPendingInvitations($type, true, $now));
+        self::assertSame(1, $this->repository->countPendingInvitations($type, false, $now));
+    }
+
     public function testCreateDefaultsIsIdempotent(): void
     {
         self::assertSame(2, $this->repository->createDefaults(self::RVID));

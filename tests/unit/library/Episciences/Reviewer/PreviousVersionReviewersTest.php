@@ -34,6 +34,7 @@ final class PreviousVersionReviewersTest extends ControllerTestCase
     }
 
     /**
+     * @param array<string, mixed> $person
      * @return array<string, mixed>
      */
     private static function reviewer(int $docId, int $uid, string $status, ?int $reportStatus = null, array $person = []): array
@@ -117,6 +118,26 @@ final class PreviousVersionReviewersTest extends ControllerTestCase
         // the rows added when a new version replaces the paper say nothing about the request
         self::assertStringContainsString("STATUS != 'inactive'", $reviewers);
         self::assertStringContainsString('ITEMID IN (10)', $reviewers);
+        // one row per request type (#319), with the report of that type
+        self::assertMatchesRegularExpression('/GROUP BY `ITEMID`,\s*`UID`,\s*`TMP_USER`,\s*`REQUEST_TYPE_ID`/', $reviewers);
+        self::assertStringContainsString('a.REQUEST_TYPE_ID IS NULL OR r.REQUEST_TYPE_ID = a.REQUEST_TYPE_ID', $reviewers);
+        // the mode of answer of the original assignment of the invitation (#319)
+        self::assertStringContainsString('o.ID = i.AID', $reviewers);
+    }
+
+    public function testTheModeOfAnswerOfEachRequestIsGiven(): void
+    {
+        $rows = PreviousVersionReviewers::fromRows(
+            [['DOCID' => 10, 'VERSION' => 1, 'REPOID' => 1, 'WHEN' => '2026-01-01 10:00:00']],
+            [
+                self::reviewer(10, 1, 'active', null, ['LIGHT_ANSWER' => '1']),
+                self::reviewer(10, 2, 'active', null, ['LIGHT_ANSWER' => '0']),
+                // added without an invitation: no original assignment
+                self::reviewer(10, 3, 'active', null, ['LIGHT_ANSWER' => null]),
+            ]
+        );
+
+        self::assertSame([true, false, false], array_column($rows, 'light_answer'));
     }
 
     public function testOnlyAPreviousVersionOfTheSamePaperIsAccepted(): void

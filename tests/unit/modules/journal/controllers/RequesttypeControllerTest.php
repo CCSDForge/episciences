@@ -147,6 +147,54 @@ final class RequesttypeControllerTest extends ControllerTestCase
         self::assertSame([], $this->typeWrites());
     }
 
+    /**
+     * @return list<string>
+     */
+    private static function infoMessages(): array
+    {
+        /** @var \Zend_Controller_Action_Helper_FlashMessenger $messenger */
+        $messenger = \Zend_Controller_Action_HelperBroker::getStaticHelper('FlashMessenger');
+        $messages = array_values($messenger->setNamespace(\Ccsd_View_Helper_Message::MSG_INFO)->getCurrentMessages());
+        $messenger->clearCurrentMessages();
+
+        return $messages;
+    }
+
+    public function testChangingTheModeOfAnswerSaysHowManyPendingInvitationsKeepTheirs(): void
+    {
+        $counted = [];
+        $this->db->respondTo('/FROM `USER_ASSIGNMENT` AS `o`/', function (string $sql, array $bind) use (&$counted): array {
+            $counted[] = $sql;
+            return [['COUNT(*)' => 3]];
+        });
+        self::infoMessages();
+
+        $result = $this->call('edit', $this->postRequest(['light_answer' => '1'] + $this->validPost(), true, ['id' => (string)self::TYPE_ID]));
+
+        self::assertSame('/grid/list#request-types-heading', $result->redirectUrl());
+        self::assertCount(1, $counted);
+        // the invitations sent with an account, the previous mode of the type
+        self::assertMatchesRegularExpression('/o\.LIGHT_ANSWER = \'?0\'?/', $counted[0]);
+        $messages = self::infoMessages();
+        self::assertCount(1, $messages);
+        self::assertStringContainsString('3', $messages[0]);
+    }
+
+    public function testKeepingTheModeOfAnswerCountsNothing(): void
+    {
+        $counted = 0;
+        $this->db->respondTo('/FROM `USER_ASSIGNMENT` AS `o`/', function () use (&$counted): array {
+            $counted++;
+            return [['COUNT(*)' => 3]];
+        });
+        self::infoMessages();
+
+        $this->call('edit', $this->postRequest($this->validPost(), true, ['id' => (string)self::TYPE_ID]));
+
+        self::assertSame(0, $counted);
+        self::assertSame([], self::infoMessages());
+    }
+
     public function testAnUnusedTypeIsDeleted(): void
     {
         $result = $this->call('delete', $this->postRequest(['id' => (string)self::TYPE_ID], true));

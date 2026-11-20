@@ -161,7 +161,10 @@ Quand l'option est cochée sur un type, le lien de l'invitation ouvre une page o
 - ou refuse la demande.
 
 L'option vaut pour les invitations envoyées ensuite : une invitation garde le mode de réponse (avec ou sans compte) du
-type au moment de son envoi. Cocher ou décocher l'option ne change donc pas les invitations en cours.
+type au moment de son envoi. Cocher ou décocher l'option ne change donc pas les invitations en cours : à
+l'enregistrement du type, un message indique combien d'invitations en attente de réponse gardent leur mode. Une invitation
+envoyée sans compte porte la mention **Sans compte** à côté de son type, dans la section **Relecteurs** de la page de
+gestion de l'article et dans le tableau des relecteurs des versions précédentes de la page d'invitation.
 
 Si aucune grille n'est configurée, la page l'indique à la personne invitée, qui ne peut pas encore répondre, et les
 rédacteurs de l'article sont prévenus par mail (une fois par invitation) ; l'historique de l'article le garde. Créez
