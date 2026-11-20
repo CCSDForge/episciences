@@ -677,4 +677,62 @@ final class Episciences_Rating_ManagerTest extends TestCase
         // Strip whitespace differences for comparison
         return preg_replace('/\s+/', ' ', trim($source));
     }
+
+    // =========================================================================
+    // getRatingForm() — data read by public/js/paper/rating.js (overall score)
+    // =========================================================================
+
+    private const YES_NO_MAYBE = [
+        ['value' => 0, 'label' => ['en' => 'Yes']],
+        ['value' => 1, 'label' => ['en' => 'No']],
+        ['value' => 2, 'label' => ['en' => 'Maybe']],
+    ];
+
+    /**
+     * The form labels the options in the language of the reviewer
+     */
+    private function loginReviewer(): void
+    {
+        $user = $this->createMock(\Episciences_User::class);
+        $user->method('getLangueid')->willReturn('en');
+        \Episciences_Auth::getInstance()->getStorage()->write($user);
+    }
+
+    public function testGetRatingFormExposesTheCoefficientsAndTheMaximumGrades(): void
+    {
+        $this->loginReviewer();
+        $unlabelled = static fn(int $max): array => array_map(static fn(int $i): array => ['value' => $i, 'label' => []], range(0, $max));
+
+        $report = new \Episciences_Rating_Report();
+        $report->setCriteria([
+            new \Episciences_Rating_Criterion(['id' => 'item_0', 'type' => 'criterion', 'visibility' => 'editors', 'coefficient' => 3, 'options' => $unlabelled(5)]),
+            new \Episciences_Rating_Criterion(['id' => 'item_1', 'type' => 'criterion', 'visibility' => 'editors', 'coefficient' => 1, 'options' => $unlabelled(10)]),
+            new \Episciences_Rating_Criterion(['id' => 'item_2', 'type' => 'criterion', 'visibility' => 'editors', 'options' => self::YES_NO_MAYBE]),
+        ]);
+
+        $form = Episciences_Rating_Manager::getRatingForm($report);
+
+        self::assertNotNull($form);
+        self::assertEquals(['item_0' => 3, 'item_1' => 1], json_decode($form->getAttrib('data-coefficients'), true));
+        self::assertSame('10', $form->getAttrib('data-max-score'));
+        self::assertSame(5, $form->getElement('note_item_0')->getAttrib('data-max-note'));
+        self::assertSame(10, $form->getElement('note_item_1')->getAttrib('data-max-note'));
+        self::assertSame(2, $form->getElement('note_item_2')->getAttrib('data-max-note'));
+        self::assertNull($form->getElement('note_item_0')->getAttrib('onchange'), 'no inline handler: bound by rating.js');
+        \Episciences_Auth::getInstance()->clearIdentity();
+    }
+
+    public function testGetRatingFormWithoutWeightedCriterionExposesAnEmptyMap(): void
+    {
+        $this->loginReviewer();
+        $report = new \Episciences_Rating_Report();
+        $report->setCriteria([
+            new \Episciences_Rating_Criterion(['id' => 'item_0', 'type' => 'criterion', 'visibility' => 'editors', 'options' => self::YES_NO_MAYBE]),
+        ]);
+
+        $form = Episciences_Rating_Manager::getRatingForm($report);
+
+        self::assertSame('{}', $form?->getAttrib('data-coefficients'));
+        \Episciences_Auth::getInstance()->clearIdentity();
+    }
 }
