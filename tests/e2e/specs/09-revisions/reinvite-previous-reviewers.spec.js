@@ -5,6 +5,7 @@ const {
     openPaperManagement,
     inviteKnownReviewer,
     submitInvitation,
+    chooseReviewReport,
 } = require('../../helpers/editorial-workflow');
 
 // A paper with a second arXiv version, not used by any other spec (parallel workers)
@@ -117,6 +118,11 @@ test.describe('Reviewers of the previous versions (#1387)', () => {
             await expect(adminPage.locator('#subject')).toHaveValue(
                 /new version of an article/
             );
+            // choosing the request type keeps the reassignment message
+            await chooseReviewReport(adminPage);
+            await expect(adminPage.locator('#subject')).toHaveValue(
+                /new version of an article/
+            );
             await submitInvitation(adminPage, newDocid);
 
             const email = await mailpit.waitForEmail({
@@ -128,14 +134,29 @@ test.describe('Reviewers of the previous versions (#1387)', () => {
             expect(email.HTML).not.toContain('automatically re-invited');
         });
 
-        await test.step('once invited again, they cannot be invited a second time', async () => {
+        await test.step('once invited again for a review report, they may only be asked another type (#319)', async () => {
             await openPaperManagement(adminPage, newDocid);
             await adminPage.locator(`#invite_reviewer_${newDocid}`).click();
             const row = table.locator('tbody tr', { hasText: REVIEWER_EMAIL });
-            await expect(row).toContainText('Already invited on this version');
+            const reinvite = row.getByRole('button', { name: /Invite .* again/ });
+            // the journal offers another type: the quick opinion, a default type (the form is in the page, hidden
+            // until a person is chosen)
             await expect(
-                row.getByRole('button', { name: /Invite .* again/ })
-            ).toHaveCount(0);
+                adminPage.locator(
+                    '#invitation-form select[name="request_type_id"] option',
+                    { hasText: 'Quick opinion' }
+                )
+            ).toHaveCount(1);
+
+            await expect(row).not.toContainText('Already invited on this version');
+            await reinvite.click();
+            await expect(adminPage.locator('#step-2')).toBeVisible();
+            await expect(
+                adminPage.locator(
+                    '#invitation-form select[name="request_type_id"] option',
+                    { hasText: 'Review report' }
+                )
+            ).toBeDisabled();
         });
     });
 });
