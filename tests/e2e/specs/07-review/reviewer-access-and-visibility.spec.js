@@ -9,6 +9,7 @@ const {
     createVolumeGrid,
     addQuantitativeCriterion,
     assignMasterVolume,
+    fillRatingComments,
 } = require('../../helpers/editorial-workflow');
 
 const REVIEWER_EMAIL = 'e2e_reviewer@example.org';
@@ -61,18 +62,7 @@ test.describe('Reviewer report visibility and access control', () => {
             await selects.nth(0).selectOption({ label: '4/5' });
             await selects.nth(1).selectOption({ label: '5/5' });
 
-            await reviewerPage.waitForFunction(() => {
-                const editors = window.tinymce?.get() ?? [];
-                return editors.length >= 2 && editors.every(editor => editor.initialized);
-            });
-            await reviewerPage.evaluate(
-                ([pub, conf]) => {
-                    const editors = window.tinymce.get();
-                    editors[0].setContent(`<p>${pub}</p>`);
-                    editors[1].setContent(`<p>${conf}</p>`);
-                },
-                [publicComment, confidentialComment]
-            );
+            await fillRatingComments(reviewerPage, [`<p>${publicComment}</p>`, `<p>${confidentialComment}</p>`]);
             await reviewerPage.locator('form#rating-grid input[type="file"]').setInputFiles(MINIMAL_PDF);
             await reviewerPage.locator('#validateRating').click();
             await expect(reviewerPage).toHaveURL(/paper\/ratings/);

@@ -89,7 +89,22 @@ async function submitHalPaper(page, { halId, version = 1, sectionTitle }) {
  */
 async function openPaperManagement(page, docid) {
     await page.goto(`administratepaper/view/id/${docid}`);
+    // Journal setting (isCoiEnabled, E2E_COI=1): the editorial team must declare the absence of
+    // conflict of interest before managing a paper. One answer covers every version of the paper.
+    if (/\/coi\/report/.test(page.url())) {
+        await declareNoConflict(page, docid);
+    }
     return page.locator('.panel:has(h2:has-text("Article status"))');
+}
+
+/**
+ * Answers "no conflict of interest" on the declaration page the editorial team is redirected to.
+ * @param {import('@playwright/test').Page} page editorial page showing /coi/report
+ * @param {number} docid
+ */
+async function declareNoConflict(page, docid) {
+    await page.locator('#coi-no').click();
+    await page.waitForURL(new RegExp(`administratepaper/view(/id/|\\?id=)${docid}`));
 }
 
 /**
@@ -196,6 +211,52 @@ async function inviteNewReviewer(page, docid, { email, lastname }) {
 }
 
 /**
+ * Opens the invitation link received by a reviewer and accepts the invitation.
+ * @param {import('./mailpit-client').MailpitClient} mailpit
+ * @param {import('@playwright/test').Page} reviewerPage page logged in as the invited reviewer
+ * @param {number} docid
+ * @param {string} reviewerEmail address the invitation was sent to
+ */
+async function acceptReviewInvitation(mailpit, reviewerPage, docid, reviewerEmail) {
+    const email = await mailpit.waitForEmail({
+        to: reviewerEmail,
+        subjectContains: [`#${docid} `, 'You are invited to review an article'],
+    });
+    const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
+    expect(invitationUrl).toBeTruthy();
+
+    // The link targets the configured application URL: only its path is kept
+    await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+    await reviewerPage.locator('#submitaccept').click();
+    await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
+}
+
+/**
+ * Fills the comment fields of the rating grid criteria (TinyMCE editors comment_item_<n>, initialised
+ * once the page has loaded). The page may hold other editors, such as the message to the author when
+ * the journal lets reviewers write to authors (reviewersCanCommentArticles): they are left untouched.
+ * @param {import('@playwright/test').Page} page reviewer or editorial page showing the rating form
+ * @param {string|string[]} contents HTML set in every criterion comment, or one HTML per criterion in
+ *   the order of the grid
+ */
+async function fillRatingComments(page, contents) {
+    const perCriterion = Array.isArray(contents) ? contents : null;
+    await page.waitForFunction(minCount => {
+        const editors = (window.tinymce?.get() ?? []).filter(editor => editor.id.startsWith('comment_item_'));
+        return editors.length >= minCount && editors.every(editor => editor.initialized);
+    }, perCriterion ? perCriterion.length : 1);
+    await page.evaluate(
+        ([single, many]) => {
+            window.tinymce
+                .get()
+                .filter(editor => editor.id.startsWith('comment_item_'))
+                .forEach((editor, index) => editor.setContent(many ? many[index] : single));
+        },
+        [perCriterion ? null : contents, perCriterion]
+    );
+}
+
+/**
  * Has the E2E reviewer review a paper: the journal requires a completed review before a paper can be
  * accepted, published or sent back for revision (requiredReviewers, set by app:e2e-seed).
  * The paper is first assigned to a volume with its own rating grid, so that the review form does not
@@ -236,14 +297,7 @@ async function completeReview({ adminPage, reviewerPage, mailpit }, docid, { vid
     const grade = reviewerPage.locator('form#rating-grid select[name^="note_item_"]');
     await expect(grade).toHaveCount(1);
     await grade.selectOption({ label: '4/5' });
-    // Comment fields are TinyMCE editors, initialised once the page has loaded
-    await reviewerPage.waitForFunction(() => {
-        const editors = window.tinymce?.get() ?? [];
-        return editors.length > 0 && editors.every(editor => editor.initialized);
-    });
-    await reviewerPage.evaluate(() => {
-        window.tinymce.get().forEach(editor => editor.setContent('<p>E2E review.</p>'));
-    });
+    await fillRatingComments(reviewerPage, '<p>E2E review.</p>');
     await reviewerPage.locator('#validateRating').click();
     await expect(reviewerPage).toHaveURL(/paper\/ratings/);
 }
@@ -323,6 +377,56 @@ async function createVolumeGrid(page, vid) {
 }
 
 /**
+ * Adds a criterion to a rating grid.
+ * @param {import('@playwright/test').Page} page editorial page
+ * @param {number} rgid volume id of the grid, 0 for the default grid
+ * @param {Object} criterion
+ * @param {string} criterion.title
+ * @param {string} criterion.description
+ * @param {'quantitative'|'qualitative'|'free'} [criterion.type='quantitative']
+ * @param {'public'|'contributor'|'editors'} [criterion.visibility='public']
+ * @param {'5'|'10'} [criterion.scale='5'] quantitative scale
+ * @param {number} [criterion.coef] quantitative coefficient (1 to 5), 1 by default
+ * @param {string[]} [criterion.options] custom values of a qualitative criterion, the standard
+ *   Yes/No/Maybe values otherwise
+ * @param {boolean} [criterion.comment=true] ask for a comment
+ * @param {boolean} [criterion.upload=false] allow attaching a file to this criterion
+ */
+async function addCriterion(
+    page,
+    rgid,
+    { title, description, type = 'quantitative', visibility = 'public', scale = '5', coef, options, comment = true, upload = false }
+) {
+    await page.goto(`grid/addcriterion?rgid=${rgid}`);
+    await page.locator('#critere').fill(title);
+    await page.locator('#description').fill(description);
+    await page.locator('#visibility').selectOption(visibility);
+    await page.locator('#evaluation_type').selectOption(type);
+
+    if (type === 'quantitative') {
+        await page.locator('#quantitative_rating_type').selectOption(scale === '10' ? '0' : '2');
+        if (coef) {
+            await page.locator('#coef').selectOption(String(coef));
+        }
+    }
+
+    if (type === 'qualitative') {
+        await page.locator('#qualitative_rating_type').selectOption(options ? '1' : '0');
+        for (const [index, label] of (options ?? []).entries()) {
+            if (index > 0) {
+                await page.locator('#add_option').click();
+            }
+            await page.locator(`#fieldset-options li:nth-child(${index + 1}) input[name^="option_"]:visible`).first().fill(label);
+        }
+    }
+
+    await page.locator('#comment').selectOption(comment ? '1' : '0');
+    await page.locator('#upload').selectOption(upload ? '1' : '0');
+    await page.locator('#submit').click();
+    await expect(page).toHaveURL(/grid\/list/);
+}
+
+/**
  * Adds a quantitative criterion (graded on a 0-5 scale, with a comment) to a rating grid.
  * @param {import('@playwright/test').Page} page editorial page
  * @param {number} rgid volume id of the grid, 0 for the default grid
@@ -333,16 +437,19 @@ async function createVolumeGrid(page, vid) {
  * @param {boolean} [criterion.upload=false] allow attaching a file to this criterion
  */
 async function addQuantitativeCriterion(page, rgid, { title, description, visibility = 'public', upload = false }) {
-    await page.goto(`grid/addcriterion?rgid=${rgid}`);
+    await addCriterion(page, rgid, { title, description, visibility, upload });
+}
+
+/**
+ * Adds a separator (a heading between criteria) to a rating grid.
+ * @param {import('@playwright/test').Page} page editorial page
+ * @param {number} rgid volume id of the grid
+ * @param {string} title
+ */
+async function addSeparator(page, rgid, title) {
+    await page.goto(`grid/addseparator?rgid=${rgid}&type=separator`);
     await page.locator('#critere').fill(title);
-    await page.locator('#description').fill(description);
-    await page.locator('#visibility').selectOption(visibility);
-    await page.locator('#evaluation_type').selectOption('quantitative');
-    await page.locator('#quantitative_rating_type').selectOption('2'); // 0-5 scale
-    await page.locator('#comment').selectOption('1');
-    if (upload) {
-        await page.locator('#upload').selectOption('1');
-    }
+    await page.locator('#visibility').selectOption('public');
     await page.locator('#submit').click();
     await expect(page).toHaveURL(/grid\/list/);
 }
@@ -353,15 +460,21 @@ module.exports = {
     submitArxivPaper,
     submitHalPaper,
     openPaperManagement,
+    declareNoConflict,
     statusPanel,
     applyDecision,
+    submitInvitation,
     assignEditor,
     inviteKnownReviewer,
     inviteNewReviewer,
+    acceptReviewInvitation,
+    fillRatingComments,
     completeReview,
     createSection,
     createVolume,
     assignMasterVolume,
     createVolumeGrid,
+    addCriterion,
     addQuantitativeCriterion,
+    addSeparator,
 };

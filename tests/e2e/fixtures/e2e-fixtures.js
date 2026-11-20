@@ -64,6 +64,8 @@ const test = workerSessions.extend({
 
     authorPage: rolePageFixture('author'),
     reviewerPage: rolePageFixture('reviewer'),
+    // Second reviewer
+    refereePage: rolePageFixture('referee'),
     editorPage: rolePageFixture('editor'),
     secretaryPage: rolePageFixture('secretary'),
     // Administrator and editor in chief

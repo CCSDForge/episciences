@@ -11,6 +11,7 @@ const {
     createVolumeGrid,
     addQuantitativeCriterion,
     assignMasterVolume,
+    fillRatingComments,
 } = require('../../helpers/editorial-workflow');
 
 const REVIEWER_EMAIL = 'e2e_reviewer@example.org';
@@ -197,13 +198,7 @@ test.describe('Reviewer management by the editorial team', () => {
             await expect(reviewerPage.locator('form#rating-grid')).toBeVisible();
 
             await reviewerPage.locator('form#rating-grid select[name^="note_item_"]').selectOption({ label: '5/5' });
-            await reviewerPage.waitForFunction(() => {
-                const editors = window.tinymce?.get() ?? [];
-                return editors.length > 0 && editors.every(editor => editor.initialized);
-            });
-            await reviewerPage.evaluate(() => {
-                window.tinymce.get().forEach(editor => editor.setContent('<p>E2E round 2 review: ready to accept.</p>'));
-            });
+            await fillRatingComments(reviewerPage, '<p>E2E round 2 review: ready to accept.</p>');
             await reviewerPage.locator('#validateRating').click();
 
             await expect(reviewerPage).toHaveURL(/paper\/ratings/);

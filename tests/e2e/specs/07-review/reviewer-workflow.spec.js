@@ -8,6 +8,7 @@ const {
     assignMasterVolume,
     createVolumeGrid,
     addQuantitativeCriterion,
+    fillRatingComments,
 } = require('../../helpers/editorial-workflow');
 
 const ARXIV_ID = '1512.03385';
@@ -70,10 +71,7 @@ test.describe('Reviewer invitation and review', () => {
         await test.step('the reviewer submits the review', async () => {
             const form = reviewerPage.locator('form#rating-grid');
             await form.locator('select[name^="note_item_"]').selectOption({ label: '4/5' });
-            // Comment fields are TinyMCE editors
-            await reviewerPage.evaluate(() => {
-                window.tinymce.get().forEach(editor => editor.setContent('<p>E2E review: sound and original.</p>'));
-            });
+            await fillRatingComments(reviewerPage, '<p>E2E review: sound and original.</p>');
             await reviewerPage.locator('#validateRating').click();
 
             await expect(reviewerPage).toHaveURL(/paper\/ratings/);
