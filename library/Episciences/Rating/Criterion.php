@@ -20,6 +20,19 @@ class Episciences_Rating_Criterion
     const EVALUATION_TYPE_QUANTITATIVE_CUSTOM = 'quantitative_custom';
     const EVALUATION_TYPE_QUALITATIVE_CUSTOM = 'qualitative_custom';
 
+    // criterion subtypes saved in the grid XML file (the "qualitative" subtype is the standard Yes / No / Maybe rating)
+    const SUBTYPE_QUANTITATIVE_10 = 'quantitative_10';
+    const SUBTYPE_QUANTITATIVE_5 = 'quantitative_5';
+
+    /**
+     * options of the standard qualitative rating
+     */
+    const STANDARD_QUALITATIVE_OPTIONS = [
+        ['value' => 0, 'label' => ['fr' => 'Oui', 'en' => 'Yes']],
+        ['value' => 1, 'label' => ['fr' => 'Non', 'en' => 'No']],
+        ['value' => 2, 'label' => ['fr' => 'Peut-être', 'en' => 'Maybe']],
+    ];
+
     private $_id;
     private $_labels = [];
     private $_descriptions = [];
@@ -247,6 +260,38 @@ class Episciences_Rating_Criterion
     }
 
     /**
+     * Return true if the criterion uses the standard qualitative rating (Yes / No / Maybe).
+     * Grids saved without a subtype are recognized by their three standard option labels.
+     */
+    public function isStandardQualitative(): bool
+    {
+        $subType = $this->getSubType();
+
+        if ($subType !== '') {
+            return $subType === self::EVALUATION_TYPE_QUALITATIVE;
+        }
+
+        $options = $this->getOptions();
+
+        if (!is_array($options) || count($options) !== count(self::STANDARD_QUALITATIVE_OPTIONS)) {
+            return false;
+        }
+
+        foreach (array_values($options) as $i => $option) {
+            $label = is_array($option['label'] ?? null) ? $option['label'] : [];
+            ksort($label);
+            $standardLabel = self::STANDARD_QUALITATIVE_OPTIONS[$i]['label'];
+            ksort($standardLabel);
+
+            if ($label !== $standardLabel) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * return true if criterion is empty (no value of any kind), false otherwise
      * @return bool
      */
@@ -455,11 +500,11 @@ class Episciences_Rating_Criterion
     }
 
     /**
-     * @param string $subType
+     * @param string|null $subType
      */
-    public function setSubType(string $subType)
+    public function setSubType(?string $subType): void
     {
-        $this->_subType = $subType;
+        $this->_subType = (string)$subType;
     }
 
 
