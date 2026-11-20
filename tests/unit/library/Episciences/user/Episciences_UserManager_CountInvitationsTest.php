@@ -40,12 +40,13 @@ final class Episciences_UserManager_CountInvitationsTest extends TestCase
     /**
      * @param string[] $statuses the rows of the invitation: the first one, then its answers or cancellations
      */
-    private function insertInvitation(int $rvid, array $statuses): void
+    private function insertInvitation(int $rvid, array $statuses, int $tmpUser = 0): void
     {
         $this->db->insert(T_ASSIGNMENTS, [
             'RVID' => $rvid,
             'ITEMID' => 1,
             'ITEM' => 'paper',
+            'TMP_USER' => $tmpUser,
             'UID' => self::UID,
             'ROLEID' => 'reviewer',
             'STATUS' => 'pending',
@@ -72,6 +73,14 @@ final class Episciences_UserManager_CountInvitationsTest extends TestCase
         $this->insertInvitation(RVID + 1, ['pending', 'declined']);
 
         $this->assertSame(3, (int)Episciences_UserManager::countInvitations(self::UID)['stats_invitations_nbr']);
+    }
+
+    public function testAPersonInvitedWithoutAnAccountWithTheSameIdIsNotCounted(): void
+    {
+        $this->insertInvitation(RVID, ['pending']);
+        $this->insertInvitation(RVID, ['pending', 'declined'], 1);
+
+        $this->assertSame(1, (int)Episciences_UserManager::countInvitations(self::UID)['stats_invitations_nbr']);
     }
 
     public function testNoInvitation(): void

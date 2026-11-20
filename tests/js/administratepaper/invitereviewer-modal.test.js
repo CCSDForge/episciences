@@ -1003,6 +1003,23 @@ describe('invitereviewer-modal.js: what the reviewer is already asked in the jou
             expect(alert.textContent).toContain('2026-11-10');
         });
 
+        test('an account with no request yet is also looked for by its address', async () => {
+            const alert = document.getElementById('reviewer-workload-alert');
+
+            await moduleUnderTest.showReviewerWorkload({ id: 404, email: 'jane.doe@example.org' });
+
+            expect(alert.hidden).toBe(false);
+            expect(alert.textContent).toContain('Invitations en attente : 1');
+        });
+
+        test('an account with requests is found by its UID, not by its address', async () => {
+            const alert = document.getElementById('reviewer-workload-alert');
+
+            await moduleUnderTest.showReviewerWorkload({ id: 7, email: 'jane.doe@example.org' });
+
+            expect(alert.textContent).toContain('Relectures en cours : 1');
+        });
+
         test('an unknown address shows nothing', async () => {
             const alert = document.getElementById('reviewer-workload-alert');
 

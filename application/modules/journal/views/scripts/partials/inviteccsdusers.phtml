@@ -59,8 +59,7 @@ $message = '';
             <th><?= $this->translate('Identifiant') ?></th>
             <th><?= $this->translate('Courriel') ?></th>
             <th><?= $this->translate('Langue') ?></th>
-            <th><?= $this->translate('Invitation(s)') ?></th>
-            <th><?= $this->translate('Relecture(s)') ?></th>
+            <th><?= $this->escape($this->translate('Sollicitations dans la revue')) ?></th>
             <th>
                 <span class="glyphicon glyphicon-info-sign"
                       data-toggle="tooltip"
@@ -91,13 +90,13 @@ $message = '';
                         data-placement="top"
                         title="<?= $this->translate('Inviter ce relecteur') . '...' ?>"
                 >
-                    <td><?= $user->getFirstname() ?></td>
-                    <td><?= $user->getLastname() ?></td>
-                    <td><?= $user->getUsername() ?></td>
-                    <td><?= $user->getEmail() ?></td>
-                    <td><?= ucfirst(Zend_Locale::getTranslation($user->getLangueid(), 'language', Episciences_Tools::getLocale())) ?></td>
-                    <td class="text-center"><?= $this->users_stat[$user->getUid()]['invitations_nbr'] ?></td>
-                    <td class="text-center"><?= $this->users_stat[$user->getUid()]['reviewing_complete_nbr'] ?></td>
+                    <td><?= $this->escape($user->getFirstname()) ?></td>
+                    <td><?= $this->escape($user->getLastname()) ?></td>
+                    <td><?= $this->escape($user->getUsername()) ?></td>
+                    <td><?= $this->escape($user->getEmail()) ?></td>
+                    <td><?= $this->escape(ucfirst((string)Zend_Locale::getTranslation($user->getLangueid(), 'language', Episciences_Tools::getLocale()))) ?></td>
+                    <?php $workload = ($this->workloads ?? [])[(int)$user->getUid()] ?? null; ?>
+                    <td data-order="<?= $this->escape((string)($workload['last_invitation_date'] ?? '')) ?>"><?= $this->partial('partials/reviewer_workload.phtml', ['workload' => $workload]) ?></td>
                     <td>
                         <?php if ($this->users_stat[$user->getUid()]['is_epi_user']): ?>
                             <span class="glyphicon glyphicon-ok-sign text-success"></span>

@@ -1125,6 +1125,29 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * How much each reviewer of the journal is already asked (git #320), as shown on the invitation page: by UID, and
+     * by hash of the address of the people invited without an account. The papers are only named to who may manage
+     * them; the others are only counted.
+     *
+     * @return array{array<int, array<string, mixed>>, array<string, array<string, mixed>>}
+     */
+    private function presentedWorkloads(int $docId, Episciences_Review $review): array
+    {
+        [$workloads, $workloadsByEmailHash] = Workload::splitByAccount(Workload::ofJournal(RVID, $docId));
+        $locale = Episciences_Tools::getLocale();
+        $presenter = new WorkloadPresenter(
+            $this->manageablePapers(Workload::paperDocIds($workloads + $workloadsByEmailHash), $review),
+            fn(string $date): string => (string)$this->view->Date($date, $locale)
+        );
+        $present = static fn(array $byKey): array => array_map(
+            [$presenter, 'present'],
+            array_filter($byKey, static fn(Workload $workload): bool => !$workload->isEmpty())
+        );
+
+        return [$present($workloads), $present($workloadsByEmailHash)];
+    }
+
+    /**
      * The papers among these that the logged user may manage (same rule as the paper management page)
      *
      * @param list<int> $docIds
@@ -1411,22 +1434,11 @@ class AdministratepaperController extends PaperDefaultController
             }
 
             // how much each reviewer of the journal is already asked (git #320)
-            [$workloads, $workloadsByEmailHash] = Workload::splitByAccount(Workload::ofJournal(RVID, (int)$docId));
-            $locale = Episciences_Tools::getLocale();
-            // the papers are only shown to who may manage them; the others are only counted
-            $presenter = new WorkloadPresenter(
-                $this->manageablePapers(Workload::paperDocIds($workloads + $workloadsByEmailHash), $oReview),
-                fn(string $date): string => (string)$this->view->Date($date, $locale)
-            );
-            $present = static fn(array $byKey): array => array_map(
-                [$presenter, 'present'],
-                array_filter($byKey, static fn(Workload $workload): bool => !$workload->isEmpty())
-            );
-            $presentedWorkloads = $present($workloads);
+            [$presentedWorkloads, $presentedWorkloadsByEmailHash] = $this->presentedWorkloads((int)$docId, $oReview);
             $this->view->reviewerWorkloads = $presentedWorkloads;
             $this->view->js_reviewer_workloads = Zend_Json::encode((object)$presentedWorkloads);
             // people invited without an account: matched by the address typed for a new reviewer
-            $this->view->js_reviewer_workloads_by_email = Zend_Json::encode((object)$present($workloadsByEmailHash));
+            $this->view->js_reviewer_workloads_by_email = Zend_Json::encode((object)$presentedWorkloadsByEmailHash);
 
             // Tous les relecteurs (utilisateurs temp. compris)
             foreach ($allReviewers as $uid => $reviewer) {
@@ -4294,7 +4306,6 @@ class AdministratepaperController extends PaperDefaultController
      */
     public function displayccsdusersAction(): void
     {
-        $span = '<span class="glyphicon glyphicon-minus"></span>';
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $users = [];
@@ -4352,14 +4363,9 @@ class AdministratepaperController extends PaperDefaultController
                     if (array_key_exists($uid, $local_users)) {
                         $users_stats[$uid]['is_epi_user'] = true;
                         $user->find($uid);
-                        $users_stats[$uid]['invitations_nbr'] = Episciences_UserManager::countInvitations($uid)['stats_invitations_nbr'];
-                        $users_stats[$uid]['reviewing_complete_nbr'] = Episciences_UserManager::countRatings($uid)['stats_ratings_nbr'];
-
                     } else {
                         $users_stats[$uid]['is_epi_user'] = false;
                         $user->setLangueid($user_lang);
-                        $users_stats[$uid]['invitations_nbr'] = $span;
-                        $users_stats[$uid]['reviewing_complete_nbr'] = $span;
                     }
 
                     $users[$uid] = $user;
@@ -4400,8 +4406,17 @@ class AdministratepaperController extends PaperDefaultController
 
             }
 
+            // what each of them is already asked in the journal (git #320), as in the known reviewers table
+            $workloads = [];
+            if (!empty($users) && $paper) {
+                $review = Episciences_ReviewsManager::find(RVID);
+                $review->loadSettings();
+                [$workloads] = $this->presentedWorkloads((int)$paper->getDocid(), $review);
+            }
+
             echo $this->view->partial('partials/inviteccsdusers.phtml', [
-                'users' => $users, 'users_stat' => $users_stats, 'is_search_with_mail' => $isSearchWithMail, 'trace' => $trace
+                'users' => $users, 'users_stat' => $users_stats, 'is_search_with_mail' => $isSearchWithMail, 'trace' => $trace,
+                'workloads' => $workloads,
             ]);
 
         }

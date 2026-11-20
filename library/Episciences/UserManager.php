@@ -39,6 +39,8 @@ class Episciences_UserManager
             ->from(['ua' => T_ASSIGNMENTS], ['stats_invitations_nbr' => new Zend_Db_Expr('COUNT(DISTINCT ui.AID)')])
             ->join(['ui' => T_USER_INVITATIONS], 'ua.ID = ui.AID', [])
             ->where('ua.UID = ?', $uid)
+            // the people invited without an account have ids of their own, which may be the UID of an account
+            ->where('ua.TMP_USER = 0')
             ->where('ua.RVID = ?', RVID);
         return $db?->fetchRow($select);
     }

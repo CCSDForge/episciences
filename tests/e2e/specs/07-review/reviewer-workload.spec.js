@@ -142,6 +142,27 @@ test.describe('Requests already made to a reviewer in the journal (#320)', () =>
             await expect(alert).toContainText('Pending invitations:');
         });
 
+        await test.step('the address of an account: the accounts found show their requests too', async () => {
+            await openNewReviewerPanel();
+            await adminPage.locator('#email').fill('e2e_reviewer@example.org');
+            // the address is looked up when the field changes
+            await adminPage.locator('#lastname').click();
+
+            const accounts = adminPage.locator('#ccsd_user_invitation');
+            await expect(accounts.locator('thead')).toContainText(
+                'Requests in the journal'
+            );
+            await expect(accounts).not.toContainText('Invitation(s)');
+            const account = accounts.locator('tbody tr', {
+                hasText: 'e2e_reviewer',
+            });
+            await expect(account).toContainText('Pending invitations:');
+
+            await account.locator('td').first().click();
+            await expect(adminPage.locator('#step-2')).toBeVisible();
+            await expect(alert).toContainText('Pending invitations:');
+        });
+
         await test.step('the address of a person invited before without an account', async () => {
             await openNewReviewerPanel();
             await adminPage

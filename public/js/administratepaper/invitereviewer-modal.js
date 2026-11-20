@@ -1087,7 +1087,7 @@ async function emailHash(email) {
 
 /**
  * Shows above the invitation message what the chosen person is already asked in the journal (git #320): a reviewer
- * with an account is found by UID, a person invited without one by e-mail address
+ * with an account is found by UID, else by e-mail address among the people invited without an account
  * @param {object} user the invited person (id: UID, when they have an account; email)
  * @returns {Promise<void>} settled once the alert is up to date
  */
@@ -1109,16 +1109,19 @@ function showReviewerWorkload(user) {
         reviewer_workloads_by_email
             ? reviewer_workloads_by_email
             : {};
-    const email = user && !user.id && user.email ? String(user.email) : '';
+    const uid = user && user.id ? String(user.id) : '';
+    const email = user && user.email ? String(user.email) : '';
 
     // the latest choice wins over an answer still being computed for a previous one
-    alert.dataset.for = user && user.id ? 'uid:' + user.id : 'email:' + email;
+    alert.dataset.for = 'uid:' + uid + '|email:' + email;
 
-    if (user && user.id) {
-        render(byUid[user.id]);
+    if (uid !== '' && byUid[uid]) {
+        render(byUid[uid]);
         return Promise.resolve();
     }
 
+    // without an account, or an account with no request yet: the person may have been invited with this address
+    // before, without an account
     render(null);
 
     if (
