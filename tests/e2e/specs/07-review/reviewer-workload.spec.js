@@ -78,6 +78,9 @@ test.describe('Requests already made to a reviewer in the journal (#320)', () =>
 
             await row.click();
             await expect(adminPage.locator('#step-2')).toBeVisible();
+            await expect(adminPage.locator('#step-2 .panel-title')).toHaveText(
+                'Invite this reviewer'
+            );
             await expect(alert).toBeVisible();
             await expect(alert).toHaveAttribute('role', 'status');
             await expect(alert).toContainText(

@@ -57,7 +57,7 @@ $(document).ready(function () {
     } else {
         let reviewer = allJsReviewers[uid];
         reviewer.id = uid;
-        $('#step-2 .panel-title').html(translate('Réinviter ce relecteur'));
+        $('#step-2 .panel-title').text(translate('Réinviter ce relecteur'));
         setInvitationValues(reviewer, reviewer.type);
         step2();
     }
@@ -259,7 +259,7 @@ function submit() {
 }
 
 function resetStep1() {
-    $('#step-2 .panel-title').html(translate('Inviter ce relecteur'));
+    $('#step-2 .panel-title').text(translate('Inviter ce relecteur'));
     clearErrors();
     clicks = 0;
 

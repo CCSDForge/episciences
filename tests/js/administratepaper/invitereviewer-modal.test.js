@@ -1050,3 +1050,28 @@ describe('invitereviewer-modal.js: what the reviewer is already asked in the jou
         expect(alert.textContent).toContain('2025-01-05');
     });
 });
+
+describe('invitereviewer-modal.js: title of the invitation step', () => {
+    let moduleUnderTest;
+
+    beforeEach(() => {
+        jest.resetModules();
+        prepareDOM();
+        document.body.insertAdjacentHTML('beforeend', '<div id="step-2"><h2 class="panel-title">Inviter ce relecteur</h2></div>');
+        global.translate.mockImplementation((s) => ({ 'Inviter ce relecteur': 'Invite this reviewer' })[s] ?? s);
+        moduleUnderTest = require('../../../public/js/administratepaper/invitereviewer-modal');
+    });
+
+    afterEach(() => {
+        global.translate.mockImplementation((s) => s);
+    });
+
+    test('going back to the reviewer selection writes the translated title, as text', () => {
+        moduleUnderTest.resetStep1();
+
+        const title = document.querySelector('#step-2 .panel-title');
+        expect(global.translate).toHaveBeenCalledWith('Inviter ce relecteur');
+        expect(title.textContent).toBe('Invite this reviewer');
+        expect(title.children).toHaveLength(0);
+    });
+});
