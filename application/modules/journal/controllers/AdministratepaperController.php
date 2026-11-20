@@ -21,6 +21,7 @@ use Episciences\Reviewer\NextVersionRequestType;
 use Episciences\Paper\RevisionRequests;
 use Episciences\Reviewer\InvitationEligibility;
 use Episciences\Reviewer\PreviousVersionReviewers;
+use Episciences\Reviewer\ReviewerSearch;
 use Episciences\Reviewer\Workload;
 use Episciences\Reviewer\WorkloadPresenter;
 use Episciences\Paper\RepositoryVersionsService;
@@ -33,6 +34,9 @@ class AdministratepaperController extends PaperDefaultController
 {
     /** Key of the reassignment template among the templates of the invitation form (git #1387) */
     public const REINVITATION_TEMPLATE = 'reinvitation';
+
+    /** Reviewers of the journal per page of the browsable list (git #900) */
+    public const REVIEWERS_PER_PAGE = 25;
 
     use Episciences_Paper_AuthorEditorCommunicationControllerTrait;
     use Episciences_Paper_AccessControlControllerTrait;
@@ -1204,6 +1208,17 @@ class AdministratepaperController extends PaperDefaultController
     private function presentedWorkloads(int $docId, Episciences_Review $review): array
     {
         [$workloads, $workloadsByEmailHash] = Workload::splitByAccount(Workload::ofJournal(RVID, $docId));
+
+        return $this->presentWorkloads($workloads, $workloadsByEmailHash, $review);
+    }
+
+    /**
+     * @param array<int, Workload> $workloads by UID
+     * @param array<string, Workload> $workloadsByEmailHash
+     * @return array{array<int, array<string, mixed>>, array<string, array<string, mixed>>}
+     */
+    private function presentWorkloads(array $workloads, array $workloadsByEmailHash, Episciences_Review $review): array
+    {
         $locale = Episciences_Tools::getLocale();
         $presenter = new WorkloadPresenter(
             $this->manageablePapers(Workload::paperDocIds($workloads + $workloadsByEmailHash), $review),
@@ -4396,6 +4411,113 @@ class AdministratepaperController extends PaperDefaultController
      * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
+    /**
+     * Search of the people an editor may invite on a paper (git #900), as JSON: the reviewers of the journal, the other
+     * Episciences accounts and the people the journal invited without an account (`term`), or the reviewers of the
+     * journal page by page (`browse=1`, `page`, `order`). Each person comes with the reason why they may not be invited,
+     * if any, their requests in the journal (git #320) and what the invitation form needs. Read only; refused to whoever
+     * may not manage the paper.
+     */
+    public function searchreviewersAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $response = $this->getResponse();
+        $response->setHeader('Content-Type', 'application/json', true);
+
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+        $paper = $request->isXmlHttpRequest() && Episciences_Auth::isLogged() && Episciences_Auth::isAllowedToManagePaper()
+            ? Episciences_PapersManager::get((int)$request->getQuery('docid'), false)
+            : false;
+
+        if (!$paper instanceof Episciences_Paper || $this->findManagementRefusal($review, $paper) !== null) {
+            $response->setHttpResponseCode(403);
+            echo '[]';
+            return;
+        }
+
+        echo Zend_Json::encode($this->reviewerSearchResult($paper, $review, $request));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function reviewerSearchResult(Episciences_Paper $paper, Episciences_Review $review, Zend_Controller_Request_Http $request): array
+    {
+        [$workloads, $workloadsByEmailHash] = Workload::splitByAccount(Workload::ofJournal(RVID, (int)$paper->getDocid()));
+        [$presented, $presentedByEmailHash] = $this->presentWorkloads($workloads, $workloadsByEmailHash, $review);
+        $eligibility = InvitationEligibility::forVersion(
+            $paper,
+            (int)Episciences_Auth::getUid(),
+            array_map('intval', array_keys($this->usersWithReportedCoiProcessing($paper)))
+        );
+        $row = fn(array $person): array => self::invitationCandidate($person, $eligibility, $presented, $presentedByEmailHash);
+        $search = new ReviewerSearch();
+
+        if ($request->getQuery('browse')) {
+            $order = (string)$request->getQuery('order', ReviewerSearch::ORDER_NAME);
+            $order = in_array($order, [ReviewerSearch::ORDER_NAME, ReviewerSearch::ORDER_LAST_INVITATION, ReviewerSearch::ORDER_LEAST_REQUESTED], true)
+                ? $order
+                : ReviewerSearch::ORDER_NAME;
+            $page = max(1, (int)$request->getQuery('page', 1));
+            $result = $search->browse(RVID, $workloads, $order, $page, self::REVIEWERS_PER_PAGE);
+
+            return [
+                'people' => array_map($row, $result['people']),
+                'total' => $result['total'],
+                'page' => $page,
+                'per_page' => self::REVIEWERS_PER_PAGE,
+                'order' => $order,
+            ];
+        }
+
+        $term = mb_substr((string)$request->getQuery('term', ''), 0, 200);
+
+        return ['groups' => array_map(static fn(array $people): array => array_map($row, $people), $search->search($term, RVID))];
+    }
+
+    /**
+     * A person found by ReviewerSearch, with what the invitation page needs
+     *
+     * @param array<string, mixed> $person
+     * @param array<int, array<string, mixed>> $presented requests in the journal by UID
+     * @param array<string, array<string, mixed>> $presentedByEmailHash requests of the people without an account
+     * @return array<string, mixed>
+     */
+    private static function invitationCandidate(array $person, InvitationEligibility $eligibility, array $presented, array $presentedByEmailHash): array
+    {
+        $uid = $person['uid'];
+        $fullName = trim($person['firstname'] . ' ' . $person['lastname']);
+        $invitationType = match ($person['group']) {
+            ReviewerSearch::GROUP_JOURNAL => 1,
+            ReviewerSearch::GROUP_ACCOUNTS => 2,
+            default => 3,
+        };
+
+        return $person + [
+            'full_name' => $fullName,
+            'refusal' => $eligibility->refusalFor($uid, $person['email']),
+            'workload' => $uid !== null
+                ? ($presented[$uid] ?? null)
+                : ($presentedByEmailHash[hash('sha256', mb_strtolower(trim($person['email'])))] ?? null),
+            // what setInvitationValues() of the invitation page needs: invitation_type is the account state
+            'user' => [
+                'id' => $uid,
+                'email' => $person['email'],
+                'full_name' => $fullName,
+                'firstname' => $person['firstname'],
+                'lastname' => $person['lastname'],
+                'screen_name' => $person['screen_name'] !== '' ? $person['screen_name'] : $fullName,
+                'user_name' => $person['username'],
+                'locale' => $person['locale'] !== '' ? $person['locale'] : Episciences_Review::DEFAULT_LANG,
+                'invitation_type' => $invitationType,
+            ],
+        ];
+    }
+
     public function displayccsdusersAction(): void
     {
         $this->_helper->layout()->disableLayout();
