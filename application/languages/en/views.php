@@ -3038,4 +3038,17 @@ return array(
     "Réinviter %s" => "Invite %s again",
     "Réinviter" => "Invite again",
     "Profil" => "Profile",
+    // Invitation page in one step (git #900)
+    "Rechercher une personne : nom, prénom ou adresse e-mail" => "Search for a person: last name, first name or e-mail address",
+    "Les relecteurs de la revue, les autres comptes Episciences, et les personnes déjà invitées sans compte (par leur adresse)." => "The reviewers of the journal, the other Episciences accounts, and the people already invited without an account (by their address).",
+    "Parcourir les relecteurs de la revue" => "Browse the reviewers of the journal",
+    "Trier par" => "Sort by",
+    "Les moins sollicités d'abord" => "Least requested first",
+    "Dernière invitation" => "Latest invitation",
+    "Pages des relecteurs de la revue" => "Pages of the reviewers of the journal",
+    "Précédent" => "Previous",
+    "Suivant" => "Next",
+    "Inviter une nouvelle personne" => "Invite a new person",
+    "Une personne qui n'a pas de compte : elle pourra en créer un, ou répondre sans compte si le type de demande le permet." => "A person without an account: they will be able to create one, or to answer without an account if the request type allows it.",
+    "Inviter cette personne" => "Invite this person",
 );

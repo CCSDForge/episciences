@@ -1,0 +1,95 @@
+<?php
+/**
+ * Invitation page, step 1 (git #900): one search for the person to invite, the reviewers of the journal page by page,
+ * and the invitation of a new person. Filled by public/js/administratepaper/reviewer-search.js from
+ * administratepaper/searchreviewers.
+ *
+ * @var Zend_View $this
+ * @var Episciences_Paper $this->paper
+ */
+
+$languages = Episciences_Tools::getLanguages();
+$locale = Episciences_Tools::getLocale();
+?>
+<div id="reviewer-search" class="panel panel-default" data-docid="<?= (int)$this->paper->getDocid() ?>">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->escape($this->translate('Inviter un relecteur')) ?></h2>
+    </div>
+    <div class="panel-body">
+        <form id="reviewer-search-form" role="search" novalidate>
+            <div class="form-group">
+                <label for="reviewer-search-term"><?= $this->escape($this->translate('Rechercher une personne : nom, prénom ou adresse e-mail')) ?></label>
+                <input type="search" id="reviewer-search-term" class="form-control" autocomplete="off"
+                       aria-describedby="reviewer-search-help" maxlength="200">
+                <p id="reviewer-search-help" class="help-block">
+                    <?= $this->escape($this->translate("Les relecteurs de la revue, les autres comptes Episciences, et les personnes déjà invitées sans compte (par leur adresse).")) ?>
+                </p>
+            </div>
+        </form>
+
+        <p id="reviewer-search-status" class="text-muted" role="status" aria-live="polite"></p>
+        <div id="reviewer-search-results"></div>
+
+        <details id="reviewer-browse">
+            <summary><?= $this->escape($this->translate('Parcourir les relecteurs de la revue')) ?></summary>
+            <div class="form-inline" style="margin: 10px 0">
+                <label for="reviewer-browse-order"><?= $this->escape($this->translate('Trier par')) ?></label>
+                <select id="reviewer-browse-order" class="form-control input-sm">
+                    <option value="name"><?= $this->escape($this->translate('Nom')) ?></option>
+                    <option value="least_requested"><?= $this->escape($this->translate('Les moins sollicités d\'abord')) ?></option>
+                    <option value="last_invitation"><?= $this->escape($this->translate('Dernière invitation')) ?></option>
+                </select>
+            </div>
+            <p id="reviewer-browse-status" class="text-muted" role="status" aria-live="polite"></p>
+            <div id="reviewer-browse-results"></div>
+            <nav id="reviewer-browse-pages" aria-label="<?= $this->escape($this->translate('Pages des relecteurs de la revue')) ?>" hidden>
+                <button type="button" id="reviewer-browse-previous" class="btn btn-default btn-sm"><?= $this->escape($this->translate('Précédent')) ?></button>
+                <span id="reviewer-browse-page"></span>
+                <button type="button" id="reviewer-browse-next" class="btn btn-default btn-sm"><?= $this->escape($this->translate('Suivant')) ?></button>
+            </nav>
+        </details>
+
+        <hr>
+        <button type="button" id="new-person-toggle" class="btn btn-default" aria-expanded="false" aria-controls="new-person">
+            <?= $this->escape($this->translate('Inviter une nouvelle personne')) ?>&hellip;
+        </button>
+        <form id="new-person" class="form-horizontal" hidden novalidate style="margin-top: 15px">
+            <p class="text-muted"><?= $this->escape($this->translate("Une personne qui n'a pas de compte : elle pourra en créer un, ou répondre sans compte si le type de demande le permet.")) ?></p>
+            <div class="form-group">
+                <label for="new-person-email" class="col-md-3 control-label"><?= $this->escape($this->translate('Adresse e-mail')) ?> *</label>
+                <div class="col-md-6">
+                    <input type="email" id="new-person-email" class="form-control" required autocomplete="off" aria-describedby="new-person-errors">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="new-person-firstname" class="col-md-3 control-label"><?= $this->escape($this->translate('Prénom')) ?></label>
+                <div class="col-md-6">
+                    <input type="text" id="new-person-firstname" class="form-control" autocomplete="off" maxlength="100">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="new-person-lastname" class="col-md-3 control-label"><?= $this->escape($this->translate('Nom')) ?> *</label>
+                <div class="col-md-6">
+                    <input type="text" id="new-person-lastname" class="form-control" required autocomplete="off" maxlength="100" aria-describedby="new-person-errors">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="new-person-locale" class="col-md-3 control-label"><?= $this->escape($this->translate('Langue')) ?></label>
+                <div class="col-md-6">
+                    <select id="new-person-locale" class="form-control">
+                        <?php foreach ($languages as $code => $label) : ?>
+                            <option value="<?= $this->escape((string)$code) ?>"<?= $code === $locale ? ' selected' : '' ?>><?= $this->escape((string)$label) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+            <div id="new-person-errors" class="col-md-offset-3 text-danger" role="alert"></div>
+            <div id="new-person-existing"></div>
+            <div class="form-group">
+                <div class="col-md-offset-3 col-md-6">
+                    <button type="submit" id="new-person-submit" class="btn btn-primary"><?= $this->escape($this->translate('Inviter cette personne')) ?>&hellip;</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

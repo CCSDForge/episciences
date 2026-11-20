@@ -208,9 +208,9 @@ async function inviteKnownReviewer(page, docid, username) {
     await page.locator(`#invite_reviewer_${docid}`).click();
     await expect(page).toHaveURL(/administratepaper\/invitereviewer/);
 
-    // The table is paged: a journal with many reviewers may not list this one on the first page
-    await page.locator('#known-reviewers_filter input').fill(username);
-    await page.locator('#known-reviewers tbody tr', { hasText: username }).click();
+    // One search for the person to invite (git #900)
+    await page.locator('#reviewer-search-term').fill(username);
+    await page.locator('#reviewer-search-results tbody tr', { hasText: username }).locator('button').click();
     await submitInvitation(page, docid);
 }
 
@@ -219,20 +219,20 @@ async function inviteKnownReviewer(page, docid, username) {
  * @param {import('@playwright/test').Page} page editorial page
  * @param {number} docid
  * @param {Object} reviewer
- * @param {string} reviewer.email no account may use it
- * @param {string} reviewer.lastname no account may have it either, or the homonyms are listed instead
- *   (the form has no first name field: Episciences_PapersManager::getTmpReviewerForm())
+ * @param {string} reviewer.email no account may use it: an account using it is offered instead
+ * @param {string} reviewer.lastname
  */
 async function inviteNewReviewer(page, docid, { email, lastname }) {
     await openPaperManagement(page, docid);
     await page.locator(`#invite_reviewer_${docid}`).click();
     await expect(page).toHaveURL(/administratepaper\/invitereviewer/);
 
-    await page.locator('#new_user_button').click();
-    // Typing the address looks for the accounts using it: the button waits for the answer
-    await page.locator('#email').fill(email);
-    await page.locator('#lastname').fill(lastname);
-    await page.locator('#next').click();
+    // The address is checked against the accounts before the message is shown (git #900)
+    await page.locator('#new-person-toggle').click();
+    await page.locator('#new-person-email').fill(email);
+    await page.locator('#new-person-lastname').fill(lastname);
+    await page.locator('#new-person-submit').click();
+    await expect(page.locator('#step-2')).toBeVisible();
     await submitInvitation(page, docid);
 }
 

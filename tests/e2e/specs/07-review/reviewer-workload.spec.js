@@ -12,9 +12,32 @@ const SECOND_ARXIV_ID = '1412.3555';
 const THIRD_ARXIV_ID = '1312.4400';
 const FOURTH_ARXIV_ID = '1505.00387';
 const REVIEWER_USERNAME = 'e2e_reviewer';
+const REVIEWER_EMAIL = 'e2e_reviewer@example.org';
 
-test.describe('Requests already made to a reviewer in the journal (#320)', () => {
-    test('inviting a reviewer shows the invitations they already have in the journal', async ({
+/**
+ * Opens the invitation page of a paper.
+ * @param {import('@playwright/test').Page} page
+ * @param {number} docid
+ */
+async function openInvitationPage(page, docid) {
+    await openPaperManagement(page, docid);
+    await page.locator(`#invite_reviewer_${docid}`).click();
+    await expect(page).toHaveURL(/administratepaper\/invitereviewer/);
+}
+
+/**
+ * Searches a person on the invitation page; returns the results.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} term
+ */
+async function search(page, term) {
+    await page.locator('#reviewer-search-term').fill(term);
+    await expect(page.locator('#reviewer-search-status')).not.toBeEmpty();
+    return page.locator('#reviewer-search-results');
+}
+
+test.describe('Inviting a reviewer in one step, with their requests in the journal (#900, #320)', () => {
+    test('a reviewer found by search shows the invitations they already have in the journal', async ({
         authorPage,
         adminPage,
     }) => {
@@ -31,27 +54,14 @@ test.describe('Requests already made to a reviewer in the journal (#320)', () =>
         });
 
         const row =
-            await test.step('the known reviewers table shows it when inviting on a second paper', async () => {
-                await openPaperManagement(adminPage, secondDocid);
-                await adminPage
-                    .locator(`#invite_reviewer_${secondDocid}`)
-                    .click();
-                await expect(adminPage).toHaveURL(
-                    /administratepaper\/invitereviewer/
-                );
+            await test.step('searching them on a second paper shows their requests', async () => {
+                await openInvitationPage(adminPage, secondDocid);
+                const results = await search(adminPage, REVIEWER_USERNAME);
 
-                await expect(
-                    adminPage.locator('#known-reviewers thead')
-                ).toContainText('Requests in the journal');
-                await adminPage
-                    .locator('#known-reviewers_filter input')
-                    .fill(REVIEWER_USERNAME);
-                const reviewerRow = adminPage.locator(
-                    '#known-reviewers tbody tr',
-                    {
-                        hasText: REVIEWER_USERNAME,
-                    }
-                );
+                await expect(results).toContainText('Reviewers of the journal');
+                const reviewerRow = results.locator('tbody tr', {
+                    hasText: REVIEWER_USERNAME,
+                });
                 // other specs may invite the same reviewer at the same time: at least this invitation
                 await expect(reviewerRow).toContainText('Pending invitations:');
                 await expect(reviewerRow).toContainText('Latest invitation:');
@@ -63,7 +73,6 @@ test.describe('Requests already made to a reviewer in the journal (#320)', () =>
                 .locator('a[href^="/administratepaper/view/id/"]')
                 .first();
             await expect(paperLink).toHaveAttribute('target', '_blank');
-
             const [paperTab] = await Promise.all([
                 adminPage.context().waitForEvent('page'),
                 paperLink.click(),
@@ -72,11 +81,10 @@ test.describe('Requests already made to a reviewer in the journal (#320)', () =>
             await expect(adminPage.locator('#step-2')).toBeHidden();
         });
 
-        await test.step('choosing the reviewer repeats it above the invitation message', async () => {
+        await test.step('inviting them repeats it above the invitation message', async () => {
             const alert = adminPage.locator('#reviewer-workload-alert');
-            await expect(alert).toBeHidden();
+            await row.getByRole('button', { name: /^Invite / }).click();
 
-            await row.click();
             await expect(adminPage.locator('#step-2')).toBeVisible();
             await expect(adminPage.locator('#step-2 .panel-title')).toHaveText(
                 'Invite this reviewer'
@@ -86,8 +94,6 @@ test.describe('Requests already made to a reviewer in the journal (#320)', () =>
             await expect(alert).toContainText(
                 'Requests already made to this reviewer in the journal'
             );
-            await expect(alert).toContainText('Pending invitations:');
-            // the alert lists every paper the user may manage, the first one of this test included
             await expect(
                 alert
                     .locator(
@@ -98,7 +104,7 @@ test.describe('Requests already made to a reviewer in the journal (#320)', () =>
         });
     });
 
-    test('the new reviewer panel shows it too, for an account found by search and for an address invited before', async ({
+    test('the reviewers can be browsed, a person invited without an account is found by address, an account is offered instead of a new person', async ({
         authorPage,
         adminPage,
     }) => {
@@ -115,69 +121,70 @@ test.describe('Requests already made to a reviewer in the journal (#320)', () =>
             arxivId: FOURTH_ARXIV_ID,
         });
 
-        await test.step('a person without an account and the reviewer are invited on a first paper', async () => {
+        await test.step('a person without an account is invited on a first paper', async () => {
             await inviteNewReviewer(adminPage, firstDocid, withoutAccount);
-            await inviteKnownReviewer(adminPage, firstDocid, REVIEWER_USERNAME);
         });
 
-        const alert = adminPage.locator('#reviewer-workload-alert');
-        const openNewReviewerPanel = async () => {
-            await openPaperManagement(adminPage, secondDocid);
-            await adminPage.locator(`#invite_reviewer_${secondDocid}`).click();
-            await expect(adminPage).toHaveURL(
-                /administratepaper\/invitereviewer/
-            );
-            await adminPage.locator('#new_user_button').click();
-        };
+        await openInvitationPage(adminPage, secondDocid);
 
-        await test.step('an account found by search', async () => {
-            await openNewReviewerPanel();
-            await adminPage.locator('#autocomplete').fill(REVIEWER_USERNAME);
+        await test.step('the reviewers of the journal are browsed page by page', async () => {
+            await adminPage.locator('#reviewer-browse summary').click();
+            await expect(
+                adminPage.locator('#reviewer-browse-status')
+            ).toContainText('Reviewers of the journal:');
+            await expect(
+                adminPage.locator('#reviewer-browse-results tbody tr').first()
+            ).toBeVisible();
+
             await adminPage
-                .locator('.modern-autocomplete-item', {
-                    hasText: 'e2e_reviewer@example.org',
-                })
-                .first()
-                .click();
-
-            await expect(adminPage.locator('#step-2')).toBeVisible();
-            await expect(alert).toBeVisible();
-            await expect(alert).toContainText('Pending invitations:');
+                .locator('#reviewer-browse-order')
+                .selectOption('least_requested');
+            await expect(
+                adminPage.locator('#reviewer-browse-results tbody tr').first()
+            ).toBeVisible();
         });
 
-        await test.step('the address of an account: the accounts found show their requests too', async () => {
-            await openNewReviewerPanel();
-            await adminPage.locator('#email').fill('e2e_reviewer@example.org');
-            // the address is looked up when the field changes
-            await adminPage.locator('#lastname').click();
-
-            const accounts = adminPage.locator('#ccsd_user_invitation');
-            await expect(accounts.locator('thead')).toContainText(
-                'Requests in the journal'
+        await test.step('the address of a person invited before without an account finds them', async () => {
+            const results = await search(
+                adminPage,
+                withoutAccount.email.toUpperCase()
             );
-            await expect(accounts).not.toContainText('Invitation(s)');
-            const account = accounts.locator('tbody tr', {
-                hasText: 'e2e_reviewer',
+            const row = results.locator('tbody tr', {
+                hasText: withoutAccount.email,
             });
-            await expect(account).toContainText('Pending invitations:');
 
-            await account.locator('td').first().click();
-            await expect(adminPage.locator('#step-2')).toBeVisible();
-            await expect(alert).toContainText('Pending invitations:');
+            await expect(results).toContainText(
+                'Already invited without an account'
+            );
+            await expect(row).toContainText('Pending invitations: 1');
+            await expect(row).toContainText('not answered yet');
         });
 
-        await test.step('the address of a person invited before without an account', async () => {
-            await openNewReviewerPanel();
-            await adminPage
-                .locator('#email')
-                .fill(withoutAccount.email.toUpperCase());
-            await adminPage.locator('#lastname').fill(withoutAccount.lastname);
-            await adminPage.locator('#next').click();
+        await test.step('a new person whose address has an account: the account is offered', async () => {
+            await adminPage.locator('#new-person-toggle').click();
+            await adminPage.locator('#new-person-email').fill(REVIEWER_EMAIL);
+            await adminPage.locator('#new-person-lastname').fill('Someone');
+            await adminPage.locator('#new-person-submit').click();
 
-            await expect(adminPage.locator('#step-2')).toBeVisible();
-            await expect(alert).toBeVisible();
-            await expect(alert).toContainText('Pending invitations: 1');
-            await expect(alert).toContainText('not answered yet');
+            const existing = adminPage.locator('#new-person-existing');
+            await expect(existing).toContainText(
+                'An account already uses this address'
+            );
+            await expect(
+                existing.locator('tbody tr', { hasText: REVIEWER_USERNAME })
+            ).toBeVisible();
+            await expect(adminPage.locator('#step-2')).toBeHidden();
+        });
+
+        await test.step('an invalid address is pointed out on its field', async () => {
+            await adminPage.locator('#new-person-email').fill('');
+            await adminPage.locator('#new-person-submit').click();
+            await expect(adminPage.locator('#new-person-errors')).toContainText(
+                'Please enter a valid e-mail address'
+            );
+            await expect(
+                adminPage.locator('#new-person-email')
+            ).toHaveAttribute('aria-invalid', 'true');
         });
     });
 });
