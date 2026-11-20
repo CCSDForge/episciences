@@ -14,6 +14,19 @@ const {
 const REVIEWER_EMAIL = 'e2e_reviewer@example.org';
 const REVIEWER_NAME = /E2E Reviewer/i;
 
+/**
+ * Row of a paper in My Reviews (paper/ratings): matched on its document id cell, the other cells
+ * (dates, versions, titles) may contain the same digits
+ * @param {import('@playwright/test').Page} page reviewer page
+ * @param {number} docid
+ * @returns {import('@playwright/test').Locator}
+ */
+function myReviewsRow(page, docid) {
+    return page
+        .locator('table#papers tbody tr')
+        .filter({ has: page.locator('td:nth-child(4)').filter({ hasText: new RegExp(`^\\s*${docid}\\s*$`) }) });
+}
+
 test.describe('Reviewer on-behalf rating, communications and dashboard', () => {
     test('an editor can complete a review on behalf of an active reviewer and reopen it', async ({
         authorPage,
@@ -104,7 +117,7 @@ test.describe('Reviewer on-behalf rating, communications and dashboard', () => {
             await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
 
             await reviewerPage.goto('paper/ratings');
-            const row = reviewerPage.locator('table#papers tbody tr', { hasText: String(docid) });
+            const row = myReviewsRow(reviewerPage, docid);
             await expect(row).toBeVisible();
             await expect(row).toContainText(/pending/i);
         });
@@ -115,7 +128,7 @@ test.describe('Reviewer on-behalf rating, communications and dashboard', () => {
             await reviewerPage.locator('#submitRatingForm').click();
             await expect(reviewerPage).toHaveURL(/paper\/ratings/);
 
-            const row = reviewerPage.locator('table#papers tbody tr', { hasText: String(docid) });
+            const row = myReviewsRow(reviewerPage, docid);
             await expect(row).toBeVisible();
             await expect(row).toContainText(/ongoing review/i);
         });
@@ -126,7 +139,7 @@ test.describe('Reviewer on-behalf rating, communications and dashboard', () => {
             await reviewerPage.locator('#validateRating').click();
             await expect(reviewerPage).toHaveURL(/paper\/ratings/);
 
-            const row = reviewerPage.locator('table#papers tbody tr', { hasText: String(docid) });
+            const row = myReviewsRow(reviewerPage, docid);
             await expect(row).toBeVisible();
             await expect(row).toContainText(/completed/i);
         });

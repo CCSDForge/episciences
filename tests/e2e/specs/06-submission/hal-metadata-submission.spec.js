@@ -77,13 +77,15 @@ test.describe('HAL submission metadata enrichment', () => {
                 await expect(body).toContainText('Institute for Nonlinear Mechanics');
                 await expect(body).toContainText('Department of Mechanical Engineering [Eindhoven]');
                 await expect(body).toContainText('Isotropic hardening');
-                await expect(body).toContainText('Creative Commons Attribution 4.0 International');
+                // The licence label depends on the environment: "Creative Commons Attribution 4.0 International"
+                // or "Attribution 4.0 International (CC BY 4.0)"
+                await expect(body).toContainText(/Attribution 4\.0 International/);
             });
 
             await test.step('the editorial management page exposes affiliations, ORCIDs and license', async () => {
                 await openPaperManagement(adminPage, docid);
                 const body = adminPage.locator('body');
-                await expect(body).toContainText(/Creative Commons Attribution 4\.0 International|CC-BY-4\.0/i);
+                await expect(body).toContainText(/Attribution 4\.0 International|CC-BY-4\.0/i);
                 await expect(body).toContainText('Institute for Nonlinear Mechanics');
                 await expect(body).toContainText('Department of Mechanical Engineering [Eindhoven]');
                 await expect(body).toContainText('0000-0002-9857-7080');
