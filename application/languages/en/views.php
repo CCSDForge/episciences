@@ -1694,21 +1694,17 @@ return array(
     "Inviter un utilisateur connu" => "Invite a known user",
 
 
-    "Merci d'éviter de la création de plusieurs comptes pour un même utilisateur." => 'Please do not create multiple accounts for the same user.',
-    'Possibilités pour inviter un relecteur : ' => 'Different options to invite a reviewer: ',
-
-    'Relecteur connu par la revue.' => 'Known reviewers from the journal',
-    'Nouveau relecteur : ' => 'New reviewer: ',
-
-    "Utilisateur connu d'Episciences" => 'Invite a known reviewer from Episciences',
-    "Nouvel utilisateur : création d'un compte invité" => 'Invite a new user: create a guest account',
-
-    'Si le relecteur n\'est pas connu de la revue, vérifier s\'il a un compte dans Episciences.' => 'If the reviewer is unknown from the journal, please check whether the user already has an Episciences account.',
-
-    'Si le relecteur est inconnu de la revue, une liste d\'utilisateur avec un nom similaire pourra vous être proposée. Merci de vérifier dans cette liste si votre relecteur n\'a pas déjà un compte.' =>
-        'If the reviewer is unknown from the journal, a list of namesake users may be proposed. Please check in this list whether your reviewer already has an Episciences account.',
-
-    'Merci de vérifier :' => 'Check list: ',
+    // guidelines of the invitation page (partials/invitereviewer_guideline.phtml)
+    "Cherchez d'abord la personne." => "Search for the person first.",
+    "Saisissez son nom, son prénom ou son adresse e-mail : la recherche couvre les relecteurs de la revue, les autres comptes Episciences et les personnes déjà invitées sans compte." => "Type their last name, first name or e-mail address: the search covers the reviewers of the journal, the other Episciences accounts and the people already invited without an account.",
+    "Un seul compte par personne." => "One account per person.",
+    "N'invitez une nouvelle personne qu'après l'avoir cherchée, de préférence par son adresse. Si un compte utilise déjà l'adresse saisie, il vous est proposé à la place." => "Only invite a new person after searching for them, preferably by their address. If an account already uses the address typed, it is offered instead.",
+    "Répartissez les demandes." => "Share out the requests.",
+    "La colonne « Sollicitations dans la revue » indique les relectures en cours, les invitations en attente et la dernière invitation de chaque personne. Pour trouver des relecteurs disponibles, triez la liste des relecteurs de la revue par « Les moins sollicités d'abord »." => "The \"Requests in the journal\" column shows the reviews in progress, the pending invitations and the latest invitation of each person. To find available reviewers, sort the list of the reviewers of the journal by \"Least requested first\".",
+    "Sur une nouvelle version, pensez aux relecteurs des versions précédentes." => "On a new version, think of the reviewers of the previous versions.",
+    "Ils connaissent déjà l'article : vous pouvez réinviter ceux de votre choix." => "They already know the paper: you can invite again the ones you choose.",
+    "Vérifiez l'invitation." => "Check the invitation.",
+    "Contrôlez la date limite de relecture et adaptez le texte si besoin." => "Check the review due date and adapt the text if needed.",
 
 
     'Rechercher par courriel, nom, prénom, ou identifiant' => 'Search by email, name, firstname, or identifier',
