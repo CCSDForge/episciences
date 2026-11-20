@@ -24,7 +24,7 @@ const REVIEWER_NAME = /E2E Reviewer/i;
 function myReviewsRow(page, docid) {
     return page
         .locator('table#papers tbody tr')
-        .filter({ has: page.locator('td').filter({ hasText: new RegExp(`^\\s*${docid}\\s*$`) }) });
+        .filter({ has: page.locator('td:nth-child(4)').filter({ hasText: new RegExp(`^\\s*${docid}\\s*$`) }) });
 }
 
 test.describe('Reviewer on-behalf rating, communications and dashboard', () => {
