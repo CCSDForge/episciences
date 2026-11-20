@@ -1,0 +1,89 @@
+<?php
+/**
+ * Reviewers of the previous versions of the paper, who may be invited again on this version (git #1387).
+ *
+ * @var Zend_View $this
+ * @var list<array<string, mixed>> $this->previousReviewers rows of AdministratepaperController::previousReviewersRows()
+ * @var array<int, array<string, mixed>> $this->reviewerWorkloads requests in the journal, by UID (git #320)
+ */
+
+use Episciences\Reviewer\InvitationEligibility;
+use Episciences\Reviewer\PreviousVersionReviewers;
+
+$statuses = [
+    PreviousVersionReviewers::STATUS_REPORT_COMPLETED => ['Rapport rendu', 'label-success'],
+    PreviousVersionReviewers::STATUS_REPORT_IN_PROGRESS => ['Relecture commencée', 'label-info'],
+    PreviousVersionReviewers::STATUS_ACCEPTED => ['Invitation acceptée', 'label-info'],
+    PreviousVersionReviewers::STATUS_DECLINED => ['Invitation refusée', 'label-default'],
+    PreviousVersionReviewers::STATUS_EXPIRED => ['Invitation expirée', 'label-default'],
+    PreviousVersionReviewers::STATUS_CANCELLED => ['Invitation annulée', 'label-default'],
+    PreviousVersionReviewers::STATUS_NOT_ANSWERED => ['Sans réponse', 'label-default'],
+];
+$refusals = [
+    InvitationEligibility::REASON_ALREADY_INVITED => 'Déjà invité sur cette version',
+    InvitationEligibility::REASON_AUTHOR => "Auteur de l'article",
+    InvitationEligibility::REASON_SELF => 'Vous-même',
+    InvitationEligibility::REASON_CONFLICT => "Conflit d'intérêts déclaré",
+];
+$locale = Episciences_Tools::getLocale();
+?>
+<?php if (!empty($this->previousReviewers)) : ?>
+    <div class="panel panel-default" id="previous-reviewers">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->escape($this->translate('Relecteurs des versions précédentes')) ?></h2>
+        </div>
+        <div class="panel-body in">
+            <table class="table table-condensed">
+                <caption class="sr-only"><?= $this->escape($this->translate('Relecteurs des versions précédentes')) ?></caption>
+                <thead>
+                <tr>
+                    <th scope="col"><?= $this->escape($this->translate('Relecteur')) ?></th>
+                    <th scope="col"><?= $this->escape($this->translate('Version')) ?></th>
+                    <th scope="col"><?= $this->escape($this->translate('Statut')) ?></th>
+                    <th scope="col"><?= $this->escape($this->translate('Date')) ?></th>
+                    <th scope="col"><?= $this->escape($this->translate('Sollicitations dans la revue')) ?></th>
+                    <th scope="col"><span class="sr-only"><?= $this->escape($this->translate('Actions')) ?></span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($this->previousReviewers as $row) : ?>
+                    <?php [$statusLabel, $statusClass] = $statuses[$row['status']] ?? [$row['status'], 'label-default']; ?>
+                    <tr data-previous-reviewer="<?= $this->escape($row['key']) ?>">
+                        <td>
+                            <?= $this->escape($row['full_name'] !== '' ? $row['full_name'] : $row['email']) ?>
+                            <br><small class="text-muted"><?= $this->escape($row['email']) ?></small>
+                        </td>
+                        <td>
+                            <?php if ($row['tmp_version']) : ?>
+                                <?= $this->escape(sprintf($this->translate('Version temporaire du %s'), (string)$this->Date($row['version_date'], $locale))) ?>
+                            <?php else : ?>
+                                <?= $this->escape(sprintf($this->translate('Version %s'), (string)$row['version'])) ?>
+                            <?php endif; ?>
+                        </td>
+                        <td><span class="label <?= $this->escape($statusClass) ?>"><?= $this->escape($this->translate($statusLabel)) ?></span></td>
+                        <td><?= $row['date'] !== null ? $this->escape((string)$this->Date($row['date'], $locale)) : '' ?></td>
+                        <td>
+                            <?php if (!$row['tmp_user']) : ?>
+                                <?= $this->partial('partials/reviewer_workload.phtml', ['workload' => ($this->reviewerWorkloads ?? [])[(int)$row['uid']] ?? null]) ?>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-right">
+                            <?php if ($row['can_reinvite']) : ?>
+                                <button type="button" class="btn btn-default btn-xs" data-reinvite="<?= $this->escape($row['key']) ?>"
+                                        aria-label="<?= $this->escape(sprintf($this->translate('Réinviter %s'), $row['full_name'] !== '' ? $row['full_name'] : $row['email'])) ?>">
+                                    <?= $this->escape($this->translate('Réinviter')) ?>
+                                </button>
+                            <?php elseif ($row['refusal'] !== null) : ?>
+                                <span class="text-muted"><?= $this->escape($this->translate($refusals[$row['refusal']] ?? '')) ?></span>
+                            <?php endif; ?>
+                            <?php if (!$row['tmp_user']) : ?>
+                                <a class="btn btn-link btn-xs" href="/user/view/userid/<?= (int)$row['uid'] ?>" target="_blank" rel="noopener"><?= $this->escape($this->translate('Profil')) ?><span class="sr-only"> (<?= $this->escape($this->translate('nouvel onglet')) ?>)</span></a>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php endif; ?>

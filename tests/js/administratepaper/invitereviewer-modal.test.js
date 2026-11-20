@@ -1075,3 +1075,65 @@ describe('invitereviewer-modal.js: title of the invitation step', () => {
         expect(title.children).toHaveLength(0);
     });
 });
+
+describe('invitereviewer-modal.js: reviewers of the previous versions invited again (git #1387)', () => {
+    let moduleUnderTest;
+
+    beforeEach(() => {
+        jest.resetModules();
+        prepareDOM();
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<input id="reviewer" type="hidden"><div id="step-2"><h2 class="panel-title">Inviter ce relecteur</h2></div>' +
+                '<button type="button" data-reinvite="r0">Réinviter</button>'
+        );
+        global.translate.mockImplementation((s) => s);
+        global.templates = {
+            ...global.templates,
+            reinvitation: { subject: { fr: 'Sujet réassignation', en: 'Reassignment subject' }, body: { fr: 'Corps réassignation', en: 'Reassignment body' } },
+        };
+        global.previous_reviewers = {
+            r0: {
+                id: 7, email: 'r7@example.org', full_name: 'Rev Seven', firstname: 'Rev', lastname: 'Seven',
+                screen_name: 'R7', user_name: 'r7', locale: 'fr', invitation_type: 1, reinvitation_of: 20,
+            },
+            r1: {
+                id: null, email: 'tmp@example.org', full_name: 'Tmp Person', firstname: '', lastname: 'Tmp Person',
+                screen_name: 'Tmp Person', user_name: '', locale: 'fr', invitation_type: 3, reinvitation_of: 10,
+            },
+        };
+        moduleUnderTest = require('../../../public/js/administratepaper/invitereviewer-modal');
+    });
+
+    afterEach(() => {
+        delete global.previous_reviewers;
+        delete global.templates.reinvitation;
+    });
+
+    const postedReviewer = () => JSON.parse(document.getElementById('reviewer').value);
+
+    test('the reassignment message is used, the account state and the previous version are posted', () => {
+        expect(moduleUnderTest.reinvitePreviousReviewer('r0')).toBe(true);
+
+        expect(document.getElementById('subject').value).toBe('Sujet réassignation');
+        expect(postedReviewer()).toMatchObject({ id: 7, invitation_type: 1, reinvitation_of: 20 });
+        expect(document.querySelector('#step-2 .panel-title').textContent).toBe('Réinviter ce relecteur');
+    });
+
+    test('a person without an account is invited again as such', () => {
+        moduleUnderTest.reinvitePreviousReviewer('r1');
+
+        expect(postedReviewer()).toMatchObject({ id: null, invitation_type: 3, reinvitation_of: 10 });
+    });
+
+    test('an unknown row does nothing', () => {
+        expect(moduleUnderTest.reinvitePreviousReviewer('r9')).toBe(false);
+    });
+
+    test('the button of a row invites the person again', () => {
+        moduleUnderTest.onReinviteClick({ target: document.querySelector('[data-reinvite="r0"]') });
+
+        expect(postedReviewer()).toMatchObject({ reinvitation_of: 20 });
+    });
+});
+

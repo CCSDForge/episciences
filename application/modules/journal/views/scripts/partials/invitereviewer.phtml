@@ -66,6 +66,10 @@ $invitation_panel_title = '';
                     </div>
                 </div>
             <?php endif; ?>
+            <?= $this->partial('partials/previous_reviewers.phtml', [
+                'previousReviewers' => $this->previousReviewers ?? [],
+                'reviewerWorkloads' => $this->reviewerWorkloads ?? [],
+            ]) ?>
             <?php if ($this->reviewers) : ?>
                 <div class="panel panel-default">
                     <div class="panel-heading">

@@ -33,6 +33,7 @@ $description .= ' - ' . $this->escape($this->paper->getTitle());
             'paper' => $this->paper,
             'reviewers' => $this->reviewers,
             'reviewerWorkloads' => $this->reviewerWorkloads ?? [],
+            'previousReviewers' => $this->previousReviewers ?? [],
             'user_form' => $this->user_form,
             'invitation_form' => $this->invitation_form,
             'referer' => $this->referer,
@@ -72,6 +73,7 @@ $description .= ' - ' . $this->escape($this->paper->getTitle());
     var allJsReviewers = <?php if ($this->allJsReviewers) : ?><?php echo $this->allJsReviewers; ?><?php else:?>null<?php endif;?>;
     var reviewer_workloads = <?= $this->js_reviewer_workloads ?: '{}' ?>;
     var reviewer_workloads_by_email = <?= $this->js_reviewer_workloads_by_email ?: '{}' ?>;
+    var previous_reviewers = <?= $this->js_previous_reviewers ?: '{}' ?>;
     //git #180 : ajout d'un nouveau tag : les noms des auteurs
     let allAuthors = <?=  $this->js_allAuthors ?>;
 

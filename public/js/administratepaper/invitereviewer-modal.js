@@ -69,6 +69,9 @@ $(document).ready(function () {
         $new_user.show();
     });
 
+    // reviewers of the previous versions (git #1387)
+    document.addEventListener('click', onReinviteClick);
+
     // Modern autocomplete init (existing user selection)
     const autocompleteInstance = createUserAutocomplete({
         inputId: 'autocomplete',
@@ -414,8 +417,10 @@ function validate_step2() {
 }
 
 // invitation default values
-// type=1: known reviewer, type=2: new user
-function setInvitationValues(user, type) {
+// type=1: known reviewer, type=2: new user, type=3: person without an account
+// templateKey: template of the message, the one of the type by default ('reinvitation': reviewer of a previous
+// version invited again, git #1387)
+function setInvitationValues(user, type, templateKey = type) {
     // Selection de la langue du template
 
     let locale = user.locale !== siteLocale ? defaultLocale : user.locale;
@@ -435,11 +440,22 @@ function setInvitationValues(user, type) {
     }
 
     user.invitation_type = type;
+    // kept with the person, so that changing the request type keeps the template asked for (git #1387)
+    if (templateKey !== type) {
+        user.template_key = templateKey;
+    } else {
+        delete user.template_key;
+    }
     $('#reviewer').val(JSON.stringify(user));
     showReviewerWorkload(user);
 
     const requestType = applyRequestType(user);
-    let tpl = invitationTemplate(requestType, type);
+    // a template asked for explicitly (reviewer of a previous version invited again, git #1387) wins over the
+    // template of the request type
+    let tpl =
+        templateKey !== type && templates[templateKey]
+            ? templates[templateKey]
+            : invitationTemplate(requestType, type);
     let recipient = user.full_name + ' <' + user.email + '>';
     let subject = replaceTags(tpl.subject[locale], user, locale);
     let body = replaceTags(tpl.body[locale], user, locale, true);
@@ -1144,6 +1160,51 @@ function showReviewerWorkload(user) {
         .catch(() => render(null));
 }
 
+/**
+ * Invites again a reviewer of a previous version (git #1387): the message is the reassignment template, the account
+ * state of the person (reviewer of the journal, or without an account) is kept, and the previous version is posted
+ * with them so that the message links to it.
+ * @param {string} key key of the row of the previous reviewers table
+ * @returns {boolean} whether the invitation step is shown
+ */
+function reinvitePreviousReviewer(key) {
+    const rows =
+        typeof previous_reviewers !== 'undefined' && previous_reviewers
+            ? previous_reviewers
+            : {};
+    const row = rows[key];
+
+    if (!row) {
+        return false;
+    }
+
+    const user = { ...row };
+    setInvitationValues(user, row.invitation_type, 'reinvitation');
+    step2();
+    // after step2(): going back to the reviewer selection writes the usual title again
+    document
+        .querySelectorAll('#step-2 .panel-title')
+        .forEach(
+            title => (title.textContent = translate('Réinviter ce relecteur'))
+        );
+
+    return true;
+}
+
+/**
+ * @param {MouseEvent} event
+ */
+function onReinviteClick(event) {
+    const button =
+        event.target instanceof Element
+            ? event.target.closest('[data-reinvite]')
+            : null;
+
+    if (button) {
+        reinvitePreviousReviewer(button.getAttribute('data-reinvite'));
+    }
+}
+
 function translateInvitationDeadline(str, locale) {
     let sStr = str.split(' ');
     return sStr[0] + ' ' + translate(sStr[1], locale);
@@ -1160,6 +1221,8 @@ if (typeof module !== 'undefined' && module.exports) {
         step2,
         validate_step2,
         setInvitationValues,
+        reinvitePreviousReviewer,
+        onReinviteClick,
         reviewerWorkloadItems,
         workloadPaperLink,
         renderReviewerWorkload,
@@ -1283,6 +1346,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const user = JSON.parse(reviewerField.value);
-        setInvitationValues(user, user.invitation_type);
+        setInvitationValues(
+            user,
+            user.invitation_type,
+            user.template_key || user.invitation_type
+        );
     });
 });

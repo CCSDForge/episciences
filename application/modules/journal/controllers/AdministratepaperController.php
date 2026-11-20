@@ -19,6 +19,8 @@ use Episciences\Paper\ManagementRefusal;
 use Episciences\Paper\RequiredReviews;
 use Episciences\Reviewer\NextVersionRequestType;
 use Episciences\Paper\RevisionRequests;
+use Episciences\Reviewer\InvitationEligibility;
+use Episciences\Reviewer\PreviousVersionReviewers;
 use Episciences\Reviewer\Workload;
 use Episciences\Reviewer\WorkloadPresenter;
 use Episciences\Paper\RepositoryVersionsService;
@@ -29,6 +31,9 @@ use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
  */
 class AdministratepaperController extends PaperDefaultController
 {
+    /** Key of the reassignment template among the templates of the invitation form (git #1387) */
+    public const REINVITATION_TEMPLATE = 'reinvitation';
+
     use Episciences_Paper_AuthorEditorCommunicationControllerTrait;
     use Episciences_Paper_AccessControlControllerTrait;
     public const ACTION_ASSIGNED = 'assigned';
@@ -1125,6 +1130,71 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * Reviewers of the previous versions of the paper (git #1387), latest version first, each with what became of their
+     * request and whether they may be invited again on this version (once per person, with the reason when they may
+     * not). "user" holds what the invitation form needs, "reinvitation_of" the previous version.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function previousReviewersRows(Episciences_Paper $paper): array
+    {
+        $previous = PreviousVersionReviewers::ofPaper($paper);
+        if ($previous === []) {
+            return [];
+        }
+
+        $eligibility = InvitationEligibility::forVersion(
+            $paper,
+            (int)Episciences_Auth::getUid(),
+            array_map('intval', array_keys($this->usersWithReportedCoiProcessing($paper)))
+        );
+        $listed = [];
+        $rows = [];
+
+        foreach ($previous as $index => $row) {
+            if (!$row['tmp_user'] && trim($row['firstname'] . $row['lastname']) === '') {
+                // account missing from the journal users: read it from the accounts directory
+                $account = new Episciences_User();
+                if ($account->findWithCAS($row['uid'])) {
+                    $row['firstname'] = (string)$account->getFirstname();
+                    $row['lastname'] = (string)$account->getLastname();
+                    $row['email'] = (string)$account->getEmail();
+                    $row['username'] = (string)$account->getUsername();
+                    $row['screen_name'] = (string)$account->getScreenName();
+                }
+            }
+
+            $person = $row['tmp_user'] ? 'email:' . mb_strtolower(trim($row['email'])) : 'uid:' . $row['uid'];
+            $isFirst = !isset($listed[$person]);
+            $listed[$person] = true;
+            $refusal = $isFirst ? $eligibility->refusalFor($row['tmp_user'] ? null : $row['uid'], $row['email']) : null;
+            $fullName = trim($row['firstname'] . ' ' . $row['lastname']);
+
+            $rows[] = $row + [
+                'key' => 'r' . $index,
+                'full_name' => $fullName,
+                'can_reinvite' => $isFirst && $refusal === null,
+                'refusal' => $refusal,
+                'user' => [
+                    'id' => $row['tmp_user'] ? null : $row['uid'],
+                    'email' => $row['email'],
+                    'full_name' => $fullName,
+                    'firstname' => $row['firstname'],
+                    'lastname' => $row['lastname'],
+                    'screen_name' => $row['screen_name'] !== '' ? $row['screen_name'] : $fullName,
+                    'user_name' => $row['username'],
+                    'locale' => $row['locale'] !== '' ? $row['locale'] : Episciences_Review::DEFAULT_LANG,
+                    // a reviewer of the journal (1), or a person without an account (3), as on the invitation form
+                    'invitation_type' => $row['tmp_user'] ? 3 : 1,
+                    'reinvitation_of' => $row['docid'],
+                ],
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
      * How much each reviewer of the journal is already asked (git #320), as shown on the invitation page: by UID, and
      * by hash of the address of the people invited without an account. The papers are only named to who may manage
      * them; the others are only counted.
@@ -1486,6 +1556,23 @@ class AdministratepaperController extends PaperDefaultController
 
                 $oTemplates[$i] = $oTemplate;
                 $templates[$i] = $template;
+            }
+
+            // reviewers of the previous versions, who may be invited again on this one (git #1387)
+            $previousReviewers = $this->previousReviewersRows($oPaper);
+            $this->view->previousReviewers = $previousReviewers;
+            $this->view->js_previous_reviewers = Zend_Json::encode(
+                (object)array_column(array_filter($previousReviewers, static fn(array $row): bool => $row['can_reinvite']), 'user', 'key')
+            );
+            if ($previousReviewers !== []) {
+                // the reassignment template, with which the reviewers are invited again on a new version
+                $oTemplate = new Episciences_Mail_Template();
+                $oTemplate->findByKey(Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION);
+                $oTemplate->loadTranslations();
+                $template = $oTemplate->toArray();
+                $template['subject'] = $oTemplate->loadSubject(Episciences_Tools::getLanguages());
+                unset($template['id'], $template['parentId'], $template['rvid'], $template['key'], $template['type']);
+                $templates[self::REINVITATION_TEMPLATE] = $template;
             }
 
             // review js array init
@@ -1981,11 +2068,15 @@ class AdministratepaperController extends PaperDefaultController
         $httpHost = $this->getRequest()->getHttpHost();
         $invitation_url = SERVER_PROTOCOL . '://' . $httpHost . $this->view->url($url_params);
 
+        // a reviewer of a previous version invited again (git #1387): the message links to that version, as the
+        // reassignment of the reviewers to a new version does
+        $reinvitationOf = PreviousVersionReviewers::previousVersionOf($paper, $reviewer['reinvitation_of'] ?? null);
+
         // La page de l'article sur Episciences
         $paperUrl = $this->view->url([
             'controller' => 'paper',
             'action' => 'view',
-            'id' => $paper->getDocid()]);
+            'id' => $reinvitationOf ?? $paper->getDocid()]);
 
         $paper_url = SERVER_PROTOCOL . '://' . $httpHost . $paperUrl;
 
@@ -2036,6 +2127,7 @@ class AdministratepaperController extends PaperDefaultController
                 'tmp_user' => $oAssignment->isTmp_user(),
                 'uid' => $uid,
                 'pool' => ($vid) ? $vid : null,
+                'reinvitation_of' => $reinvitationOf,
                 'user' => ['fullname' => $reviewer['full_name']],
                 'request_type' => ['id' => $requestType->getId(), 'labels' => $requestType->getLabels()]]);
         if (!$log) {
