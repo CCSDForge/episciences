@@ -55,7 +55,7 @@ $keepOnlySourceUsed = [];
                                 <?php if ((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID && $dataset->getMetatext() === null) : ?>
                                     <?php if (Episciences_Tools::isHttpUrl((string)$dataset->getLink())) : ?>
                                     <a href="<?= $this->escape($dataset->getLink()) ?>" target="_blank" rel="noopener"
-                                       id="link-ld"><?= $this->escape($dataset->getValue()) ?></a><?php else : ?><?= $this->escape($dataset->getValue()) ?><?php endif; ?><sup> <?= $sourceToSup ?></sup>
+                                       id="link-ld"><?= $this->escape($dataset->getValue()) ?></a><?php else : ?><?= $this->escape($dataset->getValue()) ?><?php endif; ?><sup> <?= $this->escape($sourceToSup) ?></sup>
                                 <?php endif; ?>
                             <?php endif; ?>
                             <?php if (($dataset->getName() === 'doi'
@@ -63,15 +63,19 @@ $keepOnlySourceUsed = [];
                                 && $dataset->getMetatext() !== null) {
                                 try {
                                     //pimp author names
-                                    $authorFunction = static function ($authorItem, $renderedText) {
+                                    $authorFunction = function ($authorItem, $renderedText) {
                                         if (isset($authorItem->ORCID)) {
-                                            return $renderedText . " " . '<a rel="noopener" href=' . str_replace("http", "https", $authorItem->ORCID) . ' data-toggle="tooltip" data-placement="bottom" data-original-title="' . str_replace("http://orcid.org/", "", $authorItem->ORCID) . '" target="_blank"><img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="16px" alt="ORCID"/></a>';
+                                            $orcidUrl = str_replace('http://', 'https://', (string)$authorItem->ORCID);
+                                            if (Episciences_Tools::isHttpUrl($orcidUrl)) {
+                                                $orcidTitle = str_replace(['http://orcid.org/', 'https://orcid.org/'], '', (string)$authorItem->ORCID);
+                                                return $renderedText . ' <a rel="noopener" href="' . $this->escape($orcidUrl) . '" data-toggle="tooltip" data-placement="bottom" data-original-title="' . $this->escape($orcidTitle) . '" target="_blank"><img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="16px" alt="ORCID"/></a>';
+                                            }
                                         }
                                         return $renderedText;
                                     };
-                                    $linkDOI = static function ($citationItem, $renderedText) use ($sourceToSup) {
+                                    $linkDOI = function ($citationItem, $renderedText) use ($sourceToSup) {
                                         if (isset($citationItem->DOI)) {
-                                            return '<a rel="noopener" href="http://doi.org/' . $citationItem->DOI . '"target="_blank">' . $renderedText . '</a>' . ' <sup>' . $sourceToSup . '</sup>'; //trick to undisplay prefix put in render
+                                            return '<a rel="noopener" href="http://doi.org/' . $this->escape($citationItem->DOI) . '" target="_blank">' . $this->escape($renderedText) . '</a>' . ' <sup>' . $this->escape($sourceToSup) . '</sup>'; //trick to undisplay prefix put in render
                                         }
                                         return $renderedText;
                                     };
@@ -113,7 +117,7 @@ $keepOnlySourceUsed = [];
         <?php endforeach; ?>
         <ul class="list-unstyled">
             <?php foreach ($keepOnlySourceUsed as $id => $label): ?>
-                <li><span class="label label-default"><?= $this->escape($id) ?></span> <?= $label ?></li>
+                <li><span class="label label-default"><?= $this->escape($id) ?></span> <?= $this->escape($label) ?></li>
             <?php endforeach; ?>
         </ul>
     </div>
