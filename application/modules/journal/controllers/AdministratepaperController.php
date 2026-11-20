@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\AppRegistry;
 use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\Reviewer\InvitationToken;
 use Episciences\Paper\Spdx\LicenseCodeManager;
@@ -1219,7 +1220,10 @@ class AdministratepaperController extends PaperDefaultController
                 $ignore_list = [];
                 // remove reviewers who already have an accepted invitation for this paper
                 foreach ($invitations[Episciences_User_Assignment::STATUS_ACTIVE] as $invitation) {
-                    $ignore_list[$invitation['UID']] = $invitation['UID'];
+                    if (!$invitation['TMP_USER']) {
+                        // user ids only: temporary accounts have their own ids
+                        $ignore_list[$invitation['UID']] = $invitation['UID'];
+                    }
                     if (array_key_exists($invitation['UID'], $oReviewers)) {
                         unset($oReviewers[$invitation['UID']]);
                     }
@@ -1227,7 +1231,10 @@ class AdministratepaperController extends PaperDefaultController
 
                 // remove reviewers who already have a pending invitation for this paper
                 foreach ($invitations[Episciences_User_Assignment::STATUS_PENDING] as $invitation) {
-                    $ignore_list[$invitation['UID']] = $invitation['UID'];
+                    if (!$invitation['TMP_USER']) {
+                        // user ids only: temporary accounts have their own ids
+                        $ignore_list[$invitation['UID']] = $invitation['UID'];
+                    }
                     if (array_key_exists($invitation['UID'], $oReviewers)) {
                         unset($oReviewers[$invitation['UID']]);
                     }
@@ -1576,6 +1583,26 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * Whether the reviewer has a pending (not expired) or accepted invitation for the paper:
+     * the same invitations as the ones left out of the lists of invitereviewerAction()
+     */
+    private function hasOngoingReviewerInvitation(Episciences_Paper $paper, int $uid, bool $isTmpUser): bool
+    {
+        $statuses = [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING];
+        $invitations = $paper->getInvitations($statuses, true);
+
+        foreach ($statuses as $status) {
+            foreach ($invitations[$status] ?? [] as $invitation) {
+                if ((int)$invitation['UID'] === $uid && (bool)$invitation['TMP_USER'] === $isTmpUser) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * save reviewer invitation sent to a user
      * @return bool
      * @throws Zend_Db_Adapter_Exception
@@ -1630,6 +1657,25 @@ class AdministratepaperController extends PaperDefaultController
         if (!isset($reviewer['firstname'])) {
             $reviewer['firstname'] = '';
         }
+
+        // A reviewer whose invitation for this paper is pending or accepted is not invited again
+        $isTmpReviewer = (int)($reviewer['invitation_type'] ?? 0) === 3;
+        if (!empty($reviewer['id']) && $this->hasOngoingReviewerInvitation($paper, (int)$reviewer['id'], $isTmpReviewer)) {
+            AppRegistry::getMonoLogger()?->warning(sprintf(
+                'Reviewer invitation refused for document #%d: user %s%d already has a pending or accepted invitation (sender %d)',
+                $paper->getDocid(),
+                $isTmpReviewer ? 'tmp_' : '',
+                (int)$reviewer['id'],
+                (int)Episciences_Auth::getUid()
+            ));
+            $message = $translator->translate('Ce relecteur a déjà une invitation en attente ou acceptée pour cet article.');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            if (!empty($referer)) {
+                $this->_helper->redirector->gotoUrl($referer);
+            }
+            return false;
+        }
+
         // save temporary user in USER_TMP table
         if (!$reviewer['id'] && $reviewer['invitation_type'] == 3) {
             $tmp_user = new Episciences_User_Tmp([

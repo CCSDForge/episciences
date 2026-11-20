@@ -1670,6 +1670,7 @@ return array(
     "Quitter la prévisualisation" => 'Cancel preview',
     'Envoyer un message au relecteur' => 'Send a message to the reviewer',
     "Votre invitation a bien été envoyée." => "Your invitation has been sent.",
+    "Ce relecteur a déjà une invitation en attente ou acceptée pour cet article." => "This reviewer already has a pending or accepted invitation for this article.",
     "Le log de l'invitation de relecteur n'a pas pu être enregistré" => "The log of the reviewer invitation could not be saved",
     "Le log de l'e-mail n'a pas pu être enregistré" => "The e-mail log could not be registered",
     "Inviter ce relecteur..." => "Invite this reviewer...",

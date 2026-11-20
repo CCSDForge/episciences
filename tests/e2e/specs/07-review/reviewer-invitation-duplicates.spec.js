@@ -25,20 +25,55 @@ test.describe('Duplicate invitations and existing accounts', () => {
     test('the invitation page detects already invited reviewers, existing accounts and namesakes', async ({
         authorPage,
         adminPage,
+        secretaryPage,
         mailpit,
     }) => {
         test.setTimeout(240000);
         const newReviewerEmail = `e2e-namesake-${Date.now()}@example.org`;
         let docid;
 
-        await test.step('an invited reviewer is no longer offered in the known reviewers', async () => {
+        await test.step('a reviewer invited meanwhile from another page is not invited twice', async () => {
             docid = await submitArxivPaper(authorPage, { arxivId: '1607.06450' });
+
+            // The secretary selects the reviewer, but sends the invitation only after the administrator did
+            await openPaperManagement(secretaryPage, docid);
+            await secretaryPage.locator(`#invite_reviewer_${docid}`).click();
+            await secretaryPage.locator('#known-reviewers_filter input').fill(E2E_USERNAMES.reviewer);
+            await secretaryPage.locator('#known-reviewers tbody tr', { hasText: E2E_USERNAMES.reviewer }).click();
+            await expect(secretaryPage.locator('#step-2')).toBeVisible();
+
             await inviteKnownReviewer(adminPage, docid, E2E_USERNAMES.reviewer);
 
+            await secretaryPage.waitForFunction(() => Boolean(window.tinymce?.get('body')?.initialized));
+            await secretaryPage.locator('#submit-invitation').click();
+            await expect(secretaryPage.locator('body')).toContainText(
+                'This reviewer already has a pending or accepted invitation for this article.'
+            );
+
+            await mailpit.waitForEmail({
+                to: 'e2e_reviewer@example.org',
+                subjectContains: [`#${docid} `, 'You are invited to review an article'],
+            });
+            const invited = adminPage.locator('#pending-invitations .reviewer, #invitations .reviewer', {
+                hasText: /E2E Reviewer/i,
+            });
+            await openPaperManagement(adminPage, docid);
+            await expect(invited).toHaveCount(1);
+        });
+
+        await test.step('an invited reviewer is no longer offered in the known reviewers nor by the search', async () => {
             await openPaperManagement(adminPage, docid);
             await adminPage.locator(`#invite_reviewer_${docid}`).click();
             await adminPage.locator('#known-reviewers_filter input').fill(E2E_USERNAMES.reviewer);
             await expect(adminPage.locator('#known-reviewers tbody tr', { hasText: E2E_USERNAMES.reviewer })).toHaveCount(0);
+
+            await adminPage.locator('#new_user_button').click();
+            const searched = adminPage.waitForResponse(response => response.url().includes('/user/findcasusers'));
+            await adminPage.locator('#autocomplete').fill('e2e_re');
+            const results = await (await searched).json();
+            const usernames = results.map(user => user.user_name);
+            expect(usernames).toContain(E2E_USERNAMES.referee);
+            expect(usernames).not.toContain(E2E_USERNAMES.reviewer);
         });
 
         await test.step('the address of an already invited reviewer is refused', async () => {
