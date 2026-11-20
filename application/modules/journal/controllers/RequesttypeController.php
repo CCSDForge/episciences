@@ -126,7 +126,7 @@ class RequesttypeController extends Zend_Controller_Action
     }
 
     /**
-     * @return array{label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool, counts_as_report: bool, instructions: array<string, string>}
+     * @return array{label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool, counts_as_report: bool, visible_to_author: bool, instructions: array<string, string>}
      */
     private static function formValues(?RequestType $type): array
     {
@@ -142,6 +142,7 @@ class RequesttypeController extends Zend_Controller_Action
             'enabled' => $type?->isEnabled() ?? true,
             'light_answer' => $type?->isLightAnswer() ?? false,
             'counts_as_report' => $type?->countsAsReport() ?? false,
+            'visible_to_author' => $type?->isVisibleToAuthor() ?? false,
             'instructions' => $type?->getAllInstructions() ?? [],
         ];
     }
@@ -149,7 +150,7 @@ class RequesttypeController extends Zend_Controller_Action
     /**
      * Posted values, shown again with the errors
      * @param array<string, mixed> $post
-     * @return array{label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool, counts_as_report: bool, instructions: array<string, string>}
+     * @return array{label: array<string, string>, deadline: string, deadline_unit: string, position: string, enabled: bool, light_answer: bool, counts_as_report: bool, visible_to_author: bool, instructions: array<string, string>}
      */
     private static function postedValues(array $post, ?RequestType $type): array
     {
@@ -170,6 +171,7 @@ class RequesttypeController extends Zend_Controller_Action
             'enabled' => ($type?->isFullReport() ?? false) || !empty($post[RequestTypeInput::FIELD_ENABLED]),
             'light_answer' => !($type?->isFullReport() ?? false) && !empty($post[RequestTypeInput::FIELD_LIGHT_ANSWER]),
             'counts_as_report' => ($type?->isFullReport() ?? false) || !empty($post[RequestTypeInput::FIELD_COUNTS_AS_REPORT]),
+            'visible_to_author' => ($type?->isFullReport() ?? false) || !empty($post[RequestTypeInput::FIELD_VISIBLE_TO_AUTHOR]),
             'instructions' => array_filter((array)($post[RequestTypeInput::FIELD_INSTRUCTIONS] ?? []), 'is_string'),
         ];
     }

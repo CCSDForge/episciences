@@ -3,6 +3,7 @@
 use Episciences\Paper\Record\TitleNormalizer;
 use Episciences\Reviewer\LightAnswerRepository;
 use Episciences\Reviewer\NextVersionRequestType;
+use Episciences\Reviewer\RequestTypeRepository;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LogLevel;
@@ -3003,6 +3004,11 @@ class Episciences_PapersManager
                 $ratings_string .= '<p style="border-bottom: 1px solid #999">';
                 $ratings_string .= ucfirst($translator->translate('reviewer', $locale));
                 $ratings_string .= ' ' . $reviewer->getAlias($paper->getDocid());
+                // a request type other than the review report, e.g. a quick opinion passed on to the author (#319)
+                $requestType = $rating->isReviewReport() ? null : (new RequestTypeRepository())->findById((int)$rating->getRequest_type_id());
+                if ($requestType !== null) {
+                    $ratings_string .= ' (' . htmlspecialchars($requestType->getLabel($locale), ENT_QUOTES) . ')';
+                }
                 $ratings_string .= '</p>';
 
                 $partial = new Zend_View();

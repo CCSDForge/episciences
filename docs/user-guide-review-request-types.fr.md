@@ -44,6 +44,7 @@ qu'il utilise :
    - la **Position** dans la liste ;
    - **Proposer ce type à l'invitation d'un relecteur** (décocher pour le masquer) ;
    - **Compter ses rapports comme des rapports de relecture** (voir « Rapports ») ;
+   - **Transmettre ses rapports à l'auteur** (voir « Rapports transmis à l'auteur ») ;
    - **Réponse sans compte, depuis le lien de l'invitation** (voir plus bas), et sa **Consigne** dans chaque langue
      (affichée seulement quand l'option est cochée ; elle est conservée si l'option est décochée).
 3. Cliquez sur **Enregistrer**.
@@ -130,6 +131,22 @@ coché, comptent pour le statut « relu » de l'article, le nombre minimum de re
 les phases de relecture que votre revue crée comme types (« Phase 2 », « Relecture d'une version révisée »…). Elle est
 sans effet pour un type à réponse sans compte, qui ne produit pas de rapport. Sur la page des grilles, ces types portent
 le badge **Compte comme rapport de relecture**.
+
+## Rapports transmis à l'auteur
+
+L'option **Transmettre ses rapports à l'auteur** décide si les rapports d'un type sortent de la rédaction :
+
+- **cochée** : ils sont transmis comme les rapports de relecture, selon la visibilité des critères de leur grille
+  (« public », « contributeur ») : page de l'article de l'auteur, e-mails de décision (tag `%%PAPER_RATINGS%%`, où le
+  type est indiqué à côté du relecteur), pièces jointes, et page publique de l'article publié si la revue affiche les
+  rapports ;
+- **décochée** : ils restent réservés à la rédaction, quelle que soit la visibilité des critères de leur grille.
+
+Les **rapports de relecture** sont toujours transmis : l'option est cochée et ne peut pas être modifiée. L'**avis
+rapide** et les types créés par la revue ne sont pas transmis tant que la revue ne coche pas l'option. Une réponse sans
+compte reste toujours réservée à la rédaction. Le relecteur voit toujours son propre rapport.
+
+Sur la page des grilles, chaque type porte le badge **Transmis à l'auteur** ou **Réservé à la rédaction**.
 
 ## Réponse sans compte
 

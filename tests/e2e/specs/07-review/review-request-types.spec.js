@@ -168,6 +168,31 @@ test.describe('Review request types (#319)', () => {
             ).toBeVisible();
         });
 
+        await test.step('each type says whether its reports are passed on to the author; the review report always is (#319)', async () => {
+            await expect(
+                adminPage.locator('[id^="rating-grid-t"] .panel-title', {
+                    hasText: REVIEW_REPORT,
+                })
+            ).toContainText('Passed on to the author');
+
+            // the quick opinion follows the setting of the journal: its label matches its box
+            await adminPage.goto(`requesttype/edit?id=${quickOpinion}`);
+            const visibleToAuthor = adminPage.locator('#visible_to_author');
+            await expect(visibleToAuthor).toBeEnabled();
+            await expect(visibleToAuthor).toHaveAttribute(
+                'aria-describedby',
+                'visible_to_author-help'
+            );
+            const passedOn = await visibleToAuthor.isChecked();
+
+            await adminPage.goto('grid/list');
+            await expect(
+                adminPage.locator(`#rating-grid-t${quickOpinion} .panel-title`)
+            ).toContainText(
+                passedOn ? 'Passed on to the author' : 'Editorial team only'
+            );
+        });
+
         await test.step('an answer without an account cannot count as a review report', async () => {
             await adminPage.goto(`requesttype/edit?id=${quickOpinion}`);
             await expect(adminPage.locator('#code')).toHaveCount(0);

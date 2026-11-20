@@ -480,6 +480,19 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
     }
 
     /**
+     * Whether the report may be passed on to the author (and to the public, according to the visibility of its
+     * criteria): a review report, or a report of a request type set to be passed on (#319, lot D)
+     */
+    public function isVisibleToAuthor(): bool
+    {
+        if ($this->isReviewReport()) {
+            return true;
+        }
+
+        return RequestTypeRepository::visibleToAuthorId((int)$this->getRequest_type_id());
+    }
+
+    /**
      * Whether the report counts like a review report (reviewed status, required number of reports, average rating):
      * a review report, or a report of a request type set to count (#319)
      */

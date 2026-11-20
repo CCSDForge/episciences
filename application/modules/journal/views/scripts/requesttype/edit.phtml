@@ -132,6 +132,26 @@ $error = function (string $field) use ($errors): string {
         </div>
     </div>
 
+    <div class="form-group">
+        <div class="col-md-6 col-md-offset-3">
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" id="visible_to_author" name="visible_to_author" value="1"<?= ($isFullReport || !empty($values['visible_to_author'])) ? ' checked' : '' ?>
+                           aria-describedby="visible_to_author-help"<?= $isFullReport ? ' disabled' : '' ?>>
+                    <?= $this->escape($this->translate("Transmettre ses rapports à l'auteur")) ?>
+                </label>
+                <span id="visible_to_author-help" class="help-block">
+                    <?= $this->escape($this->translate("Ils sont alors transmis comme les rapports de relecture, selon la visibilité des critères de leur grille : page de l'article, e-mails de décision, page publique si la revue affiche les rapports. Sinon, ils restent réservés à la rédaction.")) ?>
+                    <?php if ($isFullReport) : ?>
+                        <?= $this->escape($this->translate('Les rapports de relecture sont toujours transmis.')) ?>
+                    <?php else : ?>
+                        <?= $this->escape($this->translate('Une réponse sans compte reste toujours réservée à la rédaction.')) ?>
+                    <?php endif; ?>
+                </span>
+            </div>
+        </div>
+    </div>
+
     <?php if ($isNew || !$type->isFullReport()) : ?>
         <div class="form-group">
             <div class="col-md-6 col-md-offset-3">

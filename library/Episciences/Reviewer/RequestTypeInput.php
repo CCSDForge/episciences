@@ -14,6 +14,7 @@ use InvalidArgumentException;
  * Posted fields: label[<lang>], deadline + deadline_unit (both empty: journal setting),
  * position, enabled (absent: disabled), light_answer (absent: answered with an account and the rating grid),
  * counts_as_report (absent: the reports inform only; ignored for the review report and with light_answer),
+ * visible_to_author (absent: the reports stay with the editorial team; ignored for the review report, always passed on),
  * instructions[<lang>] (optional).
  */
 final class RequestTypeInput
@@ -28,6 +29,8 @@ final class RequestTypeInput
     public const FIELD_LIGHT_ANSWER = 'light_answer';
     /** the reports of the type count like review reports (#319) */
     public const FIELD_COUNTS_AS_REPORT = 'counts_as_report';
+    /** the reports of the type are passed on to the author (#319, lot D) */
+    public const FIELD_VISIBLE_TO_AUTHOR = 'visible_to_author';
     /** instructions[<lang>], shown on the page of the answer without an account; optional */
     public const FIELD_INSTRUCTIONS = 'instructions';
 
@@ -53,6 +56,8 @@ final class RequestTypeInput
         $lightAnswer = !$isFullReport && !empty($post[self::FIELD_LIGHT_ANSWER]);
         // an answer without an account is not a rating report: it never counts
         $countsAsReport = $isFullReport || (!$lightAnswer && !empty($post[self::FIELD_COUNTS_AS_REPORT]));
+        // the review reports are always passed on to the author
+        $visibleToAuthor = $isFullReport || !empty($post[self::FIELD_VISIBLE_TO_AUTHOR]);
 
         if ($this->errors !== []) {
             return;
@@ -60,9 +65,9 @@ final class RequestTypeInput
 
         try {
             $this->type = $existing !== null
-                ? $existing->withSettings($labels, $deadline, $position, $enabled, $lightAnswer, $instructions, $countsAsReport)
+                ? $existing->withSettings($labels, $deadline, $position, $enabled, $lightAnswer, $instructions, $countsAsReport, $visibleToAuthor)
                 // a type created by the journal: the default types are created by the application
-                : new RequestType(null, $rvid, null, $labels, $lightAnswer, $deadline, $position, $enabled, $instructions, $countsAsReport);
+                : new RequestType(null, $rvid, null, $labels, $lightAnswer, $deadline, $position, $enabled, $instructions, $countsAsReport, $visibleToAuthor);
         } catch (InvalidArgumentException) {
             $this->errors[self::ERROR_FORM] = "Ce type de demande n'a pas pu être enregistré.";
         }

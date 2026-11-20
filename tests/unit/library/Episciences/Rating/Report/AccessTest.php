@@ -776,6 +776,7 @@ class AccessTest extends TestCase
         $report->method('getOnbehalf_uid')->willReturn(null);
         $report->method('getCriteria')->willReturn([$criterion]);
         $report->method('getStatus')->willReturn(Episciences_Rating_Report::STATUS_COMPLETED);
+        $report->method('isVisibleToAuthor')->willReturn(true);
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR); // paper author
@@ -800,6 +801,45 @@ class AccessTest extends TestCase
     }
 
     /**
+     * Paper author cannot download from a report of a request type that is not passed on to the author, even public.
+     */
+    public function testPaperAuthorCannotDownloadFromARequestTypeNotPassedOnToTheAuthor(): void
+    {
+        $criterion = $this->createMock(Episciences_Rating_Criterion::class);
+        $criterion->method('getAttachment')->willReturn('public_file.pdf');
+        $criterion->method('getVisibility')->willReturn(Episciences_Rating_Criterion::VISIBILITY_PUBLIC);
+
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(self::UID_UNRELATED);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getCriteria')->willReturn([$criterion]);
+        $report->method('getStatus')->willReturn(Episciences_Rating_Report::STATUS_COMPLETED);
+        // a quick opinion, or a type of the journal, whose reports stay with the editorial team (#319)
+        $report->method('isVisibleToAuthor')->willReturn(false);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR); // paper author
+        $paper->method('isAssignedEditorOrCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'public_file.pdf',
+            self::UID_PAPER_AUTHOR,  // uid matches paper author
+            $review,
+            false, // isSecretary
+            false, // isEditor
+            false, // isCopyEditor
+            true   // isReportsVisibleToAuthor
+        );
+
+        self::assertFalse($result);
+    }
+
+    /**
      * Paper author can download contributor attachment when reports are visible.
      */
     public function testPaperAuthorCanDownloadContributorAttachmentWhenReportsVisible(): void
@@ -813,6 +853,7 @@ class AccessTest extends TestCase
         $report->method('getOnbehalf_uid')->willReturn(null);
         $report->method('getCriteria')->willReturn([$criterion]);
         $report->method('getStatus')->willReturn(Episciences_Rating_Report::STATUS_COMPLETED);
+        $report->method('isVisibleToAuthor')->willReturn(true);
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);

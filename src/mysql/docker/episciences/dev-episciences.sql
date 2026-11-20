@@ -9755,6 +9755,18 @@ SET `instructions` = JSON_OBJECT(
     'en', 'A few lines on the interest, originality and relevance of the article for the journal are enough; this is not a detailed review report.')
 WHERE `default_type` = 2 AND `instructions` IS NULL;
 
+-- Whether the reports of a review request type are passed on to the author (#319): the review report always is,
+-- the quick opinion and the types created by a journal are not until the journal says so.
+-- Requires 2026-11-12-review-request-type.sql.
+-- Created: 2026-11-20
+
+ALTER TABLE `review_request_type`
+    ADD COLUMN `visible_to_author` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '1 = its reports are passed on to the author, according to the visibility of their criteria' AFTER `counts_as_report`;
+
+UPDATE `review_request_type`
+SET `visible_to_author` = 1
+WHERE `default_type` = 1;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

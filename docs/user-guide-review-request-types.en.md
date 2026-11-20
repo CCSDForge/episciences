@@ -43,6 +43,7 @@ In the **Request types** section, each type is a block showing its default due d
    - **Position** in the list;
    - **Offer this type when inviting a reviewer** (uncheck to hide it);
    - **Count its reports as review reports** (see "Reports");
+   - **Pass its reports on to the author** (see "Reports Passed On to the Author");
    - **Answer without an account, from the invitation link** (see below), and its **Instructions** in each language
      (shown only while the option is checked; they are kept when it is unchecked).
 3. Click **Save**.
@@ -126,6 +127,22 @@ the "reviewed" status of the article, the minimum number of reviews, the average
 reminder. The other types are shown for information. Check this option, for example, for the review stages your journal
 creates as types ("Phase 2", "Revised version check"…). It has no effect for a type answered without an account, which
 produces no report. On the grids page, these types show the **Counts as a review report** badge.
+
+## Reports Passed On to the Author
+
+The **Pass its reports on to the author** option decides whether the reports of a type leave the editorial team:
+
+- **checked**: they are passed on like the review reports, according to the visibility of the criteria of their grid
+  ("public", "contributor"): the author's page of the article, decision e-mails (tag `%%PAPER_RATINGS%%`, where the type
+  is given next to the reviewer), attachments, and the public page of the published article if the journal shows the
+  reports;
+- **unchecked**: they stay with the editorial team, whatever the visibility of the criteria of their grid.
+
+**Review reports** are always passed on: the option is checked and cannot be changed. The **quick opinion** and the
+types created by the journal are not passed on until the journal checks the option. An answer without an account always
+stays with the editorial team. The reviewer always sees their own report.
+
+On the grids page, each type shows the **Passed on to the author** or **Editorial team only** badge.
 
 ## Answer Without an Account
 

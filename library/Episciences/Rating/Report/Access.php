@@ -101,6 +101,10 @@ class Episciences_Rating_Report_Access
             if (!$isReportsVisibleToAuthor) {
                 return false;
             }
+            // a request type whose reports stay with the editorial team (#319, lot D)
+            if (!$report->isVisibleToAuthor()) {
+                return false;
+            }
             $visibility = self::findAttachmentVisibility($report, $filename);
             return self::mayReadCriterion(self::ROLE_PAPER_AUTHOR, $visibility);
         }

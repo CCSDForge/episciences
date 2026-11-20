@@ -135,6 +135,16 @@ final class RequestTypeInputTest extends TestCase
         self::assertTrue((new RequestTypeInput($this->post(), self::RVID, self::LANGUAGES, $fullReport))->getType()?->countsAsReport());
     }
 
+    public function testThePassedOnToTheAuthorBoxSetsTheTypeButNeverTheReviewReport(): void
+    {
+        self::assertTrue((new RequestTypeInput($this->post(['visible_to_author' => '1']), self::RVID, self::LANGUAGES))->getType()?->isVisibleToAuthor());
+        self::assertFalse((new RequestTypeInput($this->post(), self::RVID, self::LANGUAGES))->getType()?->isVisibleToAuthor());
+
+        // the review reports are always passed on, the box being unchecked or absent
+        $fullReport = new RequestType(1, self::RVID, DefaultRequestType::FullReport, ['en' => 'Review report']);
+        self::assertTrue((new RequestTypeInput($this->post(), self::RVID, self::LANGUAGES, $fullReport))->getType()?->isVisibleToAuthor());
+    }
+
     public function testInstructionsAreOptionalAndLimited(): void
     {
         $type = (new RequestTypeInput($this->post(['instructions' => ['fr' => 'Indiquez votre avis.', 'en' => '']]), self::RVID, self::LANGUAGES))->getType();

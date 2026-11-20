@@ -28,6 +28,9 @@ class RequestTypeRepository
     /** @var array<int, bool> whether the reports of the type count as review reports, by type id (cache of countsAsReportId()) */
     private static array $countsAsReport = [];
 
+    /** @var array<int, bool> whether the reports of the type are passed on to the author, by type id (cache of visibleToAuthorId()) */
+    private static array $visibleToAuthor = [];
+
     /**
      * @param ?Zend_Db_Adapter_Abstract $db defaults to the application database
      */
@@ -102,14 +105,27 @@ class RequestTypeRepository
     }
 
     /**
-     * Forgets the values cached by fullReportIdOf(), isFullReportId() and countsAsReportId() (tests, creation of the
-     * default types, update of a type)
+     * Whether the reports of the type are passed on to the author, read once per request; an unknown type is not
+     */
+    public static function visibleToAuthorId(int $id, ?self $repository = null): bool
+    {
+        if (!array_key_exists($id, self::$visibleToAuthor)) {
+            self::$visibleToAuthor[$id] = (bool)($repository ?? new self())->findById($id)?->isVisibleToAuthor();
+        }
+
+        return self::$visibleToAuthor[$id];
+    }
+
+    /**
+     * Forgets the values cached by fullReportIdOf(), isFullReportId(), countsAsReportId() and visibleToAuthorId() (tests,
+     * creation of the default types, update of a type)
      */
     public static function clearCache(): void
     {
         self::$fullReportIds = [];
         self::$isFullReport = [];
         self::$countsAsReport = [];
+        self::$visibleToAuthor = [];
     }
 
     /**
@@ -174,7 +190,7 @@ class RequestTypeRepository
         // a type never changes journal, nor becomes or stops being a default type
         unset($row['default_type'], $row['rvid']);
         $db->update(self::TABLE_NAME, $row, ['id = ?' => $id]);
-        unset(self::$countsAsReport[$id]);
+        unset(self::$countsAsReport[$id], self::$visibleToAuthor[$id]);
 
         return $type;
     }

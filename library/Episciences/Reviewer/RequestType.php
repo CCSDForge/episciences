@@ -48,6 +48,8 @@ final class RequestType
 
     private bool $countsAsReport;
 
+    private bool $visibleToAuthor;
+
     /**
      * @param DefaultRequestType|null $defaultType the default type it is, null for a type created by the journal
      * @param array<string, string> $labels label per language, at least one
@@ -55,6 +57,8 @@ final class RequestType
      * @param array<string, string> $instructions instructions per language (answer without an account)
      * @param bool $countsAsReport whether its reports count like review reports (reviewed status, required number of
      *     reports, average rating); always for the review report, never for a type answered without an account
+     * @param bool $visibleToAuthor whether its reports are passed on to the author (and to the public, according to the
+     *     visibility of their criteria); always for the review report (#319, lot D)
      * @throws InvalidArgumentException on an invalid label or deadline, or settings a default type cannot have
      */
     public function __construct(
@@ -67,7 +71,8 @@ final class RequestType
         private readonly int $position = 0,
         private readonly bool $enabled = true,
         array $instructions = [],
-        bool $countsAsReport = false
+        bool $countsAsReport = false,
+        bool $visibleToAuthor = false
     ) {
         if ($defaultDeadline !== null && DeadlineUnit::parseStoredInterval($defaultDeadline) === null) {
             throw new InvalidArgumentException(sprintf('Invalid default deadline "%s"', $defaultDeadline));
@@ -93,6 +98,7 @@ final class RequestType
         $this->labels = self::cleanLabels($labels);
         $this->instructions = self::cleanInstructions($instructions);
         $this->countsAsReport = $isFullReport || $countsAsReport;
+        $this->visibleToAuthor = $isFullReport || $visibleToAuthor;
     }
 
     /**
@@ -147,7 +153,8 @@ final class RequestType
             (int)($row['position'] ?? 0),
             (bool)($row['enabled'] ?? true),
             is_array($instructions) ? $instructions : [],
-            (bool)($row['counts_as_report'] ?? false)
+            (bool)($row['counts_as_report'] ?? false),
+            (bool)($row['visible_to_author'] ?? false)
         );
     }
 
@@ -167,6 +174,7 @@ final class RequestType
             'position' => $this->position,
             'enabled' => (int)$this->enabled,
             'counts_as_report' => (int)$this->countsAsReport,
+            'visible_to_author' => (int)$this->visibleToAuthor,
         ];
     }
 
@@ -174,7 +182,7 @@ final class RequestType
     {
         return new self(
             $id, $this->rvid, $this->defaultType, $this->labels, $this->lightAnswer, $this->defaultDeadline, $this->position, $this->enabled,
-            $this->instructions, $this->countsAsReport
+            $this->instructions, $this->countsAsReport, $this->visibleToAuthor
         );
     }
 
@@ -183,6 +191,7 @@ final class RequestType
      * @param bool|null $lightAnswer null: unchanged
      * @param array<string, string>|null $instructions null: unchanged
      * @param bool|null $countsAsReport null: unchanged
+     * @param bool|null $visibleToAuthor null: unchanged
      */
     public function withSettings(
         array $labels,
@@ -191,11 +200,12 @@ final class RequestType
         bool $enabled,
         ?bool $lightAnswer = null,
         ?array $instructions = null,
-        ?bool $countsAsReport = null
+        ?bool $countsAsReport = null,
+        ?bool $visibleToAuthor = null
     ): self {
         return new self(
             $this->id, $this->rvid, $this->defaultType, $labels, $lightAnswer ?? $this->lightAnswer, $defaultDeadline, $position, $enabled,
-            $instructions ?? $this->instructions, $countsAsReport ?? $this->countsAsReport
+            $instructions ?? $this->instructions, $countsAsReport ?? $this->countsAsReport, $visibleToAuthor ?? $this->visibleToAuthor
         );
     }
 
@@ -290,6 +300,15 @@ final class RequestType
     public function countsAsReport(): bool
     {
         return $this->countsAsReport;
+    }
+
+    /**
+     * Whether its reports are passed on to the author, and to the public when the journal shows the reports of the
+     * published papers, according to the visibility of their criteria; otherwise they stay with the editorial team
+     */
+    public function isVisibleToAuthor(): bool
+    {
+        return $this->visibleToAuthor;
     }
 
     public function isQuickOpinion(): bool

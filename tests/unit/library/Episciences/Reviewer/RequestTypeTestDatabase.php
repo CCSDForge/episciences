@@ -27,6 +27,7 @@ final class RequestTypeTestDatabase
                 position INTEGER NOT NULL DEFAULT 0,
                 enabled INTEGER NOT NULL DEFAULT 1,
                 counts_as_report INTEGER NOT NULL DEFAULT 0,
+                visible_to_author INTEGER NOT NULL DEFAULT 0,
                 UNIQUE (rvid, default_type)
             )'
         );

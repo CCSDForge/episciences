@@ -126,6 +126,29 @@ final class RequestTypeTest extends TestCase
         self::assertTrue($phase->withSettings(['en' => 'Phase 2'], null, 3, true)->countsAsReport(), 'unchanged when not given');
     }
 
+    public function testOnlyTheReviewReportIsPassedOnToTheAuthorByDefault(): void
+    {
+        self::assertTrue(RequestType::defaults(self::RVID)[0]->isVisibleToAuthor());
+        self::assertFalse(RequestType::defaults(self::RVID)[1]->isVisibleToAuthor());
+        self::assertFalse((new RequestType(null, self::RVID, null, ['en' => 'Phase two']))->isVisibleToAuthor());
+        // the review report always is, whatever is given
+        self::assertTrue((new RequestType(null, self::RVID, DefaultRequestType::FullReport, ['en' => 'Review report'], false, null, 1, true, [], true, false))->isVisibleToAuthor());
+    }
+
+    public function testATypeOfTheJournalCanBePassedOnToTheAuthorAndKeepsItInItsRow(): void
+    {
+        $phase = new RequestType(8, self::RVID, null, ['en' => 'Phase two'], false, null, 3, true, [], false, true);
+
+        self::assertTrue($phase->isVisibleToAuthor());
+        self::assertSame(1, $phase->toRow()['visible_to_author']);
+        self::assertTrue(RequestType::fromRow($phase->toRow() + ['id' => 8])->isVisibleToAuthor());
+        self::assertTrue($phase->withId(9)->isVisibleToAuthor());
+        self::assertFalse($phase->withSettings(['en' => 'Phase 2'], null, 3, true, null, null, null, false)->isVisibleToAuthor());
+        self::assertTrue($phase->withSettings(['en' => 'Phase 2'], null, 3, true)->isVisibleToAuthor(), 'unchanged when not given');
+        // a row written before the setting existed: not passed on
+        self::assertFalse(RequestType::fromRow(['id' => 8, 'rvid' => self::RVID, 'labels' => '{"en":"Phase two"}'])->isVisibleToAuthor());
+    }
+
     public function testATypeAnsweredWithoutAnAccountCannotCountAsReviewReport(): void
     {
         $this->expectException(InvalidArgumentException::class);

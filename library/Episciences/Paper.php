@@ -2724,7 +2724,10 @@ class Episciences_Paper
             $visibility = [Episciences_Rating_Criterion::VISIBILITY_PUBLIC];
         }
 
-        return $this->filterRatingReports($reports, $visibility, $user);
+        // outside the editorial team, only the reports of the request types passed on to the author (#319, lot D)
+        $editorialTeam = in_array(Episciences_Rating_Criterion::VISIBILITY_EDITORS, $visibility, true);
+
+        return $this->filterRatingReports($reports, $visibility, $user, $editorialTeam);
     }
 
     /**
@@ -2784,34 +2787,42 @@ class Episciences_Paper
     }
 
     /**
-     * filter rating reports
-     * @param array $reports
-     * @param array $visibility
-     * @param Episciences_User|null $user
-     * @return array
+     * The reports cut down to what may be shown: the criteria of the given visibilities (all those of the user's own
+     * report), without the empty ones; a report left without any criterion is removed. Outside the editorial team, a
+     * report of a request type that is not passed on to the author is removed too, except the user's own (#319).
+     *
+     * @param array<int|string, Episciences_Rating_Report> $reports keyed by reportKey()
+     * @param list<string> $visibility
+     * @return array<int|string, Episciences_Rating_Report>
      */
-    private function filterRatingReports(array $reports, array $visibility = [Episciences_Rating_Criterion::VISIBILITY_PUBLIC], Episciences_User $user = null): array
+    private function filterRatingReports(array $reports, array $visibility = [Episciences_Rating_Criterion::VISIBILITY_PUBLIC], ?Episciences_User $user = null, bool $editorialTeam = false): array
     {
-        /** @var Episciences_Rating_Report $report */
-        foreach ($reports as &$report) {
+        $filtered = [];
+
+        foreach ($reports as $key => $report) {
+            $isOwnReport = null !== $user && $report->getUid() == $user->getUid();
+
+            if (!$editorialTeam && !$isOwnReport && !$report->isVisibleToAuthor()) {
+                continue;
+            }
+
             $report = clone $report;
             /** @var Episciences_Rating_Criterion $criterion */
             foreach ((array)$report->getCriteria() as $criterion) {
                 if ($criterion->isEmpty()) { // git #248 : ne pas afficher les rapport vides
                     $report->removeCriterion($criterion->getId());
-                } elseif (!in_array($criterion->getVisibility(), $visibility)) {
-                    if (null != $user && $report->getUid() == $user->getUid()) {
-                        continue;
-                    }
+                } elseif (!$isOwnReport && !in_array($criterion->getVisibility(), $visibility)) {
                     $report->removeCriterion($criterion->getId());
                 }
             }
 
-            if (empty($report->getCriteria())) {
-                unset($reports[$report->getUid()]);
+            // removed by its key: a reviewer may hold a report of each request type (#319)
+            if (!empty($report->getCriteria())) {
+                $filtered[$key] = $report;
             }
         }
-        return $reports;
+
+        return $filtered;
     }
 
     /**
