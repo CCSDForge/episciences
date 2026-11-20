@@ -27,11 +27,14 @@ function runPhp(scriptAndArgs) {
 }
 
 /**
- * Creates the E2E accounts and removes the papers, volumes and sections left by previous runs.
+ * Creates the E2E accounts, applies the journal settings the suite relies on and removes the papers,
+ * volumes and sections left by previous runs.
  * @returns {string}
  */
 function seedAndReset() {
-    return runPhp('scripts/console.php app:e2e-seed --reset');
+    // E2E_COI=1 runs the suite with the conflict of interest declaration enabled
+    const coi = process.env.E2E_COI === '1' ? 'on' : 'off';
+    return runPhp(`scripts/console.php app:e2e-seed --reset --coi=${coi}`);
 }
 
 /**
@@ -51,4 +54,18 @@ function flushMailQueue() {
     return runPhp('scripts/send_mails.php');
 }
 
-module.exports = { runPhp, seedAndReset, restoreSettings, flushMailQueue };
+/**
+ * Runs the automatic reminders of the E2E journal as if the given day had come.
+ * Every reminder of the journal is processed, not only the ones created by the calling test.
+ * @param {string} date YYYY-MM-DD
+ * @returns {string}
+ */
+function runReminders(date) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        throw new Error(`Invalid reminder date: ${date}`);
+    }
+    // The journal of app:e2e-seed (its default --rvcode)
+    return runPhp(`scripts/reminders.php --rvcode=dev --date=${date}`);
+}
+
+module.exports = { runPhp, seedAndReset, restoreSettings, flushMailQueue, runReminders };

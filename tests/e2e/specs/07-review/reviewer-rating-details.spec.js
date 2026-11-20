@@ -9,6 +9,7 @@ const {
     createVolumeGrid,
     addQuantitativeCriterion,
     assignMasterVolume,
+    fillRatingComments,
 } = require('../../helpers/editorial-workflow');
 
 const REVIEWER_EMAIL = 'e2e_reviewer@example.org';
@@ -53,13 +54,7 @@ test.describe('Reviewer rating draft, attachment and anonymity', () => {
             const form = reviewerPage.locator('form#rating-grid');
             await expect(form).toBeVisible();
             await form.locator('select[name^="note_item_"]').selectOption({ label: '3/5' });
-            await reviewerPage.waitForFunction(() => {
-                const editors = window.tinymce?.get() ?? [];
-                return editors.length > 0 && editors.every(editor => editor.initialized);
-            });
-            await reviewerPage.evaluate(() => {
-                window.tinymce.get().forEach(editor => editor.setContent('<p>E2E draft comment.</p>'));
-            });
+            await fillRatingComments(reviewerPage, '<p>E2E draft comment.</p>');
             await form.locator('input[type="file"]').setInputFiles(MINIMAL_PDF);
 
             await reviewerPage.locator('#submitRatingForm').click();
@@ -79,13 +74,7 @@ test.describe('Reviewer rating draft, attachment and anonymity', () => {
 
             const form = reviewerPage.locator('form#rating-grid');
             await form.locator('select[name^="note_item_"]').selectOption({ label: '5/5' });
-            await reviewerPage.waitForFunction(() => {
-                const editors = window.tinymce?.get() ?? [];
-                return editors.length > 0 && editors.every(editor => editor.initialized);
-            });
-            await reviewerPage.evaluate(() => {
-                window.tinymce.get().forEach(editor => editor.setContent('<p>E2E final anonymous review.</p>'));
-            });
+            await fillRatingComments(reviewerPage, '<p>E2E final anonymous review.</p>');
             await reviewerPage.locator('#validateRating').click();
             await expect(reviewerPage).toHaveURL(/paper\/ratings/);
         });
