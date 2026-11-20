@@ -34,6 +34,12 @@ et les **Sollicitations dans la revue** (voir plus bas). Cliquez sur **Inviter**
 Quand une personne ne peut pas être invitée, le motif remplace le bouton : **Déjà invité sur cette version**,
 **Auteur de l'article**, **Vous-même** ou **Conflit d'intérêts déclaré**.
 
+Avec les [types de demande](user-guide-review-request-types.fr.md), une personne peut recevoir une demande de chaque
+type sur la même version : un relecteur n'est **Déjà invité sur cette version** que s'il a une demande en cours de
+**chaque** type proposé par la revue. Sinon, il garde son bouton **Inviter**, et les types qu'il a déjà en cours sont
+grisés dans le message d'invitation. Une personne sans compte est **Déjà invitée** dès qu'elle a une invitation en
+cours.
+
 ### Parcourir les relecteurs de la revue
 
 Sous la recherche, **Parcourir les N relecteurs de la revue** (cliquez pour déplier) liste tous les relecteurs de la
@@ -90,6 +96,8 @@ précédente, les personnes invitées et ce qu'est devenue leur demande :
 | Invitation acceptée | invitation acceptée, rapport non commencé |
 | Invitation refusée / expirée / annulée | la personne n'a pas relu cette version |
 | Sans réponse | l'invitation est restée sans réponse |
+
+Le type de chaque demande (rapport de relecture, avis rapide…) est indiqué sous son statut.
 
 Pour réinviter une personne :
 

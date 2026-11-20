@@ -55,11 +55,14 @@ For other needs (revised version check, review stages…), create your own types
 
 ## Inviting a Reviewer
 
-1. Open **Invite a reviewer** from the paper's administration page and choose the reviewer as usual.
+1. Open **Invite a reviewer** from the paper's administration page and choose the person (see
+   [Inviting a Reviewer](user-guide-reviewer-invitation.en.md)).
 2. In the invitation e-mail step, choose the **Request type**.
 3. The message and the due date change according to the type. You can still edit the message before sending it.
 
-The types that the reviewer already has in progress for this article are greyed out.
+The types that the reviewer already has in progress for this article are greyed out. A reviewer with a request in
+progress of every type may no longer be invited on this version: **Already invited on this version** replaces their
+button.
 
 ## Asking for a Revision: Type of the Next Version
 

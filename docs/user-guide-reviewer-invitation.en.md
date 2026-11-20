@@ -34,6 +34,12 @@ Case and accents are ignored: "muller" finds "Müller". Each row gives the name,
 When a person may not be invited, the reason replaces the button: **Already invited on this version**, **Author of the
 article**, **Yourself** or **Conflict of interest declared**.
 
+With [request types](user-guide-review-request-types.en.md), a person may receive one request of each type on the same
+version: a reviewer is **Already invited on this version** only when they have a request in progress of **every** type
+offered by the journal. Otherwise, they keep their **Invite** button, and the types they already have in progress are
+greyed out in the invitation message. A person without an account is **Already invited** as soon as they have an
+invitation in progress.
+
 ### Browsing the Reviewers of the Journal
 
 Below the search, **Browse the N reviewers of the journal** (click to expand) lists all the reviewers of the journal,
@@ -88,6 +94,8 @@ people invited and what became of their request:
 | Invitation accepted | invitation accepted, report not started |
 | Invitation declined / expired / cancelled | the person did not review this version |
 | Not answered | the invitation was never answered |
+
+The type of each request (review report, quick opinion…) is shown below its status.
 
 To invite a person again:
 

@@ -57,11 +57,13 @@ grille si besoin.
 
 ## Inviter un relecteur
 
-1. Ouvrez **Inviter un relecteur** depuis la page de gestion de l'article et choisissez le relecteur comme d'habitude.
+1. Ouvrez **Inviter un relecteur** depuis la page de gestion de l'article et choisissez la personne (voir
+   [Inviter un relecteur](user-guide-reviewer-invitation.fr.md)).
 2. À l'étape du message d'invitation, choisissez le **Type de demande**.
 3. Le message et la date limite changent selon le type. Vous pouvez toujours modifier le message avant l'envoi.
 
-Les types que le relecteur a déjà en cours pour cet article sont grisés.
+Les types que le relecteur a déjà en cours pour cet article sont grisés. Un relecteur qui a une demande en cours de
+chaque type ne peut plus être invité sur cette version : **Déjà invité sur cette version** remplace son bouton.
 
 ## Demander des modifications : type de la version suivante
 
