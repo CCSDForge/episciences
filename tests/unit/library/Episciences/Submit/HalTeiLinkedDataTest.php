@@ -13,6 +13,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Statement_Interface;
 use Zend_Db_Table_Abstract;
@@ -24,6 +25,8 @@ use Zend_Db_Table_Abstract;
 final class HalTeiLinkedDataTest extends TestCase
 {
     private const DOCID = 1234;
+    /** Fake HAL repository: the label contains "HAL" (the repositories of the test database may differ) */
+    private const HAL_REPO_ID = 9997;
     private const HANDLE = 'https://hdl.handle.net/21.11115/0000-0016-7FC9-8';
     private const SWHID = 'swh:1:dir:0000000000000000000000000000000000000001';
 
@@ -31,6 +34,9 @@ final class HalTeiLinkedDataTest extends TestCase
 
     /** @var list<string> INSERT statements sent to the database */
     private array $inserts = [];
+
+    /** @var array<mixed> */
+    private array $previousRepositories = [];
 
     protected function setUp(): void
     {
@@ -40,6 +46,16 @@ final class HalTeiLinkedDataTest extends TestCase
         }
 
         $this->previousAdapter = $adapter;
+
+        $repositories = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $this->previousRepositories = (array)$repositories->getValue();
+        $repositories->setValue(null, [
+            self::HAL_REPO_ID => [
+                Episciences_Repositories::REPO_LABEL => 'HAL Spy',
+                Episciences_Repositories::REPO_TYPE => Episciences_Repositories::TYPE_PAPERS_REPOSITORY,
+                Episciences_Repositories::REPO_API_URL => 'https://api.hal.test',
+            ],
+        ]);
 
         /** @var Zend_Db_Adapter_Abstract&MockObject $db */
         $db = $this->getMockBuilder($adapter::class)
@@ -68,6 +84,8 @@ final class HalTeiLinkedDataTest extends TestCase
 
     protected function tearDown(): void
     {
+        (new ReflectionProperty(Episciences_Repositories::class, '_repositories'))->setValue(null, $this->previousRepositories);
+
         if ($this->previousAdapter !== null) {
             Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
         }
@@ -123,7 +141,7 @@ final class HalTeiLinkedDataTest extends TestCase
         return new Episciences_Paper([
             'docid' => self::DOCID,
             'paperid' => self::DOCID,
-            'repoid' => (int)Episciences_Repositories::HAL_REPO_ID,
+            'repoid' => self::HAL_REPO_ID,
             'identifier' => 'hal-01234567',
             'version' => 1,
         ]);
