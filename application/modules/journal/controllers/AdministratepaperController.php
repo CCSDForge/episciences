@@ -1613,6 +1613,30 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * Detail logged with a revision request (#319, lot B): the automatic reassignment of the reviewers and the type of
+     * the new request made to them (id and labels, as for an invitation), when the request holds them
+     *
+     * @param array<string, mixed> $options options of the revision request
+     * @return array<string, mixed>
+     */
+    public static function revisionRequestReviewersDetail(array $options, ?RequestTypeRepository $repository = null): array
+    {
+        $detail = [];
+
+        if (array_key_exists('reassign_reviewers', $options)) {
+            $detail['reassign_reviewers'] = (bool)$options['reassign_reviewers'];
+        }
+
+        $typeId = $options[NextVersionRequestType::OPTION] ?? null;
+        $type = is_int($typeId) ? ($repository ?? new RequestTypeRepository())->findUsable($typeId, RVID) : null;
+        if ($type !== null) {
+            $detail['next_request_type'] = ['id' => $type->getId(), 'labels' => $type->getLabels()];
+        }
+
+        return $detail;
+    }
+
+    /**
      * What the editor is told when a person may not be invited (InvitationEligibility::REASON_*), to be translated
      */
     public static function invitationRefusalMessage(string $reason): string
@@ -5422,7 +5446,7 @@ class AdministratepaperController extends PaperDefaultController
                 $actionLog = 'undefined';
             }
 
-            // log revision request
+            // log revision request, with what it asks of the reviewers on the next version (#319)
             $paper->log($actionLog, Episciences_Auth::getUid(), [
                 'id' => $comment->getPcid(),
                 'deadline' => $deadline,
@@ -5430,7 +5454,7 @@ class AdministratepaperController extends PaperDefaultController
                 'message' => $message,
                 'isAlreadyAccepted' => $isAlreadyAccepted,
                 'user' => Episciences_Auth::getUser()->toArray()
-            ]);
+            ] + self::revisionRequestReviewersDetail($options));
 
             // sends an e-mail to the author
             $tags = [

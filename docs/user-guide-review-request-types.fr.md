@@ -80,6 +80,11 @@ rapide après un premier rapport).
 
 Les messages de réinvitation peuvent afficher le type avec la balise `%%REVIEW_REQUEST_TYPE%%`.
 
+Sur la page de gestion de l'article, chaque demande du panneau **Demandes de modifications** rappelle ce choix :
+**Nouvelle demande aux relecteurs** (le type, ou « Même type que la demande en cours ») et **Réassignation automatique
+des relecteurs** (oui ou non). L'historique de l'article l'indique aussi pour les demandes faites depuis cette
+version. Ces informations sont réservées à l'équipe éditoriale : l'auteur ne les voit pas.
+
 ## Messages d'invitation
 
 Chaque type a son propre modèle de message, que vous pouvez personnaliser dans l'écran des modèles de mail, comme

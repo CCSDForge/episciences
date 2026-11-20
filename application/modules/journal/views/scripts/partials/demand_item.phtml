@@ -5,6 +5,7 @@
 // - $paperId: paper ID
 // - $isReply: boolean - default false
 // - $cleanMessage: boolean - default true (use cleanBody())
+// - $showReviewerRequest: boolean - default false (what the request asks of the reviewers, editorial team only)
 
 // Extract variables from $this if they're not already set
 if (!isset($item) && isset($this->item)) {
@@ -49,6 +50,18 @@ $showReplyButtonAndForm = $this->showReplyButtonAndForm ?? false;
                     'deadline' => $item['DEADLINE'] ?? null,
                     'showDeadline' => !$isReply
             ]) ?>
+            <?php
+            // what the request asks of the reviewers on the next version (#319, lot B): editorial team only
+            $reviewerRequest = !$isReply && !empty($this->showReviewerRequest)
+                    ? \Episciences\Reviewer\NextVersionRequestType::summaryOf($item['OPTIONS'] ?? null)
+                    : null;
+            ?>
+            <?php if ($reviewerRequest !== null) : ?>
+                <?= $this->partial('partials/revision_request_reviewers.phtml', [
+                        'typeLabel' => $this->requestTypeLabel($reviewerRequest['type']),
+                        'reassign' => $reviewerRequest['reassign'],
+                ]) ?>
+            <?php endif; ?>
         </header>
 
         <!-- Message body -->

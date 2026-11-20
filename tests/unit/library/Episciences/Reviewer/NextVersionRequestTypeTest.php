@@ -107,6 +107,31 @@ final class NextVersionRequestTypeTest extends ControllerTestCase
         self::assertSame($expected, NextVersionRequestType::ofRequest($request));
     }
 
+    /**
+     * @return array<string, array{array<string, mixed>|string|null, array{type: ?int, reassign: ?bool}|null}>
+     */
+    public static function summaryProvider(): array
+    {
+        return [
+            'stored options, a type and the reassignment' => ['{"reassign_reviewers":true,"next_request_type_id":12}', ['type' => 12, 'reassign' => true]],
+            'same type, no reassignment' => [['reassign_reviewers' => false], ['type' => null, 'reassign' => false]],
+            'a type without the reassignment option' => [['next_request_type_id' => '12'], ['type' => 12, 'reassign' => null]],
+            'a request made before these choices' => ['{"deadline":"2026-12-01"}', null],
+            'no options' => [null, null],
+            'unreadable options' => ['{', null],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed>|string|null $options
+     * @param array{type: ?int, reassign: ?bool}|null $expected
+     */
+    #[DataProvider('summaryProvider')]
+    public function testWhatARevisionRequestAsksOfTheReviewers(array|string|null $options, ?array $expected): void
+    {
+        self::assertSame($expected, NextVersionRequestType::summaryOf($options));
+    }
+
     public function testWithoutChoiceEveryCurrentRequestIsInvitedAgainWithItsType(): void
     {
         $reviewer = new stdClass();

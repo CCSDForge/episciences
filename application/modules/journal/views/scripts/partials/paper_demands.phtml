@@ -17,6 +17,7 @@ $paperId = $paper->getPaperId();
                     'item' => $this->current_demand,
                     'paperId' => $paperId,
                     'isReply' => false,
+                    'showReviewerRequest' => $this->showReviewerRequest ?? false,
                     'cleanMessage' => true
                 ]) ?>
 
@@ -58,6 +59,7 @@ $paperId = $paper->getPaperId();
                         'item' => $demand,
                         'paperId' => $paperId,
                         'isReply' => false,
+                        'showReviewerRequest' => $this->showReviewerRequest ?? false,
                         'cleanMessage' => true
                     ]) ?>
 
@@ -114,6 +116,7 @@ $paperId = $paper->getPaperId();
                             'item' => $demand,
                             'paperId' => $paperId,
                             'isReply' => false,
+                            'showReviewerRequest' => $this->showReviewerRequest ?? false,
                             'cleanMessage' => true
                         ]) ?>
 

@@ -91,6 +91,28 @@ test.describe('Request type of the next version (#319)', () => {
             );
         });
 
+        await test.step('the request shows what it asks of the reviewers, to the editorial team only', async () => {
+            const demands = adminPage.locator('#answer');
+            await expect(demands).toContainText(
+                `New request to the reviewers: ${QUICK_OPINION}`
+            );
+            await expect(demands).toContainText(
+                'Automatic reassignment of the reviewers: Yes'
+            );
+            // and in the history, as recorded with the request
+            await expect(
+                adminPage.locator('#history .revision-request-reviewers')
+            ).toContainText(QUICK_OPINION);
+
+            await authorPage.goto(`paper/view/id/${docid}`);
+            await expect(authorPage.locator('body')).toContainText(
+                'Pending minor revision'
+            );
+            await expect(
+                authorPage.locator('.revision-request-reviewers')
+            ).toHaveCount(0);
+        });
+
         const newDocid =
             await test.step('the author submits version 2', async () => {
                 await submitVersion2(authorPage, docid);

@@ -1,0 +1,22 @@
+<?php
+/**
+ * What a revision request asks of the reviewers on the next version (#319, lot B): the request type and the automatic
+ * reassignment. For the editorial team only: shown in the revision requests panel of the paper management page and in
+ * the history of the paper.
+ *
+ * @var Zend_View $this
+ * @var string $this->typeLabel label of the chosen type, already escaped; empty: the same type as the current request
+ * @var bool|null $this->reassign automatic reassignment of the reviewers, null when unknown
+ */
+
+$typeLabel = (string)($this->typeLabel ?? '');
+$reassign = $this->reassign ?? null;
+?>
+<div class="revision-request-reviewers">
+    <i class="fa-solid fa-user-check" aria-hidden="true"></i>&nbsp;<?= $this->escape($this->translate('Nouvelle demande aux relecteurs :')) ?>
+    <?= $typeLabel !== '' ? $typeLabel : $this->escape($this->translate('Même type que la demande en cours')) ?>
+    <?php if ($reassign !== null) : ?>
+        <br><?= $this->escape($this->translate('Réassignation automatique des relecteurs :')) ?>
+        <?= $this->escape($this->translate($reassign ? 'Oui' : 'Non')) ?>
+    <?php endif; ?>
+</div>

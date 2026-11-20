@@ -78,6 +78,11 @@ report).
 
 The re-invitation e-mails can show the type with the `%%REVIEW_REQUEST_TYPE%%` tag.
 
+On the paper's administration page, each request of the **Revision requests** panel recalls this choice: **New request
+to the reviewers** (the type, or "Same type as the current request") and **Automatic reassignment of the reviewers**
+(yes or no). The paper history also shows it for the requests made since this version. This information is only shown
+to the editorial team: the author does not see it.
+
 ## Invitation E-mails
 
 Each type has its own e-mail template, which you can customise in the mail templates screen, like any other template.

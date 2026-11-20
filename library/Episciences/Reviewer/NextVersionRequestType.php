@@ -57,6 +57,34 @@ final class NextVersionRequestType
     }
 
     /**
+     * What a revision request asks of the reviewers on the next version, from its stored options (OPTIONS column, JSON,
+     * or the decoded array): the type chosen (null: the same type as the current request) and the automatic
+     * reassignment. Null when the request holds neither, as the requests made before these choices existed.
+     *
+     * @param array<string, mixed>|string|null $options
+     * @return array{type: ?int, reassign: ?bool}|null
+     */
+    public static function summaryOf(array|string|null $options): ?array
+    {
+        if (is_string($options)) {
+            try {
+                $options = json_decode($options, true, 8, JSON_THROW_ON_ERROR);
+            } catch (\JsonException) {
+                return null;
+            }
+        }
+
+        if (!is_array($options) || (!array_key_exists(self::OPTION, $options) && !array_key_exists('reassign_reviewers', $options))) {
+            return null;
+        }
+
+        return [
+            'type' => self::positiveInt($options[self::OPTION] ?? null),
+            'reassign' => array_key_exists('reassign_reviewers', $options) ? (bool)$options['reassign_reviewers'] : null,
+        ];
+    }
+
+    /**
      * Type chosen in a revision request, null without a choice.
      */
     public static function ofRequest(Episciences_Comment $revisionRequest): ?int

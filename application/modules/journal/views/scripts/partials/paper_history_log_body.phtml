@@ -212,4 +212,19 @@ $tag = $this->tag;
         }
         break;
 
+    // Revision request: what it asks of the reviewers on the next version, as recorded at the time (#319, lot B)
+    case Episciences_Paper_Logger::CODE_MINOR_REVISION_REQUEST:
+    case Episciences_Paper_Logger::CODE_MAJOR_REVISION_REQUEST:
+        if (array_key_exists('reassign_reviewers', $detail) || isset($detail['next_request_type'])) {
+            $nextTypeLabels = $detail['next_request_type']['labels'] ?? null;
+            $nextTypeLabel = is_array($nextTypeLabels) && $nextTypeLabels !== []
+                ? (string)($nextTypeLabels[Episciences_Tools::getLocale()] ?? reset($nextTypeLabels))
+                : '';
+            echo $this->partial('partials/revision_request_reviewers.phtml', [
+                'typeLabel' => $this->escape($nextTypeLabel),
+                'reassign' => array_key_exists('reassign_reviewers', $detail) ? (bool)$detail['reassign_reviewers'] : null,
+            ]);
+        }
+        break;
+
 endswitch ?>

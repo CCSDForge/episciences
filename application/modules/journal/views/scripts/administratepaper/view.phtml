@@ -365,7 +365,9 @@ if ($this->citations !== '') {
                     'current_demand' => $this->currentDemand,
                     'previous_demands' => $this->demands,
                     'previousVersions' => $this->previousVersions,
-                    'previousVersionsDemands' => $this->previousVersionsDemands
+                    'previousVersionsDemands' => $this->previousVersionsDemands,
+                    // what each request asks of the reviewers on the next version (#319): editorial team only
+                    'showReviewerRequest' => true,
             ]); ?>
         </div>
     </div>
