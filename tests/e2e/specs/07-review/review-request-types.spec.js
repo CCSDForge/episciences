@@ -2,14 +2,20 @@ const { test, expect } = require('../../fixtures/e2e-fixtures');
 const {
     submitArxivPaper,
     openPaperManagement,
+    statusPanel,
+    applyDecision,
     submitInvitation,
     addQuantitativeCriterion,
 } = require('../../helpers/editorial-workflow');
 
-// a paper of its own: specs run in parallel, and each one submits a different paper
+// papers of their own: specs run in parallel, and each one submits a different paper
 const ARXIV_ID = '1704.04861';
+const PASSED_ON_ARXIV_ID = '1506.02640';
 const QUICK_OPINION = 'Quick opinion';
 const REVIEW_REPORT = 'Review report';
+const AUTHOR_EMAIL = 'e2e_author@example.org';
+const REVIEWER_USERNAME = 'e2e_reviewer';
+const REVIEWER_EMAIL = 'e2e_reviewer@example.org';
 
 /**
  * Id of a default request type of the journal, read on the grids page (its block is "#rating-grid-t<id>").
@@ -38,14 +44,39 @@ async function isLightAnswer(page, typeId) {
 }
 
 /**
- * Sets whether a request type is answered without an account, from its form.
+ * Settings of a request type, read on its form.
  * @param {import('@playwright/test').Page} page editorial page
  * @param {number} typeId
- * @param {boolean} lightAnswer
+ * @returns {Promise<{lightAnswer: boolean, visibleToAuthor: boolean}>}
  */
-async function setLightAnswer(page, typeId, lightAnswer) {
+async function requestTypeSettings(page, typeId) {
     await page.goto(`requesttype/edit?id=${typeId}`);
-    await page.locator('#light_answer').setChecked(lightAnswer);
+    return {
+        lightAnswer: await page.locator('#light_answer').isChecked(),
+        visibleToAuthor: await page.locator('#visible_to_author').isChecked(),
+    };
+}
+
+/**
+ * Saves settings of a request type from its form; the settings not given are left as they are.
+ * @param {import('@playwright/test').Page} page editorial page
+ * @param {number} typeId
+ * @param {Object} settings
+ * @param {boolean} [settings.lightAnswer] answered without an account
+ * @param {boolean} [settings.visibleToAuthor] its reports are passed on to the author
+ */
+async function saveRequestTypeSettings(
+    page,
+    typeId,
+    { lightAnswer, visibleToAuthor }
+) {
+    await page.goto(`requesttype/edit?id=${typeId}`);
+    if (lightAnswer !== undefined) {
+        await page.locator('#light_answer').setChecked(lightAnswer);
+    }
+    if (visibleToAuthor !== undefined) {
+        await page.locator('#visible_to_author').setChecked(visibleToAuthor);
+    }
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(
         page.getByText('The request type has been saved.').first()
@@ -53,10 +84,21 @@ async function setLightAnswer(page, typeId, lightAnswer) {
 }
 
 /**
+ * Sets whether a request type is answered without an account, from its form.
+ * @param {import('@playwright/test').Page} page editorial page
+ * @param {number} typeId
+ * @param {boolean} lightAnswer
+ */
+async function setLightAnswer(page, typeId, lightAnswer) {
+    await saveRequestTypeSettings(page, typeId, { lightAnswer });
+}
+
+/**
  * Creates the grid of a request type from its block on the grids page, unless it already exists; the page then
  * opens on the grid.
  * @param {import('@playwright/test').Page} page editorial page
  * @param {number} typeId
+ * @returns {Promise<boolean>} whether the grid was created
  */
 async function ensureRequestTypeGrid(page, typeId) {
     await page.goto(`grid/list#rating-grid-t${typeId}`);
@@ -64,9 +106,49 @@ async function ensureRequestTypeGrid(page, typeId) {
         `form[action="/grid/add"]:has(input[name="request_type"][value="${typeId}"]) button`
     );
 
-    if ((await createGrid.count()) > 0) {
-        await createGrid.click();
-        await expect(page).toHaveURL(new RegExp(`grid/list#rating-grid-t${typeId}$`));
+    if ((await createGrid.count()) === 0) {
+        return false;
+    }
+
+    await createGrid.click();
+    await expect(page).toHaveURL(new RegExp(`grid/list#rating-grid-t${typeId}$`));
+    return true;
+}
+
+/**
+ * Removes a criterion from the grid of a request type, when it is there.
+ * @param {import('@playwright/test').Page} page editorial page
+ * @param {number} typeId
+ * @param {string} title title of the criterion
+ */
+async function removeRequestTypeCriterion(page, typeId, title) {
+    await page.goto(`grid/list#rating-grid-t${typeId}`);
+    const remove = page
+        .locator(`#grid_t${typeId} tbody tr`, { hasText: title })
+        .locator('a.delete');
+
+    if ((await remove.count()) === 0) {
+        return;
+    }
+
+    await remove.first().click();
+    await page.locator('.bootbox-confirm .bootbox-accept').click();
+    await expect(remove).toHaveCount(0);
+}
+
+/**
+ * Leaves the grid of a request type as a test found it: removed if the test created it, otherwise without the
+ * criterion the test added.
+ * @param {import('@playwright/test').Page} page editorial page
+ * @param {number} typeId
+ * @param {boolean} created whether the test created the grid
+ * @param {string} criterionTitle title of the criterion the test added
+ */
+async function restoreRequestTypeGrid(page, typeId, created, criterionTitle) {
+    if (created) {
+        await removeRequestTypeGrid(page, typeId);
+    } else {
+        await removeRequestTypeCriterion(page, typeId, criterionTitle);
     }
 }
 
@@ -120,6 +202,82 @@ async function inviteNewReviewerFor(
 }
 
 /**
+ * Invites a reviewer who has an account for a request type, from the search of the invitation page.
+ * @param {import('@playwright/test').Page} page editorial page
+ * @param {number} docid
+ * @param {string} username
+ * @param {number} typeId
+ */
+async function inviteKnownReviewerFor(page, docid, username, typeId) {
+    await openPaperManagement(page, docid);
+    await page.locator(`#invite_reviewer_${docid}`).click();
+    await expect(page).toHaveURL(/administratepaper\/invitereviewer/);
+
+    await page.locator('#reviewer-search-term').fill(username);
+    await page
+        .locator('#reviewer-search-results tbody tr', { hasText: username })
+        .locator('button')
+        .click();
+    await expect(page.locator('#step-2')).toBeVisible();
+    await page
+        .locator('#invitation-form select[name="request_type_id"]')
+        .selectOption(String(typeId));
+    await submitInvitation(page, docid);
+}
+
+/**
+ * The reviewer accepts the invitation from the e-mail link, then fills in and sends the grid: the highest grade and
+ * the same comment for every criterion.
+ * @param {import('@playwright/test').Page} reviewerPage
+ * @param {string} invitationUrl link of the invitation e-mail
+ * @param {number} docid
+ * @param {string} comment
+ */
+async function acceptAndRate(reviewerPage, invitationUrl, docid, comment) {
+    // The link targets the configured application URL: only its path is kept
+    await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+    await reviewerPage.locator('#submitaccept').click();
+    await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
+
+    const grades = reviewerPage.locator(
+        'form#rating-grid select[name^="note_item_"]'
+    );
+    await expect(grades.first()).toBeVisible();
+    for (const grade of await grades.all()) {
+        await grade.selectOption({ index: 1 }, { timeout: 10000 });
+    }
+    // Comment fields are TinyMCE editors, initialised once the page has loaded
+    await reviewerPage.waitForFunction(() => {
+        const editors = window.tinymce?.get() ?? [];
+        return editors.length > 0 && editors.every(editor => editor.initialized);
+    });
+    await reviewerPage.evaluate(text => {
+        window.tinymce.get().forEach(editor => editor.setContent(`<p>${text}</p>`));
+    }, comment);
+    await reviewerPage.locator('#validateRating').click();
+    await expect(reviewerPage).toHaveURL(/paper\/ratings/);
+}
+
+/**
+ * Opens the refusal form of a paper and returns the message prefilled for the author, where %%PAPER_RATINGS%% has
+ * been replaced by the reports passed on to them. The form is left without being sent.
+ * @param {import('@playwright/test').Page} page administrator page
+ * @param {number} docid
+ * @returns {Promise<string>} HTML of the message
+ */
+async function refusalMessage(page, docid) {
+    const panel = await openPaperManagement(page, docid);
+    await panel.getByRole('button', { name: 'Change article status' }).click();
+    await panel.locator('a[data-target=".refusal-modal"]').click();
+    const modal = page.locator('.refusal-modal');
+    await expect(modal).toBeVisible();
+    // Zend_Form drops the dash of the element name "refusal-message"
+    return modal
+        .locator('textarea[name="refusalmessage"]')
+        .inputValue({ timeout: 10000 });
+}
+
+/**
  * A browser context without any session, as an invitee opening the e-mail link.
  * @param {import('@playwright/test').Browser} browser
  * @param {string} baseURL
@@ -142,6 +300,9 @@ async function newLoggedOutContext(browser, baseURL) {
 }
 
 test.describe('Review request types (#319)', () => {
+    // The tests change the settings and the grid of the quick opinion: they run one after the other
+    test.describe.configure({ mode: 'default' });
+
     test('the grids page lists each request type with the grid it uses, and its form has no code', async ({
         adminPage,
     }) => {
@@ -227,15 +388,17 @@ test.describe('Review request types (#319)', () => {
         const quickOpinion = await requestTypeId(adminPage, QUICK_OPINION);
         const gridKey = `t${quickOpinion}`;
         const wasLightAnswer = await isLightAnswer(adminPage, quickOpinion);
+        const criterionTitle = `E2E interest ${stamp}`;
+        let gridCreated = false;
         let docid;
 
         try {
             await test.step('the quick opinion is answered without an account, with a grid of its own', async () => {
                 await setLightAnswer(adminPage, quickOpinion, true);
 
-                await ensureRequestTypeGrid(adminPage, quickOpinion);
+                gridCreated = await ensureRequestTypeGrid(adminPage, quickOpinion);
                 await addQuantitativeCriterion(adminPage, gridKey, {
-                    title: `E2E interest ${stamp}`,
+                    title: criterionTitle,
                     description: 'Is the paper of interest for the journal?',
                     visibility: 'editors',
                 });
@@ -282,10 +445,10 @@ test.describe('Review request types (#319)', () => {
 
                     const form = page.locator('form#rating-grid');
                     await expect(form).toBeVisible();
-                    await form
-                        .locator('select')
-                        .first()
-                        .selectOption({ index: 4 });
+                    // the journal grid may already have criteria of its own: each one is graded
+                    for (const grade of await form.locator('select').all()) {
+                        await grade.selectOption({ index: 1 }, { timeout: 10000 });
+                    }
                     await form.locator('textarea').first().fill(comment);
                     await form
                         .getByRole('button', { name: 'Send my answer' })
@@ -314,7 +477,113 @@ test.describe('Review request types (#319)', () => {
         } finally {
             // the journal settings are left as they were
             await setLightAnswer(adminPage, quickOpinion, wasLightAnswer);
-            await removeRequestTypeGrid(adminPage, quickOpinion);
+            await restoreRequestTypeGrid(
+                adminPage,
+                quickOpinion,
+                gridCreated,
+                criterionTitle
+            );
+        }
+    });
+
+    test('a quick opinion reaches the author only when its type passes its reports on', async ({
+        authorPage,
+        adminPage,
+        reviewerPage,
+        mailpit,
+    }) => {
+        test.setTimeout(240000);
+        const stamp = Date.now();
+        const comment = `E2E quick opinion with an account ${stamp}`;
+        const quickOpinion = await requestTypeId(adminPage, QUICK_OPINION);
+        const initialSettings = await requestTypeSettings(adminPage, quickOpinion);
+        const criterionTitle = `E2E relevance ${stamp}`;
+        let gridCreated = false;
+        let docid;
+
+        try {
+            await test.step('the quick opinion is answered with an account, on a grid the author may see', async () => {
+                await saveRequestTypeSettings(adminPage, quickOpinion, {
+                    lightAnswer: false,
+                    visibleToAuthor: true,
+                });
+                gridCreated = await ensureRequestTypeGrid(adminPage, quickOpinion);
+                await addQuantitativeCriterion(adminPage, `t${quickOpinion}`, {
+                    title: criterionTitle,
+                    description: 'Is the paper relevant to the journal?',
+                    visibility: 'contributor',
+                });
+            });
+
+            await test.step('the reviewer gives a quick opinion with their account', async () => {
+                docid = await submitArxivPaper(authorPage, {
+                    arxivId: PASSED_ON_ARXIV_ID,
+                });
+                await inviteKnownReviewerFor(
+                    adminPage,
+                    docid,
+                    REVIEWER_USERNAME,
+                    quickOpinion
+                );
+                const email = await mailpit.waitForEmail({
+                    to: REVIEWER_EMAIL,
+                    subjectContains: [`#${docid} `, 'Request for a quick opinion'],
+                });
+                const link = mailpit
+                    .extractLinks(email.Text)
+                    .find(url => url.includes('/reviewer/invitation/'));
+                expect(link).toBeTruthy();
+                await acceptAndRate(reviewerPage, link, docid, comment);
+            });
+
+            await test.step('passed on: the decision e-mail gives the opinion, with the request type', async () => {
+                const message = await refusalMessage(adminPage, docid);
+                // the journal template must keep %%PAPER_RATINGS%%, as the default one does
+                expect(message).toContain(comment);
+                expect(message).toContain(`(${QUICK_OPINION})`);
+            });
+
+            await test.step('not passed on: the opinion is left out of the decision e-mail', async () => {
+                await saveRequestTypeSettings(adminPage, quickOpinion, {
+                    visibleToAuthor: false,
+                });
+                expect(await refusalMessage(adminPage, docid)).not.toContain(comment);
+
+                await applyDecision(adminPage, docid, 'refusal-modal');
+                await expect(statusPanel(adminPage)).toContainText('Rejected');
+                const email = await mailpit.waitForEmail({
+                    to: AUTHOR_EMAIL,
+                    subjectContains: [`#${docid} `, 'has been rejected'],
+                });
+                expect(email.HTML).not.toContain(comment);
+                expect(email.Text).not.toContain(comment);
+            });
+
+            await test.step('not passed on: the author does not see the opinion on the paper page', async () => {
+                await authorPage.goto(`paper/view/id/${docid}`);
+                await expect(statusPanel(authorPage)).toContainText('Rejected');
+                await expect(authorPage.locator('body')).not.toContainText(comment);
+            });
+
+            await test.step('passed on again: the author sees the opinion, labelled with its type', async () => {
+                await saveRequestTypeSettings(adminPage, quickOpinion, {
+                    visibleToAuthor: true,
+                });
+                await authorPage.goto(`paper/view/id/${docid}`);
+                // the reviews panel; the list of reports inside it has the same id
+                const ratings = authorPage.locator('.panel#ratings');
+                await expect(ratings).toContainText(comment);
+                await expect(ratings).toContainText(QUICK_OPINION);
+            });
+        } finally {
+            // the journal settings are left as they were
+            await saveRequestTypeSettings(adminPage, quickOpinion, initialSettings);
+            await restoreRequestTypeGrid(
+                adminPage,
+                quickOpinion,
+                gridCreated,
+                criterionTitle
+            );
         }
     });
 });
