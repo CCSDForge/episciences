@@ -46,8 +46,10 @@ If the person was not found, click **Invite a new person…**, then type their e
 required), their first name (optional) and the language of the invitation. **Invite this person…** opens the
 invitation message.
 
-The address is checked first: if an account already uses it, this account is offered instead (**An account already
-uses this address: invite this account.**), which avoids creating a duplicate. A person invited without an account can
+The address is checked first: if an account already uses it, this account is offered instead, with its **Invite**
+button, which avoids creating a duplicate. **Invite this person…** is then hidden; to invite someone else, change the
+address. If this account may not be invited (your own account, for instance), the reason is shown instead of the
+button. A person invited without an account can
 create one when answering the invitation.
 
 ## Requests in the Journal

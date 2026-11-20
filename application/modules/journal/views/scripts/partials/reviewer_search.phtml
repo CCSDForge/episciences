@@ -39,6 +39,11 @@ $locale = Episciences_Tools::getLocale();
     #reviewer-browse[open] .reviewer-browse-arrow {
         transform: rotate(180deg);
     }
+
+    /* hidden while an account using the address is offered: the display of .btn would otherwise win */
+    #new-person-submit[hidden] {
+        display: none;
+    }
 </style>
 <div id="reviewer-search" class="panel panel-default" data-docid="<?= (int)$this->paper->getDocid() ?>">
     <div class="panel-heading">

@@ -172,8 +172,46 @@ describe('reviewer-search.js', () => {
         await flush();
         await flush();
 
-        expect(document.getElementById('new-person-existing').textContent).toContain('Un compte utilise déjà cette adresse');
+        const notice = document.querySelector('#new-person-existing .alert');
+        expect(notice.textContent).toContain('Un compte utilise déjà cette adresse');
         expect(global.setInvitationValues).not.toHaveBeenCalled();
+        // only the account can be invited; the focus leaves the hidden button for the notice
+        expect(document.getElementById('new-person-submit').hidden).toBe(true);
+        expect(document.activeElement).toBe(notice);
+    });
+
+    test('an account using the address that may not be invited, yourself for instance: the notice says so', async () => {
+        global.fetch.mockReturnValue(answer({ groups: { journal: [person({ refusal: 'self' })], accounts: [], without_account: [] } }));
+        search.initReviewerSearch(document.getElementById('reviewer-search'));
+        document.getElementById('new-person-email').value = 'ada@example.org';
+        document.getElementById('new-person-lastname').value = 'Lovelace';
+
+        document.getElementById('new-person').dispatchEvent(new Event('submit', { cancelable: true }));
+        await flush();
+        await flush();
+
+        const existing = document.getElementById('new-person-existing');
+        expect(existing.querySelector('.alert').textContent).toContain('mais il ne peut pas être invité');
+        expect(existing.querySelector('button')).toBeNull();
+        expect(existing.textContent).toContain('Vous-même');
+        expect(document.getElementById('new-person-submit').hidden).toBe(true);
+    });
+
+    test('another address withdraws the account offered and brings back the button', async () => {
+        global.fetch.mockReturnValue(answer({ groups: { journal: [person()], accounts: [], without_account: [] } }));
+        search.initReviewerSearch(document.getElementById('reviewer-search'));
+        const email = document.getElementById('new-person-email');
+        email.value = 'ada@example.org';
+        document.getElementById('new-person-lastname').value = 'Lovelace';
+        document.getElementById('new-person').dispatchEvent(new Event('submit', { cancelable: true }));
+        await flush();
+        await flush();
+
+        email.value = 'other@example.org';
+        email.dispatchEvent(new Event('input'));
+
+        expect(document.getElementById('new-person-existing').children).toHaveLength(0);
+        expect(document.getElementById('new-person-submit').hidden).toBe(false);
     });
 
     test('a new person without an account goes to the invitation message', async () => {

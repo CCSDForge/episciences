@@ -13,6 +13,7 @@ const THIRD_ARXIV_ID = '1312.4400';
 const FOURTH_ARXIV_ID = '1505.00387';
 const REVIEWER_USERNAME = 'e2e_reviewer';
 const REVIEWER_EMAIL = 'e2e_reviewer@example.org';
+const ADMIN_EMAIL = 'e2e_admin@example.org';
 
 /**
  * Opens the invitation page of a paper.
@@ -180,6 +181,22 @@ test.describe('Inviting a reviewer in one step, with their requests in the journ
                 existing.locator('tbody tr', { hasText: REVIEWER_USERNAME })
             ).toBeVisible();
             await expect(adminPage.locator('#step-2')).toBeHidden();
+            // only the account can be invited, until the address changes
+            await expect(adminPage.locator('#new-person-submit')).toBeHidden();
+            await adminPage.locator('#new-person-email').fill('');
+            await expect(existing).toBeEmpty();
+            await expect(adminPage.locator('#new-person-submit')).toBeVisible();
+        });
+
+        await test.step('their own address: the account is shown with its reason, the notice says it may not be invited', async () => {
+            await adminPage.locator('#new-person-email').fill(ADMIN_EMAIL);
+            await adminPage.locator('#new-person-submit').click();
+
+            const existing = adminPage.locator('#new-person-existing');
+            await expect(existing).toContainText('but it may not be invited');
+            await expect(existing).toContainText('Yourself');
+            await expect(existing.getByRole('button')).toHaveCount(0);
+            await expect(adminPage.locator('#new-person-submit')).toBeHidden();
         });
 
         await test.step('an invalid address is pointed out on its field', async () => {

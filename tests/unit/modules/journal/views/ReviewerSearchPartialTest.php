@@ -95,5 +95,7 @@ final class ReviewerSearchPartialTest extends TestCase
         self::assertDoesNotMatchRegularExpression('/id="new-person-firstname"[^>]*required/s', $html);
         self::assertStringContainsString('<label for="new-person-firstname"', $html);
         self::assertMatchesRegularExpression('/id="new-person-errors"[^>]*role="alert"/s', $html);
+        // hidden while an account using the address is offered, despite the display of .btn
+        self::assertStringContainsString('#new-person-submit[hidden]', $html);
     }
 }

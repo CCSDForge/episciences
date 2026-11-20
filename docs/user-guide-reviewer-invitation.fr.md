@@ -46,8 +46,10 @@ Si la personne n'a pas été trouvée, cliquez sur **Inviter une nouvelle person
 son nom (obligatoires), son prénom (facultatif) et la langue de l'invitation. **Inviter cette personne…** ouvre le
 message d'invitation.
 
-Avant cela, l'adresse est vérifiée : si un compte l'utilise déjà, il vous est proposé à la place (**Un compte utilise
-déjà cette adresse : invitez ce compte.**), ce qui évite de créer un doublon. La personne invitée sans compte pourra en
+Avant cela, l'adresse est vérifiée : si un compte l'utilise déjà, il vous est proposé à la place, avec son bouton
+**Inviter**, ce qui évite de créer un doublon. **Inviter cette personne…** est alors masqué ; pour inviter quelqu'un
+d'autre, modifiez l'adresse. Si ce compte ne peut pas être invité (votre propre compte, par exemple), le motif
+s'affiche à la place du bouton. La personne invitée sans compte pourra en
 créer un en répondant à l'invitation.
 
 ## Sollicitations dans la revue

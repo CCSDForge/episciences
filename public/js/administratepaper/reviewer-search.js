@@ -404,6 +404,34 @@ function initReviewerBrowse(root, docid) {
 }
 
 /**
+ * An account already uses the address of the new person: it is offered instead, and "Invite this person" is hidden
+ * meanwhile, so that only the account can be invited (no duplicate); when the account may not be invited either, the
+ * notice says so. The focus goes to the notice, as the button it
+ * was on disappears.
+ * @param {HTMLElement} existing
+ * @param {Object[]} accounts
+ * @param {HTMLElement} submit
+ */
+function offerExistingAccount(existing, accounts, submit) {
+    const notice = document.createElement('p');
+    notice.className = 'alert alert-warning';
+    notice.tabIndex = -1;
+    // the account may itself be refused (yourself, author, conflict, already invited): its reason is shown instead
+    const invitable = accounts.some(account => !account.refusal);
+    notice.textContent = translate(
+        invitable
+            ? "Un compte utilise déjà cette adresse : invitez ce compte, ou modifiez l'adresse pour inviter une autre personne."
+            : "Un compte utilise déjà cette adresse, mais il ne peut pas être invité (voir le motif) : modifiez l'adresse pour inviter une autre personne."
+    );
+    existing.replaceChildren(
+        notice,
+        reviewerSearchTable(accounts, notice.textContent)
+    );
+    submit.hidden = true;
+    notice.focus();
+}
+
+/**
  * @param {HTMLElement} root
  * @param {string} docid
  */
@@ -413,6 +441,14 @@ function initNewPerson(root, docid) {
     const errors = root.querySelector('#new-person-errors');
     const existing = root.querySelector('#new-person-existing');
     const field = id => root.querySelector('#' + id);
+
+    const submit = field('new-person-submit');
+
+    // another address: the account offered for the previous one no longer applies
+    field('new-person-email').addEventListener('input', () => {
+        existing.replaceChildren();
+        submit.hidden = false;
+    });
 
     toggle.addEventListener('click', () => {
         form.hidden = !form.hidden;
@@ -464,15 +500,7 @@ function initNewPerson(root, docid) {
                 ...(answer.groups.accounts || []),
             ];
             if (accounts.length > 0) {
-                const notice = document.createElement('p');
-                notice.className = 'alert alert-warning';
-                notice.textContent = translate(
-                    'Un compte utilise déjà cette adresse : invitez ce compte.'
-                );
-                existing.append(
-                    notice,
-                    reviewerSearchTable(accounts, notice.textContent)
-                );
+                offerExistingAccount(existing, accounts, submit);
                 return;
             }
         } catch {
@@ -504,6 +532,7 @@ if (typeof module !== 'undefined' && module.exports) {
         renderReviewerSearchGroups,
         inviteReviewerCandidate,
         newPersonFromForm,
+        offerExistingAccount,
         initReviewerSearch,
     };
 }
