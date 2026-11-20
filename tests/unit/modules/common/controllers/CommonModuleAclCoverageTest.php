@@ -67,11 +67,8 @@ final class CommonModuleAclCoverageTest extends TestCase
      */
     public static function managementEndpoints(): iterable
     {
-        yield 'findcasusers'                => ['user-findcasusers'];
-        yield 'ajaxfindusersbymail'         => ['user-ajaxfindusersbymail'];
-        yield 'findusersbyfirstnameandname' => ['user-findusersbyfirstnameandname'];
-        yield 'ajaxfindcasuser'             => ['user-ajaxfindcasuser'];
-        yield 'rolesform'                   => ['user-rolesform'];
+        yield 'findcasusers' => ['user-findcasusers'];
+        yield 'rolesform'    => ['user-rolesform'];
     }
 
     /**
@@ -87,15 +84,13 @@ final class CommonModuleAclCoverageTest extends TestCase
         self::assertNotContains('member', $roles, "'$resource' must not be declared for member");
     }
 
-    public function testReviewerInvitationHelpersAreGuestEditorLevel(): void
+    public function testAccountAutocompleteIsGuestEditorLevel(): void
     {
-        foreach (['user-findcasusers', 'user-ajaxfindusersbymail', 'user-findusersbyfirstnameandname', 'user-ajaxfindcasuser'] as $resource) {
-            self::assertContains(
-                'guest_editor',
-                $this->rolesFor($resource),
-                "'$resource' is used by the reviewer-invitation modal (guest_editor and above)"
-            );
-        }
+        self::assertContains(
+            'guest_editor',
+            $this->rolesFor('user-findcasusers'),
+            "'user-findcasusers' feeds the account autocomplete of the paper management (guest_editor and above)"
+        );
     }
 
     public function testRolesFormSharesTheSameRoleAsSaveRoles(): void

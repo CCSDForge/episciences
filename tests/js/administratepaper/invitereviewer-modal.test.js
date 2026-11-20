@@ -8,7 +8,6 @@ const path = require('path');
 // ---------------------------------------------------------------------------
 
 global.translate = jest.fn((s) => s);
-global.isEmail = jest.fn((val) => val && val.includes('@'));
 global.isISOdate = jest.fn((val) => /^\d{4}-\d{2}-\d{2}$/.test(val));
 global.isValidDate = jest.fn((val) => true);
 global.dateIsBetween = jest.fn((val, min, max) => true);
@@ -19,7 +18,6 @@ global.nl2br = jest.fn((val) => val);
 const functionsJs = fs.readFileSync(path.join(__dirname, '../../../public/js/functions.js'), 'utf8');
 const htmlEntitiesSource = functionsJs.match(/function htmlEntities\(str\) \{[\s\S]*?\n\}/)[0];
 global.htmlEntities = new Function(`${htmlEntitiesSource} return htmlEntities;`)();
-global.createUserAutocomplete = jest.fn().mockReturnValue({ inputId: 'autocomplete' });
 global.clearErrors = jest.fn();
 
 // Mock TinyMCE
@@ -38,7 +36,6 @@ global.__initMCE = jest.fn();
 
 // Mock global variables expected by the script
 global.uid = null;
-global.reviewers = [];
 global.allJsReviewers = {};
 global.siteLocale = 'fr';
 global.defaultLocale = 'fr';
@@ -54,7 +51,6 @@ global.review = { invitation_deadline: '7 days', rating_deadline: '2026-07-22', 
 global.allAuthors = 'Author A, Author B';
 global.editor = { full_name: 'Editor Name', email: 'editor@example.com' };
 global.contributor = { full_name: 'Contributor Name', email: 'contributor@example.com', user_name: 'contrib_user', screen_name: 'ContribScreen' };
-global.ignore_list = [];
 
 // ---------------------------------------------------------------------------
 // JQuery Mock linked to real JSDOM tree
@@ -235,9 +231,6 @@ const jQueryMock = (selector) => {
                 param: (name) => '42'
             };
         },
-        dataTable: function (opts) {
-            return this;
-        },
         tooltip: function () {
             return this;
         },
@@ -323,31 +316,8 @@ function prepareDOM() {
         <div id="step-2">
             <div class="panel-title">Inviter ce relecteur</div>
         </div>
-        <div id="alert_exist_login"></div>
-        <input id="existing-reviewer" value="1" />
-        <input id="autocomplete" />
-        <form id="tmp-user-form"></form>
         <input id="deadline-id" attr-mindate="2026-06-01" attr-maxdate="2026-12-31" value="2026-07-22" />
-        <input id="email" name="email" value="test@example.com" />
-        <input id="firstname" name="firstname" value="John" />
-        <input id="lastname" name="lastname" value="Doe" />
-        <button id="next" class="btn btn-default"></button>
-        <div id="homonym_users"></div>
-        <button id="new_user_button"></button>
-        <div id="new-user"></div>
-        <div id="required_tmp_user"></div>
-        <div id="known-reviewers-body"></div>
         <div id="invitereviewer_guideline"></div>
-        <select id="user_lang">
-            <option value="fr">French</option>
-            <option value="en">English</option>
-        </select>
-        <div id="lastname-element"></div>
-        <div id="firstname-element"></div>
-        <div id="user_lang-element"></div>
-        <div id="loading_container"></div>
-        <table id="known-reviewers"></table>
-        <button id="show-known-reviewers"></button>
         <button id="back-button"></button>
         <form id="invitation-form" action="/journal/administratepaper/savereviewerinvitation"></form>
         <div id="reviewers"></div>
@@ -382,83 +352,12 @@ describe('invitereviewer-modal.js Test Suite', () => {
         jest.clearAllMocks();
     });
 
-    describe('createUser', () => {
-        test('should successfully map backend CAS user to frontend reviewer structure', () => {
-            const oUser = {
-                FIRSTNAME: 'Alice',
-                LASTNAME: 'Bob',
-                EMAIL: 'alice.bob@example.com',
-                USERNAME: 'abob',
-                UID: '4242'
-            };
-            $('#user_lang').val('en');
-            const user = moduleUnderTest.createUser(oUser);
-
-            expect(user).toEqual({
-                email: 'alice.bob@example.com',
-                full_name: 'Alice Bob',
-                locale: 'en',
-                firstname: 'Alice',
-                lastname: 'Bob',
-                user_name: 'abob',
-                id: '4242'
-            });
-        });
-
-        test('should fallback to empty string for full_name when firstname and lastname are missing', () => {
-            const oUser = {
-                EMAIL: 'no.name@example.com',
-                USERNAME: 'noname',
-                UID: '0'
-            };
-            const user = moduleUnderTest.createUser(oUser);
-            expect(user.full_name).toBe('');
-        });
-    });
-
     describe('translateInvitationDeadline', () => {
         test('should format and translate the deadline string correctly', () => {
             global.translate.mockImplementation((str) => `[${str}]`);
             const translated = moduleUnderTest.translateInvitationDeadline('5 days', 'fr');
             expect(translated).toBe('5 [days]');
             expect(global.translate).toHaveBeenCalledWith('days', 'fr');
-        });
-    });
-
-    describe('validateTmpFormInvitation', () => {
-        test('should return true for valid fields', () => {
-            $('#email').val('alice@example.com');
-            $('#lastname').val('Doe');
-            global.isEmail.mockReturnValue(true);
-
-            expect(moduleUnderTest.validateTmpFormInvitation()).toBe(true);
-        });
-
-        test('should fail when email is invalid', () => {
-            $('#email').val('invalid-email');
-            $('#lastname').val('Doe');
-            global.isEmail.mockReturnValue(false);
-
-            expect(moduleUnderTest.validateTmpFormInvitation()).toBe(false);
-            expect($('.form-errors .errors').text()).toContain('Veuillez entrer une adresse e-mail valide');
-        });
-
-        test('should fail when lastname is empty', () => {
-            $('#email').val('alice@example.com');
-            $('#lastname').val('   ');
-            global.isEmail.mockReturnValue(true);
-
-            expect(moduleUnderTest.validateTmpFormInvitation()).toBe(false);
-            expect($('.form-errors .errors').text()).toContain('Veuillez entrer un nom');
-        });
-
-        test('should aggregate errors when both are invalid', () => {
-            $('#email').val('');
-            $('#lastname').val('');
-            global.isEmail.mockReturnValue(false);
-
-            expect(moduleUnderTest.validateTmpFormInvitation()).toBe(false);
-            expect($('.form-errors .errors').text()).toContain('Veuillez entrer une adresse e-mail valide et un nom');
         });
     });
 
@@ -741,95 +640,6 @@ describe('invitereviewer-modal.js Test Suite', () => {
             expect(document.getElementById('invitereviewer_guideline').style.display).toBe('none');
         });
 
-        test('hideElements hides name and language fields', () => {
-            const last = document.getElementById('lastname-element');
-            const first = document.getElementById('firstname-element');
-            const lang = document.getElementById('user_lang-element');
-
-            moduleUnderTest.hideElements();
-
-            expect(last.style.display).toBe('none');
-            expect(first.style.display).toBe('none');
-            expect(lang.style.display).toBe('none');
-        });
-
-        test('showElements shows name and language fields', () => {
-            const last = document.getElementById('lastname-element');
-            const first = document.getElementById('firstname-element');
-            const lang = document.getElementById('user_lang-element');
-            last.style.display = 'none';
-            first.style.display = 'none';
-            lang.style.display = 'none';
-
-            moduleUnderTest.showElements();
-
-            expect(last.style.display).not.toBe('none');
-            expect(first.style.display).not.toBe('none');
-            expect(lang.style.display).not.toBe('none');
-        });
-    });
-
-    describe('replaceClass', () => {
-        test('does not replace class when canReplaceClass is false', () => {
-            const btn = document.getElementById('next');
-            btn.className = 'btn-default';
-            
-            moduleUnderTest.replaceClass($(btn), 'btn-default', 'btn-success');
-            expect(btn.classList.contains('btn-default')).toBe(true);
-            expect(btn.classList.contains('btn-success')).toBe(false);
-        });
-
-        test('replaces class when canReplaceClass is true', () => {
-            const btn = document.getElementById('next');
-            btn.className = 'btn-default';
-            
-            // Set canReplaceClass = true
-            moduleUnderTest.checkDuplicateUser([], []);
-
-            moduleUnderTest.replaceClass($(btn), 'btn-default', 'btn-success');
-            expect(btn.classList.contains('btn-default')).toBe(false);
-            expect(btn.classList.contains('btn-success')).toBe(true);
-        });
-    });
-
-    describe('findUserByMail', () => {
-        test('should make a POST request with the email', () => {
-            moduleUnderTest.findUserByMail('test@example.com');
-
-            expect(jQueryMock.ajax).toHaveBeenCalledWith({
-                url: '/user/ajaxfindusersbymail',
-                type: 'POST',
-                dataType: 'json',
-                data: { email: 'test@example.com' }
-            });
-        });
-    });
-
-    describe('findUsers', () => {
-        test('should make a POST request with the lastname', () => {
-            moduleUnderTest.findUsers('Smith');
-
-            expect(jQueryMock.ajax).toHaveBeenCalledWith({
-                url: '/user/findusersbyfirstnameandname',
-                type: 'POST',
-                dataType: 'json',
-                data: { lastName: 'Smith' }
-            });
-        });
-    });
-
-    describe('checkDuplicateUser', () => {
-        test('should call displayCcsdUsers and displayDuplicateUsers when keys found', () => {
-            const data = [{ UID: '1', USERNAME: 'user1' }];
-            const keys = ['1'];
-            ajaxSuccessPayload = '<div>duplicate list</div>';
-
-            moduleUnderTest.checkDuplicateUser(data, keys);
-
-            expect(jQueryMock.ajax).toHaveBeenCalled();
-            expect($('#alert_exist_login').html()).toBe('<div>duplicate list</div>');
-            expect($('#next').is(':visible')).toBe(false);
-        });
     });
 
     describe('submit', () => {

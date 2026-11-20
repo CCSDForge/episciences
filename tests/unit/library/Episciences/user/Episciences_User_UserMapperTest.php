@@ -46,39 +46,4 @@ class Episciences_User_UserMapperTest extends TestCase
         $this->assertIsInt($count);
         $this->assertGreaterThanOrEqual(0, $count);
     }
-
-    // -------------------------------------------------------------------------
-    // findUserByFirstNameAndName (instance method)
-    // -------------------------------------------------------------------------
-
-    public function testFindUserByFirstNameAndNameWithNonExistentNameReturnsNull(): void
-    {
-        // This test requires the Zend_Db_Table metadata cache to be writable.
-        // In some CI/test environments the cache directory may be unavailable.
-        try {
-            $mapper = new Episciences_User_UserMapper();
-            // A name extremely unlikely to exist
-            $result = $mapper->findUserByFirstNameAndName('ZZZZNONEXISTENTUSER99999');
-            $this->assertNull($result);
-        } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), 'metadataCache')) {
-                $this->markTestSkipped('Zend_Db_Table metadata cache not available: ' . $e->getMessage());
-            }
-            throw $e;
-        }
-    }
-
-    public function testFindUserByFirstNameAndNameWithBothParamsAndNonExistentReturnsNull(): void
-    {
-        try {
-            $mapper = new Episciences_User_UserMapper();
-            $result = $mapper->findUserByFirstNameAndName('NONEXISTENTLASTNAME', 'NONEXISTENTFIRST');
-            $this->assertNull($result);
-        } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), 'metadataCache')) {
-                $this->markTestSkipped('Zend_Db_Table metadata cache not available: ' . $e->getMessage());
-            }
-            throw $e;
-        }
-    }
 }

@@ -26,9 +26,6 @@ final class UserDefaultControllerLookupAccessTest extends TestCase
 
     private const LOOKUP_ACTIONS = [
         'findcasusersAction',
-        'ajaxfindusersbymailAction',
-        'findusersbyfirstnameandnameAction',
-        'ajaxfindcasuserAction',
     ];
 
     private Zend_Auth_Storage_Interface $previousAuthStorage;

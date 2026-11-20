@@ -1457,66 +1457,11 @@ class AdministratepaperController extends PaperDefaultController
             // load journal detail
             $oReview = Episciences_ReviewsManager::find(RVID);
             $oReview->loadSettings();
-            // review request types (#319)
-            $requestTypes = $this->enabledRequestTypes();
-            // load reviewers array
-            $reviewers = [];
+            // the reviewers of the journal who may still be invited on this paper: a reviewer invited again after an
+            // expired invitation gets the template of a known reviewer when they are one of them
+            $invitableReviewers = $this->invitableJournalReviewerUids($oPaper);
             $allJsReviewers = [];
-
-            $oReviewers = Episciences_Review::getReviewers();
             $allReviewers = Episciences_PapersManager::getReviewers($docId, ['pending'], true);
-
-            // get active or pending invitations
-            $invitations = $oPaper->getInvitations([
-                Episciences_User_Assignment::STATUS_ACTIVE,
-                Episciences_User_Assignment::STATUS_PENDING], true);
-            // reviewers with an accepted or pending invitation for this paper, left out of the
-            // known reviewers and of the user search, even if the journal has no reviewer yet
-            $ignore_list = $this->ongoingInvitationUserIds($invitations);
-            $this->view->js_ignore_list = Zend_Json::encode($ignore_list);
-
-            if ($oReviewers) {
-                // On ne peut pas inviter un relecteur à relire son article.
-                if (array_key_exists($oPaper->getUid(), $oReviewers)) {
-                    unset($oReviewers[$oPaper->getUid()]);
-                }
-
-                if (array_key_exists(Episciences_Auth::getUid(), $oReviewers)) {
-                    unset($oReviewers[Episciences_Auth::getUid()]);
-                }
-
-                //[COI] When inviting an reviewer; do not propose user that have confirmed (answer = yes) a COI in the user list
-
-                foreach ($this->usersWithReportedCoiProcessing($oPaper) as $uid => $user) {
-                    unset($oReviewers[$uid]);
-                }
-
-                // **** filter reviewers list
-                // a reviewer may hold one pending or accepted request of each type (#319):
-                // only the reviewers busy with every type are left out
-                $busyTypes = Episciences_User_AssignmentsManager::requestTypesInProgressByReviewer((int)$oPaper->getDocid());
-                $ignore_list = [];
-                foreach (self::reviewersBusyWithEveryType($busyTypes, $requestTypes) as $busyUid) {
-                    $ignore_list[$busyUid] = $busyUid;
-                    unset($oReviewers[$busyUid]);
-                }
-                $this->view->js_busy_request_types = Zend_Json::encode((object)$busyTypes);
-
-                // prepare js array
-                /** @var Episciences_Reviewer $reviewer */
-                foreach ($oReviewers as $uid => $reviewer) {
-                    $reviewers[$uid]['locale'] = $reviewer->getLangueid();
-                    $reviewers[$uid]['screen_name'] = $reviewer->getScreenName();
-                    $reviewers[$uid]['full_name'] = $reviewer->getFullname();
-                    $reviewers[$uid]['user_name'] = $reviewer->getUsername();
-                    $reviewers[$uid]['email'] = $reviewer->getEMail();
-                }
-
-                $this->view->js_reviewers = Zend_Json::encode($reviewers);
-                $this->view->js_ignore_list = Zend_Json::encode(array_keys($ignore_list));
-
-                $this->view->reviewers = $oReviewers;
-            }
 
             // how much each reviewer of the journal is already asked (git #320)
             [$presentedWorkloads, $presentedWorkloadsByEmailHash] = $this->presentedWorkloads((int)$docId, $oReview);
@@ -1531,7 +1476,7 @@ class AdministratepaperController extends PaperDefaultController
                 if (!is_numeric($uid)) {
                     $uid = substr($uid, 4); // UID === tmp_id
                     $allJsReviewers[$uid]['type'] = 3; // Utilisateur temporaire
-                } elseif (!array_key_exists((int)$uid, $reviewers)) {
+                } elseif (!isset($invitableReviewers[(int)$uid])) {
                     $allJsReviewers[$uid]['type'] = 2; // Utilisateur connu par le CAS
                 } else {
                     $allJsReviewers[$uid]['type'] = 1; // Relecteur connu par Episciences.
@@ -1632,13 +1577,40 @@ class AdministratepaperController extends PaperDefaultController
                 $invitationForm->setDefault('request_type_id', $nextRequestTypeId);
             }
             $this->view->invitation_form = $invitationForm;
-            $this->view->user_form = Episciences_PapersManager::getTmpReviewerForm();
             $this->view->js_allAuthors = json_encode($oPaper->formatAuthorsMetadata());
 
         } else {
             Episciences_Tools::header('HTTP/1.1 405 Method Not Allowed');
             $this->renderScript('index/notfound.phtml');
         }
+    }
+
+    /**
+     * The reviewers of the journal who may be invited on the paper: neither its author, nor the logged user, nor a
+     * reviewer who reported a conflict of interest, nor one with an active or pending invitation on it.
+     *
+     * @return array<int, int> uid => uid
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function invitableJournalReviewerUids(Episciences_Paper $paper): array
+    {
+        $uids = array_map('intval', array_keys(Episciences_Review::getReviewers() ?: []));
+        $excluded = [(int)$paper->getUid(), (int)Episciences_Auth::getUid()];
+
+        foreach (array_keys($this->usersWithReportedCoiProcessing($paper)) as $uid) {
+            $excluded[] = (int)$uid;
+        }
+
+        $invitations = $paper->getInvitations([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING], true);
+        foreach ([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING] as $status) {
+            foreach ($invitations[$status] ?? [] as $invitation) {
+                $excluded[] = (int)$invitation['UID'];
+            }
+        }
+
+        $invitable = array_diff($uids, $excluded);
+
+        return array_combine($invitable, $invitable);
     }
 
     /**
@@ -4518,124 +4490,6 @@ class AdministratepaperController extends PaperDefaultController
                 'invitation_type' => $invitationType,
             ],
         ];
-    }
-
-    public function displayccsdusersAction(): void
-    {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-        $users = [];
-        $users_stats = [];
-        $trace = [];
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
-
-        if ($request->isXmlHttpRequest()) {
-            $isOwner = false;
-            $isSearchWithMail = (boolean)$request->getPost('is_search_with_mail');
-            $docId = $request->getPost('paper_id');
-            $paper = Episciences_PapersManager::get($docId);
-
-            if (!$paper) {
-                $trace['error'] = $this->view->translate('Une erreur est survenue.');
-            } else {
-
-                // Default so a malformed 'post' payload leaves an empty list instead of
-                // an undefined variable in the foreach below.
-                $post = [];
-                try {
-
-                    $post = json_decode($request->getPost('post'), true, 512, JSON_THROW_ON_ERROR);
-
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                }
-
-                $user_lang = $request->getPost('user_lang');
-                $local_users = Episciences_UsersManager::getLocalUsers();
-                // liste des utilisateurs à ignorer
-                $ignoreList = $request->getPost('ignore_list');
-
-                $ignoreReviewers = [];
-                try {
-                    $ignoreReviewers = ($ignoreList) ? json_decode($ignoreList, false, 512, JSON_THROW_ON_ERROR) : [];
-
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                }
-
-                /** @var stdClass $value */
-                foreach ($post as $value) {
-                    $user = new Episciences_User((array)$value);
-                    $uid = $user->getUid();
-
-                    $isOwner = ($uid === $paper->getUid());
-
-                    if ($isOwner || in_array($user->getEmail(), EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER, true)) {
-                        $ignoreReviewers[] = $uid;
-                    }
-
-                    // Utilisateurs Episciences
-                    if (array_key_exists($uid, $local_users)) {
-                        $users_stats[$uid]['is_epi_user'] = true;
-                        $user->find($uid);
-                    } else {
-                        $users_stats[$uid]['is_epi_user'] = false;
-                        $user->setLangueid($user_lang);
-                    }
-
-                    $users[$uid] = $user;
-                }
-
-                if (!empty($users) && isset($ignoreReviewers)) {
-                    $trace['ignore_reviewer'] = true;
-                    foreach ($ignoreReviewers as $value) {
-                        unset($users[$value]);
-                    }
-                }
-
-                if (empty($users)) {
-
-                    if (!$isOwner) {
-                        $message = $this->view->translate('Une invitation de relecture a été envoyée à cet utilisateur');
-
-                        if (!$isSearchWithMail) {
-                            $message .= '(';
-                            $message .= $this->view->translate('même nom et même prénom');
-                            $message .= ').';
-                            $message .= ('<br>');
-                            $message .= ' ';
-                            $message .= $this->view->translate("Si votre relecteur n'est pas celui détecté par le système");
-                            $message .= ', ';
-                            $message .= $this->view->translate("continuez avec le nouvel utilisateur que vous venez de saisir.");
-                        } else {
-                            $message .= ', ';
-                            $message .= $this->view->translate("ou bien vous n'avez pas les autorisations nécessaires.");
-                        }
-
-                    } else {
-                        $message = $this->view->translate('Cet article ne peut pas être relu par son auteur');
-                    }
-
-                    $trace['message'] = $message;
-                }
-
-            }
-
-            // what each of them is already asked in the journal (git #320), as in the known reviewers table
-            $workloads = [];
-            if (!empty($users) && $paper) {
-                $review = Episciences_ReviewsManager::find(RVID);
-                $review->loadSettings();
-                [$workloads] = $this->presentedWorkloads((int)$paper->getDocid(), $review);
-            }
-
-            echo $this->view->partial('partials/inviteccsdusers.phtml', [
-                'users' => $users, 'users_stat' => $users_stats, 'is_search_with_mail' => $isSearchWithMail, 'trace' => $trace,
-                'workloads' => $workloads,
-            ]);
-
-        }
     }
 
     /**

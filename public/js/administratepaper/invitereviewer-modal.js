@@ -1,56 +1,11 @@
-let $reviewer_type;
-let $autocomplete;
-let $tmp_user_form;
 let $deadline_id;
-let $email;
-let $invite_this_reviewer_btn;
-let $alert_existlogin;
-let $firstName;
-let $lastName;
-let $homonym_users;
-let userIndex;
-let values;
-let $new_user_button;
-let $new_user;
-let $required_tmp_user;
-let $known_reviewers_body;
-let clicks;
 let $reviewerGuideline;
-let $user_lang;
-let $lastname_element;
-let $firstname_element;
-let $user_lang_element;
-let canReplaceClass = false; // Le retour au choix des relecteurs n'impacte pas l'apparence du botton "inviter ce relecteur"
-
-let $loading_container;
 
 $(document).ready(function () {
     $('[data-toggle="tooltip"]').tooltip();
 
-    $alert_existlogin = $('#alert_exist_login');
-    $reviewer_type = $('#existing-reviewer');
-    $autocomplete = $('#autocomplete');
-    $tmp_user_form = $('#tmp-user-form');
     $deadline_id = $('#deadline-id');
-    $email = $('#email');
-    $firstName = $('#firstname');
-    $lastName = $('#lastname');
-    $invite_this_reviewer_btn = $('#next');
-    $homonym_users = $('#homonym_users');
-    $new_user_button = $('#new_user_button');
-    $new_user = $('#new-user');
-    $required_tmp_user = $('#required_tmp_user');
-    $known_reviewers_body = $('#known-reviewers-body');
     $reviewerGuideline = $('#invitereviewer_guideline');
-    $user_lang = $('#user_lang');
-    $lastname_element = $('#lastname-element');
-    $firstname_element = $('#firstname-element');
-    $user_lang_element = $('#user_lang-element');
-    $loading_container = $('#loading_container');
-
-    // datatable init: known reviewers list
-    dt_init('known-reviewers', reviewers);
-    set_reviewer_type($reviewer_type.val());
 
     if (!uid) {
         step1();
@@ -62,121 +17,8 @@ $(document).ready(function () {
         step2();
     }
 
-    $new_user_button.on('click', function () {
-        $(this).hide();
-        $('#show-known-reviewers').trigger('click');
-        $required_tmp_user.show();
-        $new_user.show();
-    });
-
     // reviewers of the previous versions (git #1387)
     document.addEventListener('click', onReinviteClick);
-
-    // Modern autocomplete init (existing user selection)
-    const autocompleteInstance = createUserAutocomplete({
-        inputId: 'autocomplete',
-        selectedUserIdField: null, // We handle selection differently
-        selectButtonId: null,
-        url: '/user/findcasusers',
-        maxResults: 100,
-        // reviewers with a pending or accepted invitation for this paper
-        ignoreList:
-            typeof ignore_list !== 'undefined' && Array.isArray(ignore_list)
-                ? ignore_list
-                : [],
-        onSelectCallback: function (user) {
-            $('#autocomplete').val('');
-            setInvitationValues(
-                {
-                    id: user.id,
-                    email: user.email,
-                    full_name: user.full_name,
-                    user_name: user.user_name || '',
-                    label: user.label || user.full_name,
-                    locale: user.locale,
-                },
-                2
-            );
-            step2();
-        },
-    });
-
-    // Vérification de l'adresse mail
-    $email.on('input propertychange', function () {
-        // onpropertychange : IE < 9
-
-        let withoutSpaces = $.trim($email.val());
-        $email.val(withoutSpaces);
-
-        resetStep1();
-        showElements();
-
-        $invite_this_reviewer_btn.show();
-
-        if (isEmail($email.val())) {
-            $loading_container.html(getLoader());
-            $loading_container.show();
-
-            // Vérifier si un utilisateur est déjà associé à ce mail
-            $invite_this_reviewer_btn.prop('disabled', true);
-            findUserByMail($email.val()).done(function (result) {
-                values = Object.values(result);
-                let keys = Object.keys(result);
-                checkDuplicateUser(values, keys);
-                $invite_this_reviewer_btn.prop('disabled', false);
-                $loading_container.hide();
-            });
-
-            findUserByMail($email.val()).fail(function (jqXHR, textStatus) {
-                ajaxAlertFail();
-                console.log('FIND_USER_BY_MAIL: ' + textStatus);
-            });
-        } else {
-            $alert_existlogin.hide();
-        }
-    });
-
-    $lastName.on('input propertychange', function () {
-        resetStep1();
-    });
-
-    $firstName.on('input propertychange', function () {
-        resetStep1();
-    });
-
-    $user_lang.on('change', function () {
-        resetStep1();
-    });
-
-    // Bouton "inviter ce relecteur...": Affichage des homonymes (clicks = 1) ou passer à l'écran 2 d'invitation (clicks = 2)
-
-    clicks = 0;
-    let timer = 100;
-    let delay = 1;
-    $invite_this_reviewer_btn
-        .on('click', function () {
-            timer = setTimeout(function () {
-                clicks++;
-                if (validateTmpFormInvitation()) {
-                    if (clicks === 1) {
-                        //if(findUserByMail())
-                        checkHomonyms(values);
-                        replaceClass(
-                            $invite_this_reviewer_btn,
-                            'btn-default',
-                            'btn-success'
-                        );
-                    } else if (clicks === 2) {
-                        validate_step1();
-                    }
-                } else {
-                    clicks = 0;
-                }
-            }, delay);
-        })
-        .on('dblclick', function () {
-            clearTimeout(timer);
-        });
 
     // Bouton "retour": revient à l'écran 1 (sélection du relecteur)
     $('#back-button').click(function () {
@@ -261,59 +103,10 @@ function submit() {
     }
 }
 
+// back to the choice of the reviewer (step 1): the title and the errors of step 2 are reset
 function resetStep1() {
     $('#step-2 .panel-title').text(translate('Inviter ce relecteur'));
     clearErrors();
-    clicks = 0;
-
-    // Effacer les liste des homonymes
-    $homonym_users.empty();
-
-    //Cacher les alerts
-    if (!$alert_existlogin.text()) {
-        $alert_existlogin.hide();
-    }
-
-    replaceClass($invite_this_reviewer_btn, 'btn-success', 'btn-default');
-    $invite_this_reviewer_btn.prop('disabled', false);
-}
-
-/**
- *Retourne les logins associés à une adresse email et les détails de chaque compte
- * @param email
- */
-function findUserByMail(email) {
-    return $.ajax({
-        url: '/user/ajaxfindusersbymail',
-        type: 'POST',
-        dataType: 'json',
-        data: { email: email },
-    });
-}
-
-/**
- * Retourne tous les utilisateurs qui ont le même prénom et nom
- * @param lastName
- * @returns {*}
- */
-function findUsers(lastName) {
-    return $.ajax({
-        url: '/user/findusersbyfirstnameandname',
-        type: 'POST',
-        dataType: 'json',
-        data: { lastName: lastName },
-    });
-}
-
-function set_reviewer_type(type) {
-    $alert_existlogin.hide();
-    type = Number(type);
-    if (type === 0) {
-        $homonym_users.hide();
-    } else {
-        $new_user.show();
-        $homonym_users.show();
-    }
 }
 
 // step1: reviewer selection
@@ -321,28 +114,6 @@ function step1() {
     $reviewerGuideline.show();
     $('#step-2').hide();
     $('#step-1').fadeIn();
-}
-
-// step 1 validation (new user)
-function validate_step1() {
-    let email = $email.val();
-    let firstname = $('#firstname').val();
-    let lastname = $('#lastname').val();
-    let lang = $('#user_lang').val();
-
-    let full_name = firstname ? firstname : '';
-    full_name += lastname ? ' ' + lastname : '';
-
-    let user = {
-        id: null,
-        email: email,
-        full_name: full_name,
-        locale: lang,
-        firstname: firstname,
-        lastname: lastname,
-    };
-    setInvitationValues(user, 3);
-    step2();
 }
 
 // step 2: invitation e-mail
@@ -673,289 +444,6 @@ function show_errors(errors) {
     }
 }
 
-function reviewers_init(self_users) {
-    $('.dataTable.hover tr').each(function () {
-        $(this).click(function (event) {
-            // a link of the row (paper of the reviewer's workload) opens the paper, it does not choose the reviewer
-            if (event && event.target && event.target.closest('a')) {
-                return;
-            }
-            let uid = $(this)
-                .attr('id')
-                .match(/(\d+)$/)[1];
-            let reviewer = self_users[uid];
-            reviewer.id = uid;
-            setInvitationValues(reviewer, 1);
-            step2();
-        });
-    });
-}
-
-function dt_init(self_id, self_reviewers) {
-    // initialisation
-    $('#' + self_id)
-        .on('init.dt', function () {
-            reviewers_init(self_reviewers);
-        })
-        .on('draw.dt', function () {
-            reviewers_init(self_reviewers);
-        })
-        .dataTable({
-            stateSave: true,
-            dom: "<'dt-header row'<'left col-xs-6'l><'right col-xs-6'f>r>t<'dt-footer row'<'left col-xs-6'i><'right col-xs-6'p>>",
-            pagingType: 'numbers',
-            order: [
-                [1, 'asc'],
-                [0, 'asc'],
-            ],
-            autoWidth: true,
-            language: {
-                lengthMenu:
-                    translate('Afficher') + ' _MENU_ ' + translate('lignes'),
-                search: translate('Filtrer les relecteurs') + ' ',
-                zeroRecords: translate('Aucun résultat'),
-                info:
-                    translate('Lignes') +
-                    ' _START_ ' +
-                    translate('à') +
-                    ' _END_, ' +
-                    translate('sur') +
-                    ' _TOTAL_ ',
-                infoEmpty: translate('Aucun résultat affiché'),
-                infoFiltered: '(' + translate('filtrés sur les') + ' _MAX_)',
-                paginate: { sPrevious: '', sNext: '' },
-            },
-        });
-}
-
-/**
- * Crée un objet depuis un autre.
- * @param oUser
- * @returns {{email: *, full_name: string, locale: (*|jQuery), firstname: *, lastname: *, user_name: *}}
- */
-function createUser(oUser) {
-    let firstname = oUser.FIRSTNAME;
-    let lastname = oUser.LASTNAME;
-    let lang = $('#user_lang').val();
-    let full_name = firstname ? firstname : '';
-    full_name += lastname ? ' ' + lastname : '';
-    return {
-        email: oUser.EMAIL,
-        full_name: full_name,
-        locale: lang,
-        firstname: firstname,
-        lastname: lastname,
-        user_name: oUser.USERNAME,
-        id: oUser.UID,
-    };
-}
-
-/**
- * Affiche tous les utilisateurs ayant le même prénom et nom lors de l'invitation d'un nouvel utilisateur
- * @param html
- */
-function displayHomonymUsers(html) {
-    $homonym_users.empty();
-    $homonym_users.append(html);
-    $homonym_users.show();
-}
-
-function displayDuplicateUsers(html, keys_length, existe_users) {
-    $alert_existlogin.empty();
-
-    if (keys_length === 0) {
-        canReplaceClass = true;
-    } else {
-        canReplaceClass = false;
-        $invite_this_reviewer_btn.hide();
-    }
-
-    $alert_existlogin.append(html);
-
-    if (existe_users) {
-        hideElements();
-    }
-
-    $alert_existlogin.show();
-}
-
-/**
- * Vérification et affichage des homonymes
- */
-
-function checkHomonyms(values) {
-    if (values !== undefined && values.length > 0) {
-        setInvitationValues(createUser(values[userIndex]), 2);
-        step2();
-    } else {
-        $loading_container.html(getLoader());
-        $loading_container.show();
-
-        // Détection d'homonymes(recherche par prénom et nom)
-        $invite_this_reviewer_btn.prop('disabled', true);
-        findUsers($lastName.val().trim()).done(function (result) {
-            if (result.length === 0) {
-                // Nouvel utilisateur (compte temporaire)
-                validate_step1();
-                $loading_container.hide();
-                $invite_this_reviewer_btn.prop('disabled', false);
-            } else {
-                let ajax_data = {
-                    post: JSON.stringify(result),
-                    user_lang: $('#user_lang').val(),
-                    paper_id: paper.id,
-                    ignore_list: JSON.stringify(ignore_list),
-                };
-                let request = displayCcsdUsers(ajax_data);
-
-                request.done(function (response) {
-                    displayHomonymUsers(response);
-                    $loading_container.hide();
-                    $invite_this_reviewer_btn.prop('disabled', false);
-                });
-
-                request.fail(function (jqXHR, textStatus) {
-                    ajaxAlertFail();
-                    console.log('DSIPLAY_CCSD_USERS_FAIL:' + textStatus);
-                });
-            }
-        });
-
-        findUsers($lastName.val().trim()).fail(function (jqXHR, textStatus) {
-            ajaxAlertFail();
-            console.log('FIND_USERS_FAIL:' + textStatus);
-        });
-    }
-}
-
-/**
- * Valide le formulaire : inviter un nouveau relecteur
- * @returns {boolean}
- */
-
-function validateTmpFormInvitation() {
-    let errors = [];
-    if (!$email.val() || !isEmail($email.val())) {
-        errors.push(translate('Veuillez entrer une adresse e-mail valide'));
-    }
-
-    if (!$lastName.val().trim()) {
-        if (errors.length > 0) {
-            errors[0] = errors[0] + ' ' + translate('et un nom');
-        } else {
-            errors.push(translate('Veuillez entrer un nom'));
-        }
-    }
-
-    if (errors.length) {
-        show_errors(errors);
-        return false;
-    }
-    return true;
-}
-
-/**
- * remplace la classe d'un element
- * @param element
- * @param old_name
- * @param new_name
- */
-function replaceClass(element, old_name, new_name) {
-    if (canReplaceClass && element.hasClass(old_name)) {
-        element.removeClass(old_name);
-        element.addClass(new_name);
-    }
-}
-
-/**
- * Vérification et affichage des doublons
- * @param data
- * @param keys
- */
-function checkDuplicateUser(data, keys) {
-    let existe_users = false;
-    let html = '';
-    let json_values = JSON.stringify(data);
-    let ajax_data = {
-        post: json_values,
-        user_lang: $('#user_lang').val(),
-        paper_id: paper.id,
-        ignore_list: JSON.stringify(ignore_list),
-        is_search_with_mail: true,
-    };
-
-    // Alert doublon
-    $alert_existlogin.empty();
-    resetStep1();
-    canReplaceClass = true;
-
-    if (keys.length > 0) {
-        let request = displayCcsdUsers(ajax_data);
-        existe_users = true;
-        request.done(function (response) {
-            html += response;
-            displayDuplicateUsers(html, keys.length, existe_users);
-        });
-
-        request.fail(function (jqXHR, textStatus) {
-            ajaxAlertFail();
-            console.log('DSIPLAY_CCSD_USERS_FAIL:' + textStatus);
-        });
-    }
-}
-
-/**
- *
- * @param data
- * @returns {jqXHR}
- */
-function displayCcsdUsers(data) {
-    return $.ajax({
-        url: '/administratepaper/displayccsdusers',
-        type: 'POST',
-        dataType: 'html',
-        data: data,
-    });
-}
-
-/**
- *
- * @param uid
- * @returns {*}
- */
-function findCasUser(uid) {
-    return $.ajax({
-        url: '/user/ajaxfindcasuser',
-        type: 'POST',
-        dataType: 'json',
-        data: { uid: uid },
-    });
-}
-
-function hideElements() {
-    $lastname_element.hide();
-    $firstname_element.hide();
-    $user_lang_element.hide();
-}
-
-function showElements() {
-    $lastname_element.show();
-    $firstname_element.show();
-    $user_lang_element.show();
-}
-
-function ajaxAlertFail() {
-    $email.val('');
-    let error = new Error();
-    alert(
-        translate("Une erreur interne s'est produite, veuillez recommencer.")
-    );
-    console.log(error.stack);
-    $loading_container.hide();
-    resetStep1();
-    return false;
-}
-
 /**
  * What the reviewer is already asked in the journal (git #320), one item per line; empty when nothing is known.
  * An item is a text, with the paper it is about when the logged user may see it (link before or after the text).
@@ -1213,11 +701,7 @@ function translateInvitationDeadline(str, locale) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         resetStep1,
-        findUserByMail,
-        findUsers,
-        set_reviewer_type,
         step1,
-        validate_step1,
         step2,
         validate_step2,
         setInvitationValues,
@@ -1230,20 +714,6 @@ if (typeof module !== 'undefined' && module.exports) {
         emailHash,
         replaceTags,
         show_errors,
-        reviewers_init,
-        dt_init,
-        createUser,
-        displayHomonymUsers,
-        displayDuplicateUsers,
-        checkHomonyms,
-        validateTmpFormInvitation,
-        replaceClass,
-        checkDuplicateUser,
-        displayCcsdUsers,
-        findCasUser,
-        hideElements,
-        showElements,
-        ajaxAlertFail,
         translateInvitationDeadline,
         submit,
         requestTypeSelect,

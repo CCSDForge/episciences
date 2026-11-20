@@ -1,7 +1,6 @@
 <?php
 
 $this->jQuery()->addJavascriptFile('/js/vendor/jquery.ui.autocomplete.html.js');
-$this->jQuery()->addJavascriptFile('/js/autocomplete-utils.js');
 $this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
 // Security: DOMPurify for XSS prevention (needed by es.contacts-list.js)
 $this->jQuery()->addJavascriptFile("https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js");
@@ -12,10 +11,6 @@ $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
-//datatable
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
-$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 $this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
 ?>
 
@@ -31,28 +26,14 @@ $description .= ' - ' . $this->escape($this->paper->getTitle());
     <?php echo $this->partial(
         'partials/invitereviewer.phtml', [
             'paper' => $this->paper,
-            'reviewers' => $this->reviewers,
             'reviewerWorkloads' => $this->reviewerWorkloads ?? [],
             'previousReviewers' => $this->previousReviewers ?? [],
             'reviewersCount' => $this->reviewersCount ?? 0,
-            'user_form' => $this->user_form,
             'invitation_form' => $this->invitation_form,
             'referer' => $this->referer,
             'isExistingCriterionGrid' => $this->isExistingCriterionGrid
         ]
     ); ?>
-
-<style>
-
-    .dataTable.hover tr:hover td {
-        cursor: pointer;
-        background: #62A2D9 !important;
-        border-top: 1px solid #0F6EBF;
-        border-bottom: 1px solid #0F6EBF;
-        color: #fff;
-    }
-
-</style>
 
 <script type="text/javascript">
     // Valeurs du formulaire
@@ -61,8 +42,6 @@ $description .= ' - ' . $this->escape($this->paper->getTitle());
     var contributor = <?php if ($this->js_contributor) : ?><?php echo $this->js_contributor; ?><?php else:?>null<?php endif;?>;
     var editor = <?php echo Zend_Json::encode(['full_name' => Episciences_Auth::getFullName(), 'email' => Episciences_Auth::getEmail()]); ?>;
     var review = <?php if ($this->js_review) : ?><?php echo $this->js_review; ?><?php else:?>null<?php endif;?>;
-    var reviewers = <?php if ($this->js_reviewers) : ?><?php echo $this->js_reviewers; ?><?php else:?>null<?php endif;?>;
-    var ignore_list = <?php if ($this->js_ignore_list) : ?><?php echo $this->js_ignore_list; ?><?php else:?>null<?php endif;?>;
     var templates = <?php if ($this->js_templates) : ?><?php echo $this->js_templates; ?><?php else:?>null<?php endif;?>;
     // review request types (#319)
     var request_types = <?= $this->js_request_types ?: '[]' ?>;

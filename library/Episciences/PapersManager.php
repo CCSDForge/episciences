@@ -1319,57 +1319,6 @@ class Episciences_PapersManager
     }
 
     /**
-     * @return Ccsd_Form
-     * @throws Zend_Exception
-     * @throws Zend_Form_Exception
-     */
-    public static function getTmpReviewerForm(): \Ccsd_Form
-    {
-        $form = new Ccsd_Form();
-        $form->setAttrib('id', 'tmp-user-form');
-        $form->setAttrib('style', 'width: 500px');
-        $form->getDecorator('FormRequired')->setOption('id', 'required_tmp_user');
-
-        $form->addElement('text', 'email', [
-            'label' => 'Courriel',
-            'class' => 'form-control',
-            'placeholder' => Zend_Registry::get('Zend_Translate')->translate("prenom.nom@example.org"),
-            'required' => true
-        ]);
-
-        $form->addElement('text', 'lastname', [
-            'label' => 'Nom',
-            'class' => 'form-control',
-            'required' => true,
-        ]);
-
-        /*  $form->addElement('text', 'firstname', [
-              'label' => 'Prénom',
-              'class' => 'form-control',
-          ]);*/
-
-        $form->addElement('select', 'user_lang', [
-            'label' => 'Langue par défaut',
-            'class' => 'form-control',
-            'style' => 'width:auto;',
-            'multiOptions' => ['en' => 'Anglais', 'fr' => 'Français'],
-        ]);
-
-        $form->addElement('button', 'next', [
-            'label' => 'Inviter ce relecteur...' . '',
-            'class' => 'btn btn-default btn-sm',
-        ]);
-        /**
-         * decorators.0.decorator = "InputIcon"
-         * elements.USERNAME.options.decorators.0.options.icon = "glyphicon-user"
-         * elements.USERNAME.options.decorators.0.options.class = "form-control"
-         */
-
-        return $form;
-
-    }
-
-    /**
      * Renvoie le formulaire d'invitation d'un relecteur
      * @param $docId
      * @param $page
