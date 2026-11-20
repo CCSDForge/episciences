@@ -32,15 +32,15 @@ $keepOnlySourceUsed = [];
                     <div style="margin-top: 8px;">
                         <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px;">
                             <?php if ($isAllowedToManageRelations): ?>
-                                <button title="<?= $this->translate('Supprimer la relation') ?>" id="remove-ld-<?= $sourceHtmlIdSuffix ?>" data-ld="<?= $dataset->getId() ?>"
+                                <button title="<?= $this->translate('Supprimer la relation') ?>" id="remove-ld-<?= $sourceHtmlIdSuffix ?>" data-ld="<?= $this->escape($dataset->getId()) ?>"
                                         class="btn btn-default btn-xs" type="button">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                                 <?php $sourceHtmlIdSuffix++; ?>
-                                <a title="<?= $this->translate('Modifier le type de relation') ?>" href="#manage-linked-data" data-ld="<?= $dataset->getId() ?>"
-                                   data-type="<?= $dataset->getCode() ?>"
-                                   data-relationship="<?= $dataset->getRelationship() ?>"
-                                   data-ldval="<?= $dataset->getValue() ?>"
+                                <a title="<?= $this->translate('Modifier le type de relation') ?>" href="#manage-linked-data" data-ld="<?= $this->escape($dataset->getId()) ?>"
+                                   data-type="<?= $this->escape($dataset->getCode()) ?>"
+                                   data-relationship="<?= $this->escape($dataset->getRelationship()) ?>"
+                                   data-ldval="<?= $this->escape($dataset->getValue()) ?>"
                                    class="btn btn-default btn-xs edit-ld"> <i class="fa-solid fa-pen-to-square"></i> </a>
                             <?php endif; ?>
                             <?php if ((string)$source !== Episciences_Repositories::EPI_USER_ID) {
@@ -53,8 +53,9 @@ $keepOnlySourceUsed = [];
                                     !== Episciences_Repositories::EPI_USER_ID
                                     && (string)$dataset->getSourceId() !== Episciences_Repositories::SCHOLEXPLORER_ID)): ?>
                                 <?php if ((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID && $dataset->getMetatext() === null) : ?>
-                                    <a href="<?= $dataset->getLink() ?>" target="_blank" rel="noopener"
-                                       id="link-ld"><?= $dataset->getValue() ?></a><sup> <?= $sourceToSup ?></sup>
+                                    <?php if (Episciences_Tools::isHttpUrl((string)$dataset->getLink())) : ?>
+                                    <a href="<?= $this->escape($dataset->getLink()) ?>" target="_blank" rel="noopener"
+                                       id="link-ld"><?= $this->escape($dataset->getValue()) ?></a><?php else : ?><?= $this->escape($dataset->getValue()) ?><?php endif; ?><sup> <?= $sourceToSup ?></sup>
                                 <?php endif; ?>
                             <?php endif; ?>
                             <?php if (($dataset->getName() === 'doi'
@@ -94,7 +95,7 @@ $keepOnlySourceUsed = [];
                                     <?php
                                     $metadataHal = json_decode($dataset->getMetatext(), true);
                                     if ($metadataHal['citationFull'] === NULL) {
-                                        echo $dataset->getValue();
+                                        echo $this->escape($dataset->getValue());
                                     } else {
                                         echo $metadataHal['citationFull']; // escape volontaire ,car hal renvoi html
                                     }
