@@ -65,6 +65,8 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
     private static function stripXmlSpecialChars(string $string): string
     {
         $string = (string)preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $string);
+        // U+FFFE and U+FFFF are not allowed in XML 1.0 either (left as is if the string is not valid UTF-8)
+        $string = preg_replace('/[\x{FFFE}\x{FFFF}]/u', '', $string) ?? $string;
 
         return str_replace(['<', '>', '&', '"', "'"], '', $string);
     }
