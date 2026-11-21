@@ -49,7 +49,7 @@
                         } else {
                             echo $this->translate('Evaluation qualitative');
                             echo ' (';
-                            if ($criterion->isCustom()) {
+                            if ($criterion->isCustom() && !$criterion->isStandardQualitative()) {
                                 echo $this->translate('personnalisée');
                             } else {
                                 echo $this->translate('classique');

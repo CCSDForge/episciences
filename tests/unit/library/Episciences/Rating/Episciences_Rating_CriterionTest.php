@@ -359,4 +359,67 @@ class Episciences_Rating_CriterionTest extends TestCase
         self::assertArrayHasKey(Episciences_Rating_Criterion::VISIBILITY_CONTRIBUTOR, $emojis);
         self::assertArrayHasKey(Episciences_Rating_Criterion::VISIBILITY_EDITORS, $emojis);
     }
+
+    // ---------------------------------------------------------------------
+    // subtype / isStandardQualitative()
+    // ---------------------------------------------------------------------
+
+    public function testPopulateSetsTheSubType(): void
+    {
+        $c = new Episciences_Rating_Criterion(['subType' => Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_5]);
+
+        self::assertSame(Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_5, $c->getSubType());
+    }
+
+    public function testSetSubTypeWithNullGivesAnEmptySubType(): void
+    {
+        $c = new Episciences_Rating_Criterion(['subType' => null]);
+
+        self::assertSame('', $c->getSubType());
+    }
+
+    public function testIsStandardQualitativeFollowsTheSubType(): void
+    {
+        $standard = new Episciences_Rating_Criterion([
+            'subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE,
+            'options' => Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS,
+        ]);
+        $custom = new Episciences_Rating_Criterion([
+            'subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM,
+            'options' => Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS,
+        ]);
+
+        self::assertTrue($standard->isStandardQualitative());
+        self::assertFalse($custom->isStandardQualitative());
+    }
+
+    public function testIsStandardQualitativeWithoutSubTypeRecognizesTheStandardLabels(): void
+    {
+        // grid saved before the subtype was recorded, labels read back from the XML file in another order
+        $c = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => ['en' => 'Yes', 'fr' => 'Oui']],
+            ['value' => 1, 'label' => ['en' => 'No', 'fr' => 'Non']],
+            ['value' => 2, 'label' => ['en' => 'Maybe', 'fr' => 'Peut-être']],
+        ]]);
+
+        self::assertTrue($c->isStandardQualitative());
+    }
+
+    public function testIsStandardQualitativeWithoutSubTypeRefusesOtherOptions(): void
+    {
+        $customLabels = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => ['en' => 'Yes', 'fr' => 'Oui']],
+            ['value' => 1, 'label' => ['en' => 'No', 'fr' => 'Non']],
+            ['value' => 2, 'label' => ['en' => 'Not sure', 'fr' => 'Peut-être']],
+        ]]);
+        $unlabelled = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => null],
+            ['value' => 1, 'label' => null],
+            ['value' => 2, 'label' => null],
+        ]]);
+
+        self::assertFalse($customLabels->isStandardQualitative());
+        self::assertFalse($unlabelled->isStandardQualitative());
+        self::assertFalse((new Episciences_Rating_Criterion())->isStandardQualitative());
+    }
 }

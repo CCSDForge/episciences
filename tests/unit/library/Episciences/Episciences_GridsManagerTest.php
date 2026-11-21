@@ -160,4 +160,82 @@ class Episciences_GridsManagerTest extends TestCase
 
         self::assertEmpty($matches);
     }
+
+    public function testGetCriterionFormDefaultsReopensAStandardQualitativeCriterionAsStandard(): void
+    {
+        // the standard options are saved with their Yes / No / Maybe labels
+        $c = new Episciences_Rating_Criterion(['visibility' => 'editors', 'options' => Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS]);
+
+        $defaults = Episciences_GridsManager::getCriterionFormDefaults($c);
+
+        self::assertSame(Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, $defaults['evaluation_type']);
+        self::assertSame(0, $defaults['qualitative_rating_type']);
+    }
+
+    public function testGetCriterionFormDefaultsReopensACustomQualitativeCriterionAsCustom(): void
+    {
+        $c = new Episciences_Rating_Criterion(['visibility' => 'editors', 'options' => [
+            ['value' => 0, 'label' => ['en' => 'Good']],
+            ['value' => 1, 'label' => ['en' => 'Bad']],
+        ]]);
+
+        $defaults = Episciences_GridsManager::getCriterionFormDefaults($c);
+
+        self::assertSame(1, $defaults['qualitative_rating_type']);
+    }
+
+    // =========================================================================
+    // getCriterionRatingFromPost()
+    // =========================================================================
+
+    /**
+     * @return array<string, array{array<string, mixed>, string, int|null}>
+     */
+    public static function criterionRatingProvider(): array
+    {
+        $customOptions = ['option_0' => ['en' => 'Good'], 'option_1' => ['en' => 'Bad']];
+
+        return [
+            'free' => [['evaluation_type' => 'free'] + $customOptions, Episciences_Rating_Criterion::EVALUATION_TYPE_FREE, null],
+            'quantitative 0-10' => [['evaluation_type' => 'quantitative', 'quantitative_rating_type' => '0'] + $customOptions, Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_10, 11],
+            'quantitative 0-5' => [['evaluation_type' => 'quantitative', 'quantitative_rating_type' => '2'] + $customOptions, Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_5, 6],
+            'quantitative custom' => [['evaluation_type' => 'quantitative', 'quantitative_rating_type' => '1'] + $customOptions, Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE_CUSTOM, 2],
+            'qualitative standard' => [['evaluation_type' => 'qualitative', 'qualitative_rating_type' => '0'] + $customOptions, Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, 3],
+            'qualitative custom' => [['evaluation_type' => 'qualitative', 'qualitative_rating_type' => '1'] + $customOptions, Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM, 2],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @dataProvider criterionRatingProvider
+     */
+    public function testGetCriterionRatingFromPostGivesADistinctSubTypePerRating(array $post, string $expectedSubType, ?int $expectedOptionsCount): void
+    {
+        $rating = Episciences_GridsManager::getCriterionRatingFromPost($post);
+
+        self::assertSame($expectedSubType, $rating['subType']);
+        self::assertSame($expectedOptionsCount, $rating['options'] === null ? null : count($rating['options']));
+    }
+
+    public function testGetCriterionRatingFromPostForcesTheStandardQualitativeOptions(): void
+    {
+        $rating = Episciences_GridsManager::getCriterionRatingFromPost([
+            'evaluation_type' => 'qualitative',
+            'qualitative_rating_type' => '0',
+            'option_0' => ['en' => 'Something else'],
+        ]);
+
+        self::assertSame(Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS, $rating['options']);
+    }
+
+    public function testGetCriterionRatingFromPostCleansTheCustomLabels(): void
+    {
+        $rating = Episciences_GridsManager::getCriterionRatingFromPost([
+            'evaluation_type' => 'qualitative',
+            'qualitative_rating_type' => '1',
+            'option_0' => ['en' => ' <b>Good</b> & fair ', 'fr' => '  '],
+        ]);
+
+        self::assertSame([['value' => 0, 'label' => ['en' => 'Good &amp; fair']]], $rating['options']);
+    }
 }
