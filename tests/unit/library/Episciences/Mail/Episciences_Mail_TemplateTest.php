@@ -395,22 +395,28 @@ final class Episciences_Mail_TemplateTest extends TestCase
     public function testDefaultTemplateBodiesHaveNoUnclosedTag(): void
     {
         $folder = (new Episciences_Mail_Template())->getDefaultTranslationsFolder();
-        // Every file on disk, including bodies whose key is not listed in TemplatesManager
-        $files = glob($folder . '*/emails/*.phtml') ?: [];
-
-        // An empty list would make the test pass without checking anything
-        self::assertNotEmpty($files, sprintf('No default mail template found in %s', $folder));
+        // Every key found on disk, including those not listed in TemplatesManager
+        $keys = array_unique(array_map(
+            static fn(string $path): string => basename($path, '.phtml'),
+            glob($folder . '*/emails/*.phtml') ?: []
+        ));
 
         $unclosed = [];
+        $checkedBodies = 0;
 
-        foreach ($files as $file) {
-            $invalid = self::findUnclosedTags((string)file_get_contents($file));
+        foreach ($keys as $key) {
+            foreach ((new Episciences_Mail_Template(['key' => $key]))->loadBody() as $lang => $body) {
+                $checkedBodies++;
+                $invalid = self::findUnclosedTags((string)$body);
 
-            if ($invalid !== []) {
-                $unclosed[] = sprintf('%s: %s', substr($file, strlen($folder)), implode(', ', $invalid));
+                if ($invalid !== []) {
+                    $unclosed[] = sprintf('%s/%s: %s', $lang, $key, implode(', ', $invalid));
+                }
             }
         }
 
+        // No body loaded would make the test pass without checking anything
+        self::assertGreaterThan(0, $checkedBodies, sprintf('No default mail template loaded from %s', $folder));
         self::assertSame([], $unclosed);
     }
 
