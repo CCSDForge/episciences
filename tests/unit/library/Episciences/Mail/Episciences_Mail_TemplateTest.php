@@ -383,4 +383,29 @@ final class Episciences_Mail_TemplateTest extends TestCase
 
         self::assertSame($t->getDefaultTranslationsFolder(), $folder);
     }
+
+    // -------------------------------------------------------------------------
+    // Default template bodies
+    // -------------------------------------------------------------------------
+
+    /**
+     * A tag missing its closing "%%" (for instance "%%PAPER_URL") is never replaced,
+     * and the mail is sent with the raw tag (a broken link).
+     */
+    public function testDefaultTemplateBodiesHaveNoUnclosedTag(): void
+    {
+        $unclosed = [];
+
+        foreach (array_keys(\Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT) as $key) {
+            $template = new Episciences_Mail_Template(['key' => $key]);
+
+            foreach ($template->loadBody() as $lang => $body) {
+                if (preg_match_all('/%%[A-Z_]+(?![A-Z_]|%%)/', (string)$body, $matches) > 0) {
+                    $unclosed[] = sprintf('%s/%s: %s', $lang, $key, implode(', ', $matches[0]));
+                }
+            }
+        }
+
+        self::assertSame([], $unclosed);
+    }
 }
