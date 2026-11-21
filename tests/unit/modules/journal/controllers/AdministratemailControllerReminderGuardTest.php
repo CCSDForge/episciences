@@ -253,4 +253,68 @@ final class AdministratemailControllerReminderGuardTest extends TestCase
 
         self::assertSame(200, $response->getHttpResponseCode());
     }
+
+    /**
+     * @return array{string, string} first reminder type and one of its recipients
+     */
+    private function reminderTypeAndRecipient(): array
+    {
+        $templates = Episciences_Mail_RemindersManager::getTemplates();
+        $type = (string)array_key_first($templates);
+
+        return [$type, (string)array_key_first($templates[$type])];
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function invalidDelayProvider(): array
+    {
+        return [
+            'zero' => ['0'],
+            'negative' => ['-1'],
+            'decimal' => ['1.5'],
+            'empty' => [''],
+            'not a number' => ['abc'],
+            'above the SMALLINT UNSIGNED column' => ['65536'],
+        ];
+    }
+
+    #[DataProvider('invalidDelayProvider')]
+    public function testSaveRefusesAnInvalidDelayWith400(string $delay): void
+    {
+        $adapter = $this->stubAdapter(false);
+        $adapter->expects(self::never())->method('insert');
+        $adapter->expects(self::never())->method('update');
+        [$type, $recipient] = $this->reminderTypeAndRecipient();
+
+        $response = $this->dispatch(
+            'savereminderAction',
+            ['type' => $type, 'recipient' => $recipient, 'delay' => $delay, 'repetition' => '0'],
+            true,
+            Episciences_Csrf_Helper::getSessionToken()
+        );
+
+        self::assertSame(400, $response->getHttpResponseCode());
+    }
+
+    public function testSaveAcceptsADelayOfOneDay(): void
+    {
+        $adapter = $this->stubAdapter(false);
+        // stop right after the insert: the rest of save() writes the journal translation files
+        $adapter->expects(self::once())
+            ->method('insert')
+            ->with(self::anything(), self::callback(static fn(array $row): bool => ($row['DELAY'] ?? null) === 1))
+            ->willThrowException(new \RuntimeException('reminder inserted'));
+        [$type, $recipient] = $this->reminderTypeAndRecipient();
+
+        $this->expectExceptionMessage('reminder inserted');
+
+        $this->dispatch(
+            'savereminderAction',
+            ['type' => $type, 'recipient' => $recipient, 'delay' => '1', 'repetition' => '0'],
+            true,
+            Episciences_Csrf_Helper::getSessionToken()
+        );
+    }
 }
