@@ -1,5 +1,5 @@
 <div class="es-block-focus es-block-focus-red fixed">
-    <h4 class="text-danger" style="margin-bottom: 20px"><?php echo $this->escape($this->translate($this->message)) ?></h4>
+    <h4 class="text-danger" style="margin-bottom: 20px"><?php echo $this->escape($this->translate($this->message)) ?><?php if (!empty($this->messageCode)) : ?> <span class="stat-code"><?php echo $this->escape($this->messageCode); ?></span><?php endif; ?></h4>
     <?php if (isset($this->description)) : ?>
         <p><?php echo $this->escape($this->translate($this->description)); ?></p>
     <?php endif; ?>
