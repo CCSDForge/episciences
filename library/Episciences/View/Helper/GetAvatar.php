@@ -38,7 +38,9 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
 
         // The initials are written as text in the SVG: drop the markup characters
         // (quotes are harmless in a text node, so names like O'Brien keep their initials)
-        $stringToMakeAvatar = trim(str_replace(['<', '>', '&'], '', (string)$stringToMakeAvatar));
+        // and the control characters that are not allowed in XML 1.0
+        $stringToMakeAvatar = (string)preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', (string)$stringToMakeAvatar);
+        $stringToMakeAvatar = trim(str_replace(['<', '>', '&'], '', $stringToMakeAvatar));
         if ($stringToMakeAvatar === '') {
             $stringToMakeAvatar = '?';
         }
