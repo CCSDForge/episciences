@@ -76,6 +76,11 @@ $(document).ready(function () {
         selectButtonId: null,
         url: '/user/findcasusers',
         maxResults: 100,
+        // reviewers with a pending or accepted invitation for this paper
+        ignoreList:
+            typeof ignore_list !== 'undefined' && Array.isArray(ignore_list)
+                ? ignore_list
+                : [],
         onSelectCallback: function (user) {
             $('#autocomplete').val('');
             setInvitationValues(
