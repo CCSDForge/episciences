@@ -1,4 +1,4 @@
-FROM php:8.3-fpm
+FROM php:8.6-fpm
 
 # Set timezone
 ENV TZ=Europe/Paris
