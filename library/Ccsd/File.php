@@ -20,8 +20,7 @@ class Ccsd_File
         'jpe',
         'gif',
         'png',
-        'bmp',
-        'svg'
+        'bmp'
     ];
 
     /**
@@ -455,18 +454,18 @@ class Ccsd_File
     {
         // Lit les dimensions de l'image
         $size = getimagesize($filename);
+        if ($size === false) {
+            return false;
+        }
         $width = $size[0];
         $height = $size[1];
         $imageType = $size[2];
 
 
-        //pas un format d'image
-        if (null == $imageType) {
-            if (!static::isSvgFile($filename)) {
-                return false;
-            }
-
-            return static::convertSvgToPng($filename, $dest, $maxWidth, $maxHeight, $saveFileAs);
+        // Not a raster image: SVG files are not converted, Imagick would interpret their content
+        // (external references, embedded files)
+        if (!$imageType) {
+            return false;
         }
 
         // pas un soucis pour le SVG
