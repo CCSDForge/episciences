@@ -1795,7 +1795,8 @@ class UserDefaultController extends Zend_Controller_Action
 
     private function sendInitialsAvatar(string $svg): void
     {
-        $maxAge = 300;
+        // The URL holds everything the image depends on (name, uid, bgcolor, photo version)
+        $maxAge = 3600;
 
         $this->getResponse()
             ->setHeader('ETag', md5($svg), true)
