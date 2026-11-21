@@ -64,6 +64,13 @@ class Episciences_Mail_Reminder
         Episciences_Acl::ROLE_SECRETARY => 3,
     ];
 
+    // reminder types about review requests, which can be limited to a request type (#319)
+    public const REQUEST_TYPE_REMINDERS = [
+        self::TYPE_UNANSWERED_INVITATION,
+        self::TYPE_BEFORE_REVIEWING_DEADLINE,
+        self::TYPE_AFTER_REVIEWING_DEADLINE,
+    ];
+
     // reminder types deduplicated across recipient roles
     public const DEDUPLICATED_TYPES = [
         self::TYPE_UNANSWERED_INVITATION,
@@ -78,6 +85,12 @@ class Episciences_Mail_Reminder
     private $_delay;
     private $_repetition;
     private $_custom;
+
+    /**
+     * Review request type of a reminder to the reviewers (#319): null for every type, except the types that have a
+     * reminder of their own of the same reminder type and recipient
+     */
+    private ?int $_request_type_id = null;
 
     private $_locale;
     private $_name;
@@ -151,6 +164,7 @@ class Episciences_Mail_Reminder
             'repetition' => $this->getRepetition(),
             'recipient' => $this->getRecipient(),
             'type' => $this->getType(),
+            'request_type_id' => $this->getRequest_type_id(),
             'name' => $this->getNameTranslations(),
             'subject' => $this->getSubjectTranslations(),
             'body' => $this->getBodyTranslations(),
@@ -209,6 +223,12 @@ class Episciences_Mail_Reminder
             }
             $name .= ' - ' . $translator->translate('copie destinée au ' . mb_strtolower($translator->translate($this->getRecipient(), 'fr'), 'utf-8'), $code);
             $name .= sprintf(' (%s %s | %s%s %s)', $delay, $translator->translate(array('jour', 'jours', $this->getDelay()), $code), lcfirst($translator->translate('Répétition', $code)), $translator->translate(' :', $code), lcfirst($translator->translate(Episciences_Mail_RemindersManager::REPETITION_MAP[(int)$this->getRepetition()], $code)));
+            // the request type the reminder is limited to (#319)
+            $requestTypeLabel = $this->requestTypeLabel($code);
+            if ($requestTypeLabel !== '') {
+                // the label is set by the journal; the name is displayed as HTML in the list of the reminders
+                $name .= ' — ' . htmlspecialchars($requestTypeLabel, ENT_QUOTES, 'UTF-8');
+            }
             $translations['name'][$code] = $name;
 
             // Reminder Subject & Body
@@ -250,7 +270,9 @@ class Episciences_Mail_Reminder
             'TYPE' => $this->getType(),
             'RECIPIENT' => $this->getRecipient(),
             'DELAY' => $this->getDelay(),
-            'REPETITION' => $this->getRepetition()
+            'REPETITION' => $this->getRepetition(),
+            // only a reminder to the reviewers concerns a request type (#319)
+            'REQUEST_TYPE_ID' => $this->supportsRequestType() ? $this->getRequest_type_id() : null,
         ];
 
         // Enregistrement en base
@@ -633,6 +655,62 @@ class Episciences_Mail_Reminder
     public function getRepetition(): ?int
     {
         return $this->_repetition === null ? null : (int)$this->_repetition;
+    }
+
+    public function getRequest_type_id(): ?int
+    {
+        return $this->_request_type_id;
+    }
+
+    public function setRequest_type_id(int|string|null $requestTypeId): self
+    {
+        $this->_request_type_id = ($requestTypeId === null || $requestTypeId === '' || (int)$requestTypeId <= 0) ? null : (int)$requestTypeId;
+        return $this;
+    }
+
+    /**
+     * Label of the request type the reminder is limited to, '' for every type
+     */
+    private function requestTypeLabel(string $lang): string
+    {
+        if ($this->getRequest_type_id() === null || !$this->supportsRequestType()) {
+            return '';
+        }
+
+        return (string)(new RequestTypeRepository())->findById($this->getRequest_type_id())?->getLabel($lang);
+    }
+
+    /**
+     * Whether this reminder concerns review requests, and can be limited to a request type (#319)
+     */
+    public function supportsRequestType(): bool
+    {
+        return in_array((int)$this->getType(), self::REQUEST_TYPE_REMINDERS, true);
+    }
+
+    /**
+     * Limits the requests of a reminder query to the request type of the reminder; a reminder for every type leaves out
+     * the types that have a reminder of their own, of the same reminder type and recipient (#319)
+     * @param string $assignmentAlias alias of the assignment table in the query
+     */
+    private function filterByRequestType(Zend_Db_Select $select, string $assignmentAlias): void
+    {
+        $column = $assignmentAlias . '.REQUEST_TYPE_ID';
+
+        if ($this->getRequest_type_id() !== null) {
+            $select->where($column . ' = ?', $this->getRequest_type_id());
+            return;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $ownReminders = $db->select()
+            ->from(T_MAIL_REMINDERS, ['REQUEST_TYPE_ID'])
+            ->where('RVID = ?', (int)$this->getRvid())
+            ->where('TYPE = ?', (int)$this->getType())
+            ->where('RECIPIENT = ?', (string)$this->getRecipient())
+            ->where('REQUEST_TYPE_ID IS NOT NULL');
+
+        $select->where($column . ' IS NULL OR ' . $column . ' NOT IN (' . $ownReminders->assemble() . ')');
     }
 
     /**
@@ -1181,6 +1259,7 @@ class Episciences_Mail_Reminder
             ->where('ui1.STATUS = ?', 'pending')
             ->where("EXPIRATION_DATE >= $date") // don't send reminders for expired invitations
             ->group(['DOCID', 'ua.UID', 'ui1.ID', 'ua.TMP_USER']);
+        $this->filterByRequestType($sql, 'ua');
 
         if ($this->getRepetition()) {
 
@@ -1388,6 +1467,7 @@ class Episciences_Mail_Reminder
             ->where('ui1.STATUS = ?', 'accepted')
             ->where('RATING_STATUS = ' . Episciences_Rating_Report::STATUS_PENDING . ' OR RATING_STATUS = ' . Episciences_Rating_Report::STATUS_WIP)
             ->where("DEADLINE >= $date");
+        $this->filterByRequestType($sql, 'ua');
 
 
         if ($this->getRepetition()) {
@@ -1556,6 +1636,7 @@ class Episciences_Mail_Reminder
             ->where('ua1.STATUS = ?', 'active')
             ->where('RATING_STATUS = ' . Episciences_Rating_Report::STATUS_PENDING . ' OR RATING_STATUS = ' . Episciences_Rating_Report::STATUS_WIP)
             ->where("DEADLINE <= $date");
+        $this->filterByRequestType($sql, 'ua1');
 
         if ($this->getRepetition()) {
             $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DEADLINE, $date) >= " . $this->getDelay()));

@@ -45,6 +45,11 @@ if ($this->element->getMethod()) {
         <?= $elements['recipient'] ?>
     </div>
 
+    <?php // request type (#319): shown for the reminders about review requests only (public/js/administratemail/reminders.js) ?>
+    <div id="request_type_id-element" class="form-group row" data-reminder-types="<?= $this->escape(implode(',', Episciences_Mail_Reminder::REQUEST_TYPE_REMINDERS)) ?>">
+        <?= $elements['request_type_id'] ?>
+    </div>
+
     <div id="delay-element" class="form-group row">
         <?=  $elements['delay'] ?>
     </div>

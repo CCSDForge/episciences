@@ -193,6 +193,20 @@ review report. The type form reminds
 it when the option is checked on a type other than the quick opinion. For a revised version check type, keep the
 answer with an account when the reviewer needs their previous report.
 
+## Automatic Reminders by Request Type
+
+The reminders to the reviewers (unanswered invitation, reminder before the due date, reminder after the due date) and
+their copies to the editorial staff can be limited to a request type. In **Automatic reminders**, when setting up a
+reminder, choose the **Request type**: "Every request type" by default, or a type of the journal, for instance the
+quick opinion, with its own delays and text. The name of the reminder gives the type.
+
+A reminder limited to a type **replaces**, for that type, the "every type" reminders of the same kind and recipient: a
+quick opinion that has its own "unanswered invitation" reminder for the reviewers no longer receives the matching
+general reminder. The other reminders do not depend on the type.
+
+The reminders are sent every day by a script; a reminder limited to a type follows the same delay and repetition rules
+as the others.
+
 ## Email Notifications
 
 | Event | Recipients |

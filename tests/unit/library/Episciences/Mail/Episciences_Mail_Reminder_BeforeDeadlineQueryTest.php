@@ -144,12 +144,15 @@ final class Episciences_Mail_Reminder_BeforeDeadlineQueryTest extends TestCase
      * @param int $repetition days between two reminders (0: a single reminder)
      * @return int[] the UIDs returned by the query
      */
-    private function fetchRecipientUids(string $date = self::DEADLINE, int $delay = 0, int $repetition = 0): array
+    private function fetchRecipientUids(string $date = self::DEADLINE, int $delay = 0, int $repetition = 0, ?int $requestTypeId = null): array
     {
         $reminder = new Episciences_Mail_Reminder();
         $reminder->setRvid(RVID);
+        $reminder->setType(Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE);
+        $reminder->setRecipient('reviewer');
         $reminder->setDelay($delay);
         $reminder->setRepetition($repetition);
+        $reminder->setRequest_type_id($requestTypeId);
 
         $query = new ReflectionMethod(Episciences_Mail_Reminder::class, 'getBeforeReviewingDeadlineQuery');
         $sql = $query->invoke($reminder, $this->db->quote($date), [Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper::STATUS_REFUSED]);
@@ -163,6 +166,43 @@ final class Episciences_Mail_Reminder_BeforeDeadlineQueryTest extends TestCase
             [Episciences_User_Invitation::STATUS_PENDING, Episciences_User_Assignment::STATUS_PENDING],
             [Episciences_User_Invitation::STATUS_ACCEPTED, Episciences_User_Assignment::STATUS_ACTIVE],
         ]);
+    }
+
+    /**
+     * A reminder of the journal limited to a request type (#319)
+     */
+    private function insertReminderOfType(int $requestTypeId, string $recipient = 'reviewer', int $type = Episciences_Mail_Reminder::TYPE_BEFORE_REVIEWING_DEADLINE): void
+    {
+        $this->db->insert(T_MAIL_REMINDERS, [
+            'RVID' => RVID,
+            'TYPE' => $type,
+            'RECIPIENT' => $recipient,
+            'DELAY' => 3,
+            'REPETITION' => 0,
+            'REQUEST_TYPE_ID' => $requestTypeId,
+        ]);
+    }
+
+    public function testAReminderLimitedToARequestTypeOnlyConcernsTheRequestsOfThisType(): void
+    {
+        $this->insertAcceptedInvitation();
+
+        $this->assertSame([self::UID], $this->fetchRecipientUids(requestTypeId: self::REQUEST_TYPE_ID));
+        $this->assertSame([], $this->fetchRecipientUids(requestTypeId: self::REQUEST_TYPE_ID + 1));
+    }
+
+    public function testAReminderForEveryTypeLeavesOutTheTypesThatHaveTheirOwn(): void
+    {
+        $this->insertAcceptedInvitation();
+        // a reminder of another reminder type or for another recipient changes nothing
+        $this->insertReminderOfType(self::REQUEST_TYPE_ID, 'editor');
+        $this->insertReminderOfType(self::REQUEST_TYPE_ID, 'reviewer', Episciences_Mail_Reminder::TYPE_AFTER_REVIEWING_DEADLINE);
+        $this->assertSame([self::UID], $this->fetchRecipientUids());
+
+        // the request type has its own reminder before the deadline, for the reviewers: it is left to it
+        $this->insertReminderOfType(self::REQUEST_TYPE_ID);
+        $this->assertSame([], $this->fetchRecipientUids());
+        $this->assertSame([self::UID], $this->fetchRecipientUids(requestTypeId: self::REQUEST_TYPE_ID));
     }
 
     public function testAReviewerWhoAcceptedTheInvitationIsReminded(): void

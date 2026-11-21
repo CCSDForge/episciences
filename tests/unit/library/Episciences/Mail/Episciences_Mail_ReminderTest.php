@@ -1425,4 +1425,31 @@ final class Episciences_Mail_ReminderTest extends TestCase
             'empty' => [''],
         ];
     }
+
+    public function testOnlyTheRemindersAboutReviewRequestsCanBeLimitedToARequestType(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+
+        foreach (Episciences_Mail_Reminder::REQUEST_TYPE_REMINDERS as $type) {
+            $reminder->setType($type);
+            self::assertTrue($reminder->supportsRequestType());
+        }
+
+        foreach ([Episciences_Mail_Reminder::TYPE_BEFORE_REVISION_DEADLINE, Episciences_Mail_Reminder::TYPE_NOT_ENOUGH_REVIEWERS] as $type) {
+            $reminder->setType($type);
+            self::assertFalse($reminder->supportsRequestType());
+        }
+    }
+
+    public function testAReminderWithoutARequestTypeConcernsEveryType(): void
+    {
+        $reminder = new Episciences_Mail_Reminder();
+
+        self::assertNull($reminder->setRequest_type_id('')->getRequest_type_id());
+        self::assertNull($reminder->setRequest_type_id('0')->getRequest_type_id());
+        self::assertNull($reminder->setRequest_type_id(null)->getRequest_type_id());
+        self::assertSame(11, $reminder->setRequest_type_id('11')->getRequest_type_id());
+        // read from the database
+        self::assertSame(12, (new Episciences_Mail_Reminder(['REQUEST_TYPE_ID' => '12']))->getRequest_type_id());
+    }
 }

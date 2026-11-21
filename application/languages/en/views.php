@@ -2922,6 +2922,8 @@ return array(
     // Review request types (#319)
     "Type de demande" => "Request type",
     "Sans compte" => "Without an account",
+    "Tous les types de demande" => "Every request type",
+    "Seulement pour les relances aux relecteurs (invitation sans réponse, avant ou après la date limite) et leurs copies. Une relance limitée à un type remplace, pour ce type, les relances « tous les types » de même nature et de même destinataire." => "Only for the reminders to the reviewers (unanswered invitation, before or after the due date) and their copies. A reminder limited to a type replaces, for that type, the \"every type\" reminders of the same kind and recipient.",
     "L'invitation a été renvoyée." => "The invitation has been sent again.",
     "L'invitation n'a pas pu être renvoyée." => "The invitation could not be sent again.",
     "Cette invitation ne peut plus être renvoyée : elle a reçu une réponse, a été annulée ou a expiré." => "This invitation can no longer be sent again: it has been answered, cancelled or has expired.",

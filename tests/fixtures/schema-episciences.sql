@@ -220,9 +220,11 @@ CREATE TABLE `REMINDERS` (
   `DELAY` smallint unsigned NOT NULL,
   `REPETITION` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `RECIPIENT` varchar(25) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'reviewer',
+  `REQUEST_TYPE_ID` int unsigned DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `RVID` (`RVID`),
-  KEY `TYPE` (`TYPE`)
+  KEY `TYPE` (`TYPE`),
+  KEY `idx_request_type` (`REQUEST_TYPE_ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `REVIEW`;

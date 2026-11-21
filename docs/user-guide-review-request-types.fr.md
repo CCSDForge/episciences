@@ -196,6 +196,20 @@ relecture. Le formulaire du type le rappelle
 quand l'option est cochée sur un autre type que l'avis rapide. Pour un type de relecture d'une version révisée, gardez
 la réponse avec compte si le relecteur doit s'appuyer sur son rapport précédent.
 
+## Relances automatiques par type de demande
+
+Les relances aux relecteurs (invitation sans réponse, rappel avant la date limite, relance après la date limite) et
+leurs copies à l'équipe éditoriale peuvent être limitées à un type de demande. Dans **Relances automatiques**, à la mise
+en place d'une relance, choisissez le **Type de demande** : « Tous les types de demande » par défaut, ou un type de la
+revue, par exemple l'avis rapide, avec ses propres délais et son propre texte. Le nom de la relance indique le type.
+
+Une relance limitée à un type **remplace**, pour ce type, les relances « tous les types » de même nature et de même
+destinataire : un avis rapide qui a sa relance « invitation sans réponse » pour les relecteurs ne reçoit plus la
+relance générale correspondante. Les autres relances ne dépendent pas du type.
+
+Les relances sont envoyées chaque jour par un script ; une relance limitée à un type suit les mêmes règles de délai et de
+répétition que les autres.
+
 ## Notifications par mail
 
 | Événement | Destinataires |

@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Reviewer\RequestTypeRepository;
+
 class Episciences_Mail_RemindersManager
 {
     public const AUTHOR = 'author';
@@ -334,6 +336,19 @@ class Episciences_Mail_RemindersManager
         ]));
 
         $translator = Zend_Registry::get('Zend_Translate');
+
+        // Select: type de demande (#319), for the reminders about review requests only ***********
+        $requestTypes = ['' => $translator->translate('Tous les types de demande')];
+        foreach ((new RequestTypeRepository())->findAllForJournal(RVID) as $requestType) {
+            $requestTypes[(string)$requestType->getId()] = $requestType->getLabel($locale);
+        }
+        $form->addElement(new Ccsd_Form_Element_Select([
+            'name' => 'request_type_id',
+            'label' => 'Type de demande',
+            'multioptions' => $requestTypes,
+            'value' => (string)($reminder?->getRequest_type_id() ?? ''),
+            'description' => $translator->translate("Seulement pour les relances aux relecteurs (invitation sans réponse, avant ou après la date limite) et leurs copies. Une relance limitée à un type remplace, pour ce type, les relances « tous les types » de même nature et de même destinataire."),
+        ]));
 
         $tooltipMsg = $translator->translate("Saisir un nombre de jours (un rappel automatique pour une absence de réponse à une invitation de relecture peut être envoyé x jours après l’invitation).");
         $tooltip = '<span id="delay-info" class="lightgrey glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="bottom" title="' . $tooltipMsg . '"></span> ';

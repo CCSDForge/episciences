@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Mail\RecipientSuggestions;
+use Episciences\Reviewer\RequestTypeRepository;
 use Episciences\Security\AccessLog;
 
 class AdministratemailController extends Zend_Controller_Action
@@ -806,6 +807,8 @@ class AdministratemailController extends Zend_Controller_Action
             'recipient' => $request->getParam('recipient'),
             'delay' => $delay,
             'repetition' => $request->getParam('repetition'),
+            // a request type of the journal, else every type (#319); ignored by the reminders about something else
+            'request_type_id' => self::reminderRequestTypeId($request->getParam('request_type_id')),
         ];
 
         $langs = Episciences_Tools::getLanguages();
@@ -825,6 +828,17 @@ class AdministratemailController extends Zend_Controller_Action
 
         // Success body preserved for the AJAX caller
         echo 1;
+    }
+
+    /**
+     * The request type posted for a reminder, if it is a type of the current journal (#319)
+     */
+    private static function reminderRequestTypeId(mixed $posted): ?int
+    {
+        $id = is_numeric($posted) ? (int)$posted : 0;
+        $requestType = $id > 0 ? (new RequestTypeRepository())->findById($id) : null;
+
+        return $requestType !== null && $requestType->getRvid() === RVID ? $id : null;
     }
 
     /**

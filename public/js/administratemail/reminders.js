@@ -221,6 +221,26 @@ function setReminderType(type, recipient) {
         recipient = $('#recipient').val();
     }
     setReminder(type, recipient);
+    toggleRequestType(type);
+}
+
+/**
+ * Shows the request type only for the reminders about review requests (#319); otherwise it is emptied, as the server
+ * ignores it
+ * @param {string|number} type reminder type
+ */
+function toggleRequestType(type) {
+    const element = document.getElementById('request_type_id-element');
+    if (!element) {
+        return;
+    }
+    const types = (element.dataset.reminderTypes || '').split(',');
+    const shown = types.includes(String(type));
+    element.hidden = !shown;
+    const select = document.getElementById('request_type_id');
+    if (!shown && select) {
+        select.value = '';
+    }
 }
 
 function setReminder(type, recipient) {
