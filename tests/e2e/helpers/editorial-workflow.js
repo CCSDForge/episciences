@@ -40,7 +40,7 @@ async function fetchRepositoryDocument(page) {
         if ((await submitForm.isVisible()) || attempt === REPOSITORY_FETCH_ATTEMPTS) {
             break;
         }
-        await page.waitForTimeout(REPOSITORY_RETRY_DELAY);
+        await new Promise(resolve => setTimeout(resolve, REPOSITORY_RETRY_DELAY));
     }
 
     await expect(submitForm).toBeVisible();
