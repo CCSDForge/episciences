@@ -787,8 +787,13 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         // Delay in days, from 1: with 0, most reminder types would be sent the day of their
-        // trigger (e.g. the day of the invitation), before anything could be late or unanswered
-        $delay = filter_var($request->getParam('delay'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        // trigger (e.g. the day of the invitation), before anything could be late or unanswered.
+        // Up to 65535: the DELAY column is a SMALLINT UNSIGNED
+        $delay = filter_var(
+            $request->getParam('delay'),
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1, 'max_range' => 65535]]
+        );
         if ($delay === false) {
             $this->getResponse()->setHttpResponseCode(400);
             return;

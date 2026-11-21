@@ -276,6 +276,7 @@ final class AdministratemailControllerReminderGuardTest extends TestCase
             'decimal' => ['1.5'],
             'empty' => [''],
             'not a number' => ['abc'],
+            'above the SMALLINT UNSIGNED column' => ['65536'],
         ];
     }
 
