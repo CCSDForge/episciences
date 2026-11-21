@@ -1,8 +1,8 @@
 <div class="alert alert-block alert-error fixed">
-	<h1 class="alert-heading"><?php echo $this->translate($this->message) ?></h1>
+	<h1 class="alert-heading"><?php echo $this->escape($this->translate($this->message)) ?></h1>
 	<p>
 		<?php if (isset($this->description)){ ?>
-			<h2><?php echo $this->translate($this->description); ?></h2>
+			<h2><?php echo $this->escape($this->translate($this->description)); ?></h2>
 		<?php } ?>
 		<?php if (isset($this->exception)){ ?>
 			<?php echo $this->translate($this->exception->getMessage()); ?>
