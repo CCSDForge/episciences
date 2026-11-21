@@ -8,9 +8,10 @@ use PHPUnit\Framework\TestCase;
 /**
  * Unit tests for Ccsd_File
  *
- * Only pure static methods are tested here (no filesystem I/O, no GD/Imagick).
- * Methods that require real files (getSize, getMimeType, isWellFormedXmlFile,
- * convertImg, compile, pdf2pdfa) are excluded.
+ * Mostly pure static methods are tested here. convertImg() is only checked for
+ * rejecting non-raster content, with a temporary file (no GD/Imagick conversion).
+ * Other methods that require real files (getSize, getMimeType, compile,
+ * pdf2pdfa) are excluded.
  */
 class Ccsd_FileTest extends TestCase
 {
@@ -186,13 +187,15 @@ class Ccsd_FileTest extends TestCase
     public function testConvertImgRejectsSvgContent(): void
     {
         // SVG content behind an image extension must never reach Imagick
-        $file = tempnam(sys_get_temp_dir(), 'svg') . '.png';
+        $tmpFile = tempnam(sys_get_temp_dir(), 'svg');
+        $file = $tmpFile . '.png';
         file_put_contents($file, '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>');
 
         try {
             $this->assertFalse(Ccsd_File::convertImg($file, sys_get_temp_dir() . '/', 10, 10, 'converted'));
         } finally {
             unlink($file);
+            unlink($tmpFile);
         }
     }
 
