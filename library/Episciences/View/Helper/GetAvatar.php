@@ -29,14 +29,44 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
      */
     public static function asSvg($stringToMakeAvatar, ?string $backgroundColor = null): string
     {
-        // Use custom color if provided, otherwise use default palette
-        $backgrounds = $backgroundColor ? ['#' . $backgroundColor] : self::$_defaultBackgroundColors;
+        // laravolt/avatar concatenates the background color and the initials into the SVG
+        // markup without escaping: only accept a strict hex color, otherwise fall back to the palette
+        $backgroundColor = self::sanitizeHexColor($backgroundColor);
+        $backgrounds = $backgroundColor !== null ? ['#' . $backgroundColor] : self::$_defaultBackgroundColors;
 
         $avatar = new Avatar([
             'shape' => 'circle', 'theme' => 'colorful', 'width' => 34, 'height' => 34, 'fontSize' => 16, 'backgrounds' => $backgrounds]);
 
-        return $avatar->create($stringToMakeAvatar)->setFontFamily('Helvetica')->toSvg();
+        return $avatar->create(self::stripXmlSpecialChars((string)$stringToMakeAvatar))->setFontFamily('Helvetica')->toSvg();
 
+    }
+
+    /**
+     * @param string|null $color Hex color code, with or without leading #
+     * @return string|null the color without #, or null if it is not a 3 or 6 digit hex color
+     */
+    public static function sanitizeHexColor(?string $color): ?string
+    {
+        if ($color === null) {
+            return null;
+        }
+
+        $color = ltrim($color, '#');
+
+        return preg_match('/^(?:[0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/D', $color) ? $color : null;
+    }
+
+    /**
+     * Remove characters that would break out of an SVG text node or attribute,
+     * and C0 control characters that are not allowed in XML 1.0
+     * @param string $string
+     * @return string
+     */
+    private static function stripXmlSpecialChars(string $string): string
+    {
+        $string = (string)preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $string);
+
+        return str_replace(['<', '>', '&', '"', "'"], '', $string);
     }
 
 

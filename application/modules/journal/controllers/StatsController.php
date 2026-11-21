@@ -454,13 +454,9 @@ class StatsController extends Zend_Controller_Action
     private function renderError(int $yearQuery = null, string $header = 'HTTP/1.1 404 Not Found'): void
     {
         Episciences_Tools::header($header);
-        $message = $this->view->translate("Vous essayez de consulter les indicateurs statistiques pour l'année");
-
-        if ($yearQuery) {
-            $message .= " <span class='stat-code'>$yearQuery</span>";
-        }
-
-        $this->view->message = $message;
+        // The year is rendered (escaped) by the template: the message itself is escaped and must stay plain text
+        $this->view->message = "Vous essayez de consulter les indicateurs statistiques pour l'année";
+        $this->view->messageCode = $yearQuery ?: null;
         $this->view->description = "Aucune information n'est disponible pour cette page pour le moment.";
         $this->renderScript('error/error.phtml');
     }
