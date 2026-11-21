@@ -12,9 +12,9 @@ const {
     initOverallScore,
 } = require('../../../public/js/paper/rating.js');
 
-function renderForm(coefficients) {
+function renderForm(coefficients, maxScoreAttribute = 'data-max-score="10"') {
     document.body.innerHTML = `
-        <form id="rating-grid" data-coefficients='${JSON.stringify(coefficients)}' data-max-score="10">
+        <form id="rating-grid" data-coefficients='${JSON.stringify(coefficients)}' ${maxScoreAttribute}>
             <select name="note_item_1" data-max-note="5">
                 ${[0, 1, 2, 3, 4, 5].map(i => `<option value="${i}">${i}/5</option>`).join('')}
             </select>
@@ -99,6 +99,26 @@ describe('overall score under the rating form', () => {
         grade(form, 'note_item_3', 2);
         expect(form.querySelector('.overallValue').textContent).toBe(
             'Overall rating : 7.5/10'
+        );
+    });
+
+    test('uses a maximum score of 10 only when the form does not give one', () => {
+        const form = renderForm({ item_1: 1 }, '');
+        initOverallScore(form);
+        grade(form, 'note_item_1', 5);
+
+        expect(form.querySelector('.overallValue').textContent).toBe(
+            'Overall rating : 10/10'
+        );
+    });
+
+    test('follows a maximum score of 0 like the server', () => {
+        const form = renderForm({ item_1: 1 }, 'data-max-score="0"');
+        initOverallScore(form);
+        grade(form, 'note_item_1', 5);
+
+        expect(form.querySelector('.overallValue').textContent).toBe(
+            'Overall rating : 0/0'
         );
     });
 

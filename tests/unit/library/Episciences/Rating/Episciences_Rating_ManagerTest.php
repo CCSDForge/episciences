@@ -30,6 +30,15 @@ use ReflectionMethod;
  */
 final class Episciences_Rating_ManagerTest extends TestCase
 {
+    /**
+     * Some tests log a reviewer in: never leak the identity to the next tests, even when an assertion fails
+     */
+    protected function tearDown(): void
+    {
+        \Episciences_Auth::getInstance()->clearIdentity();
+        parent::tearDown();
+    }
+
     // =========================================================================
     // getAverageRating() — pure logic, no DB
     // =========================================================================
@@ -679,7 +688,7 @@ final class Episciences_Rating_ManagerTest extends TestCase
     }
 
     // =========================================================================
-    // getRatingForm() — data read by public/js/paper/rating.js (overall score)
+    // getRatingForm() - data read by public/js/paper/rating.js (overall score)
     // =========================================================================
 
     private const YES_NO_MAYBE = [
@@ -719,7 +728,6 @@ final class Episciences_Rating_ManagerTest extends TestCase
         self::assertSame(10, $form->getElement('note_item_1')->getAttrib('data-max-note'));
         self::assertSame(2, $form->getElement('note_item_2')->getAttrib('data-max-note'));
         self::assertNull($form->getElement('note_item_0')->getAttrib('onchange'), 'no inline handler: bound by rating.js');
-        \Episciences_Auth::getInstance()->clearIdentity();
     }
 
     public function testGetRatingFormWithoutWeightedCriterionExposesAnEmptyMap(): void
@@ -733,6 +741,5 @@ final class Episciences_Rating_ManagerTest extends TestCase
         $form = Episciences_Rating_Manager::getRatingForm($report);
 
         self::assertSame('{}', $form?->getAttrib('data-coefficients'));
-        \Episciences_Auth::getInstance()->clearIdentity();
     }
 }

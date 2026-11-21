@@ -54,7 +54,9 @@ function readGrades(form) {
  * @param {HTMLFormElement} form
  */
 function updateOverallScore(form) {
-    const maxScore = Number(form.dataset.maxScore) || 10;
+    // 10 only when the attribute is missing: otherwise follow the server, which multiplies by the stored max_score
+    const rawMaxScore = form.dataset.maxScore;
+    const maxScore = rawMaxScore === undefined ? 10 : Number(rawMaxScore) || 0;
     const score = computeOverallScore(readGrades(form), maxScore);
     const display = form.querySelector('.overallValue');
 
