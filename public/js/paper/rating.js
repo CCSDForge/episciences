@@ -25,7 +25,13 @@ function computeOverallScore(grades, maxScore) {
         return null;
     }
 
-    return Math.round((weighted / coefficients) * maxScore * 10) / 10;
+    // Like PHP round(): drop the floating-point noise (15 significant digits) before rounding,
+    // so that 5.249999999999999 gives 5.3 on the form as on the saved report
+    const tenths = Number(
+        ((weighted / coefficients) * maxScore * 10).toPrecision(15)
+    );
+
+    return Math.round(tenths) / 10;
 }
 
 /**

@@ -53,6 +53,15 @@ describe('computeOverallScore', () => {
         ).toBe(3.3);
     });
 
+    test('rounds a decimal boundary like PHP round()', () => {
+        // (7/10 x 3 + 0/10 x 1) / (3 + 1) x 10 = 5.249999999999999 in floating point: PHP gives 5.3
+        const grades = [
+            { note: 7, maxNote: 10, coefficient: 3 },
+            { note: 0, maxNote: 10, coefficient: 1 },
+        ];
+        expect(computeOverallScore(grades, 10)).toBe(5.3);
+    });
+
     test('ignores the criteria without coefficient', () => {
         const grades = [
             { note: 4, maxNote: 5, coefficient: 2 },
