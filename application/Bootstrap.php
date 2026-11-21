@@ -189,7 +189,9 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
         if ($hideStatistics) {
             $key = array_search('stats-index', array_column($confToArray, 'resource'), true);
-            unset($confToArray[$key]);
+            if ($key !== false) {
+                unset($confToArray[$key]);
+            }
 
         }
 
