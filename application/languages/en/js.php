@@ -154,6 +154,8 @@ return [
     "Inviter ce relecteur" => "Invite this reviewer",
     "Réinviter ce relecteur" => "Re-invite this reviewer",
     "Accepter l'invitation à la place du relecteur" => "Accept the invitation on behalf of the reviewer",
+    "Renvoyer l'invitation" => "Send the invitation again",
+    "Renvoyer l'invitation à ce relecteur, avec le même lien ?" => "Send the invitation again to this reviewer, with the same link?",
 
     "Code d'accès" => "Access code",
     "Filtrer les relecteurs" => "Filter reviewers",

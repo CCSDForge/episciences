@@ -7,6 +7,7 @@ const {
     submitInvitation,
     addQuantitativeCriterion,
 } = require('../../helpers/editorial-workflow');
+const { flushMailQueue } = require('../../helpers/app-cli');
 
 // papers of their own: specs run in parallel, and each one submits a different paper
 const ARXIV_ID = '1704.04861';
@@ -432,6 +433,47 @@ test.describe('Review request types (#319)', () => {
                         hasText: 'Without an account',
                     })
                 ).toBeAttached();
+            });
+
+            await test.step('the editorial team sends the invitation again, with the same link', async () => {
+                const subject = [`#${docid} `, 'Request for a quick opinion'];
+                const first = await mailpit.waitForEmail({ to: invitee.email, subjectContains: subject });
+                const linkOf = email =>
+                    mailpit.extractLinks(email.Text).find(url => url.includes('/reviewer/invitation/'));
+
+                // the pending invitations are folded
+                await adminPage.locator('[data-target="#pending-invitations"]').click();
+                await adminPage
+                    .locator('#pending-invitations .reviewer', { hasText: invitee.lastname })
+                    .locator('.popover-link')
+                    .click();
+                adminPage.once('dialog', dialog => dialog.accept());
+                await adminPage.getByRole('link', { name: 'Send the invitation again' }).click();
+                await expect(
+                    adminPage.getByText('The invitation has been sent again.').first()
+                ).toBeVisible();
+                await expect(adminPage.locator('#history')).toContainText('Review invitation sent again');
+                // its details: who sent it again, to whom
+                await adminPage
+                    .getByRole('link', { name: 'View details for Review invitation sent again' })
+                    .click();
+                await expect(adminPage.getByText('Sent again by').first()).toBeVisible();
+                await expect(adminPage.getByText(invitee.lastname).last()).toBeVisible();
+
+                // a second e-mail, with the link of the first one
+                let messages = [];
+                await expect
+                    .poll(async () => {
+                        // the application queues its e-mails: send them first
+                        flushMailQueue();
+                        messages = (await mailpit.search(`to:"${invitee.email}"`)).filter(message =>
+                            subject.every(fragment => (message.Subject || '').includes(fragment))
+                        );
+                        return messages.length;
+                    }, { timeout: 30000 })
+                    .toBe(2);
+                const resent = await mailpit.getMessage(messages[0].ID);
+                expect(linkOf(resent)).toBe(linkOf(first));
             });
 
             await test.step('the mode of answer is the one of the request when it was sent', async () => {

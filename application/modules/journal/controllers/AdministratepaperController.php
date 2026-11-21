@@ -2,6 +2,7 @@
 
 use Episciences\AppRegistry;
 use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Reviewer\InvitationResend;
 use Episciences\Reviewer\InvitationTemplates;
 use Episciences\Reviewer\InvitationToken;
 use Episciences\Reviewer\RequestType;
@@ -4208,6 +4209,173 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         return ['assignment' => $assignment, 'invitation' => $invitation, 'paper' => $paper];
+    }
+
+    /**
+     * Sends the invitation e-mail of a request again, with the same signed link, to a person who has not answered yet
+     * (#319, lot F): the message is rebuilt from the invitation template of the request type. Posted by the menu of the
+     * reviewer (AJAX, request token); the outcome is reported by a flash message.
+     */
+    public function resendinvitationAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $error = 'Votre session a expiré, veuillez réessayer.';
+        } else {
+            $error = $this->resendInvitation((int)$request->getPost('aid'));
+        }
+
+        $this->_helper->FlashMessenger
+            ->setNamespace($error === null ? Ccsd_View_Helper_Message::MSG_SUCCESS : Ccsd_View_Helper_Message::MSG_ERROR)
+            ->addMessage($this->view->translate($error ?? "L'invitation a été renvoyée."));
+        $this->getResponse()->setHeader('Content-Type', 'application/json');
+        echo json_encode(['result' => $error === null], JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @param int $aid original assignment of the invitation
+     * @return string|null why the invitation was not sent again, null when it was
+     */
+    private function resendInvitation(int $aid): ?string
+    {
+        $context = $aid > 0 ? $this->loadAcceptInvitationContext($aid) : null;
+        /** @var Episciences_Paper|null $paper */
+        $paper = $context['paper'] ?? null;
+
+        if ($context === null || (int)$paper->getRvid() !== RVID || (int)$context['invitation']->getAid() !== $aid) {
+            return "Impossible de retrouver l'invitation";
+        }
+
+        /** @var Episciences_User_Invitation $invitation */
+        $invitation = $context['invitation'];
+        /** @var Episciences_User_Assignment $assignment */
+        $assignment = $context['assignment'];
+        $waiting = $invitation->isPendingRow() && !$invitation->isAnswered() && !$invitation->isCancelled() && !$invitation->hasExpired();
+        $refusal = InvitationResend::refusal($this->isAllowedToManagePaperReviewing($paper), $waiting, $paper->canBeReviewed());
+
+        if ($refusal !== null) {
+            return $refusal;
+        }
+
+        $recipient = $this->invitedPerson($assignment);
+        if ($recipient === null) {
+            return 'Impossible de retrouver le relecteur';
+        }
+
+        $requestType = (new RequestTypeRepository())->findById((int)$assignment->getRequest_type_id())
+            ?? (new RequestTypeRepository())->findFullReport(RVID);
+
+        if ($requestType === null || !$this->sendInvitationAgain($paper, $invitation, $assignment, $recipient, $requestType)) {
+            return "L'invitation n'a pas pu être renvoyée.";
+        }
+
+        return null;
+    }
+
+    /**
+     * The person an invitation was sent to: the temporary user, or the account; null when it cannot be read
+     */
+    private function invitedPerson(Episciences_User_Assignment $assignment): ?Episciences_User
+    {
+        if ($assignment->isTmp_user()) {
+            $tmpUser = Episciences_TmpUsersManager::findById((int)$assignment->getUid());
+            return $tmpUser ?: null;
+        }
+
+        $account = new Episciences_User();
+
+        return $account->findWithCAS((int)$assignment->getUid()) ? $account : null;
+    }
+
+    /**
+     * Builds the invitation e-mail from the template of the request type, sends it and logs it
+     */
+    private function sendInvitationAgain(
+        Episciences_Paper $paper,
+        Episciences_User_Invitation $invitation,
+        Episciences_User_Assignment $assignment,
+        Episciences_User $recipient,
+        RequestType $requestType
+    ): bool {
+        $defaultLocale = Episciences_Review::getDefaultLanguage();
+        $locale = (string)($recipient->getLangueid() ?: $defaultLocale);
+        $state = InvitationResend::accountState((bool)$assignment->isTmp_user(), $recipient->isReviewer());
+        $templates = InvitationTemplates::ofCurrentJournal()->forType($requestType);
+        $template = $templates[$state] ?? reset($templates);
+
+        if (!is_array($template)) {
+            return false;
+        }
+
+        $mail = new Episciences_Mail('UTF-8');
+        $mail->setDocid($paper->getDocid(), $paper->getPaperid());
+        foreach ($this->invitationAgainTags($paper, $invitation, $assignment, $recipient, $locale) as $tag => $value) {
+            $mail->addTag($tag, $value);
+        }
+        $mail->setTo($recipient);
+        $mail->setSubject(InvitationResend::inLanguage($template['subject'], $locale, $defaultLocale));
+        // line breaks of the template become <br> when the tags are replaced (Episciences_Mail::replaceTags())
+        $mail->setRawBody(InvitationResend::inLanguage($template['body'], $locale, $defaultLocale));
+
+        if (!$mail->writeMail()) {
+            return false;
+        }
+
+        $paper->log(Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_RESENT, Episciences_Auth::getUid(), [
+            'invitation_id' => $invitation->getId(),
+            'aid' => $assignment->getId(),
+            // as in the invitation log: the uid next to the user, read by the activity page
+            'uid' => (int)$assignment->getUid(),
+            'tmp_user' => (bool)$assignment->isTmp_user(),
+            'user' => ['fullname' => $recipient->getFullName()],
+            'request_type' => ['id' => $requestType->getId(), 'labels' => $requestType->getLabels()],
+        ]);
+        $paper->log(Episciences_Paper_Logger::CODE_MAIL_SENT, Episciences_Auth::getUid(), ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
+
+        return true;
+    }
+
+    /**
+     * Tags of the invitation e-mail sent again: the ones the invitation page fills in, and the same signed link
+     * @return array<string, string>
+     */
+    private function invitationAgainTags(
+        Episciences_Paper $paper,
+        Episciences_User_Invitation $invitation,
+        Episciences_User_Assignment $assignment,
+        Episciences_User $recipient,
+        string $locale
+    ): array {
+        $urlParams = ['controller' => 'reviewer', 'action' => 'invitation', 'id' => $invitation->getId(), 'lang' => $locale];
+        $linkToken = (new InvitationToken())->forInvitation($invitation);
+        if ($linkToken !== null) {
+            $urlParams[InvitationToken::URL_PARAM] = $linkToken;
+        } elseif ($assignment->isTmp_user()) {
+            // legacy invitation (no link token)
+            $urlParams['tmp'] = md5((string)$recipient->getEmail());
+        }
+
+        $contributor = new Episciences_User();
+        $contributor->findWithCAS($paper->getUid());
+        $deadline = (string)($assignment->getDeadline() ?? '');
+
+        return [
+            Episciences_Mail_Tags::TAG_INVITATION_URL => rtrim(APPLICATION_URL, '/') . $this->view->url($urlParams, null, true),
+            Episciences_Mail_Tags::TAG_ARTICLE_ID => (string)$paper->getDocid(),
+            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => (string)$paper->getTitle($locale, true),
+            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => (string)$paper->formatAuthorsMetadata($locale),
+            Episciences_Mail_Tags::TAG_PAPER_URL => rtrim(APPLICATION_URL, '/') . $this->view->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()], null, true),
+            Episciences_Mail_Tags::TAG_PAPER_REPO_URL => (string)$paper->getDocUrl(),
+            Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => (string)$contributor->getFullName(),
+            // replaced by the invitation page too, without a constant in Episciences_Mail_Tags
+            '%%CONTRIBUTOR_EMAIL%%' => (string)$contributor->getEmail(),
+            Episciences_Mail_Tags::TAG_INVITATION_DEADLINE => (string)$this->view->Date($invitation->getExpiration_date(), $locale),
+            Episciences_Mail_Tags::TAG_RATING_DEADLINE => $deadline !== '' ? (string)$this->view->Date($deadline, $locale) : '',
+        ];
     }
 
     /**

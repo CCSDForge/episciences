@@ -56,6 +56,7 @@ final class ReviewerControllerRefusalFormTest extends TestCase
             'invitation' => [Episciences_Paper_Logger::CODE_REVIEWER_INVITATION],
             'invitation accepted' => [Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED],
             'invitation declined' => [Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED],
+            'invitation sent again' => [Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_RESENT],
             'abandon' => [Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS],
             'continue' => [Episciences_Paper_Logger::CODE_CONTINUE_PUBLICATION_PROCESS],
         ];
@@ -84,6 +85,34 @@ final class ReviewerControllerRefusalFormTest extends TestCase
 
         self::assertStringNotContainsString('<img', $html);
         self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $html, 'the values are displayed, escaped');
+    }
+
+    public function testTheInvitationSentAgainShowsWhoSentItToWhomAndForWhichType(): void
+    {
+        $view = $this->view();
+        $view->user = ['fullname' => 'Editor <b>'];
+        $view->log = [
+            'action' => Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_RESENT,
+            'uid' => 1,
+            'date' => '2026-01-01 10:00:00',
+            'detail' => [
+                'invitation_id' => 7,
+                'aid' => 70,
+                'uid' => 500,
+                'tmp_user' => true,
+                'user' => ['fullname' => 'Invited Person'],
+                'request_type' => ['id' => 11, 'labels' => ['fr' => 'Avis <rapide>', 'en' => 'Quick opinion']],
+            ],
+        ];
+
+        $html = $view->render('administratepaper/log.phtml');
+
+        self::assertStringContainsString('Invitation renvoyée le', $html);
+        self::assertStringContainsString('Editor &lt;b&gt;', $html);
+        self::assertStringContainsString('Invited Person', $html);
+        self::assertStringContainsString('relecteur sans compte', $html);
+        // the label of the type in the language of the page, escaped
+        self::assertStringContainsString('Avis &lt;rapide&gt;', $html);
     }
 
     /**

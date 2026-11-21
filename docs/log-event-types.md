@@ -14,6 +14,7 @@ This document lists the various log event types used in the Episciences platform
 | `reviewer_invitation` | `CODE_REVIEWER_INVITATION` | Reviewer invitation | Invitation d'un relecteur | warning |
 | `reviewer_invitation_accepted` | `CODE_REVIEWER_INVITATION_ACCEPTED` | Accepted invitation | Invitation de relecture acceptée | warning |
 | `reviewer_invitation_declined` | `CODE_REVIEWER_INVITATION_DECLINED` | Declined invitation | Invitation de relecture refusée | warning |
+| `reviewer_invitation_resent` | `CODE_REVIEWER_INVITATION_RESENT` | Review invitation sent again | Invitation de relecture renvoyée | info |
 | `light_answer_without_grid` | `CODE_LIGHT_ANSWER_WITHOUT_GRID` | Answer without an account impossible: no rating grid configured | Réponse sans compte impossible : aucune grille de relecture configurée | danger |
 | `reviewer_assignment` | `CODE_REVIEWER_ASSIGNMENT` | Reviewer assignment | Assignation d'un relecteur | warning |
 | `reviewer_unassignment` | `CODE_REVIEWER_UNASSIGNMENT` | Reviewer unassignment | Suppression d'un relecteur | warning |
@@ -86,6 +87,7 @@ Review request types (#319) add the following fields:
 | :--- | :--- | :--- |
 | `reviewer_invitation` | `request_type` | Type of the review request: `id` and `labels` (by language), as at the time of the invitation |
 | `light_answer_without_grid` | `invitation_id`, `request_type`, `user.fullname` | The invitation concerned, its request type, and the invited person. Logged once per invitation, when a person invited without an account cannot answer because the request type has no rating grid; the editors of the paper are also notified by e-mail |
+| `reviewer_invitation_resent` | `invitation_id`, `aid`, `uid`, `tmp_user`, `request_type`, `user.fullname` | The invitation sent again by the editorial team, its original assignment, the invited person (`uid`: account, or temporary user when `tmp_user` is true) and its request type. The e-mail itself is logged as `mail_sent` |
 | `minor_revision_request`, `major_revision_request` | `reassign_reviewers` | Whether the reviewers are invited again automatically on the next version (boolean) |
 | `minor_revision_request`, `major_revision_request` | `next_request_type` | Type of the new request to the reviewers on the next version: `id` and `labels`; absent when the same type as the current request is kept |
 

@@ -124,6 +124,17 @@ every type), the invitation page shows the reason instead of the message.
 
 Sending an invitation checks these rules again: a refused invitation is not sent and the reason is shown.
 
+## Sending Again an Invitation without an Answer
+
+A person who has not answered yet may have lost the invitation e-mail, or found it in their spam folder. On the
+paper's administration page, the menu of their pending invitation offers **Send the invitation again**: once
+confirmed, the invitation e-mail is sent again with **the same link**, written from the invitation template of the
+request type (the changes made when it was first sent are not kept). It is the only way to give them their link again
+before the next automatic reminder, especially for a person who answers without an account.
+
+The invitation can be sent again only while it waits for an answer (neither accepted, declined, cancelled nor expired)
+and while the paper can be reviewed. The paper history keeps the new sending and the e-mail sent.
+
 ## Frequently Asked Questions
 
 **I cannot find a person who has an account.**

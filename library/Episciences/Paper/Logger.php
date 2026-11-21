@@ -11,6 +11,8 @@ class Episciences_Paper_Logger
     public const CODE_REVIEWER_INVITATION_DECLINED = 'reviewer_invitation_declined';
     // invitation linked to another account than the invited one
     public const CODE_REVIEWER_INVITATION_LINKED = 'reviewer_invitation_linked';
+    // invitation e-mail sent again by the editorial team, with the same link (#319)
+    public const CODE_REVIEWER_INVITATION_RESENT = 'reviewer_invitation_resent';
     public const CODE_REVIEWER_ASSIGNMENT = 'reviewer_assignment';
     public const CODE_REVIEWER_UNASSIGNMENT = 'reviewer_unassignment';
     public const CODE_REVIEWING_IN_PROGRESS = 'reviewing_in_progress';
@@ -157,6 +159,7 @@ class Episciences_Paper_Logger
         self::CODE_REVIEWER_INVITATION_ACCEPTED         => self::WARNING,
         self::CODE_REVIEWER_INVITATION_DECLINED         => self::WARNING,
         self::CODE_REVIEWER_INVITATION_LINKED           => self::WARNING,
+        self::CODE_REVIEWER_INVITATION_RESENT           => self::INFO,
         self::CODE_REVIEWER_UNASSIGNMENT                => self::WARNING,
         self::CODE_REVIEWING_COMPLETED                  => self::WARNING,
         self::CODE_LIGHT_ANSWER_WITHOUT_GRID            => self::DANGER,
@@ -225,6 +228,7 @@ class Episciences_Paper_Logger
         self::CODE_REVIEWER_INVITATION_ACCEPTED         => "Invitation de relecture acceptée",
         self::CODE_REVIEWER_INVITATION_DECLINED         => "Invitation de relecture refusée",
         self::CODE_REVIEWER_INVITATION_LINKED           => "Invitation de relecture associée à un autre compte",
+        self::CODE_REVIEWER_INVITATION_RESENT           => "Invitation de relecture renvoyée",
         self::CODE_REVIEWER_UNASSIGNMENT                => "Suppression d'un relecteur",
         self::CODE_REVIEWING_COMPLETED                  => "Relecture terminée",
         self::CODE_LIGHT_ANSWER_WITHOUT_GRID            => "Réponse sans compte impossible : aucune grille de relecture configurée",
@@ -300,6 +304,7 @@ class Episciences_Paper_Logger
         self::CODE_REVIEWER_INVITATION_ACCEPTED         => self::CATEGORY_REVIEW,
         self::CODE_REVIEWER_INVITATION_DECLINED         => self::CATEGORY_REVIEW,
         self::CODE_REVIEWER_INVITATION_LINKED           => self::CATEGORY_REVIEW,
+        self::CODE_REVIEWER_INVITATION_RESENT           => self::CATEGORY_REVIEW,
         self::CODE_REVIEWER_UNASSIGNMENT                => self::CATEGORY_REVIEW,
         self::CODE_REVIEWING_COMPLETED                  => self::CATEGORY_REVIEW,
         self::CODE_LIGHT_ANSWER_WITHOUT_GRID            => self::CATEGORY_REVIEW,
@@ -355,6 +360,7 @@ class Episciences_Paper_Logger
         self::CODE_REVIEWER_INVITATION_ACCEPTED => 'glyphicon-ok',
         self::CODE_REVIEWER_INVITATION_DECLINED => 'glyphicon-remove',
         self::CODE_REVIEWER_INVITATION_LINKED => 'glyphicon-link',
+        self::CODE_REVIEWER_INVITATION_RESENT => 'glyphicon-repeat',
         self::CODE_REVIEWING_IN_PROGRESS => 'glyphicon-time',
         self::CODE_REVIEWING_COMPLETED => 'glyphicon-ok-circle',
         self::CODE_LIGHT_ANSWER_WITHOUT_GRID => 'glyphicon-warning-sign',
@@ -445,6 +451,7 @@ class Episciences_Paper_Logger
         self::CODE_REVIEWER_INVITATION_ACCEPTED,
         self::CODE_REVIEWER_INVITATION_DECLINED,
         self::CODE_REVIEWER_INVITATION_LINKED,
+        self::CODE_REVIEWER_INVITATION_RESENT,
         self::CODE_ABANDON_PUBLICATION_PROCESS,
         self::CODE_CONTINUE_PUBLICATION_PROCESS,
         self::CODE_COPY_EDITOR_ASSIGNMENT,

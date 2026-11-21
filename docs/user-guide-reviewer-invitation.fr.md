@@ -125,6 +125,17 @@ type), la page d'invitation affiche le motif au lieu du message.
 
 L'envoi d'une invitation vérifie de nouveau ces règles : une invitation refusée n'est pas envoyée et le motif s'affiche.
 
+## Renvoyer une invitation sans réponse
+
+Une personne qui n'a pas encore répondu a pu perdre l'e-mail d'invitation, ou le trouver dans ses indésirables. Sur la
+page de gestion de l'article, le menu de son invitation en attente propose **Renvoyer l'invitation** : après
+confirmation, l'e-mail d'invitation est renvoyé avec **le même lien**, rédigé d'après le modèle d'invitation du type de
+demande (les retouches faites au premier envoi ne sont pas reprises). C'est le seul moyen de lui redonner son lien
+avant la prochaine relance automatique, en particulier pour une personne qui répond sans compte.
+
+Le renvoi n'est possible que tant que l'invitation attend une réponse (ni acceptée, ni refusée, ni annulée, ni
+expirée) et que l'article peut être relu. L'historique de l'article garde le renvoi et l'e-mail envoyé.
+
 ## Questions fréquentes
 
 **Je ne trouve pas une personne qui a un compte.**

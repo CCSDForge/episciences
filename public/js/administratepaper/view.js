@@ -391,6 +391,8 @@ function getReviewerMenu(button) {
     let uid = $(button).data('uid');
     let byUid = $(button).data('by_uid');
     let aid = $(button).data('aid');
+    // original assignment of the invitation, which identifies it (#319)
+    const invitationAid = $(button).data('invitation_aid');
     // review request type of the invitation (#319)
     const requestType = $(button).data('request_type');
     const requestTypeQuery = requestType ? '&request_type=' + encodeURIComponent(requestType) : '';
@@ -491,6 +493,16 @@ function getReviewerMenu(button) {
         content +=
             '<span class="glyphicon glyphicon-ok" style="margin-right: 5px"></span> ' +
             translate("Accepter l'invitation à la place du relecteur") +
+            '</a></li>';
+    }
+
+    // the same invitation e-mail, with the same link, to a person who has not answered yet (#319)
+    if (canBeReviewed && status === 'pending' && invitationAid) {
+        content += '<li>';
+        content += '<a href="#" class="resend-invitation" data-invitation_aid="' + invitationAid + '">';
+        content +=
+            '<span class="glyphicon glyphicon-repeat" style="margin-right: 5px" aria-hidden="true"></span> ' +
+            translate("Renvoyer l'invitation") +
             '</a></li>';
     }
 
@@ -969,6 +981,44 @@ function closeResult() {
  * @param docid : l'id de document  à relire
  * @param uid : l'id de relecteur à reinviter
  */
+/**
+ * Sends the invitation e-mail again, once confirmed (#319); the outcome is reported by a flash message
+ * @param {number} invitationAid original assignment of the invitation
+ */
+function resendInvitation(invitationAid) {
+    if (!window.confirm(translate("Renvoyer l'invitation à ce relecteur, avec le même lien ?"))) {
+        return;
+    }
+
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+    fetch('/administratepaper/resendinvitation', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': csrfMeta ? csrfMeta.content : '',
+        },
+        body: new URLSearchParams({ aid: String(invitationAid) }),
+    })
+        .then(function () {
+            location.reload();
+        })
+        .catch(function (err) {
+            console.error('[resendInvitation] Fetch error:', err);
+        });
+}
+
+document.addEventListener('click', function (event) {
+    const link = event.target.closest('a.resend-invitation');
+    if (!link) {
+        return;
+    }
+    event.preventDefault();
+    resendInvitation(Number(link.dataset.invitation_aid));
+});
+
 function reinviteReviewer(docid, uid) {
     let $formId = $('#invitereviewer_form_' + docid);
     $formId.append(

@@ -130,6 +130,38 @@
             </tr>
         </table>
         <?php break; ?>
+    <?php case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_RESENT: ?>
+        <?php
+        // invitation e-mail sent again by the editorial team, with the same link (#319)
+        $resentType = (array)($this->log['detail']['request_type']['labels'] ?? []);
+        $resentTypeLabel = (string)($resentType[Episciences_Tools::getLocale()] ?? reset($resentType) ?: '');
+        ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?= $this->translate("Invitation renvoyée le") ?></td>
+                <td class="small"><?= $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Renvoyée par") ?></td>
+                <td class="small"><?= $this->escape($this->user['fullname'] ?? '') ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Nom") ?></td>
+                <td class="small">
+                    <?= $this->escape($this->log['detail']['user']['fullname'] ?? '') ?>
+                    <?php if (!empty($this->log['detail']['tmp_user'])): ?>
+                        (<?= $this->translate("relecteur sans compte") ?>)
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <?php if ($resentTypeLabel !== '') : ?>
+                <tr>
+                    <td class="td-label"><?= $this->translate("Type de demande") ?></td>
+                    <td class="small"><?= $this->escape($resentTypeLabel) ?></td>
+                </tr>
+            <?php endif; ?>
+        </table>
+        <?php break; ?>
     <?php case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED: ?>
         <table class="log-details">
             <tr>

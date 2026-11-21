@@ -101,8 +101,8 @@ class Episciences_User_Assignment
     protected $_when;
 
     /**
-     * Deadline de l'assignation
-     * @var datetime
+     * Deadline de l'assignation, as stored ('Y-m-d H:i:s'), null when there is none
+     * @var string|null
      */
     protected $_deadline;
 
@@ -330,7 +330,7 @@ class Episciences_User_Assignment
     }
 
     /**
-     * @return datetime $_deadline
+     * @return string|null the deadline as stored ('Y-m-d H:i:s'), null when there is none
      */
     public function getDeadline()
     {
@@ -420,7 +420,7 @@ class Episciences_User_Assignment
     }
 
     /**
-     * @param datetime $_deadline
+     * @param string|null $_deadline as stored ('Y-m-d H:i:s'), null when there is none
      */
     public function setDeadline($_deadline)
     {
