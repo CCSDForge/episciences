@@ -62,7 +62,7 @@ class UserDefaultController extends Zend_Controller_Action
             $identity = Episciences_Auth::getInstance()->getIdentity()->toArray();
         } else {
             $this->view->message = "Vous n'êtes pas connecté";
-            $this->view->description = "<a href='/user/login'>Connectez-vous</a>, ou <a href='/user/create'>créez votre compte</a>.";
+            $this->view->showLoginLinks = true;
             $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }
