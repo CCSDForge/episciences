@@ -40,6 +40,8 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
         // (quotes are harmless in a text node, so names like O'Brien keep their initials)
         // and the control characters that are not allowed in XML 1.0
         $stringToMakeAvatar = (string)preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', (string)$stringToMakeAvatar);
+        // U+FFFE and U+FFFF are not allowed in XML 1.0 either (left as is if the string is not valid UTF-8)
+        $stringToMakeAvatar = preg_replace('/[\x{FFFE}\x{FFFF}]/u', '', $stringToMakeAvatar) ?? $stringToMakeAvatar;
         $stringToMakeAvatar = trim(str_replace(['<', '>', '&'], '', $stringToMakeAvatar));
         if ($stringToMakeAvatar === '') {
             $stringToMakeAvatar = '?';
