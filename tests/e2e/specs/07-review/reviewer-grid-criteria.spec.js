@@ -99,8 +99,8 @@ test.describe('Rating grid criteria types and overall score', () => {
             await expect(ratings).toContainText(freeComment);
             await expect(ratings).toContainText('E2E Weak');
             await expect(ratings).toContainText('Yes');
-            // (5/5 x 3 + 0/10 x 1) / (3 + 1) = 0.75: the qualitative and free criteria do not count
-            await expect(ratings.locator('.panel-heading').first()).toContainText(/:\s*0\.8\b/);
+            // (5/5 x 3 + 0/10 x 1) / (3 + 1) x 10 = 7.5/10: the qualitative and free criteria do not count
+            await expect(ratings.locator('.panel-heading').first()).toContainText(/:\s*7\.5\/10\b/);
         });
     });
 });
