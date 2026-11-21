@@ -270,4 +270,12 @@ class GetAvatarTest extends TestCase
         $this->assertStringNotContainsString('<a', $svg);
         $this->assertNotFalse(simplexml_load_string($svg), 'Generated SVG must be well-formed XML');
     }
+
+    public function testAsSvgStripsControlCharactersFromInitials(): void
+    {
+        $svg = Episciences_View_Helper_GetAvatar::asSvg("A\x01B\x1F");
+
+        $this->assertDoesNotMatchRegularExpression('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $svg);
+        $this->assertNotFalse(simplexml_load_string($svg), 'Generated SVG must be well-formed XML');
+    }
 }

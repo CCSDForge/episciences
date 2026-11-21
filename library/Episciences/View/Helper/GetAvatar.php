@@ -57,12 +57,15 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
     }
 
     /**
-     * Remove characters that would break out of an SVG text node or attribute
+     * Remove characters that would break out of an SVG text node or attribute,
+     * and C0 control characters that are not allowed in XML 1.0
      * @param string $string
      * @return string
      */
     private static function stripXmlSpecialChars(string $string): string
     {
+        $string = (string)preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $string);
+
         return str_replace(['<', '>', '&', '"', "'"], '', $string);
     }
 
