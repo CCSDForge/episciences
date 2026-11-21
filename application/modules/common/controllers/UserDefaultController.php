@@ -15,6 +15,8 @@ class UserDefaultController extends Zend_Controller_Action
     public const DEFAULT_IMG_PATH = '/../public/img/user.svg';
     private const ERROR_ERROR_PHTML = 'error/error.phtml';
     private const IMAGE_SVG_XML = 'image/svg+xml';
+    // User images may be SVG served from the application origin: forbid any active content
+    private const SVG_CSP = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
 
     public function indexAction(): void
     {
@@ -1732,7 +1734,7 @@ class UserDefaultController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender(true);
         $uid = $this->getParam('uid', 0);
         $size = $this->getParam('size', Ccsd_User_Models_User::IMG_NAME_NORMAL);
-        $backgroundColor = $this->getParam('bgcolor');
+        $backgroundColor = Episciences_View_Helper_GetAvatar::sanitizeHexColor($this->getParam('bgcolor'));
 
         $photoPathName = false;
         $data = false;
@@ -1782,6 +1784,7 @@ class UserDefaultController extends Zend_Controller_Action
                 ->setHeader('Pragma', '', true)
                 ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
                 ->setHeader('Content-Type', self::IMAGE_SVG_XML, true)
+                ->setHeader('Content-Security-Policy', self::SVG_CSP, true)
                 ->setHeader('Content-Length', $contentSize, true)
                 ->setBody($data);
             return;
@@ -1807,6 +1810,7 @@ class UserDefaultController extends Zend_Controller_Action
                         ->setHeader('Pragma', '', true)
                         ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
                         ->setHeader('Content-Type', self::IMAGE_SVG_XML, true)
+                        ->setHeader('Content-Security-Policy', self::SVG_CSP, true)
                         ->setHeader('Content-Length', $contentSize, true)
                         ->setBody($data);
                     return;
@@ -1844,6 +1848,7 @@ class UserDefaultController extends Zend_Controller_Action
             ->setHeader('Pragma', '', true)
             ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
             ->setHeader('Content-Type', $imageMimeType, true)
+            ->setHeader('Content-Security-Policy', self::SVG_CSP, true)
             ->setHeader('Content-Length', $size, true)
             ->setBody($data);
 
