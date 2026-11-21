@@ -15,6 +15,14 @@ return [
     "user_lost_password_tpl_name" => "Mot de passe perdu",
     "user_lost_password_mail_subject" => "%%REVIEW_CODE%% - Changement du mot de passe de votre compte",
 
+    // Import de comptes (journal:import-users) : compte à activer
+    "user_imported_account_tpl_name" => "Compte créé par un import",
+    "user_imported_account_mail_subject" => "%%REVIEW_CODE%% - Activez votre compte",
+
+    // Import de comptes (journal:import-users) : compte existant ajouté à la revue
+    "user_added_to_journal_tpl_name" => "Ajout à la revue par un import",
+    "user_added_to_journal_mail_subject" => "%%REVIEW_CODE%% - Bienvenue dans l'équipe de la revue",
+
 
     // PAPER - SOUMISSION D'UN ARTICLE ***********************************************************************************************************
     "paper_submission_tpl_group" => "Article - soumission",

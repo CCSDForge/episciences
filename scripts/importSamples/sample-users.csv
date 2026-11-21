@@ -1,0 +1,11 @@
+firstname;lastname;email;role;lang
+Camille;Durand;camille.durand@example.org;;fr
+Dominique;Martin-Lefèvre;dominique.martin-lefevre@example.org;editor;fr
+Alex;Smith;alex.smith@example.org;editor,reviewer;en
+Noémie;Gauthier;noemie.gauthier@example.org;chief_editor;
+Sam;O'Connor;sam.oconnor@example.org;reviewer;en
+Hélène;de la Fontaine;helene.delafontaine@example.org;editorial_board;fr
+Jordan;Nguyen;jordan.nguyen@example.org;secretary,copyeditor;
+Maxime;Bérard;maxime.berard@example.org;guest_editor;fr
+Robin;García López;robin.garcialopez@example.org;scientific_advisory_board;en
+Claude;Petit;claude.petit@example.org;webmaster;

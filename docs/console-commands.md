@@ -27,6 +27,7 @@ php scripts/console.php <command> --help
 | [`users:normalize-affiliations`](#usersnormalize-affiliations) | Normalize legacy string-based `USER.affiliations` into `{label, rorId}` objects |
 | [`journal:create`](#journalcreate) | Create a new journal by cloning settings, menu, pages and appearance from a template journal |
 | [`journal:seed-demo`](#journalseed-demo) | Seed a journal with a small set of real demo submissions (volumes, sections, papers) for sandbox testing |
+| [`journal:import-users`](#journalimport-users) | Add people to a journal from a CSV file, creating the accounts that do not exist |
 | [`enrichment:extract-biblio-refs`](#enrichmentextract-biblio-refs) | Pre-extract bibliographic references via the Biblioref API (designed for cron) |
 | [`enrichment:citations`](#enrichmentcitations) | Enrich citation metadata from OpenCitations, OpenAlex, and Crossref |
 | [`enrichment:creators`](#enrichmentcreators) | Enrich author ORCID data from OpenAIRE Research Graph and HAL |
@@ -252,6 +253,64 @@ Example:
 
 ```bash
 php scripts/console.php journal:seed-demo --rvcode=sandbox1 --uid=1
+```
+
+---
+
+### `journal:import-users`
+
+Adds people to a journal from a CSV file. For each email, the account to reuse is the most
+recently modified valid account, otherwise the most recently modified account not activated yet
+(accounts with any other status are ignored); without any account, one is created **not activated**, with a random password nobody knows.
+Roles are only added: the roles already held in the journal are kept. An existing account is
+never changed (names, language); a name differing from the file is reported as a warning.
+Business logic lives in `Episciences\User\Import\*`.
+
+```bash
+php scripts/console.php journal:import-users --rvcode=RVCODE --csv=PATH [options]
+make import-users rvcode=RVCODE csv=PATH [lang=fr|en] [no-mail=1] [dry-run=1]
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--rvcode` | - | Journal code; required |
+| `--csv` | - | CSV file; required |
+| `--lang` | journal default language | Language of the new accounts without a `lang` value in the file |
+| `--no-mail` | off | Do not send any mail |
+| `--dry-run` | off | Check the file and show what would be done, without writing anything or sending mails |
+
+CSV format: semicolon separated, UTF-8 (a BOM is tolerated), with a header row naming the
+columns, in any order:
+
+| Column | Required | Content |
+|--------|----------|---------|
+| `firstname` | yes (may be empty) | First name of a new account |
+| `lastname` | yes | Last name of a new account |
+| `email` | yes | Email used to find the account; once per file |
+| `role` | no | Roles to add, separated by commas (e.g. `editor,reviewer`); empty: `member`. Any role of `Episciences_Acl` is accepted; `epiadmin` (full access to the whole platform) is reported as a warning |
+| `lang` | no | Language of a new account: a platform language (`fr`, `en`), whatever the languages of the journal, since an account is used in every journal; empty: `--lang` |
+
+The whole file is checked first: if any line is invalid, nothing is imported and every invalid
+line is listed. Examples: [`scripts/importSamples/sample-users.csv`](../scripts/importSamples/sample-users.csv)
+and [`scripts/importSamples/sample-users-invalid.csv`](../scripts/importSamples/sample-users-invalid.csv)
+(one error per line).
+
+Mails, in the language of each account:
+
+- **`user_imported_account`**: account created or not activated yet. Gives the login and the
+  roles, and a link to choose the password, which also activates the account (the link proves
+  the address). When the link has expired, "lost password" sends a new activation link.
+  No new link is sent when one was sent less than a day ago, so the import can be run again;
+  a link whose mail could not be sent does not count.
+- **`user_added_to_journal`**: valid existing account, only when at least one role was added.
+
+Both templates need `src/mysql/2026-11-16-insert-user-import-mail-templates.sql` and can be
+customized per journal in the back office.
+
+Example:
+
+```bash
+php scripts/console.php journal:import-users --rvcode=sandbox1 --csv=scripts/importSamples/sample-users.csv --dry-run
 ```
 
 ---

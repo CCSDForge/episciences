@@ -34,7 +34,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # =============================================================================
 .PHONY: help build up down status logs restart clean clean-mysql
 .PHONY: collection collection-ref-pps import-ref-pps download-ref-pps dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
-.PHONY: create-journal seed-journal-demo
+.PHONY: create-journal seed-journal-demo import-users
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
@@ -315,6 +315,21 @@ seed-journal-demo: ## Seed a journal with demo submissions (requires rvcode=RVCO
 		--uid=$(call shell_quote,$(uid)) \
 		$(if $(csv-file),--csv-file=$(call shell_quote,$(csv-file))) \
 		$(if $(filter 1,$(force)),--force) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
+
+import-users: ## Add people to a journal from a CSV file (requires rvcode=RVCODE csv=PATH; optional: lang=fr|en no-mail=1 dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php journal:import-users --rvcode=RVCODE --csv=PATH [options]
+	@if [ -z $(call shell_quote,$(rvcode)) ] || [ -z $(call shell_quote,$(csv)) ]; then \
+		echo "Error: rvcode and csv parameters are required"; \
+		echo "Usage: make import-users rvcode=RVCODE csv=PATH [lang=fr|en] [no-mail=1] [dry-run=1]"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php journal:import-users \
+		--rvcode=$(call shell_quote,$(rvcode)) \
+		--csv=$(call shell_quote,$(csv)) \
+		$(if $(lang),--lang=$(call shell_quote,$(lang))) \
+		$(if $(filter 1,$(no-mail)),--no-mail) \
 		$(if $(filter 1,$(dry-run)),--dry-run)
 
 

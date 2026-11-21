@@ -29,6 +29,10 @@ class Episciences_Mail_Tags
     public const TAG_TOKEN_VALIDATION_LINK = '%%TOKEN_VALIDATION_LINK%%';
     public const TAG_MAIL_ACCOUNT_USERNAME_LIST = '%%MAIL_ACCOUNT_USERNAME_LIST%%';
 
+    // journal:import-users
+    public const TAG_RECIPIENT_ROLES = '%%RECIPIENT_ROLES%%';
+    public const TAG_LINK_VALIDITY = '%%LINK_VALIDITY%%';
+
     // user/lost login
     public const TAG_LOST_LOGINS = '%%MAIL_ACCOUNT_USERNAME_LIST%%';
 
@@ -244,6 +248,8 @@ class Episciences_Mail_Tags
         self::TAG_VOL_BIBLIOG_REF => 'référence bibliographique du volume',
         self::TAG_TMP_PAPER_URL => "lien vers la page de gestion de la version temporaire d'un article",
         self::TAG_TOKEN_VALIDATION_LINK => "lien servant à la validation du compte",
+        self::TAG_RECIPIENT_ROLES => "rôles attribués au destinataire dans la revue (e.g. : Rédacteur, Relecteur)",
+        self::TAG_LINK_VALIDITY => "durée de validité du lien, en jours (e.g. : 14)",
         self::TAG_UPDATED_DEADLINE => 'nouvelle date limite de rendu de relecture',
         self::TAG_VOLUME_EDITORS => "tous les rédacteurs assignés au volume de l'article (e.g. : Hartman Rodney, Daniel Bryan, Walls John)",
         self::TAG_VOLUME_ID => "identifiant du volume de l'article",

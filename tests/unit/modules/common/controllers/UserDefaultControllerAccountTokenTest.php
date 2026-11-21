@@ -15,6 +15,7 @@ use Monolog\Level;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use unit\library\Episciences\User\Token\UserTokenTestDatabase;
+use Zend_Controller_Front;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Response_HttpTestCase;
 use Zend_Db_Adapter_Abstract;
@@ -462,7 +463,20 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         $view->setScriptPath(APPLICATION_PATH . '/modules/common/views/scripts/');
         $view->assign($vars);
 
-        return $view->render('user/resetpassword.phtml');
+        // The page links are built with the url() helper, which needs the default route
+        $router = Zend_Controller_Front::getInstance()->getRouter();
+        $addedRoute = !$router->hasRoute('default');
+        if ($addedRoute) {
+            $router->addDefaultRoutes();
+        }
+
+        try {
+            return $view->render('user/resetpassword.phtml');
+        } finally {
+            if ($addedRoute) {
+                $router->removeRoute('default');
+            }
+        }
     }
 
     public function testActivationPageSaysTheAccountIsActivatedWithThePasswordChosen(): void
@@ -483,6 +497,26 @@ final class UserDefaultControllerAccountTokenTest extends TestCase
         self::assertStringContainsString('Changement de votre mot de passe', $html);
         self::assertStringContainsString('Votre mot de passe a bien été changé', $html);
         self::assertStringNotContainsString('Activation de votre compte', $html);
+    }
+
+    public function testInvalidLinkPageExplainsTheFailureAndOffersANewLink(): void
+    {
+        $html = $this->renderPasswordPage(['resultMessage' => Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_FAILURE]);
+
+        self::assertStringContainsString('class="alert alert-danger" role="alert"', $html);
+        self::assertStringContainsString("Ce lien n'est plus valide", $html);
+        self::assertMatchesRegularExpression('#<a class="btn btn-primary" href="[^"]*lostpassword[^"]*">#', $html);
+        self::assertStringContainsString('Demander un nouveau lien', $html);
+        self::assertStringNotContainsString('user/login', $html);
+    }
+
+    public function testChangedPasswordPageOffersToSignIn(): void
+    {
+        $html = $this->renderPasswordPage(['resultMessage' => Ccsd_User_Models_User::ACCOUNT_RESET_PASSWORD_SUCCESS]);
+
+        self::assertStringContainsString('class="alert alert-success" role="status"', $html);
+        self::assertMatchesRegularExpression('#<a class="btn btn-primary" href="[^"]*login[^"]*">#', $html);
+        self::assertStringNotContainsString('alert-danger', $html);
     }
 
     public function testActivationTokenCannotSetAPassword(): void
