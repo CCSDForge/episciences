@@ -48,7 +48,8 @@ Environment variables:
 | Variable        | Default                                                           | Purpose                                           |
 |-----------------|-------------------------------------------------------------------|---------------------------------------------------|
 | `BASE_URL`      | `https://dev.episciences.org/`                                    | Journal under test                                |
-| `APP_MODE`      | -                                                                 | `manager` for the `*-epi-manager` branches        |
+| `APP_MODE`      | -                                                                 | `manager` for the `*-epi-manager` branches (default `BASE_URL`: `https://manager-dev.episciences.org/dev/`) |
+| `E2E_RVCODE`    | `dev`                                                             | Code of the journal under test (seed, reminders)  |
 | `MAILPIT_URL`   | `https://mailpit.episciences.org`                                 | Mailpit API                                       |
 | `E2E_PHP_EXEC`  | `docker exec -u www-data -w /var/www/htdocs episciences-php-fpm php` | Runs the PHP scripts (seed, mail queue)        |
 | `E2E_SKIP_SEED` | -                                                                 | `1` to skip the seed and reset                    |
@@ -56,6 +57,20 @@ Environment variables:
 
 PHP scripts run as `www-data`: run as root, they would leave cache files the web server cannot
 write anymore (`Failed saving metadata to metadataCache` notices).
+
+### Manager mode (`*-epi-manager` branches)
+
+On the `main-epi-manager` and `preprod-epi-manager` branches, a journal is served under its code
+(`https://manager-dev.episciences.org/dev/paper/view/...`) instead of its own host name. The same
+suite runs in both modes; on a `*-epi-manager` checkout:
+
+```bash
+APP_MODE=manager yarn test:e2e
+```
+
+The journal must be switched to the new front-end, otherwise its code is not read from the URL:
+`UPDATE REVIEW SET is_new_front_switched = 'yes' WHERE CODE = 'dev';`. The `manager-dev`
+virtual host (`src/apache/vhost.conf`) has no `RVCODE`, which would disable the prefix.
 
 ## Layout
 
@@ -85,6 +100,7 @@ tests/e2e/
 │   │                          through the UI
 │   ├── mailpit-client.js      waits for an email, extracts its links
 │   ├── app-cli.js             runs the PHP scripts (seed and reset, mail queue)
+│   ├── app-url.js             base URL of both URL modes, toAppPath() for links read in emails or pages
 │   └── login.js               logs in through the login form
 └── global-setup.js
 ```
@@ -117,6 +133,12 @@ tests/e2e/
 - **TinyMCE editors.** Some buttons are only enabled by an `input` event of the editor: type into
   its iframe (`frameLocator('#<id>_ifr').locator('body')`) rather than calling `setContent()`.
 
+- **Relative URLs only.** Navigate with paths relative to the base URL (`page.goto('paper/view')`,
+  never `'/paper/view'`), and turn the links read in emails or in the page (`href`) into such paths
+  with `toAppPath()` (`helpers/app-url.js`): the manager mode serves the journal under `/dev/`.
+  `yarn lint:e2e` rejects absolute paths in `goto()` / `request.get()`. Match URLs with unanchored
+  patterns (`toHaveURL(/paper\/ratings/)`).
+
 ## CI
 
 `.github/workflows/e2e.yml` installs the application on the runner, serves it with
@@ -131,8 +153,13 @@ must also be applied to that dataset, or the E2E suite runs on an outdated schem
 container (configset of `src/solr/episciences`) and the Solr indexing worker run next to the web
 server: the volume pages list the papers indexed in Solr.
 
-It runs on pull requests targeting `staging` or `main`, and can be triggered manually
-(`workflow_dispatch`):
+It runs on pull requests targeting `staging`, `main`, `main-epi-manager` or `preprod-epi-manager`,
+and can be triggered manually (`workflow_dispatch`):
+
+- pull requests targeting a `*-epi-manager` branch (for instance the merge of `main` into
+  `main-epi-manager`) run in manager mode: the journal is flagged `is_new_front_switched`, served
+  without `RVCODE` under `manager-dev.episciences.org/dev/`, and the router mirrors the aliases of
+  the manager virtual host. A manual run chooses the mode (`app_mode` input);
 
 - draft pull requests and documentation only changes (`docs/**`, `*.md`) are not tested; a draft is
   tested once marked ready for review;

@@ -1,4 +1,5 @@
 const { test, expect, E2E_USERNAMES } = require('../../fixtures/e2e-fixtures');
+const { toAppPath } = require('../../helpers/app-url');
 const {
     MINIMAL_PDF,
     submitArxivPaper,
@@ -45,7 +46,7 @@ test.describe('Reviewer rating draft, attachment and anonymity', () => {
             const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
             expect(invitationUrl).toBeTruthy();
 
-            await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+            await reviewerPage.goto(toAppPath(invitationUrl));
             await reviewerPage.locator('#submitaccept').click();
             await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
         });

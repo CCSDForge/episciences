@@ -1,4 +1,5 @@
 const { test, expect, E2E_USERNAMES } = require('../../fixtures/e2e-fixtures');
+const { toAppPath } = require('../../helpers/app-url');
 const { E2E_PASSWORD } = require('../../helpers/login');
 const {
     submitArxivPaper,
@@ -39,8 +40,7 @@ async function receivedInvitationPath(mailpit, docid, to) {
     const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
     expect(invitationUrl).toBeTruthy();
 
-    const url = new URL(invitationUrl);
-    return url.pathname.replace(/^\//, '') + url.search;
+    return toAppPath(invitationUrl);
 }
 
 /**
