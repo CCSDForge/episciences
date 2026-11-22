@@ -52,4 +52,16 @@ describe('user autocomplete search URL', () => {
             '/user/findcasusers?term=dupont'
         );
     });
+
+    test('appends query parameters with & when the url already has a query string', () => {
+        const autocomplete = createUserAutocomplete({
+            inputId: 'autocomplete',
+            url: '/user/findcasusers?scope=journal',
+            ignoreList: [12],
+        });
+
+        expect(autocomplete.buildSearchUrl('dupont')).toBe(
+            '/user/findcasusers?scope=journal&term=dupont&ignore_list%5B%5D=12'
+        );
+    });
 });

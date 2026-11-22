@@ -290,7 +290,8 @@ class ModernUserAutocomplete {
         ).forEach(uid => {
             params.append('ignore_list[]', String(uid));
         });
-        return `${this.config.url}?${params.toString()}`;
+        const separator = this.config.url.includes('?') ? '&' : '?';
+        return `${this.config.url}${separator}${params.toString()}`;
     }
 
     fetchUsers(term) {
