@@ -144,7 +144,7 @@ $previousRatings = $this->previousRatings;
                              data-target="#current-rating">
                             <h4 class="panel-title">
                                 <?php $score = $this->report->getScore(); ?>
-                                <?php if ($score && is_numeric($score)) : ?>
+                                <?php if (is_numeric($score)) : ?>
                                     <strong><?= $this->escape(round((float)$score, 1) . '/' . $this->report->getMax_score()) ?></strong><?php endif; ?>
                                 <?php
 
@@ -175,7 +175,7 @@ $previousRatings = $this->previousRatings;
                                  data-target="#previous-rating-<?php echo $id ?>">
                                 <h4 class="panel-title grey">
                                     <?php $rScore = $report->getScore(); ?>
-                                    <?php if ($rScore && is_numeric($rScore)) : ?>
+                                    <?php if (is_numeric($rScore)) : ?>
                                         <strong><?= $this->escape(round((float)$rScore, 1) . '/' . $report->getMax_score()) ?></strong>
                                     <?php endif; ?>
                                     (<?= $this->translate('round') . ' ' . $count ?>

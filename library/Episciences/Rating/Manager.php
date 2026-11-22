@@ -239,7 +239,7 @@ class Episciences_Rating_Manager
         }
 
         // same computation as Episciences_Rating_Report::calculateScore()
-        $form->setAttrib('data-coefficients', json_encode($coefficients, JSON_FORCE_OBJECT));
+        $form->setAttrib('data-coefficients', json_encode($coefficients, JSON_FORCE_OBJECT) ?: '{}');
         $form->setAttrib('data-max-score', (string)$grid->getMax_score());
 
         // hidden : global note
