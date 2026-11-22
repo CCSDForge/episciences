@@ -196,11 +196,10 @@ final class RepositoryHooksTest extends TestCase
      */
     public static function unexpectedHalPayloadProvider(): iterable
     {
-        yield 'docs is a string' => ['{"response":{"docs":"x"}}'];
-        yield 'doc is a string' => ['{"response":{"docs":["x"]}}'];
-        yield 'response is a string' => ['{"response":"x"}'];
-        yield 'payload is a scalar' => ['42'];
-        yield 'field is a string' => ['{"response":{"docs":[{"swhidId_s":"swh:1:dir:abc"}]}}'];
+        yield 'empty body' => [''];
+        yield 'not XML' => ['{"response":{"docs":[{"swhidId_s":"swh:1:dir:abc"}]}}'];
+        yield 'truncated XML' => ['<TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body><listBibl><biblFull>'];
+        yield 'no document' => ['<TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body><listBibl/></body></text></TEI>'];
     }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('unexpectedHalPayloadProvider')]
@@ -217,10 +216,10 @@ final class RepositoryHooksTest extends TestCase
         self::assertSame([], $errors);
     }
 
-    public function testHalRequestHasNoVersionAndAnEncodedIdentifier(): void
+    public function testHalRequestAsksTheTeiWithoutVersionAndWithAnEncodedIdentifier(): void
     {
         $requests = [];
-        $client = $this->halClient($requests, new Response(200, [], '{"response":{"numFound":0,"docs":[]}}'));
+        $client = $this->halClient($requests, new Response(200, [], '<TEI xmlns="http://www.tei-c.org/ns/1.0"/>'));
 
         $affectedRows = Episciences_Submit::datasetsProcessing($this->halPaper('hal-01234567&rows=1000'), $client);
 
@@ -232,14 +231,15 @@ final class RepositoryHooksTest extends TestCase
         parse_str($uri->getQuery(), $query);
         self::assertSame('halId_s:hal-01234567&rows=1000', $query['q'], 'the identifier is encoded');
         self::assertArrayNotHasKey('rows', $query);
-        self::assertSame('swhidId_s,researchData_s', $query['fl']);
+        self::assertSame('xml-tei', $query['wt'], 'the TEI holds the relation and resource types');
+        self::assertArrayNotHasKey('fl', $query);
         self::assertStringNotContainsString('version_i', $uri->getQuery(), 'the HAL index only holds the latest version');
     }
 
     public function testHalResponseWithoutDocsDoesNotFail(): void
     {
         $requests = [];
-        $client = $this->halClient($requests, new Response(200, [], '{"response":{"numFound":0}}'));
+        $client = $this->halClient($requests, new Response(200, [], '<TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body><listBibl/></body></text></TEI>'));
 
         $errors = $this->collectErrors(
             fn() => self::assertSame(0, Episciences_Submit::datasetsProcessing($this->halPaper('hal-01234567'), $client))
