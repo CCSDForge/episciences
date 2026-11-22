@@ -331,6 +331,7 @@ class Episciences_Rating_CriterionTest extends TestCase
     {
         $criterion = new Episciences_Rating_Criterion();
         $criterion->setType(Episciences_Rating_Criterion::TYPE_CRITERION);
+        $criterion->setSubType(Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_10);
         $criterion->setVisibility(Episciences_Rating_Criterion::VISIBILITY_EDITORS);
         $criterion->setPosition(2);
         $criterion->setNote(4);
@@ -341,6 +342,7 @@ class Episciences_Rating_CriterionTest extends TestCase
         $array = $criterion->toArray();
 
         self::assertSame(Episciences_Rating_Criterion::TYPE_CRITERION, $array['type']);
+        self::assertSame(Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_10, $array['subType']);
         self::assertArrayHasKey('options', $array);
         self::assertSame(4, $array['note']);
         self::assertSame(2, $array['coefficient']);
@@ -417,9 +419,14 @@ class Episciences_Rating_CriterionTest extends TestCase
             ['value' => 1, 'label' => null],
             ['value' => 2, 'label' => null],
         ]]);
+        $quantitativeWithSameLabels = new Episciences_Rating_Criterion([
+            'coefficient' => 1,
+            'options' => Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS,
+        ]);
 
         self::assertFalse($customLabels->isStandardQualitative());
         self::assertFalse($unlabelled->isStandardQualitative());
+        self::assertFalse($quantitativeWithSameLabels->isStandardQualitative());
         self::assertFalse((new Episciences_Rating_Criterion())->isStandardQualitative());
     }
 }

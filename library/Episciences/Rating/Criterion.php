@@ -271,6 +271,10 @@ class Episciences_Rating_Criterion
             return $subType === self::EVALUATION_TYPE_QUALITATIVE;
         }
 
+        if ($this->hasCoefficient()) {
+            return false;
+        }
+
         $options = $this->getOptions();
 
         if (!is_array($options) || count($options) !== count(self::STANDARD_QUALITATIVE_OPTIONS)) {
@@ -406,6 +410,7 @@ class Episciences_Rating_Criterion
 
         if ($this->getType() == self::TYPE_CRITERION) {
             $array = array_merge($array, [
+                'subType' => $this->getSubType(),
                 'options' => $this->getOptions(),
                 'note' => $this->getNote(),
                 'coefficient' => $this->getCoefficient(),
