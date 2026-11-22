@@ -8,6 +8,7 @@ use Episciences\Paper\Export;
 use Episciences\Paper\Funding\FundingReference;
 use Episciences\Paper\Funding\FundingReferenceFactory;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
+use Episciences\Paper\RelationshipMapper;
 use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\Paper\Spdx\LicenseCodeManager;
 use Episciences\Paper\Spdx\LicenseManager;
@@ -4994,6 +4995,17 @@ class Episciences_Paper
 
     }
 
+    /**
+     * Display group of a linked data: its relation in the stored vocabulary (legacy rows may hold a DataCite type),
+     * "Other" when it has none or one without equivalent
+     */
+    private static function linkedDataRelationGroup(Episciences_Paper_Dataset $dataset): string
+    {
+        $relationship = RelationshipMapper::toCrossref((string)$dataset->getRelationship());
+
+        return $relationship !== null ? ucfirst($relationship) : 'Other';
+    }
+
     public function getDatasetsFromEnrichment()
     {
 
@@ -5020,18 +5032,10 @@ class Episciences_Paper
                 case 'publication' :
                 case 'dataset' :
                 case 'software':
-                    if ($unorderedDatasets->getRelationship() !== null) {
-                        $formatedDatasets[$typeLd][ucfirst($unorderedDatasets->getRelationship())][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
-                    } else {
-                        $formatedDatasets[$typeLd]['Other'][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
-                    }
+                    $formatedDatasets[$typeLd][self::linkedDataRelationGroup($unorderedDatasets)][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
                     break;
                 default :
-                    if ($unorderedDatasets->getRelationship() !== null) {
-                        $formatedDatasets["publication"][ucfirst($unorderedDatasets->getRelationship())][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
-                    } else {
-                        $formatedDatasets["publication"]['Other'][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
-                    }
+                    $formatedDatasets["publication"][self::linkedDataRelationGroup($unorderedDatasets)][$unorderedDatasets->getSourceId()][] = $unorderedDatasets;
                     break;
             }
         }
