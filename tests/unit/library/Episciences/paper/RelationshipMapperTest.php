@@ -64,6 +64,24 @@ final class RelationshipMapperTest extends TestCase
     }
 
     /**
+     * @return iterable<string, array{?string, string}>
+     */
+    public static function crossrefExportProvider(): iterable
+    {
+        yield 'stored' => ['isSupplementedBy', 'isSupplementedBy'];
+        yield 'legacy DataCite type' => ['IsReviewedBy', 'hasReview'];
+        yield 'no relation' => [null, 'references'];
+        yield 'empty' => ['', 'references'];
+        yield 'unknown' => ['IsWhatever', 'references'];
+    }
+
+    #[DataProvider('crossrefExportProvider')]
+    public function testToCrossrefOrDefaultFallsBackToReferences(?string $relationship, string $expected): void
+    {
+        self::assertSame($expected, RelationshipMapper::toCrossrefOrDefault($relationship));
+    }
+
+    /**
      * @return iterable<string, array{string}>
      */
     public static function noStoredEquivalentProvider(): iterable
@@ -146,10 +164,11 @@ final class RelationshipMapperTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{string}>
+     * @return iterable<string, array{?string}>
      */
     public static function noDataCiteEquivalentProvider(): iterable
     {
+        yield 'no relation' => [null];
         yield 'empty' => [''];
         yield 'related material' => ['isRelatedMaterial'];
         yield 'has related material' => ['hasRelatedMaterial'];
@@ -161,7 +180,7 @@ final class RelationshipMapperTest extends TestCase
     }
 
     #[DataProvider('noDataCiteEquivalentProvider')]
-    public function testToDataCiteGivesNullWithoutEquivalent(string $relationship): void
+    public function testToDataCiteGivesNullWithoutEquivalent(?string $relationship): void
     {
         self::assertNull(RelationshipMapper::toDataCite($relationship, RelationshipProfile::OpenAire));
         self::assertNull(RelationshipMapper::toDataCite($relationship, RelationshipProfile::DataCite));

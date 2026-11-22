@@ -177,8 +177,8 @@ Otherwise it uses `ucfirst()`. The result is kept only when the profile accepts 
 | `isFormatOf` | `isFormatOf` | *omitted* | *no `type`* |
 | `hasFormat` | `hasFormat` | *omitted* | *no `type`* |
 
-- **Crossref XML** (`export/crossref.phtml`): `toCrossref()` of the stored value, so that a legacy row holding a
-  DataCite type is still exported; `references` when the relation is absent or unknown.
+- **Crossref XML** (`export/crossref.phtml`): `RelationshipMapper::toCrossrefOrDefault()` of the stored value, so that
+  a legacy row holding a DataCite type is still exported; `references` when the relation is absent or unknown.
 - **OpenAIRE 4.0**: the `<datacite:relatedIdentifier>` is omitted when there is no accepted type.
 - **HAL TEI**: the `<relatedItem>` is kept, without its `type` attribute, rather than with a value of another
   vocabulary. `Episciences\Repositories\HAL\TeiLinkedDataParser` reads it back with its fallback (`references`).

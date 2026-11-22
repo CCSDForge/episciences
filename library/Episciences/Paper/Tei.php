@@ -540,7 +540,7 @@ class Episciences_Paper_Tei
 
             $relatedItem = $xml->createElement('relatedItem');
 
-            $relationType = RelationshipMapper::toDataCite((string)($row['relationship'] ?? ''));
+            $relationType = RelationshipMapper::toDataCite($row['relationship'] ?? null);
             if ($relationType !== null) {
                 $relatedItem->setAttribute('type', $relationType);
             }

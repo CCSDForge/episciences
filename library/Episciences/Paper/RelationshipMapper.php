@@ -66,6 +66,14 @@ final class RelationshipMapper
     }
 
     /**
+     * Stored relation of a T_PAPER_DATASETS row for the Crossref export: "references" when absent or unknown
+     */
+    public static function toCrossrefOrDefault(?string $relationship): string
+    {
+        return self::fromDataCite($relationship ?? '');
+    }
+
+    /**
      * Any relation (DataCite or stored, whatever the case of its first letter) => stored relation,
      * null when it has no equivalent
      */
@@ -83,11 +91,11 @@ final class RelationshipMapper
     }
 
     /**
-     * Stored relation => DataCite relationType accepted by $profile, null when it has no equivalent
+     * Stored relation => DataCite relationType accepted by $profile, null when it has no equivalent (or no relation)
      */
-    public static function toDataCite(string $relationship, RelationshipProfile $profile = RelationshipProfile::DataCite): ?string
+    public static function toDataCite(?string $relationship, RelationshipProfile $profile = RelationshipProfile::DataCite): ?string
     {
-        $relationship = lcfirst(trim($relationship));
+        $relationship = lcfirst(trim($relationship ?? ''));
 
         if ($relationship === '') {
             return null;
