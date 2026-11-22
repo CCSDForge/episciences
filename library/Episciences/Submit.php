@@ -8,6 +8,7 @@ use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\LinkedDataNotStoredException;
 use Episciences\Paper\PartiallyStoredException;
 use Episciences\Paper\Record\TitleNormalizer;
+use Episciences\Repositories\HAL\TeiLinkedDataParser;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Submit\SubmittedRecord;
 use GuzzleHttp\Client;
@@ -2924,7 +2925,7 @@ class Episciences_Submit
     }
 
     /**
-     * Update paper datasets from the HAL search API
+     * Update the paper linked data from the HAL TEI (search API): related works and SWHID
      * @param Episciences_Paper $paper
      * @param Client|null $client HTTP client (injected by the tests)
      * @return int
@@ -2935,24 +2936,21 @@ class Episciences_Submit
 
             if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
                 $client ??= new Client([
-                    'headers' => ['Content-type' => 'application/json'],
                     'timeout' => self::HAL_API_TIMEOUT,
                     'connect_timeout' => self::HAL_API_CONNECT_TIMEOUT,
                 ]);
+                // The TEI holds the related works with their relation and resource types (<relatedItem>)
+                // and the SWHID (<idno type="swhid">), which the search fields do not all give.
                 // No version filter: the HAL search index only holds the latest version of a document
                 $url = Episciences_Repositories::getApiUrl($paper->getRepoid())
-                    . '/search/?indent=true&q=halId_s:' . urlencode((string)$paper->getIdentifier())
-                    . '&fl=swhidId_s,researchData_s';
-                $response = $client->get($url);
-                $result = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
-                // An unexpected payload yields no datasets: { "swhidId_s": [...], "researchData_s": [...] } is expected
-                $docs = $result['response']['docs'] ?? [];
-                $firstDoc = is_array($docs) && $docs !== [] ? reset($docs) : [];
-                $allDatasets = is_array($firstDoc) ? array_filter($firstDoc, 'is_array') : [];
-                return self::processDatasets($paper, $allDatasets);
+                    . '/search/?q=halId_s:' . urlencode((string)$paper->getIdentifier())
+                    . '&wt=xml-tei';
+                $tei = $client->get($url)->getBody()->getContents();
+                // A TEI without the document (unreadable, empty search result) yields no linked data
+                return self::processDatasets($paper, TeiLinkedDataParser::parse($tei) ?? []);
             }
 
-        } catch (GuzzleException|JsonException  $e) {
+        } catch (GuzzleException $e) {
             trigger_error($e->getMessage());
         }
 
@@ -3427,15 +3425,22 @@ class Episciences_Submit
                 continue;
             }
 
+            // One related identifier with its relation (DataCite shaped repositories, HAL TEI), or a list of identifiers
+            $isRelatedIdentifier = $isDataCiteShaped || array_key_exists('identifier', $datasets);
+            $entryOptions = $options;
+
             foreach ($datasets as $key => $value) {
 
-                if ($isDataCiteShaped) {
+                if ($isRelatedIdentifier) {
 
                     if ($key !== 'identifier') {
                         continue;
                     }
 
-                    $options['relationship'] = $datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+                    // Outside the DataCite shaped repositories, the relation is one of the linked data vocabulary ("references" otherwise)
+                    $entryOptions['relationship'] = $isDataCiteShaped
+                        ? ($datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE)
+                        : TeiLinkedDataParser::relationship(is_string($datasets['relation'] ?? null) ? $datasets['relation'] : '');
                 }
 
                 try {
@@ -3443,7 +3448,7 @@ class Episciences_Submit
                         $docId,
                         $value,
                         (string)($datasets['resource_type'] ?? ''),
-                        $options,
+                        $entryOptions,
                         $noProcessed,
                         $failures
                     );

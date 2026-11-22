@@ -53,8 +53,7 @@ test.describe('Rating grid criteria types and overall score', () => {
             const grid = adminPage.locator(`table#grid_${vid}`);
             await expect(grid.locator('tr', { hasText: titles.weighted }).locator('td.c-coeff')).toHaveText('3');
             await expect(grid.locator('tr', { hasText: titles.tenScale })).toContainText('Quantitative rating (out of 10)');
-            // The list labels every qualitative criterion with values as customized, the standard one included
-            await expect(grid.locator('tr', { hasText: titles.standard })).toContainText('Qualitative rating');
+            await expect(grid.locator('tr', { hasText: titles.standard })).toContainText('Qualitative rating (standard)');
             await expect(grid.locator('tr', { hasText: titles.custom })).toContainText('Qualitative rating (customized)');
             await expect(grid.locator('tr', { hasText: titles.free })).toContainText('Free rating');
             await expect(grid.locator('tr', { hasText: titles.separator })).toContainText('Separator');
@@ -86,6 +85,8 @@ test.describe('Rating grid criteria types and overall score', () => {
             await grade(titles.tenScale).selectOption({ label: '0/10' });
             await grade(titles.standard).selectOption({ label: 'Yes' });
             await grade(titles.custom).selectOption({ label: 'E2E Weak' });
+            // Shown live with the server formula: (5/5 x 3 + 0/10 x 1) / (3 + 1) x 10
+            await expect(form.locator('.overallValue')).toContainText('7.5/10');
             await fillRatingComments(reviewerPage, `<p>${freeComment}</p>`);
             await reviewerPage.locator('#validateRating').click();
             await expect(reviewerPage).toHaveURL(/paper\/ratings/);
@@ -97,8 +98,8 @@ test.describe('Rating grid criteria types and overall score', () => {
             await expect(ratings).toContainText(freeComment);
             await expect(ratings).toContainText('E2E Weak');
             await expect(ratings).toContainText('Yes');
-            // (5/5 x 3 + 0/10 x 1) / (3 + 1) = 0.75: the qualitative and free criteria do not count
-            await expect(ratings.locator('.panel-heading').first()).toContainText(/:\s*0\.8\b/);
+            // (5/5 x 3 + 0/10 x 1) / (3 + 1) x 10 = 7.5/10: the qualitative and free criteria do not count
+            await expect(ratings.locator('.panel-heading').first()).toContainText(/:\s*7\.5\/10\b/);
         });
     });
 });

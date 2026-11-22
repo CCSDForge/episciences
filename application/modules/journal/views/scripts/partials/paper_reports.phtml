@@ -52,7 +52,7 @@ $loggedUid = Episciences_Auth::getUid();
                         <strong><?= $message ?>
                         </strong>
                         <?php if ($this-> isAllowedToSeeReportDetails && is_numeric($report->getScore())) : ?>
-                            : <?= round(($report->getScore() / $report->getMax_score()), 1) ?>
+                            : <?= $this->escape(round((float)$report->getScore(), 1) . '/' . $report->getMax_score()) ?>
                         <?php endif; ?>
                         <span class="grey pull-right"><?= $this->Date($report->getUpdate_date()) ?>
                             <span class="glyphicon glyphicon-chevron-down" style="margin-left: 5px;"></span>
