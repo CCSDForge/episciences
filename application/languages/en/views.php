@@ -187,7 +187,7 @@ return array(
     "Champs requis" => 'Required fields',
     "Valeur(s) manquante(s) pour les langues suivantes : '%value%'" => "Missing value(s) for the following languages: '%value%'",
     "Upload de fichier" => "File upload",
-    'Vous pouvez associer une image à ce compte (jpg, gif, png)' => 'You may add a picture to your account (jpg, gif, png)',
+    'Vous pouvez associer une image à ce compte (jpg, png, gif ; 5 Mo maximum)' => 'You may add a picture to your account (jpg, png, gif; 5 MB maximum)',
     "Votre message aurait été envoyé. NB : les messages ne sont pas réellement envoyés dans l'environnement : " => 'Your message would have been sent. NB: messages are not really sent when using the environment: ',
     "Merci de les corriger." => "Please correct them.",
     "La taille maximale des fichiers que vous pouvez télécharger est limitée à" => "The maximum size of files you can download is limited to",
