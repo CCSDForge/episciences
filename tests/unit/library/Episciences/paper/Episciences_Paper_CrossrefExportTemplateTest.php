@@ -18,6 +18,7 @@ final class Episciences_Paper_CrossrefExportTemplateTest extends TestCase
 {
     private const CROSSREF_NS = 'http://www.crossref.org/schema/5.3.1';
     private const JATS_NS = 'http://www.ncbi.nlm.nih.gov/JATS1';
+    private const RELATIONS_NS = 'http://www.crossref.org/relations.xsd';
 
     public function testResourceUrlsContainingAmpersandProduceWellFormedXml(): void
     {
@@ -49,12 +50,55 @@ final class Episciences_Paper_CrossrefExportTemplateTest extends TestCase
     }
 
     /**
-     * @param array<int, array<string, string>> $abstracts
+     * Legacy rows stored with a DataCite relation type are exported in the Crossref vocabulary
      */
-    private function render(string $pdfUrl, string $journalUrl, array $abstracts): DOMXPath
+    public function testLinkedDataRelationsAreExportedInTheCrossrefVocabulary(): void
+    {
+        $relationships = [
+            '10.1/review' => 'IsReviewedBy',
+            '10.1/source' => 'IsSourceOf',
+            '10.1/cites' => 'Cites',
+            '10.1/version' => 'IsNewVersionOf',
+            '10.1/related' => 'IsRelatedTo',
+            '10.1/stored' => 'isSupplementedBy',
+            '10.1/none' => null,
+            '10.1/unknown' => 'IsWhatever',
+        ];
+        $linkedData = [];
+        foreach ($relationships as $doi => $relationship) {
+            $linkedData[] = ['value' => $doi, 'link' => 'doi', 'relationship' => $relationship];
+        }
+
+        $xpath = $this->render('https://example.org/paper.pdf', 'https://journal.example.org', [], $linkedData);
+
+        $exported = [];
+        foreach ($xpath->query('//r:related_item/*') ?: [] as $relation) {
+            if ($relation instanceof DOMElement) {
+                $exported[trim($relation->textContent)] = [$relation->localName, $relation->getAttribute('relationship-type')];
+            }
+        }
+
+        self::assertSame([
+            '10.1/review' => ['inter_work_relation', 'hasReview'],
+            '10.1/source' => ['inter_work_relation', 'hasDerivation'],
+            '10.1/cites' => ['inter_work_relation', 'references'],
+            '10.1/version' => ['intra_work_relation', 'isVersionOf'],
+            '10.1/related' => ['inter_work_relation', 'isRelatedMaterial'],
+            '10.1/stored' => ['inter_work_relation', 'isSupplementedBy'],
+            '10.1/none' => ['inter_work_relation', 'references'],
+            '10.1/unknown' => ['inter_work_relation', 'references'],
+        ], $exported);
+    }
+
+    /**
+     * @param array<int, array<string, string>> $abstracts
+     * @param list<array<string, string|null>> $linkedData
+     */
+    private function render(string $pdfUrl, string $journalUrl, array $abstracts, array $linkedData = []): DOMXPath
     {
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getMainPaperUrl')->willReturn($pdfUrl);
+        $paper->method('getLinkedData')->willReturn($linkedData);
         $paper->method('getPaperid')->willReturn(42);
         $paper->method('getMetadata')->willReturn([]);
 
@@ -85,6 +129,7 @@ final class Episciences_Paper_CrossrefExportTemplateTest extends TestCase
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('c', self::CROSSREF_NS);
         $xpath->registerNamespace('jats', self::JATS_NS);
+        $xpath->registerNamespace('r', self::RELATIONS_NS);
 
         return $xpath;
     }

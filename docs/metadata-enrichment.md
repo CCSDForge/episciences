@@ -97,6 +97,8 @@ All enrichment commands live in `scripts/` and run via `php scripts/console.php`
 - **Class:** `Episciences\Api\ScholexplorerApiClient` / `Episciences_SoftwareHeritageTools`
 - **Protocol:** Scholexplorer REST API v3 with JWT authentication token flow.
 - **Dataset Linking:** Identifies bilateral links between papers and research datasets (Zenodo, Dataverse, Figshare, Pangaea).
+  The Scholix relation type is stored in the linked data vocabulary (`IsRelatedTo` and unknown types as `isRelatedMaterial`),
+  see [Linked Data Relationships](./linked-data-relationships.md#inbound-datacite--scholix-to-stored).
 - **Software Heritage:** Generates SWH persistent identifiers (SWHIDs) for software deposits deposited via HAL.
 
 ### 4. zbMATH Open

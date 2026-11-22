@@ -7,7 +7,7 @@ namespace Episciences\Repositories\HAL;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
-use Episciences\Paper\Relationship;
+use Episciences\Paper\RelationshipMapper;
 use Episciences_Paper_DatasetsManager;
 
 /**
@@ -28,7 +28,7 @@ final class TeiLinkedDataParser
     public const RESOURCE_TYPE_PUBLICATION = 'publication';
 
     private const TEI_NS = 'http://www.tei-c.org/ns/1.0';
-    private const COAR_PREFIX = 'http://purl.org/coar/resource_type/';
+    private const COAR_PREFIX = 'purl.org/coar/resource_type/';
 
     /**
      * COAR resource types that are not publications
@@ -36,16 +36,6 @@ final class TeiLinkedDataParser
     private const COAR_RESOURCE_TYPES = [
         'c_ddb1' => self::RESOURCE_TYPE_DATASET,
         'c_5ce6' => self::RESOURCE_TYPE_SOFTWARE,
-    ];
-
-    /**
-     * DataCite relation types whose lcfirst() is not in the linked data vocabulary
-     */
-    private const RELATION_TYPES = [
-        'IsReviewedBy' => 'hasReview',
-        'Reviews' => 'isReviewOf',
-        'Cites' => 'references',
-        'IsCitedBy' => 'isReferencedBy',
     ];
 
     /**
@@ -87,19 +77,7 @@ final class TeiLinkedDataParser
      */
     public static function relationship(string $relationType): string
     {
-        $relationType = trim($relationType);
-
-        if (isset(self::RELATION_TYPES[$relationType])) {
-            return self::RELATION_TYPES[$relationType];
-        }
-
-        $candidate = lcfirst($relationType);
-        $known = array_merge(
-            Relationship::getFlattenedRelationships(),
-            Relationship::getFlattenedRelationshipsIntraWorkRelation()
-        );
-
-        return in_array($candidate, $known, true) ? $candidate : Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+        return RelationshipMapper::fromDataCite($relationType);
     }
 
     /**
@@ -107,7 +85,9 @@ final class TeiLinkedDataParser
      */
     public static function resourceType(string $coarUri): string
     {
-        $code = str_starts_with($coarUri, self::COAR_PREFIX) ? substr($coarUri, strlen(self::COAR_PREFIX)) : '';
+        // http:// and https:// are both found in the TEI
+        $path = (string)preg_replace('~^https?://~i', '', trim($coarUri));
+        $code = str_starts_with($path, self::COAR_PREFIX) ? substr($path, strlen(self::COAR_PREFIX)) : '';
 
         return self::COAR_RESOURCE_TYPES[$code] ?? self::RESOURCE_TYPE_PUBLICATION;
     }

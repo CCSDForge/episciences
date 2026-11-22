@@ -316,10 +316,9 @@ $paperLanguageRaw = $this->paperLanguage;
 
                 <?php if (!empty($enrichmentLinkedData)) : ?>
                     <?php foreach ($enrichmentLinkedData as $linkedData) {
-                        if (!isset($linkedData['relationship'])) {
-                            $linkedData['relationship'] = 'references';
-                        }
-                        $relationshipType = lcfirst($linkedData['relationship']);
+                        // Legacy rows may hold a DataCite relation type; "references" when absent or unknown
+                        $relationshipType = \Episciences\Paper\RelationshipMapper::toCrossref((string)($linkedData['relationship'] ?? ''))
+                            ?? \Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
                         $isIntra = in_array($relationshipType, $intraWorkRelationship, true);
                         $isInter = in_array($relationshipType, $interWorkRelationship, true);
                         ?>

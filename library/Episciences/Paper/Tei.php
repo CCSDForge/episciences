@@ -6,6 +6,8 @@
  * Time: 15:50
  */
 
+use Episciences\Paper\RelationshipMapper;
+
 class Episciences_Paper_Tei
 {
     private $_paper;
@@ -510,21 +512,45 @@ class Episciences_Paper_Tei
             $doi->setAttribute('type', 'doi');
             $biblStruct->appendChild($doi);
         }
-        $enrichmentLinkedData = $this->getPaper()->getLinkedData();
-        foreach ($enrichmentLinkedData as $linkedData) {
-            $relatedItem = $xml->createElement('relatedItem');
-            if (!is_null($linkedData['relationship'])) {
-                $relatedItem->setAttribute('type', $linkedData['relationship']);
-            }
-            $urlTargetLinkedData = Episciences_Paper_DatasetsManager::getUrlLinkedData($linkedData['value'], $linkedData['link']);
-            if ($urlTargetLinkedData !== '') {
-                $relatedItem->setAttribute('target', $urlTargetLinkedData);
-                $biblStruct->appendChild($relatedItem);
-            }
+        foreach (self::relatedItems($xml, $this->getPaper()->getLinkedData()) as $relatedItem) {
+            $biblStruct->appendChild($relatedItem);
         }
         $sourceDesc->appendChild($biblStruct);
 
         return $sourceDesc;
+    }
+
+    /**
+     * <relatedItem target="..." type="..."/> of the linked data having a URL, the type in the DataCite vocabulary
+     * of HAL TEI: no type rather than one of another vocabulary when the relation has no DataCite equivalent
+     *
+     * @param array<int, array<string, mixed>> $linkedData rows of T_PAPER_DATASETS
+     * @return list<DOMElement>
+     */
+    public static function relatedItems(DOMDocument $xml, array $linkedData): array
+    {
+        $relatedItems = [];
+
+        foreach ($linkedData as $row) {
+            $target = Episciences_Paper_DatasetsManager::getUrlLinkedData((string)($row['value'] ?? ''), (string)($row['link'] ?? ''));
+
+            if ($target === '') {
+                continue;
+            }
+
+            $relatedItem = $xml->createElement('relatedItem');
+
+            $relationType = RelationshipMapper::toDataCite((string)($row['relationship'] ?? ''));
+            if ($relationType !== null) {
+                $relatedItem->setAttribute('type', $relationType);
+            }
+
+            $relatedItem->setAttribute('target', $target);
+
+            $relatedItems[] = $relatedItem;
+        }
+
+        return $relatedItems;
     }
 
     private function getVolumeName($locale = null): string

@@ -29,6 +29,7 @@ final class HalTeiLinkedDataTest extends TestCase
     private const HAL_REPO_ID = 9997;
     private const HANDLE = 'https://hdl.handle.net/21.11115/0000-0016-7FC9-8';
     private const SWHID = 'swh:1:dir:0000000000000000000000000000000000000001';
+    private const OTHER_SWHID = 'swh:1:dir:0000000000000000000000000000000000000002';
 
     private ?Zend_Db_Adapter_Abstract $previousAdapter = null;
 
@@ -84,11 +85,13 @@ final class HalTeiLinkedDataTest extends TestCase
 
     protected function tearDown(): void
     {
-        (new ReflectionProperty(Episciences_Repositories::class, '_repositories'))->setValue(null, $this->previousRepositories);
-
-        if ($this->previousAdapter !== null) {
-            Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
+        // Nothing was replaced when setUp() skipped the test
+        if ($this->previousAdapter === null) {
+            return;
         }
+
+        (new ReflectionProperty(Episciences_Repositories::class, '_repositories'))->setValue(null, $this->previousRepositories);
+        Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
     }
 
     public function testTheRelatedItemsAndTheSwhidOfTheTeiAreStoredWithTheirRelation(): void
@@ -129,6 +132,34 @@ final class HalTeiLinkedDataTest extends TestCase
         self::assertStringContainsString("'references'", $this->inserts[0]);
         self::assertStringNotContainsString('Is supplemented by', $this->inserts[0]);
         self::assertStringContainsString("'references'", $this->inserts[1]);
+    }
+
+    /**
+     * A DataCite shaped repository (Zenodo) gives DataCite relation types: they are stored in the linked data vocabulary
+     */
+    public function testTheRelationsOfADataCiteShapedRepositoryAreNormalized(): void
+    {
+        $affectedRows = Episciences_Submit::processDatasets($this->zenodoPaper(), [
+            ['identifier' => self::SWHID, 'relation' => 'IsReviewedBy', 'resource_type' => 'software'],
+            ['identifier' => self::HANDLE, 'relation' => 'Cites', 'resource_type' => 'dataset'],
+            ['identifier' => self::OTHER_SWHID, 'relation' => 'IsSourceOf', 'resource_type' => ['not', 'a', 'string']],
+        ]);
+
+        self::assertSame(3, $affectedRows);
+        self::assertStringContainsString("'hasReview'", $this->inserts[0]);
+        self::assertStringContainsString("'references'", $this->inserts[1]);
+        self::assertStringContainsString("'hasDerivation'", $this->inserts[2]);
+    }
+
+    private function zenodoPaper(): Episciences_Paper
+    {
+        return new Episciences_Paper([
+            'docid' => self::DOCID,
+            'paperid' => self::DOCID,
+            'repoid' => (int)Episciences_Repositories::ZENODO_REPO_ID,
+            'identifier' => '1234567',
+            'version' => 1,
+        ]);
     }
 
     private function halClient(string $tei): Client

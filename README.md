@@ -49,6 +49,7 @@ See the [Developer Setup Guide](./docs/dev-setup.md) for the full onboarding wal
 | [Paper Comment Types](./docs/paper-comment-types.md) | Structured comments and lifecycle event types in `Episciences_CommentsManager` |
 | [Log Event Types](./docs/log-event-types.md) | All log event codes tracked by `Episciences_Paper_Logger` |
 | [Adding a Submission Repository](./docs/adding-a-new-repository.md) | Guide to integrating external repositories (arXiv, HAL, Zenodo, etc.) |
+| [Linked Data Relationships](./docs/linked-data-relationships.md) | Stored relation vocabulary of the linked data and its mapping to DataCite, Scholix, Crossref, OpenAIRE and HAL TEI |
 | [Bibliographic Reference Extraction](./docs/biblioref-extraction.md) | Architecture, lifecycle, and operational usage of the Biblioref system |
 | [Messenger & Async Queues](./docs/messenger-and-queues.md) | Symfony Messenger architecture, Doctrine DBAL transport, retries, and worker daemons |
 | [Next.js Cache Revalidation](./docs/next-revalidation.md) | On-demand ISR cache invalidation architecture and messenger transport |

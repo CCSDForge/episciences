@@ -2431,6 +2431,7 @@ return array(
     'Donnée liée déjà existante, veuillez changer ses informations via le formulaire' => 'The relationship already exists, please modify the information using the form',
     'Suppression de la donnée liée bien prise en compte' => 'The relationship has been deleted successfully',
     'Voulez-vous supprimer la donnée liée ?' => 'Do you want to delete the relationship?',
+    'Type de relation non reconnu' => 'The relationship type is not recognised',
     'Format de donnée non reconnu' => 'The supplied data format is not recognised, please make sure to enter a valid identifier: URL, DOI, SWHID',
     "L'archive ArXiv ne contient pas de logiciel" => "The ArXiv server is not supported for software relations at the moment, it seems it does not contain any software",
     "L'identifiant HAL n'est pas de type logiciel" => 'The HAL identifier is not of software type',
