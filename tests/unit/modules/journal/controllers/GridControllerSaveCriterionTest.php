@@ -26,6 +26,14 @@ final class GridControllerSaveCriterionTest extends ControllerTestCase
 
     private string $gridFile = '';
 
+    /**
+     * registry keys set by setUp(), removed by tearDown()
+     * @var list<string>
+     */
+    private array $addedRegistryKeys = [];
+
+    private bool $addedDefaultRoutes = false;
+
     public static function setUpBeforeClass(): void
     {
         self::loadController('journal', 'GridController');
@@ -35,23 +43,28 @@ final class GridControllerSaveCriterionTest extends ControllerTestCase
     {
         $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
 
-        if (!Zend_Registry::isRegistered('Zend_Locale')) {
-            Zend_Registry::set('Zend_Locale', new Zend_Locale('en'));
-        }
-        if (!Zend_Registry::isRegistered('languages')) {
-            Zend_Registry::set('languages', ['en', 'fr']);
+        $this->addedRegistryKeys = [];
+        foreach (['Zend_Locale' => new Zend_Locale('en'), 'languages' => ['en', 'fr']] as $key => $value) {
+            if (!Zend_Registry::isRegistered($key)) {
+                Zend_Registry::set($key, $value);
+                $this->addedRegistryKeys[] = $key;
+            }
         }
         $router = Zend_Controller_Front::getInstance()->getRouter();
-        if (!$router->hasRoute('default')) {
+        $this->addedDefaultRoutes = !$router->hasRoute('default');
+        if ($this->addedDefaultRoutes) {
             $router->addDefaultRoutes();
         }
 
         (new Zend_Controller_Action_Helper_FlashMessenger())->setNamespace('success')->clearCurrentMessages();
         (new Zend_Controller_Action_Helper_FlashMessenger())->setNamespace('error')->clearCurrentMessages();
 
-        $this->gridId = random_int(900000, 999999);
-        $filename = 'grid_' . $this->gridId . '.xml';
-        $this->gridFile = REVIEW_GRIDS_PATH . $filename;
+        // never overwrite (then delete) an existing grid file
+        do {
+            $this->gridId = random_int(900000, 999999);
+            $filename = 'grid_' . $this->gridId . '.xml';
+            $this->gridFile = REVIEW_GRIDS_PATH . $filename;
+        } while (file_exists($this->gridFile));
 
         $grid = new Episciences_Rating_Grid(['filename' => $filename]);
         $grid->setCriteria([]);
@@ -65,6 +78,15 @@ final class GridControllerSaveCriterionTest extends ControllerTestCase
         }
         (new Zend_Controller_Action_Helper_FlashMessenger())->setNamespace('success')->clearCurrentMessages();
         (new Zend_Controller_Action_Helper_FlashMessenger())->setNamespace('error')->clearCurrentMessages();
+
+        foreach ($this->addedRegistryKeys as $key) {
+            Zend_Registry::getInstance()->offsetUnset($key);
+        }
+        $this->addedRegistryKeys = [];
+        if ($this->addedDefaultRoutes) {
+            Zend_Controller_Front::getInstance()->getRouter()->removeRoute('default');
+            $this->addedDefaultRoutes = false;
+        }
     }
 
     /**
