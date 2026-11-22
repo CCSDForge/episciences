@@ -407,6 +407,36 @@ class Episciences_Rating_CriterionTest extends TestCase
         self::assertTrue($c->isStandardQualitative());
     }
 
+    public function testIsStandardQualitativeWithoutSubTypeAcceptsTheStandardLabelsOfSomeLanguages(): void
+    {
+        // saved back by the old edit form of an English-only journal
+        $c = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => ['en' => 'Yes']],
+            ['value' => 1, 'label' => ['en' => 'No']],
+            ['value' => 2, 'label' => ['en' => 'Maybe']],
+        ]]);
+
+        self::assertTrue($c->isStandardQualitative());
+        self::assertSame(Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, $c->getRatingType());
+    }
+
+    public function testIsStandardQualitativeWithoutSubTypeRefusesOtherLanguagesOrMissingLabels(): void
+    {
+        $otherLanguage = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => ['en' => 'Yes', 'de' => 'Ja']],
+            ['value' => 1, 'label' => ['en' => 'No']],
+            ['value' => 2, 'label' => ['en' => 'Maybe']],
+        ]]);
+        $missingLabel = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => ['en' => 'Yes']],
+            ['value' => 1, 'label' => []],
+            ['value' => 2, 'label' => ['en' => 'Maybe']],
+        ]]);
+
+        self::assertFalse($otherLanguage->isStandardQualitative());
+        self::assertFalse($missingLabel->isStandardQualitative());
+    }
+
     public function testIsStandardQualitativeWithoutSubTypeRefusesOtherOptions(): void
     {
         $customLabels = new Episciences_Rating_Criterion(['options' => [

@@ -273,7 +273,8 @@ class Episciences_Rating_Criterion
 
     /**
      * Return true if the criterion uses the standard qualitative rating (Yes / No / Maybe).
-     * Grids saved without a subtype are recognized by their three standard option labels.
+     * Grids saved without a subtype are recognized by their three standard option labels
+     * (in all or part of the standard languages).
      */
     public function isStandardQualitative(): bool
     {
@@ -295,11 +296,11 @@ class Episciences_Rating_Criterion
 
         foreach (array_values($options) as $i => $option) {
             $label = is_array($option['label'] ?? null) ? $option['label'] : [];
-            ksort($label);
             $standardLabel = self::STANDARD_QUALITATIVE_OPTIONS[$i]['label'];
-            ksort($standardLabel);
 
-            if ($label !== $standardLabel) {
+            // the old edit form saved back only the journal languages (e.g. ['en' => 'Yes']):
+            // every saved language must hold the standard label
+            if ($label === [] || array_diff_assoc($label, $standardLabel) !== []) {
                 return false;
             }
         }
