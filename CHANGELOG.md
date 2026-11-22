@@ -99,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Automatic reminders: saving a reminder with a custom template failed for a journal without translation folder yet (the folder of the e-mail templates was not created with its parents).
 - HAL submission: the related data and publications declared in HAL (e.g. a Zenodo dataset, an open review) were not linked to the paper: the HAL field read so far (`researchData_s`) is no longer filled by HAL. The linked data are now read from the HAL TEI (`<relatedItem>` with its relation and COAR resource type, `<idno type="swhid">`), and stored with their relation type ([#1494](https://github.com/CCSDForge/episciences/issues/1494)).
+- Mail sent to a reviewer when the author answers their comment (English), and mail informing the editorial committee that a temporary version was accepted (French): the paper link pointed to the raw `%%PAPER_URL` tag. The template editor now offers the `%%PAPER_URL%%` tag for the latter. A unit test now refuses a default mail template with an unclosed tag ([#1496](https://github.com/CCSDForge/episciences/issues/1496)).
 - Statistics page: a year for which the API has no evaluation figure (e.g. a first year with only imported papers) no longer displays the error message: the evaluation figures are simply absent, and the API is no longer asked twice. The note on the imported articles now says that they are left out of the indicators below only (the articles above include them), and is also displayed with a single imported article.
 - [#1482](https://github.com/CCSDForge/episciences/pull/1482): bioRxiv / medRxiv submission: a preprint with a single author no longer makes the submission fail. Authors, affiliations, keywords, licence and document type are read from the JATS XML itself: a single affiliation is no longer named "Array, 1, ...", affiliations with letter labels or several institutions are kept, group authors get their name, keywords with inline markup are no longer truncated, and medRxiv preprints no longer get their subject area ("hwp-journal-coll") as document type (`Episciences_Repositories_BioMedRxiv`).
 - [#1472](https://github.com/CCSDForge/episciences/pull/1472): Reviewer invitation: a reviewer invited without an account who accepted by creating one is told, when opening the invitation again with that account, that they already answered it, instead of "It appears that a reply has already been sent".
@@ -151,6 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Paper page, linked data (datasets, publications and software): output escaping is hardened.
 - dependencies: apply security updates for Composer (`symfony/*` packages: CVE-2026-123824, CVE-2026-121623, CVE-2026-122053, CVE-2026-118515, CVE-2026-123792) and Yarn (recursive updates for `undici`, `brace-expansion`, `fast-uri`, `colord`, `serialize-javascript`).
 
 ### Fixed

@@ -20,8 +20,7 @@ class Ccsd_File
         'jpe',
         'gif',
         'png',
-        'bmp',
-        'svg'
+        'bmp'
     ];
 
     /**
@@ -454,22 +453,16 @@ class Ccsd_File
     public static function convertImg($filename, $dest = null, $maxWidth = null, $maxHeight = null, $saveFileAs = null)
     {
         // Lit les dimensions de l'image
+        // Not a raster image (SVG included): rejected here, so Imagick never interprets
+        // vector content (external references, embedded files)
         $size = getimagesize($filename);
+        if ($size === false) {
+            return false;
+        }
         $width = $size[0];
         $height = $size[1];
         $imageType = $size[2];
 
-
-        //pas un format d'image
-        if (null == $imageType) {
-            if (!static::isSvgFile($filename)) {
-                return false;
-            }
-
-            return static::convertSvgToPng($filename, $dest, $maxWidth, $maxHeight, $saveFileAs);
-        }
-
-        // pas un soucis pour le SVG
         if (!$width || !$height) {
             return false;
         }
@@ -527,110 +520,6 @@ class Ccsd_File
         }
         return imagejpeg($img);
 
-    }
-
-    /**
-     * Le Fichier est probablement un fichier XML SVG
-     * Si le fichier est du XML
-     * Si l'élément racine est svg
-     * @param $filename
-     * @return bool
-     */
-    public static function isSvgFile($filename)
-    {
-
-        $xml = static::isWellFormedXmlFile($filename);
-
-        if (!$xml) {
-            return false;
-        }
-
-        if ('svg' != $xml->getName()) {
-            return false;
-        }
-
-        return true;
-
-    }
-
-    /**
-     * Fichier XML bien formé
-     * Vérification sommaire : si le fichier XML est chargé on accepte qu'il est bien formé et on retourne
-     * l'objet SimpleXMLElement
-     * @param string $filename
-     * @return bool|SimpleXMLElement
-     */
-    public static function isWellFormedXmlFile($filename)
-    {
-        libxml_use_internal_errors(true);
-        $doc = simplexml_load_string(file_get_contents($filename));
-        libxml_clear_errors();
-        if (!$doc) {
-            return false;
-        }
-        return $doc;
-    }
-
-    /**
-     * Try to convert SVG file to PNG file,
-     * Change scale when $maxWidth AND $maxHeight are given
-     * Return value:
-     *     If $dest is null, raw png is return as string
-     *     If dest non null, the png file is written in dest dir
-     *         If saveFileAs is given, use this filename to save file, else the output filename is
-     *         the same a input filename except extension
-     *     If can write file (whatever the reason) return false.
-     *
-     * @param $svgFile
-     * @param string|null $dest
-     * @param int|null $maxWidth
-     * @param int|null $maxHeight
-     * @param string|null $saveFileAs
-     * @return string
-     */
-    public static function convertSvgToPng($svgFile, $dest = null, $maxWidth = null, $maxHeight = null, $saveFileAs = null)
-    {
-
-        $image = new Imagick();
-        $image->setBackgroundColor(new ImagickPixel('transparent'));
-        $image->readImage($svgFile);
-        $image->setImageFormat('png32');
-        if (null != $maxWidth && null != $maxHeight) {
-            $image->resizeImage($maxWidth, $maxHeight, imagick::FILTER_LANCZOS, 1);
-        }
-        // retourne l'image sans l'écrire
-        if (null == $dest || !is_dir($dest)) {
-            $png = base64_encode($image);
-            $image->clear();
-            $image->destroy();
-            return $png;
-        }
-
-        /* Le repertoire ne se termine pas par /, on l'ajoute */
-        if (substr($dest, -1, 1) != '/') {
-            $dest .= '/';
-        }
-        // ecrit l'image  et retourne son nom
-        //renomme éventuellement le fichier
-        if ($saveFileAs != null) {
-            $outputFile = $saveFileAs . '.png';
-        } else {
-            // ou change juste l'extension
-            $outputFile = static::replaceFileExtension($svgFile, 'png');
-        }
-        try {
-            $resultWrite = $image->writeImage($dest . $outputFile);
-        } catch (Exception $e) {
-            error_log('convertSvgToPng: ' . $e->getMessage() . ' dest:' . $dest . ' file:' . $outputFile);
-            return false;
-        }
-        $image->clear();
-        $image->destroy();
-
-        if (!$resultWrite) {
-            $outputFile = false;
-        }
-        return $outputFile;
     }
 
     /**
