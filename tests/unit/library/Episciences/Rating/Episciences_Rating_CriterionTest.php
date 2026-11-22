@@ -331,6 +331,7 @@ class Episciences_Rating_CriterionTest extends TestCase
     {
         $criterion = new Episciences_Rating_Criterion();
         $criterion->setType(Episciences_Rating_Criterion::TYPE_CRITERION);
+        $criterion->setSubType(Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_10);
         $criterion->setVisibility(Episciences_Rating_Criterion::VISIBILITY_EDITORS);
         $criterion->setPosition(2);
         $criterion->setNote(4);
@@ -341,6 +342,7 @@ class Episciences_Rating_CriterionTest extends TestCase
         $array = $criterion->toArray();
 
         self::assertSame(Episciences_Rating_Criterion::TYPE_CRITERION, $array['type']);
+        self::assertSame(Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_10, $array['subType']);
         self::assertArrayHasKey('options', $array);
         self::assertSame(4, $array['note']);
         self::assertSame(2, $array['coefficient']);
@@ -358,5 +360,155 @@ class Episciences_Rating_CriterionTest extends TestCase
         self::assertArrayHasKey(Episciences_Rating_Criterion::VISIBILITY_PUBLIC, $emojis);
         self::assertArrayHasKey(Episciences_Rating_Criterion::VISIBILITY_CONTRIBUTOR, $emojis);
         self::assertArrayHasKey(Episciences_Rating_Criterion::VISIBILITY_EDITORS, $emojis);
+    }
+
+    // ---------------------------------------------------------------------
+    // subtype / isStandardQualitative()
+    // ---------------------------------------------------------------------
+
+    public function testPopulateSetsTheSubType(): void
+    {
+        $c = new Episciences_Rating_Criterion(['subType' => Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_5]);
+
+        self::assertSame(Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_5, $c->getSubType());
+    }
+
+    public function testSetSubTypeWithNullGivesAnEmptySubType(): void
+    {
+        $c = new Episciences_Rating_Criterion(['subType' => null]);
+
+        self::assertSame('', $c->getSubType());
+    }
+
+    public function testIsStandardQualitativeFollowsTheSubType(): void
+    {
+        $standard = new Episciences_Rating_Criterion([
+            'subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE,
+            'options' => Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS,
+        ]);
+        $custom = new Episciences_Rating_Criterion([
+            'subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM,
+            'options' => Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS,
+        ]);
+
+        self::assertTrue($standard->isStandardQualitative());
+        self::assertFalse($custom->isStandardQualitative());
+    }
+
+    public function testIsStandardQualitativeWithoutSubTypeRecognizesTheStandardLabels(): void
+    {
+        // grid saved before the subtype was recorded, labels read back from the XML file in another order
+        $c = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => ['en' => 'Yes', 'fr' => 'Oui']],
+            ['value' => 1, 'label' => ['en' => 'No', 'fr' => 'Non']],
+            ['value' => 2, 'label' => ['en' => 'Maybe', 'fr' => 'Peut-être']],
+        ]]);
+
+        self::assertTrue($c->isStandardQualitative());
+    }
+
+    public function testIsStandardQualitativeWithoutSubTypeAcceptsTheStandardLabelsOfSomeLanguages(): void
+    {
+        // saved back by the old edit form of an English-only journal
+        $c = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => ['en' => 'Yes']],
+            ['value' => 1, 'label' => ['en' => 'No']],
+            ['value' => 2, 'label' => ['en' => 'Maybe']],
+        ]]);
+
+        self::assertTrue($c->isStandardQualitative());
+        self::assertSame(Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, $c->getRatingType());
+    }
+
+    public function testIsStandardQualitativeWithoutSubTypeRefusesOtherLanguagesOrMissingLabels(): void
+    {
+        $otherLanguage = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => ['en' => 'Yes', 'de' => 'Ja']],
+            ['value' => 1, 'label' => ['en' => 'No']],
+            ['value' => 2, 'label' => ['en' => 'Maybe']],
+        ]]);
+        $missingLabel = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => ['en' => 'Yes']],
+            ['value' => 1, 'label' => []],
+            ['value' => 2, 'label' => ['en' => 'Maybe']],
+        ]]);
+
+        self::assertFalse($otherLanguage->isStandardQualitative());
+        self::assertFalse($missingLabel->isStandardQualitative());
+    }
+
+    public function testIsStandardQualitativeWithoutSubTypeRefusesOtherOptions(): void
+    {
+        $customLabels = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => ['en' => 'Yes', 'fr' => 'Oui']],
+            ['value' => 1, 'label' => ['en' => 'No', 'fr' => 'Non']],
+            ['value' => 2, 'label' => ['en' => 'Not sure', 'fr' => 'Peut-être']],
+        ]]);
+        $unlabelled = new Episciences_Rating_Criterion(['options' => [
+            ['value' => 0, 'label' => null],
+            ['value' => 1, 'label' => null],
+            ['value' => 2, 'label' => null],
+        ]]);
+        $quantitativeWithSameLabels = new Episciences_Rating_Criterion([
+            'coefficient' => 1,
+            'options' => Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS,
+        ]);
+
+        self::assertFalse($customLabels->isStandardQualitative());
+        self::assertFalse($unlabelled->isStandardQualitative());
+        self::assertFalse($quantitativeWithSameLabels->isStandardQualitative());
+        self::assertFalse((new Episciences_Rating_Criterion())->isStandardQualitative());
+    }
+
+    public function testGetRatingTypeFollowsTheSubTypeEvenWithEmptyOptionLabels(): void
+    {
+        $emptyLabels = [
+            ['value' => 0, 'label' => null],
+            ['value' => 1, 'label' => null],
+        ];
+        $qualitativeCustom = new Episciences_Rating_Criterion([
+            'subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM,
+            'options' => $emptyLabels,
+        ]);
+        $quantitativeCustom = new Episciences_Rating_Criterion([
+            'subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE_CUSTOM,
+            'coefficient' => 1,
+            'options' => $emptyLabels,
+        ]);
+
+        self::assertSame(Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM, $qualitativeCustom->getRatingType());
+        self::assertSame(Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE_CUSTOM, $quantitativeCustom->getRatingType());
+    }
+
+    public function testGetRatingTypeWithoutSubTypeGuessesFromTheCoefficientAndTheOptions(): void
+    {
+        $unlabelled = static fn(int $max): array => array_map(
+            static fn(int $i): array => ['value' => $i, 'label' => null],
+            range(0, $max)
+        );
+        $custom = [['value' => 0, 'label' => ['en' => 'Low']], ['value' => 1, 'label' => ['en' => 'High']]];
+
+        $cases = [
+            Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_10 => ['coefficient' => 1, 'options' => $unlabelled(10)],
+            Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_5 => ['coefficient' => 1, 'options' => $unlabelled(5)],
+            Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE_CUSTOM => ['coefficient' => 1, 'options' => $custom],
+            Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE => ['options' => Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS],
+            Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM => ['options' => $custom],
+            Episciences_Rating_Criterion::EVALUATION_TYPE_FREE => [],
+        ];
+
+        foreach ($cases as $expected => $values) {
+            self::assertSame($expected, (new Episciences_Rating_Criterion($values))->getRatingType(), $expected);
+        }
+    }
+
+    public function testGetRatingTypeIgnoresAnUnknownSubType(): void
+    {
+        $c = new Episciences_Rating_Criterion([
+            'subType' => 'unknown',
+            'options' => Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS,
+        ]);
+
+        self::assertSame(Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, $c->getRatingType());
     }
 }

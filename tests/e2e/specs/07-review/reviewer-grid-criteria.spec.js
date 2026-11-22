@@ -53,8 +53,7 @@ test.describe('Rating grid criteria types and overall score', () => {
             const grid = adminPage.locator(`table#grid_${vid}`);
             await expect(grid.locator('tr', { hasText: titles.weighted }).locator('td.c-coeff')).toHaveText('3');
             await expect(grid.locator('tr', { hasText: titles.tenScale })).toContainText('Quantitative rating (out of 10)');
-            // The list labels every qualitative criterion with values as customized, the standard one included
-            await expect(grid.locator('tr', { hasText: titles.standard })).toContainText('Qualitative rating');
+            await expect(grid.locator('tr', { hasText: titles.standard })).toContainText('Qualitative rating (standard)');
             await expect(grid.locator('tr', { hasText: titles.custom })).toContainText('Qualitative rating (customized)');
             await expect(grid.locator('tr', { hasText: titles.free })).toContainText('Free rating');
             await expect(grid.locator('tr', { hasText: titles.separator })).toContainText('Separator');
