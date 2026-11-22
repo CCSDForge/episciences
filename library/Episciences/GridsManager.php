@@ -223,7 +223,7 @@ class Episciences_GridsManager
     /**
      * Returns criterion form defaults
      * @param Episciences_Rating_Criterion $criterion
-     * @return array
+     * @return array<string, mixed>
      */
     public static function getCriterionFormDefaults(Episciences_Rating_Criterion $criterion): array
     {
@@ -254,8 +254,7 @@ class Episciences_GridsManager
         }
 
         // options labels (for custom values)
-        $custom = $criterion->isCustom();
-        if ($custom) {
+        if ($criterion->isCustom()) {
             foreach ($defaults['options'] as $i => $option) {
                 if (array_key_exists('label', $option) && !empty($option['label'])) {
                     foreach ($option['label'] as $lang => $label) {
@@ -265,24 +264,15 @@ class Episciences_GridsManager
             }
         }
 
-        // quantitative rating
-        if ($criterion->getCoefficient()) {
-            $defaults['evaluation_type'] = Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE;
-            if ($custom) {
-                $defaults['quantitative_rating_type'] = 1;
-            } else {
-                $defaults['quantitative_rating_type'] = (count($defaults['options']) === 11) ? 0 : 2;
-            }
-        } // qualitative rating
-        elseif ( (!is_null($criterion->getOptions())) && count($criterion->getOptions()) > 1 ) {
-            $defaults['evaluation_type'] = Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE;
-            $defaults['qualitative_rating_type'] = ($custom && !$criterion->isStandardQualitative()) ? 1 : 0;
-        } // free rating
-        else {
-            $defaults['evaluation_type'] = Episciences_Rating_Criterion::EVALUATION_TYPE_FREE;
-        }
-
-        return $defaults;
+        // rating type: the saved subtype first (a custom rating may have empty option labels)
+        return array_merge($defaults, match ($criterion->getRatingType()) {
+            Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_10 => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE, 'quantitative_rating_type' => 0],
+            Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE_CUSTOM => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE, 'quantitative_rating_type' => 1],
+            Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_5 => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE, 'quantitative_rating_type' => 2],
+            Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, 'qualitative_rating_type' => 0],
+            Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, 'qualitative_rating_type' => 1],
+            default => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_FREE],
+        });
     }
 
 

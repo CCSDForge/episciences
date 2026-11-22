@@ -57,4 +57,45 @@ final class GridCriteriaPartialTest extends TestCase
 
         self::assertSame('Evaluation qualitative (personnalisée)', $this->renderRating($criterion));
     }
+
+    public function testCustomQualitativeCriterionWithEmptyLabelsIsShownAsCustomized(): void
+    {
+        $criterion = new Episciences_Rating_Criterion([
+            'visibility' => 'editors',
+            'type' => Episciences_Rating_Criterion::TYPE_CRITERION,
+            'subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM,
+            'options' => [
+                ['value' => 0, 'label' => null],
+                ['value' => 1, 'label' => null],
+            ],
+        ]);
+
+        self::assertSame('Evaluation qualitative (personnalisée)', $this->renderRating($criterion));
+    }
+
+    public function testCustomQuantitativeCriterionWithEmptyLabelsIsShownAsCustomized(): void
+    {
+        $criterion = new Episciences_Rating_Criterion([
+            'visibility' => 'editors',
+            'type' => Episciences_Rating_Criterion::TYPE_CRITERION,
+            'subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE_CUSTOM,
+            'coefficient' => 1,
+            'options' => [
+                ['value' => 0, 'label' => null],
+                ['value' => 1, 'label' => null],
+            ],
+        ]);
+
+        self::assertSame('Evaluation quantitative (personnalisée)', $this->renderRating($criterion));
+    }
+
+    public function testSeparatorIsShownAsSeparator(): void
+    {
+        $criterion = new Episciences_Rating_Criterion([
+            'visibility' => 'editors',
+            'type' => Episciences_Rating_Criterion::TYPE_SEPARATOR,
+        ]);
+
+        self::assertSame('Séparateur', $this->renderRating($criterion));
+    }
 }

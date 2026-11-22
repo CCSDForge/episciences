@@ -25,6 +25,18 @@ class Episciences_Rating_Criterion
     const SUBTYPE_QUANTITATIVE_5 = 'quantitative_5';
 
     /**
+     * rating types returned by getRatingType() (all the subtypes saved for a rated criterion)
+     */
+    const RATING_TYPES = [
+        self::EVALUATION_TYPE_FREE,
+        self::SUBTYPE_QUANTITATIVE_10,
+        self::SUBTYPE_QUANTITATIVE_5,
+        self::EVALUATION_TYPE_QUANTITATIVE_CUSTOM,
+        self::EVALUATION_TYPE_QUALITATIVE,
+        self::EVALUATION_TYPE_QUALITATIVE_CUSTOM,
+    ];
+
+    /**
      * options of the standard qualitative rating
      */
     const STANDARD_QUALITATIVE_OPTIONS = [
@@ -267,7 +279,7 @@ class Episciences_Rating_Criterion
     {
         $subType = $this->getSubType();
 
-        if ($subType !== '') {
+        if (in_array($subType, self::RATING_TYPES, true)) {
             return $subType === self::EVALUATION_TYPE_QUALITATIVE;
         }
 
@@ -293,6 +305,37 @@ class Episciences_Rating_Criterion
         }
 
         return true;
+    }
+
+    /**
+     * Return the rating type of the criterion (one of RATING_TYPES): the saved subtype,
+     * or, for the grids saved without a subtype, the type guessed from the coefficient and the options.
+     */
+    public function getRatingType(): string
+    {
+        $subType = $this->getSubType();
+
+        if (in_array($subType, self::RATING_TYPES, true)) {
+            return $subType;
+        }
+
+        $options = $this->getOptions();
+        $optionsCount = is_array($options) ? count($options) : 0;
+
+        if ($this->getCoefficient()) {
+            if ($this->isCustom()) {
+                return self::EVALUATION_TYPE_QUANTITATIVE_CUSTOM;
+            }
+            return ($optionsCount === 11) ? self::SUBTYPE_QUANTITATIVE_10 : self::SUBTYPE_QUANTITATIVE_5;
+        }
+
+        if ($optionsCount > 1) {
+            return ($this->isCustom() && !$this->isStandardQualitative()) ?
+                self::EVALUATION_TYPE_QUALITATIVE_CUSTOM :
+                self::EVALUATION_TYPE_QUALITATIVE;
+        }
+
+        return self::EVALUATION_TYPE_FREE;
     }
 
     /**

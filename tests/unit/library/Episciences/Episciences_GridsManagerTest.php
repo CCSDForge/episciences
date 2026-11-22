@@ -238,4 +238,37 @@ class Episciences_GridsManagerTest extends TestCase
 
         self::assertSame([['value' => 0, 'label' => ['en' => 'Good &amp; fair']]], $rating['options']);
     }
+
+    public function testGetCriterionFormDefaultsKeepsACustomQualitativeRatingWithEmptyLabels(): void
+    {
+        $c = new Episciences_Rating_Criterion([
+            'visibility' => Episciences_Rating_Criterion::VISIBILITY_EDITORS,
+            'subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM,
+            'options' => [['value' => 0, 'label' => null], ['value' => 1, 'label' => null]],
+        ]);
+
+        $defaults = Episciences_GridsManager::getCriterionFormDefaults($c);
+
+        self::assertSame(Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, $defaults['evaluation_type']);
+        self::assertSame(1, $defaults['qualitative_rating_type']);
+    }
+
+    public function testGetCriterionFormDefaultsKeepsACustomQuantitativeRatingWithEmptyLabels(): void
+    {
+        $options = [];
+        for ($i = 0; $i <= 10; $i++) {
+            $options[] = ['value' => $i, 'label' => null];
+        }
+        $c = new Episciences_Rating_Criterion([
+            'visibility' => Episciences_Rating_Criterion::VISIBILITY_EDITORS,
+            'subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE_CUSTOM,
+            'coefficient' => 1,
+            'options' => $options,
+        ]);
+
+        $defaults = Episciences_GridsManager::getCriterionFormDefaults($c);
+
+        self::assertSame(Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE, $defaults['evaluation_type']);
+        self::assertSame(1, $defaults['quantitative_rating_type']);
+    }
 }
