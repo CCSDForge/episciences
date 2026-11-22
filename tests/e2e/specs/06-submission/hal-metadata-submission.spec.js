@@ -90,6 +90,14 @@ test.describe('HAL submission metadata enrichment', () => {
                 await expect(body).toContainText('Department of Mechanical Engineering [Eindhoven]');
                 await expect(body).toContainText('0000-0002-9857-7080');
             });
+
+            await test.step('the related data and publication declared in HAL are linked to the paper', async () => {
+                // Read from the HAL TEI: <relatedItem type="IsSupplementedBy"> (Zenodo dataset) and <relatedItem type="IsReviewedBy">
+                const body = adminPage.locator('body');
+                await expect(body).toContainText(/zenodo\.22869346/i);
+                await expect(body).toContainText('Is supplemented by');
+                await expect(body).toContainText('hal-05758441');
+            });
         } finally {
             await restoreRepositories(adminPage, initialRepos);
         }

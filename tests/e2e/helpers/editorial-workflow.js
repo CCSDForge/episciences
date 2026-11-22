@@ -17,6 +17,34 @@ const MINIMAL_PDF = path.resolve(__dirname, '..', 'fixtures', 'files', 'minimal.
 
 // Fetching metadata from arXiv or HAL goes over the network
 const REPOSITORY_TIMEOUT = 60000;
+// A repository sometimes answers too slowly: the server gives up and the page displays an error.
+// The suite runs without Playwright retries, so the fetch itself is retried.
+const REPOSITORY_FETCH_ATTEMPTS = 3;
+const REPOSITORY_RETRY_DELAY = 5000;
+
+/**
+ * Fetches the document typed in the search form from its repository, retrying on fetch errors,
+ * until the submission form is displayed.
+ * @param {import('@playwright/test').Page} page author page, on the submission page
+ */
+async function fetchRepositoryDocument(page) {
+    const submitForm = page.locator('#submitForm');
+    // A document already submitted to the journal has its own alert (#result_message): not a fetch error
+    const fetchError = page.locator('#showResult .alert-danger:not(#result_message)');
+
+    for (let attempt = 1; attempt <= REPOSITORY_FETCH_ATTEMPTS; attempt++) {
+        // A new search replaces the previous error with a loader
+        await page.locator('#search_doc-getPaper').click();
+        await expect(submitForm.or(fetchError).first()).toBeVisible({ timeout: REPOSITORY_TIMEOUT });
+
+        if ((await submitForm.isVisible()) || attempt === REPOSITORY_FETCH_ATTEMPTS) {
+            break;
+        }
+        await new Promise(resolve => setTimeout(resolve, REPOSITORY_RETRY_DELAY));
+    }
+
+    await expect(submitForm).toBeVisible();
+}
 
 /**
  * Submits a preprint from a repository as the logged-in author.
@@ -33,10 +61,7 @@ async function submitRepositoryPaper(page, { repoId, docId, version = 1, section
     await page.locator('#search_doc-repoId').selectOption(repoId);
     await page.locator('#search_doc-docId').fill(docId);
     await page.locator('#search_doc-version').fill(String(version));
-    await page.locator('#search_doc-getPaper').click();
-
-    const submitForm = page.locator('#submitForm');
-    await expect(submitForm).toBeVisible({ timeout: REPOSITORY_TIMEOUT });
+    await fetchRepositoryDocument(page);
 
     if (sectionTitle) {
         await page.locator('#sections').selectOption({ label: sectionTitle });
