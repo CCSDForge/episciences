@@ -1,4 +1,8 @@
 <?php
+
+use Episciences\Paper\Relationship;
+use Episciences\Paper\RelationshipMapper;
+
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
 $onlineType = 'online';
@@ -49,10 +53,10 @@ $fundingReferences = $paper->getFundingReferences();
 $enrichmentLinkedData = $paper->getLinkedData();
 $bibliographicalRef = $paper->getBibRef();
 
-$interWorkRelationship = \Episciences\Paper\Relationship::getFlattenedRelationships();
+$interWorkRelationship = Relationship::getFlattenedRelationships();
 // Use the full intra list (including UI-hidden types) so that records stored via import
 // (e.g. isVersionOf, isFormatOf from HAL) are correctly classified in CrossRef XML.
-$intraWorkRelationship = \Episciences\Paper\Relationship::getFlattenedRelationshipsIntraWorkRelation();
+$intraWorkRelationship = Relationship::getFlattenedRelationshipsIntraWorkRelation();
 
 $issn = Ccsd_View_Helper_FormatIssn::FormatIssn($journal->getSetting(Episciences_Review::SETTING_ISSN));
 
@@ -316,7 +320,7 @@ $paperLanguageRaw = $this->paperLanguage;
 
                 <?php if (!empty($enrichmentLinkedData)) : ?>
                     <?php foreach ($enrichmentLinkedData as $linkedData) {
-                        $relationshipType = \Episciences\Paper\RelationshipMapper::toCrossrefOrDefault($linkedData['relationship'] ?? null);
+                        $relationshipType = RelationshipMapper::toCrossrefOrDefault($linkedData['relationship'] ?? null);
                         $isIntra = in_array($relationshipType, $intraWorkRelationship, true);
                         $isInter = in_array($relationshipType, $interWorkRelationship, true);
                         ?>

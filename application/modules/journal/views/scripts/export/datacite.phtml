@@ -6,6 +6,10 @@
         xmlns:oaire="http://namespace.openaire.eu/schema/oaire/"
         xsi:schemaLocation="http://namespace.openaire.eu/schema/oaire/ https://www.openaire.eu/schema/repo-lit/4.0/openaire.xsd">
     <?php
+
+    use Episciences\Paper\RelationshipMapper;
+    use Episciences\Paper\RelationshipProfile;
+
     /** @var Episciences_Paper $paper */
 
 
@@ -199,7 +203,7 @@
         <?php if (!empty($enrichmentLinkedData)) : ?>
             <?php foreach ($enrichmentLinkedData as $linkedData) { ?>
                 <?php if (in_array((strtoupper($linkedData['link'])), $authorizedRelatedIndentifier, true) || $linkedData['link'] === 'handle' || $linkedData['link'] === 'doi' || $linkedData['link'] === 'arXiv' || $linkedData['link'] === 'bibcode' || $linkedData['link'] === 'software') : ?>
-                    <?php $dataCiteRelation = \Episciences\Paper\RelationshipMapper::toDataCite($linkedData['relationship'] ?? null, \Episciences\Paper\RelationshipProfile::OpenAire); ?>
+                    <?php $dataCiteRelation = RelationshipMapper::toDataCite($linkedData['relationship'] ?? null, RelationshipProfile::OpenAire); ?>
                     <?php if ($dataCiteRelation !== null) : ?>
                         <datacite:relatedIdentifier relatedIdentifierType="<?php
                         if ($linkedData['link'] === 'handle') {
