@@ -45,7 +45,7 @@ final class Episciences_Paper_DatasetsFromEnrichmentTest extends TestCase
     {
         $groups = $this->displayGroups('software', [null, 'hasMetadata', '', 'references']);
 
-        self::assertSame(['References' => 1, 'Other' => 3], $groups);
+        self::assertSame(['References' => 1, Episciences_Paper::LINKED_DATA_OTHER_RELATION => 3], $groups);
     }
 
     public function testAnUntypedLinkedDataIsAPublication(): void

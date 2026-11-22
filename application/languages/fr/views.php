@@ -383,6 +383,7 @@ return [
     "isDataBasisFor" => "Est une donnée de base pour",
     "hasRelatedMaterial" => "Dispose d'un contenu lié",
     "isRelatedMaterial" => "Est un contenu lié à",
+    'linked_data_other_relation' => 'Autre',
     "isCompiledBy" => "Est compilé par",
     "compiles" => "Compile",
     "isDocumentedBy" => "Est documenté par",

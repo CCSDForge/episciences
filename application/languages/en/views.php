@@ -2601,6 +2601,7 @@ return array(
     "isDataBasisFor" => "Is data basis for",
     "hasRelatedMaterial" => "Has related material",
     "isRelatedMaterial" => "Is a related material",
+    'linked_data_other_relation' => 'Other',
     "isCompiledBy" => "Is compiled by",
     "compiles" => "Compiles",
     "isDocumentedBy" => "Is documented by",

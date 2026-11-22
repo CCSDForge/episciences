@@ -45,6 +45,8 @@ class Episciences_Paper
      * Expire metadata of published articles after 1 month
      */
     public const CACHE_EXPIRE_METADATA_PUBLISHED = 3600 * 24 * 31;
+    /** Display group (and translation key) of the linked data without relation, or with one without equivalent */
+    public const LINKED_DATA_OTHER_RELATION = 'linked_data_other_relation';
 
     /**
      *
@@ -4997,13 +4999,13 @@ class Episciences_Paper
 
     /**
      * Display group of a linked data: its relation in the stored vocabulary (legacy rows may hold a DataCite type),
-     * "Other" when it has none or one without equivalent
+     * LINKED_DATA_OTHER_RELATION when it has none or one without equivalent
      */
     private static function linkedDataRelationGroup(Episciences_Paper_Dataset $dataset): string
     {
         $relationship = RelationshipMapper::toCrossref((string)$dataset->getRelationship());
 
-        return $relationship !== null ? ucfirst($relationship) : 'Other';
+        return $relationship !== null ? ucfirst($relationship) : self::LINKED_DATA_OTHER_RELATION;
     }
 
     public function getDatasetsFromEnrichment()

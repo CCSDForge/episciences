@@ -71,7 +71,8 @@ others, still valid in the exports). "Crossref element" is the element used by t
 Each relation has a translation key of the same name in `application/languages/{en,fr}/views.php`, used to
 display the linked data on the paper page. `Episciences_Paper::getDatasetsFromEnrichment()` groups them by
 `toCrossref()` of the stored value, so that a legacy row holding a DataCite type joins the group of its stored
-relation; a row without relation, or with one without equivalent, is shown under "Other".
+relation; a row without relation, or with one without equivalent, is shown under "Other"
+(`Episciences_Paper::LINKED_DATA_OTHER_RELATION`, translation key `linked_data_other_relation`).
 
 ## Inbound: DataCite / Scholix to Stored
 
