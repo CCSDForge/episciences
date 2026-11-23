@@ -34,7 +34,7 @@ class IndexController extends Episciences_Controller_Action
                 'name' => $review->getName(),
                 'code' => $review->getCode(),
                 'url' => $url,
-                'logo' => sprintf('%s./logos/logo-%s.svg', $url, $review->getCode())
+                'logo' => sprintf('%s/logos/logo-%s.svg', $url, $review->getCode())
             ];
         }
 
