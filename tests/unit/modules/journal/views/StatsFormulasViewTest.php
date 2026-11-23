@@ -61,6 +61,35 @@ final class StatsFormulasViewTest extends TestCase
         return $view->render('stats/submissions.phtml');
     }
 
+    private function renderImported(int $imported): string
+    {
+        $view = $this->view();
+        $view->chart1Title = 'Soumissions';
+        $view->allSubmissions = 44;
+        $view->imported = $imported;
+
+        return $view->render('stats/submissions.phtml');
+    }
+
+    /**
+     * The submissions above count the imported papers: the note is about the indicators below only, and is displayed
+     * as soon as there is an imported paper
+     */
+    public function testTheImportedArticlesAreLeftOutOfTheIndicatorsBelowOnly(): void
+    {
+        $this->useLanguage('fr');
+
+        self::assertStringContainsString('Les articles importés ne sont pas inclus dans les indicateurs ci-dessous', $this->renderImported(1));
+        self::assertStringNotContainsString('Les articles importés ne sont pas inclus', $this->renderImported(0));
+    }
+
+    public function testTheNoteOfTheImportedArticlesIsTranslatedInEnglish(): void
+    {
+        $this->useLanguage('en');
+
+        self::assertStringContainsString('Imported articles are not included in the indicators below', $this->renderImported(2));
+    }
+
     private function renderDelays(): string
     {
         $view = $this->view();

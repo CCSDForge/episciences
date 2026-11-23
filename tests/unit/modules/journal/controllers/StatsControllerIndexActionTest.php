@@ -50,6 +50,9 @@ final class StatsControllerIndexActionTest extends ControllerTestCase
 
     private bool $evaluationAvailable = true;
 
+    /** The API refuses the query of the evaluation figures (422), e.g. a year without any paper for them */
+    private bool $evaluationRefused = false;
+
     public static function setUpBeforeClass(): void
     {
         self::loadController('journal', 'StatsController');
@@ -114,6 +117,10 @@ final class StatsControllerIndexActionTest extends ControllerTestCase
             return new Response(503);
         }
 
+        if ($this->evaluationRefused && str_contains($path, self::EVALUATION_PATH)) {
+            return new Response(422, [], '{"status":422,"violations":[{"propertyPath":"year","message":"Invalid year(s)"}]}');
+        }
+
         return new Response(200, [], '[]');
     }
 
@@ -123,6 +130,17 @@ final class StatsControllerIndexActionTest extends ControllerTestCase
     private function query(RequestInterface $request): array
     {
         return Query::parse($request->getUri()->getQuery());
+    }
+
+    /**
+     * @return list<RequestInterface> the requests of the evaluation figures, in order
+     */
+    private function evaluationRequests(): array
+    {
+        return array_values(array_filter(
+            array_column($this->apiRequests, 'request'),
+            static fn(RequestInterface $request): bool => str_contains($request->getUri()->getPath(), self::EVALUATION_PATH)
+        ));
     }
 
     /**
@@ -180,6 +198,41 @@ final class StatsControllerIndexActionTest extends ControllerTestCase
 
         self::assertSame(200, $result->statusCode());
         self::assertNotEmpty($this->view()->errorMessage);
+    }
+
+    public function testTheEvaluationQueryIsRefused_NoFigureAndNoError(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+        $this->evaluationRefused = true;
+
+        $result = $this->displayStatistics();
+
+        self::assertSame(200, $result->statusCode());
+        self::assertNull($this->view()->errorMessage);
+        self::assertNull($this->view()->reviewsRequested);
+    }
+
+    public function testTheEvaluationQueryIsRefused_TheAdministratorsDoNotAskAgainWithoutTheReviews(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+        $this->evaluationRefused = true;
+
+        $this->displayStatistics();
+
+        self::assertNull($this->view()->errorMessage);
+        self::assertCount(1, $this->evaluationRequests());
+        self::assertSame('true', $this->query($this->evaluationRequests()[0])[StatsController::WITH_PAPERS_PARAM] ?? null);
+    }
+
+    public function testTheReviewsAreNotAvailable_TheAdministratorsGetThePublicFigures(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_SECRETARY]);
+
+        $this->displayStatistics();
+
+        self::assertNull($this->view()->errorMessage);
+        self::assertCount(2, $this->evaluationRequests());
+        self::assertArrayNotHasKey(StatsController::WITH_PAPERS_PARAM, $this->query($this->evaluationRequests()[1]));
     }
 
     public function testTheStatisticsAreRetrieved_NoErrorIsDisplayed(): void

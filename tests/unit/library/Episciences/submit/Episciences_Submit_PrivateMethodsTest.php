@@ -389,6 +389,36 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         self::assertStringContainsString('operation ended', $result['error']);
     }
 
+    public function testBuildCcsdErrorResultEscapesTheRawErrorMessageOnTheWeb(): void
+    {
+        $hadServerSoftware = array_key_exists('SERVER_SOFTWARE', $_SERVER);
+        $previousServerSoftware = $_SERVER['SERVER_SOFTWARE'] ?? null;
+        $_SERVER['SERVER_SOFTWARE'] = 'Apache';
+
+        try {
+            $result = $this->invoke('buildCcsdErrorResult', [new Ccsd_Error('unexpected <b>answer</b> & more'), 9999]);
+        } finally {
+            if ($hadServerSoftware) {
+                $_SERVER['SERVER_SOFTWARE'] = $previousServerSoftware;
+            } else {
+                unset($_SERVER['SERVER_SOFTWARE']);
+            }
+        }
+
+        self::assertStringContainsString('unexpected &lt;b&gt;answer&lt;/b&gt; &amp; more', $result['error']);
+        self::assertStringNotContainsString('<b>answer</b>', $result['error']);
+    }
+
+    public function testBuildCcsdErrorResultKeepsTheRawErrorMessageFromTheCommandLine(): void
+    {
+        $result = $this->invoke('buildCcsdErrorResult', [new Ccsd_Error('unexpected <b>answer</b> & more'), 9999]);
+
+        // The diagnostic is kept as it is, the markup of the message itself is removed
+        self::assertStringContainsString('[unexpected <b>answer</b> & more]', $result['error']);
+        self::assertStringNotContainsString('<strong>', $result['error']);
+        self::assertStringNotContainsString('<a ', $result['error']);
+    }
+
     // =========================================================================
     // GROUP A — assertNewVersionConsistency()
     // =========================================================================
@@ -870,5 +900,58 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
     {
         self::assertTrue(Episciences_Submit::isStrictNotification(true, [2 => 'editor']));
         self::assertFalse(Episciences_Submit::isStrictNotification(true, []));
+    }
+
+    // =========================================================================
+    // cleanIdentifier() / stripArxivPrefix() - issue #1481
+    // =========================================================================
+
+    /**
+     * @dataProvider arxivPrefixProvider
+     */
+    public function testStripArxivPrefix(string $input, string $expected): void
+    {
+        self::assertSame($expected, $this->invoke('stripArxivPrefix', [$input]));
+    }
+
+    public static function arxivPrefixProvider(): array
+    {
+        return [
+            'capitalized prefix' => ['arXiv:2409.09809', '2409.09809'],
+            'lowercase prefix' => ['arxiv:2409.09809', '2409.09809'],
+            'uppercase prefix with spaces' => ['ARXIV : 2409.09809', '2409.09809'],
+            'prefix with version' => ['arXiv:2409.09809v3', '2409.09809v3'],
+            'old-style identifier' => ['arXiv:math/0601001', 'math/0601001'],
+            'no prefix' => ['2409.09809', '2409.09809'],
+            'old-style identifier without prefix' => ['math/0601001', 'math/0601001'],
+            'prefix not at the start' => ['2409.09809arXiv:', '2409.09809arXiv:'],
+            'non-breaking spaces around the prefix' => ["\u{00A0}arXiv\u{00A0}:\u{00A0}2409.09809", '2409.09809'],
+        ];
+    }
+
+    public function testCleanIdentifierStripsArxivPrefixForArxiv(): void
+    {
+        self::assertSame(
+            '2409.09809',
+            $this->invoke('cleanIdentifier', [' arXiv:2409.09809 ', Episciences_Repositories::ARXIV_REPO_ID])
+        );
+    }
+
+    public function testCleanIdentifierKeepsPrefixForOtherRepositories(): void
+    {
+        self::assertSame(
+            'arXiv:2409.09809',
+            $this->invoke('cleanIdentifier', ['arXiv:2409.09809', Episciences_Repositories::HAL_REPO_ID])
+        );
+    }
+
+    public function testArxivPrefixIsStrippedBeforeVersionExtraction(): void
+    {
+        $id = $this->invoke('cleanIdentifier', ['arXiv:2409.09809v3', Episciences_Repositories::ARXIV_REPO_ID]);
+        $version = null;
+        $this->invoke('extractVersionSuffix', [&$id, &$version]);
+
+        self::assertSame('2409.09809', $id);
+        self::assertEquals(3, $version);
     }
 }

@@ -5,6 +5,15 @@ class ReviewController extends Zend_Controller_Action
     public const SETTING_JOURNAL_PUBLISHER = 'journalPublisher';
     public const SETTING_JOURNAL_PUBLISHER_LOC = 'journalPublisherLoc';
 
+    /**
+     * Settings of the journal settings form made of several checkboxes
+     */
+    public const MULTI_CHECKBOX_SETTINGS = [
+        Episciences_Review::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
+        Episciences_Review::SETTING_SYSTEM_NOTIFICATIONS,
+        Episciences_Review::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
+    ];
+
     public function indexAction()
     {
         $this->renderScript('index/submenu.phtml');
@@ -66,11 +75,9 @@ class ReviewController extends Zend_Controller_Action
                     Episciences_Review::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
                     Episciences_Review::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES,
                     Episciences_Review::SETTING_SHOW_RATINGS,
-                    Episciences_Review::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
                     Episciences_Review::SETTING_SPECIAL_ISSUE_ACCESS_CODE,
                     Episciences_Review::SETTING_ENCAPSULATE_REVIEWERS,
                     Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS,
-                    Episciences_Review::SETTING_SYSTEM_NOTIFICATIONS,
                     Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD,
                     Episciences_Review::SETTING_DISPLAY_STATISTICS,
                     Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
@@ -86,6 +93,13 @@ class ReviewController extends Zend_Controller_Action
                     // If checkbox is not set, empty, or null, set it to '0'
                     if (!isset($reviewSettingsToSave[$checkboxSetting]) || $reviewSettingsToSave[$checkboxSetting] === '' || $reviewSettingsToSave[$checkboxSetting] === null) {
                         $reviewSettingsToSave[$checkboxSetting] = '0';
+                    }
+                }
+
+                // Groups of checkboxes (stored as JSON lists): nothing checked is an empty list
+                foreach (self::MULTI_CHECKBOX_SETTINGS as $multiCheckboxSetting) {
+                    if (!is_array($reviewSettingsToSave[$multiCheckboxSetting] ?? null)) {
+                        $reviewSettingsToSave[$multiCheckboxSetting] = [];
                     }
                 }
 
@@ -128,6 +142,30 @@ class ReviewController extends Zend_Controller_Action
             $form->setDefaults($defaults);
         }
         $this->view->form = $form;
+        $this->view->sections = Episciences_Review::SETTINGS_FORM_SECTIONS;
+        // the DOI settings and the licenses have their own page: the settings page sums them up
+        $this->view->doiSettings = $review->getDoiSettings();
+        $this->view->canEditDoiSettings = Episciences_Auth::isRoot();
+        $this->view->defaultLicense = $review->getDefaultLicense();
+        $this->view->allowedLicenses = $review->getAllowedLicenses();
+        $this->view->licenseNames = self::licenseNames(array_merge(array_filter([$review->getDefaultLicense()]), $review->getAllowedLicenses()));
+    }
+
+    /**
+     * @param string[] $codes SPDX codes
+     * @return array<string, string> code => name of the known licenses (unknown codes are left out)
+     */
+    private static function licenseNames(array $codes): array
+    {
+        $names = [];
+        foreach (array_unique($codes) as $code) {
+            $name = \Episciences\Paper\Spdx\LicenseManager::getNameByIdentifier($code);
+            if ($name !== null && trim($name) !== '' && strcasecmp(trim($name), $code) !== 0) {
+                $names[$code] = trim($name);
+            }
+        }
+
+        return $names;
     }
 
     /**
@@ -147,6 +185,7 @@ class ReviewController extends Zend_Controller_Action
         }
 
         $review->loadSettings();
+        $this->view->canEditDoiSettings = Episciences_Auth::isRoot();
 
         $isSubmitted = $request->isPost() && array_key_exists('submit', $request->getPost());
         $form = $review->licensesSettingsForm();

@@ -147,21 +147,23 @@
             "controller": "review",
             "action": "settings",
             "resource": "review-settings",
-            "privilege": "chief_editor,administrator,secretary"
-          },
-          {
-            "label": "Licences",
-            "controller": "review",
-            "action": "licenses",
-            "resource": "review-licenses",
-            "privilege": "chief_editor,administrator,secretary"
-          },
-          {
-            "label": "Paramètres DOI",
-            "controller": "doi",
-            "action": "settings",
-            "resource": "doi-settings",
-            "privilege": "epiadmin"
+            "privilege": "chief_editor,administrator,secretary",
+            "pages": [
+              {
+                "label": "Paramètres des licences",
+                "controller": "review",
+                "action": "licenses",
+                "resource": "review-licenses",
+                "privilege": "chief_editor,administrator,secretary"
+              },
+              {
+                "label": "Paramètres DOI",
+                "controller": "doi",
+                "action": "settings",
+                "resource": "doi-settings",
+                "privilege": "epiadmin"
+              }
+            ]
           },
           {
             "label": "Volumes",
