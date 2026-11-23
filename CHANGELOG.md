@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v1.0.58.3 - 2026-11-23
+
 ### Fixed
 
 - [#1514](https://github.com/CCSDForge/episciences/pull/1514), [#1516](https://github.com/CCSDForge/episciences/pull/1516), [#1521](https://github.com/CCSDForge/episciences/pull/1521): user profile photos and initials avatars: validate uploaded profile photos (JPEG, PNG, GIF up to 5 MB) and remove unused SVG/XML conversion helpers; generate initials avatars on each request with a one-hour browser cache instead of writing them to disk; validate avatar background colors, strip markup, control, and XML-forbidden characters from initials, and restrict photo response headers.
