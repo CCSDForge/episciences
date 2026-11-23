@@ -8,6 +8,7 @@ const {
     addQuantitativeCriterion,
 } = require('../../helpers/editorial-workflow');
 const { flushMailQueue } = require('../../helpers/app-cli');
+const { toAppPath } = require('../../helpers/app-url');
 
 // papers of their own: specs run in parallel, and each one submits a different paper
 const ARXIV_ID = '1704.04861';
@@ -236,8 +237,7 @@ async function inviteKnownReviewerFor(page, docid, username, typeId) {
  * @param {string} comment
  */
 async function acceptAndRate(reviewerPage, invitationUrl, docid, comment) {
-    // The link targets the configured application URL: only its path is kept
-    await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+    await reviewerPage.goto(toAppPath(invitationUrl));
     await reviewerPage.locator('#submitaccept').click();
     await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
 
@@ -494,15 +494,12 @@ test.describe('Review request types (#319)', () => {
                     .extractLinks(email.Text)
                     .find(url => url.includes('/reviewer/invitation/'));
                 expect(link).toBeTruthy();
-                const url = new URL(link);
-                invitationPath = url.pathname.replace(/^\//, '') + url.search;
+                invitationPath = toAppPath(link);
 
                 const context = await newLoggedOutContext(browser, baseURL);
                 try {
                     const page = await context.newPage();
-                    await page.goto(
-                        url.pathname.replace(/^\//, '') + url.search
-                    );
+                    await page.goto(invitationPath);
 
                     const form = page.locator('form#rating-grid');
                     await expect(form).toBeVisible();

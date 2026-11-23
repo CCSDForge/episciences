@@ -1909,63 +1909,21 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
-     * User ids of the reviewers with an accepted or pending (not expired) invitation:
-     * user ids only, temporary accounts have their own ids
-     * @param array<string, array<int, array<string, mixed>>> $invitations sorted invitations (Episciences_Paper::getInvitations())
-     * @return int[]
+     * Logs a reviewer invitation refused when saving it (for instance sent from a page loaded before another member of
+     * the editorial team invited the same person)
+     *
+     * @param int $uid account of the invited person, 0 for a person without an account yet
+     * @param string $reason why the invitation is refused
      */
-    private function ongoingInvitationUserIds(array $invitations): array
+    private static function logRefusedInvitation(Episciences_Paper $paper, int $uid, bool $isAccount, string $reason): void
     {
-        $uids = [];
-
-        foreach ([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING] as $status) {
-            foreach ($invitations[$status] ?? [] as $invitation) {
-                if (!$invitation['TMP_USER']) {
-                    $uids[(int)$invitation['UID']] = (int)$invitation['UID'];
-                }
-            }
-        }
-
-        return array_values($uids);
-    }
-
-    /**
-     * Whether the reviewer has a pending (not expired) or accepted invitation for the paper:
-     * the same invitations as the ones left out of the lists of invitereviewerAction().
-     * A new temporary account (no id yet) is matched by its e-mail address.
-     */
-    private function hasOngoingReviewerInvitation(Episciences_Paper $paper, int $uid, bool $isTmpUser, string $email = ''): bool
-    {
-        if ($uid <= 0 && (!$isTmpUser || trim($email) === '')) {
-            return false;
-        }
-
-        $statuses = [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING];
-        $invitations = $paper->getInvitations($statuses, true);
-
-        foreach ($statuses as $status) {
-            foreach ($invitations[$status] ?? [] as $invitation) {
-                if (self::isInvitationOf($invitation, $uid, $isTmpUser, $email)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @param array<string, mixed> $invitation
-     */
-    private static function isInvitationOf(array $invitation, int $uid, bool $isTmpUser, string $email): bool
-    {
-        if ($uid > 0) {
-            return (int)$invitation['UID'] === $uid && (bool)$invitation['TMP_USER'] === $isTmpUser;
-        }
-
-        $invitedEmail = (string)($invitation['reviewer']['email'] ?? '');
-
-        return $invitedEmail !== '' && strcasecmp(trim($invitedEmail), trim($email)) === 0;
+        AppRegistry::getMonoLogger()?->warning(sprintf(
+            'Reviewer invitation refused for document #%d: %s (%s, sender %d)',
+            (int)$paper->getDocid(),
+            $isAccount && $uid > 0 ? 'user ' . $uid : 'person without an account',
+            $reason,
+            (int)Episciences_Auth::getUid()
+        ));
     }
 
     /**
@@ -2036,6 +1994,9 @@ class AdministratepaperController extends PaperDefaultController
             );
 
         if ($requestType === null || $isBusy) {
+            if ($isBusy) {
+                self::logRefusedInvitation($paper, $invitedUid, true, 'request of type ' . $requestType->getId() . ' in progress');
+            }
             $message = $requestType === null
                 ? $translator->translate("Ce type de demande n'est pas disponible.")
                 : $translator->translate('Ce relecteur a déjà une demande de ce type en cours pour cet article.');
@@ -2049,6 +2010,7 @@ class AdministratepaperController extends PaperDefaultController
         $isAccount = $invitedUid > 0 && (int)($reviewer['invitation_type'] ?? 0) !== 3;
         $refusal = $this->invitationEligibility($paper)->refusalFor($isAccount ? $invitedUid : null, (string)($reviewer['email'] ?? ''));
         if ($refusal !== null) {
+            self::logRefusedInvitation($paper, $invitedUid, $isAccount, $refusal);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
                 ->addMessage($translator->translate(self::invitationRefusalMessage($refusal)));
             $this->_helper->redirector->gotoUrl($referer);

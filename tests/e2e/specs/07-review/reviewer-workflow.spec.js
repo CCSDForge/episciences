@@ -94,9 +94,9 @@ test.describe('Reviewer invitation and review', () => {
                 .locator('#papers tbody tr')
                 .filter({ has: adminPage.locator('td:first-child', { hasText: new RegExp(`^\\s*${docid}\\s*$`) }) });
             const contact = row.locator('a[aria-label="Send a message to the reviewer"]');
-            await expect(contact).toHaveAttribute('href', new RegExp(`^/administratemail/send/recipient/\\d+/paper/${docid}$`));
+            await expect(contact).toHaveAttribute('href', new RegExp(`administratemail/send/recipient/\\d+/paper/${docid}$`));
             // the message form exists (the former link led to a missing page)
-            const response = await adminPage.request.get((await contact.getAttribute('href')).replace(/^\//, ''));
+            const response = await adminPage.request.get(toAppPath(await contact.getAttribute('href')));
             expect(response.status()).toBe(200);
         });
     });
