@@ -1,4 +1,5 @@
 const { test, expect, E2E_USERNAMES } = require('../../fixtures/e2e-fixtures');
+const { toAppPath } = require('../../helpers/app-url');
 const {
     MINIMAL_PDF,
     submitArxivPaper,
@@ -56,10 +57,10 @@ test.describe('Isolation between two reviewers of the same paper', () => {
             await reviewerPage.goto(`paper/rating/id/${docid}`);
             const attachmentLink = reviewerPage.locator(`form#rating-grid a[href*="/${docid}/report/"]`);
             await expect(attachmentLink).toHaveCount(1);
-            attachmentHref = (await attachmentLink.getAttribute('href')).replace(/^\//, '');
+            attachmentHref = toAppPath(await attachmentLink.getAttribute('href'));
 
             const deleteButton = reviewerPage.locator('form#rating-grid a[onclick*="deleteattachmentreport"]');
-            deleteUrl = (await deleteButton.getAttribute('onclick')).match(/'(\/paper\/deleteattachmentreport\/[^']+)'/)[1];
+            deleteUrl = (await deleteButton.getAttribute('onclick')).match(/'([^']*\/paper\/deleteattachmentreport\/[^']+)'/)[1];
 
             // The owner of the draft can download its attachment
             expect((await reviewerPage.request.get(attachmentHref)).status()).toBe(200);
@@ -81,7 +82,7 @@ test.describe('Isolation between two reviewers of the same paper', () => {
         });
 
         await test.step('the second reviewer cannot delete the attachment of the first one', async () => {
-            await refereePage.goto(deleteUrl.replace(/^\//, ''));
+            await refereePage.goto(toAppPath(deleteUrl));
             await expect(refereePage.getByText("You don't have the required permissions to delete this file").first()).toBeVisible();
 
             await reviewerPage.goto(`paper/rating/id/${docid}`);

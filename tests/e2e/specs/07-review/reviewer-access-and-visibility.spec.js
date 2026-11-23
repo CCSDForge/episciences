@@ -1,4 +1,5 @@
 const { test, expect, E2E_USERNAMES } = require('../../fixtures/e2e-fixtures');
+const { toAppPath } = require('../../helpers/app-url');
 const {
     MINIMAL_PDF,
     submitArxivPaper,
@@ -53,7 +54,7 @@ test.describe('Reviewer report visibility and access control', () => {
             const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
             expect(invitationUrl).toBeTruthy();
 
-            await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+            await reviewerPage.goto(toAppPath(invitationUrl));
             await reviewerPage.locator('#submitaccept').click();
             await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
 
@@ -87,7 +88,7 @@ test.describe('Reviewer report visibility and access control', () => {
             await expect(authorPage.locator('body')).toContainText(publicComment);
             await expect(authorPage.locator('body')).not.toContainText(confidentialComment);
 
-            const response = await authorPage.request.get(confidentialAttachmentHref.replace(/^\//, ''));
+            const response = await authorPage.request.get(toAppPath(confidentialAttachmentHref));
             expect([401, 403, 404]).toContain(response.status());
         });
     });

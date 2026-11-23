@@ -1,4 +1,5 @@
 const { test, expect, E2E_USERNAMES } = require('../../fixtures/e2e-fixtures');
+const { toAppPath } = require('../../helpers/app-url');
 const { E2E_PASSWORD } = require('../../helpers/login');
 const {
     submitArxivPaper,
@@ -96,9 +97,7 @@ async function confirmAcceptance(page, modal, reviewerName) {
 function linkPath(mailpit, email, route) {
     const link = mailpit.extractLinks(email.Text).find(url => url.includes(route));
     expect(link).toBeTruthy();
-    // The link targets the configured application URL: only its path is kept
-    const url = new URL(link);
-    return url.pathname.replace(/^\//, '') + url.search;
+    return toAppPath(link);
 }
 
 test.describe('Reviewer invitation accepted by the editor of the paper', () => {
