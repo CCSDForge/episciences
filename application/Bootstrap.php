@@ -61,19 +61,6 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
                 Zend_Registry::set('reviewSettings', $oReview->getSettings());
                 Zend_Registry::set('reviewSettingsDoi', $oReview->getDoiSettings());
 
-                $reviewSettings = $oReview->getSettings();
-
-                $hideStatistics = ((
-                        !isset($reviewSettings[Episciences_Review::SETTING_DISPLAY_STATISTICS]) ||
-                        !$reviewSettings[Episciences_Review::SETTING_DISPLAY_STATISTICS]
-                    ) ||
-                    (
-                        $reviewSettings[Episciences_Review::SETTING_DISPLAY_STATISTICS] === '2' &&
-                        !Episciences_Auth::isSecretary()
-                    ));
-
-                Zend_Registry::set('hideStatistics', $hideStatistics);
-
 
                 $isCoiEnabled = (boolean)$oReview->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
                 Zend_Registry::set('isCoiEnabled', $isCoiEnabled);
@@ -101,7 +88,8 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         $sessionOptions = [
             'name' => SESSION_NAMESPACE,
             'cookie_httponly' => $options['resources']['session']['cookie_httponly'],
-            'cookie_secure' => $options['resources']['session']['cookie_secure']
+            'cookie_secure' => $options['resources']['session']['cookie_secure'],
+            'cookie_samesite' => $options['resources']['session']['cookie_samesite'] ?? 'Lax'
         ];
         Zend_Session::setOptions($sessionOptions);
         Zend_Session::start();
@@ -197,9 +185,16 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         }
         $confToArray = array_merge($config->toArray(), $connectedConfig->toArray());
 
-        if (Zend_Registry::get('hideStatistics')) {
+        // Computed here and not in _initModule(): checking the user's roles reads Zend_Auth,
+        // which would start the session before _initSession() applies the cookie options
+        $hideStatistics = $this->isStatisticsHidden();
+        Zend_Registry::set('hideStatistics', $hideStatistics);
+
+        if ($hideStatistics) {
             $key = array_search('stats-index', array_column($confToArray, 'resource'), true);
-            unset($confToArray[$key]);
+            if ($key !== false) {
+                unset($confToArray[$key]);
+            }
 
         }
 
@@ -214,6 +209,20 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
             ->setRoles(Episciences_Auth::getRoles());
 
         return $acl;
+    }
+
+    /**
+     * @throws Zend_Exception
+     */
+    private function isStatisticsHidden(): bool
+    {
+        $displayStatistics = Zend_Registry::get('reviewSettings')[Episciences_Review::SETTING_DISPLAY_STATISTICS] ?? null;
+
+        if (!$displayStatistics) {
+            return true;
+        }
+
+        return $displayStatistics === '2' && !Episciences_Auth::isSecretary();
     }
 
     /**

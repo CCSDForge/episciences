@@ -207,4 +207,82 @@ class GetAvatarTest extends TestCase
         // Cleanup
         unlink($writtenFile);
     }
+
+    /**
+     * @dataProvider validHexColorProvider
+     */
+    public function testSanitizeHexColorAcceptsHexColors(string $input, string $expected): void
+    {
+        $this->assertSame($expected, Episciences_View_Helper_GetAvatar::sanitizeHexColor($input));
+    }
+
+    public static function validHexColorProvider(): array
+    {
+        return [
+            '3 digits' => ['fff', 'fff'],
+            '6 digits' => ['FFC107', 'FFC107'],
+            'leading hash' => ['#5627a8', '5627a8'],
+        ];
+    }
+
+    /**
+     * @dataProvider invalidHexColorProvider
+     */
+    public function testSanitizeHexColorRejectsInvalidValues(?string $input): void
+    {
+        $this->assertNull(Episciences_View_Helper_GetAvatar::sanitizeHexColor($input));
+    }
+
+    public static function invalidHexColorProvider(): array
+    {
+        return [
+            'null' => [null],
+            'empty' => [''],
+            'markup injection' => ['fff"/><script>alert(1)</script><rect fill="red'],
+            'trailing newline' => ["fff\n"],
+            'non hex' => ['ggg'],
+            '4 digits' => ['ffff'],
+            '8 digits' => ['ffffffff'],
+            'color name' => ['red'],
+        ];
+    }
+
+    public function testAsSvgIgnoresInjectedBackgroundColor(): void
+    {
+        $svg = Episciences_View_Helper_GetAvatar::asSvg('AB', 'fff"/><script>alert(1)</script><rect fill="red');
+
+        $this->assertStringNotContainsString('<script', $svg);
+        $this->assertStringNotContainsString('<rect', $svg);
+        $this->assertNotFalse(simplexml_load_string($svg), 'Generated SVG must be well-formed XML');
+    }
+
+    public function testAsSvgUsesValidBackgroundColor(): void
+    {
+        $svg = Episciences_View_Helper_GetAvatar::asSvg('AB', 'FFC107');
+
+        $this->assertStringContainsString('fill="#FFC107"', $svg);
+    }
+
+    public function testAsSvgStripsMarkupFromInitials(): void
+    {
+        $svg = Episciences_View_Helper_GetAvatar::asSvg('<a &b');
+
+        $this->assertStringNotContainsString('<a', $svg);
+        $this->assertNotFalse(simplexml_load_string($svg), 'Generated SVG must be well-formed XML');
+    }
+
+    public function testAsSvgStripsControlCharactersFromInitials(): void
+    {
+        $svg = Episciences_View_Helper_GetAvatar::asSvg("A\x01B\x1F");
+
+        $this->assertDoesNotMatchRegularExpression('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $svg);
+        $this->assertNotFalse(simplexml_load_string($svg), 'Generated SVG must be well-formed XML');
+    }
+
+    public function testAsSvgStripsXmlForbiddenNonCharactersFromInitials(): void
+    {
+        $svg = Episciences_View_Helper_GetAvatar::asSvg("\u{FFFE}A\u{FFFF}B");
+
+        $this->assertNotFalse(simplexml_load_string($svg), 'Generated SVG must be well-formed XML');
+    }
 }
