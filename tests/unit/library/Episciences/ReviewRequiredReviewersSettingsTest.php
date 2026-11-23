@@ -11,14 +11,14 @@ use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
 /**
- * Editor settings of the journal: minimum number of reviews, number of rounds it applies to and
+ * Reviewing settings of the journal: minimum number of reviews, number of rounds it applies to and
  * minimum of the later rounds (git #239).
  */
 final class ReviewRequiredReviewersSettingsTest extends TestCase
 {
-    private function editorsForm(): Ccsd_Form
+    private function reviewingForm(): Ccsd_Form
     {
-        $method = new ReflectionMethod(Episciences_Review::class, 'addEditorsSettingsForm');
+        $method = new ReflectionMethod(Episciences_Review::class, 'addRatingSettingsForm');
 
         /** @var Ccsd_Form */
         return $method->invoke(new Episciences_Review(), new Ccsd_Form());
@@ -26,7 +26,7 @@ final class ReviewRequiredReviewersSettingsTest extends TestCase
 
     public function testTheThreeSettingsAreInTheForm(): void
     {
-        $form = $this->editorsForm();
+        $form = $this->reviewingForm();
 
         self::assertNotNull($form->getElement(Episciences_Review::SETTING_REQUIRED_REVIEWERS));
         self::assertNotNull($form->getElement(Episciences_Review::SETTING_REQUIRED_REVIEWERS_ROUNDS));
@@ -73,7 +73,7 @@ final class ReviewRequiredReviewersSettingsTest extends TestCase
     #[DataProvider('valueProvider')]
     public function testValuesAreChecked(string $setting, string $value, bool $valid): void
     {
-        $element = $this->editorsForm()->getElement($setting);
+        $element = $this->reviewingForm()->getElement($setting);
         self::assertNotNull($element);
 
         self::assertSame($valid, $element->isValid($value));
