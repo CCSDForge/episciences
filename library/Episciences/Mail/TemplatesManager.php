@@ -248,7 +248,8 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_RATING,
         Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME,
-        Episciences_Mail_Tags::TAG_REQUESTER_SCREEN_NAME
+        Episciences_Mail_Tags::TAG_REQUESTER_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_PAPER_URL
     ];
 
     public const paper_ask_other_editors_tags = [

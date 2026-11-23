@@ -34,6 +34,7 @@ class E2ESeedCommand extends Command
             ->addOption('rvcode', null, InputOption::VALUE_OPTIONAL, 'Journal code for roles', 'dev')
             ->addOption('password', 'p', InputOption::VALUE_OPTIONAL, 'Fixed password for all generated users', 'password123')
             ->addOption('reset', null, InputOption::VALUE_NONE, 'Also remove the papers, volumes and sections left by previous E2E runs')
+            ->addOption('coi', null, InputOption::VALUE_REQUIRED, 'Conflict of interest declaration: on or off', 'off')
             ->addOption('restore-settings', null, InputOption::VALUE_NONE, 'Restore journal settings backed up before E2E runs');
     }
 
@@ -89,6 +90,15 @@ class E2ESeedCommand extends Command
                 'email'     => 'e2e_reviewer@example.org',
                 'firstname' => 'E2E',
                 'lastname'  => 'Reviewer',
+                'roles'     => [Episciences_Acl::ROLE_MEMBER, Episciences_Acl::ROLE_REVIEWER],
+            ],
+            [
+                // Second reviewer, for the tests involving two reviewers of the same paper.
+                // Its username must not contain "e2e_reviewer": the specs look reviewers up by username
+                'username'  => 'e2e_referee',
+                'email'     => 'e2e_referee@example.org',
+                'firstname' => 'E2E',
+                'lastname'  => 'Referee',
                 'roles'     => [Episciences_Acl::ROLE_MEMBER, Episciences_Acl::ROLE_REVIEWER],
             ],
             [
@@ -164,7 +174,14 @@ class E2ESeedCommand extends Command
 
         $io->table(['Username', 'Roles', 'Email', 'Status'], $results);
 
-        $this->applyJournalSettings($rvid);
+        $coi = (string)$input->getOption('coi');
+
+        if (!in_array($coi, ['on', 'off'], true)) {
+            $io->error('--coi must be "on" or "off"');
+            return Command::INVALID;
+        }
+
+        $this->applyJournalSettings($rvid, $coi === 'on');
 
         if ($input->getOption('reset')) {
             $this->resetJournalData($io, $rvid);
@@ -180,9 +197,13 @@ class E2ESeedCommand extends Command
     /**
      * @return array<string, string>
      */
-    private function getRequiredSettings(): array
+    private function getRequiredSettings(bool $isCoiEnabled): array
     {
         return [
+            // The suite runs with and without the conflict of interest declaration (E2E_COI)
+            Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => $isCoiEnabled ? '1' : '',
+            // Reviewers can send messages to the author: the rating page then holds one more editor
+            Episciences_Review::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES => '1',
             // A paper needs a completed review before it can be accepted, published or sent back for revision
             Episciences_Review::SETTING_REQUIRED_REVIEWERS => '1',
             // Author editor choice must not be mandatory during E2E submissions
@@ -197,10 +218,10 @@ class E2ESeedCommand extends Command
     /**
      * Backs up initial settings and applies the ones the suite relies on.
      */
-    private function applyJournalSettings(int $rvid): void
+    private function applyJournalSettings(int $rvid, bool $isCoiEnabled): void
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $requiredSettings = $this->getRequiredSettings();
+        $requiredSettings = $this->getRequiredSettings($isCoiEnabled);
 
         // Backup current setting values if not already backed up
         foreach (array_keys($requiredSettings) as $setting) {

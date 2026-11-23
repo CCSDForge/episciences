@@ -88,6 +88,8 @@ class Episciences_Rating_Manager
         $form->setAttrib('id', 'rating-grid');
         $form->addElementPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
         $translator = Zend_Registry::get('Zend_Translate');
+        // weighted criteria (id => coefficient), read by public/js/paper/rating.js to show the overall score
+        $coefficients = [];
 
         foreach ($criteria as $criterion) {
 
@@ -149,7 +151,11 @@ class Episciences_Rating_Manager
                     'label' => ($criterion->hasCoefficient()) ? 'Note' . ' (coefficient ' . $criterion->getCoefficient() . ')' : 'Votre avis',
                     'multioptions' => $notes,
                     'value' => $criterion->getNote(),
-                    'onchange' => 'updateNote()'));
+                    'data-max-note' => $criterion->getMaxNote()));
+
+                if ((float)$criterion->getCoefficient() > 0) {
+                    $coefficients[$id] = (float)$criterion->getCoefficient();
+                }
 
                 $group[] = 'note_' . $id;
             }
@@ -232,6 +238,10 @@ class Episciences_Rating_Manager
             }
         }
 
+        // same computation as Episciences_Rating_Report::calculateScore()
+        $form->setAttrib('data-coefficients', json_encode($coefficients, JSON_FORCE_OBJECT) ?: '{}');
+        $form->setAttrib('data-max-score', (string)$grid->getMax_score());
+
         // hidden : global note
         $form->addElement('hidden', 'noteGlobale');
 
@@ -240,7 +250,8 @@ class Episciences_Rating_Manager
             'decorators' => array(
                 array(
                     'decorator' => 'HtmlTag',
-                    'options' => array('tag' => 'div', 'class' => 'overallValue'))
+                    // updated by public/js/paper/rating.js when a grade changes
+                    'options' => array('tag' => 'div', 'class' => 'overallValue', 'aria-live' => 'polite'))
             )));
 
 

@@ -8,6 +8,8 @@ const E2E_PASSWORD = 'password123';
 const E2E_USERNAMES = {
     author: 'e2e_author',
     reviewer: 'e2e_reviewer',
+    // Second reviewer, for the tests involving two reviewers of the same paper
+    referee: 'e2e_referee',
     editor: 'e2e_editor',
     secretary: 'e2e_secretary',
     admin: 'e2e_admin',

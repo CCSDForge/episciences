@@ -32,14 +32,16 @@ yarn lint:e2e                                    # ESLint with eslint-plugin-pla
 Before the tests, `global-setup.js` runs `php scripts/console.php app:e2e-seed --reset`:
 
 - it creates (or resets) the E2E accounts, all with the password `password123`:
-  `e2e_author`, `e2e_reviewer`, `e2e_editor`, `e2e_secretary`, `e2e_admin` (administrator and editor
+  `e2e_author`, `e2e_reviewer`, `e2e_referee` (second reviewer), `e2e_editor`, `e2e_secretary`, `e2e_admin` (administrator and editor
   in chief);
 - it removes what previous runs left in the journal: every paper of `e2e_author`, then every volume
   and section whose English title starts with `E2E `, with the rating grid of each removed volume.
   Nothing else is touched;
 - it sets the journal settings the suite relies on: one completed review at least before a paper can
   be accepted, published or sent back for revision (`requiredReviewers`). The specs have the paper
-  reviewed first (`completeReview()` in `helpers/editorial-workflow.js`).
+  reviewed first (`completeReview()` in `helpers/editorial-workflow.js`). Reviewers can send
+  messages to authors (`reviewersCanCommentArticles`), and the conflict of interest declaration
+  (`isCoiEnabled`) follows `E2E_COI`. The initial settings are restored after the run.
 
 Environment variables:
 
@@ -50,6 +52,7 @@ Environment variables:
 | `MAILPIT_URL`   | `https://mailpit.episciences.org`                                 | Mailpit API                                       |
 | `E2E_PHP_EXEC`  | `docker exec -u www-data -w /var/www/htdocs episciences-php-fpm php` | Runs the PHP scripts (seed, mail queue)        |
 | `E2E_SKIP_SEED` | -                                                                 | `1` to skip the seed and reset                    |
+| `E2E_COI`       | -                                                                 | `1` to run with the conflict of interest declaration enabled |
 
 PHP scripts run as `www-data`: run as root, they would leave cache files the web server cannot
 write anymore (`Failed saving metadata to metadataCache` notices).
@@ -71,9 +74,10 @@ tests/e2e/
 │   ├── 08-editorial-decisions/ acceptance, rejection
 │   ├── 09-revisions/          minor revision with a new version, major revision answered as is
 │   ├── 10-publication/        publication in a volume, copy editing by the author
-│   └── 11-journal-configuration/ rating grid lifecycle, journal settings
+│   ├── 11-journal-configuration/ rating grid lifecycle, journal settings
+│   └── 12-conflict-of-interest/ declaration of conflicts of interest (one test per E2E_COI mode)
 ├── fixtures/
-│   ├── e2e-fixtures.js        logged-in page per role (authorPage, reviewerPage, editorPage,
+│   ├── e2e-fixtures.js        logged-in page per role (authorPage, reviewerPage, refereePage, editorPage,
 │   │                          secretaryPage, adminPage) and the mailpit client
 │   └── files/minimal.pdf      file uploaded by the tests
 ├── helpers/
@@ -105,6 +109,11 @@ tests/e2e/
   silently skips its actions passes for the wrong reason. Conditions are only legitimate for journal
   settings (for instance the data descriptor some journals require at submission). `yarn lint:e2e`
   flags conditional assertions, fixed waits and `networkidle`.
+- **Conflict of interest.** Every test must pass with `E2E_COI=1` and without it. With the
+  declaration enabled, the editorial team is sent to `/coi/report` before managing a paper:
+  `openPaperManagement()` answers "no conflict" itself, so always open the management page through it.
+- **Rating comments.** Fill the criterion comments with `fillRatingComments()`: the rating page also
+  holds the TinyMCE editor of the message to the author.
 - **TinyMCE editors.** Some buttons are only enabled by an `input` event of the editor: type into
   its iframe (`frameLocator('#<id>_ifr').locator('body')`) rather than calling `setContent()`.
 
@@ -123,4 +132,16 @@ container (configset of `src/solr/episciences`) and the Solr indexing worker run
 server: the volume pages list the papers indexed in Solr.
 
 It runs on pull requests targeting `staging` or `main`, and can be triggered manually
-(`workflow_dispatch`).
+(`workflow_dispatch`):
+
+- draft pull requests and documentation only changes (`docs/**`, `*.md`) are not tested; a draft is
+  tested once marked ready for review;
+- a new push to a pull request cancels the run of its previous commit;
+- the suite runs without the conflict of interest declaration on every pull request, and also with
+  it (`E2E_COI=1`) on pull requests targeting `main` and on manual runs. Each mode has its own
+  runners and database;
+- each mode is split into two shards (`--shard`) running at the same time, each with its own report
+  artifact.
+
+Locally, run both modes one after the other (`E2E_COI=1 yarn test:e2e`): the setting applies to the
+whole journal.

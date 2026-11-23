@@ -29,6 +29,8 @@ class UserDefaultController extends Episciences_Controller_Action
     public const DEFAULT_IMG_PATH = '/../public/img/user.svg';
     private const ERROR_ERROR_PHTML = 'error/error.phtml';
     private const IMAGE_SVG_XML = 'image/svg+xml';
+    // User images may be SVG served from the application origin: forbid any active content
+    private const SVG_CSP = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
     /** Tokens accepted by the password reset page */
     private const PASSWORD_TOKEN_PURPOSES = [TokenPurpose::PASSWORD_RESET, TokenPurpose::ACCOUNT_SETUP];
     private const ACCOUNT_ACTIVATED_MESSAGE = "Votre compte est activé. Si vous ne connaissez pas votre mot de passe, utilisez la procédure « Mot de passe oublié »";
@@ -2407,104 +2409,41 @@ class UserDefaultController extends Episciences_Controller_Action
         }
 
         $photoPathName = false;
-        $data = false;
         $imageMimeType = 'image/jpg';
-        $screenName = ''; // only set for the initials avatar, the only size that uses it
 
         $uid = (int)$uid;
-        switch ($size) {
-            case Ccsd_User_Models_User::IMG_NAME_INITIALS:
-                $screenName = $this->getParam('name');
-                $screenName = urldecode($screenName);
-                $screenName = filter_var($screenName, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
-                $imageMimeType = self::IMAGE_SVG_XML;
-                break;
-            case Ccsd_User_Models_User::IMG_NAME_THUMB:
-            case Ccsd_User_Models_User::IMG_NAME_NORMAL:
-            case Ccsd_User_Models_User::IMG_NAME_LARGE:
-                break;
-            default:
-                $size = Ccsd_User_Models_User::IMG_NAME_NORMAL;
-                break;
-        }
 
-
-        // photo of a specific user
-        if ($uid !== 0) {
-            $user = new Ccsd_User_Models_User(['uid' => $uid]);
-            $photoPathName = $user->getPhotoPathName($size);
-        } else {
-            // nobody or logged user
-            $uid = (int)Episciences_Auth::getUid();
-            if ($uid !== 0) {
-                $user = new Ccsd_User_Models_User(['uid' => $uid]);
-                $photoPathName = $user->getPhotoPathName($size);
-            }
-        }
-
-        // If custom background color is provided for initials, generate SVG dynamically (skip cache)
-        if ($backgroundColor && $size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
-            $data = Episciences_View_Helper_GetAvatar::asSvg($screenName, $backgroundColor);
-            $contentSize = strlen($data);
-            $maxAge = 300; // Shorter cache for dynamic content
-            $expires = gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge);
-
-            $this->getResponse()
-                ->setHeader('ETag', md5($data), true)
-                ->setHeader('Expires', $expires, true)
-                ->setHeader('Pragma', '', true)
-                ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
-                ->setHeader('Content-Type', self::IMAGE_SVG_XML, true)
-                ->setHeader('Content-Length', $contentSize, true)
-                ->setBody($data);
+        if ($size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
+            // The initials avatar is built from the name sent in the request: it is never written to disk,
+            // otherwise the first request for a user would set the avatar served to everyone for that user
+            $screenName = $this->getParam('name', '');
+            $screenName = is_string($screenName) ? html_entity_decode(urldecode($screenName), ENT_QUOTES | ENT_HTML5) : '';
+            $this->sendInitialsAvatar(Episciences_View_Helper_GetAvatar::asSvg($screenName, $backgroundColor));
             return;
         }
 
-        if (!$photoPathName) {
-            if ($size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
-
-                // Generate SVG
-                $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
-
-                if (!isset($user)) {
-                    // Anonymous request (no uid, not logged in): there is no user
-                    // directory to cache the SVG in, so serve it inline instead of
-                    // dereferencing an undefined $user (which was a fatal error).
-                    $contentSize = strlen($data);
-                    $maxAge = 300;
-                    $expires = gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge);
-
-                    $this->getResponse()
-                        ->setHeader('ETag', md5($data), true)
-                        ->setHeader('Expires', $expires, true)
-                        ->setHeader('Pragma', '', true)
-                        ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
-                        ->setHeader('Content-Type', self::IMAGE_SVG_XML, true)
-                        ->setHeader('Content-Length', $contentSize, true)
-                        ->setBody($data);
-                    return;
-                }
-
-                $userPhotoPath = $user->getPhotoPath();
-
-                if (!is_dir($userPhotoPath) && !mkdir($userPhotoPath, 0777, true) && !is_dir($userPhotoPath)) {
-                    trigger_error(sprintf('Directory "%s" was not created', $userPhotoPath), E_USER_WARNING);
-                }
-
-                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
-                file_put_contents($photoPathName, $data);
-
-            } else {
-                $imageMimeType = self::IMAGE_SVG_XML;
-                $photoPathName = APPLICATION_PATH . self::DEFAULT_IMG_PATH;
-            }
+        if (!in_array($size, [Ccsd_User_Models_User::IMG_NAME_THUMB, Ccsd_User_Models_User::IMG_NAME_NORMAL, Ccsd_User_Models_User::IMG_NAME_LARGE], true)) {
+            $size = Ccsd_User_Models_User::IMG_NAME_NORMAL;
         }
 
+        if ($uid === 0) {
+            // nobody or logged user
+            $uid = (int)Episciences_Auth::getUid();
+        }
+
+        if ($uid !== 0) {
+            $user = new Ccsd_User_Models_User(['uid' => $uid]);
+            $photoPathName = $user->getPhotoPathName($size);
+        }
+
+        if (!$photoPathName) {
+            $imageMimeType = self::IMAGE_SVG_XML;
+            $photoPathName = APPLICATION_PATH . self::DEFAULT_IMG_PATH;
+        }
+
+        $data = file_get_contents($photoPathName);
         $modifiedTime = filemtime($photoPathName);
         $size = filesize($photoPathName);
-        if (!$data) {
-            $data = file_get_contents($photoPathName);
-        }
         $maxAge = 3600;
 
         $expires = gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge);
@@ -2517,10 +2456,27 @@ class UserDefaultController extends Episciences_Controller_Action
             ->setHeader('Pragma', '', true)
             ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
             ->setHeader('Content-Type', $imageMimeType, true)
+            ->setHeader('Content-Security-Policy', self::SVG_CSP, true)
             ->setHeader('Content-Length', $size, true)
             ->setBody($data);
 
 
+    }
+
+    private function sendInitialsAvatar(string $svg): void
+    {
+        // The URL holds everything the image depends on (name, uid, bgcolor, photo version)
+        $maxAge = 3600;
+
+        $this->getResponse()
+            ->setHeader('ETag', md5($svg), true)
+            ->setHeader('Expires', gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge), true)
+            ->setHeader('Pragma', '', true)
+            ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
+            ->setHeader('Content-Type', self::IMAGE_SVG_XML, true)
+            ->setHeader('Content-Security-Policy', self::SVG_CSP, true)
+            ->setHeader('Content-Length', strlen($svg), true)
+            ->setBody($svg);
     }
 
     /**
