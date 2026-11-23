@@ -34,6 +34,12 @@ final class PartialDefaultControllerTest extends TestCase
             {
                 return (string) $messageid;
             }
+
+            // Stands for the router: journals are served behind a /<journal code>/ path prefix
+            public function url(array $urlOptions = []): string
+            {
+                return '/rvcode/' . implode('/', $urlOptions);
+            }
         };
         foreach ($vars as $name => $value) {
             $view->$name = $value;
@@ -154,8 +160,8 @@ final class PartialDefaultControllerTest extends TestCase
             'showLoginLinks' => true,
         ]);
 
-        self::assertStringContainsString('<a href="/user/login">', $html);
-        self::assertStringContainsString('<a href="/user/create">', $html);
+        self::assertStringContainsString('<a href="/rvcode/user/login">', $html);
+        self::assertStringContainsString('<a href="/rvcode/user/create">', $html);
     }
 
     public function testErrorViewOmitsGuestLoginLinksByDefault(): void
