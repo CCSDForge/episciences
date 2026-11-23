@@ -5,7 +5,7 @@
 			<h2><?php echo $this->escape($this->translate($this->description)); ?></h2>
 		<?php } ?>
 		<?php if (!empty($this->showLoginLinks)){ ?>
-			<h2><a href="/user/login"><?php echo $this->escape($this->translate('Connectez-vous')); ?></a>, <?php echo $this->escape($this->translate('ou')); ?> <a href="/user/create"><?php echo $this->escape($this->translate('créez votre compte')); ?></a>.</h2>
+			<h2><a href="<?php echo $this->url(['controller' => 'user', 'action' => 'login']); ?>"><?php echo $this->escape($this->translate('Connectez-vous')); ?></a>, <?php echo $this->escape($this->translate('ou')); ?> <a href="<?php echo $this->url(['controller' => 'user', 'action' => 'create']); ?>"><?php echo $this->escape($this->translate('créez votre compte')); ?></a>.</h2>
 		<?php } ?>
 		<?php if (isset($this->exception)){ ?>
 			<?php echo $this->translate($this->exception->getMessage()); ?>
