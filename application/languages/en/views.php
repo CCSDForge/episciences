@@ -442,6 +442,10 @@ return array(
     "Attention, cet article a été supprimé par son auteur." => "Please note that this article has been deleted by its author.",
     "Attention, cet article a été supprimé par la revue." => "Please note that this article has been deleted by the Journal.",
     "Supprimer la soumission" => "Delete the submission",
+    "Voulez-vous vraiment supprimer cette soumission ?" => "Do you really want to delete this submission?",
+    "Cette action est irréversible." => "This action cannot be undone.",
+    "La revue ne traitera plus cet article, et les relecteurs et rédacteurs qui y sont assignés en seront retirés." => "The journal will no longer handle this article, and the reviewers and editors assigned to it will be removed from it.",
+    "Supprimer définitivement" => "Delete permanently",
     "Cet article a déjà été publié, il n'est plus nécessaire de le relire." => "Thank you but this article has already been published, it is useless to review it now.",
     "Cet article a déjà été accepté, il n'est plus nécessaire de le relire." => "Thank you but this article has already been accepted, it is useless to review it now.",
     "Cet article a été refusé, il n'est plus nécessaire de le relire." => "Thank you but this article has been rejected, it is useless to review it now.",
@@ -1630,6 +1634,7 @@ return array(
     'Des articles (%1$s et %2$d autres) sont rattachés à cette rubrique.' => 'Papers (%1$s and %2$d more) are attached to this section.',
     "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre article n'a pas été enregistré. Les informations saisies ont été conservées, merci de sélectionner à nouveau vos fichiers puis de valider le formulaire." => "Your session has expired or the page has been open for too long: for security reasons, your article was not saved. The information you entered has been kept; please select your files again and submit the form.",
     "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre nouvelle version n'a pas été enregistrée. Merci de recharger cette page puis de soumettre à nouveau votre nouvelle version." => "Your session has expired or the page has been open for too long: for security reasons, your new version was not saved. Please reload this page and submit your new version again.",
+    "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, la soumission n'a pas été supprimée. Merci de recharger cette page puis de recommencer." => "Your session has expired or the page has been open for too long: for security reasons, the submission was not deleted. Please reload this page and try again.",
     //Soumission d'une notice vide
     "Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : " => "You can not submit this document; the file is not available; the end date of the embargo: ",
     //suggestions de l'auteur
