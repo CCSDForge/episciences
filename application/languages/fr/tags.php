@@ -75,7 +75,7 @@ return array(
         Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED => 'Nouvelle date limite de révision',
 
 
-        Ccsd_Error::DEFAULT_PREFIX_CODE . ' ' . 'Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).' => "L'opération s'est terminée avec cette erreur : <strong><small>[%s]</small></strong>. Merci de réessayer. En cas de difficulté, contactez le support Episciences, à l'adresse %s, en indiquant l'identifiant du document (exemple d'identifiant pour un document déposé dans %s : %s).",
+        Ccsd_Error::DEFAULT_PREFIX_CODE . ' ' . 'Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (for example %4$s for a document submitted in %3$s).' => "L'opération s'est terminée avec cette erreur : <strong><small>[%s]</small></strong>. Merci de réessayer. En cas de difficulté, contactez le support Episciences, à l'adresse %s, en indiquant l'identifiant du document (par exemple %4\$s pour un document déposé dans %3\$s).",
         Episciences_Paper_Logger::CODE_LICENSE_UPDATED => 'Licence mise à jour',
 
 );

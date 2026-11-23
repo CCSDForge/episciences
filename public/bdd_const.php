@@ -54,6 +54,9 @@ defined('EPISCIENCES_READ_ONLY_MODE') || define('EPISCIENCES_READ_ONLY_MODE', fa
 defined('EPISCIENCES_READ_ONLY_MODE_START') || define('EPISCIENCES_READ_ONLY_MODE_START', '');
 defined('EPISCIENCES_READ_ONLY_MODE_END') || define('EPISCIENCES_READ_ONLY_MODE_END', '');
 
+// arXiv submission: read the metadata from DataCite when the arXiv OAI-PMH server is unavailable, enabled unless set to false in pwd.json
+defined('EPISCIENCES_ARXIV_DATACITE_FALLBACK') || define('EPISCIENCES_ARXIV_DATACITE_FALLBACK', true);
+
 /**
  * S'assure que la constante de nom $name est definie
  * Si non definie, prendra la valeur de la variable d'environnement du meme nom

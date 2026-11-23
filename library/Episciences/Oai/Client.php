@@ -20,6 +20,7 @@ class Episciences_Oai_Client extends Ccsd_Oai_Client
     {
         $this->_userAgent = $userAgent;
         parent::__construct($url, $format);
+        $this->setLogger(\Episciences\AppRegistry::getMonoLogger());
     }
 
     /**

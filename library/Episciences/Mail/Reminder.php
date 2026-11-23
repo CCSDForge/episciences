@@ -280,7 +280,7 @@ class Episciences_Mail_Reminder
         foreach ($this->getCustom() as $lang => $custom) {
             $custom = (int)$custom;
             $path = REVIEW_LANG_PATH . $lang . '/emails/';
-            if (!file_exists($path) && !mkdir($path) && !is_dir($path)) {
+            if (!file_exists($path) && !mkdir($path, 0755, true) && !is_dir($path)) {
                 throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
             }
             $filename = $key . '.phtml';

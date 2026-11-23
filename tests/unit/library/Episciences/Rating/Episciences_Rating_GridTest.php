@@ -317,4 +317,43 @@ final class Episciences_Rating_GridTest extends TestCase
             "Fix G3: firstChild must be null-checked before calling getAttribute() on it"
         );
     }
+
+    // =========================================================================
+    // Criterion subtype in the XML file
+    // =========================================================================
+
+    public function testSaveAndLoadXmlKeepTheCriterionSubType(): void
+    {
+        $dir = sys_get_temp_dir() . '/grid_subtype_' . uniqid('', true) . '/';
+        $grid = new Episciences_Rating_Grid(['filename' => 'grid_1.xml']);
+        $grid->setCriteria([
+            new Episciences_Rating_Criterion([
+                'visibility' => 'editors',
+                'type' => Episciences_Rating_Criterion::TYPE_CRITERION,
+                'subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE,
+                'labels' => ['en' => 'Sound methodology'],
+                'options' => Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS,
+            ]),
+            new Episciences_Rating_Criterion([
+                'visibility' => 'editors',
+                'type' => Episciences_Rating_Criterion::TYPE_SEPARATOR,
+                'labels' => ['en' => 'Part 2'],
+            ]),
+        ]);
+
+        try {
+            self::assertTrue($grid->save($dir));
+
+            $loaded = new Episciences_Rating_Grid();
+            self::assertTrue($loaded->loadXML($dir . 'grid_1.xml'));
+        } finally {
+            @unlink($dir . 'grid_1.xml');
+            @rmdir($dir);
+        }
+
+        $criteria = $loaded->getCriteria();
+        self::assertSame(Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, $criteria[0]->getSubType());
+        self::assertTrue($criteria[0]->isStandardQualitative());
+        self::assertSame('', $criteria[1]->getSubType());
+    }
 }
