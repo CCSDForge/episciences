@@ -273,12 +273,15 @@ final class Workload
             ->where('ITEM = ?', Episciences_User_Assignment::ITEM_PAPER)
             ->where('ROLEID = ?', Episciences_User_Assignment::ROLE_REVIEWER)
             ->where('TMP_USER = 0')
-            ->group(['ITEMID', 'UID']);
+            // a reviewer may hold one request of each type on a paper (#319)
+            ->group(['ITEMID', 'UID', 'REQUEST_TYPE_ID']);
 
         $reportDone = $db->select()
             ->from(['r' => T_REVIEWER_REPORTS], [new Zend_Db_Expr('1')])
             ->where('r.UID = a.UID')
             ->where('r.DOCID = a.ITEMID')
+            // the report of this request type; an assignment saved before the types matches any report
+            ->where('a.REQUEST_TYPE_ID IS NULL OR r.REQUEST_TYPE_ID = a.REQUEST_TYPE_ID')
             ->where('r.STATUS = ?', Episciences_Rating_Report::STATUS_COMPLETED);
 
         return $db->select()

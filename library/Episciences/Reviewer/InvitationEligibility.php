@@ -49,15 +49,29 @@ final class InvitationEligibility
 
     /**
      * @param list<int> $conflictUids accounts that declared a conflict of interest with the paper
+     * @param list<int>|null $busyAccountUids with review request types (#319), the accounts with a request in progress of
+     *     every enabled type: only they are already invited, the others may be asked another type; null: any account
+     *     with a request in progress is already invited
      */
-    public static function forVersion(Episciences_Paper $paper, int $loggedUid, array $conflictUids, ?Zend_Db_Adapter_Abstract $db = null): self
-    {
+    public static function forVersion(
+        Episciences_Paper $paper,
+        int $loggedUid,
+        array $conflictUids,
+        ?Zend_Db_Adapter_Abstract $db = null,
+        ?array $busyAccountUids = null
+    ): self {
         $db ??= Zend_Db_Table_Abstract::getDefaultAdapter();
+        $busy = $busyAccountUids === null ? null : array_fill_keys($busyAccountUids, true);
         $invitedUids = [];
         $invitedEmails = [];
 
         foreach ($db->fetchAll(self::invitedQuery($db, (int)$paper->getDocid())) as $row) {
-            if (!(int)$row['TMP_USER']) {
+            $isAccount = !(int)$row['TMP_USER'];
+            if ($isAccount && $busy !== null && !isset($busy[(int)$row['UID']])) {
+                // an account that may still be asked another type: neither its UID nor its address refuse it
+                continue;
+            }
+            if ($isAccount) {
                 $invitedUids[] = (int)$row['UID'];
             }
             if ((string)$row['EMAIL'] !== '') {

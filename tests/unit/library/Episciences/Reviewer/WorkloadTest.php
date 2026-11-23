@@ -191,7 +191,9 @@ final class WorkloadTest extends ControllerTestCase
         [$assignments, $invitations] = $this->db->selects();
         self::assertStringContainsString('RVID = ' . RVID, $assignments);
         self::assertStringContainsString('TMP_USER = 0', $assignments);
-        self::assertMatchesRegularExpression('/GROUP BY `ITEMID`,\s*`UID`/', $assignments);
+        // one request of each type per reviewer on a paper (#319), and the report of that type
+        self::assertMatchesRegularExpression('/GROUP BY `ITEMID`,\s*`UID`,\s*`REQUEST_TYPE_ID`/', $assignments);
+        self::assertStringContainsString('a.REQUEST_TYPE_ID IS NULL OR r.REQUEST_TYPE_ID = a.REQUEST_TYPE_ID', $assignments);
         self::assertStringContainsString('a.RVID = ' . RVID, $invitations);
         self::assertStringContainsString('GROUP BY `i`.`AID`', $invitations);
         self::assertStringNotContainsString('TMP_USER = 0', $invitations);

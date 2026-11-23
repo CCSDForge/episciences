@@ -131,12 +131,35 @@ final class RequiredReviewsTest extends ControllerTestCase
         self::assertSame($expected, RequiredReviews::blocksLoggedEditor($this->version(self::PAPER_ID, null, $completedReviews), $journal));
     }
 
+    /**
+     * A quick opinion, or any request type not set to count as a review report, does not reach the minimum (#319).
+     */
+    public function testReportsThatDoNotCountAsReviewReportsAreIgnored(): void
+    {
+        $journal = $this->journal([Episciences_Review::SETTING_REQUIRED_REVIEWERS => '2']);
+
+        self::assertSame(1, RequiredReviews::completedFor($this->version(self::PAPER_ID, null, 1, 2)));
+        self::assertFalse(RequiredReviews::isReached($this->version(self::PAPER_ID, null, 1, 2), $journal));
+        self::assertTrue(RequiredReviews::isReached($this->version(self::PAPER_ID, null, 2, 1), $journal));
+    }
+
     public function testNoMinimumNeverHoldsBack(): void
     {
         $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
 
         self::assertTrue(RequiredReviews::isReached($this->version(self::PAPER_ID), $this->journal([])));
         self::assertFalse(RequiredReviews::blocksLoggedEditor($this->version(self::PAPER_ID), $this->journal([])));
+    }
+
+    /**
+     * @return MockObject&Episciences_Rating_Report
+     */
+    private function report(bool $countsAsReviewReport): Episciences_Rating_Report
+    {
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('countsAsReviewReport')->willReturn($countsAsReviewReport);
+
+        return $report;
     }
 
     /**
@@ -164,11 +187,12 @@ final class RequiredReviewsTest extends ControllerTestCase
     }
 
     /**
-     * Version $docId of paper PAPER_ID (the first version has DOCID = PAPERID), with $completedReviews completed reviews.
+     * Version $docId of paper PAPER_ID (the first version has DOCID = PAPERID), with $completedReviews completed reviews
+     * and $notCountedReports completed reports of request types that do not count as review reports.
      *
      * @return MockObject&Episciences_Paper
      */
-    private function version(int $docId, ?string $when = null, int $completedReviews = 0): Episciences_Paper
+    private function version(int $docId, ?string $when = null, int $completedReviews = 0, int $notCountedReports = 0): Episciences_Paper
     {
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getPaperid')->willReturn(self::PAPER_ID);
@@ -177,7 +201,10 @@ final class RequiredReviewsTest extends ControllerTestCase
         $paper->method('loadRatings')->willReturnSelf();
         $paper->method('getRatings')->willReturnCallback(
             fn($uid = null, $status = null): array => $status === Episciences_Rating_Report::STATUS_COMPLETED
-                ? array_fill(0, $completedReviews, $this->createMock(Episciences_Rating_Report::class))
+                ? array_map(
+                    fn(bool $counts): Episciences_Rating_Report => $this->report($counts),
+                    [...array_fill(0, $completedReviews, true), ...array_fill(0, $notCountedReports, false)]
+                )
                 : []
         );
 

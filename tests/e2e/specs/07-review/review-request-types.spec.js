@@ -190,10 +190,11 @@ async function inviteNewReviewerFor(
     await page.locator(`#invite_reviewer_${docid}`).click();
     await expect(page).toHaveURL(/administratepaper\/invitereviewer/);
 
-    await page.locator('#new_user_button').click();
-    await page.locator('#email').fill(email);
-    await page.locator('#lastname').fill(lastname);
-    await page.locator('#next').click();
+    // The address is checked against the accounts before the message is shown (git #900)
+    await page.locator('#new-person-toggle').click();
+    await page.locator('#new-person-email').fill(email);
+    await page.locator('#new-person-lastname').fill(lastname);
+    await page.locator('#new-person-submit').click();
 
     await expect(page.locator('#step-2')).toBeVisible();
     await page

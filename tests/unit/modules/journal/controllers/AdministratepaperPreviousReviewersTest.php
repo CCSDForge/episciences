@@ -56,8 +56,23 @@ final class AdministratepaperPreviousReviewersTest extends ControllerTestCase
             ])
             // the conflicts of interest declared with the paper
             ->respondTo('/paper_conflicts/i', [])
-            // the invitations in progress on the current version: reviewer 2 already invited again
-            ->respondTo('/ITEMID = ' . self::CURRENT_DOCID . '/', [['UID' => 2, 'TMP_USER' => 0, 'EMAIL' => 'r2@example.org']])
+            // the enabled request types of the journal (#319): a review report and a quick opinion
+            ->respondTo('/review_request_type/', [
+                ['id' => 1, 'rvid' => RVID, 'default_type' => 1, 'labels' => '{"en":"Review report"}'],
+                ['id' => 2, 'rvid' => RVID, 'default_type' => 2, 'labels' => '{"en":"Quick opinion"}'],
+            ])
+            // the requests in progress on the current version, by type: reviewer 2 is busy with both types, reviewer 1
+            // with a quick opinion only, so that a review report may still be asked to them
+            ->respondTo('/REQUEST_TYPE_ID.*ITEMID = ' . self::CURRENT_DOCID . '/s', [
+                ['UID' => 2, 'REQUEST_TYPE_ID' => 1],
+                ['UID' => 2, 'REQUEST_TYPE_ID' => 2],
+                ['UID' => 1, 'REQUEST_TYPE_ID' => 2],
+            ])
+            // the invitations in progress on the current version, whatever their type
+            ->respondTo('/ITEMID = ' . self::CURRENT_DOCID . '/', [
+                ['UID' => 2, 'TMP_USER' => 0, 'EMAIL' => 'r2@example.org'],
+                ['UID' => 1, 'TMP_USER' => 0, 'EMAIL' => 'r1@example.org'],
+            ])
             ->respondTo('/ITEMID IN \(/', [
                 self::reviewer(20, 1, 'active', Episciences_Rating_Report::STATUS_COMPLETED),
                 self::reviewer(20, 2, 'active', Episciences_Rating_Report::STATUS_COMPLETED),
@@ -87,7 +102,9 @@ final class AdministratepaperPreviousReviewersTest extends ControllerTestCase
 
         self::assertSame(
             [
+                // a quick opinion in progress: another type may still be asked (#319)
                 [20, 1, true, null],
+                // a request in progress of every type
                 [20, 2, false, InvitationEligibility::REASON_ALREADY_INVITED],
                 // reviewer 1 is already listed on version 2
                 [10, 1, false, null],

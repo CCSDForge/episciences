@@ -179,6 +179,19 @@ async function submitInvitation(page, docid) {
 }
 
 /**
+ * Chooses the review report as the request type of the invitation, when the journal has request types (#319): the
+ * type offered first follows the order the journal chose, which the local data may change.
+ * @param {import('@playwright/test').Page} page editorial page, at step 2 of the invitation
+ */
+async function chooseReviewReport(page) {
+    const select = page.locator('#invitation-form select[name="request_type_id"]');
+    if ((await select.count()) === 0) {
+        return;
+    }
+    await select.selectOption({ label: 'Review report' });
+}
+
+/**
  * Assigns an editor to a paper from its management page ("Assign editors" form).
  * @param {import('@playwright/test').Page} page secretary or administrator page
  * @param {number} docid
@@ -211,6 +224,7 @@ async function inviteKnownReviewer(page, docid, username) {
     // One search for the person to invite (git #900)
     await page.locator('#reviewer-search-term').fill(username);
     await page.locator('#reviewer-search-results tbody tr', { hasText: username }).locator('button').click();
+    await chooseReviewReport(page);
     await submitInvitation(page, docid);
 }
 
@@ -233,6 +247,7 @@ async function inviteNewReviewer(page, docid, { email, lastname }) {
     await page.locator('#new-person-lastname').fill(lastname);
     await page.locator('#new-person-submit').click();
     await expect(page.locator('#step-2')).toBeVisible();
+    await chooseReviewReport(page);
     await submitInvitation(page, docid);
 }
 
@@ -510,6 +525,7 @@ module.exports = {
     statusPanel,
     applyDecision,
     submitInvitation,
+    chooseReviewReport,
     assignEditor,
     inviteKnownReviewer,
     inviteNewReviewer,

@@ -77,13 +77,14 @@ final class RequiredReviews
     }
 
     /**
-     * Number of completed reviews of the version.
+     * Number of completed reviews of the version that count towards the minimum.
      */
     public static function completedFor(Episciences_Paper $paper): int
     {
         $paper->loadRatings(null, Episciences_Rating_Report::STATUS_COMPLETED);
 
-        return count($paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED));
+        // only the review reports, and the reports of the request types set to count as such (#319)
+        return count(Episciences_Paper::countedReportsOf($paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED)));
     }
 
     public static function isReached(Episciences_Paper $paper, Episciences_Review $review): bool

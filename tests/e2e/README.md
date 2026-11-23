@@ -91,7 +91,8 @@ tests/e2e/
 │   │                          a reviewer in the journal
 │   ├── 08-editorial-decisions/ acceptance, rejection, minimum number of reviews per review round
 │   ├── 09-revisions/          minor revision with a new version, major revision answered as is,
-│   │                          request type of the next version
+│   │                          request type of the next version, reviewers of the previous versions
+│   │                          invited again
 │   ├── 10-publication/        publication in a volume, copy editing by the author
 │   ├── 11-journal-configuration/ rating grid lifecycle, journal settings
 │   └── 12-conflict-of-interest/ declaration of conflicts of interest (one test per E2E_COI mode)

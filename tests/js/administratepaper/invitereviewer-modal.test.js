@@ -940,6 +940,28 @@ describe('invitereviewer-modal.js: reviewers of the previous versions invited ag
         expect(moduleUnderTest.reinvitePreviousReviewer('r9')).toBe(false);
     });
 
+    test('changing the request type keeps the reassignment message', () => {
+        const form = document.getElementById('invitation-form');
+        form.insertAdjacentHTML('beforeend', '<select name="request_type_id"><option value="4">Review report</option><option value="9">Quick opinion</option></select>');
+        document.dispatchEvent(new Event('DOMContentLoaded'));
+
+        moduleUnderTest.reinvitePreviousReviewer('r0');
+        expect(postedReviewer().template_key).toBe('reinvitation');
+
+        const select = form.querySelector('select[name="request_type_id"]');
+        select.value = '9';
+        select.dispatchEvent(new Event('change'));
+
+        expect(document.getElementById('subject').value).toBe('Sujet réassignation');
+        expect(postedReviewer()).toMatchObject({ reinvitation_of: 20, template_key: 'reinvitation' });
+    });
+
+    test('a usual invitation does not keep a template of its own', () => {
+        moduleUnderTest.setInvitationValues({ id: 5, email: 'a@example.org', full_name: 'A', locale: 'fr' }, 1);
+
+        expect(postedReviewer().template_key).toBeUndefined();
+    });
+
     test('the button of a row invites the person again', () => {
         moduleUnderTest.onReinviteClick({ target: document.querySelector('[data-reinvite="r0"]') });
 

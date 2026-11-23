@@ -69,4 +69,23 @@ final class InvitationEligibilityTest extends ControllerTestCase
         self::assertStringContainsString('ITEMID = 30', $sql);
         self::assertStringContainsString("a.STATUS IN ('pending', 'active')", $sql);
     }
+
+    public function testWithRequestTypesOnlyTheAccountsBusyWithEveryTypeAreAlreadyInvited(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(30);
+        $paper->method('getUid')->willReturn(self::AUTHOR);
+        $this->db->respondTo('/FROM `USER_ASSIGNMENT`/', [
+            ['UID' => 7, 'TMP_USER' => 0, 'EMAIL' => 'seven@example.org'],
+            ['UID' => 8, 'TMP_USER' => 0, 'EMAIL' => 'eight@example.org'],
+            ['UID' => 9, 'TMP_USER' => 1, 'EMAIL' => 'tmp@example.org'],
+        ]);
+
+        // reviewer 8 holds a request of every type, reviewer 7 may still be asked another type (#319)
+        $eligibility = InvitationEligibility::forVersion($paper, self::LOGGED, [], busyAccountUids: [8]);
+
+        self::assertSame(InvitationEligibility::REASON_ALREADY_INVITED, $eligibility->refusalFor(8, 'eight@example.org'));
+        self::assertNull($eligibility->refusalFor(7, 'seven@example.org'), 'nor its address refuses it');
+        self::assertSame(InvitationEligibility::REASON_ALREADY_INVITED, $eligibility->refusalFor(null, 'tmp@example.org'));
+    }
 }
