@@ -14,6 +14,15 @@ function renderInput() {
 }
 
 describe('user autocomplete search URL', () => {
+    // The default search URL is prefixed with the journal path (set by the layout)
+    beforeAll(() => {
+        global.JS_PREFIX_URL = '/';
+    });
+
+    afterAll(() => {
+        delete global.JS_PREFIX_URL;
+    });
+
     beforeEach(renderInput);
 
     test('sends the search term', () => {
