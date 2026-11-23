@@ -7863,7 +7863,8 @@ CREATE TABLE `news` (
                         `title` json NOT NULL COMMENT 'Page title',
                         `content` json DEFAULT NULL,
                         `link` json DEFAULT NULL,
-                        `visibility` json NOT NULL
+                        `visibility` json NOT NULL,
+                        `visibility_enum` enum('public','private') COLLATE utf8mb4_unicode_ci DEFAULT 'public'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -7896,6 +7897,7 @@ CREATE TABLE `pages` (
                          `title` json NOT NULL COMMENT 'Page title',
                          `content` json NOT NULL,
                          `visibility` json NOT NULL,
+                         `visibility_set` set('public','member','editor','chief_editor','administrator','secretary','webmaster','guest_editor') DEFAULT 'public',
                          `page_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Page code'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
@@ -8788,7 +8790,8 @@ ALTER TABLE `mailing_lists`
 -- Indexes for table `license_spdx`
 --
 ALTER TABLE `license_spdx`
-    ADD PRIMARY KEY (`code`);
+    ADD PRIMARY KEY (`code`),
+    ADD KEY `recommended` (`recommended`);
 
 --
 -- Indexes for table `mailing_list_roles`

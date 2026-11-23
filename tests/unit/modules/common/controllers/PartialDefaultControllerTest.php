@@ -147,15 +147,22 @@ final class PartialDefaultControllerTest extends TestCase
         self::assertStringContainsString('&lt;script&gt;', $html);
     }
 
-    public function testErrorViewKeepsTrustedDescriptionMarkup(): void
+    public function testErrorViewRendersGuestLoginLinks(): void
     {
         $html = $this->render('journal/views/scripts/error/error.phtml', [
             'message' => 'm',
-            'description' => "<a href='/user/login'>Login</a>",
-            'descriptionIsHtml' => true,
+            'showLoginLinks' => true,
         ]);
 
-        self::assertStringContainsString("<a href='/user/login'>Login</a>", $html);
+        self::assertStringContainsString('<a href="/user/login">', $html);
+        self::assertStringContainsString('<a href="/user/create">', $html);
+    }
+
+    public function testErrorViewOmitsGuestLoginLinksByDefault(): void
+    {
+        $html = $this->render('journal/views/scripts/error/error.phtml', ['message' => 'm']);
+
+        self::assertStringNotContainsString('/user/login', $html);
     }
 
     public function testDenyAndHttpErrorViewsEscapeTheMessage(): void

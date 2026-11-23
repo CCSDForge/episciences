@@ -23,6 +23,15 @@ Episciences has received funding from:
 - [CNRS](https://www.cnrs.fr/)
 - [European Commission grant 101017452](https://cordis.europa.eu/project/id/101017452) “OpenAIRE Nexus - OpenAIRE-Nexus Scholarly Communication Services for EOSC users”
 
+### Getting Started (Local Development)
+
+Episciences runs on Docker and depends on [CCSDForge/episciences-infrastructure](https://github.com/CCSDForge/episciences-infrastructure) for its shared services (MySQL 8.4 databases, Apache Solr, Traefik reverse proxy, Mailpit, phpMyAdmin, and the `epi-network` Docker network).
+
+- **Start `episciences-infrastructure` first** (`make up`, `make solr-setup`, and `make db-import` on first init) to provide the database engines, search index, and `epi-network`.
+- **Then set up this repository** (`make dev-setup`), which starts the application containers (`httpd`, `php-fpm`, Messenger workers) and loads the `episciences` schema and dev dataset (`src/mysql/docker/episciences/dev-episciences.sql`) matching your current branch.
+
+See the [Developer Setup Guide](./docs/dev-setup.md) for the full onboarding walkthrough.
+
 ### Documentation
 
 | Document | Description |

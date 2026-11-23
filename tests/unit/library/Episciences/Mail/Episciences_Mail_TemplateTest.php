@@ -383,4 +383,94 @@ final class Episciences_Mail_TemplateTest extends TestCase
 
         self::assertSame($t->getDefaultTranslationsFolder(), $folder);
     }
+
+    // -------------------------------------------------------------------------
+    // Default template bodies
+    // -------------------------------------------------------------------------
+
+    /**
+     * A tag missing its closing "%%" (for instance "%%PAPER_URL") is never replaced,
+     * and the mail is sent with the raw tag (a broken link).
+     */
+    public function testDefaultTemplateBodiesHaveNoUnclosedTag(): void
+    {
+        $folder = (new Episciences_Mail_Template())->getDefaultTranslationsFolder();
+        // Every key found on disk, including those not listed in TemplatesManager
+        $keys = array_unique(array_map(
+            static fn(string $path): string => basename($path, '.phtml'),
+            glob($folder . '*/emails/*.phtml') ?: []
+        ));
+
+        $unclosed = [];
+        $checkedBodies = 0;
+
+        foreach ($keys as $key) {
+            foreach ((new Episciences_Mail_Template(['key' => $key]))->loadBody() as $lang => $body) {
+                $checkedBodies++;
+                $invalid = self::findUnclosedTags((string)$body);
+
+                if ($invalid !== []) {
+                    $unclosed[] = sprintf('%s/%s: %s', $lang, $key, implode(', ', $invalid));
+                }
+            }
+        }
+
+        // No body loaded would make the test pass without checking anything
+        self::assertGreaterThan(0, $checkedBodies, sprintf('No default mail template loaded from %s', $folder));
+        self::assertSame([], $unclosed);
+    }
+
+    /**
+     * @return array<string, array{string, list<string>}>
+     */
+    public static function unclosedTagProvider(): array
+    {
+        return [
+            'no tag' => ['Dear reviewer, thank you.', []],
+            'closed tag' => ['Dear %%RECIPIENT_SCREEN_NAME%%,', []],
+            'adjacent closed tags' => ['#%%ARTICLE_ID%%%%ARTICLE_TITLE%%', []],
+            'closed tag followed by capitals' => ['%%ARTICLE_ID%%ABC', []],
+            'closed tag with a digit' => ['%%TAG1%%', []],
+            'closed tag in a link' => ['<a href="%%PAPER_URL%%">#%%ARTICLE_ID%%</a>', []],
+            'unclosed tag in a link' => ['<a href="%%PAPER_URL">#%%ARTICLE_ID%%</a>', ['%%PAPER_URL']],
+            'unclosed tag at the end' => ['See %%PAPER_URL', ['%%PAPER_URL']],
+            'unclosed tag followed by a tag' => ['%%PAPER_URL%%ARTICLE_ID%%', ['%%']],
+            'lowercase tag' => ['%%paper_url%%', ['%%', '%%']],
+            'empty tag' => ['%%%%', ['%%%%']],
+            'single percent' => ['100% free', []],
+        ];
+    }
+
+    /**
+     * @param list<string> $expected
+     * @dataProvider unclosedTagProvider
+     */
+    public function testFindUnclosedTags(string $body, array $expected): void
+    {
+        self::assertSame($expected, self::findUnclosedTags($body));
+    }
+
+    /**
+     * Returns the malformed tags of a mail body: a "%%NAME" without its closing "%%",
+     * a stray "%%", or an empty "%%%%".
+     *
+     * Tags are read from left to right, so the closing "%%" of a tag is never read again
+     * as the opening of the next one.
+     *
+     * @return list<string>
+     */
+    private static function findUnclosedTags(string $body): array
+    {
+        preg_match_all('/%%([A-Z0-9_]*)(%%)?/', $body, $matches, PREG_SET_ORDER);
+
+        $invalid = [];
+
+        foreach ($matches as $match) {
+            if ($match[1] === '' || !isset($match[2])) {
+                $invalid[] = $match[0];
+            }
+        }
+
+        return $invalid;
+    }
 }
