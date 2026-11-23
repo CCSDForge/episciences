@@ -81,8 +81,7 @@ class UserDefaultController extends Episciences_Controller_Action
             $identity = Episciences_Auth::getInstance()->getIdentity()->toArray();
         } else {
             $this->view->message = "Vous n'êtes pas connecté";
-            $this->view->description = "<a href='<?= $this->url(['controller' => 'user', 'action'=> 'login']) ?>'>Connectez-vous</a>, ou <a href='<?= $this->url(['controller' => 'user', 'action' => 'create']) ?>'>créez votre compte</a>.";
-            $this->view->descriptionIsHtml = true; // static markup, rendered unescaped by error.phtml
+            $this->view->showLoginLinks = true;
             $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }

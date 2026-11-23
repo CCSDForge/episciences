@@ -1,4 +1,5 @@
 const path = require('path');
+const { toAppPath } = require('./app-url');
 const { expect } = require('@playwright/test');
 
 /**
@@ -250,8 +251,7 @@ async function acceptReviewInvitation(mailpit, reviewerPage, docid, reviewerEmai
     const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
     expect(invitationUrl).toBeTruthy();
 
-    // The link targets the configured application URL: only its path is kept
-    await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+    await reviewerPage.goto(toAppPath(invitationUrl));
     await reviewerPage.locator('#submitaccept').click();
     await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
 }
@@ -313,8 +313,7 @@ async function completeReview({ adminPage, reviewerPage, mailpit }, docid, { vid
     const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
     expect(invitationUrl).toBeTruthy();
 
-    // The link targets the configured application URL: only its path is kept
-    await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+    await reviewerPage.goto(toAppPath(invitationUrl));
     await reviewerPage.locator('#submitaccept').click();
     await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
 

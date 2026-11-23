@@ -1,4 +1,5 @@
 const { test, expect, E2E_USERNAMES } = require('../../fixtures/e2e-fixtures');
+const { toAppPath } = require('../../helpers/app-url');
 const {
     REPOSITORY_TIMEOUT,
     submitArxivPaper,
@@ -70,7 +71,7 @@ test.describe('Reviewer management by the editorial team', () => {
             const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
             expect(invitationUrl).toBeTruthy();
 
-            await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+            await reviewerPage.goto(toAppPath(invitationUrl));
             await reviewerPage.locator('#submitaccept').click();
             await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
             await expect(reviewerPage.locator('form#rating-grid')).toBeVisible();
@@ -189,7 +190,7 @@ test.describe('Reviewer management by the editorial team', () => {
             const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
             expect(invitationUrl).toBeTruthy();
 
-            await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+            await reviewerPage.goto(toAppPath(invitationUrl));
             await reviewerPage.locator('#submitaccept').click();
             await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docidV2}`));
 

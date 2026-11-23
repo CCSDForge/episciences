@@ -12,6 +12,12 @@ const DEFAULT_PHP_EXEC = 'docker exec -u www-data -w /var/www/htdocs episciences
 
 const projectRoot = path.resolve(__dirname, '..', '..', '..');
 
+// Code of the E2E journal
+const RVCODE = process.env.E2E_RVCODE || 'dev';
+if (!/^[a-z0-9-]+$/.test(RVCODE)) {
+    throw new Error(`Invalid E2E_RVCODE: ${RVCODE}`);
+}
+
 /**
  * @param {string} scriptAndArgs script path relative to the project root, followed by its arguments
  * @returns {string} the script output
@@ -34,7 +40,7 @@ function runPhp(scriptAndArgs) {
 function seedAndReset() {
     // E2E_COI=1 runs the suite with the conflict of interest declaration enabled
     const coi = process.env.E2E_COI === '1' ? 'on' : 'off';
-    return runPhp(`scripts/console.php app:e2e-seed --reset --coi=${coi}`);
+    return runPhp(`scripts/console.php app:e2e-seed --rvcode=${RVCODE} --reset --coi=${coi}`);
 }
 
 /**
@@ -42,7 +48,7 @@ function seedAndReset() {
  * @returns {string}
  */
 function restoreSettings() {
-    return runPhp('scripts/console.php app:e2e-seed --restore-settings');
+    return runPhp(`scripts/console.php app:e2e-seed --rvcode=${RVCODE} --restore-settings`);
 }
 
 /**
@@ -64,8 +70,7 @@ function runReminders(date) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         throw new Error(`Invalid reminder date: ${date}`);
     }
-    // The journal of app:e2e-seed (its default --rvcode)
-    return runPhp(`scripts/reminders.php --rvcode=dev --date=${date}`);
+    return runPhp(`scripts/reminders.php --rvcode=${RVCODE} --date=${date}`);
 }
 
 module.exports = { runPhp, seedAndReset, restoreSettings, flushMailQueue, runReminders };

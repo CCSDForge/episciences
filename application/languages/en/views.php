@@ -1608,6 +1608,8 @@ return array(
     "Vous êtes connecté avec un compte différent de celui ayant été utilisé pour soumettre ce document. Veuillez vous déconnecter et vous reconnecter avec le bon compte pour continuer." => "You’re signed in with a different account than the one used to submit this document. Please sign out and log in with the correct account to continue.",
     "Souhaitez-vous remplacer la version précédente ?" => "Do you want to replace the previous version?",
     "ou" => 'or',
+    "Connectez-vous" => 'Log in',
+    "créez votre compte" => 'create your account',
     "Attention : " => "Warning: ",
     "Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue." => "To submit your new version, please use the link in the email you received from the journal.",
     "Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, ou le bouton ci-dessous." => "To submit your new version, please use the link in the email you received from the journal, or the button below.",
