@@ -97,9 +97,9 @@ Used in the footer of the website, the exports and the published metadata (OAI-P
 | Delay before an invitation expires | After it, the reviewer can no longer accept. | Default: 1 month. |
 | Default review delay | Time to submit the report, counted from the invitation. | Must be between the minimum and the maximum. |
 | Minimum / maximum review delay | Limits the editors can apply to each reviewer. | Defaults: 2 months and 6 months. |
-| Minimum reviews count | Number of completed reports for the article to be "reviewed"; below it, the editors get reminders to invite reviewers. | 0: every reviewer who accepted must submit their report. |
-| Minimum applied to the first N review rounds | Number of review rounds (each new version of an article, a temporary version included, opens one) the minimum above applies to. | Empty: the minimum applies to every version. |
-| Minimum reviews count in later rounds | Minimum of completed reports required from the round after these first N rounds. | Empty or 0: no report required. |
+| Minimum number of reviews | Completed reports required on a version before it can be accepted, published or sent back for revision; below it, the editors get reminders to invite reviewers. | 0: no blocking minimum; the article is "reviewed" once every reviewer who accepted has submitted their report. |
+| Number of first versions subject to this minimum | Each new version of an article, a temporary version included, counts as a version. | Empty: the minimum applies to every version. |
+| Minimum number of reviews on later versions | Minimum of the versions after these first versions. | Empty or 0: no blocking minimum (same rule as 0 above). |
 | Reviewers: send messages to the author | The reviewer can write to the author. | — |
 | Show the reports on the public page | The reports are visible on the page of the **published** articles, including those published before it was enabled. | Tell the reviewers. |
 | Reassign the same reviewers (major / minor revisions) | Box checked by default when the editor requests revisions. | The editor can change it for each request. |

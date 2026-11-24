@@ -18,13 +18,13 @@ only):
 
 | Setting | Role |
 |---|---|
-| **Minimum reviews count** | minimum of the first rounds |
-| **Minimum applied to the first N review rounds** | number of first rounds concerned; leave empty to apply the minimum to **every** version (usual behaviour) |
-| **Minimum reviews count in later rounds** | minimum from the next round on; leave empty (or 0) to require none |
+| **Minimum number of reviews** | minimum of the first versions |
+| **Number of first versions subject to this minimum** | leave empty to apply the minimum to **every** version (usual behaviour) |
+| **Minimum number of reviews on later versions** | minimum of the versions that follow; empty or 0: no blocking minimum |
 
 ### Examples
 
-| Need | Minimum | First N rounds | Later rounds |
+| Need | Minimum number | First versions | Later versions |
 |---|---|---|---|
 | Same minimum for every version (usual setting) | 2 | *(empty)* | *(empty)* |
 | 2 reviews for the first version, then 1 | 2 | 1 | 1 |
@@ -49,8 +49,9 @@ The minimum is also used for:
 
 ## Frequently Asked Questions
 
-**I typed 0 in "Minimum reviews count in later rounds" and the field is empty once saved: is that normal?**
-Yes: empty and 0 have the same effect (no review required).
+**I typed 0 in "Minimum number of reviews on later versions" and the field is empty once saved: is that normal?**
+Yes: empty and 0 have the same effect. No minimum holds the editors back, and the paper gets the "reviewed" status
+once every reviewer who accepted has submitted their report.
 
 **Does a temporary version accepted, then replaced by the final version, count as two rounds?**
 The temporary version is a round; the final version submitted afterwards is another one, but it does not go through

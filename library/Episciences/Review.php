@@ -1620,8 +1620,8 @@ class Episciences_Review
         );
 
         $form->addElement('text', self::SETTING_REQUIRED_REVIEWERS, [
-                'label' => "Minimum de relectures requis",
-                'description' => "Nombre de rapports terminés pour que l'article passe au statut « relu » ; en dessous, les rédacteurs sont relancés pour inviter des relecteurs. 0 : tous les relecteurs ayant accepté doivent rendre leur rapport.",
+                'label' => "Nombre minimum de relectures",
+                'description' => "Rapports terminés exigés sur une version avant de pouvoir l'accepter, la publier ou demander des modifications ; en dessous, les rédacteurs sont relancés pour inviter des relecteurs. 0 : aucun minimum bloquant ; l'article passe au statut « relu » quand tous les relecteurs ayant accepté ont rendu leur rapport.",
                 'value' => 0,
                 'class' => 'journal-settings-number',
                 'filters' => ['StringTrim'],
@@ -1631,8 +1631,8 @@ class Episciences_Review
         );
 
         $form->addElement('text', self::SETTING_REQUIRED_REVIEWERS_ROUNDS, [
-                'label' => "Minimum appliqué aux N premiers tours de relecture",
-                'description' => "Laisser vide pour appliquer le minimum à toutes les versions. Chaque nouvelle version d'un article (y compris une version temporaire) est un nouveau tour de relecture.",
+                'label' => "Nombre de premières versions soumises à ce minimum",
+                'description' => "Laisser vide pour appliquer ce minimum à toutes les versions. Chaque nouvelle version d'un article, y compris une version temporaire, compte comme une version.",
                 'class' => 'journal-settings-number',
                 'filters' => ['StringTrim'],
                 'validators' => [['Digits', true], ['GreaterThan', true, ['min' => 0]]],
@@ -1641,8 +1641,8 @@ class Episciences_Review
         );
 
         $form->addElement('text', self::SETTING_REQUIRED_REVIEWERS_LATER_ROUNDS, [
-                'label' => "Minimum de relectures aux tours suivants",
-                'description' => "Minimum de relectures requis à partir du tour suivant ces N premiers tours. Laisser vide (ou 0) pour n'en exiger aucune.",
+                'label' => "Nombre minimum de relectures sur les versions suivantes",
+                'description' => "S'applique aux versions qui suivent ces premières versions. Vide ou 0 : aucun minimum bloquant ; l'article passe au statut « relu » quand tous les relecteurs ayant accepté ont rendu leur rapport.",
                 'value' => 0,
                 'class' => 'journal-settings-number',
                 'filters' => ['StringTrim'],

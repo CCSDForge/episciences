@@ -97,9 +97,9 @@ Reprise dans le pied de page du site, les exports et les métadonnées diffusée
 | Délai avant expiration d'une invitation | Passé ce délai, le relecteur ne peut plus accepter. | Par défaut : 1 mois. |
 | Délai de relecture par défaut | Délai pour rendre le rapport, compté depuis l'invitation. | Doit être compris entre le minimum et le maximum. |
 | Délai de relecture minimum / maximum | Limites que les rédacteurs peuvent appliquer à chaque relecteur. | Par défaut : 2 mois et 6 mois. |
-| Minimum de relectures requis | Nombre de rapports terminés pour que l'article soit « relu » ; en dessous, les rédacteurs sont relancés pour inviter des relecteurs. | 0 : tous les relecteurs ayant accepté doivent rendre leur rapport. |
-| Minimum appliqué aux N premiers tours de relecture | Nombre de tours de relecture (chaque nouvelle version d'un article, y compris une version temporaire, en ouvre un) soumis au minimum ci-dessus. | Vide : le minimum s'applique à toutes les versions. |
-| Minimum de relectures aux tours suivants | Minimum de rapports terminés exigé à partir du tour suivant ces N premiers tours. | Vide ou 0 : aucun rapport exigé. |
+| Nombre minimum de relectures | Rapports terminés exigés sur une version avant de pouvoir l'accepter, la publier ou demander des modifications ; en dessous, les rédacteurs sont relancés pour inviter des relecteurs. | 0 : aucun minimum bloquant ; l'article est « relu » quand tous les relecteurs ayant accepté ont rendu leur rapport. |
+| Nombre de premières versions soumises à ce minimum | Chaque nouvelle version d'un article, y compris une version temporaire, compte comme une version. | Vide : le minimum s'applique à toutes les versions. |
+| Nombre minimum de relectures sur les versions suivantes | Minimum des versions qui suivent ces premières versions. | Vide ou 0 : aucun minimum bloquant (même règle que 0 ci-dessus). |
 | Relecteurs : envoyer des messages à l'auteur | Le relecteur peut écrire à l'auteur. | — |
 | Afficher les rapports sur la page publique | Les rapports sont visibles sur la page des articles **publiés**, y compris ceux publiés avant l'activation. | À annoncer aux relecteurs. |
 | Réassigner les mêmes relecteurs (modifications majeures / mineures) | Case cochée par défaut quand le rédacteur demande des modifications. | Le rédacteur peut la changer à chaque demande. |

@@ -19,13 +19,13 @@ et secrétaires de rédaction) :
 
 | Réglage | Rôle |
 |---|---|
-| **Minimum de relectures requis** | minimum des premiers tours |
-| **Minimum appliqué aux N premiers tours de relecture** | nombre de premiers tours concernés ; laissez vide pour appliquer le minimum à **toutes** les versions (comportement habituel) |
-| **Minimum de relectures aux tours suivants** | minimum à partir du tour suivant ; laissez vide (ou 0) pour n'en exiger aucune |
+| **Nombre minimum de relectures** | minimum des premières versions |
+| **Nombre de premières versions soumises à ce minimum** | laissez vide pour appliquer le minimum à **toutes** les versions (comportement habituel) |
+| **Nombre minimum de relectures sur les versions suivantes** | minimum des versions qui suivent ; vide ou 0 : aucun minimum bloquant |
 
 ### Exemples
 
-| Besoin | Minimum requis | N premiers tours | Tours suivants |
+| Besoin | Nombre minimum | Premières versions | Versions suivantes |
 |---|---|---|---|
 | Même minimum pour toutes les versions (réglage habituel) | 2 | *(vide)* | *(vide)* |
 | 2 relectures pour la première version, puis 1 | 2 | 1 | 1 |
@@ -50,9 +50,10 @@ Le minimum sert aussi :
 
 ## Questions fréquentes
 
-**J'ai saisi 0 dans « Minimum de relectures aux tours suivants » et le champ est vide à l'enregistrement : est-ce
-normal ?**
-Oui : vide et 0 ont le même effet (aucune relecture exigée).
+**J'ai saisi 0 dans « Nombre minimum de relectures sur les versions suivantes » et le champ est vide à
+l'enregistrement : est-ce normal ?**
+Oui : vide et 0 ont le même effet. Aucun minimum ne bloque les rédacteurs, et l'article passe au statut « évalué »
+quand tous les relecteurs ayant accepté ont rendu leur rapport.
 
 **Une version temporaire acceptée puis remplacée par la version définitive compte-t-elle deux tours ?**
 La version temporaire est un tour ; la version définitive déposée ensuite en est un autre, mais elle ne repasse pas
