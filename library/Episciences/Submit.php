@@ -2012,7 +2012,10 @@ class Episciences_Submit
         $journal = Episciences_ReviewsManager::findByRvid($paper->getRvid());
 
         if ($journal && !(new Episciences_Paper_DocumentBackup($oldDocId, (string)$journal->getCode()))->deleteDocumentBackupFile()) {
-            trigger_error(sprintf('The backup copy of the document of docid %d could not be deleted.', $oldDocId), E_USER_WARNING);
+            \Episciences\AppRegistry::getMonoLogger()?->warning(
+                'The backup copy of the document could not be deleted.',
+                ['docid' => $oldDocId]
+            );
         }
     }
 
