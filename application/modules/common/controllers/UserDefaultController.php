@@ -1501,7 +1501,7 @@ class UserDefaultController extends Zend_Controller_Action
         if ($request) {
 
             $params = $request->getPost();
-            $uid = $params['uid'];
+            $uid = (int) ($params['uid'] ?? 0);
 
             $user = new Episciences_User();
             $user->find($uid);
