@@ -77,8 +77,8 @@ async function submitRepositoryPaper(page, { repoId, docId, version = 1, section
     await page.locator('#disclaimers-disclaimer2').check();
     await page.locator('#submitPaper').click();
 
-    await expect(page).toHaveURL(/\/paper\/view\/id\/\d+/, { timeout: REPOSITORY_TIMEOUT });
-    return Number(page.url().match(/\/paper\/view\/id\/(\d+)/)[1]);
+    await expect(page).toHaveURL(/\/paper\/view(?:\/id\/|\?id=)\d+/, { timeout: REPOSITORY_TIMEOUT });
+    return Number(page.url().match(/\/paper\/view(?:\/id\/|\?id=)(\d+)/)[1]);
 }
 
 /**
