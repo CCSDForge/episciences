@@ -478,30 +478,6 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
         $this->_update_date = $date;
     }
 
-    /**
-     * Whether the logged-in user may download this report's attachments.
-     *
-     * Rating reports are confidential: only editorial staff, the paper's editor
-     * (or guest editor) / copy editor assigned to the paper, the reviewer who
-     * authored the report, or the author of the paper once the reports are
-     * visible to them may access the attachment.
-     *
-     * @param Episciences_Paper|null $paper the paper (version) the report belongs to
-     */
-    public function isAttachmentAccessibleToLoggedUser(?Episciences_Paper $paper): bool
-    {
-        if (!$paper || !Episciences_Auth::isLogged()) {
-            return false;
-        }
-
-        $uid = (int)Episciences_Auth::getUid();
-
-        return Episciences_Auth::isAllowedToUploadPaperReport()
-            || $paper->isAssignedEditorOrCopyEditor($uid)
-            || (int)$this->getUid() === $uid
-            || $paper->isReportsVisibleToAuthor();
-    }
-
     public function isCompleted(): bool
     {
         return ($this->getStatus() === self::STATUS_COMPLETED);

@@ -55,6 +55,7 @@ echo $this->doctype('HTML5');
     // Episciences Main CSS
     $this->jQuery()->addStylesheet("/css/main.css");
 
+    $this->getHelper('webpackAssets')->queueStylesheet('toast');
     $this->jQuery()->addStylesheet(VENDOR_BOOTSTRAP);
     $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME);
     $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_SOLID);
@@ -65,6 +66,7 @@ echo $this->doctype('HTML5');
     // JS
     $this->jQuery()->addJavascriptFile("/js/translation.php?lang=" . Zend_Registry::get('lang'));
     $this->jQuery()->addJavascriptFile(VENDOR_BOOTBOX);
+    $this->getHelper('webpackAssets')->queueScript('toast');
     $this->jQuery()->addJavascriptFile("/js/functions.js");
     $this->jQuery()->addJavascriptFile("/js/form.js");
     $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_URL_PARSER);
@@ -90,16 +92,8 @@ if (APPLICATION_MODULE !== 'portal') {
 } else {
     $displayLogin = false;
 }
-$this->navbar(true, [
-    'languages' => Zend_Registry::get('languages'),
-    'lang' => Zend_Registry::get('lang')],
-    $displayLogin,
-    ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml'
-    ]);
-?>
-
+$this->navbar(true, ['languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')], true, ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml', 'accountActions' => !\Episciences\Maintenance\ReadOnlyMode::isEnabled()]); ?>
 <div id="container" class="container<?php echo $this->containerClass; ?>">
-
 
     <div class="logo">
         <?php
@@ -109,11 +103,7 @@ $this->navbar(true, [
         } ?>
     </div>
 
-    <?php if (EPISCIENCES_RENDER_ALERT_BANNER['STATUS']): ?>
-
-        <?= $this->render('commons/alert-banner.phtml') ?>
-
-    <?php endif; ?>
+    <?= $this->render('commons/maintenance-banner.phtml') ?>
 
     <?php ?>
 
@@ -157,12 +147,9 @@ $this->navbar(true, [
                         <hr/>
                     <?php } ?>
 
-                    <?php
-                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_ERROR, false);
-                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_WARNING, false);
-                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_SUCCESS, false);
-                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_INFO, true);
-                    ?>
+                    <?php // Toasts are displayed as an overlay but stay here in the DOM (keyboard and reading order) ?>
+                    <div id="toast-container"></div>
+                    <?php echo $this->DisplayFlashMessages(); ?>
 
                     <?php echo $this->layout()->content; ?>
                 </div>

@@ -4,8 +4,10 @@ declare(strict_types=1);
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,9 +19,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Replaces: scripts/mergePdfVol.php (JournalScript)
  */
+#[AsCommand(name: 'volume:merge-pdf', description: 'Merge PDFs for all volumes of one or all journals (requires pdfunite).')]
 class MergePdfVolCommand extends Command
 {
-    protected static $defaultName = 'volume:merge-pdf';
     public const APICALLVOL = 'volumes?page=1&itemsPerPage=1000&rvcode=';
 
     private Logger $logger;
@@ -27,7 +29,6 @@ class MergePdfVolCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Merge PDFs for all volumes of one or all journals (requires pdfunite).')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Journal RV code, or "allJournals"')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulate without downloading or merging PDFs')
             ->addOption('ignore-cache', null, InputOption::VALUE_NONE, 'Bypass cache and force re-merge')
@@ -52,10 +53,10 @@ class MergePdfVolCommand extends Command
 
         $this->logger = new Logger('mergePdfVol');
         $this->logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . 'mergePdfVol_' . date('Y-m-d') . '.log', Logger::INFO
+            EPISCIENCES_LOG_PATH . 'mergePdfVol_' . date('Y-m-d') . '.log', Level::Info
         ));
-        if (!$io->isQuiet()) {
-            $this->logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        if (!$io->isQuiet() && !$io->isSilent()) {
+            $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         if ($dryRun) {
@@ -84,7 +85,7 @@ class MergePdfVolCommand extends Command
             ]);
 
             if ($removeCache) {
-                $cache = new FilesystemAdapter("volume-pdf-{$rvCode}", 0, CACHE_PATH_METADATA);
+                $cache = new FilesystemAdapter('volume-pdf', 0, CACHE_PATH_METADATA . $rvCode);
                 $cache->clear();
                 $this->logger->info('Cache cleared', ['rvCode' => $rvCode]);
             }
@@ -404,7 +405,7 @@ class MergePdfVolCommand extends Command
      */
     public static function getCacheDocIdsList(string $vid, string $rvCode): string
     {
-        $cache  = new FilesystemAdapter("volume-pdf-{$rvCode}", 0, CACHE_PATH_METADATA);
+        $cache  = new FilesystemAdapter('volume-pdf', 0, CACHE_PATH_METADATA . $rvCode);
         $item   = $cache->getItem($vid);
         if (!$item->isHit()) {
             return json_encode([''], JSON_THROW_ON_ERROR);
@@ -419,7 +420,7 @@ class MergePdfVolCommand extends Command
      */
     public static function setCacheDocIdsList(string $vid, array $jsonVidList, string $rvCode): void
     {
-        $cache = new FilesystemAdapter("volume-pdf-{$rvCode}", 0, CACHE_PATH_METADATA);
+        $cache = new FilesystemAdapter('volume-pdf', 0, CACHE_PATH_METADATA . $rvCode);
         $item  = $cache->getItem($vid);
         $item->set(json_encode($jsonVidList, JSON_THROW_ON_ERROR));
         $cache->save($item);

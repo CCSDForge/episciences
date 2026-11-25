@@ -1,5 +1,6 @@
 <?php
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -10,14 +11,12 @@ use Faker\Factory;
 /**
  * Modern Symfony Command to generate test users for Episciences
  */
+#[AsCommand(name: 'app:generate-users', description: 'Generates random test users using Faker')]
 class GenerateUsersCommand extends Command
 {
-    protected static $defaultName = 'app:generate-users';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Generates random test users using Faker')
             ->addOption('count', 'c', InputOption::VALUE_OPTIONAL, 'Number of users to generate', 5)
             ->addOption('role', 'r', InputOption::VALUE_OPTIONAL, 'Role to assign (member, editor, admin, chiefeditor)', 'member')
             ->addOption('password', 'p', InputOption::VALUE_OPTIONAL, 'Fixed password for all generated users', 'password123')

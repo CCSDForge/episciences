@@ -2,6 +2,8 @@
 
 namespace unit\library\Episciences\Reviewer;
 
+use Episciences\User\EmailAlreadyInUseException;
+use Episciences\User\EmailPolicy;
 use Episciences_Reviewer_AccountResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -129,5 +131,142 @@ class Episciences_Reviewer_AccountResolverTest extends TestCase
         $second = Episciences_Reviewer_AccountResolver::generateStrongPassword(32);
 
         self::assertNotSame($first, $second);
+    }
+
+    // -------------------------------------------------------------------------
+    // createReviewerAccount() email-conflict guard — no DB required: the
+    // conflict finder is injected, so the method returns before touching the
+    // database.
+    // -------------------------------------------------------------------------
+
+    public function testCreateReviewerAccountThrowsWhenConflictFinderSignalsUid(): void
+    {
+        $this->expectException(EmailAlreadyInUseException::class);
+
+        Episciences_Reviewer_AccountResolver::createReviewerAccount(
+            'Fabio',
+            'Zanasi',
+            'fabio@example.org',
+            'en',
+            'fzanasi',
+            'irrelevant-password',
+            static fn(string $email): array => [42]
+        );
+    }
+
+    public function testCreateReviewerAccountExceptionCarriesConflictingUid(): void
+    {
+        try {
+            Episciences_Reviewer_AccountResolver::createReviewerAccount(
+                'Fabio',
+                'Zanasi',
+                'fabio@example.org',
+                'en',
+                'fzanasi',
+                'irrelevant-password',
+                static fn(string $email): array => [42]
+            );
+            self::fail('Expected EmailAlreadyInUseException');
+        } catch (EmailAlreadyInUseException $e) {
+            self::assertSame(42, $e->getUid());
+        }
+    }
+
+    public function testCreateReviewerAccountPassesNormalizedEmailToConflictFinder(): void
+    {
+        $rawEmail = ' Fabio<>@Example.org ';
+        $capturedEmail = null;
+
+        try {
+            Episciences_Reviewer_AccountResolver::createReviewerAccount(
+                'Fabio',
+                'Zanasi',
+                $rawEmail,
+                'en',
+                'fzanasi',
+                'irrelevant-password',
+                function (string $email) use (&$capturedEmail): array {
+                    $capturedEmail = $email;
+                    return [42];
+                }
+            );
+            self::fail('Expected EmailAlreadyInUseException');
+        } catch (EmailAlreadyInUseException $e) {
+            // expected
+        }
+
+        self::assertSame(EmailPolicy::normalize($rawEmail), $capturedEmail);
+    }
+
+    /**
+     * The URL builder returns the whole path, the journal prefix included on prefixed deployments:
+     * the application URL contributes its origin only, so the prefix is never doubled.
+     *
+     * @return array<string, array{string, string, string}>
+     */
+    public static function accountSetupUrlProvider(): array
+    {
+        return [
+            'journal sub-domain' => [
+                'https://epijinfo.episciences.org',
+                '/user/resetpassword/lang/en/token/abc',
+                'https://epijinfo.episciences.org/user/resetpassword/lang/en/token/abc',
+            ],
+            'journal behind a URL prefix' => [
+                'https://manager-preprod.episciences.org/epijinfo',
+                '/epijinfo/user/resetpassword?lang=en&token=abc',
+                'https://manager-preprod.episciences.org/epijinfo/user/resetpassword?lang=en&token=abc',
+            ],
+            'port kept' => [
+                'http://localhost:8080/epijinfo',
+                '/epijinfo/user/resetpassword?lang=en&token=abc',
+                'http://localhost:8080/epijinfo/user/resetpassword?lang=en&token=abc',
+            ],
+            'trailing slash dropped with the path' => [
+                'http://localhost:8080/epijinfo/',
+                '/epijinfo/user/resetpassword?lang=en&token=abc',
+                'http://localhost:8080/epijinfo/user/resetpassword?lang=en&token=abc',
+            ],
+            'no journal context' => [
+                '',
+                '/user/resetpassword/lang/en/token/abc',
+                '/user/resetpassword/lang/en/token/abc',
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider accountSetupUrlProvider
+     */
+    public function testBuildAccountSetupUrlJoinsOriginAndPath(string $applicationUrl, string $path, string $expected): void
+    {
+        $url = Episciences_Reviewer_AccountResolver::buildAccountSetupUrl(
+            $applicationUrl,
+            static fn(array $params): string => $path,
+            'en',
+            'abc'
+        );
+
+        self::assertSame($expected, $url);
+    }
+
+    public function testBuildAccountSetupUrlAsksForTheResetPasswordRoute(): void
+    {
+        $captured = null;
+
+        Episciences_Reviewer_AccountResolver::buildAccountSetupUrl(
+            'https://epijinfo.episciences.org',
+            static function (array $params) use (&$captured): string {
+                $captured = $params;
+                return '/';
+            },
+            'fr',
+            'token-value'
+        );
+
+        self::assertSame(
+            ['controller' => 'user', 'action' => 'resetpassword', 'lang' => 'fr', 'token' => 'token-value'],
+            $captured
+        );
     }
 }

@@ -1,32 +1,35 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
 /**
  * Symfony Console command: enrich funding data from OpenAIRE Research Graph + HAL.
  *
  * Replaces: scripts/getFundingData.php (JournalScript)
  */
+#[AsCommand(name: 'enrichment:funding', description: 'Enrich funding data from OpenAIRE Research Graph and HAL')]
 class GetFundingDataCommand extends Command
 {
-    protected static $defaultName = 'enrichment:funding';
-
     protected function configure(): void
     {
         $this
-            ->setDescription('Enrich funding data from OpenAIRE Research Graph and HAL')
             ->addOption('doi', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by DOI')
             ->addOption('paperid', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by paper ID')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
-            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Bypass cache and fetch fresh data')
+            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Bypass cache and fetch fresh data (OpenAIRE responses and HAL TEI)')
+            ->addOption('refresh-all', null, InputOption::VALUE_NONE, 'Refresh PAPERS.DOCUMENT and the cached exports of every processed paper, even when its fundings did not change')
             ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code); ignored when --doi or --paperid is used');
     }
 
@@ -35,6 +38,7 @@ class GetFundingDataCommand extends Command
         $io      = new SymfonyStyle($input, $output);
         $dryRun  = (bool) $input->getOption('dry-run');
         $noCache = (bool) $input->getOption('no-cache');
+        $refreshAll = (bool) $input->getOption('refresh-all');
         $rvcode  = $input->getOption('rvcode');
 
         $io->title('Funding data enrichment');
@@ -42,9 +46,11 @@ class GetFundingDataCommand extends Command
         $this->bootstrap();
 
         $logger = new Logger('fundingEnrichment');
-        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'fundingEnrichment_' . date('Y-m-d') . '.log', Logger::INFO));
-        if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'fundingEnrichment_' . date('Y-m-d') . '.log', Level::Info));
+        $stdoutHandler = null;
+        if (!$io->isQuiet() && !$io->isSilent()) {
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
+            $logger->pushHandler($stdoutHandler);
         }
 
         if ($dryRun) {
@@ -67,20 +73,20 @@ class GetFundingDataCommand extends Command
         if ($input->getOption('doi')) {
             $doi = (string) $input->getOption('doi');
             $select = $db->select()
-                ->from(T_PAPERS, ['PAPERID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
+                ->from(T_PAPERS, ['PAPERID', 'DOCID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
                 ->where('DOI = ?', trim($doi))
                 ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
             $rows = $db->fetchAll($select);
         } elseif ($input->getOption('paperid')) {
             $paperId = (int) $input->getOption('paperid');
             $select = $db->select()
-                ->from(T_PAPERS, ['PAPERID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
+                ->from(T_PAPERS, ['PAPERID', 'DOCID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
                 ->where('PAPERID = ?', $paperId)
                 ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
             $rows = $db->fetchAll($select);
         } else {
             $select = $db->select()
-                ->from(T_PAPERS, ['PAPERID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
+                ->from(T_PAPERS, ['PAPERID', 'DOCID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
                 ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
                 ->order('REPOID DESC');
             if ($rvid !== null) {
@@ -90,12 +96,20 @@ class GetFundingDataCommand extends Command
         }
 
         $logger->info('Starting funding enrichment for ' . count($rows) . ' papers');
-        $io->progressStart(count($rows));
+        $progressBar = $io->createProgressBar(count($rows));
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         $oaClient = \Episciences\Api\OpenAireApiClient::create();
+        $logger->info($oaClient->isAuthenticated()
+            ? 'OpenAIRE: authenticated mode (client credentials configured)'
+            : 'OpenAIRE: anonymous fallback mode (no client credentials configured) — throttling at 60s/request'
+        );
 
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
+            $docId   = (int) $value['DOCID'];
+            $fundingRowsChanged = 0;
 
             // Process OpenAIRE funding for papers with DOI (all rows are already STATUS_PUBLISHED)
             if (!empty($value['DOI'])) {
@@ -121,18 +135,16 @@ class GetFundingDataCommand extends Command
                     try {
                         $fileFound = json_decode($fundingItem->get(), true, 512, JSON_THROW_ON_ERROR);
                         if (!empty($fileFound[0])) {
-                            $fundingArray       = [];
                             $globalfundingArray = [];
                             $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB(
                                 $fileFound,
-                                $fundingArray,
                                 $globalfundingArray
                             );
                             $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId(
                                 $paperId,
                                 (int) Episciences_Repositories::GRAPH_OPENAIRE_ID
                             );
-                            Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA(
+                            $fundingRowsChanged += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA(
                                 $globalfundingArray,
                                 $rowInDBGraph,
                                 $paperId
@@ -152,27 +164,13 @@ class GetFundingDataCommand extends Command
                 $version        = (int) $value['VERSION']; // cast: function expects int, DB returns string
 
                 if (!$dryRun) {
+                    // replaced only once HAL returned it: the author and licence enrichments share it
+                    if ($noCache && !Episciences_Hal_TeiCacheManager::refresh($trimIdentifier, $version)) {
+                        $logger->warning("HAL TEI of {$trimIdentifier} (version {$version}) could not be read again: cached TEI used, if any");
+                    }
+
                     try {
-                        $arrayIdEuAnr    = Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($trimIdentifier, $version);
-                        $decodeHalResp   = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
-                        $globalArrayJson = [];
-
-                        if (!empty($decodeHalResp['response']['docs'])) {
-                            $globalArrayJson = Episciences_Paper_ProjectsManager::FormatFundingANREuToArray(
-                                $decodeHalResp['response']['docs'],
-                                $trimIdentifier,
-                                $globalArrayJson
-                            );
-                        }
-
-                        if (!empty($globalArrayJson)) {
-                            $mergeArrayANREU = [];
-                            foreach ($globalArrayJson as $globalPreJson) {
-                                $mergeArrayANREU[] = $globalPreJson[0];
-                            }
-                            $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, (int) Episciences_Repositories::HAL_REPO_ID);
-                            Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
-                        }
+                        $fundingRowsChanged += Episciences_Paper_ProjectsManager::enrichHalFundingFromTei($paperId, $trimIdentifier, $version);
                     } catch (JsonException $e) {
                         $logger->error("JSON decode error for paper {$paperId} (HAL funding): " . $e->getMessage());
                     } catch (\Throwable $e) {
@@ -181,14 +179,46 @@ class GetFundingDataCommand extends Command
                 }
             }
 
-            $io->progressAdvance();
+            if (!$dryRun && ($fundingRowsChanged > 0 || $refreshAll)) {
+                $this->refreshFundingConsumers($paperId, $docId, $logger);
+            }
+
+            if (!$dryRun) {
+                try {
+                    SolrIndexing::enqueueIndex($docId);
+                } catch (Exception $e) {
+                    $logger->error("Solr enqueue error for paper {$docId}: " . $e->getMessage());
+                }
+            }
+
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('Funding data enrichment completed.');
         $logger->info('Funding enrichment completed');
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Fundings are read by PAPERS.DOCUMENT (stored) and by the Crossref / OpenAIRE exports (cached):
+     * refresh the first and drop the cached exports, so the new fundings show up everywhere.
+     */
+    private function refreshFundingConsumers(int $paperId, int $docId, Logger $logger): void
+    {
+        try {
+            if (!Episciences_PapersManager::updateJsonDocumentData($docId)) {
+                $logger->error("DOCUMENT update failed for paper {$paperId} (docid {$docId}) after funding change");
+            }
+        } catch (\Throwable $e) {
+            $logger->error("DOCUMENT update failed for paper {$paperId} (docid {$docId}): " . get_class($e) . ': ' . $e->getMessage());
+        }
+
+        // already done when the funding rows were written, needed for --refresh-all
+        Episciences_Paper_Projects_Repository::invalidateFundingExportCaches($paperId);
     }
 
     private function bootstrap(): void
@@ -222,5 +252,9 @@ class GetFundingDataCommand extends Command
 
         Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
         Zend_Registry::set('Zend_Locale', new Zend_Locale('en'));
+
+        // Paper::toJson() (DOCUMENT refresh) needs a translator for the status labels;
+        // Episciences_Translation_Plugin::preDispatch() never runs in this command.
+        Zend_Registry::set('Zend_Translate', \Episciences\Translation\TranslatorFactory::create(PATH_TRANSLATION, null, 'auto'));
     }
 }

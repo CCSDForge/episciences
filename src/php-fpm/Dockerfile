@@ -41,9 +41,8 @@ RUN pecl install xdebug && \
 RUN docker-php-ext-install curl gd dom fileinfo iconv intl pdo pdo_mysql posix simplexml xml xsl zip
 RUN docker-php-ext-enable curl gd dom fileinfo iconv intl pdo pdo_mysql posix simplexml xml xsl zip
 
-# Install Node.js and Yarn
-# Install Node.js (version 18.x) and Yarn
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+# Install Node.js (the major version of .nvmrc) and Yarn
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y nodejs \
     && apt-get clean \
     && npm install -g yarn
@@ -63,6 +62,16 @@ COPY ./src/php-fpm/upload.ini /usr/local/etc/php/conf.d/
 # Install mail queue crontab
 COPY ./src/php-fpm/crontab /etc/cron.d/episciences-mails
 RUN chmod 0644 /etc/cron.d/episciences-mails
+
+# Ship the episciences:worker systemd template unit inside the image so
+# every build/deploy carries the current version of it — this container
+# doesn't run systemd itself, this is just so ops can pull the up-to-date
+# unit file straight off a running/built image (e.g. `docker cp`) instead of
+# hunting for it separately. See docs/console-commands.md#messenger-queues
+# for install steps on the actual host (one instance per transport, e.g.
+# `systemctl enable --now episciences-worker@solr_index episciences-worker@next_revalidation`).
+COPY ./src/php-fpm/episciences-worker@.service /etc/systemd/system/episciences-worker@.service
+RUN chmod 0644 /etc/systemd/system/episciences-worker@.service
 
 # Copy entrypoint script and set permissions
 COPY ./src/php-fpm/entrypoint.sh /usr/local/bin/entrypoint.sh

@@ -147,6 +147,97 @@ class GetAvatarTest extends TestCase
     }
 
     /**
+     * A well formed hex background color is written in the SVG
+     */
+    public function testAsSvgAcceptsHexBackgroundColor(): void
+    {
+        $this->assertStringContainsString('#FFC107', Episciences_View_Helper_GetAvatar::asSvg('John Doe', 'FFC107'));
+        $this->assertStringContainsString('#abc', Episciences_View_Helper_GetAvatar::asSvg('John Doe', 'abc'));
+    }
+
+    /**
+     * A background color that is not a hex code never reaches the SVG attributes
+     */
+    public function testAsSvgIgnoresMalformedBackgroundColor(): void
+    {
+        $result = Episciences_View_Helper_GetAvatar::asSvg('John Doe', 'red" onload="alert(1)');
+
+        $this->assertStringNotContainsString('onload', $result);
+        $this->assertStringNotContainsString('alert', $result);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function rejectedColorProvider(): array
+    {
+        return [
+            'trailing newline' => ["abc\n"],
+            'four digits' => ['abcd'],
+            'five digits' => ['abcde'],
+            'seven digits' => ['abcdef1'],
+            'not hexadecimal' => ['ggg'],
+            'attribute injection' => ['abc" onload="alert(1)'],
+        ];
+    }
+
+    /**
+     * Only 3 or 6 hex digits are written in the SVG: anything else gives the default palette
+     *
+     * @dataProvider rejectedColorProvider
+     */
+    public function testAsSvgOnlyWritesWellFormedColors(string $color): void
+    {
+        $result = Episciences_View_Helper_GetAvatar::asSvg('John Doe', $color);
+
+        $this->assertStringNotContainsString('#' . $color, $result);
+        $this->assertStringNotContainsString("\n\"", $result, 'no line break left inside an attribute');
+        $this->assertStringNotContainsString('onload', $result);
+    }
+
+    /**
+     * The text of the avatar cannot inject markup into the SVG
+     */
+    public function testAsSvgStripsMarkupCharactersFromTheName(): void
+    {
+        $result = Episciences_View_Helper_GetAvatar::asSvg('<script>alert(1)</script> <x');
+
+        $this->assertStringNotContainsString('<script', $result);
+        $this->assertStringNotContainsString('<x', $result);
+        $this->assertNotFalse(simplexml_load_string($result), 'The SVG stays well formed');
+    }
+
+    /**
+     * A leading # on the background color is tolerated
+     */
+    public function testAsSvgAcceptsHexBackgroundColorWithHash(): void
+    {
+        $this->assertStringContainsString('#FFC107', Episciences_View_Helper_GetAvatar::asSvg('John Doe', '#FFC107'));
+    }
+
+    /**
+     * A name made only of markup characters still produces a well formed SVG
+     */
+    public function testAsSvgFallsBackWhenTheNameIsOnlyMarkupCharacters(): void
+    {
+        $result = Episciences_View_Helper_GetAvatar::asSvg('<>&');
+
+        $this->assertNotFalse(simplexml_load_string($result), 'The SVG stays well formed');
+        $this->assertStringContainsString('?', $result);
+    }
+
+    /**
+     * Quotes are kept: they cannot break out of a text node
+     */
+    public function testAsSvgKeepsApostropheInTheName(): void
+    {
+        $result = Episciences_View_Helper_GetAvatar::asSvg("D'Artagnan");
+
+        $this->assertNotFalse(simplexml_load_string($result), 'The SVG stays well formed');
+        $this->assertStringContainsString('D', $result);
+    }
+
+    /**
      * Test that asPaperStatusSvg() returns '404.svg' for an unknown status
      */
     public function testAsPaperStatusSvgInvalidStatusReturns404(): void
@@ -206,69 +297,6 @@ class GetAvatarTest extends TestCase
 
         // Cleanup
         unlink($writtenFile);
-    }
-
-    /**
-     * @dataProvider validHexColorProvider
-     */
-    public function testSanitizeHexColorAcceptsHexColors(string $input, string $expected): void
-    {
-        $this->assertSame($expected, Episciences_View_Helper_GetAvatar::sanitizeHexColor($input));
-    }
-
-    public static function validHexColorProvider(): array
-    {
-        return [
-            '3 digits' => ['fff', 'fff'],
-            '6 digits' => ['FFC107', 'FFC107'],
-            'leading hash' => ['#5627a8', '5627a8'],
-        ];
-    }
-
-    /**
-     * @dataProvider invalidHexColorProvider
-     */
-    public function testSanitizeHexColorRejectsInvalidValues(?string $input): void
-    {
-        $this->assertNull(Episciences_View_Helper_GetAvatar::sanitizeHexColor($input));
-    }
-
-    public static function invalidHexColorProvider(): array
-    {
-        return [
-            'null' => [null],
-            'empty' => [''],
-            'markup injection' => ['fff"/><script>alert(1)</script><rect fill="red'],
-            'trailing newline' => ["fff\n"],
-            'non hex' => ['ggg'],
-            '4 digits' => ['ffff'],
-            '8 digits' => ['ffffffff'],
-            'color name' => ['red'],
-        ];
-    }
-
-    public function testAsSvgIgnoresInjectedBackgroundColor(): void
-    {
-        $svg = Episciences_View_Helper_GetAvatar::asSvg('AB', 'fff"/><script>alert(1)</script><rect fill="red');
-
-        $this->assertStringNotContainsString('<script', $svg);
-        $this->assertStringNotContainsString('<rect', $svg);
-        $this->assertNotFalse(simplexml_load_string($svg), 'Generated SVG must be well-formed XML');
-    }
-
-    public function testAsSvgUsesValidBackgroundColor(): void
-    {
-        $svg = Episciences_View_Helper_GetAvatar::asSvg('AB', 'FFC107');
-
-        $this->assertStringContainsString('fill="#FFC107"', $svg);
-    }
-
-    public function testAsSvgStripsMarkupFromInitials(): void
-    {
-        $svg = Episciences_View_Helper_GetAvatar::asSvg('<a &b');
-
-        $this->assertStringNotContainsString('<a', $svg);
-        $this->assertNotFalse(simplexml_load_string($svg), 'Generated SVG must be well-formed XML');
     }
 
     public function testAsSvgStripsControlCharactersFromInitials(): void

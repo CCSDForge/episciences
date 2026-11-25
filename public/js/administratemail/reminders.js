@@ -8,16 +8,27 @@ const TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE = 6;
 const TYPE_ARTICLES_BLOCKED_IN_SUBMITTED_STATE = 7;
 const TYPE_ARTICLES_BLOCKED_IN_REVIEWED_STATE = 8;
 
+/**
+ * Per-session request token (CSRF) exposed by the layout, required to save or delete a reminder.
+ * @returns {string}
+ */
+function getCsrfToken() {
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    return csrfMeta ? csrfMeta.content : '';
+}
+
 function deleteReminder(btn) {
     bootbox.setDefaults({ locale: locale });
     bootbox.confirm(translate('Êtes-vous sûr ?'), function (result) {
         if (result) {
             let container = $(btn).parent('.reminder');
+            const previousContent = $(container).html();
             $(container).html(getLoader());
 
             $.ajax({
                 url: $(btn).attr('href'),
                 type: 'POST',
+                headers: { 'X-CSRF-Token': getCsrfToken() },
                 success: function (response) {
                     // Suppression du séparateur suivant si le reminder était le premier de la liste
                     if (!$(container).prevAll('.reminder').length) {
@@ -37,10 +48,11 @@ function deleteReminder(btn) {
                     // Suppression du reminder
                     $(container).remove();
                 },
-                error: function (response) {
+                error: function (jqXHR) {
+                    // Restore the reminder replaced by the loader
+                    $(container).html(previousContent);
                     bootbox.alert(
-                        translate('La suppression a échoué : ') +
-                            translate(response)
+                        translate('La suppression a échoué : ') + jqXHR.status
                     );
                 },
             });
@@ -54,7 +66,13 @@ function submit() {
         $.ajax({
             url: $('#reminder_form').attr('action'),
             type: 'POST',
+            headers: { 'X-CSRF-Token': getCsrfToken() },
             data: $('#reminder_form').serialize(),
+            error: function () {
+                bootbox.alert(
+                    translate('Une erreur est survenue, veuillez réessayer.')
+                );
+            },
             success: function (response) {
                 $('#modal-box').modal('hide');
                 let container = $('#reminders');

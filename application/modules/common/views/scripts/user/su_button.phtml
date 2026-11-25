@@ -1,0 +1,19 @@
+<?php
+/**
+ * Switch user button: switching identity changes the session, so it is a POST carrying the
+ * session request token, never a link.
+ *
+ * @var Zend_View $this
+ * @var int $this->uid target account
+ * @var string|null $this->buttonClass CSS classes of the button
+ */
+$title = $this->translate('Se connecter avec ce compte.');
+?>
+<form method="post" action="<?= $this->url(['controller' => 'user', 'action' => 'su'], 'default', true) ?>" style="display: inline;">
+    <input type="hidden" name="uid" value="<?= (int)$this->uid ?>">
+    <input type="hidden" name="csrf_token" value="<?= $this->escape(Episciences_Csrf_Helper::getSessionToken()) ?>">
+    <button type="submit" class="<?= $this->escape($this->buttonClass ?? 'btn btn-default') ?>"
+            title="<?= $this->escape($title) ?>" aria-label="<?= $this->escape($title) ?>" data-toggle="tooltip">
+        <span class="fas fa-user-secret" style="margin: 0.2rem" aria-hidden="true"></span>
+    </button>
+</form>

@@ -9,7 +9,9 @@ if (!$paper->isRevisionRequested()){
 ?>
 <div>
     <?php
+    // Offered to the users allowed to answer (see PaperController::isAllowedToAnswerRevisionRequest())
     if ($controller === 'paper' &&
+            !empty($this->isAllowedToAnswerRevisionRequest) &&
             !empty($this->current_demand) &&
             !in_array($paper->getStatus(), Episciences_Paper::$_noEditableStatus, true))  :
         ?>
@@ -26,11 +28,11 @@ if (!$paper->isRevisionRequested()){
                     $newVersionHref = $this->url(['controller' => $controller, 'action' => 'newversion', 'id' => $this->current_demand['PCID']]);
 
                     if ($this->zIdentifier) {  // from z-submission: new version submission
-                        $newVersionHref .= '&z-identifier=' . $this->zIdentifier;
+                        $newVersionHref .= '&z-identifier=' . urlencode((string)$this->zIdentifier);
                     }
 
                     ?>
-                    <a id="new-version" href="<?= $newVersionHref ?>"
+                    <a id="new-version" href="<?= $this->escape($newVersionHref) ?>"
                        title="<?= $this->translate('Proposer une nouvelle version') ?>"
                        class="modal-opener"
                        data-target="#"><?= $this->translate('Proposer une nouvelle version') ?>
@@ -60,7 +62,8 @@ if (!$paper->isRevisionRequested()){
                     </li>
 
 
-                    <?php if ($this->review->getSetting(Episciences_Review::SETTING_CAN_ANSWER_WITH_TMP_VERSION)) : ?>
+                    <?php // Offered to the users allowed to record it (see PaperController::isAllowedToWriteTemporaryVersion()) ?>
+                    <?php if ($this->isAllowedToWriteTemporaryVersion && $this->review->getSetting(Episciences_Review::SETTING_CAN_ANSWER_WITH_TMP_VERSION)) : ?>
                         <li>
                             <a href="<?= $this->url(['controller' => $controller, 'action' => 'tmpversion', 'id' => $this->current_demand['PCID']]) ?>"
                                title="<?php echo $this->translate('Envoyer une version temporaire'); ?>"

@@ -1,5 +1,8 @@
 <?php
 
+use Episciences\Form\Validate\DeadlineUnit;
+use Episciences\Reviewer\InvitationToken;
+
 class Episciences_User_Invitation
 {
     // CONSTANTES *****************************************************************
@@ -34,6 +37,11 @@ class Episciences_User_Invitation
      */
     protected $_status;
 
+    /**
+     * Per-invitation random value used to derive the link token (null for a legacy invitation or a status row)
+     * @see InvitationToken
+     */
+    protected ?string $_token = null;
 
     /**
      * Date de l'envoi
@@ -100,15 +108,33 @@ class Episciences_User_Invitation
 
         $rvId = !defined('RVID') ? Episciences_Review::$_currentReviewId : RVID;
 
-        // Délai avant expiration de l'invitation (en jours)
+        // Invitation expiration delay (e.g. "1 month")
         $review = Episciences_ReviewsManager::find($rvId);
         $review->loadSettings();
-        $expiration_delay = ($review->getSetting('invitation_deadline')) ?: Episciences_Review::DEFAULT_INVITATION_DEADLINE;
+        // The stored setting is never trusted: only an integer and an allow-listed unit reach the SQL expression
+        $storedDelay = $review->getSetting('invitation_deadline');
+        $delay = DeadlineUnit::parseStoredInterval($storedDelay);
 
-        // Préparation des valeurs à insérer
+        if ($delay === null) {
+            if (!empty($storedDelay) || (int)$storedDelay === 0) {
+                trigger_error(
+                    sprintf('Invalid invitation_deadline setting "%s" for review #%s: falling back to "%s"', $storedDelay, $rvId, Episciences_Review::DEFAULT_INVITATION_DEADLINE),
+                    E_USER_WARNING
+                );
+            }
+            $delay = DeadlineUnit::parseStoredInterval(Episciences_Review::DEFAULT_INVITATION_DEADLINE);
+        }
+
+        if (!$delay) {
+            return false;
+        }
+
+        [$delayValue, $delayUnit] = $delay;
+
+        // Values to insert
         $values = [
             'SENDING_DATE' => new Zend_Db_Expr('NOW()'),
-            'EXPIRATION_DATE' => new Zend_Db_Expr('DATE_ADD(NOW(), INTERVAL ' . $expiration_delay . ')')
+            'EXPIRATION_DATE' => new Zend_Db_Expr(sprintf('DATE_ADD(NOW(), INTERVAL %d %s)', $delayValue, strtoupper($delayUnit)))
         ];
         if ($this->getAid()) {
             $values['AID'] = $this->getAid();
@@ -120,10 +146,27 @@ class Episciences_User_Invitation
             $values['SENDER_UID'] = $this->getSender_uid();
         }
 
+        // Only a pending row is reached through an invitation link: status rows (accepted, declined, cancelled) get no link token
+        $token = null;
+        if ($this->isPendingRow()) {
+            if ($this->getInvitationToken()->isConfigured()) {
+                $token = InvitationToken::generateRowSecret();
+                $values['TOKEN'] = $token;
+            } else {
+                // a row value without the global secret would make every link generation throw after this insert:
+                // the invitation is sent as a legacy one instead
+                trigger_error(
+                    sprintf('The reviewer invitation link secret (%s) is not configured: invitation sent without a link token', InvitationToken::SECRET_CONSTANT_NAME),
+                    E_USER_WARNING
+                );
+            }
+        }
+
         // Insertion en BDD
         if ($db->insert(T_USER_INVITATIONS, $values)) {
             $id = (int) $db->lastInsertId();
             $this->setId($id);
+            $this->setToken($token);
         } else {
             return false;
         }
@@ -139,6 +182,25 @@ class Episciences_User_Invitation
     public function getId()
     {
         return $this->_id;
+    }
+
+    /**
+     * A row with no status is stored with the column default ('pending')
+     */
+    public function isPendingRow(): bool
+    {
+        $status = $this->getStatus();
+        return $status === null || $status === '' || $status === self::STATUS_PENDING;
+    }
+
+    protected function getInvitationToken(): InvitationToken
+    {
+        return new InvitationToken();
+    }
+
+    public function getToken(): ?string
+    {
+        return $this->_token;
     }
 
     /**
@@ -206,7 +268,7 @@ class Episciences_User_Invitation
      */
     public function setId($_id)
     {
-        $this->_id = $_id;
+        $this->_id = (int)$_id;
     }
 
     /**
@@ -224,6 +286,11 @@ class Episciences_User_Invitation
     public function setStatus($_status)
     {
         $this->_status = $_status;
+    }
+
+    public function setToken(?string $token): void
+    {
+        $this->_token = ($token === null || $token === '') ? null : $token;
     }
 
     /**

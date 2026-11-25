@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
@@ -15,10 +16,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * so extra columns in the source file are ignored gracefully:
  *   Detectors,Doi,Title,Pubpeerusers,Pubpeerurl,Status
  */
+#[AsCommand(name: 'import:ref-pps', description: 'Import PPS data from a CSV file into the ref_pps Solr core.')]
 class ImportRefPpsCommand extends Command
 {
-    protected static $defaultName = 'import:ref-pps';
-
     private const BATCH_SIZE = 1000;
 
     private const REQUIRED_COLUMNS = ['detectors', 'doi', 'title', 'pubpeerusers', 'pubpeerurl', 'status'];
@@ -26,7 +26,6 @@ class ImportRefPpsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Import PPS data from a CSV file into the ref_pps Solr core.')
             ->addArgument('csv-file', InputArgument::OPTIONAL, 'Path to the CSV file', 'data/ref_pps/pps-current.csv');
     }
 

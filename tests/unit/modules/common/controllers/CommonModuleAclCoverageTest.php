@@ -67,12 +67,10 @@ final class CommonModuleAclCoverageTest extends TestCase
      */
     public static function managementEndpoints(): iterable
     {
-        yield 'findusers'                   => ['user-findusers'];
         yield 'findcasusers'                => ['user-findcasusers'];
         yield 'ajaxfindusersbymail'         => ['user-ajaxfindusersbymail'];
         yield 'findusersbyfirstnameandname' => ['user-findusersbyfirstnameandname'];
         yield 'ajaxfindcasuser'             => ['user-ajaxfindcasuser'];
-        yield 'getmails'                    => ['user-getmails'];
         yield 'rolesform'                   => ['user-rolesform'];
     }
 
@@ -121,6 +119,22 @@ final class CommonModuleAclCoverageTest extends TestCase
             self::assertContains($role, $roles, "'$resource' must be declared for '$role' in acl.ini");
         }
         self::assertNotContains('guest', $roles, "'$resource' must not be declared for guest");
+    }
+
+    /**
+     * Controllers redirect denied users to /error/deny: the page must be declared for guest,
+     * otherwise the request is handled as an unknown resource and answered with a 404.
+     */
+    public function testErrorDenyPageIsDeclaredForGuest(): void
+    {
+        self::assertContains('guest', $this->rolesFor('error-deny'), "'error-deny' must be declared for 'guest' in acl.ini");
+    }
+
+    public function testUserUnsuIsDeclaredUnderMember(): void
+    {
+        $roles = $this->rolesFor('user-unsu');
+        self::assertContains('member', $roles, "'user-unsu' must be declared for 'member' in acl.ini");
+        self::assertNotContains('guest', $roles, "'user-unsu' must not be declared for 'guest'");
     }
 
     /**

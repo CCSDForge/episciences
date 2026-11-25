@@ -703,4 +703,44 @@ describe('openSectionModal', () => {
         expect(fetch.mock.calls[2][0]).toBe('/administratepaper/displaysection');
         expect(fetch.mock.calls[2][1].body).toContain('partial=0');
     });
+
+    test('save sends the page CSRF token along with the paper and its section', async () => {
+        const meta = document.createElement('meta');
+        meta.name = 'csrf-token';
+        meta.content = 'page-token';
+        document.head.appendChild(meta);
+
+        const form = makeFormDOM('section-assignment-form-91');
+        const select = makeSelectDOM('section_select');
+        const option = document.createElement('option');
+        option.value = '4';
+        option.selected = true;
+        select.name = 'sid';
+        select.appendChild(option);
+        form.appendChild(select);
+
+        global.fetch = jest.fn()
+            .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('') })
+            .mockResolvedValue({ ok: true, text: () => Promise.resolve('1') });
+
+        const btn = document.createElement('button');
+        btn.dataset.docid = '91';
+        btn.dataset.partial = 'false';
+
+        try {
+            openSectionModal(btn);
+            await flushPromises();
+
+            form.dispatchEvent(new Event('submit', { bubbles: true }));
+            await flushPromises();
+        } finally {
+            meta.remove();
+        }
+
+        const [url, options] = fetch.mock.calls[1];
+        expect(url).toBe('/administratepaper/savesection');
+        expect(options.headers['X-CSRF-Token']).toBe('page-token');
+        expect(options.body).toContain('sid=4');
+        expect(options.body).toContain('docid=91');
+    });
 });

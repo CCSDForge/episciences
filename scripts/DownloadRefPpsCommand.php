@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -14,17 +15,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Downloads the CSV, handles the 48h rate limit, and keeps timestamped backups.
  */
+#[AsCommand(name: 'download:ref-pps', description: 'Download the PPS CSV file from IRIT.')]
 class DownloadRefPpsCommand extends Command
 {
-    protected static $defaultName = 'download:ref-pps';
-
     private const URL = 'https://dbrech.irit.fr/pls/apex/f?p=9999:300::IR[allproblematicpapers]_CSV';
     private const LIMIT_HOURS = 48;
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Download the PPS CSV file from IRIT.')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force download even if the 48h limit is not reached');
     }
 

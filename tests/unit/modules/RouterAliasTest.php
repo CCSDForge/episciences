@@ -59,11 +59,7 @@ final class RouterAliasTest extends TestCase
             );
         }
 
-        self::assertSame(
-            ['rvcode' => 'articles', 'id' => self::DOCID, 'controller' => 'paper', 'action' => 'view'],
-            $this->match('paper', 'articles/' . self::DOCID)
-        );
-
+        $this->assertNoMatch('paper', 'articles/' . self::DOCID);
         $this->assertNoMatch('paper', 'en/articles/' . self::DOCID);
         $this->assertNoMatch('pdf', 'articles/' . self::DOCID . '/download');
     }

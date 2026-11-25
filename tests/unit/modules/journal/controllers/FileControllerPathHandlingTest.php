@@ -106,16 +106,16 @@ final class FileControllerPathHandlingTest extends TestCase
     // reportAction(): permission check before serving a report attachment
     // -----------------------------------------------------------------------
 
-    public function testReportActionChecksPermissions(): void
+    public function testReportActionDelegatesToAccessClass(): void
     {
         // The access rules themselves are covered by
-        // Episciences_Rating_ReportAttachmentAccessTest.
+        // tests/unit/library/Episciences/Rating/Report/AccessTest.php.
         $method = $this->extractMethod('reportAction');
 
-        self::assertStringContainsString('$report->isAttachmentAccessibleToLoggedUser(', $method,
-            'reportAction() must delegate the permission check to the report');
+        self::assertStringContainsString('Episciences_Rating_Report_Access::mayDownloadAttachment', $method,
+            'reportAction() must delegate access control to Episciences_Rating_Report_Access');
 
-        $checkPos = strpos($method, 'isAttachmentAccessibleToLoggedUser(');
+        $checkPos = strpos($method, 'mayDownloadAttachment(');
         $openPos = strpos($method, 'openFile(');
         self::assertNotFalse($openPos, 'reportAction() must call openFile()');
         self::assertLessThan($openPos, $checkPos,

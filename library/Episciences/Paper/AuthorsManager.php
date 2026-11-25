@@ -10,12 +10,16 @@ class Episciences_Paper_AuthorsManager
     // ────────────────────────────────────────────
     /**
      * Normalize an ORCID identifier: strip URL prefix and fix lowercase checksum digit
-     *
-     * @deprecated Use Episciences_Paper_Authors_HalTeiParser::normalizeOrcid()
      */
     public static function normalizeOrcid(string $orcid): string
     {
-        return Episciences_Paper_Authors_HalTeiParser::normalizeOrcid($orcid);
+        $orcid = preg_replace('#^https?://orcid\.org/#', '', trim($orcid));
+
+        if (preg_match('/\d{4}-\d{4}-\d{4}-\d{3}x$/', (string) $orcid)) {
+            $orcid = substr((string) $orcid, 0, -1) . 'X';
+        }
+
+        return $orcid;
     }
 
     /**

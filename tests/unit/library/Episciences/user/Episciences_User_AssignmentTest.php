@@ -2,6 +2,9 @@
 
 namespace unit\library\Episciences\user;
 
+use Episciences\User\UserNotFoundException;
+use Episciences_TmpUsersManager;
+use Episciences_User;
 use Episciences_User_Assignment;
 use PHPUnit\Framework\TestCase;
 
@@ -10,6 +13,9 @@ use PHPUnit\Framework\TestCase;
  *
  * Tests pure logic (setters/getters, options constructor, constants).
  * The save() method requires a DB connection and is not tested here.
+ *
+ * resolveFromUser() is exercised with non-existent uids (0, PHP_INT_MAX-ish) so
+ * the DB lookups reliably miss without needing fixtures.
  *
  * @covers Episciences_User_Assignment
  */
@@ -252,5 +258,38 @@ class Episciences_User_AssignmentTest extends TestCase
     {
         $result = $this->assignment->setOptions(['status' => 'pending']);
         $this->assertInstanceOf(Episciences_User_Assignment::class, $result);
+    }
+
+    // -------------------------------------------------------------------------
+    // resolveFromUser() — introduced in PR #1109
+    // -------------------------------------------------------------------------
+
+    public function testResolveFromUserReturnsEpisciencesUserForNonTmpAssignment(): void
+    {
+        $this->assignment->setUid(0);
+        $this->assignment->setTmp_user(false);
+
+        $result = $this->assignment->resolveFromUser();
+
+        $this->assertInstanceOf(Episciences_User::class, $result);
+    }
+
+    /**
+     * For a tmp-user assignment whose recipient no longer exists,
+     * resolveFromUser() must throw a UserNotFoundException so the caller
+     * (ReviewerController::checkAndProcessLinkedInvitation()) can handle the
+     * "not found" case gracefully.
+     */
+    public function testResolveFromUserThrowsUserNotFoundExceptionWhenTmpUserIsNotFound(): void
+    {
+        // Sanity check: this uid must not exist as a tmp user in the test DB.
+        $this->assertFalse(Episciences_TmpUsersManager::findById(999999999));
+
+        $this->assignment->setUid(999999999);
+        $this->assignment->setTmp_user(true);
+
+        $this->expectException(UserNotFoundException::class);
+
+        $this->assignment->resolveFromUser();
     }
 }

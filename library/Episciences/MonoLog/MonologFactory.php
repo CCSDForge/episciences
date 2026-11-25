@@ -2,11 +2,7 @@
 
 namespace Episciences\MonoLog;
 
-
-
-use Exception;
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\RotatingFileHandler;
+use Episciences\Log\LoggerFactory;
 use Monolog\Logger;
 
 class MonologFactory
@@ -14,20 +10,9 @@ class MonologFactory
 
     public static function createLogger(): Logger
     {
-
-        $logger = new Logger('appLogger');
-
-        $handler = new RotatingFileHandler(
-            sprintf('%s.monolog.log', EPISCIENCES_LOG_PATH . (defined('RVCODE') ? RVCODE : 'app')),
-            0, // unlimited
-            Logger::DEBUG,
-            true,
-            0664
+        return LoggerFactory::rotating(
+            'appLogger',
+            sprintf('%s.monolog.log', LoggerFactory::logPath() . (defined('RVCODE') ? RVCODE : 'app'))
         );
-        $formatter = new LineFormatter(null, null, false, true);
-        $handler->setFormatter($formatter);
-        $logger->pushHandler($handler);
-
-        return $logger;
     }
 }

@@ -150,6 +150,13 @@
             "privilege": "chief_editor,administrator,secretary"
           },
           {
+            "label": "Licences",
+            "controller": "review",
+            "action": "licenses",
+            "resource": "review-licenses",
+            "privilege": "chief_editor,administrator,secretary"
+          },
+          {
             "label": "Paramètres DOI",
             "controller": "doi",
             "action": "settings",

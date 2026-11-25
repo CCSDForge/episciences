@@ -7,15 +7,22 @@ document.addEventListener('DOMContentLoaded', function () {
             const uid = this.getAttribute('attr-uid');
             const formData = new FormData();
             formData.append('uid', uid);
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
 
             fetch(JS_PREFIX_URL + 'user/ajaxdeletephoto', {
                 method: 'POST',
                 body: formData,
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': csrfMeta ? csrfMeta.content : '',
                 },
             })
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.text();
+                })
                 .then(data => {
                     if (data == '1') {
                         const photoElements = document.querySelectorAll(
@@ -43,10 +50,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
                     deletePhotoButton.classList.add('hidden');
-                    message('Photo supprimée.', 'alert-success');
+                    message(translate('Photo supprimée.'), 'alert-success');
                 })
                 .catch(error => {
-                    message('La suppression a échoué.', 'alert-danger');
+                    message(
+                        translate('La suppression a échoué.'),
+                        'alert-danger'
+                    );
                 });
 
             return false;

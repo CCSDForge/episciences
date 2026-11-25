@@ -5,7 +5,7 @@
                href="<?= $this->url(['controller' => 'administratemail', 'action' => 'view', 'id' => $mail['ID']])?>"
                data-width="50%" data-toggle="tooltip"
                title="<?php echo $this->translate('Voir cet e-mail'); ?>">
-                <?= ($mail['SUBJECT']) ?: $this->translate('Aucun sujet') ?>
+                <?php echo ($mail['SUBJECT']) ? htmlentities($mail['SUBJECT']) : $this->translate('Aucun sujet'); ?>
             </a>
         </td>
         <td>

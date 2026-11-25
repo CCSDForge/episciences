@@ -58,9 +58,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     public function testIsValidWithNumericValue(): void
     {
         $this->setPostData([
-            'rating_deadline_max_unit' => 'days',
+            'rating_deadline_max_unit' => 'day',
             'rating_deadline_min' => '7',
-            'rating_deadline_min_unit' => 'days',
+            'rating_deadline_min_unit' => 'day',
         ]);
 
         $this->assertTrue($this->validator->isValid(14));
@@ -73,9 +73,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     public function testIsInvalidWithNonNumericString(): void
     {
         $this->setPostData([
-            'rating_deadline_max_unit' => 'days',
+            'rating_deadline_max_unit' => 'day',
             'rating_deadline_min' => '7',
-            'rating_deadline_min_unit' => 'days',
+            'rating_deadline_min_unit' => 'day',
         ]);
 
         $this->assertFalse($this->validator->isValid('abc'));
@@ -89,9 +89,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     public function testIsInvalidWithEmptyString(): void
     {
         $this->setPostData([
-            'rating_deadline_max_unit' => 'days',
+            'rating_deadline_max_unit' => 'day',
             'rating_deadline_min' => '7',
-            'rating_deadline_min_unit' => 'days',
+            'rating_deadline_min_unit' => 'day',
         ]);
 
         $this->assertFalse($this->validator->isValid(''));
@@ -109,9 +109,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     public function testIsValidWhenMaximumGreaterThanMinimum(): void
     {
         $this->setPostData([
-            'rating_deadline_max_unit' => 'days',
+            'rating_deadline_max_unit' => 'day',
             'rating_deadline_min' => '7',
-            'rating_deadline_min_unit' => 'days',
+            'rating_deadline_min_unit' => 'day',
         ]);
 
         $this->assertTrue($this->validator->isValid(30));
@@ -124,9 +124,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     public function testIsValidWhenMaximumEqualsMinimum(): void
     {
         $this->setPostData([
-            'rating_deadline_max_unit' => 'days',
+            'rating_deadline_max_unit' => 'day',
             'rating_deadline_min' => '7',
-            'rating_deadline_min_unit' => 'days',
+            'rating_deadline_min_unit' => 'day',
         ]);
 
         $this->assertTrue($this->validator->isValid(7));
@@ -139,9 +139,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     public function testIsInvalidWhenMaximumLessThanMinimum(): void
     {
         $this->setPostData([
-            'rating_deadline_max_unit' => 'days',
+            'rating_deadline_max_unit' => 'day',
             'rating_deadline_min' => '7',
-            'rating_deadline_min_unit' => 'days',
+            'rating_deadline_min_unit' => 'day',
         ]);
 
         $this->assertFalse($this->validator->isValid(5));
@@ -155,9 +155,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     public function testIsValidWhenMaximumMuchGreaterThanMinimum(): void
     {
         $this->setPostData([
-            'rating_deadline_max_unit' => 'days',
+            'rating_deadline_max_unit' => 'day',
             'rating_deadline_min' => '7',
-            'rating_deadline_min_unit' => 'days',
+            'rating_deadline_min_unit' => 'day',
         ]);
 
         $this->assertTrue($this->validator->isValid(90));
@@ -170,9 +170,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     public function testIsInvalidWhenMaximumSlightlyLessThanMinimum(): void
     {
         $this->setPostData([
-            'rating_deadline_max_unit' => 'days',
+            'rating_deadline_max_unit' => 'day',
             'rating_deadline_min' => '7',
-            'rating_deadline_min_unit' => 'days',
+            'rating_deadline_min_unit' => 'day',
         ]);
 
         $this->assertFalse($this->validator->isValid(6));
@@ -191,9 +191,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     {
         // Max: 30 days, Min: 1 week (7 days) -> 30 > 7, valid
         $this->setPostData([
-            'rating_deadline_max_unit' => 'days',
+            'rating_deadline_max_unit' => 'day',
             'rating_deadline_min' => '1',
-            'rating_deadline_min_unit' => 'weeks',
+            'rating_deadline_min_unit' => 'week',
         ]);
 
         $this->assertTrue($this->validator->isValid(30));
@@ -207,9 +207,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     {
         // Max: 1 week (7 days), Min: 30 days -> 7 < 30, invalid
         $this->setPostData([
-            'rating_deadline_max_unit' => 'weeks',
+            'rating_deadline_max_unit' => 'week',
             'rating_deadline_min' => '30',
-            'rating_deadline_min_unit' => 'days',
+            'rating_deadline_min_unit' => 'day',
         ]);
 
         $this->assertFalse($this->validator->isValid(1));
@@ -227,9 +227,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     public function testErrorMessageForInvalidEstimation(): void
     {
         $this->setPostData([
-            'rating_deadline_max_unit' => 'days',
+            'rating_deadline_max_unit' => 'day',
             'rating_deadline_min' => '7',
-            'rating_deadline_min_unit' => 'days',
+            'rating_deadline_min_unit' => 'day',
         ]);
 
         $this->assertFalse($this->validator->isValid('invalid'));
@@ -245,9 +245,9 @@ class CheckMaximumDeadlineDelayTest extends TestCase
     public function testErrorMessageForMaximumLessThanMinimum(): void
     {
         $this->setPostData([
-            'rating_deadline_max_unit' => 'days',
+            'rating_deadline_max_unit' => 'day',
             'rating_deadline_min' => '7',
-            'rating_deadline_min_unit' => 'days',
+            'rating_deadline_min_unit' => 'day',
         ]);
 
         $this->assertFalse($this->validator->isValid(3));

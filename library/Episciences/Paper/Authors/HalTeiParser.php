@@ -19,7 +19,7 @@ class Episciences_Paper_Authors_HalTeiParser
      * Extract all authors with their affiliations and ORCIDs from a TEI XML document
      *
      * @param SimpleXMLElement $teiDocument full TEI XML document
-     * @return array<int, array{given_name: string, family: string, fullname: string, affiliations?: array, orcid?: string}>
+     * @return array<int, array{given_name: string, first_name: string, family: string, fullname: string, affiliations?: array, orcid?: string}>
      */
     public static function getAuthorsFromHalTei(SimpleXMLElement $teiDocument): array
     {
@@ -56,16 +56,40 @@ class Episciences_Paper_Authors_HalTeiParser
     /**
      * Extract author name information from a TEI persName element
      *
+     * HAL splits given names into <forename type="first"> and <forename type="middle">.
+     * All forenames are kept in "given_name"; "first_name" holds the first one only,
+     * because OAI-DC derived records (stored in DB) only carry the first given name.
+     * A forename reduced to a single letter is an initial and is written with a period ("C" -> "C."),
+     * since HAL returns initials with or without it.
+     *
      * @param SimpleXMLElement|null $personName TEI persName element
      * @param array $parsedAuthors accumulated authors array
      * @return array updated authors array with new entry appended
      */
     public static function getAuthorInfoFromXmlTei(?SimpleXMLElement $personName, array $parsedAuthors): array
     {
+        $forenames = [];
+
+        foreach ($personName->forename as $forenameNode) {
+            $forename = trim((string)$forenameNode);
+
+            if (preg_match('/^\p{L}$/u', $forename) === 1) {
+                $forename .= '.';
+            }
+
+            if ($forename !== '') {
+                $forenames[] = $forename;
+            }
+        }
+
+        $givenName = implode(' ', $forenames);
+        $surname = (string)$personName->surname;
+
         $parsedAuthors[] = [
-            'given_name' => (string)$personName->forename,
-            'family' => (string)$personName->surname,
-            'fullname' => rtrim($personName->forename . ' ' . $personName->surname),
+            'given_name' => $givenName,
+            'first_name' => $forenames[0] ?? '',
+            'family' => $surname,
+            'fullname' => trim($givenName . ' ' . $surname),
         ];
 
         return $parsedAuthors;
@@ -103,7 +127,7 @@ class Episciences_Paper_Authors_HalTeiParser
 
         foreach ($authorNode->idno as $idnoNode) {
             if ((string)$idnoNode->attributes()->type === self::IDNO_TYPE_ORCID) {
-                $parsedAuthors[$lastAuthorIndex][self::KEY_ORCID] = self::normalizeOrcid((string)$idnoNode);
+                $parsedAuthors[$lastAuthorIndex][self::KEY_ORCID] = Episciences_Paper_AuthorsManager::normalizeOrcid((string)$idnoNode);
             }
         }
 
@@ -111,17 +135,11 @@ class Episciences_Paper_Authors_HalTeiParser
     }
 
     /**
-     * Normalize an ORCID identifier: strip URL prefix and fix lowercase checksum digit
+     * @deprecated Use Episciences_Paper_AuthorsManager::normalizeOrcid()
      */
     public static function normalizeOrcid(string $orcid): string
     {
-        $orcid = preg_replace('#^https?://orcid\.org/#', '', trim($orcid));
-
-        if (preg_match('/\d{4}-\d{4}-\d{4}-\d{3}x$/', (string) $orcid)) {
-            $orcid = substr((string) $orcid, 0, -1) . 'X';
-        }
-
-        return $orcid;
+        return Episciences_Paper_AuthorsManager::normalizeOrcid($orcid);
     }
 
     /**
@@ -186,8 +204,11 @@ class Episciences_Paper_Authors_HalTeiParser
      * Replace affiliation structure references (e.g. "struct-1234") with their resolved details
      *
      * @param array $authorsWithStructRefs authors with raw structure references
+     * An inconsistent TEI (an author pointing to a structure absent from listOrg) is not trusted:
+     * an empty array is returned so that callers fall back on OAI-DC or skip the enrichment.
+     *
      * @param array $affiliationsByStructId affiliation details keyed by structure ID
-     * @return array authors with resolved affiliation details
+     * @return array authors with resolved affiliation details, empty if a reference cannot be resolved
      */
     public static function mergeAuthorInfoAndAffiTei(array $authorsWithStructRefs, array $affiliationsByStructId): array
     {
@@ -197,6 +218,10 @@ class Episciences_Paper_Authors_HalTeiParser
             }
 
             foreach ($author[self::KEY_AFFILIATIONS] as $affiIndex => $structRef) {
+                if (!isset($affiliationsByStructId[$structRef])) {
+                    return [];
+                }
+
                 $resolvedAffiliation = [self::KEY_NAME => $affiliationsByStructId[$structRef][self::KEY_NAME]];
 
                 if (array_key_exists(self::IDNO_TYPE_ROR, $affiliationsByStructId[$structRef])) {

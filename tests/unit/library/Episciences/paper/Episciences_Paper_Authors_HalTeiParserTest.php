@@ -30,6 +30,61 @@ final class Episciences_Paper_Authors_HalTeiParserTest extends TestCase
     }
 
     /**
+     * Verify HAL middle names are kept in given_name and fullname, first_name holding the first forename
+     */
+    public function testGetAuthorInfoFromXmlTeiKeepsMiddleNames(): void
+    {
+        $personName = simplexml_load_string(
+            '<persName>
+                <forename type="first">Heath</forename>
+                <forename type="middle">B</forename>
+                <surname>Henninger</surname>
+            </persName>'
+        );
+
+        $result = Episciences_Paper_Authors_HalTeiParser::getAuthorInfoFromXmlTei($personName, []);
+
+        self::assertSame('Heath B.', $result[0]['given_name']);
+        self::assertSame('Heath', $result[0]['first_name']);
+        self::assertSame('Henninger', $result[0]['family']);
+        self::assertSame('Heath B. Henninger', $result[0]['fullname']);
+    }
+
+    /**
+     * Verify initials get a single period, whether HAL returns them with or without one
+     */
+    public function testGetAuthorInfoFromXmlTeiWritesInitialsWithPeriod(): void
+    {
+        $personName = simplexml_load_string(
+            '<persName>
+                <forename type="first">J</forename>
+                <forename type="middle">R.</forename>
+                <surname>Smith</surname>
+            </persName>'
+        );
+
+        $result = Episciences_Paper_Authors_HalTeiParser::getAuthorInfoFromXmlTei($personName, []);
+
+        self::assertSame('J. R.', $result[0]['given_name']);
+        self::assertSame('J.', $result[0]['first_name']);
+        self::assertSame('J. R. Smith', $result[0]['fullname']);
+    }
+
+    /**
+     * Verify a persName without any forename yields empty given and first names
+     */
+    public function testGetAuthorInfoFromXmlTeiWithoutForename(): void
+    {
+        $personName = simplexml_load_string('<persName><surname>Collective</surname></persName>');
+
+        $result = Episciences_Paper_Authors_HalTeiParser::getAuthorInfoFromXmlTei($personName, []);
+
+        self::assertSame('', $result[0]['given_name']);
+        self::assertSame('', $result[0]['first_name']);
+        self::assertSame('Collective', $result[0]['fullname']);
+    }
+
+    /**
      * Verify multiple affiliations are extracted with numeric indices (bug fix regression test)
      *
      * This specifically tests the SimpleXML foreach fix: affiliations must be
@@ -201,6 +256,27 @@ final class Episciences_Paper_Authors_HalTeiParserTest extends TestCase
 
         // Second author has no affiliations key
         self::assertArrayNotHasKey('affiliations', $result[1]);
+    }
+
+    /**
+     * Verify an affiliation reference missing from listOrg discards the whole TEI result
+     */
+    public function testMergeAuthorInfoAndAffiTeiReturnsEmptyOnUnresolvedStructRef(): void
+    {
+        $authors = [
+            [
+                'given_name' => 'Marie',
+                'family' => 'Curie',
+                'fullname' => 'Marie Curie',
+                'affiliations' => ['struct-100', 'struct-999'],
+            ],
+        ];
+
+        $affiliations = [
+            'struct-100' => ['name' => 'Sorbonne', 'ROR' => 'https://ror.org/0000001'],
+        ];
+
+        self::assertSame([], Episciences_Paper_Authors_HalTeiParser::mergeAuthorInfoAndAffiTei($authors, $affiliations));
     }
 
     /**

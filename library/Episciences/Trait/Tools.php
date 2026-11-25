@@ -2,8 +2,7 @@
 
 namespace Episciences\Trait;
 
-use Ccsd_Search_Solr_Indexer;
-use Ccsd_Search_Solr_Indexer_Episciences;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences_Notify_Hal;
 use Episciences_Paper;
 use Episciences_Repositories;
@@ -57,14 +56,10 @@ trait Tools
             return;
         }
 
-        $resOfIndexing = $paper->indexUpdatePaper();
-
-        if (!$resOfIndexing) {
-            try {
-                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
-            } catch (Exception $e) {
-                Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
-            }
+        try {
+            SolrIndexing::enqueueIndex($paper->getDocid());
+        } catch (Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
         }
     }
 

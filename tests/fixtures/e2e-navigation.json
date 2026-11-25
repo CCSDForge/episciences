@@ -1,0 +1,6 @@
+[
+  { "label": "Home", "controller": "index", "action": "index", "resource": "index-index" },
+  { "label": "Search", "controller": "search", "action": "index", "resource": "search-index" },
+  { "label": "Latest publications", "controller": "browse", "action": "latest", "resource": "browse-latest", "nbResults": "5" },
+  { "label": "Volumes", "controller": "browse", "action": "regularissues", "resource": "browse-regularissues" }
+]

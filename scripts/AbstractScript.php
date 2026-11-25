@@ -1,9 +1,9 @@
 <?php
 namespace scripts;
 
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\RotatingFileHandler;
+use Episciences\Log\LoggerFactory;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Script;
 
@@ -16,20 +16,11 @@ Abstract class AbstractScript extends Script
     {
         $loggerName = sprintf('%s', strtolower(get_class($this)));
 
-        $logger = new Logger($loggerName);
-
-        $handler = new RotatingFileHandler(
-            sprintf('%s%s.log', EPISCIENCES_LOG_PATH, $loggerName),
-            0, // unlimited
-            Logger::DEBUG,
-            true,
-            0664
+        $logger = LoggerFactory::rotating(
+            $loggerName,
+            sprintf('%s%s.log', EPISCIENCES_LOG_PATH, $loggerName)
         );
-
-        $formatter = new LineFormatter(null, null, false, true);
-        $handler->setFormatter($formatter);
-        $logger->pushHandler($handler);
-        $logger->pushHandler(new StreamHandler('php://stdout', Logger::CRITICAL));
+        $logger->pushHandler(new StreamHandler('php://stdout', Level::Critical));
         $this->logger = $logger;
     }
 

@@ -57,7 +57,7 @@ class Episciences_VolumesAndSectionsManager
                 $id = $matches[1];
                 $to = $i + 1;
 
-                if ($db->update($table, ['POSITION' => $to], ["$colId = ?" => $id])) {
+                if ($db->update($table, ['POSITION' => $to], ["$colId = ?" => $id, 'RVID = ?' => RVID])) {
 
                     $key = array_search($id, $previousSort, false);
 
@@ -75,13 +75,19 @@ class Episciences_VolumesAndSectionsManager
 
             foreach ($previousSort as $id) {
                 ++$to;
-                $db->update($table, ['POSITION' => $to], ["$colId = ?" => $id]);
+                $db->update($table, ['POSITION' => $to], ["$colId = ?" => $id, 'RVID = ?' => RVID]);
 
             }
         }
 
         if ($isFromAjax) {
             echo count($params['sorted']);
+        }
+
+        $rvcode = defined('RVCODE') ? RVCODE : null;
+        if ($rvcode !== null) {
+            $tag = $colId === 'SID' ? "sections-{$rvcode}" : "volumes-{$rvcode}";
+            \Episciences\Next\RevalidationService::enqueueTag($rvcode, $tag);
         }
 
         return true;

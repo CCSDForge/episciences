@@ -157,32 +157,7 @@ class Episciences_Repositories_ARCHE_Hooks implements CommonHooksInterface, Link
 
     private static function extractDescriptions($metadata, $language): array
     {
-        $descriptions = [];
-        $descriptionNodes = $metadata->xpath('//datacite:descriptions/datacite:description');
-
-        foreach ($descriptionNodes as $descNode) {
-            $desValue = Episciences_Tools::epi_html_decode((string)$descNode, ['HTML.AllowedElements' => 'p']);
-            $value = trim(str_replace(['<p>', '</p>'], '', $desValue));
-            if (!empty($value)) {
-                $nodeLanguage = '';
-                $xmlAttrs = $descNode->attributes('xml', true);
-                if (isset($xmlAttrs['lang'])) {
-                    $nodeLanguage = (string)$xmlAttrs['lang'];
-                }
-                if (empty($nodeLanguage)) {
-                    $langXpath = $descNode->xpath('@xml:lang');
-                    if (!empty($langXpath)) {
-                        $nodeLanguage = (string)$langXpath[0];
-                    }
-                }
-                $descriptions[] = [
-                    'value'    => $value,
-                    'language' => $nodeLanguage ?: $language,
-                ];
-            }
-        }
-
-        return $descriptions;
+        return Episciences_Repositories_Common::extractDescriptions($metadata, $language);
     }
 
     public static function hookIsRequiredVersion(): array
@@ -216,7 +191,8 @@ class Episciences_Repositories_ARCHE_Hooks implements CommonHooksInterface, Link
             $relatedIdentifiers = self::extractRelatedIdentifiers($hookParams);
         }
 
-        $affectedRows = Episciences_Submit::processDatasets($hookParams['docId'], $relatedIdentifiers);
+        // Also reindexed when some linked data could not be stored (thrown after the reindex)
+        $affectedRows = Episciences_Submit::processLinkedDataAndReindex((int)$hookParams['docId'], $relatedIdentifiers);
 
         $response['affectedRows'] = $affectedRows;
         return $response;

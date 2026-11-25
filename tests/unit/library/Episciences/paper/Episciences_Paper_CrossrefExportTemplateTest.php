@@ -63,6 +63,8 @@ final class Episciences_Paper_CrossrefExportTemplateTest extends TestCase
 
         $view = new Zend_View();
         $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts');
+        // Same setup as Episciences_Paper_XmlExportManager::xmlExport(): partials are rendered by bare name
+        $view->addScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/export');
         $view->addHelperPath('Episciences/View/Helper', 'Episciences_View_Helper');
         $view->paper = $paper;
         $view->journal = $journal;

@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Maintenance\ReadOnlyMode;
 use Episciences\MonoLog\MonologFactory;
 
 
@@ -124,6 +125,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         $view->addHelperPath('ZendX/JQuery/View/Helper', 'ZendX_JQuery_View_Helper');
         $view->addHelperPath('Ccsd/View/Helper', 'Ccsd_View_Helper');
         $view->addHelperPath('Episciences/View/Helper', 'Episciences_View_Helper');
+        $view->addHelperPath('Episciences/View/Helper', 'Episciences\\View\\Helper\\');
 
 
         $view->addScriptPath(APPLICATION_PATH . '/modules/common/views/scripts');
@@ -177,8 +179,11 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
         $config = new Zend_Config_Json($localNavigationFile, null, ['ignoreconstants' => true]);
 
+        // Read-only maintenance mode: everyone gets the public navigation (see ReadOnlyGate plugin)
+        $isReadOnly = ReadOnlyMode::isEnabled();
+
         //Chargement de la navigation
-        if (Episciences_Auth::isLogged()) {
+        if (Episciences_Auth::isLogged() && !$isReadOnly) {
             $connectedConfig = new Zend_Config_Json($globalNavigationFile, null, ['ignoreconstants' => true]);
         } else {
             $connectedConfig = new Zend_Config_Json(APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.guest.navigation.json', null, ['ignoreconstants' => true]);
@@ -206,7 +211,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         //Initialisation du menu
         $viewRenderer->view->nav($navigation)
             ->setAcl($acl)
-            ->setRoles(Episciences_Auth::getRoles());
+            ->setRoles($isReadOnly ? [Episciences_Acl::ROLE_GUEST] : Episciences_Auth::getRoles());
 
         return $acl;
     }
@@ -292,6 +297,9 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
                         'action' => 'index'
                     ],
                 ));
+
+            // $this->_helper->url($action, $controller) bypasses the router: keep the journal prefix
+            Zend_Controller_Action_HelperBroker::addHelper(new Episciences_Controller_Action_Helper_Url());
         }
     }
 

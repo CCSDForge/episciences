@@ -45,7 +45,7 @@ $journalDoiPrefix = $journal->getDoiSettings()->getDoiPrefix();
 
 $enrichmentAuthors = $paper->getAuthors();
 $enrichmentLicence = $paper->getLicence();
-$enrichmentFundings = $paper->getFundings();
+$fundingReferences = $paper->getFundingReferences();
 $enrichmentLinkedData = $paper->getLinkedData();
 $bibliographicalRef = $paper->getBibRef();
 
@@ -91,6 +91,25 @@ $paperLanguageRaw = $this->paperLanguage;
         </journal_metadata>
         <?php if ($publicationDate || $this->volume !== '' || $this->section !== ''): ?>
             <journal_issue>
+                <?php if (!empty($this->volumeEditors)): ?>
+                    <?php $validEditors = array_filter($this->volumeEditors, static fn($e) => !empty($e->getLastname())); ?>
+                    <?php if (!empty($validEditors)): ?>
+                        <contributors>
+                            <?php foreach (array_values($validEditors) as $index => $editor): ?>
+                                <person_name sequence="<?= $index === 0 ? 'first' : 'additional' ?>"
+                                             contributor_role="editor">
+                                    <?php if (!empty($editor->getFirstname())) : ?>
+                                        <given_name><?= $this->escape($editor->getFirstname()) ?></given_name>
+                                    <?php endif; ?>
+                                    <surname><?= $this->escape($editor->getLastname()) ?></surname>
+                                    <?php if (!empty($editor->getOrcid())): ?>
+                                        <ORCID>https://orcid.org/<?= strtoupper($this->escape($editor->getOrcid())) ?></ORCID>
+                                    <?php endif; ?>
+                                </person_name>
+                            <?php endforeach; ?>
+                        </contributors>
+                    <?php endif; ?>
+                <?php endif; ?>
                 <?php if ($publicationDate) : ?>
                     <publication_date media_type="<?= $onlineType ?>">
                         <month><?php echo $publicationDate->format('m'); ?></month>
@@ -241,26 +260,7 @@ $paperLanguageRaw = $this->paperLanguage;
             <publisher_item> <?php //A container for item identification numbers set by a publisher. ?>
                 <item_number item_number_type="article_number"><?php echo $paper->getPaperid(); ?></item_number>
             </publisher_item>
-            <?php if (!empty($enrichmentFundings)): ?>
-                <program name="fundref" xmlns="http://www.crossref.org/fundref.xsd">
-                    <?php foreach ($enrichmentFundings as $fundingInfo) {
-                        $isFunderName = isset($fundingInfo['funderName']) && $fundingInfo['funderName'] !== "unidentified";
-                        ?>
-                        <?php if ($isFunderName || $fundingInfo['code'] !== "unidentified" || $fundingInfo['projectTitle'] !== "unidentified") : ?>
-                            <assertion name="fundgroup">
-                                <?php if ($isFunderName) : ?>
-                                    <assertion
-                                            name="funder_name"><?= $this->escape($fundingInfo['funderName']) ?></assertion>
-                                <?php endif; ?>
-                                <?php if ($fundingInfo['code'] !== "unidentified") : ?>
-                                    <assertion
-                                            name="award_number"><?= $this->escape($fundingInfo['code']) ?></assertion>
-                                <?php endif; ?>
-                            </assertion>
-                        <?php endif; ?>
-                    <?php } ?>
-                </program>
-            <?php endif; ?>
+            <?= $this->partial('fundref.phtml', ['fundingReferences' => $fundingReferences]) ?>
 
             <?php if ($enrichmentLicence !== ""): ?>
                 <program name="AccessIndicators" xmlns="http://www.crossref.org/AccessIndicators.xsd">
@@ -341,7 +341,7 @@ $paperLanguageRaw = $this->paperLanguage;
                                     $identifierType = 'uri';
                                     $linkedData['value'] = 'https://hal.science/' . $linkedData['value'];
                                 } elseif ($identifierType === 'doi') {
-                                    $linkedData['value'] = Episciences_DoiTools::cleanDoi( $linkedData['value']);
+                                    $linkedData['value'] = Episciences_DoiTools::cleanDoi($linkedData['value']);
                                 }
                                 ?>
                                 <?php if ($isIntra) : ?>

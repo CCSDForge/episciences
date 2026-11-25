@@ -8,6 +8,7 @@ use Episciences\Notify\NotifySourceConfig;
 use Episciences\Notify\NotifySourceRegistry;
 use Episciences\Notify\PayloadValidator;
 use Episciences\Notify\PreprintUrlParser;
+use Episciences\Reviewer\InvitationToken;
 use scripts\AbstractScript;
 
 require_once "AbstractScript.php";
@@ -530,6 +531,8 @@ class InboxNotifications extends AbstractScript
     ): bool
     {
         $paper->setPaperid($context->getPaperid());
+        // Same paper id: the submission date is shared by all the versions of a paper
+        $paper->setSubmission_date($context->getSubmission_date());
 
         try {
             $isAdded = $this->getFirstSubmissionResult($paper, $journal, $data, [
@@ -773,7 +776,7 @@ class InboxNotifications extends AbstractScript
     ): array
     {
         return [
-            Episciences_Mail_Tags::TAG_REVIEW_CODE => $journal->getCode(),
+            Episciences_Mail_Tags::TAG_REVIEW_CODE => $journal->getMailDisplayCode(),
             Episciences_Mail_Tags::TAG_REVIEW_NAME => $journal->getName(),
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocId(),
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
@@ -860,7 +863,11 @@ class InboxNotifications extends AbstractScript
             $this->logger->critical($e->getMessage());
         }
 
-        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+        // Pass the RVID explicitly: the RVID constant is not defined in CLI
+        // On a first submission no conflict declaration exists yet, so keep every recipient
+        if (!$isFirstSubmission) {
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients, $journal->getRvid());
+        }
         unset($recipients[$paper->getUid()]);
 
         if (!$isFirstSubmission && $originalRequest !== null) {
@@ -1355,6 +1362,11 @@ class InboxNotifications extends AbstractScript
                 $oInvitation->getId()
             );
 
+            $linkToken = (new InvitationToken())->forInvitation($oInvitation);
+            if ($linkToken !== null) {
+                $invitationUrl .= '&' . InvitationToken::URL_PARAM . '=' . $linkToken;
+            }
+
             $oAssignment->setInvitation_id($oInvitation->getId());
             $oAssignment->save();
 
@@ -1411,7 +1423,12 @@ class InboxNotifications extends AbstractScript
         $enrichment = $additionalPaperData[Episciences_Repositories_Common::ENRICHMENT] ?? [];
 
         if (Episciences_Repositories::getApiUrl($paper->getRepoid())) {
-            Episciences_Submit::datasetsProcessing($paper);
+            try {
+                Episciences_Submit::datasetsProcessing($paper);
+            } catch (Throwable $e) {
+                // The linked data that could be stored are: the authors and the enrichment are still stored
+                $this->logger->error(sprintf('Linked data error for paper %s: %s', $paper->getIdentifier(), $e->getMessage()));
+            }
         }
 
         if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {

@@ -31,38 +31,22 @@
                 <td><?php echo ($criterion->getComment_setting()) ? $this->translate('Oui') : $this->translate('Non'); ?></td>
                 <td><?php echo ($criterion->getAttachment_setting()) ? $this->translate('Oui') : $this->translate('Non'); ?></td>
                 <td><?php
-                    if ($criterion->getCoefficient()) {
-                        echo $this->translate('Evaluation quantitative');
-                        echo ' (';
-                        if ($criterion->isCustom()) {
-                            echo $this->translate('personnalisée');
-                        } elseif (count($criterion->getOptions()) == 11) {
-                            echo $this->translate('sur 10');
-                        } elseif (count($criterion->getOptions()) == 6) {
-                            echo $this->translate('sur 5');
-                        }
-                        echo ')';
-                    } elseif ($criterion->getOptions()) {
-
-                        if (($criterion->getOptions()[0]['value'] == 0) && ($criterion->getOptions()[0]['label'] == null)) {
-                            echo $this->translate('Évaluation libre');
-                        } else {
-                            echo $this->translate('Evaluation qualitative');
-                            echo ' (';
-                            if ($criterion->isCustom()) {
-                                echo $this->translate('personnalisée');
-                            } else {
-                                echo $this->translate('classique');
-                            }
-                            echo ')';
-                        }
-                    } elseif ($criterion->getType() == 'separator') {
-                        echo $this->translate('Séparateur');
+                    if ($criterion->getType() === Episciences_Rating_Criterion::TYPE_SEPARATOR) {
+                        $ratingLabel = $this->translate('Séparateur');
                     } else {
-                        // kept for compatibility ?
-                        echo $this->translate('Évaluation libre');
+                        $quantitative = $this->translate('Evaluation quantitative');
+                        $qualitative = $this->translate('Evaluation qualitative');
+                        $customized = $this->translate('personnalisée');
+                        $ratingLabel = match ($criterion->getRatingType()) {
+                            Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_10 => $quantitative . ' (' . $this->translate('sur 10') . ')',
+                            Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_5 => $quantitative . ' (' . $this->translate('sur 5') . ')',
+                            Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE_CUSTOM => $quantitative . ' (' . $customized . ')',
+                            Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE => $qualitative . ' (' . $this->translate('classique') . ')',
+                            Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM => $qualitative . ' (' . $customized . ')',
+                            default => $this->translate('Évaluation libre'),
+                        };
                     }
-
+                    echo $this->escape($ratingLabel);
                     ?></td>
                 <td><?php echo ($criterion->getVisibility()) ? ucfirst($this->translate($criterion->getVisibility())) : ucfirst($this->translate('editors')); ?></td>
                 <?php if (Episciences_Auth::isSecretary()) : ?>
@@ -111,6 +95,7 @@
                     $.ajax({
                         url: JS_PREFIX_URL + "grid/sortcriterion",
                         type: 'POST',
+                        headers: {'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''},
                         data: {sorted: $(this).sortable("toArray"), rgid: <?php echo $this->grid->getId(); ?>},
                         dataType: "json",
                         success: function (result) {
@@ -148,13 +133,16 @@
             }
             ?>
 
-            <a href="<?= $this->url(['controller' => 'grid', 'action' => 'copy', 'from' => $this->defaultGrid->getId(), 'to' => $this->grid->getId()]) ?>">
-                <button type="button"
+            <form action="<?= $this->url(['controller' => 'grid', 'action' => 'copy']) ?>" method="post" style="display:inline">
+                <input type="hidden" name="csrf_token" value="<?= $this->escape(Episciences_Csrf_Helper::getSessionToken()) ?>">
+                <input type="hidden" name="from" value="<?= (int)$this->defaultGrid->getId() ?>">
+                <input type="hidden" name="to" value="<?= (int)$this->grid->getId() ?>">
+                <button type="submit"
                         class="btn btn-default" <?= $isEmptySource || !$isEmptyDestination ? 'disabled' : '' ?>
                         title="<?= $this->translate($title) ?>">
                     <?php echo $this->translate('Copier grille par défaut'); ?>
                 </button>
-            </a>
+            </form>
 
         <?php endif; ?>
 

@@ -218,8 +218,9 @@ class Episciences_Section
      */
     public function loadEditors($active = true)
     {
+        // the latest assignment of each editor (highest ID: two assignments can have the same date)
         $subquery = $this->_db->select()
-            ->from(T_ASSIGNMENTS, ['UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', Episciences_User_Assignment::ITEM_SECTION)
             ->where('ITEMID = ?', $this->getSid())
             ->where('ROLEID = ?', Episciences_User_Assignment::ROLE_EDITOR)
@@ -228,10 +229,10 @@ class Episciences_Section
         $select = $this->_db->select()
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinUsing(T_USERS, 'UID', ['LANGUEID', 'SCREEN_NAME'])
-            ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subquery], 'a.ID = b.LAST_ID', [])
             ->join(['ur' => T_USER_ROLES], 'ur.UID = a.UID')
             ->where('ur.ROLEID IN (?)', [Episciences_Acl::ROLE_GUEST_EDITOR, Episciences_Acl::ROLE_EDITOR, Episciences_Acl::ROLE_CHIEF_EDITOR])
-            ->where('ur.RVID = ?', RVID);
+            ->where('ur.RVID = ?', $this->getRvid() ?: (defined('RVID') ? RVID : 0));
 
         $result = $this->_db->fetchAssoc($select);
         $editors = [];
@@ -330,8 +331,27 @@ class Episciences_Section
             }
 
             $this->_db->insert(T_SECTION_SETTINGS, $sectionSettings);
-        } else { // update exiting section
-            return $this->update($sectionData, $sectionSettings) >= 0;
+
+            // Enqueue Next.js cache revalidation for new section
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "sections-{$rvcode}");
+            }
+        } else { // update existing section
+            $updated = $this->update($sectionData, $sectionSettings) >= 0;
+
+            if ($updated) {
+                $sid = $this->getSid();
+                $rvcode = defined('RVCODE') ? RVCODE : null;
+                if ($rvcode !== null) {
+                    \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                        "section-{$sid}-{$rvcode}",
+                        "sections-{$rvcode}",
+                    ]);
+                }
+            }
+
+            return $updated;
         }
 
         return true;

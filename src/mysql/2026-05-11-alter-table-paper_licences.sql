@@ -1,0 +1,1 @@
+ALTER TABLE `paper_licences` ADD `uid` INT UNSIGNED NULL COMMENT 'edited by' AFTER `updated_at`, ADD INDEX `uid` (`uid`); 

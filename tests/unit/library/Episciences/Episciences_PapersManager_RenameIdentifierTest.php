@@ -13,8 +13,10 @@ use Zend_Registry;
 use Zend_Translate;
 
 /**
- * Episciences_PapersManager::renameIdentifier() renames the versions of a refused paper submitted again:
+ * Episciences_PapersManager::renameIdentifier() frees the identifier of a refused paper submitted again:
  * the same document submitted to another journal (or as another paper) must keep its identifier.
+ * The previous versions of the refused paper that share its identifier (e.g. arXiv, HAL) are renamed too,
+ * as they have always been: this is existing behaviour, documented here, not a new rule.
  * Rows are inserted in a transaction that is rolled back after each test.
  *
  * @covers Episciences_PapersManager::renameIdentifier
@@ -74,11 +76,12 @@ final class Episciences_PapersManager_RenameIdentifierTest extends TestCase
         );
     }
 
-    public function testOnlyTheVersionsOfThePaperInItsJournalAreRenamed(): void
+    public function testOnlyThePaperInItsJournalIsRenamed(): void
     {
         $paperId = 999001;
-        $refused = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_REFUSED);
-        $obsolete = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_OBSOLETE);
+        // A revised paper: version 1 made obsolete by version 2, which is refused
+        $obsolete = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_OBSOLETE, 1);
+        $refused = $this->insertPaper(RVID, $paperId, Episciences_Paper::STATUS_REFUSED, 2);
         $otherJournal = $this->insertPaper(RVID + 1, 999002, Episciences_Paper::STATUS_SUBMITTED);
         // Same paper id in another journal: the journal condition is checked on its own
         $samePaperOtherJournal = $this->insertPaper(RVID + 1, $paperId, Episciences_Paper::STATUS_REFUSED);

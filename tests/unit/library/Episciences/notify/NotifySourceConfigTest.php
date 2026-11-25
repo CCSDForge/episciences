@@ -13,7 +13,7 @@ class NotifySourceConfigTest extends TestCase
     private const LABEL         = 'HAL';
     private const ORIGIN_ID     = 'https://hal.science/';
     private const ORIGIN_INBOX  = 'https://inbox.hal.science/';
-    private const ACCEPTED_TYPES = ['Offer', 'coar-notify:ReviewAction'];
+    private const ACCEPTED_TYPES = [['Offer', 'coar-notify:ReviewAction']];
 
     // -------------------------------------------------------------------------
     // Getters return constructor values
@@ -57,7 +57,7 @@ class NotifySourceConfigTest extends TestCase
             originInbox: self::ORIGIN_INBOX,
         );
 
-        self::assertSame(['Offer', 'coar-notify:ReviewAction'], $config->getAcceptedTypes());
+        self::assertSame([['Offer', 'coar-notify:ReviewAction']], $config->getAcceptedTypes());
     }
 
     // -------------------------------------------------------------------------
@@ -66,7 +66,7 @@ class NotifySourceConfigTest extends TestCase
 
     public function testCustomAcceptedTypes(): void
     {
-        $types  = ['Offer', 'coar-notify:EndorsementAction'];
+        $types  = [['Offer', 'coar-notify:EndorsementAction']];
         $config = new NotifySourceConfig(
             repoId:        self::REPO_ID,
             label:         self::LABEL,

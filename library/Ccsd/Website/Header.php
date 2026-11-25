@@ -23,6 +23,27 @@ class Ccsd_Website_Header
      * @var string
      */
     const FORM_INI = 'Ccsd/Website/Form/configs/header-logo.ini';
+
+    /**
+     * Alignments offered by the form (the first one is the fallback)
+     */
+    private const ALIGNMENTS = ['left', 'center', 'right'];
+
+    /**
+     * Inline tags allowed in the labels, without attribute (in addition to line breaks)
+     */
+    private const INLINE_TAGS = ['b', 'strong', 'i', 'em'];
+
+    /**
+     * CSS properties allowed in the style of a label: typography only, so that a label
+     * cannot be positioned over the page nor load a remote resource
+     */
+    private const STYLE_PROPERTIES = [
+        'color', 'font', 'font-family', 'font-size', 'font-style', 'font-variant', 'font-weight',
+        'letter-spacing', 'line-height', 'text-align', 'text-decoration', 'text-shadow',
+        'text-transform', 'vertical-align', 'white-space', 'word-spacing',
+    ];
+
     /**
      * Tableau des logos de l'en-tête du site
      * @var array
@@ -171,7 +192,6 @@ class Ccsd_Website_Header
                     if ($logo['type'] == self::LOGO_IMG) {
                         //Logo de type image
                         if (!($logo['img_tmp'] != '' || (isset($files[$logoid]['name']['img']) && $files[$logoid]['name']['img'] != ''))) {
-                            echo $logoid;
                             $errors[$logoid] = 'img';
                         }
                     } else {
@@ -264,56 +284,178 @@ class Ccsd_Website_Header
     }
 
     /**
+     * Escape a value for HTML text and attribute contexts
+     */
+    private static function esc(mixed $value): string
+    {
+        return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    /**
+     * Escape a label: entities already typed by the user are kept as is, and line breaks
+     * and the inline tags of INLINE_TAGS stay allowed, without any attribute
+     */
+    private static function escText(mixed $value): string
+    {
+        $escaped = htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8', false);
+        $parts = preg_split(
+            '#(&lt;br\s*/?&gt;|&lt;/?(?:' . implode('|', self::INLINE_TAGS) . ')&gt;)#i',
+            $escaped,
+            -1,
+            PREG_SPLIT_DELIM_CAPTURE
+        );
+        if ($parts === false) {
+            return $escaped;
+        }
+
+        // Keep the tags balanced: a tag left open would also apply to the rest of the page
+        $html = '';
+        $open = [];
+        foreach ($parts as $i => $part) {
+            if ($i % 2 === 0) {
+                $html .= $part;
+                continue;
+            }
+            preg_match('#^&lt;(/?)([a-z]+)#i', $part, $matches);
+            [, $closing, $tag] = $matches;
+            $tag = strtolower($tag);
+            if ($tag === 'br') {
+                $html .= '<br>';
+            } elseif ($closing === '') {
+                $html .= '<' . $tag . '>';
+                $open[] = $tag;
+            } elseif (($pos = array_search($tag, $open, true)) !== false) {
+                // Closing a tag also closes the ones opened inside it
+                foreach (array_reverse(array_splice($open, $pos)) as $closed) {
+                    $html .= '</' . $closed . '>';
+                }
+            }
+        }
+        foreach (array_reverse($open) as $closed) {
+            $html .= '</' . $closed . '>';
+        }
+
+        return $html;
+    }
+
+    /**
+     * Keep the declarations of a style whose property is in STYLE_PROPERTIES and whose value
+     * has no function other than a color one (no url(), expression(), var(), ...)
+     */
+    private static function safeStyle(mixed $value): string
+    {
+        $style = '';
+        foreach (explode(';', (string)$value) as $declaration) {
+            [$property, $propertyValue] = array_map('trim', explode(':', $declaration, 2)) + [1 => ''];
+            $property = strtolower($property);
+            $plainValue = preg_replace('#\b(?:rgba?|hsla?)\([\d\s.,%/]*\)#i', '', $propertyValue) ?? '(';
+            if (
+                $propertyValue !== ''
+                && in_array($property, self::STYLE_PROPERTIES, true)
+                && preg_match('#^[\#\w\s.,%\'"+!-]*$#', $plainValue)
+            ) {
+                $style .= $property . ':' . $propertyValue . ';';
+            }
+        }
+
+        return self::esc($style);
+    }
+
+    /**
+     * Keep the valid CSS class names only
+     */
+    private static function safeClass(mixed $value): string
+    {
+        $classes = preg_split('/\s+/', trim((string)$value)) ?: [];
+        $classes = array_filter($classes, static fn(string $class): bool => (bool)preg_match('/^-?[_a-zA-Z][\w-]*$/', $class));
+
+        return implode(' ', $classes);
+    }
+
+    /**
+     * Restrict the alignment to the values offered by the form
+     */
+    private static function safeAlign(mixed $value): string
+    {
+        $value = (string)$value;
+        return in_array($value, self::ALIGNMENTS, true) ? $value : self::ALIGNMENTS[0];
+    }
+
+    /**
+     * Escape a link target, dropping any scheme other than http(s), mailto and tel
+     */
+    private static function safeHref(mixed $value): string
+    {
+        $value = (string)$value;
+        // Browsers ignore whitespace and control characters inside a URL, so inspect the scheme without them
+        $normalized = preg_replace('/[\x00-\x20\x7f]+/', '', $value) ?? '';
+        if (preg_match('/^[a-z][a-z0-9+.\-]*:/i', $normalized) && !preg_match('/^(https?|mailto|tel):/i', $normalized)) {
+            return '';
+        }
+        return self::esc($value);
+    }
+
+    /**
      * Création du fichier en-tête en HTML
      */
     public function createHeader()
     {
         foreach ($this->_languages as $lang) {
-            $content = "<table width=\"100%\" cellpadding=\"0\" style=\"position:relative;\">\n<tr>\n";
-            foreach ($this->_logos as $logo) {
-                $content .= "<td align=\"" . $logo['align'] . "\">";
-                if ($logo['type'] == self::LOGO_IMG) {
-                    if ($logo['img_href'] != "") {
-                        $content .= "<a href=\"" . $logo['img_href'] . "\" border=\"0\" target=\"_self\">";
-                    }
-                    if (substr($logo['img'], 0, 4) != "/img") {
-                        $logo['img'] = $this->_publicUrl . $logo['img'];
-                    }
-
-                    $content .= "<img src=\"" . $logo['img'] . "\"";
-                    if ($logo['img_width'] != "") {
-                        $content .= " width=\"" . $logo['img_width'] . "\"";
-                    }
-                    if ($logo['img_height'] != "") {
-                        $content .= " height=\"" . $logo['img_height'] . "\"";
-                    }
-                    if ($logo['img_alt'] != "") {
-                        $content .= " alt=\"" . $logo['img_alt'] . "\"";
-                    }
-                    $content .= " />";
-                    if ($logo['img_href'] != "") {
-                        $content .= "</a>";
-                    }
-                } else {
-                    $content .= "<span";
-                    if ($logo['text_class'] != "") {
-                        $content .= " class=\"" . $logo['text_class'] . "\"";
-                    }
-                    if ($logo['text_style'] != "") {
-                        $content .= " style=\"" . $logo['text_style'] . "\"";
-                    }
-                    $content .= ">" . (isset($logo['text'][$lang]) ? $logo['text'][$lang] : '') . "</span>";
-                }
-                $content .= "</td>\n";
-            }
-            $content .= "</tr>\n</table>\n";
-
             if (!is_dir($this->_layoutDir)) {
                 mkdir($this->_layoutDir, 0777, true);
             }
 
-            file_put_contents($this->_layoutDir . 'header.' . $lang . '.html', $content);
+            file_put_contents($this->_layoutDir . 'header.' . $lang . '.html', $this->renderHeader($lang));
         }
 
+    }
+
+    /**
+     * Build the HTML of the header for one language
+     */
+    public function renderHeader(string $lang): string
+    {
+        $content = "<table width=\"100%\" cellpadding=\"0\" style=\"position:relative;\">\n<tr>\n";
+        foreach ($this->_logos as $logo) {
+            $content .= "<td align=\"" . self::safeAlign($logo['align'] ?? '') . "\">";
+            if ($logo['type'] == self::LOGO_IMG) {
+                if ($logo['img_href'] != "") {
+                    $content .= "<a href=\"" . self::safeHref($logo['img_href']) . "\" border=\"0\" target=\"_self\">";
+                }
+                if (substr($logo['img'], 0, 4) != "/img") {
+                    $logo['img'] = $this->_publicUrl . $logo['img'];
+                }
+
+                $content .= "<img src=\"" . self::esc($logo['img']) . "\"";
+                if ($logo['img_width'] != "") {
+                    $content .= " width=\"" . self::esc($logo['img_width']) . "\"";
+                }
+                if ($logo['img_height'] != "") {
+                    $content .= " height=\"" . self::esc($logo['img_height']) . "\"";
+                }
+                if ($logo['img_alt'] != "") {
+                    $content .= " alt=\"" . self::esc($logo['img_alt']) . "\"";
+                }
+                $content .= " />";
+                if ($logo['img_href'] != "") {
+                    $content .= "</a>";
+                }
+            } else {
+                $content .= "<span";
+                $class = self::safeClass($logo['text_class'] ?? '');
+                if ($class !== "") {
+                    $content .= " class=\"" . $class . "\"";
+                }
+                $style = self::safeStyle($logo['text_style'] ?? '');
+                if ($style !== "") {
+                    $content .= " style=\"" . $style . "\"";
+                }
+                $content .= ">" . self::escText($logo['text'][$lang] ?? '') . "</span>";
+            }
+            $content .= "</td>\n";
+        }
+        $content .= "</tr>\n</table>\n";
+
+        return $content;
     }
 }

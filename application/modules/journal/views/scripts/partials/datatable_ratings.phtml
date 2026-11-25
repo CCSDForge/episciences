@@ -69,26 +69,14 @@ foreach ($this->papers as $paper) : ?>
                 $this->url(['controller' => 'reviewer', 'action' => 'invitation', 'id' => $invitation->getId()]) :
                 $this->url(['controller' => $controller, 'action' => 'rating', 'id' => $paper->getDocid()]);
             ?>
-            <a href="<?= $url ?>"><strong><?php echo Ccsd_Tools::truncate($paper->getTitle(), 75); ?></strong></a>
+            <a href="<?php echo $url ?>"><strong><?php echo $this->paperTitle($paper); ?></strong></a>
         </td>
 
-        <?php // article volume ******************************************* ?>
-        <td class="text-center"><?php
-            if (array_key_exists($paper->getVid(), $this->volumes)) {
-                echo $this->volumes[$paper->getVid()]->getNameKey();
-            } else {
-                echo '-';
-            }
-            ?></td>
-
-        <?php // article section ******************************************* ?>
-        <td class="text-center"><?php
-            if (array_key_exists($paper->getSid(), $this->sections)) {
-                echo $this->translate($this->sections[$paper->getSid()]->getNameKey());
-            } else {
-                echo '-';
-            }
-            ?></td>
+        <?php echo $this->partial('partials/paper_list_volume_section.phtml', [
+            'paper' => $paper,
+            'volumes' => $this->volumes,
+            'sections' => $this->sections,
+        ]); ?>
 
         <?php // contributor name ************************************************** ?>
         <?php if ($action !== 'submitted' && $action !== 'ratings' && (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor())) : ?>

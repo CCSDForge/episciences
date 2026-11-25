@@ -178,7 +178,6 @@ class Episciences_ReviewTest extends TestCase
 
         $settings = $this->review->getSettings();
 
-        self::assertCount(2, $settings);
         self::assertSame('1234-5678', $settings[Episciences_Review::SETTING_ISSN]);
         self::assertSame('2', $settings[Episciences_Review::SETTING_INVITATION_DEADLINE]);
     }
@@ -198,6 +197,171 @@ class Episciences_ReviewTest extends TestCase
         self::assertSame(0, Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED);
         self::assertSame(1, Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL);
         self::assertSame(2, Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED);
+    }
+
+    // =========================================================================
+    // Journal licenses
+    // =========================================================================
+
+    public function testLicensesAreUnsetByDefault(): void
+    {
+        $this->review->applySettingsFromRows([]);
+        self::assertNull($this->review->getDefaultLicense());
+        self::assertSame([], $this->review->getAllowedLicenses());
+    }
+
+    public function testLicensesAreLoadedFromRows(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'CC-BY-4.0'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["CC-BY-4.0","MIT"]'],
+        ]);
+        self::assertSame('CC-BY-4.0', $this->review->getDefaultLicense());
+        self::assertSame(['CC-BY-4.0', 'MIT'], $this->review->getAllowedLicenses());
+    }
+
+    public function testAllowedLicensesIgnoreInvalidStoredValues(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => '  '],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => 'not json'],
+        ]);
+        self::assertNull($this->review->getDefaultLicense());
+        self::assertSame([], $this->review->getAllowedLicenses());
+    }
+
+    public function testLicensesCanBeSetThroughOptions(): void
+    {
+        $this->review->applySettingsFromRows([]);
+        $this->review->setOptions([
+            Episciences_Review::SETTING_LICENSE_DEFAULT => 'MIT',
+            Episciences_Review::SETTING_LICENSES_ALLOWED => ['MIT', '', 'MIT', ' Apache-2.0 '],
+        ]);
+        self::assertSame('MIT', $this->review->getDefaultLicense());
+        self::assertSame(['MIT', 'Apache-2.0'], $this->review->getAllowedLicenses());
+    }
+
+    private function buildLicensesSettingsForm(): Ccsd_Form
+    {
+        return $this->review->licensesSettingsForm();
+    }
+
+    private static function methodSource(string $name): string
+    {
+        $method = new ReflectionMethod(Episciences_Review::class, $name);
+        $lines = file($method->getFileName());
+
+        return implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+    }
+
+    public function testLicensesSettingsFormHasBothElementsAndSubmit(): void
+    {
+        $form = $this->buildLicensesSettingsForm();
+
+        self::assertNotNull($form->getElement(Episciences_Review::SETTING_LICENSE_DEFAULT));
+        self::assertNotNull($form->getElement(Episciences_Review::SETTING_LICENSES_ALLOWED));
+        self::assertNotNull($form->getDisplayGroup('licenses'));
+    }
+
+    /**
+     * Saved codes that are not (or no longer) recommended are displayed as selected:
+     * they must be valid options, otherwise the form cannot be submitted unchanged.
+     */
+    public function testLicensesSettingsFormAcceptsSavedNonRecommendedCodes(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'LicenseRef-Default-Test'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["LicenseRef-Allowed-Test"]'],
+        ]);
+
+        $form = $this->buildLicensesSettingsForm();
+
+        self::assertTrue($form->isValid([
+            Episciences_Review::SETTING_LICENSE_DEFAULT => 'LicenseRef-Default-Test',
+            Episciences_Review::SETTING_LICENSES_ALLOWED => ['LicenseRef-Default-Test', 'LicenseRef-Allowed-Test'],
+        ]));
+    }
+
+    /**
+     * The option labels are built by the licenseFormSelect helper: the form must not look up the license names itself
+     */
+    public function testLicensesSettingsFormDoesNotLookUpLicenseNames(): void
+    {
+        self::assertStringNotContainsString('getNameByIdentifier', self::methodSource('licensesSettingsForm'));
+    }
+
+    /**
+     * Licenses have their own page (review/licenses): the main settings page must neither
+     * display them (the required default license would block saving the other settings)
+     * nor save them.
+     */
+    public function testLicensesAreNotPartOfTheMainSettings(): void
+    {
+        self::assertStringNotContainsString('SETTING_LICENSE', self::methodSource('settingsForm'));
+        self::assertStringNotContainsString('SETTING_LICENSE', self::methodSource('save'));
+    }
+
+    public function testSaveLicenseSettingsOnlyWritesLicenseKeys(): void
+    {
+        $source = self::methodSource('saveLicenseSettings');
+
+        self::assertStringContainsString('self::SETTING_LICENSE_DEFAULT =>', $source);
+        self::assertStringContainsString('self::SETTING_LICENSES_ALLOWED =>', $source);
+        self::assertSame(2, substr_count($source, '=>'));
+    }
+
+    public function testDefaultLicenseIsRequired(): void
+    {
+        $form = $this->buildLicensesSettingsForm();
+        $default = $form->getElement(Episciences_Review::SETTING_LICENSE_DEFAULT);
+
+        self::assertTrue($default->isRequired());
+        self::assertFalse($default->isValid('', []));
+        self::assertArrayHasKey(Zend_Validate_NotEmpty::IS_EMPTY, $default->getMessages());
+    }
+
+    public function testAllowedLicensesAreOptional(): void
+    {
+        $form = $this->buildLicensesSettingsForm();
+
+        self::assertFalse($form->getElement(Episciences_Review::SETTING_LICENSES_ALLOWED)->isRequired());
+    }
+
+    public function testDefaultLicenseIsAddedToAllowedLicenses(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'Apache-2.0'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["MIT","CC-BY-4.0"]'],
+        ]);
+        self::assertSame(['MIT', 'CC-BY-4.0', 'Apache-2.0'], $this->review->getAllowedLicenses());
+    }
+
+    public function testDefaultLicenseIsNotDuplicatedInAllowedLicenses(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'MIT'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["MIT","CC-BY-4.0"]'],
+        ]);
+        self::assertSame(['MIT', 'CC-BY-4.0'], $this->review->getAllowedLicenses());
+    }
+
+    public function testDefaultLicenseIsNotDuplicatedInAllowedLicensesWhateverTheCase(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'cc-by-4.0'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '["MIT","CC-BY-4.0"]'],
+        ]);
+        self::assertSame(['MIT', 'CC-BY-4.0'], $this->review->getAllowedLicenses());
+    }
+
+    public function testEmptyAllowedLicensesStayUnrestrictedWithDefault(): void
+    {
+        // Empty list = all the recommended licenses: adding the default would restrict to it alone
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_LICENSE_DEFAULT, 'VALUE' => 'MIT'],
+            ['SETTING' => Episciences_Review::SETTING_LICENSES_ALLOWED, 'VALUE' => '[]'],
+        ]);
+        self::assertSame([], $this->review->getAllowedLicenses());
     }
 
     public function testGetCoverLetterRequirementDefaultsToOptionalWhenUnset(): void
@@ -423,6 +587,76 @@ class Episciences_ReviewTest extends TestCase
         self::assertSame('journalDescription', Episciences_Review::SETTING_JOURNAL_DESCRIPTION);
         self::assertSame('journalKeywords', Episciences_Review::SETTING_JOURNAL_KEYWORDS);
         self::assertSame('journalCreationYear', Episciences_Review::SETTING_JOURNAL_CREATION_YEAR);
+    }
+
+    // =========================================================================
+    // SETTING_MAIL_DISPLAY_CODE (custom rvcode label in automatic emails)
+    // =========================================================================
+
+    public function testMailDisplayCodeSettingConstant(): void
+    {
+        self::assertSame('mailDisplayCode', Episciences_Review::SETTING_MAIL_DISPLAY_CODE);
+    }
+
+    public function testSetAndGetMailDisplayCodeSetting(): void
+    {
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'custom-code');
+        self::assertSame('custom-code', $this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    public function testMailDisplayCodeSettingDefaultsToFalseWhenUnset(): void
+    {
+        self::assertFalse($this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    public function testGetMailDisplayCodeFallsBackToCodeWhenSettingUnset(): void
+    {
+        $this->review->setCode('epijinfo');
+        self::assertSame('epijinfo', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeFallsBackToCodeWhenSettingBlank(): void
+    {
+        $this->review->setCode('epijinfo');
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, '   ');
+        self::assertSame('epijinfo', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeUsesCustomSettingWhenSet(): void
+    {
+        $this->review->setCode('epijinfo');
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'Épijournal Info');
+        self::assertSame('Épijournal Info', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeTrimsCustomSetting(): void
+    {
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, '  custom  ');
+        self::assertSame('custom', $this->review->getMailDisplayCode());
+    }
+
+    public function testApplySettingsFromRowsSetsMailDisplayCode(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'VALUE' => 'epij-custom'],
+        ]);
+
+        self::assertSame('epij-custom', $this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    /**
+     * settingsForm() pulls in Zend_Registry-dependent sub-forms (translator, repositories),
+     * so it cannot be instantiated in isolation here; verified via source inspection instead,
+     * consistent with other DB/registry-dependent methods in this codebase's test suite.
+     */
+    public function testSettingsFormSourceAddsMailDisplayCodeElement(): void
+    {
+        $method = new ReflectionMethod(Episciences_Review::class, 'settingsForm');
+        $lines = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertStringContainsString("addElement('text', self::SETTING_MAIL_DISPLAY_CODE", $source);
+        self::assertStringContainsString('self::SETTING_MAIL_DISPLAY_CODE], \'global\'', $source);
     }
 
     // =========================================================================

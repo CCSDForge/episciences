@@ -656,4 +656,278 @@ XML;
         $body = $data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'] ?? [];
         self::assertSame('My Article', $body['title'] ?? '');
     }
+
+    // =========================================================================
+    // extractOaiCreators() — private, tested via ReflectionMethod
+    //
+    // Bug: the Zenodo REST API (/api/records/{id}) flattens a creator's
+    // affiliations into a single string, even when the creator has several
+    // affiliations on the record (e.g. Zenodo record 15741513: "Chambers, Sally"
+    // has 3 affiliations, only 1 was recovered before this fix). The DataCite
+    // OAI-PMH XML carries the full list with ROR identifiers.
+    // =========================================================================
+
+    private const OAI_DATACITE_XML = <<<'XML'
+<?xml version="1.0"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/">
+  <GetRecord>
+    <record>
+      <metadata>
+        <resource xmlns="http://datacite.org/schema/kernel-4">
+          <creators>
+            <creator>
+              <creatorName nameType="Personal">Candela, Gustavo</creatorName>
+              <givenName>Gustavo</givenName>
+              <familyName>Candela</familyName>
+              <nameIdentifier nameIdentifierScheme="ORCID">0000-0001-6122-0777</nameIdentifier>
+              <affiliation affiliationIdentifier="https://ror.org/05t8bcz72" affiliationIdentifierScheme="ROR">University of Alicante</affiliation>
+              <affiliation affiliationIdentifier="https://ror.org/05n09v162" affiliationIdentifierScheme="ROR">Digital Research Infrastructure for the Arts and Humanities</affiliation>
+            </creator>
+            <creator>
+              <creatorName nameType="Personal">Chambers, Sally</creatorName>
+              <givenName>Sally</givenName>
+              <familyName>Chambers</familyName>
+              <nameIdentifier nameIdentifierScheme="ORCID">0000-0002-2430-475X</nameIdentifier>
+              <affiliation affiliationIdentifier="https://ror.org/05dhe8b71" affiliationIdentifierScheme="ROR">British Library</affiliation>
+              <affiliation affiliationIdentifier="https://ror.org/05n09v162" affiliationIdentifierScheme="ROR">Digital Research Infrastructure for the Arts and Humanities</affiliation>
+              <affiliation>Ghent Centre for Digital Humanities, Ghent University, Belgium</affiliation>
+            </creator>
+            <creator>
+              <creatorName nameType="Personal">Solo, No Affiliation</creatorName>
+            </creator>
+          </creators>
+        </resource>
+      </metadata>
+    </record>
+  </GetRecord>
+</OAI-PMH>
+XML;
+
+    private function loadOaiMetadata(string $xmlString): \SimpleXMLElement
+    {
+        $metadata = simplexml_load_string($xmlString);
+        $metadata->registerXPathNamespace('oai', 'http://www.openarchives.org/OAI/2.0/');
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        return $metadata;
+    }
+
+    /**
+     * A creator with several <affiliation> elements must yield all of them, each
+     * carrying its ROR identifier when the record provides one.
+     */
+    public function testExtractOaiCreatorsReturnsAllAffiliationsWithRor(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'extractOaiCreators');
+        $method->setAccessible(true);
+
+        $creators = $method->invoke(null, $this->loadOaiMetadata(self::OAI_DATACITE_XML));
+
+        self::assertCount(3, $creators);
+
+        self::assertSame('Candela, Gustavo', $creators[0]['name']);
+        self::assertSame('0000-0001-6122-0777', $creators[0]['orcid']);
+        self::assertCount(2, $creators[0]['affiliations']);
+        self::assertSame('University of Alicante', $creators[0]['affiliations'][0]['name']);
+        self::assertSame('https://ror.org/05t8bcz72', $creators[0]['affiliations'][0]['ROR']);
+
+        self::assertSame('Chambers, Sally', $creators[1]['name']);
+        self::assertCount(3, $creators[1]['affiliations']);
+    }
+
+    /**
+     * An affiliation with no ROR attributes must still be extracted, without a 'ROR' key.
+     */
+    public function testExtractOaiCreatorsAffiliationWithoutRorHasNoRorKey(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'extractOaiCreators');
+        $method->setAccessible(true);
+
+        $creators = $method->invoke(null, $this->loadOaiMetadata(self::OAI_DATACITE_XML));
+
+        $ghentAffiliation = $creators[1]['affiliations'][2];
+        self::assertSame('Ghent Centre for Digital Humanities, Ghent University, Belgium', $ghentAffiliation['name']);
+        self::assertArrayNotHasKey('ROR', $ghentAffiliation);
+    }
+
+    /**
+     * A creator with no <affiliation> element must still be returned, with an empty list.
+     */
+    public function testExtractOaiCreatorsWithoutAffiliationReturnsEmptyList(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'extractOaiCreators');
+        $method->setAccessible(true);
+
+        $creators = $method->invoke(null, $this->loadOaiMetadata(self::OAI_DATACITE_XML));
+
+        self::assertSame('Solo, No Affiliation', $creators[2]['name']);
+        self::assertNull($creators[2]['orcid']);
+        self::assertSame([], $creators[2]['affiliations']);
+    }
+
+    // =========================================================================
+    // mergeOaiAffiliationsIntoCreators() — private, tested via ReflectionMethod
+    // =========================================================================
+
+    /**
+     * A REST creator matching an OAI creator by ORCID must receive the full
+     * OAI affiliation list, even if their names differ (e.g. diacritics/formatting).
+     */
+    public function testMergeOaiAffiliationsMatchesByOrcid(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'mergeOaiAffiliationsIntoCreators');
+        $method->setAccessible(true);
+
+        $restCreators = [
+            ['name' => 'Candela, G.', 'affiliation' => 'University of Alicante', 'orcid' => '0000-0001-6122-0777'],
+        ];
+        $oaiCreators = [
+            [
+                'name' => 'Candela, Gustavo',
+                'orcid' => '0000-0001-6122-0777',
+                'affiliations' => [
+                    ['name' => 'University of Alicante', 'ROR' => 'https://ror.org/05t8bcz72'],
+                    ['name' => 'Digital Research Infrastructure for the Arts and Humanities', 'ROR' => 'https://ror.org/05n09v162'],
+                ],
+            ],
+        ];
+
+        $result = $method->invoke(null, $restCreators, $oaiCreators);
+
+        self::assertCount(2, $result[0]['affiliations']);
+    }
+
+    /**
+     * An ORCID match must take priority over a homonym name match that appears
+     * earlier in the OAI creator list.
+     */
+    public function testMergeOaiAffiliationsOrcidMatchTakesPriorityOverEarlierHomonym(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'mergeOaiAffiliationsIntoCreators');
+        $method->setAccessible(true);
+
+        $restCreators = [
+            ['name' => 'Martin, Jean', 'affiliation' => 'Correct University', 'orcid' => '0000-0002-1825-0097'],
+        ];
+        $oaiCreators = [
+            [
+                'name' => 'Martin, Jean',
+                'orcid' => null,
+                'affiliations' => [
+                    ['name' => 'Wrong University'],
+                ],
+            ],
+            [
+                'name' => 'Martin, J.',
+                'orcid' => '0000-0002-1825-0097',
+                'affiliations' => [
+                    ['name' => 'Correct University', 'ROR' => 'https://ror.org/05t8bcz72'],
+                ],
+            ],
+        ];
+
+        $result = $method->invoke(null, $restCreators, $oaiCreators);
+
+        self::assertSame('Correct University', $result[0]['affiliations'][0]['name']);
+    }
+
+    /**
+     * Without an ORCID match, creators are matched by exact full name.
+     */
+    public function testMergeOaiAffiliationsFallsBackToExactName(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'mergeOaiAffiliationsIntoCreators');
+        $method->setAccessible(true);
+
+        $restCreators = [
+            ['name' => 'Chambers, Sally', 'affiliation' => 'British Library'],
+        ];
+        $oaiCreators = [
+            [
+                'name' => 'Chambers, Sally',
+                'orcid' => null,
+                'affiliations' => [
+                    ['name' => 'British Library', 'ROR' => 'https://ror.org/05dhe8b71'],
+                    ['name' => 'Ghent Centre for Digital Humanities, Ghent University, Belgium'],
+                ],
+            ],
+        ];
+
+        $result = $method->invoke(null, $restCreators, $oaiCreators);
+
+        self::assertCount(2, $result[0]['affiliations']);
+    }
+
+    /**
+     * A REST creator with no matching OAI creator keeps its original data untouched
+     * (no 'affiliations' key added).
+     */
+    public function testMergeOaiAffiliationsLeavesUnmatchedCreatorUntouched(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'mergeOaiAffiliationsIntoCreators');
+        $method->setAccessible(true);
+
+        $restCreators = [
+            ['name' => 'Unknown, Person', 'affiliation' => 'Somewhere'],
+        ];
+
+        $result = $method->invoke(null, $restCreators, []);
+
+        self::assertArrayNotHasKey('affiliations', $result[0]);
+        self::assertSame('Somewhere', $result[0]['affiliation']);
+    }
+
+    // =========================================================================
+    // enrichmentProcessCreators() — multi-affiliation branch (OAI enrichment)
+    // =========================================================================
+
+    /**
+     * When a creator carries the OAI-merged 'affiliations' list, enrichmentProcessCreators()
+     * must build one entry per affiliation, using AffiliationHelper::buildWithRor() when a
+     * ROR identifier is present and buildNameOnly() otherwise — instead of collapsing to
+     * the single flattened REST 'affiliation' string.
+     */
+    public function testEnrichmentProcessCreatorsUsesAllOaiAffiliations(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'enrichmentProcessCreators');
+        $method->setAccessible(true);
+
+        $creators = [
+            [
+                'name' => 'Candela, Gustavo',
+                'affiliation' => 'University of Alicante', // single flattened REST value
+                'affiliations' => [ // full OAI-merged list
+                    ['name' => 'University of Alicante', 'ROR' => 'https://ror.org/05t8bcz72'],
+                    ['name' => 'Digital Research Infrastructure for the Arts and Humanities', 'ROR' => 'https://ror.org/05n09v162'],
+                ],
+            ],
+        ];
+
+        [, $authors] = $method->invoke(null, $creators, [], []);
+
+        self::assertCount(2, $authors[0]['affiliation']);
+        self::assertSame('University of Alicante', $authors[0]['affiliation'][0]['name']);
+        self::assertSame('https://ror.org/05t8bcz72', $authors[0]['affiliation'][0]['id'][0]['id']);
+        self::assertSame('ROR', $authors[0]['affiliation'][0]['id'][0]['id-type']);
+        self::assertSame('Digital Research Infrastructure for the Arts and Humanities', $authors[0]['affiliation'][1]['name']);
+    }
+
+    /**
+     * A creator without the OAI 'affiliations' key falls back to the original
+     * single-affiliation behaviour (regression guard for the pre-existing path).
+     */
+    public function testEnrichmentProcessCreatorsFallsBackWithoutOaiAffiliations(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'enrichmentProcessCreators');
+        $method->setAccessible(true);
+
+        $creators = [
+            ['name' => 'Martin, Paul', 'affiliation' => 'CNRS'],
+        ];
+
+        [, $authors] = $method->invoke(null, $creators, [], []);
+
+        self::assertCount(1, $authors[0]['affiliation']);
+        self::assertSame(['name' => 'CNRS'], $authors[0]['affiliation'][0]);
+    }
 }

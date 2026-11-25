@@ -1,20 +1,34 @@
 <?php
 
+use Episciences\Paper\WriteFailure;
+
 class Episciences_Paper_DatasetsMetadataManager
 {
     /**
-     * @param array $datasets
-     * @return int
+     * @param array<Episciences_Paper_DatasetMetadata|string> $datasets
+     * @return int|null id of the inserted row, null when nothing was inserted: callers store it as
+     *                  paper_datasets.id_paper_datasets_meta, where NULL means "no metadata"
+     *                  (0 would break the foreign key, and INSERT IGNORE would drop the dataset)
      */
+    public static function insert(array $datasets): ?int
+    {
+        // Reported, not fatal: the caller stores its dataset without metadata
+        return WriteFailure::reportAsWarning(__METHOD__, static fn(): ?int => self::insertOrFail($datasets), null);
+    }
 
-    public static function insert(array $datasets): int
+    /**
+     * Same as insert(), but a database failure is thrown: the processing that follows the save of a paper
+     * reports it and still stores the dataset, without metadata (Episciences_Submit::processDatasets())
+     *
+     * @param array<Episciences_Paper_DatasetMetadata|string> $datasets
+     * @return int|null id of the inserted row, null when there was nothing to insert
+     * @throws Zend_Db_Exception
+     */
+    public static function insertOrFail(array $datasets): ?int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $values = [];
-
-        $affectedRows = 0;
-
 
         foreach ($datasets as $dataset) {
 
@@ -29,24 +43,16 @@ class Episciences_Paper_DatasetsMetadataManager
 
         }
 
-        $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_DATASETS_META) . ' (`metatext`) VALUES ';
-
-        if (!empty($values)) {
-
-            try {
-                //Prepares and executes an SQL
-                /** @var Zend_Db_Statement_Interface $result */
-                $result = $db->query($sql . implode(', ', $values));
-
-                $affectedRows = $result->rowCount();
-
-            } catch (Exception $e) {
-                trigger_error($e->getMessage(), E_USER_ERROR);
-            }
+        // Without an insert, lastInsertId() would return the id of an earlier insert of the connection
+        if ($values === []) {
+            return null;
         }
 
-        return $db->lastInsertId();
+        $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_DATASETS_META) . ' (`metatext`) VALUES ';
 
+        $db->query($sql . implode(', ', $values));
+
+        return (int)$db->lastInsertId();
     }
     /**
      * @param int $id

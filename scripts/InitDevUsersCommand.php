@@ -1,5 +1,6 @@
 <?php
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -9,15 +10,9 @@ use Faker\Factory;
 /**
  * Modern Symfony Command to initialize the 'dev' journal with a specific distribution of 30 users.
  */
+#[AsCommand(name: 'app:init-dev-users', description: 'Initializes the dev journal (RVID 1) with 30 users (1 chief, 2 admins, 5 editors, 22 members)')]
 class InitDevUsersCommand extends Command
 {
-    protected static $defaultName = 'app:init-dev-users';
-
-    protected function configure(): void
-    {
-        $this->setDescription('Initializes the dev journal (RVID 1) with 30 users (1 chief, 2 admins, 5 editors, 22 members)');
-    }
-
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);

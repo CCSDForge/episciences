@@ -3,6 +3,8 @@
 use Episciences\AppRegistry;
 use Episciences\Upload\PublicFileStore;
 use Episciences\Upload\SafeFileName;
+use Episciences\Upload\UploadChecker;
+use Psr\Log\LogLevel;
 
 class Episciences_Volume_Metadata
 {
@@ -279,10 +281,11 @@ class Episciences_Volume_Metadata
 
         if ($file !== null && $file !== '') {
             // The stored reference is lost on the next save: keep a trace to find the orphan file
-            AppRegistry::getMonoLogger()?->warning('Volume metadata file name rejected', [
-                'file' => is_scalar($file) ? (string)$file : gettype($file),
-                'vid' => $this->getVid(),
-            ]);
+            Episciences_View_Helper_Log::log(
+                'Volume metadata file name rejected',
+                LogLevel::WARNING,
+                ['file' => is_scalar($file) ? (string)$file : gettype($file), 'vid' => $this->getVid()]
+            );
         }
 
         $this->_file = null;
@@ -319,11 +322,14 @@ class Episciences_Volume_Metadata
         if ($this->getTmpfile()) {
             $file = $this->getTmpfile();
 
-            // The description of the file comes back from the browser: only the uploads parked for this journal are stored
+            // The description of the file comes back from the browser: check it again before storing anything
             $source = PublicFileStore::resolveTemporaryFile((string)($file['tmp_name'] ?? ''), REVIEW_TMP_PATH);
+            $error = $source === null
+                ? 'The file is not an upload of this journal'
+                : UploadChecker::firstPublicFileError($source, (string)($file['name'] ?? ''));
 
-            if ($source === null) {
-                AppRegistry::getMonoLogger()?->warning('Volume file refused', ['vid' => $this->getVid(), 'reason' => 'The file is not an upload of this journal']);
+            if ($error !== null) {
+                AppRegistry::getMonoLogger()?->warning('Volume file refused', ['vid' => $this->getVid(), 'reason' => $error]);
                 return false;
             }
 
@@ -336,8 +342,8 @@ class Episciences_Volume_Metadata
 
             // setFile() would drop a name that is not bare (e.g. with a backslash): check it before
             // the previous file is removed, or the volume would lose both files
-            $name = (string)($file['name'] ?? '');
-            $filename = SafeFileName::isBare($name) ? Ccsd_Tools::getNewFileName($name, $path) : '';
+            $storedName = PublicFileStore::storedName((string)$file['name']);
+            $filename = SafeFileName::isBare($storedName) ? Ccsd_Tools::getNewFileName($storedName, $path) : '';
             if (!SafeFileName::isBare($filename)) {
                 AppRegistry::getMonoLogger()?->warning('Volume file refused', ['vid' => $this->getVid(), 'reason' => 'The file name is not a bare file name']);
                 return false;

@@ -1,0 +1,23 @@
+<?php
+
+use Episciences\Maintenance\ReadOnlyMode;
+
+// Single maintenance banner, by priority: read-only mode in progress, upcoming read-only maintenance
+// (planned start in the future), then the free message of RENDER_ALERT_BANNER (pwd.json)
+if (ReadOnlyMode::isEnabled()) {
+    $message = 'Maintenance en cours : le site reste consultable, mais les connexions, soumissions et modifications sont temporairement suspendues.';
+} elseif (ReadOnlyMode::isAnnounced()) {
+    $message = 'Maintenance à venir : le site restera consultable, mais les connexions, soumissions et modifications seront temporairement suspendues.';
+} else {
+    $message = null;
+}
+?>
+<?php if ($message !== null): ?>
+    <div class="alert alert-warning text-center" role="status">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        <?= $this->escape($this->translate($message)) ?>
+        <?= $this->render('commons/read-only-schedule.phtml') ?>
+    </div>
+<?php else: ?>
+    <?= $this->render('commons/alert-banner.phtml') ?>
+<?php endif; ?>

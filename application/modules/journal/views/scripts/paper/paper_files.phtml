@@ -5,7 +5,7 @@ $action = 'oafiles';
 $files = $paper->getFiles();
 $hideSizeAndChecksumColumns = array_filter($files, static fn($f): bool => $f->getFileSize() > 0);
 ?>
-<?php if ($paper->hasHook && $files): ?>
+<?php if ($paper->hasFilesEnrichment() && $files): ?>
     <div class="panel panel-default collapsable" id="paper-files">
         <div class="panel-heading">
             <h2 class="panel-title"><?= $this->translate('Fichiers') ?></h2>

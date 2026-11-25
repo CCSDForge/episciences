@@ -73,14 +73,11 @@ trait Ccsd_Form_Trait_Populate {
                  if (is_array($v)) {
                      return $v;
                  }
-                 switch ($v) {
-                     case $translator->isTranslated($v) :
-                         return $translator->translate($v);
-                     case $translator->isTranslated('lang_' . $v) :
-                         return $translator->translate('lang_' . $v);
-                     default :
-                         return $v;
+                 if ($translator->isTranslated($v)) {
+                     return $translator->translate($v);
                  }
+                 // Language codes are resolved from CLDR (Symfony Intl); other values are kept as is
+                 return is_string($v) ? Ccsd_Locale::getLanguageName($v) : $v;
 
              }, $this->_data);
          }

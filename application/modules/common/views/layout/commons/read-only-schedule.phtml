@@ -1,0 +1,28 @@
+<?php
+
+use Episciences\Maintenance\ReadOnlyMode;
+
+// Planned schedule of the read-only maintenance (optional, see READ_ONLY_MODE_START / READ_ONLY_MODE_END in pwd.json)
+$start = ReadOnlyMode::getPlannedStart();
+$end = ReadOnlyMode::getPlannedEnd();
+$locale = Zend_Registry::isRegistered('lang') ? (string) Zend_Registry::get('lang') : 'en';
+
+if ($start !== null && $end !== null) {
+    $schedule = sprintf(
+        $this->translate('Maintenance prévue du %1$s au %2$s.'),
+        ReadOnlyMode::formatDateTime($start, $locale),
+        ReadOnlyMode::formatDateTime($end, $locale)
+    );
+} elseif ($end !== null) {
+    $schedule = sprintf($this->translate('Fin de maintenance prévue : %s.'), ReadOnlyMode::formatDateTime($end, $locale));
+} elseif ($start !== null && ReadOnlyMode::isAnnounced()) {
+    $schedule = sprintf($this->translate('Début de maintenance prévu : %s.'), ReadOnlyMode::formatDateTime($start, $locale));
+} elseif ($start !== null) {
+    $schedule = sprintf($this->translate('Maintenance commencée le %s.'), ReadOnlyMode::formatDateTime($start, $locale));
+} else {
+    $schedule = '';
+}
+?>
+<?php if ($schedule !== ''): ?>
+    <span class="read-only-schedule"><?= $this->escape($schedule) ?></span>
+<?php endif; ?>

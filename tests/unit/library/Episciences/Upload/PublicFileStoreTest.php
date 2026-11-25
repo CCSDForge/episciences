@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace unit\library\Episciences\Upload;
 
 use Episciences\Upload\PublicFileStore;
+use Episciences\Upload\UploadChecker;
 use Episciences_Volume_Metadata;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \Episciences\Upload\PublicFileStore
+ * @covers \Episciences\Upload\UploadChecker::publicFilesPolicy
  * @covers \Episciences_Volume_Metadata::save
  */
 final class PublicFileStoreTest extends TestCase
@@ -96,6 +98,45 @@ final class PublicFileStoreTest extends TestCase
         ];
     }
 
+    /**
+     * @dataProvider providerNames
+     */
+    public function testStoredName(string $original, string $expected): void
+    {
+        self::assertSame($expected, PublicFileStore::storedName($original));
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function providerNames(): array
+    {
+        return [
+            'plain' => ['report.pdf', 'report.pdf'],
+            'extension in lowercase' => ['Report.PDF', 'Report.pdf'],
+            'earlier extension is neutralised' => ['script.php.png', 'script_php.png'],
+            'several dots' => ['a.b.c.txt', 'a_b_c.txt'],
+            'no base name' => ['.png', 'file.png'],
+            'no extension' => ['README', 'README'],
+        ];
+    }
+
+    public function testPublicFilesPolicyDoesNotAcceptHtml(): void
+    {
+        $policy = UploadChecker::publicFilesPolicy();
+
+        self::assertFalse($policy->isExtensionAllowed('html'));
+        self::assertTrue($policy->isExtensionAllowed('pdf'));
+        self::assertTrue($policy->isExtensionAllowed('png'));
+    }
+
+    public function testHtmlIsRefusedForPublicFilesEvenWithAnHtmlContent(): void
+    {
+        $file = $this->root . '/page.html';
+        file_put_contents($file, '<html><body><script>alert(1)</script></body></html>');
+
+        self::assertNotNull(UploadChecker::firstPublicFileError($file, 'page.html'));
+    }
 
     public function testMetadataDoesNotStoreAFileThatIsNotAnUploadOfTheJournal(): void
     {

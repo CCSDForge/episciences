@@ -17,5 +17,5 @@ $hasAvatarData = is_array($user) && (!empty($user['SCREEN_NAME']) || !empty($use
         <?= $this->userAvatar($user, 'initials') ?>
     <?php endif; ?>
     <span class="log-user-name"><?= $this->escape($this->fullName) ?></span>
-    <?= $this->tag ?>
+    <?= $this->escape((string)$this->tag) ?>
 </span>

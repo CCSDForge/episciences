@@ -871,4 +871,31 @@ class Episciences_UserTest extends TestCase
         $this->assertTrue($result);
         $this->assertSame('uid-from-object', $user->getUuid());
     }
+
+    // -------------------------------------------------------------------------
+    // hasOnlyAdministratorRole with an explicit journal (CLI: no usable RVID constant)
+    // -------------------------------------------------------------------------
+
+    public function testHasOnlyAdministratorRoleForExplicitJournal(): void
+    {
+        $this->user->setRoles([
+            RVID => [Episciences_Acl::ROLE_EDITOR],
+            9999 => [Episciences_Acl::ROLE_ADMIN],
+        ]);
+
+        $this->assertTrue($this->user->hasOnlyAdministratorRole(9999));
+        $this->assertFalse($this->user->hasOnlyAdministratorRole(RVID));
+    }
+
+    public function testHasOnlyAdministratorRoleForExplicitJournalWithOtherRole(): void
+    {
+        $this->user->setRoles([9999 => [Episciences_Acl::ROLE_ADMIN, Episciences_Acl::ROLE_SECRETARY]]);
+        $this->assertFalse($this->user->hasOnlyAdministratorRole(9999));
+    }
+
+    public function testHasOnlyAdministratorRoleForJournalWithoutRoles(): void
+    {
+        $this->user->setRoles([RVID => [Episciences_Acl::ROLE_ADMIN]]);
+        $this->assertFalse($this->user->hasOnlyAdministratorRole(9999));
+    }
 }

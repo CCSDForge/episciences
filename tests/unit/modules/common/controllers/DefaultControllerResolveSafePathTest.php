@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace unit\modules\common\controllers;
 
+use Episciences\Security\AccessLog;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Behavioural tests for DefaultController::resolveSafePath().
@@ -20,6 +24,8 @@ use ReflectionMethod;
  */
 final class DefaultControllerResolveSafePathTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private object $controller;
     private ReflectionMethod $method;
 
@@ -64,7 +70,9 @@ final class DefaultControllerResolveSafePathTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->rrmdir($this->root);
+        if (isset($this->root)) {
+            $this->rrmdir($this->root);
+        }
     }
 
     private function resolve(string $relativePath): ?string
@@ -208,5 +216,64 @@ final class DefaultControllerResolveSafePathTest extends TestCase
         self::assertNull($result,
             'A sibling directory sharing the base-name prefix must not be treated as inside the base '
             . '(the DIRECTORY_SEPARATOR boundary check prevents prefix confusion)');
+    }
+
+    // -----------------------------------------------------------------------
+    // Security log: attempts are recorded, missing files are not
+    // -----------------------------------------------------------------------
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function climbingPathProvider(): array
+    {
+        return [
+            'existing target outside the base' => ['../outside.txt'],
+            'missing target outside the base' => ['../../no-such-file'],
+            'climbing from a subdirectory' => ['sub/../../outside.txt'],
+            'backslash separators' => ['..\\..\\no-such-file'],
+            'leading separator' => ['/../../no-such-file'],
+            'directory named like the home shortcut' => ['~/../../no-such-file'],
+        ];
+    }
+
+    /**
+     * @dataProvider climbingPathProvider
+     */
+    public function testPathLeavingTheBaseIsLogged(string $relativePath): void
+    {
+        self::assertNull($this->resolve($relativePath));
+        self::assertSame([[AccessLog::UNSAFE_PATH, 'outside_base_directory']], $this->loggedEvents());
+        self::assertSame($relativePath, $this->securityLogRecords()[0]->context['path']);
+    }
+
+    public function testControlCharacterIsLogged(): void
+    {
+        $this->resolve("doc\0.pdf");
+
+        self::assertSame([[AccessLog::UNSAFE_PATH, 'control_character']], $this->loggedEvents());
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function harmlessPathProvider(): array
+    {
+        return [
+            'existing file' => ['doc.pdf'],
+            'missing file' => ['does-not-exist.pdf'],
+            'missing file below a parent segment staying inside' => ['sub/../nope.pdf'],
+            'dot segments staying inside' => ['./sub/../doc.pdf'],
+        ];
+    }
+
+    /**
+     * @dataProvider harmlessPathProvider
+     */
+    public function testPathStayingInsideTheBaseIsNotLogged(string $relativePath): void
+    {
+        $this->resolve($relativePath);
+
+        self::assertSame([], $this->loggedEvents());
     }
 }

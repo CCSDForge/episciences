@@ -21,7 +21,7 @@ class ImportApacheLogsCommandTest extends TestCase
         mkdir($this->tempLogDir, 0755, true);
 
         $application = new Application();
-        $application->add(new ImportApacheLogsCommand());
+        $application->addCommand(new ImportApacheLogsCommand());
         $this->command = $application->find('stats:import-logs');
         $this->commandTester = new CommandTester($this->command);
     }

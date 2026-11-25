@@ -18,7 +18,7 @@ class Episciences_Form_Validate_CheckMinimumDeadlineDelay extends Zend_Validate_
         self::DEADLINE_GREATER_THAN_MAX => "Le délai de relecture minimum ne peut pas être supérieur au délai de relecture maximum.",
     );
 
-    public function isValid($value)
+    public function isValid($value, $context = null)
     {
         $this->_setValue($value);
 
@@ -27,9 +27,15 @@ class Episciences_Form_Validate_CheckMinimumDeadlineDelay extends Zend_Validate_
             return false;
         }
 
-        $request = Zend_Controller_Front::getInstance()->getRequest();
-        $deadline_min = trim($value) . ' ' . $request->getPost('rating_deadline_min_unit');
-        $deadline_max = trim($request->getPost('rating_deadline_max')) . ' ' . $request->getPost('rating_deadline_max_unit');
+        $post = is_array($context) ? $context : Zend_Controller_Front::getInstance()->getRequest()->getPost();
+        $post['rating_deadline_min'] = $value;
+        $deadline_min = Episciences\Form\Validate\DeadlineUnit::buildInterval($post, 'rating_deadline_min');
+        $deadline_max = Episciences\Form\Validate\DeadlineUnit::buildInterval($post, 'rating_deadline_max');
+
+        // an unusable value or unit is reported by the element that owns it
+        if ($deadline_min === null || $deadline_max === null) {
+            return true;
+        }
 
         if (strtotime($deadline_min) > strtotime($deadline_max)) {
             $this->_error(self::DEADLINE_GREATER_THAN_MAX);

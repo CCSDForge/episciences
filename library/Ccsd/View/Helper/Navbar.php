@@ -57,6 +57,12 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
     protected $_userRenderScript = 'commons/user.phtml';
 
     /**
+     * Display the account menu or the login/create account links (hidden in read-only maintenance mode)
+     * @var bool
+     */
+    protected $_accountActions = true;
+
+    /**
      * @var string
      */
     protected $_navBarSearchScript = 'commons/navbar-search-form.phtml';
@@ -94,7 +100,8 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
             $this->_displayLogin = true;
             foreach ([
                          'isLogged',
-                         'userRenderScript'
+                         'userRenderScript',
+                         'accountActions'
                      ] as $option) {
                 if (isset($loginOptions[$option])) {
                     $this->{'_' . $option} = $loginOptions[$option];
@@ -178,13 +185,17 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
 
 
                         <?php
-                        if ($this->_isLogged) {
+                        if ($this->_accountActions && $this->_isLogged) {
                             try {
                                 echo $this->view->render($this->_userRenderScript);
                             } catch (Exception $e) {
                                 trigger_error('Failed rendering ' . $this->_userRenderScript, E_USER_WARNING);
                             }
-                        } else { ?>
+                        } elseif ($this->_isLogged) {
+                            // Read-only maintenance mode: no account menu, but logging out stays possible ?>
+                            <a class="btn btn-default navbar-btn" href="<?= $view->url(['controller' => 'user', 'action' => 'logout']) ?>"><i class="fas fa-sign-out-alt" aria-hidden="true"></i>&nbsp;<?= $view->translate('Déconnexion') ?></a>
+                            <?php
+                        } elseif ($this->_accountActions) { ?>
 
                             <?php if (defined('RVCODE') && RVCODE !== 'portal'): ?>
 
@@ -195,11 +206,13 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                             <?php endif; ?>
 
                             &nbsp;
-                            <form class="form-inline navbar-form pull-right" style="margin-top: 8px; margin-right: 8px;" action="<?= $this->view->url(['controller' => 'user', 'action' => 'login']) ?>" id="form-login" method="post">
+                            <?php // GET: the login action only reads the page to return to from the URL ?>
+                            <form class="form-inline navbar-form pull-right" style="margin-top: 8px; margin-right: 8px;" action="<?= $this->view->url(['controller' => 'user', 'action' => 'login']) ?>" id="form-login" method="get">
                                 <input type="hidden" name="forward-controller" value="<?php echo $request->getControllerName(); ?>"/>
                                 <input type="hidden" name="forward-action" value="<?php echo $request->getActionName(); ?>"/>
                                 <?php
-                                $forwardParams = $request->getParams();
+                                // URL parameters of the current page only (route first), never its posted fields
+                                $forwardParams = array_merge($request->getQuery(), $request->getUserParams());
                                 unset($forwardParams['controller'], $forwardParams['action'], $forwardParams['module'], $forwardParams['submit'], $forwardParams['submit_advanced']);
 
                                 foreach ($forwardParams as $name => $value) {

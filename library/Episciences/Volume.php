@@ -301,8 +301,9 @@ class Episciences_Volume
             [Episciences_Acl::ROLE_GUEST_EDITOR, Episciences_Acl::ROLE_EDITOR, Episciences_Acl::ROLE_CHIEF_EDITOR] :
             (array)$role;
 
+        // the latest assignment of each user (highest ID: two assignments can have the same date)
         $subquery = $this->_db->select()
-            ->from(T_ASSIGNMENTS, ['UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', Episciences_User_Assignment::ITEM_VOLUME)
             ->where('ITEMID = ?', $this->getVid())
             ->where('ROLEID = ?', $role)
@@ -311,10 +312,10 @@ class Episciences_Volume
         return $this->_db->select()
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinUsing(T_USERS, 'UID', ['LANGUEID', 'SCREEN_NAME'])
-            ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subquery], 'a.ID = b.LAST_ID', [])
             ->join(['ur' => T_USER_ROLES], 'ur.UID = a.UID')
             ->where('ur.ROLEID IN (?)', $roles)
-            ->where('ur.RVID = ?', RVID);
+            ->where('ur.RVID = ?', $this->getRvid() ?: (defined('RVID') ? RVID : 0));
     }
 
     /**
@@ -803,6 +804,11 @@ class Episciences_Volume
                 $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding, $vid);
             }
 
+            // Enqueue Next.js cache revalidation for new volume
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "volumes-{$rvcode}");
+            }
 
         } else {
             // Modification d'un volume
@@ -816,6 +822,14 @@ class Episciences_Volume
                 $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding, $vid, true);
             }
 
+            // Enqueue Next.js cache revalidation for updated volume
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                    "volume-{$vid}",
+                    "volumes-{$rvcode}",
+                ]);
+            }
 
         }
 
@@ -886,8 +900,12 @@ class Episciences_Volume
      */
     private function addNewVolume(): int
     {
+        if (!$this->getRvid()) { // If RVID has not been defined, it is specified here
+            $this->setRvid(RVID);
+        }
+
         $values = $this->getVolumeDataForSave();
-        $values['RVID'] = RVID;
+        $values['RVID'] = $this->getRvid();
         $values['POSITION'] = 0;
 
         try {
@@ -973,6 +991,8 @@ class Episciences_Volume
 
             // Sanitize user input to prevent XSS
             $sanitizedValues = $this->sanitizeMetadataValues($decodedValues);
+
+            $sanitizedValues = $this->discardForeignMetadataId($sanitizedValues);
 
             // Add required fields
             $sanitizedValues['vid'] = $this->getVid();
@@ -1114,6 +1134,28 @@ class Episciences_Volume
         }
 
         return $sanitized;
+    }
+
+    /**
+     * A client-supplied metadata id is only honoured for a row that already belongs to this volume;
+     * otherwise it is dropped so that a new row is created instead of overwriting another one.
+     * The id is normalised to an integer: a float such as 7.5 would match key 7 here but no row in the UPDATE,
+     * and the cleanup of old metadata would then delete row 7.
+     *
+     * @param array<string, mixed> $values
+     * @return array<string, mixed>
+     */
+    private function discardForeignMetadataId(array $values): array
+    {
+        $id = isset($values['id']) ? filter_var($values['id'], FILTER_VALIDATE_INT) : false;
+
+        if ($id === false || !array_key_exists($id, $this->getMetadatas())) {
+            unset($values['id']);
+        } else {
+            $values['id'] = $id;
+        }
+
+        return $values;
     }
 
     /**
@@ -1521,9 +1563,16 @@ class Episciences_Volume
     /**
      * @return array
      */
+    /**
+     * Conference metadata of a proceedings volume.
+     *
+     * Settings are expected to be loaded already: every caller reaches this method
+     * through isProceeding(), which reads one of them. Load them explicitly —
+     * Episciences_VolumesManager::loadSettingsForVolumes() does it for a whole list
+     * in one query — rather than relying on a side effect here.
+     */
     public function getProceedingInfo(): array
     {
-        $this->loadSettings();
         return [
             self::VOLUME_IS_PROCEEDING => $this->getSetting(self::VOLUME_IS_PROCEEDING),
             self::VOLUME_CONFERENCE_NAME => $this->getSetting(self::VOLUME_CONFERENCE_NAME),

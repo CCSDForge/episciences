@@ -3,11 +3,15 @@ use Laminas\Feed\Writer\Feed;
 
 class Episciences_Rss
 {
+    public const DEFAULT_MAX_ENTRIES = 20;
+    public const MAX_ENTRIES = 100;
+
     protected Episciences_Review $_review;
     protected Feed $_feed;
     private Zend_Translate $_translator;
 
     /**
+     * @param array<mixed> $settings
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Exception
      * @throws Zend_Feed_Exception
@@ -21,29 +25,7 @@ class Episciences_Rss
         if ($review) {
             $this->setReview($review);
 
-            $feed = new Feed;
-            if ($settings["action"] === 'papers') {
-                $feedTitle = $this->_translator->translate("Dernières publications");
-            } elseif ($settings["action"] === 'news') {
-                $feedTitle = $this->_translator->translate("Dernières actualités");
-            } else {
-                $feedTitle = '';
-            }
-            $feed->setTitle(sprintf('%s - %s', $review->getName(), $feedTitle));
-            $feed->setLink(APPLICATION_URL);
-            $feed->setFeedLink(APPLICATION_URL . '/rss/papers', 'rss');
-            $feed->setDescription($this->_translator->translate("Derniers articles"));
-            $feed->setImage(['uri' => APPLICATION_URL . '/img/episciences_sign_50x50.png', 'title' => DOMAIN, 'link' => APPLICATION_URL]);
-            $feed->setGenerator(DOMAIN);
-
-            $feed->addAuthor([
-                'name' => $review->getName()
-            ]);
-            $feed->setDateModified(time());
-            $feed->addHub('http://pubsubhubbub.appspot.com/');
-
-            $this->setFeed($feed);
-
+            $this->setFeed($this->createFeed($review->getName(), (string)$settings["action"]));
 
             if ($settings["action"] === 'papers') {
                 $this->listPapers($settings);
@@ -101,6 +83,37 @@ class Episciences_Rss
         echo $feed->export('rss');
     }
 
+    /**
+     * Channel of the feed of an action ('papers' or 'news')
+     */
+    private function createFeed(string $reviewName, string $action): Feed
+    {
+        if ($action === 'news') {
+            $feedTitle = $this->_translator->translate("Dernières actualités");
+            $feedDescription = $feedTitle;
+        } else {
+            $feedTitle = $action === 'papers' ? $this->_translator->translate("Dernières publications") : '';
+            $feedDescription = $this->_translator->translate("Derniers articles");
+            $action = 'papers';
+        }
+
+        $feed = new Feed;
+        $feed->setTitle(sprintf('%s - %s', $reviewName, $feedTitle));
+        $feed->setLink(APPLICATION_URL);
+        $feed->setFeedLink(APPLICATION_URL . '/rss/' . $action, 'rss');
+        $feed->setDescription($feedDescription);
+        $feed->setImage(['uri' => APPLICATION_URL . '/img/episciences_sign_50x50.png', 'title' => DOMAIN, 'link' => APPLICATION_URL]);
+        $feed->setGenerator(DOMAIN);
+
+        $feed->addAuthor([
+            'name' => $reviewName
+        ]);
+        $feed->setDateModified(time());
+        $feed->addHub('http://pubsubhubbub.appspot.com/');
+
+        return $feed;
+    }
+
     public function getReview(): Episciences_Review
     {
         return $this->_review;
@@ -124,13 +137,28 @@ class Episciences_Rss
             'is' => ['status' => Episciences_Paper::STATUS_PUBLISHED],
             'order' => 'PUBLICATION_DATE DESC'];
 
-        if (array_key_exists('max', $settings)) {
-            $filters['limit'] = $settings['max'];
-        } else {
-            $filters['limit'] = 20;
-        }
+        $filters['limit'] = self::getMaxEntries($settings);
 
         return $review->getPapers($filters);
+    }
+
+    /**
+     * Number of entries of a feed: the requested 'max', bounded, or the default one
+     * @param array<mixed> $settings
+     */
+    public static function getMaxEntries(array $settings): int
+    {
+        return self::parseMaxEntries($settings['max'] ?? null) ?? self::DEFAULT_MAX_ENTRIES;
+    }
+
+    /**
+     * Requested number of entries: a positive integer, bounded, or null when invalid
+     */
+    public static function parseMaxEntries(mixed $max): ?int
+    {
+        $max = filter_var($max, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        return $max === false ? null : min($max, self::MAX_ENTRIES);
     }
 
     /**
@@ -155,17 +183,19 @@ class Episciences_Rss
      */
     public function listNews(array $settings): void
     {
-        $max = (array_key_exists('max', $settings)) ? $settings['max'] : 20;
         $newsList = new Episciences_News();
         $feed = $this->getFeed();
-        foreach ($newsList->getListNews(false, 0, $max) as $news) {
+        // Only the news put online by the journal
+        foreach ($newsList->getListNews(true, 0, self::getMaxEntries($settings)) as $news) {
             $entry = $feed->createEntry();
             $entry->setTitle($this->_translator->translate($news['TITLE']));
-            $entry->setLink(APPLICATION_URL . '/news/');
+            // Anchor of the news on the news page: also the guid of the entry, unique per news
+            $entry->setLink(sprintf('%s/news/#news-%d', APPLICATION_URL, $news['NEWSID']));
             $pastDateTime = strtotime($news['DATE_POST']);
             $entry->setDateModified($pastDateTime);
             $entry->setDateCreated($pastDateTime);
-            $postContent = $this->_translator->translate($news['CONTENT']);
+            // Plain text, rendered as on the news page
+            $postContent = nl2br(htmlspecialchars($this->_translator->translate($news['CONTENT']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
             $entry->setDescription($postContent);
             $entry->setContent($postContent);
             $feed->addEntry($entry);

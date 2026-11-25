@@ -1,0 +1,36 @@
+// Illustration or graphical abstract panel of the paper page (paper/paper_graphical_abstract.phtml)
+
+.graphical-abstract-figure {
+  margin: 0 0 15px;
+
+  img {
+    display: block;
+    max-width: 100%;
+    max-height: 480px;
+    height: auto;
+    object-fit: contain;
+  }
+
+  figcaption {
+    margin-top: 5px;
+    color: $dark-grey;
+    font-size: 0.9em;
+  }
+}
+
+.graphical-abstract-form {
+  max-width: 640px;
+
+  .graphical-abstract-counter {
+    margin-top: 0;
+    text-align: right;
+  }
+
+  .graphical-abstract-status:empty {
+    display: none;
+  }
+
+  .graphical-abstract-actions .btn + .btn {
+    margin-left: 5px;
+  }
+}

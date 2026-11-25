@@ -1,5 +1,6 @@
 <?php
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -8,15 +9,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * Modern Symfony Command to create a fixed 'episciences-bot' user.
  */
+#[AsCommand(name: 'app:create-bot-user', description: 'Creates a fixed episciences-bot user with a predefined UID and credentials.')]
 class CreateBotUserCommand extends Command
 {
-    protected static $defaultName = 'app:create-bot-user';
-
-    protected function configure(): void
-    {
-        $this->setDescription('Creates a fixed episciences-bot user with a predefined UID and credentials.');
-    }
-
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);

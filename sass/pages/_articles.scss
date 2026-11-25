@@ -127,3 +127,12 @@ input#affiliations{
 #manage-linked-data {
   scroll-margin-top: 70px;
 }
+
+// Article list: keep the table header visible below the fixed navbar.
+// With DataTables scrollX, the header is rendered in a separate table inside .dataTables_scrollHead.
+#papers_wrapper .dataTables_scrollHead {
+  position: sticky !important; // DataTables sets position: relative inline
+  top: $navbar-fixed-height;
+  z-index: 2;
+  background: $white;
+}

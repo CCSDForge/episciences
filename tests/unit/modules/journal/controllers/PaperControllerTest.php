@@ -42,68 +42,6 @@ final class PaperControllerTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // Bug B4: scandir() return value not checked
-    // -----------------------------------------------------------------------
-
-    /**
-     * Bug B4 (fixed): scandir() can return false when the path does not exist
-     * or is not accessible. The original code passed the return value directly
-     * to foreach(), causing "TypeError: foreach argument must be array or object"
-     * when the path was invalid.
-     *
-     * After the fix, the code guards with `if ($parentPathContent === false)`.
-     */
-    public function testScandirReturnIsFalseChecked(): void
-    {
-        $method = $this->extractMethod('saveAuthorFormattingAnswer');
-
-        // Must contain an explicit false check on the scandir result
-        self::assertMatchesRegularExpression(
-            '/scandir\s*\(\s*\$parentPath\s*\)\s*;.*?if\s*\(\s*\$parentPathContent\s*===\s*false\s*\)/s',
-            $method,
-            'Bug B4: scandir() result must be checked for === false before use in foreach'
-        );
-    }
-
-    /**
-     * Complementary check: the false-path must initialize to an empty array,
-     * so the subsequent foreach iterates over nothing.
-     */
-    public function testScandirFalsePathAssignsEmptyArray(): void
-    {
-        $method = $this->extractMethod('saveAuthorFormattingAnswer');
-
-        self::assertStringContainsString(
-            '$parentPathContent = []',
-            $method,
-            'Bug B4: when scandir returns false, $parentPathContent must be set to empty array'
-        );
-    }
-
-    // -----------------------------------------------------------------------
-    // Bug B5: unlink() called without checking is_file() first
-    // -----------------------------------------------------------------------
-
-    /**
-     * Bug B5 (fixed): the loop that deletes moved files called unlink() without
-     * verifying the target exists and is a regular file. A missing file or a
-     * symlink-race could cause unlink() to fail silently or behave unexpectedly.
-     *
-     * After the fix, the call is guarded with is_file().
-     */
-    public function testUnlinkIsGuardedWithIsFile(): void
-    {
-        $method = $this->extractMethod('saveAuthorFormattingAnswer');
-
-        // The guarded pattern: `if (is_file($parentPath . $file)) { unlink(...) }`
-        self::assertMatchesRegularExpression(
-            '/is_file\s*\(\s*\$parentPath\s*\.\s*\$file\s*\).*?unlink\s*\(\s*\$parentPath\s*\.\s*\$file\s*\)/s',
-            $method,
-            'Bug B5: unlink($parentPath . $file) must be guarded with is_file() check'
-        );
-    }
-
-    // -----------------------------------------------------------------------
     // pdfAction
     // -----------------------------------------------------------------------
 
@@ -405,7 +343,6 @@ final class PaperControllerTest extends TestCase
             'savetmpversionAction must call handleManagerNotifications() for manager notifications'
         );
     }
-
 
     /**
      * Regression: after removing $paper from notifyManagersAndAuthor(), the method

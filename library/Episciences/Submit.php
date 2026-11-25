@@ -5,6 +5,12 @@ use Episciences\Files\File;
 use Episciences\Files\Uploader;
 use Episciences\Paper\DataDescriptor;
 use Episciences\Paper\DataDescriptorManager;
+use Episciences\Paper\LinkedDataNotStoredException;
+use Episciences\Paper\PartiallyStoredException;
+use Episciences\Paper\Record\TitleNormalizer;
+use Episciences\Repositories\HAL\TeiLinkedDataParser;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
+use Episciences\Submit\SubmittedRecord;
 use Episciences\Trait\UrlBuilder;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -17,13 +23,31 @@ class Episciences_Submit
     use UrlBuilder;
     public const SUBMIT_DOCUMENT_LABEL = 'Proposer un document';
 
+    public const CSRF_TOKEN_ELEMENT_NAME = 'csrf_token';
     public const COVER_LETTER_FILE_ELEMENT_NAME = 'file_comment_author';
     public const COVER_LETTER_COMMENT_ELEMENT_NAME = 'author_comment';
     public const DD_FILE_ELEMENT_NAME = 'file_data_descriptor';
+    /** Hidden field holding the repository enrichment (JSON object), filled by public/js/submit/functions.js */
+    public const ENRICHMENT_ELEMENT_NAME = 'h_enrichment';
+    // The files and the linked data hooks of these repositories use the same repository record
+    private const FILES_AND_LINKED_DATA_SHARED_RECORD_REPOSITORIES = [
+        Episciences_Repositories::ZENODO_REPO_ID,
+        Episciences_Repositories::BAOBAB_REPO_ID,
+    ];
     public const DD_PREVIOUS_VERSION_STR = 'previous_dataset_version_number';
     protected $_db = null;
     public const POSTED_VOLUME_KEY = 'volumes';
     public const POSTED_SECTION_KEY = 'sections';
+    public const HAL_API_TIMEOUT = 10;
+    public const HAL_API_CONNECT_TIMEOUT = 5;
+    /**
+     * Key of a saveDoc() result: set when a step of the processing that follows the save failed
+     * (files, linked data, authors or enrichment, see processSavedPaper())
+     */
+    public const RESULT_POST_SAVE_FAILURE = 'postSaveFailure';
+    public const POST_SAVE_FAILURE_MESSAGE = "Votre article a bien été enregistré, mais une partie de ses données (fichiers, données liées, auteurs ou enrichissements) n'a pas pu être enregistrée : merci de contacter la revue.";
+    // Shown to the journal staff who posted the new version of a paper in place of its author
+    public const POST_SAVE_FAILURE_MESSAGE_STAFF = "La nouvelle version a bien été enregistrée, mais une partie de ses données (fichiers, données liées, auteurs ou enrichissements) n'a pas pu être enregistrée : mettez à jour ses métadonnées depuis la page de l'article.";
     /** Key of getDoc()'s result naming where the record comes from, when not from the repository itself */
     public const RECORD_SOURCE = 'recordSource';
     /** Versions of the document given by the fallback source (internal to getDoc()) */
@@ -125,8 +149,7 @@ class Episciences_Submit
         // Champ texte : identifiant du document
         $subform->addElement('text', 'docId', $docIdElementOptions);
 
-        $hookVersion = isset($defaults['repoId']) ? Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $defaults['repoId']]) : [];
-        $isRequiredVersionField = empty($hookVersion) || (isset($hookVersion['result']) && $hookVersion['result']);
+        $isRequiredVersionField = !isset($defaults['repoId']) || Episciences_Repositories::isVersionRequired((int)$defaults['repoId']);
 
         // Champ texte : version du document
 
@@ -166,7 +189,7 @@ class Episciences_Submit
         $form->addElement($xml);
         $group[] = 'xml';
 
-        $form->addElement('hidden', 'h_enrichment',
+        $form->addElement('hidden', self::ENRICHMENT_ELEMENT_NAME,
             ['decorators' => [
                 'ViewHelper',
             ]]);
@@ -346,7 +369,7 @@ class Episciences_Submit
             $allowedToSeeCoverLetterTranslated[] = Zend_Registry::get('Zend_Translate')->translate($roleAllowedToSee);
         }
 
-        $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
+        $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible pour : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
 
         // Comment field is always optional
         $optionalSuffix = '<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>';
@@ -378,7 +401,8 @@ class Episciences_Submit
                 'validators' => [
                     'Count' => [false, 1],
                     'Extension' => [false, $implode_extensions],
-                    'Size' => [false, MAX_FILE_SIZE]
+                    'Size' => [false, MAX_FILE_SIZE],
+                    new Episciences_Form_Validate_MimeType()
                 ]
             ];
 
@@ -451,12 +475,7 @@ class Episciences_Submit
         $group[] = 'submitPaper';
 
 
-        $form->addDisplayGroup($group, 'submitDoc');
-        $form->getDisplayGroup('submitDoc')->setDecorators([
-            'FormElements',
-            [['wrapper2' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel-body']],
-            [['wrapper1' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel panel-default', 'style' => 'display: none', 'id' => 'submitForm']]
-        ]);
+        self::addSubmitDocGroup($form, $group);
 
 
         if ($defaults) {
@@ -524,6 +543,8 @@ class Episciences_Submit
 
     /**
      * save a temporary version of a paper
+     * @deprecated Not called anymore: temporary versions are recorded by PaperController::savetmpversionAction(),
+     *             with the files of the answer uploaded through FileController::uploadAction(). To be removed.
      * @param Episciences_Paper $paper
      * @return array
      * @throws Zend_Db_Adapter_Exception
@@ -637,8 +658,7 @@ class Episciences_Submit
 
             $subform->addElement('hidden', 'h_docId');
 
-            $isRequiredVersionFromHook = Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $defaults['repoId']]);
-            $isRequiredVersion = $isRequiredVersionFromHook['result'] ?? true;
+            $isRequiredVersion = Episciences_Repositories::isVersionRequired((int)$defaults['repoId']);
 
             if ($isRequiredVersion) {
 
@@ -670,11 +690,6 @@ class Episciences_Submit
                 $subform->addElement('hidden', 'newVersionOf', ['value' => $settings['newVersionOf']]);
 
                 // Submission of a new version following a request for changes to the temporary version
-
-                if (isset($defaults['hasHook']) && $defaults['hasHook']) {
-                    $subform->addElement('hidden', 'h_hasHook', ['value' => $defaults['hasHook']]);
-                }
-
                 if ($paper->isTmp()) {
 
                     //#git 259 : Leave the version field empty when submitting a new one (request: ask for the final version)
@@ -718,8 +733,8 @@ class Episciences_Submit
             $xml->setDecorators(['ViewHelper']);
             $form->addElement($xml);
             $group[] = 'xml';
-
-            $form->addElement('hidden', 'h_enrichment',
+    
+            $form->addElement('hidden', self::ENRICHMENT_ELEMENT_NAME,
                 ['decorators' => [
                     'ViewHelper',
                 ]]);
@@ -741,7 +756,7 @@ class Episciences_Submit
                 $allowedToSeeCoverLetterTranslated[] = Zend_Registry::get('Zend_Translate')->translate($roleAllowedToSee);
             }
 
-            $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
+            $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible pour : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
 
             // Comment field is always optional
             $optionalSuffix = '<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>';
@@ -772,7 +787,8 @@ class Episciences_Submit
                     'validators' => [
                         'Count' => [false, 1],
                         'Extension' => [false, $implode_extensions],
-                        'Size' => [false, MAX_FILE_SIZE]
+                        'Size' => [false, MAX_FILE_SIZE],
+                        new Episciences_Form_Validate_MimeType()
                     ]
                 ]);
 
@@ -844,12 +860,7 @@ class Episciences_Submit
             ]);
             $group[] = 'searchAgain';
 
-            $form->addDisplayGroup($group, 'submitDoc');
-            $form->getDisplayGroup('submitDoc')->setDecorators([
-                'FormElements',
-                [['wrapper2' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel-body']],
-                [['wrapper1' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel panel-default', 'style' => 'display: none', 'id' => 'submitForm']]
-            ]);
+            self::addSubmitDocGroup($form, $group);
 
             if (isset($defaults['version'], $defaults['docId'], $defaults['repoId'])) {
                 //#git 259 : Laisser le champ version vide quand on en soumet une nouvelle
@@ -865,6 +876,31 @@ class Episciences_Submit
             return null;
         }
 
+    }
+
+    /**
+     * Build the (initially hidden) "submitDoc" display group shared by the submission and new version forms.
+     * The hidden request token checked by the submission actions (see Episciences_Csrf_Helper) is added here,
+     * so that no form using this group can omit it.
+     *
+     * @param Zend_Form $form
+     * @param string[] $group Names of the elements of the submission display group
+     * @throws Zend_Form_Exception
+     */
+    private static function addSubmitDocGroup(Zend_Form $form, array $group): void
+    {
+        $token = new Zend_Form_Element_Hidden(self::CSRF_TOKEN_ELEMENT_NAME);
+        $token->setValue(Episciences_Csrf_Helper::getSessionToken());
+        $token->setDecorators(['ViewHelper']);
+        $form->addElement($token);
+        $group[] = self::CSRF_TOKEN_ELEMENT_NAME;
+
+        $form->addDisplayGroup($group, 'submitDoc');
+        $form->getDisplayGroup('submitDoc')->setDecorators([
+            'FormElements',
+            [['wrapper2' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel-body']],
+            [['wrapper1' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel panel-default', 'style' => 'display: none', 'id' => 'submitForm']]
+        ]);
     }
 
     /**
@@ -899,11 +935,17 @@ class Episciences_Submit
         $hookVersion = [];
 
         if ($isNewVersionOf) {
+            // $latestObsoleteDocId comes straight from the request, so partialGet()
+            // returns null for a stale docid or one belonging to another journal.
+            // Leave $oldPaper null in that case: assertDateTimeVersion(),
+            // assertVersion() and assertNewVersionConsistency() all treat that as
+            // "nothing to compare against", and findExistingDocId() below still
+            // locates the real latest version if there is one.
             $oldPaper = Episciences_PapersManager::partialGet((int)$latestObsoleteDocId, $rvId);
 
-            if ($oldPaper->isTmp()) {
-                $previousVersions = $oldPaper->getPreviousVersions(false, false);
-                $oldPaper = $previousVersions[array_key_first($previousVersions)];
+            if ($oldPaper?->isTmp()) {
+                $previousVersions = $oldPaper->getPreviousVersions(false, false) ?? [];
+                $oldPaper = $previousVersions[array_key_first($previousVersions)] ?? null;
             }
 
         }
@@ -930,7 +972,11 @@ class Episciences_Submit
                     'response' => $hookApiRecord,
                 ];
 
-                if ($isNewVersionOf) {
+                // $oldPaper is null whenever $latestObsoleteDocId could not be
+                // resolved above: addContext() takes a non-nullable paper, and the
+                // TypeError it would raise is an Error, which the catch clauses
+                // below do not intercept.
+                if ($isNewVersionOf && $oldPaper) {
                     self::addContext($oldPaper, $parms);
                 }
 
@@ -945,6 +991,11 @@ class Episciences_Submit
             $identifier = Episciences_Repositories::getIdentifier($repoId, $id, $version !== null ? (int)$version : null);
 
             $result['record'] = self::loadRecord($hookApiRecord, $repoId, $identifier, $result, $oai, $id);
+
+            // Some repositories (e.g. arXiv, HAL) accept line breaks in titles: store them on a single line
+            if (is_string($result['record'])) {
+                $result['record'] = TitleNormalizer::normalize($result['record']);
+            }
             $result['hookVersion'] = $version;
             $result['hookId'] = $id;
             $result['hookRepoId'] = (int)$repoId;
@@ -1016,6 +1067,12 @@ class Episciences_Submit
 
     /**
      * Define the version based on the date/time and validation of the new submission
+     *
+     * Only applies to repositories that version by date-time rather than by an
+     * OAI version number. They are identified by the UPDATE_DATETIME key, which
+     * reaches $result from hookApiRecords() through fillConceptAndUpdateInfo():
+     * absent for every other repository, so no further guard is needed.
+     *
      * @param $docId
      * @param Episciences_Paper|null $previousPaper
      * @param array $result
@@ -1025,9 +1082,7 @@ class Episciences_Submit
 
     private static function assertDateTimeVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result, bool $isNewVersion): void
     {
-        if(
-            !$docId ||
-            !$previousPaper->hasHook){
+        if (!$docId || !$previousPaper) {
             return;
         }
 
@@ -1037,7 +1092,7 @@ class Episciences_Submit
             return;
         }
 
-        $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($previousPaper?->getIdentifier());
+        $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($previousPaper->getIdentifier());
 
         if ($previousPaperVersionDateTime < $currentVersionDateTime) {
 
@@ -1046,8 +1101,7 @@ class Episciences_Submit
             }
 
             $result['status'] = 2;
-            $version = $previousPaper?->getVersion() + 1;
-            $result['hookVersion'] = $version;
+            $result['hookVersion'] = $previousPaper->getVersion() + 1;
         }
     }
 
@@ -1268,8 +1322,13 @@ class Episciences_Submit
                 $oai = null; // the OAI-PMH server is unavailable: no other request to it
             }
 
-            if ((int)$repoId === (int)Episciences_Repositories::ARXIV_REPO_ID) {
-                $record = self::stripSurplusArxivDescriptions($record);
+            $cleanedRecord = Episciences_Repositories::callHook('hookCleanXMLRecordInput', [
+                'record' => $record,
+                'repoId' => (int)$repoId
+            ]);
+
+            if (isset($cleanedRecord['record'])) {
+                $record = $cleanedRecord['record'];
             }
 
             $type = Episciences_Tools::xpath($record, '//dc:type');
@@ -1283,54 +1342,6 @@ class Episciences_Submit
 
 
         return null;
-    }
-
-    /**
-     * arXiv's OAI-PMH oai_dc record carries the "Comments" field (e.g. "to be
-     * published in JFP") as a second, separate <dc:description> sibling after the
-     * real abstract. The paper view page (Episciences_Paper::getXslt() ->
-     * public/xsl/full_paper.xsl) renders every <dc:description> node directly
-     * from the stored RECORD XML, so discard the surplus node here, before it's
-     * ever persisted, instead of only filtering it out on every read.
-     */
-    private static function stripSurplusArxivDescriptions(string $record): string
-    {
-        if ($record === '') {
-            return $record;
-        }
-
-        $dom = new DOMDocument();
-
-        try {
-            set_error_handler('\Ccsd\Xml\Exception::HandleXmlError');
-            $loaded = $dom->loadXML($record);
-        } catch (\Ccsd\Xml\Exception $e) {
-            $loaded = false;
-        } finally {
-            restore_error_handler();
-        }
-
-        if (!$loaded || !$dom->documentElement) {
-            return $record;
-        }
-
-        $xpath = new DOMXPath($dom);
-        foreach (Ccsd_Tools::getNamespaces($dom->documentElement) as $prefix => $namespace) {
-            $xpath->registerNamespace($prefix, $namespace);
-        }
-
-        $descriptions = $xpath->query('//dc:description');
-
-        if ($descriptions === false || $descriptions->length <= 1) {
-            return $record;
-        }
-
-        for ($i = $descriptions->length - 1; $i > 0; $i--) {
-            $node = $descriptions->item($i);
-            $node->parentNode->removeChild($node);
-        }
-
-        return $dom->saveXML($dom->documentElement);
     }
 
     /**
@@ -1433,7 +1444,7 @@ class Episciences_Submit
         } else {
             $error = $translator->translate(
                     "Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : "
-                ) . '<strong class="alert-warning">' . $displayDate . '</strong>';
+                ) . '<strong>' . $displayDate . '</strong>';
         }
 
         throw new Ccsd_Error('docUnderEmbargo: ' . $error);
@@ -1639,11 +1650,15 @@ class Episciences_Submit
     {
         $result = ['status' => 0];
 
+        $isFromCli = Ccsd_Tools::isFromCli();
         $parsedError = $e->parseError();
-        $mailToStr = sprintf('<a href="mailto:%s">%s</a>', EPISCIENCES_SUPPORT, EPISCIENCES_SUPPORT);
+        // From the command line the message is only logged: plain text, without markup
+        $mailToStr = $isFromCli
+            ? EPISCIENCES_SUPPORT
+            : sprintf('<a href="mailto:%s">%s</a>', EPISCIENCES_SUPPORT, EPISCIENCES_SUPPORT);
 
         try {
-            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
+            $translator = $isFromCli ? null : Zend_Registry::get('Zend_Translate');
         } catch (Zend_Exception $registryException) {
             // Keep $e: the error to report is the original one, not the failed translator lookup
             Episciences_View_Helper_Log::log($registryException->getMessage());
@@ -1651,6 +1666,11 @@ class Episciences_Submit
         }
 
         $error = $translator ? $translator->translate($parsedError) : $parsedError;
+
+        if ($isFromCli) {
+            // Markup of the message itself only: the values inserted below are kept as they are
+            $error = html_entity_decode(strip_tags($error), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
 
         if (
             str_contains($e->getMessage(), Ccsd_Error::ID_DOES_NOT_EXIST_CODE) ||
@@ -1670,17 +1690,14 @@ class Episciences_Submit
         } elseif (str_contains($parsedError, Ccsd_Error::DEFAULT_PREFIX_CODE)) {
             $error = sprintf(
                 $error,
-                $e->getMessage(),
+                $isFromCli ? $e->getMessage() : htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'),
                 $mailToStr,
                 Episciences_Repositories::getLabel($repoId),
                 Episciences_Repositories::getIdentifierExemple($repoId)
             );
         }
 
-        if ($translator) {
-            $error = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $error;
-        }
-
+        // On the web, the message is displayed under an "Error" heading (see public/js/submit/functions.js)
         $result['error'] = $error;
 
         return $result;
@@ -1691,29 +1708,19 @@ class Episciences_Submit
      */
     private static function buildGenericErrorResult(Exception $e): array
     {
-        $result = ['status' => 0];
+        // HTML on the web, plain text from the command line
+        $error = Ccsd_Tools::isFromCli() ? $e->getMessage() : htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
 
-        try {
-            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
-        } catch (Zend_Exception $e) {
-            Episciences_View_Helper_Log::log($e->getMessage());
-            $translator = null;
-        }
-
-        if ($translator) {
-            $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
-        } else {
-            $result['error'] = $e->getMessage();
-        }
-
-        return $result;
+        return ['status' => 0, 'error' => $error];
     }
 
 
     /**
      * @param Episciences_Paper $paper
-     * @param array $datasets
+     * @param array<string, list<array{value: string, relation?: string}>> $datasets
+     *        values per type, each with the relation type it was found with
      * @return int
+     * @throws Zend_Db_Exception
      */
     public static function forceAddingDatasets(Episciences_Paper $paper, array $datasets = []): int
     {
@@ -1731,17 +1738,17 @@ class Episciences_Submit
                 $code = Episciences_Paper_Dataset::UNDEFINED_CODE;
             }
 
-            $tmpData['relationship'] = $dataset['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
             $tmpData['code'] = $code;
             $tmpData['name'] = Episciences_Paper_Dataset::$_datasetsLabel[$code];
-            $tmpData['link'] = Episciences_Paper_Dataset::$_datasetsLink[$code];
+            $tmpData['link'] = Episciences_Paper_Dataset::$_datasetsLink[$code] ?? Episciences_Paper_Dataset::URL_CODE;
 
             foreach ($dataset as $value) {
-                $tmpData['value'] = $value;
+                $tmpData['relationship'] = $value['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+                $tmpData['value'] = $value['value'];
                 $data[] = $tmpData;
             }
         }
-        return Episciences_Paper_DatasetsManager::insert($data);
+        return Episciences_Paper_DatasetsManager::insertOrFail($data);
     }
 
     /**
@@ -1759,7 +1766,7 @@ class Episciences_Submit
 
     public function saveDoc(array $data, ?int $paperId = null, ?int $vid = null, ?int $sid = null): array
     {
-        $enrichment = $this->parseEnrichment($data);
+        $enrichment = self::parseEnrichment($data);
         $paperData = $this->buildValuesToPopulatePaper($data, $paperId, $vid, $sid);
 
         if ($this->paperAlreadyExists($paperData)) {
@@ -1778,17 +1785,30 @@ class Episciences_Submit
         return $this->completeSaveProcess($paper, $data, $enrichment);
     }
 
-    private function parseEnrichment(array $data): array
+    /**
+     * Decodes the submitted repository enrichment (h_enrichment) of an initial submission or of a new version.
+     * The field is client controlled: anything but a JSON object is ignored.
+     *
+     * @param array<string, mixed> $data submitted values
+     * @return array<string, mixed>
+     */
+    public static function parseEnrichment(array $data): array
     {
-        if (!isset($data['h_enrichment']) || $data['h_enrichment'] === '') {
+        if (!isset($data[self::ENRICHMENT_ELEMENT_NAME]) || !is_string($data[self::ENRICHMENT_ELEMENT_NAME]) || $data[self::ENRICHMENT_ELEMENT_NAME] === '') {
             return [];
         }
 
         try {
-            $enrichment = json_decode($data['h_enrichment'], true, 512, JSON_THROW_ON_ERROR);
+            $enrichment = json_decode($data[self::ENRICHMENT_ELEMENT_NAME], true, 512, JSON_THROW_ON_ERROR);
+            // Valid JSON can still be a scalar
+            if (!is_array($enrichment)) {
+                return [];
+            }
             if (isset($enrichment['type']) && $enrichment['type'] === Episciences_Paper::TEXT_TYPE_TITLE) {
                 $enrichment['type'] = Episciences_Paper::DEFAULT_TYPE_TITLE;
             }
+            // The files hooks load the files from the repository (see processRepositoryHooks())
+            unset($enrichment[Episciences_Repositories_Common::FILES]);
             return $enrichment;
         } catch (Exception $e) {
             trigger_error($e->getMessage());
@@ -1891,10 +1911,29 @@ class Episciences_Submit
         $this->logPaperAction($paper, $data);
 
         // Enrichments
-        $this->cleanupOldData($paper, $data);
-        $this->processRepositoryHooks($paper, $enrichment);
-        $this->handlePostSaveProcessing($paper, $enrichment);
+        // The paper is saved and notified: a failure to delete the data it replaces is reported, not thrown
+        $cleanedUp = self::runPostSaveStep(
+            'cleanupOldData',
+            $paper,
+            fn() => $this->cleanupOldData($paper, $data)
+        );
 
+        $authorsStored = true;
+        if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {
+            // Without contributors in the enrichment (stored by processSavedPaper()), the authors are taken from
+            // the paper metadata, unless authors are already stored for the paper
+            $authorsStored = self::runPostSaveStep(
+                'insertAuthorsFromPaper',
+                $paper,
+                static fn() => Episciences_Paper_Authors_Repository::insertFromPaperOrFail($paper)
+            );
+        }
+
+        // Not short-circuited: the rest of the processing runs even when the authors could not be stored
+        if (!self::processSavedPaper($paper, $enrichment) || !$authorsStored || !$cleanedUp) {
+            // The paper is saved: the author is told, the controller shows POST_SAVE_FAILURE_MESSAGE
+            $result[self::RESULT_POST_SAVE_FAILURE] = true;
+        }
 
         $result['message'] = '<strong>' . $this->translate('Votre article a bien été enregistré.') . '</strong>';
         return $result;
@@ -1953,7 +1992,7 @@ class Episciences_Submit
 
     /**
      * @param Episciences_Paper|DataSet $paper
-     * @param array $data
+     * @param array<string, mixed> $data
      * @return void
      */
 
@@ -1964,62 +2003,184 @@ class Episciences_Submit
         }
 
         $oldDocId = (int)Ccsd_Tools::ifsetor($data['old_docid'], 0);
+
+        // Only a paper replaced in place gets new files and datasets: a paper kept as a row of its own keeps them
+        if ($oldDocId !== (int)$paper->getDocid()) {
+            return;
+        }
+
         Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($oldDocId, $paper->getRepoid());
         Episciences_Paper_FilesManager::deleteByDocId($oldDocId);
     }
 
     /**
+     * Processing of a saved paper, shared by an initial submission and a new version (PaperController):
+     * repository hooks, submitted enrichment, then authors from the HAL TEI.
+     * The paper is already saved and notified: a failed step is reported as a warning and
+     * does not stop the following ones.
+     *
      * @param Episciences_Paper|DataSet $paper
-     * @param array $enrichment
-     * @return void
+     * @param array<string, mixed> $enrichment decoded h_enrichment (see parseEnrichment())
+     * @return bool false when a step failed: the files, the linked data or the enrichment of the paper may be missing
      */
-
-    private function processRepositoryHooks(Episciences_Paper|DataSet $paper, array $enrichment): void
+    public static function processSavedPaper(Episciences_Paper|DataSet $paper, array $enrichment): bool
     {
-        $hookParams = [
-            'repoId' => $paper->getRepoid(),
-            'identifier' => $paper->getIdentifier(),
-            'docId' => $paper->getDocid()
+        $repositoryProcessed = self::processRepositoryHooks($paper);
+
+        $steps = [
+            'enrichmentProcess' => static fn() => self::storeEnrichmentOrFail($paper, $enrichment),
         ];
 
-        $filesHookParams = isset($enrichment['files'])
-            ? array_merge($hookParams, ['files' => $enrichment['files']])
-            : $hookParams;
-
-        Episciences_Repositories::callHook('hookFilesProcessing', $filesHookParams);
-        Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
-
-        if (Episciences_Repositories::hasHook($paper->getRepoid()) === '' && Episciences_Repositories::getApiUrl($paper->getRepoid())) {
-            self::datasetsProcessing($paper);
+        if (Episciences_Repositories::isFromHalRepository((int)$paper->getRepoid())) {
+            $steps['enrichAffiOrcidFromTeiHalInDB'] = static fn() => Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB(
+                (int)$paper->getRepoid(),
+                (int)$paper->getPaperid(),
+                (string)$paper->getIdentifier(),
+                (int)$paper->getVersion()
+            );
         }
+
+        $failedSteps = [];
+        self::runPostSaveSteps($paper, $steps, $failedSteps);
+
+        return $repositoryProcessed && $failedSteps === [];
     }
 
     /**
+     * Repository processing of a saved paper: files, linked data, then HAL datasets / SWHID.
+     * The files are loaded from the repository.
+     *
      * @param Episciences_Paper|DataSet $paper
-     * @param array $enrichment
-     * @return void
+     * @return bool false when a step failed: the files or the linked data of the paper may be missing
+     *              (an HTTP failure of the HAL datasets request is only reported, see datasetsProcessing())
      */
-
-    private function handlePostSaveProcessing(Episciences_Paper|DataSet $paper, array $enrichment): void
+    public static function processRepositoryHooks(Episciences_Paper|DataSet $paper): bool
     {
-        if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {
-            Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
+        $repoId = (int)$paper->getRepoid();
+        $hookParams = [
+            'repoId' => $paper->getRepoid(),
+            'identifier' => $paper->getIdentifier(),
+            'docId' => $paper->getDocid(),
+            'version' => $paper->getVersion()
+        ];
+
+        $filesResult = [];
+        $recordNotLoaded = false;
+
+        $steps = [
+            'hookFilesProcessing' => static function () use ($hookParams, &$filesResult, &$recordNotLoaded): void {
+                try {
+                    $filesResult = Episciences_Repositories::callHook('hookFilesProcessing', $hookParams);
+                } catch (Ccsd_Error|GuzzleException $e) {
+                    // The repository record could not be loaded (repository failure, timeout)
+                    $recordNotLoaded = true;
+                    throw $e;
+                }
+            },
+            'hookLinkedDataProcessing' => static function () use ($hookParams, $repoId, &$filesResult, &$recordNotLoaded): void {
+                if ($recordNotLoaded && in_array((string)$repoId, self::FILES_AND_LINKED_DATA_SHARED_RECORD_REPOSITORIES, true)) {
+                    // The same record: not requested again, the author would wait for the same failure twice
+                    throw new RuntimeException('Not requested again: the repository record could not be loaded for the files');
+                }
+
+                // The repository record the files hook loaded, if any: the linked data hook does not load it again.
+                // Only this record, not the whole result of the files hook (its own parameters)
+                $linkedDataHookParams = !empty($filesResult['response']) && is_array($filesResult['response'])
+                    ? array_merge($hookParams, ['response' => $filesResult['response']])
+                    : $hookParams;
+
+                Episciences_Repositories::callHook('hookLinkedDataProcessing', $linkedDataHookParams);
+            },
+        ];
+
+        if (
+            !Episciences_Repositories::handlesOwnEnrichment($repoId) &&
+            Episciences_Repositories::getApiUrl($repoId) !== ''
+        ) {
+            // datasetsProcessing() only handles the HTTP and JSON errors, not the database ones
+            $steps['datasetsProcessing'] = static fn() => self::datasetsProcessing($paper);
         }
 
-        self::enrichmentProcess($paper, $enrichment);
+        $failedSteps = [];
+        self::runPostSaveSteps($paper, $steps, $failedSteps);
 
-        try {
-            if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
-                Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB(
-                    $paper->getRepoid(),
-                    $paper->getPaperid(),
-                    $paper->getIdentifier(),
-                    (int)$paper->getVersion()
-                );
+        return $failedSteps === [];
+    }
+
+    /**
+     * Runs the steps of the processing that follows the save of a paper, or the update of its record
+     * (Episciences_PapersManager::updateRecordData()), in order: a failed step is reported (see runPostSaveStep())
+     * and does not stop the following ones.
+     *
+     * @param Episciences_Paper|DataSet $paper
+     * @param array<string, callable(): mixed> $steps step name => step; an int result is its number of affected rows
+     * @param list<string> $failedSteps receives the names of the steps that failed
+     * @param-out list<string> $failedSteps
+     * @return int number of rows affected by the steps
+     */
+    public static function runPostSaveSteps(Episciences_Paper|DataSet $paper, array $steps, array &$failedSteps): int
+    {
+        $affectedRows = 0;
+
+        foreach ($steps as $step => $run) {
+            $succeeded = self::runPostSaveStep(
+                $step,
+                $paper,
+                static function () use ($run, &$affectedRows): void {
+                    try {
+                        $result = $run();
+                    } catch (PartiallyStoredException $e) {
+                        // The other data (linked data, enrichment) were stored: counted, then the failure is reported
+                        $affectedRows += $e->getAffectedRows();
+                        throw $e;
+                    }
+
+                    if (is_int($result)) {
+                        $affectedRows += $result;
+                    }
+                }
+            );
+
+            if (!$succeeded) {
+                $failedSteps[] = $step;
             }
-        } catch (JsonException|InvalidArgumentExceptionAlias $e) {
-            trigger_error($e->getMessage());
         }
+
+        return $affectedRows;
+    }
+
+    /**
+     * Runs a step of the processing that follows the save of a paper, or the update of its record
+     * (Episciences_PapersManager::updateRecordData()): a failure is reported as a warning
+     * (with the paper and the step, to re-run its enrichment) instead of stopping the rest of the processing.
+     * Throwable: a step can also fail with a TypeError on an unexpected payload (repository or submitted enrichment);
+     * the exception class is reported so that a programming error stays distinguishable from a repository failure.
+     *
+     * @param string $step name reported with the failure
+     * @param Episciences_Paper|DataSet $paper
+     * @param callable(): mixed $run
+     * @return bool false when the step failed
+     */
+    public static function runPostSaveStep(string $step, Episciences_Paper|DataSet $paper, callable $run): bool
+    {
+        try {
+            $run();
+        } catch (Throwable $e) {
+            trigger_error(
+                sprintf(
+                    'Post-save step %s failed for docid %s (repository %s): %s: %s',
+                    $step,
+                    $paper->getDocid(),
+                    $paper->getRepoid(),
+                    $e::class,
+                    $e->getMessage()
+                ),
+                E_USER_WARNING
+            );
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -2062,13 +2223,13 @@ class Episciences_Submit
 
         $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_AUTHOR_COPY;
 
-        Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));
-        $recipients = $this->filterConflictRecipients($recipients, $paper);
-        unset($recipients[$paper->getUid()]);
-
         $oldDocId = (int)Ccsd_Tools::ifsetor($data['old_docid'], 0);
         $oldStatus = (int)Ccsd_Tools::ifsetor($data['old_paper_status'], 0);
         $canReplace = (bool)Ccsd_Tools::ifsetor($data['can_replace'], false);
+
+        Episciences_Review::checkReviewNotifications($recipients, self::isStrictNotification($canReplace, $recipients));
+        $recipients = self::filterConflictRecipients($recipients, $paper);
+        unset($recipients[$paper->getUid()]);
 
         if ($canReplace) {
             $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY;
@@ -2100,13 +2261,15 @@ class Episciences_Submit
     }
 
     /**
+     * Removes the recipients who declared a conflict of interest on a new paper (web and inbox submissions).
+     * Reads the settings of the current journal from the 'reviewSettings' registry entry.
      * @param array $recipients
      * @param Episciences_Paper|DataSet $paper
      * @return array
      * @throws Zend_Exception
      */
 
-    private function filterConflictRecipients(array $recipients, Episciences_Paper|DataSet $paper): array
+    public static function filterConflictRecipients(array $recipients, Episciences_Paper|DataSet $paper): array
     {
         $journalSettings = Zend_Registry::get('reviewSettings');
         $isCoiEnabled = isset($journalSettings[Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED])
@@ -2193,10 +2356,8 @@ class Episciences_Submit
         // Remove article author if included
         unset($editors[$paper->getUid()]);
 
-        // Save editor assignments
-        $this->saveEditorAssignments($paper, $editors);
-
-        return $editors;
+        // Only the editors actually assigned are notified as such
+        return $this->saveEditorAssignments($paper, $editors);
     }
 
     /**
@@ -2208,11 +2369,24 @@ class Episciences_Submit
     }
 
     /**
-     * Save and log editor assignments.
+     * Whether only the roles checked in the journal notification settings are added to the recipients.
+     * A new paper keeps the github#508 fallback (everyone when no role is checked), even with editors assigned
+     * automatically; an updated paper only notifies its editors and the checked roles.
      */
-    private function saveEditorAssignments(Episciences_Paper $paper, array $editors): void
+    public static function isStrictNotification(bool $isUpdate, array $recipients): bool
     {
-        foreach ($editors as $editor) {
+        return $isUpdate && !empty($recipients);
+    }
+
+    /**
+     * Save and log editor assignments.
+     * @return Episciences_Editor[] the editors actually assigned, with the keys of $editors
+     */
+    private function saveEditorAssignments(Episciences_Paper $paper, array $editors): array
+    {
+        $assigned = [];
+
+        foreach ($editors as $key => $editor) {
             $assignment = new Episciences_User_Assignment([
                 'rvid' => RVID,
                 'item' => Episciences_User_Assignment::ITEM_PAPER,
@@ -2222,7 +2396,12 @@ class Episciences_Submit
                 'status' => Episciences_User_Assignment::STATUS_ACTIVE, // TODO: consider inviting instead
             ]);
 
-            $assignment->save();
+            if (!$assignment->save()) {
+                error_log(sprintf('Failed to save the assignment of editor UID = %s to DOCID = %s', $editor->getUid(), $paper->getDocid()));
+                continue;
+            }
+
+            $assigned[$key] = $editor;
 
             $paper->log(
                 Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
@@ -2230,6 +2409,8 @@ class Episciences_Submit
                 ['aid' => $assignment->getId(), 'user' => $editor->toArray()]
             );
         }
+
+        return $assigned;
     }
 
     /**
@@ -2582,7 +2763,7 @@ class Episciences_Submit
 
         // Default submission status and date
         $values['STATUS'] = Episciences_Paper::STATUS_SUBMITTED;
-        $values['SUBMISSION_DATE'] = $data['old_submissiondate'] ?? date("Y-m-d H:i:s");
+        $values['SUBMISSION_DATE'] = date("Y-m-d H:i:s");
 
         // Metadata
         $values['RECORD'] = $data['xml'];
@@ -2608,14 +2789,19 @@ class Episciences_Submit
 
         if ($canReplace) {
             $oldStatus = $data['old_paper_status'] ?? null;
-            $isUpdatable = in_array($oldStatus, [
-                Episciences_Paper::STATUS_SUBMITTED,
-                Episciences_Paper::STATUS_OK_FOR_REVIEWING
-            ], true);
+            // Only a paper that has not been reviewed yet is updated in place. A refused paper that the journal
+            // accepts to receive again keeps its row: the new version is a new row with the same paper id
+            $isUpdatable = in_array($oldStatus, Episciences_Paper::STATUS_REPLACEABLE_IN_PLACE, true);
 
             if (isset($data['old_docid']) && $isUpdatable) {
                 $values['DOCID'] = (int)$data['old_docid'];
                 $values['STATUS'] = (int)Ccsd_Tools::ifsetor($oldStatus, $values['STATUS']);
+
+                // The paper replaced in place keeps its submission date (set from the stored paper).
+                // A refused paper submitted again is a new submission: it gets the current date
+                if (!empty($data['old_submissiondate'])) {
+                    $values['SUBMISSION_DATE'] = $data['old_submissiondate'];
+                }
             }
 
             $values['PAPERID'] = (int)Ccsd_Tools::ifsetor($data['old_paperid'], 0);
@@ -2631,6 +2817,66 @@ class Episciences_Submit
         return $values;
     }
 
+
+    public const REPLACEMENT_ERROR_NOT_FOUND = "Le document que vous souhaitez remplacer est introuvable. Merci de relancer la recherche de votre document.";
+    public const REPLACEMENT_ERROR_NOT_OWNER = "Seul l'auteur d'un document peut en déposer une nouvelle version. Si vous êtes l'auteur, merci de vous connecter avec le compte utilisé lors de la première soumission.";
+    public const REPLACEMENT_ERROR_NOT_REPLACEABLE = "Le processus de publication de cet article est en cours, vous ne pourrez donc pas le remplacer.";
+
+    /**
+     * Tell why a stored paper cannot be replaced by a new version.
+     *
+     * @param Episciences_Paper|null $storedPaper the paper to replace, as stored in the database
+     * @param bool $isOwner whether the user who submits the new version owns the stored paper
+     * @param bool $canResubmitRefused whether the journal accepts a new submission of a refused paper
+     * @return string|null a translatable message, or null if the paper can be replaced
+     */
+    public static function getReplacementError(?Episciences_Paper $storedPaper, bool $isOwner, bool $canResubmitRefused): ?string
+    {
+        if ($storedPaper === null) {
+            return self::REPLACEMENT_ERROR_NOT_FOUND;
+        }
+
+        if (!$isOwner) {
+            return self::REPLACEMENT_ERROR_NOT_OWNER;
+        }
+
+        $isResubmittable = $canResubmitRefused && $storedPaper->getStatus() === Episciences_Paper::STATUS_REFUSED;
+
+        return ($storedPaper->canBeReplacedInPlace() || $isResubmittable) ? null : self::REPLACEMENT_ERROR_NOT_REPLACEABLE;
+    }
+
+    /**
+     * Set the values of the searched document, as resolved on the server (record, concept identifier, version,
+     * update datetime), in place of those posted by the form.
+     *
+     * @param array<string, mixed> $formValues
+     * @param array{record: string, conceptIdentifier: ?string, hookVersion: ?float, update: ?string} $document
+     * @return array<string, mixed>
+     */
+    public static function applySubmittedDocument(array $formValues, array $document): array
+    {
+        $formValues['xml'] = $document[SubmittedRecord::RECORD];
+
+        foreach ([
+            'concept_identifier' => $document[SubmittedRecord::CONCEPT_IDENTIFIER],
+            Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME => $document[SubmittedRecord::UPDATE_DATETIME],
+        ] as $key => $value) {
+            unset($formValues[$key]);
+
+            if ($value !== null) {
+                $formValues[$key] = $value;
+            }
+        }
+
+        $version = $document[SubmittedRecord::VERSION];
+
+        if ($version !== null) {
+            $formValues['h_version'] = $version;
+            $formValues['search_doc'] = ['version' => $version, 'h_version' => $version] + (array)($formValues['search_doc'] ?? []);
+        }
+
+        return $formValues;
+    }
 
     /**
      * @param array $post
@@ -2650,28 +2896,32 @@ class Episciences_Submit
     }
 
     /**
-     * Update paper datasets
+     * Update the paper linked data from the HAL TEI (search API): related works and SWHID
      * @param Episciences_Paper $paper
+     * @param Client|null $client HTTP client (injected by the tests)
      * @return int
      */
-    public static function datasetsProcessing(Episciences_Paper $paper): int
+    public static function datasetsProcessing(Episciences_Paper $paper, ?Client $client = null): int
     {
-        $cHeaders = [
-            'headers' => ['Content-type' => 'application/json']
-        ];
-
         try {
 
             if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
-                $client = new Client($cHeaders);
-                $url = Episciences_Repositories::getApiUrl($paper->getRepoid()) . '/search/?indent=true&q=halId_s:' . $paper->getIdentifier() . '&fl=swhidId_s,researchData_s&version_i:' . $paper->getversion();
-                $response = $client->get($url);
-                $result = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
-                $allDatasets = $result['response']['docs'][array_key_first($result['response']['docs'])] ?? [];
-                return self::processDatasets($paper, $allDatasets);
+                $client ??= new Client([
+                    'timeout' => self::HAL_API_TIMEOUT,
+                    'connect_timeout' => self::HAL_API_CONNECT_TIMEOUT,
+                ]);
+                // The TEI holds the related works with their relation and resource types (<relatedItem>)
+                // and the SWHID (<idno type="swhid">), which the search fields do not all give.
+                // No version filter: the HAL search index only holds the latest version of a document
+                $url = Episciences_Repositories::getApiUrl($paper->getRepoid())
+                    . '/search/?q=halId_s:' . urlencode((string)$paper->getIdentifier())
+                    . '&wt=xml-tei';
+                $tei = $client->get($url)->getBody()->getContents();
+                // A TEI without the document (unreadable, empty search result) yields no linked data
+                return self::processDatasets($paper, TeiLinkedDataParser::parse($tei) ?? []);
             }
 
-        } catch (GuzzleException|JsonException  $e) {
+        } catch (GuzzleException $e) {
             trigger_error($e->getMessage());
         }
 
@@ -2720,7 +2970,6 @@ class Episciences_Submit
 
         $isTmp = $paper->isTmp();
 
-        //$hasHook = $paper->hasHook;  // @see Episciences_Paper::setRepoid() todo à vérifier où il est utilisé et voir s'il peut être supprimé
         $repository = $paper->getRepoid();
         $identifier = $paper->getIdentifier();
         $version = (int)$paper->getVersion();
@@ -2731,7 +2980,6 @@ class Episciences_Submit
 
             if ($firstSubmission) {
                 $repository = $firstSubmission->getRepoid();
-                //$hasHook = $firstSubmission->hasHook;
                 $identifier = $firstSubmission->getIdentifier();
                 $repoId = $firstSubmission->getRepoid();
             }
@@ -2743,9 +2991,6 @@ class Episciences_Submit
 
         $identifier = rtrim(Episciences_Repositories_Common::removeDateTimePattern($identifier), '/');
 
-        //$isIdentifierCommonToAllVersions = !$hasHook || $repository !== (int)Episciences_Repositories::ZENODO_REPO_ID; //  The identifier field will be empty
-
-        //$defaults['hasHook'] = $hasHook;
         $defaults['isIdentifierCommonToAllVersions'] = $isIdentifierCommonToAllVersions;
         $defaults['repoId'] = $repository;
         $defaults['docId'] = $isIdentifierCommonToAllVersions ? $identifier : ''; //NB. Pour Zenodo, un identifiant différent par version, d’où l’initialisation de sa valeur par défaut à ''
@@ -2827,6 +3072,9 @@ class Episciences_Submit
     }
 
     /**
+     * Stores the enrichment of a paper: a failure is reported as a warning (with the enrichment key)
+     * and the other enrichments are still stored
+     *
      * @param Episciences_Paper $paper
      * @param array $enrichment
      * @return int
@@ -2834,14 +3082,56 @@ class Episciences_Submit
 
     public static function enrichmentProcess(Episciences_Paper $paper, array $enrichment = []): int
     {
+        $failures = [];
+        $insertedRows = self::storeEnrichment($paper, $enrichment, $failures);
 
-        if (empty ($enrichment)) {
-            return 0;
+        foreach ($failures as $key => $failure) {
+            trigger_error(
+                sprintf('Enrichment %s failed for docid %s: %s', $key, $paper->getDocid(), $failure),
+                E_USER_WARNING
+            );
         }
 
-        $insertedRows = 0;
+        return $insertedRows;
+    }
 
-        $jsonVals = [];
+    /**
+     * Same as enrichmentProcess(), but the failures are thrown, in a single exception, once the other enrichments
+     * are stored: the processing that follows the save of a paper, and the update of its record, report it
+     * and count the rows stored
+     *
+     * @param Episciences_Paper $paper
+     * @param array<string, mixed> $enrichment
+     * @return int
+     * @throws PartiallyStoredException
+     */
+    public static function storeEnrichmentOrFail(Episciences_Paper $paper, array $enrichment): int
+    {
+        $failures = [];
+        $insertedRows = self::storeEnrichment($paper, $enrichment, $failures);
+
+        if ($failures !== []) {
+            $reported = [];
+            foreach ($failures as $key => $failure) {
+                $reported[] = $key . ' (' . $failure . ')';
+            }
+            throw new PartiallyStoredException('Enrichment not stored: ' . implode('; ', $reported), $insertedRows);
+        }
+
+        return $insertedRows;
+    }
+
+    /**
+     * Stores each enrichment of a paper; a failure of one of them does not prevent the others
+     *
+     * @param Episciences_Paper $paper
+     * @param array<string, mixed> $enrichment
+     * @param array<string, string> $failures filled with the enrichment key => exception class and message
+     * @return int
+     */
+    private static function storeEnrichment(Episciences_Paper $paper, array $enrichment, array &$failures): int
+    {
+        $insertedRows = 0;
 
         foreach ($enrichment as $key => $values) {
 
@@ -2849,79 +3139,90 @@ class Episciences_Submit
                 continue;
             }
 
-            $paperId = $paper->getPaperId();
-
             try {
-                $jsonVals = json_encode($values, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-            } catch (JsonException $e) {
-                trigger_error($e->getMessage());
-            }
+                $insertedRows += self::storeEnrichmentValue($paper, (string)$key, $values);
+            } catch (Throwable $e) {
+                // Throwable: an unexpected payload fails with a TypeError, the exception class tells it apart
+                $failures[(string)$key] = $e::class . ': ' . $e->getMessage();
 
-            if ($key === Episciences_Repositories_Common::CONTRIB_ENRICHMENT) {
-
-                $authors = Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId);
-
-                if (empty($authors)) { // to prevent manual changes being overwritten.
-
-                    $insertedRows += Episciences_Paper_AuthorsManager::insert([
-                        [
-                            'authors' => $jsonVals,
-                            'paperId' => $paperId
-                        ]
-                    ]);
-
-                } elseif ($paper->getRepoid() !== (int)Episciences_Repositories::ARXIV_REPO_ID) {
-                    $authors = new Episciences_Paper_Authors([
-                        'authors' => $jsonVals,
-                        'paperId' => $paperId
-                    ]);
-
-                    $insertedRows += Episciences_Paper_AuthorsManager::update($authors);
-
+                if ($e instanceof PartiallyStoredException) {
+                    // The other related identifiers were stored
+                    $insertedRows += $e->getAffectedRows();
                 }
-
-            } elseif ($key === Episciences_Repositories_Common::CITATIONS) {
-
-
-                if (!empty($values)) {
-
-                    $oCitations = new Episciences_Paper_Citations();
-
-                    $oCitations
-                        ->setCitation($jsonVals)
-                        ->setDocId($paper->getDocid())
-                        ->setSourceId($paper->getRepoid());
-
-                    $insertedRows += Episciences_Paper_CitationsManager::insert([$oCitations]);
-
-                }
-
-            } elseif ($key === Episciences_Repositories_Common::PROJECTS) {
-
-                $data = [
-                    'funding' => $jsonVals,
-                    'paperId' => $paper->getPaperid(),
-                    'source_id' => $paper->getRepoid()
-                ];
-
-                $insertedRows += Episciences_Paper_ProjectsManager::insert($data);
-            } elseif ($key === Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT) {
-
-                $paper->setType(self::processAndPrepareType($values));
-                $paper->forceType();
-
-                try {
-                    if ($paper->save()) {
-                        ++$insertedRows;
-                    }
-                } catch (Zend_Db_Adapter_Exception|InvalidArgumentExceptionAlias $e) {
-                    trigger_error($e->getMessage());
-                }
-            } elseif ($key === Episciences_Repositories_Common::RELATED_IDENTIFIERS) {
-                $insertedRows += self::processDatasets($paper->getDocid(), $enrichment[Episciences_Repositories_Common::RELATED_IDENTIFIERS]);
             }
         }
+
         return $insertedRows;
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @param string $key one of Episciences_Repositories_Common::AVAILABLE_ENRICHMENT
+     * @param mixed $values
+     * @return int
+     * @throws JsonException|Zend_Db_Exception
+     */
+    private static function storeEnrichmentValue(Episciences_Paper $paper, string $key, mixed $values): int
+    {
+        $paperId = $paper->getPaperId();
+        $jsonVals = json_encode($values, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+
+        if ($key === Episciences_Repositories_Common::CONTRIB_ENRICHMENT) {
+
+            if (empty(Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId))) { // to prevent manual changes being overwritten.
+                return Episciences_Paper_Authors_Repository::insertOrFail([
+                    [
+                        'authors' => $jsonVals,
+                        'paperId' => $paperId
+                    ]
+                ]);
+            }
+
+            if ($paper->getRepoid() !== (int)Episciences_Repositories::ARXIV_REPO_ID) {
+                return Episciences_Paper_Authors_Repository::update(new Episciences_Paper_Authors([
+                    'authors' => $jsonVals,
+                    'paperId' => $paperId
+                ]));
+            }
+
+            return 0;
+        }
+
+        if ($key === Episciences_Repositories_Common::CITATIONS) {
+
+            if (empty($values)) {
+                return 0;
+            }
+
+            $oCitations = new Episciences_Paper_Citations();
+            $oCitations
+                ->setCitation($jsonVals)
+                ->setDocId($paper->getDocid())
+                ->setSourceId($paper->getRepoid());
+
+            return Episciences_Paper_Citations_Repository::insertOrFail([$oCitations]);
+        }
+
+        if ($key === Episciences_Repositories_Common::PROJECTS) {
+            return Episciences_Paper_ProjectsManager::insert([
+                'funding' => $jsonVals,
+                'paperId' => $paper->getPaperid(),
+                'source_id' => $paper->getRepoid()
+            ]);
+        }
+
+        if ($key === Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT) {
+            $paper->setType(self::processAndPrepareType($values));
+            $paper->forceType();
+            return $paper->save() ? 1 : 0;
+        }
+
+        // The submitted enrichment is client controlled: processDatasets() takes an array
+        if ($key === Episciences_Repositories_Common::RELATED_IDENTIFIERS && is_array($values)) {
+            return self::processDatasets($paper->getDocid(), $values);
+        }
+
+        return 0;
     }
 
     /**
@@ -2959,6 +3260,102 @@ class Episciences_Submit
     }
 
 
+    /**
+     * Whether $repoId's related identifiers arrive DataCite-shaped
+     * (identifier/relation/resource_type/scheme) rather than as a plain list
+     * of identifier strings.
+     */
+    private static function isDataCiteShapedRepo(int $repoId): bool
+    {
+        return $repoId === (int)Episciences_Repositories::ZENODO_REPO_ID
+            || $repoId === (int)Episciences_Repositories::ARCHE_ID
+            || $repoId === (int)Episciences_Repositories::BAOBAB_REPO_ID
+            || Episciences_Repositories::isDspace($repoId);
+    }
+
+    /**
+     * Stores a HAL link the way a manual addition does
+     * (AdministratelinkeddataController::addldAction()), with HAL's full
+     * citation as metadata when HAL returns one:
+     * - a software deposit (HAL docType_s SOFTWARE) is stored as software under
+     *   its HAL id without version, with its SWHID and codemeta;
+     * - anything else is stored as a publication under its HAL id as found.
+     * The related identifier's resource_type only decides when HAL does not
+     * answer: HAL's own document type wins otherwise.
+     *
+     * @param array<string, mixed> $options
+     * @param list<string> $failures receives the metadata that could not be stored (the link is stored without it)
+     * @throws Zend_Db_Exception
+     */
+    private static function addHalDataset(int $docId, string $value, string $resourceType, array $options, array &$failures): int
+    {
+        $parsedHalId = Episciences_Tools::splitHalIdentifier($value);
+
+        if ($parsedHalId === null) {
+            return 0;
+        }
+
+        [$halId, $halIdWithoutVersion, $version] = $parsedHalId;
+
+        // The same HAL document may already be linked with or without a version suffix
+        if (Episciences_Paper_DatasetsManager::hasHalDocument($docId, $halIdWithoutVersion)) {
+            return 0;
+        }
+
+        $citation = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($halIdWithoutVersion, $version));
+        $halDoc = $citation->response->docs[0] ?? null;
+
+        $isSoftware = $halDoc !== null
+            ? ($halDoc->docType_s ?? '') === 'SOFTWARE'
+            : strcasecmp($resourceType, Episciences_Paper_Dataset::SOFTWARE_CODE) === 0;
+
+        $metatext = [];
+
+        if (!empty($halDoc->citationFull_s)) {
+            $metatext['citationFull'] = $halDoc->citationFull_s;
+        }
+
+        if ($isSoftware) {
+            if (!empty($halDoc->swhidId_s[0])) {
+                $metatext['swhidId'] = $halDoc->swhidId_s[0];
+            }
+
+            $codeMeta = json_decode(Episciences_SoftwareHeritageTools::getCodeMetaFromHal($halId), true);
+
+            if (!empty($codeMeta)) {
+                $metatext['codemeta'] = $codeMeta;
+            }
+        }
+
+        $metadataId = null;
+
+        if ($metatext !== []) {
+            $datasetMetadata = new Episciences_Paper_DatasetMetadata();
+            $datasetMetadata->setMetatext(json_encode($metatext, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $metadataId = self::insertDatasetMetadata($datasetMetadata, $value, $failures);
+        }
+
+        return Episciences_Paper_DatasetsManager::addDatasetFromSubmissionOrFail(
+            $docId,
+            Episciences_Paper_Dataset::HAL_CODE,
+            $isSoftware ? $halIdWithoutVersion : $halId,
+            $isSoftware ? Episciences_Paper_Dataset::SOFTWARE_CODE : Episciences_Paper_Dataset::PUBLICATION,
+            $metadataId,
+            $options
+        );
+    }
+
+    /**
+     * Stores the linked data (related identifiers) of a paper.
+     * Each identifier is stored on its own: a failure (unexpected value, database) does not prevent the others.
+     * A dataset whose metadata cannot be stored is kept without metadata.
+     *
+     * @param Episciences_Paper|int $paper
+     * @param array<mixed>|null $allDatasets
+     * @return int number of inserted rows
+     * @throws LinkedDataNotStoredException after the other identifiers are stored, when an identifier or its metadata
+     *                                      could not be: the processing that follows the save of a paper reports it
+     */
     public static function processDatasets(Episciences_Paper|int $paper, ?array $allDatasets = []): int
     {
         $affectedRows = 0;
@@ -2980,11 +3377,12 @@ class Episciences_Submit
         }
 
         $noProcessed = [];
+        $failures = [];
         $docId = $current->getDocid();
         $repoId = $current->getRepoid();
+        $isDataCiteShaped = self::isDataCiteShapedRepo($repoId);
 
         $options = ['sourceId' => $repoId];
-
 
         foreach ($allDatasets as $datasets) {
             /*
@@ -2993,75 +3391,229 @@ class Episciences_Submit
                         ["resource_type"] => string(7) "dataset"
                         ["scheme"] => string(3) "url"
             */
+            if (!is_array($datasets)) {
+                // The submitted enrichment is client controlled: an entry that is not a list is ignored
+                continue;
+            }
+
+            // One related identifier with its relation (DataCite shaped repositories, HAL TEI), or a list of identifiers
+            $isRelatedIdentifier = $isDataCiteShaped || array_key_exists('identifier', $datasets);
+            $entryOptions = $options;
+
             foreach ($datasets as $key => $value) {
 
-
-                // Skip existing Dataset
-                if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
-                    continue;
-                }
-
-                if (
-                    $repoId === (int)Episciences_Repositories::ZENODO_REPO_ID ||
-                    $repoId === (int)Episciences_Repositories::ARCHE_ID ||
-                    Episciences_Repositories::isDspace($repoId)) {
+                if ($isRelatedIdentifier) {
 
                     if ($key !== 'identifier') {
                         continue;
                     }
 
-                    $options['relationship'] = $datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
-                    $datasets = $value;
+                    // Outside the DataCite shaped repositories, the relation is one of the linked data vocabulary ("references" otherwise)
+                    $entryOptions['relationship'] = $isDataCiteShaped
+                        ? ($datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE)
+                        : TeiLinkedDataParser::relationship(is_string($datasets['relation'] ?? null) ? $datasets['relation'] : '');
                 }
 
-
-                $value = trim($value);
-                $typeLd = Episciences_Tools::checkValueType($value);
-
-
-                if ($typeLd === Episciences_Paper_Dataset::DOI_CODE || Episciences_Tools::isDoiWithUrl($value)) {
-                    $result = Episciences_DoiTools::getMetadataFromDoi($value);
-
-                    if (!empty($result)) {
-
-                        try {
-                            $aResult = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
-                            $typeFromCsl = $aResult['type'] ?? Episciences_Paper_Dataset::UNDEFINED_CODE;
-
-                            if (!array_key_exists($typeFromCsl, Episciences_Paper_Dataset::$_datasetsLabel)) {
-                                trigger_error(sprintf('[Paper [#%s]: Add missing code "%s" to %s', $docId, $typeFromCsl, 'Episciences_Paper_Dataset::$_datasetsLabel'));
-                                $code = Episciences_Paper_Dataset::UNDEFINED_CODE;
-                            } else {
-                                $code = Episciences_Paper_Dataset::$_datasetsLabel[$typeFromCsl];
-                            }
-
-                        } catch (JsonException $e) {
-                            $code = Episciences_Paper_Dataset::UNDEFINED_CODE;
-                            trigger_error($e->getMessage());
-                        }
-
-                        $epiDM = new Episciences_Paper_DatasetMetadata();
-                        $epiDM->setMetatext($result);
-                        $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
-                        $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $code, $idMetaDataLastId, $options);
-
-                    } else {
-                        $noProcessed[$typeLd] = $datasets;
-                    }
-                } elseif ($typeLd === Episciences_Paper_Dataset::SOFTWARE_CODE) {
-                    $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
-                } elseif ($typeLd === Episciences_Paper_Dataset::HANDLE_CODE) {
-                    $value = Episciences_Tools::cleanHandle($value);
-                    $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
+                try {
+                    $affectedRows += self::storeLinkedIdentifier(
+                        $docId,
+                        $value,
+                        (string)($datasets['resource_type'] ?? ''),
+                        $entryOptions,
+                        $noProcessed,
+                        $failures
+                    );
+                } catch (Throwable $e) {
+                    // Throwable: an unexpected value fails with a TypeError, the exception class tells it apart
+                    $failures[] = self::describeLinkedDataFailure($value, $e);
                 }
-                if (!empty($noProcessed)) {
-                    $affectedRows += $affectedRows = self::forceAddingDatasets($current, $noProcessed);
-                }
-
             }
         }
+
+        // Once, after the loop: values whose DOI lookup failed are stored as is
+        if (!empty($noProcessed)) {
+            try {
+                $affectedRows += self::forceAddingDatasets($current, $noProcessed);
+            } catch (Throwable $e) {
+                $failures[] = self::describeLinkedDataFailure(
+                    implode(', ', array_column(array_merge(...array_values($noProcessed)), 'value')),
+                    $e
+                );
+            }
+        }
+
+        if ($failures !== []) {
+            throw new LinkedDataNotStoredException('Linked data not stored: ' . implode('; ', $failures), $affectedRows);
+        }
+
         return $affectedRows;
 
+    }
+
+    /**
+     * Stores the linked data of a repository record (linked data hooks), then reindexes the paper when it is published
+     * and some rows were stored, also when other linked data could not be: the failure is thrown after the reindex.
+     *
+     * @param array<mixed>|null $linkedIdentifiers
+     * @return int number of inserted rows
+     * @throws LinkedDataNotStoredException|Zend_Db_Statement_Exception
+     */
+    public static function processLinkedDataAndReindex(int $docId, ?array $linkedIdentifiers): int
+    {
+        try {
+            $affectedRows = self::processDatasets($docId, $linkedIdentifiers);
+        } catch (LinkedDataNotStoredException $e) {
+            self::reindexPublishedPaper($docId, $e->getAffectedRows());
+            throw $e;
+        }
+
+        self::reindexPublishedPaper($docId, $affectedRows);
+        return $affectedRows;
+    }
+
+    /**
+     * @throws Zend_Db_Statement_Exception
+     */
+    private static function reindexPublishedPaper(int $docId, int $affectedRows): void
+    {
+        if ($affectedRows <= 0) {
+            return;
+        }
+
+        $paper = Episciences_PapersManager::get($docId, false);
+
+        if ($paper && $paper->isPublished()) {
+            try {
+                SolrIndexing::enqueueIndex($paper->getDocid());
+            } catch (Exception $e) {
+                trigger_error($e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * Stores one related identifier of a paper
+     *
+     * @param array<string, mixed> $options
+     * @param array<string, list<array{value: string, relation: string}>> $noProcessed receives the DOIs whose lookup failed
+     * @param list<string> $failures receives the metadata that could not be stored (the dataset is stored without it)
+     * @return int number of inserted rows
+     * @throws Zend_Db_Exception
+     */
+    private static function storeLinkedIdentifier(
+        int $docId,
+        mixed $value,
+        string $resourceType,
+        array $options,
+        array &$noProcessed,
+        array &$failures
+    ): int
+    {
+        if (!is_scalar($value)) {
+            throw new UnexpectedValueException('Unexpected related identifier: ' . get_debug_type($value));
+        }
+
+        $value = trim((string)$value);
+
+        // Skip existing Dataset
+        if ($value === '' || Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
+            return 0;
+        }
+
+        $typeLd = Episciences_Tools::checkValueType($value);
+        $doi = Episciences_DoiTools::cleanDoi($value);
+
+        if (Episciences_Tools::isDoi($doi)) {
+            // A doi.org URL is stored as a bare DOI, like any other DOI
+            if (Episciences_Paper_DatasetsManager::findByValue($docId, $doi) !== null) {
+                return 0;
+            }
+
+            $result = Episciences_DoiTools::getMetadataFromDoi($doi);
+
+            if (empty($result)) {
+                // Each value carries its own relation type: append, don't
+                // overwrite, so failures don't lose siblings sharing the type.
+                $noProcessed[Episciences_Paper_Dataset::DOI_CODE][] = [
+                    'value' => $doi,
+                    'relation' => $options['relationship'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE,
+                ];
+                return 0;
+            }
+
+            $epiDM = new Episciences_Paper_DatasetMetadata();
+            $epiDM->setMetatext($result);
+
+            return Episciences_Paper_DatasetsManager::addDatasetFromSubmissionOrFail(
+                $docId,
+                Episciences_Paper_Dataset::DOI_CODE,
+                $doi,
+                self::datasetCodeFromCsl($docId, $result),
+                self::insertDatasetMetadata($epiDM, $doi, $failures),
+                $options
+            );
+        }
+
+        if ($typeLd === Episciences_Paper_Dataset::SOFTWARE_CODE) {
+            return Episciences_Paper_DatasetsManager::addDatasetFromSubmissionOrFail($docId, $typeLd, $value, $typeLd, null, $options);
+        }
+
+        if ($typeLd === Episciences_Paper_Dataset::HANDLE_CODE) {
+            $value = Episciences_Tools::cleanHandle($value);
+            return Episciences_Paper_DatasetsManager::addDatasetFromSubmissionOrFail($docId, $typeLd, $value, $typeLd, null, $options);
+        }
+
+        if ($typeLd === Episciences_Paper_Dataset::HAL_CODE) {
+            return self::addHalDataset($docId, $value, $resourceType, $options, $failures);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Dataset code of a DOI, from its CSL metadata
+     */
+    private static function datasetCodeFromCsl(int $docId, string $csl): string
+    {
+        try {
+            $aResult = json_decode($csl, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage());
+            return Episciences_Paper_Dataset::UNDEFINED_CODE;
+        }
+
+        $typeFromCsl = is_array($aResult) ? ($aResult['type'] ?? Episciences_Paper_Dataset::UNDEFINED_CODE) : Episciences_Paper_Dataset::UNDEFINED_CODE;
+
+        if (!is_string($typeFromCsl) || !array_key_exists($typeFromCsl, Episciences_Paper_Dataset::$_datasetsLabel)) {
+            $reportedType = is_string($typeFromCsl) ? $typeFromCsl : get_debug_type($typeFromCsl);
+            trigger_error(sprintf('[Paper [#%s]: Add missing code "%s" to %s', $docId, $reportedType, 'Episciences_Paper_Dataset::$_datasetsLabel'));
+            return Episciences_Paper_Dataset::UNDEFINED_CODE;
+        }
+
+        return Episciences_Paper_Dataset::$_datasetsLabel[$typeFromCsl];
+    }
+
+    /**
+     * Stores the metadata of a dataset: when it cannot be, the dataset is still stored, without metadata,
+     * and the failure is reported with the other ones of processDatasets()
+     *
+     * @param list<string> $failures
+     * @return int|null id of the metadata, null without metadata
+     */
+    private static function insertDatasetMetadata(Episciences_Paper_DatasetMetadata $metadata, string $value, array &$failures): ?int
+    {
+        try {
+            return Episciences_Paper_DatasetsMetadataManager::insertOrFail([$metadata]);
+        } catch (Throwable $e) {
+            $failures[] = self::describeLinkedDataFailure('metadata of ' . $value, $e);
+            return null;
+        }
+    }
+
+    private static function describeLinkedDataFailure(mixed $value, Throwable $e): string
+    {
+        $label = is_scalar($value) ? (string)$value : get_debug_type($value);
+        return sprintf('%s (%s: %s)', $label, $e::class, $e->getMessage());
     }
 
     /**
@@ -3139,7 +3691,8 @@ class Episciences_Submit
             'validators' => [
                 'Count' => [false, 1],
                 'Extension' => [false, implode(',', $availableExtensions)],
-                'Size' => [false, MAX_FILE_SIZE]
+                'Size' => [false, MAX_FILE_SIZE],
+                new Episciences_Form_Validate_MimeType()
             ]
         ]);
 

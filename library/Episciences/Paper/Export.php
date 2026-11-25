@@ -37,13 +37,12 @@ use Zend_View;
 class Export
 {
     const MODULES_JOURNAL_VIEWS_SCRIPTS_EXPORT = '/modules/journal/views/scripts/export/';
-    public const FUNDER_NAME = 'funderName';
 
     public static function getCrossref(Episciences_Paper $paper, bool $forOai = false): string
     {
 
         $previousVersionsUrl = self::getPreviousVersionsUrls($paper);
-        list($volume, $section, $proceedingInfo) = self::getPaperVolumeAndSection($paper);
+        list($volume, $section, $proceedingInfo, $volumeEditors) = self::getPaperVolumeAndSection($paper);
         $journal = self::getJournalSettings($paper);
 
         // Create new DOI if none exist
@@ -75,6 +74,7 @@ class Export
             'paperLanguage' => $paperLanguage,
             'previousVersionsUrl' => $previousVersionsUrl,
             'emailAddress' => $emailAddress,
+            'volumeEditors' => $volumeEditors,
         ]));
 
     }
@@ -108,6 +108,7 @@ class Export
         $volume = '';
         $section = '';
         $proceedingInfo = '';
+        $volumeEditors = [];
 
         if ($paper->getVid()) {
             $volumeCacheKey = 'volume-' . $paper->getVid();
@@ -122,6 +123,7 @@ class Export
 
             if ($oVolume) {
                 $volume = $oVolume->getName('en', true);
+                $volumeEditors = $oVolume->getEditors(true);
                 if ($oVolume->isProceeding()) {
                     $proceedingInfo = $oVolume->getProceedingInfo();
                 }
@@ -144,7 +146,7 @@ class Export
                 $section = $oSection->getName('en', true);
             }
         }
-        return array($volume, $section, $proceedingInfo);
+        return array($volume, $section, $proceedingInfo, $volumeEditors);
     }
 
     /**
@@ -594,9 +596,6 @@ class Export
         // description
         foreach ($paper->getAllAbstracts() as $lang => $abstract) {
             $abstract = trim($abstract);
-            if ($abstract === 'International audience') {
-                continue;
-            }
             $description = $xml->createElement('dc:description', $abstract);
             if ($lang && Zend_Locale::isLocale($lang)) {
                 $description->setAttribute('xml:lang', $lang);
@@ -688,7 +687,7 @@ class Export
         $result['abstracts'] = $paper->getAbstractsCleaned();
         $result['keywords'] = $paper->getMetadata('subjects');
 
-        if ($paper->hasHook && $paper->getConcept_identifier() !== null) {
+        if ($paper->hasConceptIdentifier() && $paper->getConcept_identifier() !== null) {
             $result['concept_identifier'] = $paper->getConcept_identifier();
         }
 

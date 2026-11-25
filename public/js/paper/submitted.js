@@ -1,3 +1,10 @@
+// Declared before the document-ready handler: loaded with $.getScript() once the page is ready,
+// this script runs the handler at once, before the declarations below it would be evaluated.
+// Tables whose columns will be measured again at the next frame
+const tablesToAdjust = new Set();
+// DataTables API of each table node, replaced when the table is rebuilt
+const tableApis = new WeakMap();
+
 $(document).ready(function () {
     let $action = selfAction;
     let $controller = selfController;
@@ -9,6 +16,7 @@ $(document).ready(function () {
     let $reviewers = $('#reviewers');
     let $doi = $('#doi');
     let $repositories = $('#repositories');
+    let $suggestion = $('#suggestion');
     let $oTable;
     let searchLength = 3;
     const $KeyboardNavigationKeys = [37, 39, 38, 40, 36, 33, 35, 34]; // [Turn left, Turn right, Forward, Backward, Home (start), Pitch Up, End, Pitch Down ]
@@ -45,6 +53,8 @@ $(document).ready(function () {
             let filter_doi = $doi.length > 0 ? ($doi.val() ?? ['']) : [''];
             let filter_repositories =
                 $repositories.length > 0 ? ($repositories.val() ?? ['']) : [''];
+            let filter_suggestion =
+                $suggestion.length > 0 ? ($suggestion.val() ?? ['']) : [''];
 
             let filters = {
                 status: filter_status,
@@ -55,6 +65,7 @@ $(document).ready(function () {
                 reviewers: filter_reviewers,
                 doi: filter_doi,
                 repositories: filter_repositories,
+                suggestion: filter_suggestion,
             };
 
             let isFilter = checkFilterParams(filters);
@@ -121,6 +132,8 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
                   doi: 'doi' in filters ? filters['doi'] : [],
                   repositories:
                       'repositories' in filters ? filters['repositories'] : [],
+                  suggestion:
+                      'suggestion' in filters ? filters['suggestion'] : [],
               };
 
     let columnDefs = [];
@@ -148,7 +161,13 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
         isAutoWidth = true;
     }
 
-    let oTable = $('.dataTable').DataTable({
+    // With scrollX, DataTables copies the header into a second table of the same class: only the
+    // table of the rows is (re)built, otherwise each rebuild sends its request twice
+    const $table = $('.dataTable').not(
+        '.dataTables_scrollHead .dataTable, .dataTables_scrollFoot .dataTable'
+    );
+
+    let oTable = $table.DataTable({
         fnPreDrawCallback: function () {
             $("div[id$='_processing']").removeAttr('class');
             $(this)
@@ -220,10 +239,39 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
         },
     });
 
+    // Re-measure the columns when an image of the rows is loaded or fails to load (capture: these
+    // events do not bubble). The same listener is added once, even if the table is rebuilt: it
+    // uses the current API.
+    const tableNode = oTable.table().node();
+    tableApis.set(tableNode, oTable);
+    tableNode.addEventListener('load', adjustColumnsOnImageLoad, true);
+    tableNode.addEventListener('error', adjustColumnsOnImageLoad, true);
+
     // oTable.column(9).visible(false);
-    addToggleButton('.dataTable', '.dt-header .right');
+    addToggleButton($table, '.dt-header .right');
 
     return oTable;
+}
+
+/**
+ * The column widths are measured when the table is drawn. With scrollX the header is a separate
+ * table: an image loaded afterwards (paper status icon) widens its column in the body only, as
+ * does the alternative text of an image that fails to load.
+ * @param {Event} event
+ */
+function adjustColumnsOnImageLoad(event) {
+    const table = this;
+
+    if (event.target.tagName !== 'IMG' || tablesToAdjust.has(table)) {
+        return;
+    }
+
+    // Once per frame, the images of a page being loaded together
+    tablesToAdjust.add(table);
+    requestAnimationFrame(function () {
+        tablesToAdjust.delete(table);
+        tableApis.get(table).columns.adjust();
+    });
 }
 
 /**
@@ -242,6 +290,7 @@ function checkFilterParams(
         reviewers: [],
         doi: [],
         repositories: [],
+        suggestion: [],
     }
 ) {
     return (
@@ -261,6 +310,8 @@ function checkFilterParams(
         filters['doi'].length > 0 &&
         'repositories' in filters &&
         filters['repositories'].length > 0 &&
+        'suggestion' in filters &&
+        filters['suggestion'].length > 0 &&
         (filters['status'][0] !== '' ||
             filters['volume'][0] !== '' ||
             filters['section'][0] !== '' ||
@@ -268,7 +319,8 @@ function checkFilterParams(
             filters['ratingStatus'][0] !== '' ||
             filters['reviewers'][0] !== '' ||
             filters['doi'][0] !== '' ||
-            filters['repositories'][0] !== '')
+            filters['repositories'][0] !== '' ||
+            filters['suggestion'][0] !== '')
     );
 }
 

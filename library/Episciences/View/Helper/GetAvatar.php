@@ -29,46 +29,29 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
      */
     public static function asSvg($stringToMakeAvatar, ?string $backgroundColor = null): string
     {
-        // laravolt/avatar concatenates the background color and the initials into the SVG
-        // markup without escaping: only accept a strict hex color, otherwise fall back to the palette
-        $backgroundColor = self::sanitizeHexColor($backgroundColor);
-        $backgrounds = $backgroundColor !== null ? ['#' . $backgroundColor] : self::$_defaultBackgroundColors;
+        // Use custom color if provided and well formed (3 or 6 hex digits, leading # tolerated),
+        // otherwise use default palette
+        $hexColor = $backgroundColor !== null ? ltrim($backgroundColor, '#') : '';
+        $backgrounds = preg_match('/^(?:[0-9a-fA-F]{3}){1,2}$/D', $hexColor)
+            ? ['#' . $hexColor]
+            : self::$_defaultBackgroundColors;
+
+        // The initials are written as text in the SVG: drop the markup characters
+        // (quotes are harmless in a text node, so names like O'Brien keep their initials)
+        // and the control characters that are not allowed in XML 1.0
+        $stringToMakeAvatar = (string)preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', (string)$stringToMakeAvatar);
+        // U+FFFE and U+FFFF are not allowed in XML 1.0 either (left as is if the string is not valid UTF-8)
+        $stringToMakeAvatar = preg_replace('/[\x{FFFE}\x{FFFF}]/u', '', $stringToMakeAvatar) ?? $stringToMakeAvatar;
+        $stringToMakeAvatar = trim(str_replace(['<', '>', '&'], '', $stringToMakeAvatar));
+        if ($stringToMakeAvatar === '') {
+            $stringToMakeAvatar = '?';
+        }
 
         $avatar = new Avatar([
             'shape' => 'circle', 'theme' => 'colorful', 'width' => 34, 'height' => 34, 'fontSize' => 16, 'backgrounds' => $backgrounds]);
 
-        return $avatar->create(self::stripXmlSpecialChars((string)$stringToMakeAvatar))->setFontFamily('Helvetica')->toSvg();
+        return $avatar->create($stringToMakeAvatar)->setFontFamily('Helvetica')->toSvg();
 
-    }
-
-    /**
-     * @param string|null $color Hex color code, with or without leading #
-     * @return string|null the color without #, or null if it is not a 3 or 6 digit hex color
-     */
-    public static function sanitizeHexColor(?string $color): ?string
-    {
-        if ($color === null) {
-            return null;
-        }
-
-        $color = ltrim($color, '#');
-
-        return preg_match('/^(?:[0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/D', $color) ? $color : null;
-    }
-
-    /**
-     * Remove characters that would break out of an SVG text node or attribute,
-     * and C0 control characters that are not allowed in XML 1.0
-     * @param string $string
-     * @return string
-     */
-    private static function stripXmlSpecialChars(string $string): string
-    {
-        $string = (string)preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $string);
-        // U+FFFE and U+FFFF are not allowed in XML 1.0 either (left as is if the string is not valid UTF-8)
-        $string = preg_replace('/[\x{FFFE}\x{FFFF}]/u', '', $string) ?? $string;
-
-        return str_replace(['<', '>', '&', '"', "'"], '', $string);
     }
 
 

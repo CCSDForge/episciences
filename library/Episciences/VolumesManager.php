@@ -136,8 +136,9 @@ class Episciences_VolumesManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        // the latest assignment of each editor to each volume (highest ID: two assignments can have the same date)
         $subquery = $db->select()
-            ->from(T_ASSIGNMENTS, ['UID', 'ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', Episciences_User_Assignment::ITEM_VOLUME)
             ->where('ITEMID IN (?)', $vids)
             ->where('ROLEID = ?', Episciences_User_Assignment::ROLE_EDITOR)
@@ -152,7 +153,7 @@ class Episciences_VolumesManager
         $select = $db->select()
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN', 'ITEMID'])
             ->joinUsing(T_USERS, 'UID', [])
-            ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN` AND a.ITEMID = b.ITEMID')
+            ->join(['b' => $subquery], 'a.ID = b.LAST_ID', [])
             ->join(['ur' => T_USER_ROLES], 'ur.UID = a.UID')
             ->where('ur.ROLEID IN (?)', $roles)
             ->where('ur.RVID = ?', RVID);
@@ -467,6 +468,16 @@ class Episciences_VolumesManager
             Episciences_GridsManager::delete($file);
         }
 
+        // Enqueue Next.js cache revalidation for deleted volume
+        $journal = Episciences_ReviewsManager::find($rvId);
+        if ($journal !== false) {
+            $rvcode = $journal->getCode();
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "volume-{$id}",
+                "volumes-{$rvcode}",
+            ]);
+        }
+
         return true;
     }
 
@@ -480,12 +491,13 @@ class Episciences_VolumesManager
     /**
      * @param int $vid
      * @param array $fields
+     * @param int|null $rvid Journal to scope the lookup to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      */
-    private static function isPapersInVolumeQuery(int $vid, array $fields = ['COUNT(st.DOCID)']): \Zend_Db_Select
+    private static function isPapersInVolumeQuery(int $vid, array $fields = ['COUNT(st.DOCID)'], ?int $rvid = null): \Zend_Db_Select
     {
         //Prise en compte des volumes secondaires git #169
-        return Episciences_PapersManager::getVolumesQuery($fields)
+        return Episciences_PapersManager::getVolumesQuery($fields, $rvid)
             ->where("st.VID = ? OR vpt.VID = ?", $vid);
     }
 
@@ -641,6 +653,11 @@ class Episciences_VolumesManager
             'attribs' => [
                 'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Exemple : 2024 ou 2024-2025')
             ],
+            'description' => sprintf(
+                Zend_Registry::get('Zend_Translate')->translate('Format : AAAA ou AAAA-AAAA, entre %s et %s'),
+                Episciences_Form_Validate_VolumeYear::MIN_YEAR,
+                (int)date('Y') + 5
+            ),
             'validators' => [
                 [
                     'validator' => 'VolumeYear',
@@ -673,6 +690,10 @@ class Episciences_VolumesManager
         ]);
 
         self::getProceedingForm($form, $volume);
+
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
+        // The form script wraps each element in a row, hide the one of the token
+        $form->getElement('csrf_token')->setAttrib('data-none', true);
 
         return $form;
     }
@@ -845,6 +866,12 @@ class Episciences_VolumesManager
                 $db->query($sql . implode(', ', $values) . ' AS new_row ON DUPLICATE KEY UPDATE POSITION=new_row.POSITION');
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_WARNING);
+            }
+
+            // Enqueue Next.js cache revalidation for reordered papers
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "volume-{$vid}");
             }
         }
     }

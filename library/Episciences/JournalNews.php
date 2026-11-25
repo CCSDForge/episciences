@@ -227,25 +227,49 @@ class Episciences_JournalNews
         return $this;
     }
 
+    /**
+     * Convert visibility ENUM value to JSON format for legacy column synchronization
+     * Example: "public" -> '["public"]'
+     */
+    public static function visibilityToJson(string $visibility): string
+    {
+        if (empty($visibility)) {
+            return '["public"]';
+        }
+        return json_encode([$visibility], JSON_UNESCAPED_UNICODE);
+    }
+
     public static function insert(array $news): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        // Synchronize visibility columns: new ENUM -> old JSON
+        if (isset($news['visibility'])) {
+            $visibilityValue = $news['visibility'];
+            $news['visibility_enum'] = $visibilityValue;
+            $news['visibility'] = self::visibilityToJson($visibilityValue);
+        }
+
         try {
             $resUpdate = $db->insert(T_JOURNAL_NEWS, $news);
-            return $resUpdate;
         } catch (Zend_Db_Adapter_Exception $exception) {
             error_log($exception->getMessage());
             $resUpdate = 0;
         }
-        return $resUpdate;
 
+        if ($resUpdate > 0 && isset($news['code']) && $news['code'] !== '') {
+            $rvcode = (string) $news['code'];
+            \Episciences\Next\RevalidationService::enqueueTag($rvcode, "news-{$rvcode}");
+        }
+
+        return $resUpdate;
     }
 
     public static function update(Episciences_JournalNews $journalNews): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $where['id = ?'] = $journalNews->getId();
+        $visibilityValue = $journalNews->getVisibility();
 
         $values = [
             'uid' => $journalNews->getUid(),
@@ -253,7 +277,8 @@ class Episciences_JournalNews
             'content' => $journalNews->getContent(),
             'link' => $journalNews->getLink(),
             'date_updated' => new Zend_DB_Expr('NOW()'),
-            'visibility' => $journalNews->getVisibility(),
+            'visibility_enum' => $visibilityValue,
+            'visibility' => self::visibilityToJson($visibilityValue),
         ];
         try {
             $resUpdate = $db->update(T_JOURNAL_NEWS, $values, $where);
@@ -261,29 +286,48 @@ class Episciences_JournalNews
             error_log($exception->getMessage());
             $resUpdate = 0;
         }
+
+        if ($resUpdate > 0) {
+            $rvcode = $journalNews->getCode();
+            \Episciences\Next\RevalidationService::enqueueTag($rvcode, "news-{$rvcode}");
+        }
+
         return $resUpdate;
     }
+
     public static function findByLegacyId(int $legacyId): ?Episciences_JournalNews
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $query = $db->select()
-            ->from(T_JOURNAL_NEWS)
+            ->from(T_JOURNAL_NEWS, [
+                'id', 'legacy_id', 'code', 'uid', 'date_creation', 'date_updated',
+                'title', 'content', 'link',
+                'visibility' => 'visibility_enum'
+            ])
             ->where('legacy_id = ?', $legacyId);
 
         $res = $db->fetchRow($query);
         if (empty($res)) {
-            $journalNew = null;
-        } else {
-            $journalNew = $res;
-            return new Episciences_JournalNews($journalNew);
+            return null;
         }
-        return $journalNew;
+        return new Episciences_JournalNews($res);
     }
-    public static function deleteByLegacyId(int $legacyId) {
+    public static function deleteByLegacyId(int $legacyId): bool
+    {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        // Fetch rvcode before deletion for cache revalidation
+        $row = $db->fetchRow(
+            $db->select()->from(T_JOURNAL_NEWS, ['code'])->where('legacy_id = ?', $legacyId)
+        );
+        $rvcode = is_array($row) && isset($row['code']) ? (string) $row['code'] : null;
+
         $resDelete = $db->delete(T_JOURNAL_NEWS, ['legacy_id = ?' => $legacyId]);
+
+        if ($resDelete > 0 && $rvcode !== null && $rvcode !== '') {
+            \Episciences\Next\RevalidationService::enqueueTag($rvcode, "news-{$rvcode}");
+        }
+
         return $resDelete > 0;
-
-
     }
 }

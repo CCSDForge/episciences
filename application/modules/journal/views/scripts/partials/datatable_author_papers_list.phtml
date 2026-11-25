@@ -32,30 +32,18 @@ foreach ($this->papers as $paper) : ?>
         <?php // article title ******************************************* ?>
         <td>
             <a href="<?= $this->url(['controller' => $controller, 'action' => 'view', 'id' =>  $paper->getDocid()])?>">
-                <strong><?php echo Ccsd_Tools::truncate(Episciences_Tools::decodeLatex($paper->getTitle()), 75); ?></strong>
+                <strong><?php echo $this->paperTitle($paper); ?></strong>
                 <?php if ($paper->getVersion() != 1) : ?>
                     (v<?php echo $paper->getVersion(); ?>)
                 <?php endif; ?>
             </a>
         </td>
 
-        <?php // article volume ******************************************* ?>
-        <td class="text-center"><?php
-            if (array_key_exists($paper->getVid(), $this->volumes)) {
-                echo $this->volumes[$paper->getVid()]->getNameKey();
-            } else {
-                echo '-';
-            }
-            ?></td>
-
-        <?php // article section ******************************************* ?>
-        <td class="text-center"><?php
-            if (array_key_exists($paper->getSid(), $this->sections)) {
-                echo $this->translate($this->sections[$paper->getSid()]->getNameKey());
-            } else {
-                echo '-';
-            }
-            ?></td>
+        <?php echo $this->partial('partials/paper_list_volume_section.phtml', [
+            'paper' => $paper,
+            'volumes' => $this->volumes,
+            'sections' => $this->sections,
+        ]); ?>
 
         <?php // submission date ************************************************ ?>
         <td>

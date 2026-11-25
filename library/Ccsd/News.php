@@ -91,7 +91,7 @@ class Ccsd_News
         foreach ($news as $key => $value) {
             switch ($key) {
                 case 'newsid':
-                    $id = $value;
+                    $id = (int)$value;
                     break;
                 case 'online':
                     $bind[mb_strtoupper($key)] = (int)$value;
@@ -125,6 +125,10 @@ class Ccsd_News
 
         } else {
 
+            if (!$this->belongsToSite($id)) {
+                throw new InvalidArgumentException('News ' . $id . ' does not belong to the current site');
+            }
+
             $isInsert = false;
             //Editing
             if (isset($news['date']) && $news['date']) {
@@ -139,13 +143,16 @@ class Ccsd_News
                     $journalNewsExisting->setContent(json_encode($news['content'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
                 empty($news['content']) ? $journalNewsExisting->setLink(null) :
                     $journalNewsExisting->setLink(json_encode(['und' => $bind['LINK']],JSON_THROW_ON_ERROR));
-                $journalNewsExisting->setVisibility(json_encode([$visibility], JSON_THROW_ON_ERROR));
+                $journalNewsExisting->setVisibility($visibility);
                 Episciences_JournalNews::update($journalNewsExisting);
 
             } else {
                 $this->insertNewJournalNews($id, $bind, $news, $visibility);
             }
-            $this->_db->update($this->_table, $bind, $this->_primary . ' = ' . $id);
+            $this->_db->update($this->_table, $bind, [
+                $this->_primary . ' = ?' => $id,
+                $this->_sidField . ' = ?' => $this->_sid,
+            ]);
 
         }
         //Editing translation files
@@ -198,16 +205,46 @@ class Ccsd_News
     }
 
     /**
-     * Suppression d'une actualité
-     * @param unknown_type $newsid
+     * Whether the news exists and belongs to the current site
+     * @param int $newsid
+     * @return bool
      */
-    public function delete($newsid)
+    public function belongsToSite(int $newsid): bool
     {
-        if ($this->_db->delete($this->_table, $this->_primary . ' = ' . $newsid)) {
-
-            $this->updateTranslation($newsid);
-
+        if ($newsid <= 0) {
+            return false;
         }
+
+        $select = $this->_db->select()
+            ->from($this->_table, [$this->_primary])
+            ->where($this->_primary . ' = ?', $newsid)
+            ->where($this->_sidField . ' = ?', $this->_sid);
+
+        return (bool)$this->_db->fetchOne($select);
+    }
+
+    /**
+     * Delete a news of the current site
+     * @param int $newsid
+     * @return bool true if a news was deleted
+     */
+    public function delete($newsid): bool
+    {
+        $newsid = (int)$newsid;
+        if ($newsid <= 0) {
+            return false;
+        }
+
+        $deleted = $this->_db->delete($this->_table, [
+            $this->_primary . ' = ?' => $newsid,
+            $this->_sidField . ' = ?' => $this->_sid,
+        ]);
+
+        if ($deleted) {
+            $this->updateTranslation($newsid);
+        }
+
+        return (bool)$deleted;
     }
 
     /**
@@ -311,7 +348,7 @@ class Ccsd_News
             'title' => json_encode($news['title'], JSON_THROW_ON_ERROR),
             'content' => empty($news['content']) ? new Zend_Db_Expr('NULL') : json_encode($news['content'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
             'link' => empty($news['link']) ? new Zend_Db_Expr('NULL') : json_encode(['und' => $bind['LINK']], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
-            'visibility' => json_encode([$visibility], JSON_THROW_ON_ERROR)
+            'visibility' => $visibility
         ];
         Episciences_JournalNews::insert($journalNewsInfo);
     }

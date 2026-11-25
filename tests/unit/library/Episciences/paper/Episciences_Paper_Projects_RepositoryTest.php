@@ -121,4 +121,28 @@ class Episciences_Paper_Projects_RepositoryTest extends TestCase
         $this->assertSame($rowsSrc1, Episciences_Paper_Projects_Repository::getByPaperIdAndSourceId($paperId, 1));
         $this->assertSame($rowsSrc2, Episciences_Paper_Projects_Repository::getByPaperIdAndSourceId($paperId, 2));
     }
+
+    // ---------------------------------------------------------------
+    // invalidateFundingExportCaches()
+    // ---------------------------------------------------------------
+
+    public function testInvalidateFundingExportCachesDropsTheCachedFundingExportsOnly(): void
+    {
+        $paperId = 987654321;
+        $cache = new \Symfony\Component\Cache\Adapter\FilesystemAdapter(\Episciences_Paper::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
+        $methods = ['getCrossref', 'getOpenaire', 'getDatacite', 'getTei'];
+
+        foreach ($methods as $method) {
+            $cache->save($cache->getItem($paperId . '-' . $method)->set('<xml/>'));
+        }
+
+        Episciences_Paper_Projects_Repository::invalidateFundingExportCaches($paperId);
+
+        $this->assertFalse($cache->getItem($paperId . '-getCrossref')->isHit());
+        $this->assertFalse($cache->getItem($paperId . '-getOpenaire')->isHit());
+        $this->assertFalse($cache->getItem($paperId . '-getDatacite')->isHit());
+        $this->assertTrue($cache->getItem($paperId . '-getTei')->isHit(), 'exports without fundings are kept');
+
+        $cache->deleteItem($paperId . '-getTei');
+    }
 }

@@ -41,6 +41,9 @@ return [
     "Le comité éditorial demande que vous apportiez des modifications à votre article." => "The editorial committee asks that you bring modifications to your article.",
     "Êtes-vous sûr ?" => "Are you sure?",
     "La suppression a échoué : " => "Deletion failed: ",
+    "La suppression a échoué." => "Deletion failed.",
+    "Une erreur est survenue lors de la mise à jour des métadonnées." => "An error occurred while updating metadata.",
+    "Photo supprimée." => "Picture deleted.",
     "Afficher" => "Display",
     "Lignes" => "Lines",
     "lignes" => "lines",
@@ -132,6 +135,13 @@ return [
     "Contacter ce rédacteur" => "Contact this editor",
     "Contacter un contributeur" => "Contact a contributor",
     "Contacter ce contributeur" => "Contact this contributor",
+    "Changer le contributeur" => "Change contributor",
+    "Contributeur actuel / Contributrice actuelle" => "Current contributor",
+    "Nouveau contributeur / Nouvelle contributrice" => "New contributor",
+    "Rechercher un utilisateur..." => "Search for a user...",
+    "Ajouter l'ancien contributeur / l'ancienne contributrice comme co-auteur / co-autrice" => "Add the former contributor as co-author",
+    "Il/Elle continuera à recevoir les notifications" => "They will continue to receive notifications",
+    "Veuillez sélectionner un nouveau contributeur" => "Please select a new contributor",
     "Contacter ce préparateur de copie" => "Contact this copy editor",
     "Contacter un préparateur de copie" => "Contact a copy editor",
 
@@ -305,4 +315,52 @@ return [
 
     // Activity timeline filters
     'activity_timeline_events_shown' => 'event(s) shown',
+
+    // Illustration or graphical abstract
+    'Le texte alternatif est obligatoire.' => 'The alternative text is required.',
+    'Veuillez corriger les erreurs du formulaire.' => 'Please correct the errors in the form.',
+    'Une erreur est survenue, veuillez réessayer.' => 'An error occurred, please try again.',
+    'Enregistrement en cours…' => 'Saving…',
+    'Voulez-vous supprimer cette illustration ?' => 'Do you want to delete this illustration?',
+
+    // License save errors
+    "Échec de l'enregistrement de la licence." => 'Failed to save the licence.',
+    "Échec de l'enregistrement de la licence : aucun code de licence fourni." => 'Failed to save the licence: no licence code provided.',
+    "Échec de l'enregistrement de la licence : code SPDX invalide." => 'Failed to save the licence: invalid SPDX code.',
+    "Échec de l'enregistrement de la licence : action non autorisée." => 'Failed to save the licence: action not allowed.',
+    "Échec de l'enregistrement de la licence : cette licence n'est pas autorisée par la revue." => 'Failed to save the licence: this licence is not allowed by the journal.',
+    "Échec de l'enregistrement de la licence : article introuvable." => 'Failed to save the licence: paper not found.',
+    
+    // License save warnings
+    "La licence actuelle est déjà définie." => 'The current license is already set.',
+
+    // Statistics: charts
+    'Voir les données' => 'View the data',
+    'Télécharger (CSV)' => 'Download (CSV)',
+    // Statistics: names of the CSV files
+    'chiffres' => 'figures',
+    'Délais moyens' => 'Average delays',
+    'Délais médians' => 'Median delays',
+    'Année' => 'Year',
+    'Rôle' => 'Role',
+    'Indicateur' => 'Indicator',
+    'Valeur' => 'Value',
+    'Importé' => 'Imported',
+    'oui' => 'yes',
+    'jours' => 'days',
+
+    // Statistics: papers of the figures
+    'article(s)' => 'article(s)',
+    "article(s) non listé(s) : conflit d'intérêts déclaré" => 'article(s) not listed: declared conflict of interest',
+    "Certains articles n'ont pas été trouvés dans la revue." => 'Some articles were not found in the journal.',
+    'La liste a expiré : veuillez recharger la page.' => 'The list has expired: please reload the page.',
+    'Votre session a expiré : veuillez vous reconnecter.' => 'Your session has expired: please log in again.',
+    'Recharger la page' => 'Reload the page',
+
+    // Search of the document to submit
+    "Erreur" => "Error",
+    "Le document %s a déjà été soumis à la revue." => "The document %s has already been submitted to this journal.",
+
+    // File upload
+    "Le téléversement du fichier a échoué. Veuillez le retirer et réessayer." => 'The file upload failed. Please remove it and try again.',
 ];

@@ -29,13 +29,18 @@ class QueueMessageManager
             throw new InvalidArgumentException("rvcode cannot be empty");
         }
 
+        // queue_messages.type is NOT NULL: a message without a type is refused here, not by the database
+        if ($queue->getType() === null) {
+            throw new InvalidArgumentException("type cannot be empty");
+        }
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $unprocessed = self::UNPROCESSED;
         $table = self::TABLE;
-        $defaultTimeOut = self::TYPE_DEFAULT_TIMEOUT;
+        $timeout = $queue->getTimeout() ?? self::TYPE_DEFAULT_TIMEOUT;
 
-        $sql = "INSERT INTO {$table} (rvcode, type, message, created_at, timeout, processed) 
-        VALUES (:rvcode, :type, :message, UNIX_TIMESTAMP(), {$defaultTimeOut}, {$unprocessed})";
+        $sql = "INSERT INTO {$table} (rvcode, type, message, created_at, timeout, processed)
+        VALUES (:rvcode, :type, :message, UNIX_TIMESTAMP(), {$timeout}, {$unprocessed})";
 
         $stmt = $db?->prepare($sql);
 

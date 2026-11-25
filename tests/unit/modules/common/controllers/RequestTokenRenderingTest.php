@@ -70,8 +70,10 @@ final class RequestTokenRenderingTest extends TestCase
         self::assertStringContainsString('meta[name="csrf-token"]', $js,
             'the script must read the token from the meta tag');
 
-        self::assertSame(2, substr_count($js, 'appendRequestToken(form_data)'),
-            'both the add and the delete call must append the token');
+        self::assertSame(1, substr_count($js, 'appendRequestToken(formData);'),
+            'the shared POST helper must append the token');
+        self::assertSame(2, substr_count($js, 'postGraphicalAbstract(form'),
+            'both the add and the delete call must go through the shared POST helper');
         self::assertStringContainsString("formData.append('csrf_token'", $js,
             'the token must be appended as the csrf_token field');
     }

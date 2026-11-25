@@ -3,8 +3,6 @@
 namespace unit\library\Episciences\notify;
 
 use coarnotify\client\COARNotifyClient;
-use coarnotify\client\NotifyResponse;
-use coarnotify\exceptions\NotifyException;
 use coarnotify\http\HttpLayer;
 use coarnotify\http\HttpResponse;
 use Episciences\Notify\Notification;
@@ -15,15 +13,27 @@ use Episciences_Repositories;
 use Episciences_Review;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
+use Zend_Registry;
 
 class Episciences_Notify_HalTest extends TestCase
 {
+    // Injected directly into Episciences_Notify_Hal rather than relying on
+    // NOTIFY_TARGET_HAL_INBOX/URL, which come from the untracked config/pwd.json
+    // and are empty in this test environment (see NotifySourceRegistryTest).
+    private const HAL_INBOX = 'https://inbox.hal.science/';
+    private const HAL_URL = 'https://hal.science/';
+
     /** @var MockObject&Episciences_Paper */
     private MockObject $paper;
     /** @var MockObject&Episciences_Review */
     private MockObject $journal;
     /** @var MockObject&NotificationsRepository */
     private MockObject $repository;
+
+    private bool $hadMetadataSources;
+    /** @var mixed */
+    private $originalMetadataSources;
 
     protected function setUp(): void
     {
@@ -39,6 +49,57 @@ class Episciences_Notify_HalTest extends TestCase
 
         $this->journal->method('getUrl')->willReturn('https://test-journal.episciences.org');
         $this->journal->method('getName')->willReturn('Test Journal');
+
+        $this->hadMetadataSources = Zend_Registry::isRegistered('metadataSources');
+        if ($this->hadMetadataSources) {
+            $this->originalMetadataSources = Zend_Registry::get('metadataSources');
+        }
+
+        self::registerHalMetadataSource();
+    }
+
+    protected function tearDown(): void
+    {
+        // Zend_Registry is a process-wide singleton: restore whatever was registered
+        // before this test so the fake HAL source and the emptied repository cache
+        // don't leak into other test files running later in the same PHPUnit process.
+        if ($this->hadMetadataSources) {
+            Zend_Registry::set('metadataSources', $this->originalMetadataSources);
+        } else {
+            Zend_Registry::getInstance()->offsetUnset('metadataSources');
+        }
+        self::resetRepositoriesCache();
+    }
+
+    /**
+     * Hal::announceEndorsement() builds the "in repository" URI through
+     * Episciences_Repositories::getDocUrl(), which reads the metadataSources
+     * Zend_Registry entry (normally populated from the metadata_sources table).
+     * The test DB has no such rows, so getDocUrl() returns null and the
+     * context item URI collapses to a relative "/pdf", which coarnotify rejects
+     * with "URI requires a scheme". Register a minimal HAL entry so the URI is
+     * absolute, and reset the memoized repository list so it is picked up.
+     */
+    private static function registerHalMetadataSource(): void
+    {
+        $metadataSources = Zend_Registry::isRegistered('metadataSources')
+            ? Zend_Registry::get('metadataSources')
+            : [];
+        $metadataSources[(string) Episciences_Repositories::HAL_REPO_ID] = [
+            Episciences_Repositories::REPO_LABEL => Episciences_Repositories::HAL_LABEL,
+            Episciences_Repositories::REPO_TYPE => Episciences_Repositories::TYPE_PAPERS_REPOSITORY,
+            Episciences_Repositories::REPO_DOCURL => 'https://hal.science/%%ID',
+        ];
+        Zend_Registry::set('metadataSources', $metadataSources);
+
+        self::resetRepositoriesCache();
+    }
+
+    private static function resetRepositoriesCache(): void
+    {
+        $repositories = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $repositories->setAccessible(true);
+        $repositories->setValue(null, []);
     }
 
     private function buildClientWithStatus(int $httpStatus): COARNotifyClient
@@ -50,7 +111,19 @@ class Episciences_Notify_HalTest extends TestCase
         $httpLayer = $this->createMock(HttpLayer::class);
         $httpLayer->method('post')->willReturn($httpResponse);
 
-        return new COARNotifyClient(NOTIFY_TARGET_HAL_INBOX, $httpLayer);
+        return new COARNotifyClient(self::HAL_INBOX, $httpLayer);
+    }
+
+    private function buildHal(?COARNotifyClient $client = null): Episciences_Notify_Hal
+    {
+        return new Episciences_Notify_Hal(
+            $this->paper,
+            $this->journal,
+            $this->repository,
+            $client,
+            self::HAL_INBOX,
+            self::HAL_URL
+        );
     }
 
     public function testAnnounceEndorsementReturnUrnUuidId(): void
@@ -59,7 +132,7 @@ class Episciences_Notify_HalTest extends TestCase
 
         $this->repository->expects(self::once())->method('save');
 
-        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, $client);
+        $hal = $this->buildHal($client);
         $id = $hal->announceEndorsement();
 
         self::assertNotEmpty($id);
@@ -79,7 +152,7 @@ class Episciences_Notify_HalTest extends TestCase
                     && str_starts_with($n->getId(), 'urn:uuid:');
             }));
 
-        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, $client);
+        $hal = $this->buildHal($client);
         $hal->announceEndorsement();
     }
 
@@ -92,7 +165,7 @@ class Episciences_Notify_HalTest extends TestCase
             ->method('save')
             ->with(self::callback(fn(Notification $n): bool => $n->getStatus() === 201));
 
-        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, $client);
+        $hal = $this->buildHal($client);
         $hal->announceEndorsement();
     }
 
@@ -106,7 +179,7 @@ class Episciences_Notify_HalTest extends TestCase
             ->method('save')
             ->with(self::callback(fn(Notification $n): bool => $n->getStatus() === Notification::STATUS_FAILED));
 
-        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, $client);
+        $hal = $this->buildHal($client);
         $id = $hal->announceEndorsement();
 
         self::assertNotEmpty($id);
@@ -128,11 +201,23 @@ class Episciences_Notify_HalTest extends TestCase
                 $savedNotification = $n;
             });
 
-        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, $client);
+        $hal = $this->buildHal($client);
         $hal->announceEndorsement();
 
         self::assertNotNull($savedNotification);
         $original = json_decode($savedNotification->getOriginal(), true);
         self::assertIsArray($original);
+    }
+
+    public function testAnnounceEndorsementThrowsWhenTargetInboxIsEmpty(): void
+    {
+        $this->repository->expects(self::never())->method('save');
+
+        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, null, '');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('NOTIFY_TARGET_HAL_INBOX is not configured');
+
+        $hal->announceEndorsement();
     }
 }

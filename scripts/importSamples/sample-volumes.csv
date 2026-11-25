@@ -1,10 +1,8 @@
-position;status;current_issue;title_fr;title_en
-1;0;0;1 | 1979;1 | 1979
-2;0;0;2 | 1980;2 | 1980
-3;0;0;3 | 1980;3 | 1980
-4;0;0;4 | 1981;4 | 1981
-5;0;0;5 | 1981;5 | 1981
-6;0;0;6 | 1982;6 | 1982
-7;0;0;7 | 1983;7 | 1983
-8;0;0;8 | 1983;8 | 1983
-
+position;status;current_issue;special_issue;bib_reference;title_en;title_fr;description_en;description_fr;num;year
+1;0;0;0;;Volume 1 (1979);Volume 1 (1979);;;1;1979
+2;0;0;0;;Volume 2 (1980);Volume 2 (1980);;;2;1980
+3;0;0;0;;Volume 3 (1980);Volume 3 (1980);;;3;1980
+4;0;0;0;;Volume 4 (1981);Volume 4 (1981);;;4;1981
+5;0;0;0;;Volume 5 (1981);Volume 5 (1981);;;5;1981
+6;0;0;0;;Volume 6 (1982);Volume 6 (1982);;;6;1982
+7;0;1;1;;Special issue 2023;Numéro spécial 2023;An english description;Une description en français;7;2023

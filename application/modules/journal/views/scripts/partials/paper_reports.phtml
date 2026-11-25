@@ -52,7 +52,7 @@ $loggedUid = Episciences_Auth::getUid();
                         <strong><?= $message ?>
                         </strong>
                         <?php if ($this-> isAllowedToSeeReportDetails && is_numeric($report->getScore())) : ?>
-                            : <?= round(($report->getScore() / $report->getMax_score()), 1) ?>
+                            : <?= $this->escape(round((float)$report->getScore(), 1) . '/' . $report->getMax_score()) ?>
                         <?php endif; ?>
                         <span class="grey pull-right"><?= $this->Date($report->getUpdate_date()) ?>
                             <span class="glyphicon glyphicon-chevron-down" style="margin-left: 5px;"></span>
@@ -65,13 +65,6 @@ $loggedUid = Episciences_Auth::getUid();
                     </div>
                 </div>
             </div>
-        <?php endif; ?>
-
-        <?php if ($this->isAllowedToSeeReportDetails && count($paper->getRatings()) > 1 && $paper->getAverageRating()) : ?>
-            <div style="margin-top: 20px; font-size: 16px" class="text-center darkgrey"><strong>
-                    <?= $this->translate('Note moyenne') ?> :
-                    <?= $paper->getAverageRating(1) . '/' . $report->getMax_score() ?>
-                </strong></div>
         <?php endif; ?>
 
     <?php endforeach; ?>

@@ -73,6 +73,36 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
     }
 
     // =========================================================================
+    // GROUP E — isDataCiteShapedRepo() — processDatasets() DataCite-shaped
+    // repositories guard
+    // =========================================================================
+    //
+    // processDatasets() itself touches the database and cannot be exercised end
+    // to end here, but the repository-shape guard it delegates to is pure and
+    // is exercised directly. Without BAOBAB listed here, a BAOBAB submission's
+    // related identifiers would be iterated key-by-key and
+    // "IsDerivedFrom"/"dataset" would be typed as if they were identifiers
+    // themselves.
+
+    public function testIsDataCiteShapedRepoRecognisesBaobab(): void
+    {
+        $result = $this->invoke('isDataCiteShapedRepo', [(int)Episciences_Repositories::BAOBAB_REPO_ID]);
+        self::assertTrue($result);
+    }
+
+    public function testIsDataCiteShapedRepoRecognisesZenodoAndArche(): void
+    {
+        self::assertTrue($this->invoke('isDataCiteShapedRepo', [(int)Episciences_Repositories::ZENODO_REPO_ID]));
+        self::assertTrue($this->invoke('isDataCiteShapedRepo', [(int)Episciences_Repositories::ARCHE_ID]));
+    }
+
+    public function testIsDataCiteShapedRepoRejectsOtherRepos(): void
+    {
+        $result = $this->invoke('isDataCiteShapedRepo', [(int)Episciences_Repositories::HAL_REPO_ID]);
+        self::assertFalse($result);
+    }
+
+    // =========================================================================
     // GROUP A — assertDateTimeVersion()
     // =========================================================================
 
@@ -95,7 +125,6 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $docId = 42;
         $result = [];
         $paper = $this->mockPaper(1.0, 'some-id-no-datetime');
-        $paper->hasHook = true;
         $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, false]);
         self::assertSame(42, $docId); // unchanged
     }
@@ -110,7 +139,6 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $result = ['update' => '20240315:120000', 'hookVersion' => 1.0];
         // identifier has no YYYYMMDD:HHMMSS pattern → getDateTimePattern returns ''
         $paper = $this->mockPaper(1.0, 'some-id-without-datetime');
-        $paper->hasHook = true;
         $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         self::assertNull($docId);
         self::assertSame(2.0, $result['hookVersion']);
@@ -125,7 +153,6 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $datetime = '20240315:120000';
         $result = ['update' => $datetime, 'hookVersion' => 1.0];
         $paper = $this->mockPaper(1.0, 'some-id/' . $datetime);
-        $paper->hasHook = true;
         $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         // same datetime → previousDatetime is NOT < current → no change
         self::assertSame(42, $docId);
@@ -140,7 +167,6 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $docId = 99;
         $result = ['update' => '20250101:000000', 'hookVersion' => 3.0];
         $paper = $this->mockPaper(3.0, 'paper/20240101:000000'); // older
-        $paper->hasHook = true;
         $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         self::assertNull($docId);
         self::assertSame(4.0, $result['hookVersion']);
@@ -154,9 +180,57 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $docId = 77;
         $result = ['update' => '20230101:000000', 'hookVersion' => 2.0]; // current is older
         $paper = $this->mockPaper(2.0, 'paper/20250101:000000'); // previous is newer
-        $paper->hasHook = true;
         $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         self::assertSame(77, $docId); // unchanged — previous > current, NOT a new version
+    }
+
+    /**
+     * No previousPaper → early return, and no "Attempt to read property on null"
+     * warning: the guard used to dereference $previousPaper->hasHook before
+     * checking that $previousPaper was there at all.
+     */
+    public function testAssertDateTimeVersionEarlyReturnWhenNoPreviousPaper(): void
+    {
+        $docId = 42;
+        $result = ['update' => '20240315:120000', 'hookVersion' => 1.0];
+
+        $raised = [];
+        set_error_handler(static function (int $errno, string $message) use (&$raised): bool {
+            $raised[] = $message;
+            return true;
+        });
+
+        try {
+            $this->invoke('assertDateTimeVersion', [&$docId, null, &$result, true]);
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame([], $raised);
+        self::assertSame(42, $docId);
+        self::assertSame(1.0, $result['hookVersion']);
+    }
+
+    /**
+     * The date-time versioning branch is selected by the UPDATE_DATETIME key alone.
+     *
+     * That key only ever reaches $result from a repository's hookApiRecords(), so
+     * the extra "does this repository have a hooks class" guard the method used to
+     * carry was redundant — and it silently disabled the branch for a paper whose
+     * hasHook property had not been populated.
+     */
+    public function testAssertDateTimeVersionDependsOnTheUpdateKeyOnly(): void
+    {
+        $docId = 42;
+        $result = ['update' => '20250101:000000', 'hookVersion' => 1.0];
+        // hasHook left unset, as on any Episciences_Paper built without setRepoid()
+        $paper = $this->mockPaper(1.0, 'paper/20240101:000000');
+
+        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
+
+        self::assertNull($docId);
+        self::assertSame(2.0, $result['hookVersion']);
+        self::assertSame(2, $result['status']);
     }
 
     // =========================================================================
@@ -315,6 +389,36 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         self::assertStringContainsString('operation ended', $result['error']);
     }
 
+    public function testBuildCcsdErrorResultEscapesTheRawErrorMessageOnTheWeb(): void
+    {
+        $hadServerSoftware = array_key_exists('SERVER_SOFTWARE', $_SERVER);
+        $previousServerSoftware = $_SERVER['SERVER_SOFTWARE'] ?? null;
+        $_SERVER['SERVER_SOFTWARE'] = 'Apache';
+
+        try {
+            $result = $this->invoke('buildCcsdErrorResult', [new Ccsd_Error('unexpected <b>answer</b> & more'), 9999]);
+        } finally {
+            if ($hadServerSoftware) {
+                $_SERVER['SERVER_SOFTWARE'] = $previousServerSoftware;
+            } else {
+                unset($_SERVER['SERVER_SOFTWARE']);
+            }
+        }
+
+        self::assertStringContainsString('unexpected &lt;b&gt;answer&lt;/b&gt; &amp; more', $result['error']);
+        self::assertStringNotContainsString('<b>answer</b>', $result['error']);
+    }
+
+    public function testBuildCcsdErrorResultKeepsTheRawErrorMessageFromTheCommandLine(): void
+    {
+        $result = $this->invoke('buildCcsdErrorResult', [new Ccsd_Error('unexpected <b>answer</b> & more'), 9999]);
+
+        // The diagnostic is kept as it is, the markup of the message itself is removed
+        self::assertStringContainsString('[unexpected <b>answer</b> & more]', $result['error']);
+        self::assertStringNotContainsString('<strong>', $result['error']);
+        self::assertStringNotContainsString('<a ', $result['error']);
+    }
+
     // =========================================================================
     // GROUP A — assertNewVersionConsistency()
     // =========================================================================
@@ -419,20 +523,20 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
 
     public function testParseEnrichmentWithEmptyHEnrichment(): void
     {
-        $result = $this->invoke('parseEnrichment', [['h_enrichment' => '']], false);
+        $result = $this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => '']], false);
         self::assertSame([], $result);
     }
 
     public function testParseEnrichmentWithValidJson(): void
     {
         $enrichment = ['authors' => ['Alice', 'Bob'], 'keywords' => ['PHP']];
-        $result = $this->invoke('parseEnrichment', [['h_enrichment' => json_encode($enrichment)]], false);
+        $result = $this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode($enrichment)]], false);
         self::assertSame($enrichment, $result);
     }
 
     public function testParseEnrichmentConvertsTextTypeToDefault(): void
     {
-        $data = ['h_enrichment' => json_encode(['type' => Episciences_Paper::TEXT_TYPE_TITLE])];
+        $data = [Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode(['type' => Episciences_Paper::TEXT_TYPE_TITLE])];
         $result = $this->invoke('parseEnrichment', [$data], false);
         self::assertSame(Episciences_Paper::DEFAULT_TYPE_TITLE, $result['type']);
     }
@@ -440,15 +544,47 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
     public function testParseEnrichmentWithInvalidJsonReturnsEmpty(): void
     {
         // trigger_error() inside catch block emits E_USER_NOTICE — suppress it
-        $result = @$this->invoke('parseEnrichment', [['h_enrichment' => 'not-valid-json']], false);
+        $result = @$this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => 'not-valid-json']], false);
         self::assertSame([], $result);
     }
 
     public function testParseEnrichmentPreservesOtherTypes(): void
     {
-        $data = ['h_enrichment' => json_encode(['type' => 'article'])];
+        $data = [Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode(['type' => 'article'])];
         $result = $this->invoke('parseEnrichment', [$data], false);
         self::assertSame('article', $result['type']);
+    }
+
+    public function testParseEnrichmentIgnoresAScalar(): void
+    {
+        // Valid JSON, but not an object: the method returns an array
+        $result = $this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => '42']], false);
+        self::assertSame([], $result);
+    }
+
+    /**
+     * @return iterable<string, array{mixed}>
+     */
+    public static function submittedFilesProvider(): iterable
+    {
+        yield 'file records' => [[['key' => 'article.pdf', 'size' => 12, 'links' => ['self' => 'https://example.test/a.pdf']]]];
+        yield 'a string' => ['article.pdf'];
+        yield 'a list of strings' => [['article.pdf']];
+        yield 'a record and a string' => [[['key' => 'article.pdf'], 'x']];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('submittedFilesProvider')]
+    public function testParseEnrichmentLeavesTheFilesToTheFilesHooks(mixed $files): void
+    {
+        // The files hooks load the files from the repository
+        $data = [Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode(['files' => $files, 'type' => 'article'])];
+
+        self::assertSame(['type' => 'article'], Episciences_Submit::parseEnrichment($data));
+    }
+
+    public function testParseEnrichmentIgnoresANonStringValue(): void
+    {
+        self::assertSame([], Episciences_Submit::parseEnrichment([Episciences_Submit::ENRICHMENT_ELEMENT_NAME => ['files' => []]]));
     }
 
     // =========================================================================
@@ -735,6 +871,35 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $recipients = [7 => 'uid7', 8 => 'uid8'];
 
         self::assertSame($recipients, $this->invoke('removeConflictingRecipients', [$recipients, []]));
+    }
+
+    public function testFilterConflictRecipientsKeepsEveryoneWhenConflictsAreDisabled(): void
+    {
+        $previous = \Zend_Registry::isRegistered('reviewSettings') ? \Zend_Registry::get('reviewSettings') : null;
+        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '0']);
+
+        try {
+            $recipients = [2 => 'editor', 3 => 'secretary'];
+            $paper = $this->createMock(Episciences_Paper::class);
+            // Conflict declarations are not even read
+            $paper->expects($this->never())->method('getPaperid');
+
+            self::assertSame($recipients, Episciences_Submit::filterConflictRecipients($recipients, $paper));
+        } finally {
+            \Zend_Registry::set('reviewSettings', $previous);
+        }
+    }
+
+    public function testNewPaperKeepsTheNotificationFallbackEvenWithAssignedEditors(): void
+    {
+        self::assertFalse(Episciences_Submit::isStrictNotification(false, [2 => 'editor']));
+        self::assertFalse(Episciences_Submit::isStrictNotification(false, []));
+    }
+
+    public function testUpdatedPaperOnlyNotifiesTheCheckedRolesWhenItHasEditors(): void
+    {
+        self::assertTrue(Episciences_Submit::isStrictNotification(true, [2 => 'editor']));
+        self::assertFalse(Episciences_Submit::isStrictNotification(true, []));
     }
 
     // =========================================================================

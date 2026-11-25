@@ -87,6 +87,43 @@ class Episciences_Volume_MetadataTest extends TestCase
         self::assertInstanceOf(Episciences_Volume_Metadata::class, $this->meta->setFile('f.pdf'));
     }
 
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function unsafeFileNamesProvider(): array
+    {
+        return [
+            'parent directory' => ['../../other/file.pdf'],
+            'sub directory' => ['sub/file.pdf'],
+            'absolute path' => ['/etc/passwd'],
+            'backslash' => ['..\\file.pdf'],
+            'null byte' => ["file.pdf\0.png"],
+            'dot' => ['.'],
+            'double dot' => ['..'],
+            'empty' => [''],
+            'not a string' => [['a.pdf']],
+        ];
+    }
+
+    /**
+     * @dataProvider unsafeFileNamesProvider
+     */
+    public function testSetFileDropsNamesThatAreNotBareFileNames(mixed $name): void
+    {
+        $this->meta->setFile($name);
+
+        self::assertNull($this->meta->getFile());
+        self::assertSame(0, $this->meta->hasFile());
+        self::assertNull($this->meta->getFilePath());
+    }
+
+    public function testFileNameFromBrowserOptionsIsDropped(): void
+    {
+        $meta = new Episciences_Volume_Metadata(['vid' => 3, 'file' => '../../1/files/secret.pdf']);
+
+        self::assertNull($meta->getFile());
+    }
+
     // =========================================================================
     // hasFile — returns 1 or 0 (not bool)
     // =========================================================================
@@ -314,6 +351,27 @@ class Episciences_Volume_MetadataTest extends TestCase
     {
         // No vid set → save() returns false immediately without touching DB/filesystem
         self::assertFalse($this->meta->save());
+    }
+
+    public function testSaveUpdatesOnlyTheRowOfItsOwnVolume(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = $this->getMockBuilder($previousAdapter::class)
+            ->setConstructorArgs([$previousAdapter->getConfig()])
+            ->onlyMethods(['insert', 'update'])
+            ->getMock();
+        $adapter->expects(self::never())->method('insert');
+        $adapter->expects(self::once())->method('update')
+            ->with(T_VOLUME_METADATAS, self::anything(), ['ID = ?' => 7, 'VID = ?' => 3])
+            ->willReturn(1);
+        Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+
+        try {
+            $meta = new Episciences_Volume_Metadata(['id' => 7, 'vid' => 3, 'title' => ['en' => 'T']]);
+            self::assertTrue($meta->save());
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
     }
 
     // =========================================================================

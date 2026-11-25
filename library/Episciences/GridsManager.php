@@ -84,6 +84,8 @@ class Episciences_GridsManager
                     'style' => 'width:300px'
                 ]);
 
+                Episciences_Csrf_Helper::addSessionTokenElement($form);
+
                 $form->setActions(true)->createSubmitButton('submit', [
                     'label' => 'Créer la grille',
                     'class' => 'btn btn-primary'
@@ -148,9 +150,80 @@ class Episciences_GridsManager
 
 
     /**
+     * Returns the subtype and the options of a criterion from the criterion form values
+     * (standard options are forced back, whatever the posted option labels)
+     * @param array<string, mixed> $post
+     * @return array{subType: string, options: array<int, array<string, mixed>>|null}
+     */
+    public static function getCriterionRatingFromPost(array $post): array
+    {
+        $evaluationType = (string)($post['evaluation_type'] ?? '');
+
+        if ($evaluationType === Episciences_Rating_Criterion::EVALUATION_TYPE_FREE) {
+            return ['subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_FREE, 'options' => null];
+        }
+
+        if ($evaluationType === Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE) {
+            return match ((int)($post['quantitative_rating_type'] ?? 0)) {
+                0 => ['subType' => Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_10, 'options' => self::getUnlabelledOptions(10)],
+                2 => ['subType' => Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_5, 'options' => self::getUnlabelledOptions(5)],
+                default => ['subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE_CUSTOM, 'options' => self::getCustomOptionsFromPost($post)],
+            };
+        }
+
+        if ($evaluationType === Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE) {
+            return ((int)($post['qualitative_rating_type'] ?? 0) === 0) ?
+                ['subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, 'options' => Episciences_Rating_Criterion::STANDARD_QUALITATIVE_OPTIONS] :
+                ['subType' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM, 'options' => self::getCustomOptionsFromPost($post)];
+        }
+
+        return ['subType' => '', 'options' => self::getCustomOptionsFromPost($post)];
+    }
+
+    /**
+     * @return array<int, array{value: int, label: array<string, string>}> options 0 to $max, without label
+     */
+    private static function getUnlabelledOptions(int $max): array
+    {
+        $options = [];
+        for ($i = 0; $i <= $max; $i++) {
+            $options[] = ['value' => $i, 'label' => []];
+        }
+        return $options;
+    }
+
+    /**
+     * Custom options from the "option_<n>" form values (labels by language)
+     * @param array<string, mixed> $post
+     * @return array<int, array{value: int, label: array<string, string>}>
+     */
+    private static function getCustomOptionsFromPost(array $post): array
+    {
+        $options = [];
+        $i = 0;
+
+        foreach ($post as $key => $value) {
+            if (!str_starts_with((string)$key, 'option_')) {
+                continue;
+            }
+            $labels = [];
+            foreach ((is_array($value) ? $value : []) as $lang => $label) {
+                $cleanLabel = trim(strip_tags((string)$label));
+                if ($cleanLabel !== '') {
+                    $labels[$lang] = htmlspecialchars($cleanLabel, ENT_QUOTES, 'UTF-8');
+                }
+            }
+            $options[$i] = ['value' => $i, 'label' => $labels];
+            $i++;
+        }
+
+        return $options;
+    }
+
+    /**
      * Returns criterion form defaults
      * @param Episciences_Rating_Criterion $criterion
-     * @return array
+     * @return array<string, mixed>
      */
     public static function getCriterionFormDefaults(Episciences_Rating_Criterion $criterion): array
     {
@@ -181,8 +254,7 @@ class Episciences_GridsManager
         }
 
         // options labels (for custom values)
-        $custom = $criterion->isCustom();
-        if ($custom) {
+        if ($criterion->isCustom()) {
             foreach ($defaults['options'] as $i => $option) {
                 if (array_key_exists('label', $option) && !empty($option['label'])) {
                     foreach ($option['label'] as $lang => $label) {
@@ -192,24 +264,15 @@ class Episciences_GridsManager
             }
         }
 
-        // quantitative rating
-        if ($criterion->getCoefficient()) {
-            $defaults['evaluation_type'] = Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE;
-            if ($custom) {
-                $defaults['quantitative_rating_type'] = 1;
-            } else {
-                $defaults['quantitative_rating_type'] = (count($defaults['options']) === 11) ? 0 : 2;
-            }
-        } // qualitative rating
-        elseif ( (!is_null($criterion->getOptions())) && count($criterion->getOptions()) > 1 ) {
-            $defaults['evaluation_type'] = Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE;
-            $defaults['qualitative_rating_type'] = ($custom) ? 1 : 0;
-        } // free rating
-        else {
-            $defaults['evaluation_type'] = Episciences_Rating_Criterion::EVALUATION_TYPE_FREE;
-        }
-
-        return $defaults;
+        // rating type: the saved subtype first (a custom rating may have empty option labels)
+        return array_merge($defaults, match ($criterion->getRatingType()) {
+            Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_10 => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE, 'quantitative_rating_type' => 0],
+            Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE_CUSTOM => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE, 'quantitative_rating_type' => 1],
+            Episciences_Rating_Criterion::SUBTYPE_QUANTITATIVE_5 => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE, 'quantitative_rating_type' => 2],
+            Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, 'qualitative_rating_type' => 0],
+            Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE_CUSTOM => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE, 'qualitative_rating_type' => 1],
+            default => ['evaluation_type' => Episciences_Rating_Criterion::EVALUATION_TYPE_FREE],
+        });
     }
 
 
@@ -395,6 +458,8 @@ class Episciences_GridsManager
             [['div' => 'HtmlTag'], ['tag' => 'div', 'class' => 'form-group row']]
         ]);
 
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
+
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Valider',
             'class' => 'btn btn-primary'
@@ -459,6 +524,8 @@ class Episciences_GridsManager
                 'public' => 'Publique',
                 'contributor' => 'Contributeur',
                 'editors' => 'Rédacteurs']]);
+
+        Episciences_Csrf_Helper::addSessionTokenElement($form);
 
         $form->setActions(true)->createSubmitButton('submit', [
             'label' => 'Valider',

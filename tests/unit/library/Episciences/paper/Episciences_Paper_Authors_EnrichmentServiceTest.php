@@ -287,4 +287,400 @@ final class Episciences_Paper_Authors_EnrichmentServiceTest extends TestCase
         self::assertEquals('0000-0001-1111-1111', $result[0]['orcid']);
         self::assertEquals('0000-0002-2222-2222', $result[1]['orcid']);
     }
+
+    /**
+     * A wrong ROR (copied from another affiliation of the same author) is replaced by the TEI one
+     */
+    public function testMergeReplacesRorDuplicatedFromAnotherAffiliation(): void
+    {
+        $rorAmu = [['id' => 'https://ror.org/035xkbk20', 'id-type' => 'ROR', 'acronym' => 'AMU']];
+        $dbAuthors = [
+            [
+                'fullname' => 'Nicolas Salvage',
+                'given' => 'Nicolas',
+                'family' => 'Salvage',
+                'affiliation' => [
+                    ['name' => 'Institut des Sciences du Mouvement', 'id' => $rorAmu],
+                    ['name' => 'Aix Marseille Université', 'id' => $rorAmu],
+                ],
+            ],
+        ];
+
+        $teiAuthors = [
+            [
+                'fullname' => 'Nicolas Salvage',
+                'given_name' => 'Nicolas',
+                'first_name' => 'Nicolas',
+                'family' => 'Salvage',
+                'affiliations' => [
+                    ['name' => 'Institut des Sciences du Mouvement', 'ROR' => 'https://ror.org/03tncyc93', 'acronym' => 'ISM'],
+                    ['name' => 'Aix Marseille Université', 'ROR' => 'https://ror.org/035xkbk20', 'acronym' => 'AMU'],
+                ],
+            ],
+        ];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        self::assertCount(2, $result[0]['affiliation']);
+        self::assertSame(
+            [['id' => 'https://ror.org/03tncyc93', 'id-type' => 'ROR', 'acronym' => 'ISM']],
+            $result[0]['affiliation'][0]['id']
+        );
+        self::assertSame($rorAmu, $result[0]['affiliation'][1]['id']);
+    }
+
+    /**
+     * A ROR copied from a sibling affiliation is removed when the HAL structure has no ROR
+     */
+    public function testMergeRemovesCopiedRorWhenTeiStructureHasNone(): void
+    {
+        $rorUdem = [['id' => 'https://ror.org/0161xgx34', 'id-type' => 'ROR', 'acronym' => 'UdeM']];
+        $dbAuthors = [
+            [
+                'fullname' => 'Kevin Co',
+                'given' => 'Kevin',
+                'family' => 'Co',
+                'affiliation' => [
+                    ['name' => 'Laboratoire LS2M', 'id' => $rorUdem],
+                    ['name' => 'Université de Montréal', 'id' => $rorUdem],
+                ],
+            ],
+        ];
+
+        $teiAuthors = [
+            [
+                'fullname' => 'Kevin Co',
+                'given_name' => 'Kevin',
+                'first_name' => 'Kevin',
+                'family' => 'Co',
+                'affiliations' => [
+                    ['name' => 'Laboratoire LS2M'],
+                    ['name' => 'Université de Montréal', 'ROR' => 'https://ror.org/0161xgx34', 'acronym' => 'UdeM'],
+                ],
+            ],
+        ];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        self::assertSame(
+            [['name' => 'Laboratoire LS2M'], ['name' => 'Université de Montréal', 'id' => $rorUdem]],
+            $result[0]['affiliation']
+        );
+    }
+
+    /**
+     * A ROR carried by a single affiliation (e.g. set manually) is kept even if HAL disagrees
+     */
+    public function testMergeKeepsManualRorNotSharedWithSibling(): void
+    {
+        $dbAuthors = [
+            [
+                'fullname' => 'Kevin Co',
+                'given' => 'Kevin',
+                'family' => 'Co',
+                'affiliation' => [
+                    ['name' => 'Laboratoire LS2M', 'id' => [['id' => 'https://ror.org/0000manual', 'id-type' => 'ROR']]],
+                    ['name' => 'Université de Montréal', 'id' => [['id' => 'https://ror.org/0161xgx34', 'id-type' => 'ROR']]],
+                ],
+            ],
+        ];
+
+        $teiAuthors = [
+            [
+                'fullname' => 'Kevin Co',
+                'given_name' => 'Kevin',
+                'first_name' => 'Kevin',
+                'family' => 'Co',
+                'affiliations' => [
+                    ['name' => 'Laboratoire LS2M'],
+                    ['name' => 'Université de Montréal', 'ROR' => 'https://ror.org/0other0000'],
+                ],
+            ],
+        ];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        self::assertSame($dbAuthors, $result);
+    }
+
+    /**
+     * An affiliation already holding the TEI ROR is left untouched
+     */
+    public function testMergeKeepsAffiliationWithSameRor(): void
+    {
+        $dbAffiliation = ['name' => 'CNRS', 'id' => [['id' => 'https://ror.org/02feahw73', 'id-type' => 'ROR', 'acronym' => 'Custom']]];
+        $dbAuthors = [
+            ['fullname' => 'John Doe', 'given' => 'John', 'family' => 'Doe', 'affiliation' => [$dbAffiliation]],
+        ];
+
+        $teiAuthors = [
+            [
+                'fullname' => 'John Doe',
+                'given_name' => 'John',
+                'family' => 'Doe',
+                'affiliations' => [['name' => 'CNRS', 'ROR' => 'https://ror.org/02feahw73', 'acronym' => 'CNRS']],
+            ],
+        ];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        self::assertSame([$dbAffiliation], $result[0]['affiliation']);
+    }
+
+    /**
+     * A DB author without middle name (OAI-DC) is matched and completed with the TEI middle name
+     */
+    public function testMergeAddsMiddleNameFromTei(): void
+    {
+        $dbAuthors = [
+            ['fullname' => 'Eva Herbst', 'given' => 'Eva', 'family' => 'Herbst'],
+        ];
+
+        $teiAuthors = [
+            [
+                'fullname' => 'Eva C Herbst',
+                'given_name' => 'Eva C',
+                'first_name' => 'Eva',
+                'family' => 'Herbst',
+                'orcid' => '0000-0001-2345-6789',
+            ],
+        ];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        self::assertSame('Eva C', $result[0]['given']);
+        self::assertSame('Eva C Herbst', $result[0]['fullname']);
+        self::assertSame('Herbst', $result[0]['family']);
+        self::assertSame('0000-0001-2345-6789', $result[0]['orcid']);
+
+        $secondPass = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($result, $teiAuthors);
+        self::assertSame($result, $secondPass);
+    }
+
+    /**
+     * A DB initial without period is matched with the TEI one and completed with its period
+     */
+    public function testMergeAddsMissingPeriodToInitials(): void
+    {
+        $dbAuthors = [
+            ['fullname' => 'Eva C Herbst', 'given' => 'Eva C', 'family' => 'Herbst'],
+        ];
+
+        $teiAuthors = [
+            ['fullname' => 'Eva C. Herbst', 'given_name' => 'Eva C.', 'first_name' => 'Eva', 'family' => 'Herbst', 'orcid' => '0000-0001-2345-6789'],
+        ];
+
+        Episciences_Paper_Authors_EnrichmentService::resetCorrections();
+        $result = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        self::assertSame('Eva C.', $result[0]['given']);
+        self::assertSame('Eva C. Herbst', $result[0]['fullname']);
+        self::assertSame('0000-0001-2345-6789', $result[0]['orcid']);
+        self::assertContains('Initials completed: Eva C Herbst -> Eva C. Herbst', Episciences_Paper_Authors_EnrichmentService::getCorrections());
+        self::assertSame($result, Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($result, $teiAuthors));
+    }
+
+    /**
+     * A DB given name differing from the TEI one by its accents only is kept as is
+     */
+    public function testMergeKeepsAccentsOfDbGivenName(): void
+    {
+        $dbAuthors = [
+            ['fullname' => 'Éva Herbst', 'given' => 'Éva', 'family' => 'Herbst'],
+        ];
+
+        $teiAuthors = [
+            ['fullname' => 'Eva Herbst', 'given_name' => 'Eva', 'first_name' => 'Eva', 'family' => 'Herbst'],
+        ];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        self::assertSame($dbAuthors, $result);
+    }
+
+    /**
+     * A DB given name that differs from the TEI first forename is never overwritten
+     */
+    public function testMergeDoesNotOverwriteDifferentGivenName(): void
+    {
+        $dbAuthors = [
+            ['fullname' => 'Eva Herbst', 'given' => 'E.', 'family' => 'Herbst'],
+        ];
+
+        $teiAuthors = [
+            ['fullname' => 'Eva C Herbst', 'given_name' => 'Eva C', 'first_name' => 'Eva', 'family' => 'Herbst'],
+        ];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        self::assertSame($dbAuthors, $result);
+    }
+
+    /**
+     * HAL authors are built from the TEI: middle names, ORCID and affiliations with their own ROR
+     */
+    public function testBuildAuthorsFromHalTeiUsesTeiRecords(): void
+    {
+        $dcAuthors = [
+            ['fullname' => 'Eva Herbst', 'given' => 'Eva', 'family' => 'Herbst'],
+            ['fullname' => 'Philipp Moroder', 'given' => 'Philipp', 'family' => 'Moroder'],
+        ];
+
+        $teiAuthors = [
+            [
+                'given_name' => 'Eva C',
+                'first_name' => 'Eva',
+                'family' => 'Herbst',
+                'fullname' => 'Eva C Herbst',
+                'orcid' => '0000-0001-2345-6789',
+                'affiliations' => [
+                    ['name' => 'Institut ISM', 'ROR' => 'https://ror.org/03tncyc93', 'acronym' => 'ISM'],
+                    ['name' => 'Aix Marseille Université', 'ROR' => 'https://ror.org/035xkbk20', 'acronym' => 'AMU'],
+                ],
+            ],
+            [
+                'given_name' => 'Philipp',
+                'first_name' => 'Philipp',
+                'family' => 'Moroder',
+                'fullname' => 'Philipp Moroder',
+                'affiliations' => [['name' => 'Schulthess Klinik']],
+            ],
+        ];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::buildAuthorsFromHalTei($dcAuthors, $teiAuthors);
+
+        self::assertSame([
+            [
+                'fullname' => 'Eva C Herbst',
+                'given' => 'Eva C',
+                'family' => 'Herbst',
+                'orcid' => '0000-0001-2345-6789',
+                'affiliation' => [
+                    ['name' => 'Institut ISM', 'id' => [['id' => 'https://ror.org/03tncyc93', 'id-type' => 'ROR', 'acronym' => 'ISM']]],
+                    ['name' => 'Aix Marseille Université', 'id' => [['id' => 'https://ror.org/035xkbk20', 'id-type' => 'ROR', 'acronym' => 'AMU']]],
+                ],
+            ],
+            [
+                'fullname' => 'Philipp Moroder',
+                'given' => 'Philipp',
+                'family' => 'Moroder',
+                'affiliation' => [['name' => 'Schulthess Klinik']],
+            ],
+        ], $result);
+    }
+
+    /**
+     * DC authors are kept when the TEI does not list the same number of authors
+     */
+    public function testBuildAuthorsFromHalTeiFallsBackOnDcWhenAuthorCountDiffers(): void
+    {
+        $dcAuthors = [
+            ['fullname' => 'Eva Herbst', 'given' => 'Eva', 'family' => 'Herbst'],
+            ['fullname' => 'Philipp Moroder', 'given' => 'Philipp', 'family' => 'Moroder'],
+        ];
+
+        $teiAuthors = [
+            ['given_name' => 'Eva C', 'first_name' => 'Eva', 'family' => 'Herbst', 'fullname' => 'Eva C Herbst'],
+        ];
+
+        self::assertSame($dcAuthors, Episciences_Paper_Authors_EnrichmentService::buildAuthorsFromHalTei($dcAuthors, $teiAuthors));
+        self::assertSame($dcAuthors, Episciences_Paper_Authors_EnrichmentService::buildAuthorsFromHalTei($dcAuthors, []));
+    }
+
+    /**
+     * DC authors are kept when the TEI lists other people or another order, even with the same count
+     */
+    public function testBuildAuthorsFromHalTeiFallsBackOnDcWhenFamilyNamesDiffer(): void
+    {
+        $dcAuthors = [
+            ['fullname' => 'Eva Herbst', 'given' => 'Eva', 'family' => 'Herbst'],
+            ['fullname' => 'Philipp Moroder', 'given' => 'Philipp', 'family' => 'Moroder'],
+        ];
+
+        $swappedTeiAuthors = [
+            ['given_name' => 'Philipp', 'first_name' => 'Philipp', 'family' => 'Moroder', 'fullname' => 'Philipp Moroder'],
+            ['given_name' => 'Eva C', 'first_name' => 'Eva', 'family' => 'Herbst', 'fullname' => 'Eva C Herbst'],
+        ];
+
+        $otherTeiAuthors = [
+            ['given_name' => 'Eva C', 'first_name' => 'Eva', 'family' => 'Herbst', 'fullname' => 'Eva C Herbst'],
+            ['given_name' => 'Jean', 'first_name' => 'Jean', 'family' => 'Dupont', 'fullname' => 'Jean Dupont'],
+        ];
+
+        self::assertSame($dcAuthors, Episciences_Paper_Authors_EnrichmentService::buildAuthorsFromHalTei($dcAuthors, $swappedTeiAuthors));
+        self::assertSame($dcAuthors, Episciences_Paper_Authors_EnrichmentService::buildAuthorsFromHalTei($dcAuthors, $otherTeiAuthors));
+    }
+
+    /**
+     * Family names are compared without case and accents
+     */
+    public function testBuildAuthorsFromHalTeiIgnoresCaseAndAccentsOfFamilyNames(): void
+    {
+        $dcAuthors = [['fullname' => 'Eric Lefevre', 'given' => 'Eric', 'family' => 'LEFEVRE']];
+        $teiAuthors = [['given_name' => 'Éric', 'first_name' => 'Éric', 'family' => 'Lefèvre', 'fullname' => 'Éric Lefèvre']];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::buildAuthorsFromHalTei($dcAuthors, $teiAuthors);
+
+        self::assertSame([['fullname' => 'Éric Lefèvre', 'given' => 'Éric', 'family' => 'Lefèvre']], $result);
+    }
+
+    /**
+     * A TEI author without forename is stored with a null given name, like DC authors
+     */
+    public function testBuildAuthorsFromHalTeiStoresNullGivenNameWhenMissing(): void
+    {
+        $dcAuthors = [['fullname' => ' Collective', 'given' => null, 'family' => 'Collective']];
+        $teiAuthors = [['given_name' => '', 'first_name' => '', 'family' => 'Collective', 'fullname' => 'Collective']];
+
+        $result = Episciences_Paper_Authors_EnrichmentService::buildAuthorsFromHalTei($dcAuthors, $teiAuthors);
+
+        self::assertSame([['fullname' => 'Collective', 'given' => null, 'family' => 'Collective']], $result);
+    }
+
+    /**
+     * Every correction applied during a merge is listed, and the list can be reset
+     */
+    public function testMergeListsAppliedCorrections(): void
+    {
+        $rorAmu = [['id' => 'https://ror.org/035xkbk20', 'id-type' => 'ROR', 'acronym' => 'AMU']];
+        $dbAuthors = [
+            [
+                'fullname' => 'Eva Herbst',
+                'given' => 'Eva',
+                'family' => 'Herbst',
+                'affiliation' => [
+                    ['name' => 'ISM', 'id' => $rorAmu],
+                    ['name' => 'AMU', 'id' => $rorAmu],
+                ],
+            ],
+        ];
+
+        $teiAuthors = [
+            [
+                'fullname' => 'Eva C Herbst',
+                'given_name' => 'Eva C',
+                'first_name' => 'Eva',
+                'family' => 'Herbst',
+                'orcid' => '0000-0001-2345-6789',
+                'affiliations' => [
+                    ['name' => 'ISM', 'ROR' => 'https://ror.org/03tncyc93'],
+                    ['name' => 'AMU', 'ROR' => 'https://ror.org/035xkbk20'],
+                    ['name' => 'CNRS'],
+                ],
+            ],
+        ];
+
+        Episciences_Paper_Authors_EnrichmentService::resetCorrections();
+        Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei($dbAuthors, $teiAuthors);
+
+        self::assertSame([
+            'Middle name added: Eva Herbst -> Eva C Herbst',
+            'ORCID 0000-0001-2345-6789 added for Eva C Herbst',
+            'ROR https://ror.org/035xkbk20 replaced by https://ror.org/03tncyc93 for Eva C Herbst - ISM',
+            'Affiliation added for Eva C Herbst - CNRS (no ROR)',
+        ], Episciences_Paper_Authors_EnrichmentService::getCorrections());
+
+        Episciences_Paper_Authors_EnrichmentService::resetCorrections();
+        self::assertSame([], Episciences_Paper_Authors_EnrichmentService::getCorrections());
+    }
 }

@@ -92,22 +92,30 @@ trait Ccsd_Form_Trait_ImplementFunctionJS {
     }
 
     /**
-     * Foo functions: Necessary to NOT put a relPublicDirPath attribute to Html element
-     * It's that way Zend function
-     * @see Zend_Form_Decorator_ViewHelper::render
-     * @see Zend_Form::setOptions():381
-     * @param $value
+     * Directory of the JavaScript templates used by the Ccsd_Form_Decorator_* decorators.
+     * Kept out of public properties: Zend_Form_Element::getAttribs() would render them as HTML attributes
+     * @see Ccsd_Form_Trait_GenerateFunctionJS::generate()
      */
-    public function setRelPublicDirPath($value) {
+    public function getJsTemplateDir(): string
+    {
+        return dirname(__DIR__, 3) . '/public/js/form/decorator';
     }
 
     /**
-     * Foo functions: Necessary to NOT put a relPublicDirPath attribute to Html element
-     * It's that way Zend function
-     * @see Zend_Form_Decorator_ViewHelper::render
-     * @see Zend_Form::setOptions():381
-     * @param $value
+     * Ignores the legacy 'pathDir' option.
+     * Without this setter, Zend_Form_Element::setOptions() would store it with setAttrib() and render it as an HTML attribute
+     * @param mixed $value
      */
-    public function setPathdir($value) {
+    public function setPathDir($value): void
+    {
+    }
+
+    /**
+     * Ignores the legacy 'relPublicDirPath' option.
+     * Without this setter, Zend_Form_Element::setOptions() would store it with setAttrib() and render it as an HTML attribute
+     * @param mixed $value
+     */
+    public function setRelPublicDirPath($value): void
+    {
     }
  }

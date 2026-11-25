@@ -60,6 +60,8 @@ class Episciences_Rating_Grid
             $criterion_values['id'] = $item->getAttribute('xml:id');
             //type
             $criterion_values['type'] = $item->getAttribute('type');
+            // subtype (absent from the grids saved before it was recorded)
+            $criterion_values['subtype'] = $item->getAttribute('subtype');
 
             // labels
             $labels = [];
@@ -180,9 +182,11 @@ class Episciences_Rating_Grid
     }
 
     /**
-     * @return Episciences_Rating_Criterion[]
+     * Returns the criteria array, or null if not yet initialized.
+     *
+     * @return Episciences_Rating_Criterion[]|null
      */
-    public function getCriteria()
+    public function getCriteria(): ?array
     {
         return $this->_criteria;
     }

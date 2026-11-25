@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 language: "en-GB"
 early_access: false
+tone_instructions: "Be strictly professional, concise, and objective. Do not include jokes, puns, or playful comments."
 
 reviews:
   # Review profile: balanced and constructive
@@ -8,6 +9,7 @@ reviews:
   request_changes_workflow: false
   high_level_summary: true
   poem: false
+  in_progress_fortune: false
   review_status: true
   collapse_walkthrough: false
 
@@ -47,7 +49,7 @@ reviews:
     - path: "src/**"
       instructions: "Ensure modern PHP 8+ standards, strict typing, PSR guidelines, and clean object-oriented architecture."
     - path: "tests/**"
-      instructions: "Review test correctness, assertions accuracy, mock sanity, and ensure edge cases are adequately covered."
+      instructions: "Review test correctness, assertions accuracy, mock sanity, and ensure edge cases are adequately covered. Tests must run the code they cover (call the method, dispatch the controller action, render the view): flag any test that reads the application source instead (file_get_contents() on a .php or .phtml file, extractMethod(), ReflectionMethod::getStartLine(), regular expressions on source text). Controller tests should extend tests/unit/modules/ControllerTestCase.php. See tests/README.md."
 
   # Linters and static analysis integrations
   tools:

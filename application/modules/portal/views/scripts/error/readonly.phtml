@@ -1,0 +1,5 @@
+<div class="alert alert-warning" role="alert">
+    <h1 class="h4"><?= $this->escape($this->translate('Maintenance en cours')) ?></h1>
+    <p><?= $this->escape($this->translate("Le site est temporairement en consultation seule : cette page n'est pas disponible pendant la maintenance. Merci de réessayer plus tard.")) ?></p>
+    <p class="mb-0"><a href="<?= $this->escape($this->url(['controller' => 'index', 'action' => 'index'], null, true)) ?>"><?= $this->escape($this->translate("Retour à l'accueil")) ?></a></p>
+</div>
