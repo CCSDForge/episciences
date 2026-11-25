@@ -2181,11 +2181,11 @@ class UserDefaultController extends Episciences_Controller_Action
         if ($request) {
 
             $params = $request->getPost();
-            $uid = $params['uid'];
+            $uid = (int) ($params['uid'] ?? 0);
 
             $user = new Episciences_User();
             $user->find($uid);
-            $userRoles = $user->getRoles();
+            $userRoles = $user->getRoles() ?? [];
 
             $acl = new Episciences_Acl();
             $roles = $acl->getEditableRoles();
@@ -2347,7 +2347,7 @@ class UserDefaultController extends Episciences_Controller_Action
 
         $user = new Episciences_User();
         $user->find($uid);
-        $userRoles = $user->getRoles();
+        $userRoles = $user->getRoles() ?? [];
         if (count($userRoles) > 1) {
             foreach (array_keys($userRoles, Episciences_Acl::ROLE_MEMBER) as $key) {
                 unset ($userRoles[$key]);

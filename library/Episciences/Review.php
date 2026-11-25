@@ -2265,16 +2265,24 @@ class Episciences_Review
     }
 
     /**
-     * get repositories
-     * @return array|mixed
+     * Repositories accepted by the journal; empty when the setting has never been saved
+     * @return array
      */
-    public function getRepositories()
+    public function getRepositories(): array
     {
-        if (array_key_exists('repositories', $this->_settings)) {
-            return $this->_settings['repositories'];
-        }
+        $repositories = $this->getSetting(self::SETTING_REPOSITORIES);
 
-        return [];
+        return is_array($repositories) ? $repositories : [];
+    }
+
+    /**
+     * Whether the journal accepts submissions from the given repository
+     * @param int|string $repoId
+     * @return bool
+     */
+    public function acceptsRepository(int|string $repoId): bool
+    {
+        return in_array((string)$repoId, array_map('strval', $this->getRepositories()), true);
     }
 
     /**
@@ -2775,7 +2783,7 @@ class Episciences_Review
     {
 
 
-        if (in_array(Episciences_Repositories::ARXIV_REPO_ID, self::getSetting(self::SETTING_REPOSITORIES)) && $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD)) {
+        if ($this->acceptsRepository(Episciences_Repositories::ARXIV_REPO_ID) && $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD)) {
 
             $path = self::getCryptoFilePath();
 

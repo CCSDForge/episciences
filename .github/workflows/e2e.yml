@@ -26,8 +26,12 @@ concurrency:
 jobs:
   playwright-e2e:
     name: Playwright E2E Tests (${{ (endsWith(github.base_ref, '-epi-manager') || inputs.app_mode == 'manager') && 'manager' || 'journal' }} mode, COI ${{ matrix.coi == '1' && 'enabled' || 'disabled' }}, shard ${{ matrix.shard }}/2)
-    # Draft pull requests are not tested
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    # Draft pull requests and automated dependency updates are not tested
+    if: >-
+      github.event_name != 'pull_request' ||
+      (!github.event.pull_request.draft &&
+       github.event.pull_request.user.login != 'dependabot[bot]' &&
+       github.event.pull_request.user.login != 'renovate[bot]')
     runs-on: ubuntu-latest
     # The suite runs without the conflict of interest declaration on every pull request, and also with
     # it (a journal-wide setting, hence its own runners and databases) on pull requests targeting main
