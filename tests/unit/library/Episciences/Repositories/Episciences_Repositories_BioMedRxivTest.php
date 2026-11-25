@@ -23,6 +23,9 @@ use ReflectionMethod;
  *          offset when string has no ', '. Fixed: guard with isset($parts[1]) check.
  *   B4 — ORCID regex '#^http(s*)://orcid.org/#' matches 'httpssss://orcid.org/'.
  *          Fixed: '#^https?://orcid.org/#'
+ *   B5 — authors, affiliations, keywords, licence and types were read from the JATS converted to an
+ *          array (json_encode()), where a single <contrib>, <aff> or <kwd> is not a list: a single
+ *          author made the submission fail. They are now read from the XML document.
  *
  * @covers Episciences_Repositories_BioMedRxiv
  * @covers Episciences_Repositories_BioRxiv_Hooks
@@ -106,68 +109,6 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
 
         self::assertIsString($result);
         self::assertStringStartsWith('https://creativecommons.org', $result);
-    }
-
-    // =========================================================================
-    // cleanRepairKeywords
-    // =========================================================================
-
-    public function testCleanRepairKeywordsScalar(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'cleanRepairKeywords');
-        $method->setAccessible(true);
-
-        // cleanRepairKeywords takes $keywords by reference — use invokeArgs.
-        $keywords = ['keyword1', 'keyword2'];
-        $method->invokeArgs(null, [&$keywords]);
-
-        self::assertSame(['keyword1', 'keyword2'], $keywords);
-    }
-
-    public function testCleanRepairKeywordsArray(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'cleanRepairKeywords');
-        $method->setAccessible(true);
-
-        // bioRxiv pattern: ['italic' => 'Cebus'] should become 'Cebus'
-        $keywords = [['italic' => 'Cebus']];
-        $method->invokeArgs(null, [&$keywords]);
-
-        self::assertSame(['Cebus'], $keywords);
-    }
-
-    // =========================================================================
-    // typeProcess
-    // =========================================================================
-
-    public function testTypeProcessScalar(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'typeProcess');
-        $method->setAccessible(true);
-
-        // typeProcess takes $type by reference — use invokeArgs.
-        $rawTypes = ['subject' => 'Biology'];
-        $type = [];
-        $method->invokeArgs(null, [$rawTypes, &$type]);
-
-        self::assertNotEmpty($type);
-        self::assertContains('Biology', $type);
-    }
-
-    public function testTypeProcessArray(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'typeProcess');
-        $method->setAccessible(true);
-
-        $rawTypes = [
-            ['subject' => 'New Results', 'subj-group-type' => 'heading'],
-        ];
-        $type = [];
-        $method->invokeArgs(null, [$rawTypes, &$type]);
-
-        self::assertNotEmpty($type);
-        self::assertContains('New Results', $type);
-        self::assertContains('heading', $type);
     }
 
     // =========================================================================
@@ -287,97 +228,6 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
     }
 
     // =========================================================================
-    // typeProcess() edge cases
-    // =========================================================================
-
-    public function testTypeProcessEmpty(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'typeProcess');
-        $method->setAccessible(true);
-
-        $type = [];
-        $method->invokeArgs(null, [[], &$type]);
-
-        self::assertSame([], $type);
-    }
-
-    // =========================================================================
-    // articleMetaProcess() — private, tested via ReflectionMethod
-    // =========================================================================
-
-    /**
-     * permissions block with a CC licence string populates $strLicense.
-     */
-    public function testArticleMetaProcessPermissions(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'articleMetaProcess');
-        $method->setAccessible(true);
-
-        $articleMeta = [
-            'permissions' => [
-                'license' => ['p' => 'This work is licensed under a, CC BY 4.0 International'],
-            ],
-        ];
-
-        $strLicense   = '';
-        $contributors = [];
-        $institutions = [];
-        $keyWords     = [];
-
-        $method->invokeArgs(null, [$articleMeta, &$strLicense, &$contributors, &$institutions, &$keyWords]);
-
-        self::assertNotEmpty($strLicense);
-        self::assertStringContainsString('creativecommons', $strLicense);
-    }
-
-    /**
-     * kwd-group block populates $keyWords.
-     */
-    public function testArticleMetaProcessKeywords(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'articleMetaProcess');
-        $method->setAccessible(true);
-
-        $articleMeta = [
-            'kwd-group' => [
-                'kwd' => ['evolution', 'genetics'],
-            ],
-        ];
-
-        $strLicense   = '';
-        $contributors = [];
-        $institutions = [];
-        $keyWords     = [];
-
-        $method->invokeArgs(null, [$articleMeta, &$strLicense, &$contributors, &$institutions, &$keyWords]);
-
-        self::assertContains('evolution', $keyWords);
-        self::assertContains('genetics', $keyWords);
-    }
-
-    /**
-     * An unrecognised top-level key is ignored — no output populated.
-     */
-    public function testArticleMetaProcessIgnoresUnknownKeys(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'articleMetaProcess');
-        $method->setAccessible(true);
-
-        $articleMeta = ['unknown-key' => ['some' => 'data']];
-
-        $strLicense   = '';
-        $contributors = [];
-        $institutions = [];
-        $keyWords     = [];
-
-        $method->invokeArgs(null, [$articleMeta, &$strLicense, &$contributors, &$institutions, &$keyWords]);
-
-        self::assertSame('', $strLicense);
-        self::assertSame([], $contributors);
-        self::assertSame([], $keyWords);
-    }
-
-    // =========================================================================
     // getRequestedVersionFromCollection() — edge cases
     // =========================================================================
 
@@ -401,6 +251,250 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
         $result = $method->invoke(null, $collection, 0);
 
         self::assertSame([], $result);
+    }
+
+    // =========================================================================
+    // JATS article-meta: authors, affiliations, keywords, licence, types
+    // =========================================================================
+
+    private static function jats(string $articleMeta): \SimpleXMLElement
+    {
+        $xml = '<article xmlns:hwp="http://schema.highwire.org/Journal" xmlns:xlink="http://www.w3.org/1999/xlink">'
+            . '<front><article-meta>' . $articleMeta . '</article-meta></front></article>';
+
+        return simplexml_load_string($xml);
+    }
+
+    private static function callPrivate(string $method, \SimpleXMLElement $doc): mixed
+    {
+        $reflection = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, $method);
+        $reflection->setAccessible(true);
+
+        return $reflection->invoke(null, $doc);
+    }
+
+    /**
+     * A single <contrib> made the submission fail (bioRxiv 10.1101/2025.08.07.669028).
+     */
+    public function testContributorsProcessSingleAuthor(): void
+    {
+        $doc = self::jats(
+            '<contrib-group><contrib contrib-type="author" corresp="yes">'
+            . '<contrib-id contrib-id-type="orcid">http://orcid.org/0000-0001-8887-2548</contrib-id>'
+            . '<name><surname>Hase</surname><given-names>Kazuko</given-names></name>'
+            . '<xref ref-type="aff" rid="a1">1</xref><xref ref-type="aff" rid="a2">2</xref><xref ref-type="corresp" rid="cor1">*</xref>'
+            . '</contrib>'
+            . '<aff id="a1"><label>1</label><institution>Tohoku University</institution>, Sendai, <country>Japan</country></aff>'
+            . '<aff id="a2"><label>2</label><institution>SOKENDAI</institution>, Hayama, <country>Japan</country></aff>'
+            . '</contrib-group>'
+        );
+
+        self::assertSame([[
+            'degrees' => '',
+            'fullname' => 'Kazuko Hase',
+            'family' => 'Hase',
+            'given' => 'Kazuko',
+            'email' => '',
+            'orcid' => '0000-0001-8887-2548',
+            'affiliation' => [['name' => 'Tohoku University, Japan'], ['name' => 'SOKENDAI, Japan']],
+        ]], self::callPrivate('contributorsProcess', $doc));
+    }
+
+    /**
+     * A single <aff> was named "Array, 1, ..."; affiliations are linked by id, whatever their label ("a", "b"...).
+     */
+    public function testContributorsProcessSingleAffiliationWithLetterLabel(): void
+    {
+        $doc = self::jats(
+            '<contrib-group>'
+            . '<contrib contrib-type="author"><name><surname>Doe</surname><given-names>Jane</given-names></name><xref ref-type="aff" rid="a1">a</xref></contrib>'
+            . '<contrib contrib-type="author"><name><surname>Roe</surname><given-names>Rick</given-names></name><xref ref-type="aff" rid="a1">a</xref></contrib>'
+            . '<aff id="a1"><label>a</label><institution>The Salk Institute</institution></aff>'
+            . '</contrib-group>'
+        );
+
+        $contributors = self::callPrivate('contributorsProcess', $doc);
+
+        self::assertCount(2, $contributors);
+        self::assertSame([['name' => 'The Salk Institute']], $contributors[0]['affiliation']);
+        self::assertSame([['name' => 'The Salk Institute']], $contributors[1]['affiliation']);
+    }
+
+    /**
+     * Several <institution> elements were named "Array, Array"; an untagged affiliation keeps its text.
+     */
+    public function testContributorsProcessAffiliationNames(): void
+    {
+        $doc = self::jats(
+            '<contrib-group>'
+            . '<contrib contrib-type="author"><name><surname>Doe</surname><given-names>Jane</given-names></name>'
+            . '<xref ref-type="aff" rid="a1">1</xref><xref ref-type="aff" rid="a2">2</xref></contrib>'
+            . '<aff id="a1"><label>1</label><institution>Baylor College of Medicine</institution>, Houston, '
+            . '<institution>Fudan University</institution>, <country>USA</country></aff>'
+            . '<aff id="a2"><label>2</label>Lab of Things, Paris, France</aff>'
+            . '</contrib-group>'
+        );
+
+        self::assertSame(
+            [['name' => 'Baylor College of Medicine, Fudan University, USA'], ['name' => 'Lab of Things, Paris, France']],
+            self::callPrivate('contributorsProcess', $doc)[0]['affiliation']
+        );
+    }
+
+    /**
+     * A group author has no <name>: it was stored with an empty name.
+     */
+    public function testContributorsProcessGroupAuthorAndNamelessContributor(): void
+    {
+        $doc = self::jats(
+            '<contrib-group>'
+            . '<contrib contrib-type="author"><collab>Days of our Mice Consortium</collab></contrib>'
+            . '<contrib contrib-type="author"><xref ref-type="aff" rid="a1">1</xref></contrib>'
+            . '</contrib-group>'
+        );
+
+        self::assertSame([[
+            'degrees' => '',
+            'fullname' => 'Days of our Mice Consortium',
+            'family' => 'Days of our Mice Consortium',
+            'given' => '',
+            'email' => '',
+        ]], self::callPrivate('contributorsProcess', $doc));
+    }
+
+    public function testContributorsProcessNoContributor(): void
+    {
+        self::assertSame([], self::callPrivate('contributorsProcess', self::jats('')));
+    }
+
+    /**
+     * A single <kwd> was not a list; inline markup was dropped ("r/<italic>K</italic>-selection").
+     */
+    public function testKeywordsProcess(): void
+    {
+        self::assertSame(['tadpole'], self::callPrivate('keywordsProcess', self::jats('<kwd-group><kwd>tadpole</kwd></kwd-group>')));
+
+        $doc = self::jats(
+            '<kwd-group><title>Key words</title><kwd><italic>Millepora</italic></kwd><kwd>r/<italic>K</italic>-selection</kwd><kwd> </kwd></kwd-group>'
+            . '<kwd-group><kwd>ecology</kwd><kwd>r/K-selection</kwd></kwd-group>'
+        );
+
+        self::assertSame(['Millepora', 'r/K-selection', 'ecology'], self::callPrivate('keywordsProcess', $doc));
+        self::assertSame([], self::callPrivate('keywordsProcess', self::jats('')));
+    }
+
+    public function testLicenseProcess(): void
+    {
+        $doc = self::jats(
+            '<permissions><license license-type="creative-commons"><p>This pre-print is available under a Creative Commons License '
+            . '(Attribution-NonCommercial 4.0 International), CC BY-NC 4.0, as described at '
+            . '<ext-link ext-link-type="uri">http://creativecommons.org/licenses/by-nc/4.0/</ext-link></p></license></permissions>'
+        );
+
+        self::assertSame('https://creativecommons.org/licenses/by-nc/4.0', self::callPrivate('licenseProcess', $doc));
+        self::assertSame('', self::callPrivate('licenseProcess', self::jats('')));
+    }
+
+    /**
+     * An id typed as ORCID wins over an untyped id; an untyped id is an ORCID only in the ORCID format.
+     */
+    public function testContributorsProcessOrcid(): void
+    {
+        $contrib = static fn(string $ids): string => '<contrib contrib-type="author"><name><surname>Doe</surname><given-names>Jane</given-names></name>' . $ids . '</contrib>';
+
+        $doc = self::jats(
+            '<contrib-group>'
+            . $contrib('<contrib-id>local-42</contrib-id><contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-1825-009x</contrib-id>')
+            . $contrib('<contrib-id>http://orcid.org/0000-0001-8887-2548</contrib-id>')
+            . $contrib('<contrib-id>local-42</contrib-id><contrib-id contrib-id-type="other">0000-0001-8887-2548</contrib-id>')
+            . '</contrib-group>'
+        );
+
+        $contributors = self::callPrivate('contributorsProcess', $doc);
+
+        self::assertSame('0000-0002-1825-009X', $contributors[0]['orcid']);
+        self::assertSame('0000-0001-8887-2548', $contributors[1]['orcid']);
+        self::assertArrayNotHasKey('orcid', $contributors[2]);
+    }
+
+    /**
+     * The Creative Commons grant may follow a copyright notice in another paragraph.
+     */
+    public function testLicenseProcessReadsEveryParagraph(): void
+    {
+        $doc = self::jats(
+            '<permissions><license><p>Copyright the authors.</p>'
+            . '<p>This pre-print is available under a Creative Commons License (Attribution 4.0 International), CC BY 4.0, as described at http://creativecommons.org/licenses/by/4.0/</p>'
+            . '</license></permissions>'
+        );
+
+        self::assertSame('https://creativecommons.org/licenses/by/4.0', self::callPrivate('licenseProcess', $doc));
+
+        $allRightsReserved = self::jats('<permissions><license><p> </p><p>All rights reserved.</p></license></permissions>');
+
+        self::assertSame('[CC_NO] All rights reserved.', self::callPrivate('licenseProcess', $allRightsReserved));
+    }
+
+    /**
+     * Version selection, JATS enrichment and Dublin Core, from a local JATS file:
+     * keywords are published even when they are the only metadata of the JATS.
+     */
+    public function testJatsEnrichmentReachesTheDublinCore(): void
+    {
+        $jatsFile = tempnam(sys_get_temp_dir(), 'jats');
+        self::assertIsString($jatsFile);
+
+        try {
+            file_put_contents($jatsFile, '<article><front><article-meta><kwd-group>'
+                . '<kwd>r/<italic>K</italic>-selection</kwd><kwd>ecology</kwd></kwd-group></article-meta></front></article>');
+
+            $version = self::callStatic('getRequestedVersionFromCollection', [[
+                ['version' => '1', 'doi' => '10.1101/abc', 'server' => 'bioRxiv', 'category' => 'ecology', 'jatsxml' => $jatsFile],
+                ['version' => '2', 'doi' => '10.1101/abc', 'server' => 'bioRxiv', 'category' => 'ecology'],
+            ], 1]);
+
+            self::assertSame(['r/K-selection', 'ecology'], $version['enrichment']['kwd']);
+
+            $dublinCore = self::callStatic('toDublinCore', [$version]);
+
+            self::assertStringContainsString('<dc:subject>r/K-selection</dc:subject>', $dublinCore);
+            self::assertStringContainsString('<dc:identifier>https://www.bioRxiv.org/content/10.1101/abc</dc:identifier>', $dublinCore);
+        } finally {
+            unlink($jatsFile);
+        }
+    }
+
+    /**
+     * @param array<int, mixed> $args
+     */
+    private static function callStatic(string $method, array $args): mixed
+    {
+        $reflection = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, $method);
+        $reflection->setAccessible(true);
+
+        return $reflection->invokeArgs(null, $args);
+    }
+
+    /**
+     * The subject area ("hwp-journal-coll") is not a type: medRxiv got "hwp-journal-coll" as its type.
+     */
+    public function testTypeProcess(): void
+    {
+        $bioRxiv = self::jats(
+            '<article-categories>'
+            . '<subj-group subj-group-type="author-type"><subject>Regular Article</subject></subj-group>'
+            . '<subj-group subj-group-type="heading"><subject>New Results</subject></subj-group>'
+            . '<subj-group subj-group-type="hwp-journal-coll"><subject>Ecology</subject></subj-group>'
+            . '</article-categories>'
+        );
+
+        self::assertSame(['Regular Article', 'New Results'], self::callPrivate('typeProcess', $bioRxiv));
+
+        $medRxiv = self::jats(
+            '<article-categories><subj-group subj-group-type="hwp-journal-coll"><subject>Sports Medicine</subject></subj-group></article-categories>'
+        );
+
+        self::assertSame([], self::callPrivate('typeProcess', $medRxiv));
     }
 
     // =========================================================================

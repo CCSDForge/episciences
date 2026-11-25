@@ -171,10 +171,13 @@ final class StatsControllerPapersActionTest extends ControllerTestCase
 
         $this->dispatch(StatsController::class, 'papers', $this->getRequest(['figure' => StatsController::NB_PUBLISHED, 'year' => '2024']));
 
+        // the listed versions, then the versions of their papers (date of the first submission)
         $queries = $this->queriesOf(T_PAPERS);
-        self::assertCount(1, $queries);
+        self::assertCount(2, $queries);
         self::assertStringContainsString('(RVID = ' . RVID . ')', $queries[0]);
         self::assertStringContainsString('(DOCID IN (203))', $queries[0]);
+        self::assertStringContainsString('(RVID = ' . RVID . ')', $queries[1]);
+        self::assertStringContainsString('(PAPERID IN (', $queries[1]);
     }
 
     public function testTheColumnsOfTheFigure_TheHistoryIsNotReadWithoutDateFromIt(): void

@@ -430,8 +430,98 @@ class SubmitTest extends TestCase
             sprintf('The open archive %s did not respond in time', Episciences_Repositories::getLabel($repoId)),
             $result['error']
         );
-        self::assertStringContainsString('mailto:' . EPISCIENCES_SUPPORT, $result['error']);
+        // From the command line the message is plain text: the address of the support, without a link
+        self::assertStringContainsString(EPISCIENCES_SUPPORT, $result['error']);
+        self::assertSame(strip_tags($result['error']), $result['error']);
         self::assertStringNotContainsString('%s', $result['error']);
+    }
+
+    public function testOnTheWebTheRepositoryErrorLinksToTheSupport(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
+        $method->setAccessible(true);
+
+        $hadServerSoftware = array_key_exists('SERVER_SOFTWARE', $_SERVER);
+        $previousServerSoftware = $_SERVER['SERVER_SOFTWARE'] ?? null;
+        $_SERVER['SERVER_SOFTWARE'] = 'Apache';
+
+        try {
+            $result = $method->invoke(null, new Ccsd_Error(Ccsd_Error::REPOSITORY_TIMEOUT_CODE, CURLE_OPERATION_TIMEDOUT), 2);
+        } finally {
+            if ($hadServerSoftware) {
+                $_SERVER['SERVER_SOFTWARE'] = $previousServerSoftware;
+            } else {
+                unset($_SERVER['SERVER_SOFTWARE']);
+            }
+        }
+
+        self::assertStringContainsString('<a href="mailto:' . EPISCIENCES_SUPPORT . '">', $result['error']);
+    }
+
+    /**
+     * @return array<string, array{string, int}> error message, position of the example identifier in the arguments
+     */
+    public static function identifierExampleProvider(): array
+    {
+        return [
+            'document not found' => [Ccsd_Error::ID_DOES_NOT_EXIST_CODE . ':', 0],
+            'version not found' => [Ccsd_Error::ARXIV_VERSION_DOES_NOT_EXIST_CODE . ':', 0],
+            'other error' => ['some unexpected error', 1],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('identifierExampleProvider')]
+    public function testTheExampleIdentifierComesBeforeTheRepository(string $message): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'buildCcsdErrorResult');
+        $method->setAccessible(true);
+
+        $repoId = 2;
+        $result = $method->invoke(null, new Ccsd_Error($message), $repoId);
+
+        // The identifier no longer follows the name of the repository and a colon, where it read as a label
+        self::assertStringContainsString(
+            sprintf(
+                '(for example %s for a document submitted in %s).',
+                Episciences_Repositories::getIdentifierExemple($repoId),
+                Episciences_Repositories::getLabel($repoId)
+            ),
+            $result['error']
+        );
+    }
+
+    /**
+     * @return array<string, array{string, list<string>}> source message, arguments
+     */
+    public static function frenchIdentifierExampleProvider(): array
+    {
+        return [
+            'document not found' => [
+                (new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE . ':'))->parseError(),
+                ['support@example.org', 'arXiv', '2101.00001'],
+            ],
+            'other error' => [
+                (new Ccsd_Error('some unexpected error'))->parseError(),
+                ['some unexpected error', 'support@example.org', 'arXiv', '2101.00001'],
+            ],
+        ];
+    }
+
+    /**
+     * @param list<string> $arguments
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('frenchIdentifierExampleProvider')]
+    public function testTheFrenchMessageGivesTheExampleIdentifierBeforeTheRepository(string $source, array $arguments): void
+    {
+        // The application dictionaries (the translator of the tests is empty)
+        $translator = \Episciences\Translation\TranslatorFactory::create(APPLICATION_PATH . '/languages', null, 'fr');
+        $translated = $translator->translate($source, 'fr');
+
+        self::assertNotSame($source, $translated, 'the message is translated');
+        self::assertStringContainsString(
+            '(par exemple 2101.00001 pour un document déposé dans arXiv).',
+            sprintf($translated, ...$arguments)
+        );
     }
 
     public function testRepositoryTimeoutMessageIsFormattedWhenTheTranslatorIsMissing(): void
@@ -947,7 +1037,7 @@ class SubmitTest extends TestCase
 
         self::assertSame(0, $result['status']);
         self::assertStringContainsString('arXiv', $result['error']);
-        self::assertStringContainsString('mailto:' . EPISCIENCES_SUPPORT, $result['error']);
+        self::assertStringContainsString(EPISCIENCES_SUPPORT, $result['error']);
         self::assertStringNotContainsString('%s', $result['error']);
         self::assertStringNotContainsString('The operation ended with this error', $result['error']);
     }

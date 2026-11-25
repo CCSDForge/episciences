@@ -356,6 +356,10 @@ return [
     'Votre session a expiré : veuillez vous reconnecter.' => 'Your session has expired: please log in again.',
     'Recharger la page' => 'Reload the page',
 
+    // Search of the document to submit
+    "Erreur" => "Error",
+    "Le document %s a déjà été soumis à la revue." => "The document %s has already been submitted to this journal.",
+
     // File upload
     "Le téléversement du fichier a échoué. Veuillez le retirer et réessayer." => 'The file upload failed. Please remove it and try again.',
 

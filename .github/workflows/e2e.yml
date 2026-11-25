@@ -2,22 +2,63 @@ name: End-to-End Tests (Playwright)
 
 on:
   pull_request:
-    branches: [ staging, main ]
+    # *-epi-manager: the journal is served under its code (/dev/...), see APP_MODE below
+    branches: [ staging, main, main-epi-manager, preprod-epi-manager ]
+    # ready_for_review: a draft pull request is tested once it is marked ready
+    types: [ opened, synchronize, reopened, ready_for_review ]
+    # Documentation only changes do not run the suite
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
   workflow_dispatch:
+    inputs:
+      app_mode:
+        description: 'URL mode: journal (one host per journal) or manager (journal code prefix, *-epi-manager branches)'
+        type: choice
+        options: [ journal, manager ]
+        default: journal
+
+# A new push to a pull request cancels the run of its previous commit
+concurrency:
+  group: e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   playwright-e2e:
-    name: Playwright E2E Tests
+    name: Playwright E2E Tests (${{ (endsWith(github.base_ref, '-epi-manager') || inputs.app_mode == 'manager') && 'manager' || 'journal' }} mode, COI ${{ matrix.coi == '1' && 'enabled' || 'disabled' }}, shard ${{ matrix.shard }}/2)
+    # Draft pull requests and automated dependency updates are not tested
+    if: >-
+      github.event_name != 'pull_request' ||
+      (!github.event.pull_request.draft &&
+       github.event.pull_request.user.login != 'dependabot[bot]' &&
+       github.event.pull_request.user.login != 'renovate[bot]')
     runs-on: ubuntu-latest
+    # The suite runs without the conflict of interest declaration on every pull request, and also with
+    # it (a journal-wide setting, hence its own runners and databases) on pull requests targeting main
+    # and on manual runs. Each mode is split into two shards running at the same time.
+    strategy:
+      fail-fast: false
+      matrix:
+        coi: ${{ fromJSON((github.event_name != 'pull_request' || github.base_ref == 'main') && '["0", "1"]' || '["0"]') }}
+        shard: [ 1, 2 ]
 
     env:
       PWD_PATH: ${{ github.workspace }}/tests/config
-      # Absolute URLs built by the application use https?://<rvcode>.episciences.org (DOMAIN
-      # constant): the journal is served under that name, resolved to the runner in /etc/hosts
-      BASE_URL: http://dev.episciences.org/
+      # URL mode, read by playwright.config.js (APP_MODE) and .github/scripts/e2e-router.php (E2E_APP_MODE):
+      # - journal (staging, main): the journal is served at http://dev.episciences.org/; absolute URLs
+      #   built by the application use https?://<rvcode>.episciences.org (DOMAIN constant)
+      # - manager (*-epi-manager): the journal is served under its code, at
+      #   http://manager-dev.episciences.org/dev/ (PREFIX_URL)
+      # Both host names are resolved to the runner in /etc/hosts
+      APP_MODE: ${{ (endsWith(github.base_ref, '-epi-manager') || inputs.app_mode == 'manager') && 'manager' || 'journal' }}
+      E2E_APP_MODE: ${{ (endsWith(github.base_ref, '-epi-manager') || inputs.app_mode == 'manager') && 'manager' || 'journal' }}
+      BASE_URL: ${{ (endsWith(github.base_ref, '-epi-manager') || inputs.app_mode == 'manager') && 'http://manager-dev.episciences.org/dev/' || 'http://dev.episciences.org/' }}
+      E2E_RVCODE: dev
       MAILPIT_URL: http://127.0.0.1:8025/
       # PHP runs on the runner itself, not in the docker-compose container
       E2E_PHP_EXEC: php
+      # Applied by app:e2e-seed (tests/e2e/global-setup.js)
+      E2E_COI: ${{ matrix.coi }}
       SMTP_HOST: 127.0.0.1
       SMTP_PORT: 1025
 
@@ -77,6 +118,17 @@ jobs:
           # Public pages of the journal
           cp tests/fixtures/e2e-navigation.json data/dev/config/navigation.json
 
+      - name: Serve the journal under its code (manager mode)
+        if: env.APP_MODE == 'manager'
+        run: |
+          # The journal code is read from the first path segment only for the journals switched to the
+          # new front-end (defineJournalConstants() in public/const.php)
+          mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences \
+            -e "UPDATE REVIEW SET is_new_front_switched = 'yes' WHERE CODE = '${E2E_RVCODE}';"
+          # Base of the links built outside of a web request (command line scripts); Dotenv loads it into
+          # $_ENV, .env.local overrides the tracked .env
+          echo 'MANAGER_APPLICATION_URL=http://manager-dev.episciences.org' >> .env.local
+
       - name: Use the MySQL authentication adapter and the Solr container
         # The E2E accounts only exist in the local authentication database
         run: |
@@ -100,7 +152,7 @@ jobs:
           php scripts/console.php episciences:queue --transport=next_revalidation --setup
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: 'yarn'
@@ -135,7 +187,7 @@ jobs:
 
       - name: Start Web Server
         run: |
-          echo "127.0.0.1 dev.episciences.org" | sudo tee -a /etc/hosts
+          echo "127.0.0.1 dev.episciences.org manager-dev.episciences.org" | sudo tee -a /etc/hosts
           # Lets PHP listen on port 80 without running as root
           sudo setcap cap_net_bind_service=+ep "$(readlink -f "$(command -v php)")"
           # Upload limits of the php-fpm container (src/php-fpm/upload.ini): with the default 2M, the
@@ -143,11 +195,12 @@ jobs:
           nohup php -d upload_max_filesize=16M -d post_max_size=32M \
             -S 127.0.0.1:80 -t public .github/scripts/e2e-router.php > /tmp/php-server.log 2>&1 &
           sleep 2
-          curl --fail --silent --show-error --output /dev/null http://dev.episciences.org/user/login
+          curl --fail --silent --show-error --output /dev/null "${BASE_URL}user/login"
         env:
           # The development environment does not require HTTPS for the session cookie
           APPLICATION_ENV: development
-          RVCODE: dev
+          # In manager mode the journal comes from the URL: a non-empty RVCODE disables the journal code prefix
+          RVCODE: ${{ env.APP_MODE != 'manager' && 'dev' || '' }}
 
       # Indexes published papers in Solr, as the worker-solr-index service of docker-compose.yml: the
       # volume pages list the indexed papers
@@ -166,7 +219,7 @@ jobs:
 
       # The global setup seeds the E2E accounts and cleans the journal (tests/e2e/global-setup.js)
       - name: Run Playwright Tests
-        run: yarn test:e2e
+        run: yarn test:e2e --shard=${{ matrix.shard }}/2
         env:
           CI: true
 
@@ -183,6 +236,6 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-${{ env.APP_MODE }}-coi-${{ matrix.coi }}-shard-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 14

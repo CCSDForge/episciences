@@ -1,46 +1,107 @@
-function updateNote() {
-    /*
-     * nx = note x
-     * cx = coefficient de la note x
-     * maxValue = valeur maximale de la note totale
-     * Formule : ( ( (n1*c1) + (n2*c2) + ... ) / (c1 + c2 + ...) ) * maxValue
-     */
+/**
+ * Overall score of a rating report, computed like Episciences_Rating_Report::calculateScore(1):
+ * sum(note / maxNote * coefficient) / sum(coefficients) * maxScore, rounded to one decimal.
+ * Only the weighted criteria (coefficient > 0) count.
+ *
+ * @param {Array<{note: number, maxNote: number, coefficient: number}>} grades
+ * @param {number} maxScore
+ * @returns {number|null} null when no criterion is weighted
+ */
+function computeOverallScore(grades, maxScore) {
+    let weighted = 0;
+    let coefficients = 0;
 
-    if (coefs) {
-        var valuesCount = 0;
-        var overallValue = 0;
-
-        $('select[name^="note_"]').each(function () {
-            var id = $(this).attr('name').substr(5);
-            if (!$.isNumeric(coefs[id])) {
-                return;
-            }
-            var max = parseInt($(this).find('option:last').val());
-            var coef = (parseInt($(this).val()) / max) * coefs[id];
-            overallValue += coef;
-        });
-
-        for (var i in coefs) {
-            valuesCount += parseInt(coefs[i]);
+    grades.forEach(grade => {
+        if (!(grade.coefficient > 0)) {
+            return;
         }
+        coefficients += grade.coefficient;
+        if (grade.maxNote > 0 && Number.isFinite(grade.note)) {
+            weighted += (grade.note / grade.maxNote) * grade.coefficient;
+        }
+    });
 
-        overallValue = (overallValue / valuesCount) * maxValue;
-        overallValue = Math.round(overallValue);
-
-        // On récupère la valeur dans un champ hidden
-        $('#noteGlobale').val(overallValue);
-
-        // On affiche la note
-        $('.overallValue').html(
-            translate('Note globale') +
-                ' : ' +
-                "<span style='color: #ED8C1C'>" +
-                overallValue +
-                '/' +
-                maxValue +
-                '</span>'
-        );
+    if (coefficients === 0) {
+        return null;
     }
+
+    // Like PHP round(): drop the floating-point noise (15 significant digits) before rounding,
+    // so that 5.249999999999999 gives 5.3 on the form as on the saved report
+    const tenths = Number(
+        ((weighted / coefficients) * maxScore * 10).toPrecision(15)
+    );
+
+    return Math.round(tenths) / 10;
+}
+
+/**
+ * @param {HTMLFormElement} form rating form (data-coefficients: JSON map criterion id => coefficient)
+ * @returns {Array<{note: number, maxNote: number, coefficient: number}>}
+ */
+function readGrades(form) {
+    let coefficients = {};
+    try {
+        coefficients = JSON.parse(form.dataset.coefficients || '{}') || {};
+    } catch (e) {
+        coefficients = {};
+    }
+
+    return Array.from(form.querySelectorAll('select[name^="note_"]')).map(
+        select => ({
+            note: parseInt(select.value, 10),
+            maxNote: parseInt(select.dataset.maxNote, 10),
+            coefficient: Number(coefficients[select.name.substring(5)]) || 0,
+        })
+    );
+}
+
+/**
+ * Shows the overall score under the rating form
+ * @param {HTMLFormElement} form
+ */
+function updateOverallScore(form) {
+    // 10 only when the attribute is missing: otherwise follow the server, which multiplies by the stored max_score
+    const rawMaxScore = form.dataset.maxScore;
+    const maxScore = rawMaxScore === undefined ? 10 : Number(rawMaxScore) || 0;
+    const score = computeOverallScore(readGrades(form), maxScore);
+    const display = form.querySelector('.overallValue');
+
+    if (score === null || !display) {
+        return;
+    }
+
+    const hidden = form.querySelector('#noteGlobale');
+    if (hidden) {
+        hidden.value = String(score);
+    }
+
+    const value = document.createElement('span');
+    value.className = 'text-warning';
+    value.textContent = `${score}/${maxScore}`;
+    display.replaceChildren(`${translate('Note globale')} : `, value);
+}
+
+/**
+ * @param {HTMLFormElement|null} form
+ */
+function initOverallScore(form) {
+    if (!form) {
+        return;
+    }
+    form.addEventListener('change', event => {
+        if (event.target.matches('select[name^="note_"]')) {
+            updateOverallScore(form);
+        }
+    });
+    updateOverallScore(form);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () =>
+        initOverallScore(document.getElementById('rating-grid'))
+    );
+} else {
+    initOverallScore(document.getElementById('rating-grid'));
 }
 
 /**
@@ -52,4 +113,13 @@ function confirmDeleteAttachment(url_file) {
     if (confirm(translate('Voulez-vous supprimer ce fichier ?'))) {
         location.href = url_file;
     }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        computeOverallScore,
+        readGrades,
+        updateOverallScore,
+        initOverallScore,
+    };
 }

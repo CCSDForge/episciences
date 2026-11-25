@@ -40,6 +40,7 @@ require_once __DIR__ . '/GetDoiCommand.php';
 require_once __DIR__ . '/Command/AbstractCommand.php';
 require_once __DIR__ . '/Command/Bootstrapper.php';
 require_once __DIR__ . '/Command/E2EExternalAccountCommand.php';
+require_once __DIR__ . '/Command/E2EExpireInvitationCommand.php';
 // Extends Command/AbstractCommand.php: must be loaded after it
 require_once __DIR__ . '/NormalizeRecordTitlesCommand.php';
 require_once __DIR__ . '/UpdateLicensesCommand.php';
@@ -77,6 +78,7 @@ $application->addCommand(new GenerateUsersCommand());
 $application->addCommand(new InitDevUsersCommand());
 $application->addCommand(new E2ESeedCommand());
 $application->addCommand(new \scripts\Command\E2EExternalAccountCommand());
+$application->addCommand(new \scripts\Command\E2EExpireInvitationCommand());
 $application->addCommand(new CreateBotUserCommand());
 $application->addCommand(new AnonymizeSuLogsCommand());
 $application->addCommand(new PurgeExpiredUserTokensCommand());
