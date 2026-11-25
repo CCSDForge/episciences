@@ -394,7 +394,7 @@ async function assignMasterVolume(page, docid, vid) {
  */
 async function createVolumeGrid(page, vid) {
     await page.goto('grid/list');
-    const form = page.locator('form[action="/grid/add"]');
+    const form = page.locator('form[action$="/grid/add"]');
     await form.locator('#volume').selectOption(String(vid));
     await form.locator('#submit').click();
     await expect(page.getByText('The new review grid has been successfully saved.').first()).toBeVisible();

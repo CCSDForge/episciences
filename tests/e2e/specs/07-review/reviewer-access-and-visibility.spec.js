@@ -116,7 +116,7 @@ test.describe('Reviewer report visibility and access control', () => {
             await expect(pending).toBeVisible();
 
             await pending.locator('.reviewer', { hasText: REVIEWER_NAME }).locator('.popover-link').click();
-            await adminPage.locator('.popover .context-menu a[href^="/administratepaper/removereviewer/"]').click();
+            await adminPage.locator('.popover .context-menu a[href*="/administratepaper/removereviewer/"]').click();
 
             const modal = adminPage.locator('#modal-box');
             await expect(modal.locator('#reviewer-removal-form')).toBeVisible();

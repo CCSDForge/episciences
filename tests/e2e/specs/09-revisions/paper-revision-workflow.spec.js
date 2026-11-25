@@ -57,7 +57,7 @@ test.describe('Revisions', () => {
             await expect(statusPanel(adminPage)).toContainText('Obsolete');
 
             const version2Link = adminPage
-                .locator('.panel:has(h2:has-text("Versions")) a[href^="/administratepaper/view/id/"]')
+                .locator('.panel:has(h2:has-text("Versions")) a[href*="/administratepaper/view/id/"]')
                 .filter({ hasText: 'Version 2' });
             await expect(version2Link).toBeVisible();
             const newDocid = Number((await version2Link.getAttribute('href')).split('/').pop());
@@ -89,9 +89,9 @@ test.describe('Revisions', () => {
 
         await test.step('the author answers without any modification', async () => {
             await openAnswerMenu(authorPage, docid);
-            await authorPage.locator('a[href^="/paper/answerrequest"]').click();
+            await authorPage.locator('a[href*="/paper/answerrequest"]').click();
 
-            const form = authorPage.locator('form[action^="/paper/saveanswer"]');
+            const form = authorPage.locator('form[action*="/paper/saveanswer"]');
             await expect(form).toBeVisible();
             // The submit button is only enabled by an input event of the TinyMCE editor
             const editorBody = authorPage.frameLocator('#comment_only_answerRequest_ifr').locator('body');

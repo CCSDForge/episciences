@@ -113,7 +113,7 @@ test.describe('Automatic reviewer reminders', () => {
                 await expect(activeReviewer).toBeVisible();
                 await activeReviewer.locator('.popover-link').click();
                 await expect(adminPage.locator('.popover .context-menu')).toBeVisible();
-                await adminPage.locator('.popover .context-menu a[href^="/administratepaper/updatedeadline/"]').click();
+                await adminPage.locator('.popover .context-menu a[href*="/administratepaper/updatedeadline/"]').click();
 
                 const modal = adminPage.locator('#modal-box');
                 const deadlineInput = modal.locator('#deadline-id');
