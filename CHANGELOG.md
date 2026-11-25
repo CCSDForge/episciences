@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Journals that never saved their accepted repositories: the paper page, the paper management page and saving the journal settings no longer fail; the setting is then read as an empty list.
+- Users without any role in the current journal: the role editing form and the role tags no longer fail.
 - [#1514](https://github.com/CCSDForge/episciences/pull/1514), [#1516](https://github.com/CCSDForge/episciences/pull/1516), [#1521](https://github.com/CCSDForge/episciences/pull/1521): user profile photos and initials avatars: validate uploaded profile photos (JPEG, PNG, GIF up to 5 MB) and remove unused SVG/XML conversion helpers; generate initials avatars on each request with a one-hour browser cache instead of writing them to disk; validate avatar background colors, strip markup, control, and XML-forbidden characters from initials, and restrict photo response headers.
 - [#1514](https://github.com/CCSDForge/episciences/pull/1514), [#1521](https://github.com/CCSDForge/episciences/pull/1521): session and navigation: apply the configured session cookie options before the session starts, set the `SameSite=Lax` attribute on the session cookie, and preserve the first navigation menu entry when hidden statistics have no menu entry.
 - [#1514](https://github.com/CCSDForge/episciences/pull/1514): error pages and modals: escape modal and error page parameters, render guest login links and the requested statistics year directly in templates without raw markup, and add the missing English translations for guest login links on error pages.

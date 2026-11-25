@@ -973,7 +973,7 @@ class AdministratepaperController extends PaperDefaultController
         // paper password bloc
 
         $displayPaperPasswordBloc = (
-            in_array(Episciences_Repositories::ARXIV_REPO_ID, $review->getSetting($review::SETTING_REPOSITORIES)) &&
+            $review->acceptsRepository(Episciences_Repositories::ARXIV_REPO_ID) &&
             $review->getSetting($review::SETTING_ARXIV_PAPER_PASSWORD) &&
             $paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID &&
             !in_array($paper->getStatus(), $paper::$_noEditableStatus, true) &&
