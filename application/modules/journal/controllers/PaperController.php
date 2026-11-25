@@ -226,7 +226,7 @@ class PaperController extends PaperDefaultController
         if ($isVisibleRatings) {
             $paper->loadRatings();
             $this->view->reports = $paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED, Episciences_Auth::getUser());
-            $this->view->isAllowedToSeeReportDetails = !$paper->isOwner() && (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid));
+            $this->view->isAllowedToSeeReportDetails = !$paper->isOwner() && (Episciences_Auth::isSecretary() || $paper->isAssignedEditor((int)$loggedUid));
 
         }
 
