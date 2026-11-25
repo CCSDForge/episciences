@@ -27,6 +27,12 @@
       "constraints": {
         "php": "8.3"
       }
+    },
+    {
+      "description": "Disable automatic PHP version upgrades (managed manually)",
+      "matchPackageNames": ["php"],
+      "matchDepTypes": ["tool-constraint", "stage"],
+      "enabled": false
     }
   ]
 }
