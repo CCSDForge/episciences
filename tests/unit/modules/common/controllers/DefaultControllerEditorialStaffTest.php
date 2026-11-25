@@ -65,12 +65,14 @@ final class DefaultControllerEditorialStaffTest extends TestCase
         $copyEditors = Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS;
 
         return [
-            'editor, journal not restricting editors' => [Episciences_Acl::ROLE_EDITOR, $editors, [$editors => '0'], true],
+            'editor, journal not restricting editors (0)' => [Episciences_Acl::ROLE_EDITOR, $editors, [$editors => '0'], true],
+            'editor, journal not restricting editors (empty string)' => [Episciences_Acl::ROLE_EDITOR, $editors, [$editors => ''], true],
             'editor, journal restricting editors' => [Episciences_Acl::ROLE_EDITOR, $editors, [$editors => '1'], false],
-            'editor, setting never saved' => [Episciences_Acl::ROLE_EDITOR, $editors, [], false],
-            'copy editor, journal not restricting copy editors' => [Episciences_Acl::ROLE_COPY_EDITOR, $copyEditors, [$copyEditors => '0'], true],
+            'editor, setting never saved' => [Episciences_Acl::ROLE_EDITOR, $editors, [], true],
+            'copy editor, journal not restricting copy editors (0)' => [Episciences_Acl::ROLE_COPY_EDITOR, $copyEditors, [$copyEditors => '0'], true],
+            'copy editor, journal not restricting copy editors (empty string)' => [Episciences_Acl::ROLE_COPY_EDITOR, $copyEditors, [$copyEditors => ''], true],
             'copy editor, journal restricting copy editors' => [Episciences_Acl::ROLE_COPY_EDITOR, $copyEditors, [$copyEditors => '1'], false],
-            'copy editor, setting never saved' => [Episciences_Acl::ROLE_COPY_EDITOR, $copyEditors, [], false],
+            'copy editor, setting never saved' => [Episciences_Acl::ROLE_COPY_EDITOR, $copyEditors, [], true],
         ];
     }
 
@@ -89,7 +91,10 @@ final class DefaultControllerEditorialStaffTest extends TestCase
     {
         $this->logInAs([Episciences_Acl::ROLE_COPY_EDITOR]);
 
-        self::assertFalse($this->isEditorialStaff([Episciences_Review::SETTING_ENCAPSULATE_EDITORS => '0']));
+        self::assertFalse($this->isEditorialStaff([
+            Episciences_Review::SETTING_ENCAPSULATE_EDITORS => '0',
+            Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS => '1',
+        ]));
     }
 
     public function testSecretaryHandlesEveryPaper(): void
