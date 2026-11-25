@@ -228,11 +228,23 @@ final class FileControllerDocumentFileAccessTest extends TestCase
         self::assertTrue($this->isAllowed($this->controller($this->paper(), $settings), 'copy_editing_sources'));
     }
 
-    public function testUnassignedEditorIsRefusedWhenTheJournalNeverSavedTheSetting(): void
+    public function testUnassignedEditorIsRefusedWhenTheJournalRestrictsEditors(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
+        $settings = [Episciences_Review::SETTING_ENCAPSULATE_EDITORS => '1'];
+
+        self::assertFalse($this->isAllowed($this->controller($this->paper(), $settings), 'copy_editing_sources'));
+    }
+
+    public function testUnassignedEditorReadsTheFilesWhenTheJournalNeverSavedOrClearedTheSetting(): void
     {
         $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
 
-        self::assertFalse($this->isAllowed($this->controller($this->paper()), 'copy_editing_sources'));
+        self::assertTrue($this->isAllowed($this->controller($this->paper()), 'copy_editing_sources'));
+        self::assertTrue($this->isAllowed(
+            $this->controller($this->paper(), [Episciences_Review::SETTING_ENCAPSULATE_EDITORS => '']),
+            'copy_editing_sources'
+        ));
     }
 
     public function testEditorInConflictOfInterestIsRefused(): void

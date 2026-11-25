@@ -179,7 +179,9 @@ class DefaultController extends Episciences_Controller_Action
     /**
      * The logged user handles the paper for the journal: secretaries and administrators, the editors and copy
      * editors assigned to the paper, the editors and copy editors of a journal that does not restrict them to
-     * their assigned papers. An encapsulation setting the journal never saved counts as restrictive.
+     * their assigned papers. Only a non-empty encapsulation setting (e.g. '1') restricts them, matching
+     * PaperController and Episciences_Auth::isAllowedToListOnlyAssignedPapers() (legacy journals may have '' or
+     * no row stored for unchecked checkboxes).
      *
      * @param array<string, mixed> $journalSettings
      * @throws Zend_Db_Statement_Exception
@@ -199,8 +201,8 @@ class DefaultController extends Episciences_Controller_Action
     protected static function isEditorialStaffOfEveryPaper(array $journalSettings): bool
     {
         return Episciences_Auth::isSecretary() ||
-            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS] ?? null) === '0' && Episciences_Auth::isEditor()) ||
-            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS] ?? null) === '0' && Episciences_Auth::isCopyEditor());
+            (empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]) && Episciences_Auth::isEditor()) ||
+            (empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS]) && Episciences_Auth::isCopyEditor());
     }
 
     protected function redirectWithFlashMessageIfPaperIsRemovedOrDeleted(Episciences_Paper $paper, bool $forceRedirection = true): void
