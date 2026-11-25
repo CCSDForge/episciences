@@ -97,10 +97,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#1514](https://github.com/CCSDForge/episciences/pull/1514), [#1516](https://github.com/CCSDForge/episciences/pull/1516), [#1521](https://github.com/CCSDForge/episciences/pull/1521): user profile photos and initials avatars: validate uploaded profile photos (JPEG, PNG, GIF up to 5 MB) and remove unused SVG/XML conversion helpers; generate initials avatars on each request with a one-hour browser cache instead of writing them to disk; validate avatar background colors, strip markup, control, and XML-forbidden characters from initials, and restrict photo response headers. Special thanks to [kta1kri](https://github.com/kta1kri) for the detailed report on the avatar background color and the session cookie.
-- [#1514](https://github.com/CCSDForge/episciences/pull/1514), [#1521](https://github.com/CCSDForge/episciences/pull/1521): session and navigation: apply the configured session cookie options before the session starts, set the `SameSite=Lax` attribute on the session cookie, and preserve the first navigation menu entry when hidden statistics have no menu entry.
-- [#1514](https://github.com/CCSDForge/episciences/pull/1514): error pages and modals: escape modal and error page parameters.
-- [#1483](https://github.com/CCSDForge/episciences/pull/1483): arXiv submission and import: strip the "arXiv:" prefix (case-insensitive) from arXiv identifiers before storing them (fixes [#1481](https://github.com/CCSDForge/episciences/issues/1481)); includes an SQL migration script to clean existing identifiers.
 - Automatic reminders: saving a reminder with a custom template failed for a journal without translation folder yet (the folder of the e-mail templates was not created with its parents).
 - Reviewer invitation: a reviewer whose invitation for the paper is pending or accepted can no longer be invited again (for instance by two members of the editorial team at the same time), a new reviewer without account included (same e-mail address), and the user search of the invitation page no longer offers them ([#1497](https://github.com/CCSDForge/episciences/issues/1497)).
 - Reviewer rating form: the overall score was never shown, and each grade change threw a JavaScript error (`coefs is not defined`). It is now computed live with the server formula, from the coefficients and maximum grades rendered on the form. The saved score of a completed report is shown on the same scale (for example `7.5/10` instead of `0.8`) ([#1495](https://github.com/CCSDForge/episciences/issues/1495)).
@@ -155,6 +151,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Remove the legacy `scripts/DeletePaper.php` script (replaced by the `papers:delete` console command), which reported a deletion as successful even when it had failed.
+
+## v1.0.58.3 - 2026-11-23
+
+### Fixed
+
+- Journals that never saved their accepted repositories: the paper page, the paper management page and saving the journal settings no longer fail; the setting is then read as an empty list.
+- Users without any role in the current journal: the role editing form and the role tags no longer fail.
+- [#1514](https://github.com/CCSDForge/episciences/pull/1514), [#1516](https://github.com/CCSDForge/episciences/pull/1516), [#1521](https://github.com/CCSDForge/episciences/pull/1521): user profile photos and initials avatars: validate uploaded profile photos (JPEG, PNG, GIF up to 5 MB) and remove unused SVG/XML conversion helpers; generate initials avatars on each request with a one-hour browser cache instead of writing them to disk; validate avatar background colors, strip markup, control, and XML-forbidden characters from initials, and restrict photo response headers.
+- [#1514](https://github.com/CCSDForge/episciences/pull/1514), [#1521](https://github.com/CCSDForge/episciences/pull/1521): session and navigation: apply the configured session cookie options before the session starts, set the `SameSite=Lax` attribute on the session cookie, and preserve the first navigation menu entry when hidden statistics have no menu entry.
+- [#1514](https://github.com/CCSDForge/episciences/pull/1514): error pages and modals: escape modal and error page parameters, render guest login links and the requested statistics year directly in templates without raw markup, and add the missing English translations for guest login links on error pages.
+- [#1483](https://github.com/CCSDForge/episciences/pull/1483): arXiv submission and import: strip the "arXiv:" prefix (case-insensitive) from arXiv identifiers before storing them (fixes [#1481](https://github.com/CCSDForge/episciences/issues/1481)); includes an SQL migration script to clean existing identifiers.
+- [#1445](https://github.com/CCSDForge/episciences/pull/1445), [#1485](https://github.com/CCSDForge/episciences/pull/1485): paper file download: the request that fetches the file from its repository now applies its connection, transfer, and low-speed time limits (allowing large files and slow repositories to finish downloading while dropping stalled transfers), validates the requested URLs more strictly, and falls back to the local copy on any network error, not only on HTTP errors.
+- [#1460](https://github.com/CCSDForge/episciences/pull/1460): arXiv submission and OAI-PMH client: add request timeouts (30 s, 15 s for arXiv) and failure logging, retry arXiv once on transient errors, report unreachable open archives as temporarily unavailable, and fall back to DataCite metadata (including for the version check) when arXiv remains unavailable.
 
 ## v1.0.58.2 - 2026-11-11
 

@@ -225,7 +225,7 @@ class Episciences_ReviewsManager
 
             $acceptedRepositories = [];
 
-            foreach ($oReview->getSetting(Episciences_Review::SETTING_REPOSITORIES) as $repoId) {
+            foreach ($oReview->getRepositories() as $repoId) {
 
                 $label = Episciences_Repositories::getLabel($repoId);
 
