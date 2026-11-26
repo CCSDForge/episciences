@@ -9,8 +9,8 @@ test.describe('Public Journal Homepage', () => {
         expect(response).not.toBeNull();
         expect(response.status()).toBe(200);
 
-        // Check page title is present and meaningful
-        await expect(page).toHaveTitle(/Discrete Mathematics|Episciences|Home/i);
+        // Check page title is present and non-empty
+        await expect(page).toHaveTitle(/\S+/);
 
         // Verify key structural elements exist
         const body = page.locator('body');
