@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Episciences\Api\ScholexplorerApiClient;
 use Episciences\Console\ProgressAwareStreamHandler;
+use Episciences\Paper\RelationshipMapper;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
@@ -184,6 +185,8 @@ class GetLinkDataCommand extends Command
         $scheme      = (string) $linkItem['scheme'];
         $url         = $linkItem['link'];
         $relName     = (string) $linkItem['relationship'];
+        // Stored in the linked data vocabulary; an unknown Scholix relation is only "related material"
+        $relationship = RelationshipMapper::fromDataCite($relName, RelationshipMapper::FALLBACK_RELATED_MATERIAL);
         $code        = (string) $linkItem['type'];
         $rawEntity   = is_array($linkItem['raw']) ? $linkItem['raw'] : [];
 
@@ -208,7 +211,7 @@ class GetLinkDataCommand extends Command
             'value'               => $canonicalId,
             'link'                => is_string($url) && $url !== '' ? $url : $scheme,
             'sourceId'            => Episciences_Repositories::SCHOLEXPLORER_ID,
-            'relationship'        => $relName,
+            'relationship'        => $relationship,
             'idPaperDatasetsMeta' => $metaId,
         ]]);
 

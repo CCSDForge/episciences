@@ -6,6 +6,10 @@
         xmlns:oaire="http://namespace.openaire.eu/schema/oaire/"
         xsi:schemaLocation="http://namespace.openaire.eu/schema/oaire/ https://www.openaire.eu/schema/repo-lit/4.0/openaire.xsd">
     <?php
+
+    use Episciences\Paper\RelationshipMapper;
+    use Episciences\Paper\RelationshipProfile;
+
     /** @var Episciences_Paper $paper */
 
 
@@ -30,16 +34,6 @@
     $enrichmentLicence = $paper->getLicence();
     $fundingReferences = $paper->getFundingReferences();
     $enrichmentLinkedData = $paper->getLinkedData();
-
-    $authorizedRelationType = [
-        "IsCitedBy", "Cites", "IsSupplementTo", "IsSupplementedBy",
-        "IsContinuedBy", "Continues", "IsDescribedBy",
-        "Describes", "HasMetadata", "IsMetadataFor",
-        "HasVersion", "IsVersionOf", "IsNewVersionOf", "IsPreviousVersionOf",
-        "IsPartOf", "HasPart", "IsReferencedBy", "References", "IsDocumentedBy", "Documents", "IsCompiledBy", "Compiles",
-        "IsVariantFormOf", "IsOriginalFormOf", "IsIdenticalTo", "IsReviewedBy",
-        "Reviews", "IsDerivedFrom", "IsSourceOf", "IsRequiredBy", "Requires"
-    ];
 
     $authorizedRelatedIndentifier = [
         "ARK", "arXiv", "bibcode", "DOI",
@@ -209,7 +203,8 @@
         <?php if (!empty($enrichmentLinkedData)) : ?>
             <?php foreach ($enrichmentLinkedData as $linkedData) { ?>
                 <?php if (in_array((strtoupper($linkedData['link'])), $authorizedRelatedIndentifier, true) || $linkedData['link'] === 'handle' || $linkedData['link'] === 'doi' || $linkedData['link'] === 'arXiv' || $linkedData['link'] === 'bibcode' || $linkedData['link'] === 'software') : ?>
-                    <?php if (in_array(ucfirst($linkedData['relationship']), $authorizedRelationType, true)) : ?>
+                    <?php $dataCiteRelation = RelationshipMapper::toDataCite($linkedData['relationship'] ?? null, RelationshipProfile::OpenAire); ?>
+                    <?php if ($dataCiteRelation !== null) : ?>
                         <datacite:relatedIdentifier relatedIdentifierType="<?php
                         if ($linkedData['link'] === 'handle') {
                             echo $this->escape(ucfirst($linkedData['link']));
@@ -219,7 +214,7 @@
                             echo $this->escape(strtoupper($linkedData['link']));
                         }
                         ?>"
-                                                    relationType="<?= $this->escape($linkedData['relationship']) ?>"><?php echo $this->escape($linkedData['value']); ?></datacite:relatedIdentifier>
+                                                    relationType="<?= $this->escape($dataCiteRelation) ?>"><?php echo $this->escape($linkedData['value']); ?></datacite:relatedIdentifier>
                     <?php endif; ?>
                 <?php endif; ?>
             <?php } ?>

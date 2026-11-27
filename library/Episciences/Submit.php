@@ -9,6 +9,7 @@ use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\LinkedDataNotStoredException;
 use Episciences\Paper\PartiallyStoredException;
 use Episciences\Paper\Record\TitleNormalizer;
+use Episciences\Paper\RelationshipMapper;
 use Episciences\Repositories\HAL\TeiLinkedDataParser;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Submit\SubmittedRecord;
@@ -2093,7 +2094,7 @@ class Episciences_Submit
             !Episciences_Repositories::handlesOwnEnrichment($repoId) &&
             Episciences_Repositories::isFromHalRepository($repoId)
         ) {
-            // datasetsProcessing() only handles the HTTP and JSON errors, not the database ones
+            // datasetsProcessing() only handles the HTTP errors, not the database ones
             $steps['datasetsProcessing'] = static fn() => self::datasetsProcessing($paper);
         }
 
@@ -3436,17 +3437,17 @@ class Episciences_Submit
                         continue;
                     }
 
-                    // Outside the DataCite shaped repositories, the relation is one of the linked data vocabulary ("references" otherwise)
-                    $entryOptions['relationship'] = $isDataCiteShaped
-                        ? ($datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE)
-                        : TeiLinkedDataParser::relationship(is_string($datasets['relation'] ?? null) ? $datasets['relation'] : '');
+                    // DataCite relation types are stored in the linked data vocabulary ("references" when unknown)
+                    $entryOptions['relationship'] = RelationshipMapper::fromDataCite(
+                        is_string($datasets['relation'] ?? null) ? $datasets['relation'] : ''
+                    );
                 }
 
                 try {
                     $affectedRows += self::storeLinkedIdentifier(
                         $docId,
                         $value,
-                        (string)($datasets['resource_type'] ?? ''),
+                        is_string($datasets['resource_type'] ?? null) ? $datasets['resource_type'] : '',
                         $entryOptions,
                         $noProcessed,
                         $failures

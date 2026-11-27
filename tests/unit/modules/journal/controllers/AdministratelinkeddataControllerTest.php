@@ -90,6 +90,8 @@ final class AdministratelinkeddataControllerTest extends TestCase
                 // One row per query, so that fetch() loops end
                 $statement = $this->createMock(Zend_Db_Statement_Interface::class);
                 $statement->method('fetch')->willReturnOnConsecutiveCalls($paperRow, false);
+                // Nothing written: an INSERT is only recorded in $this->queries
+                $statement->method('rowCount')->willReturn(0);
 
                 return $statement;
             }
@@ -237,6 +239,69 @@ final class AdministratelinkeddataControllerTest extends TestCase
         $this->stubDatabase(['id' => 9, 'doc_id' => 77, 'code' => 'x', 'value' => 'v', 'name' => 'n'], $this->paperOwnedByTheLoggedInUser($status));
 
         $this->dispatch('setnewinfoldAction', ['ldId' => '9', 'valueLd' => 'v', 'typeld' => 'software', 'relationship' => 'cites']);
+    }
+
+    public function testTheUpdatedRelationshipIsStoredInTheLinkedDataVocabulary(): void
+    {
+        $this->logIn();
+        $this->adapter->expects(self::once())->method('update')
+            ->with(self::anything(), self::callback(static fn(array $values): bool => $values['relationship'] === 'hasReview'))
+            ->willReturn(1);
+        $this->stubDatabase(
+            ['id' => 9, 'doc_id' => 77, 'code' => 'x', 'value' => 'v', 'name' => 'n'],
+            $this->paperOwnedByTheLoggedInUser(\Episciences_Paper::STATUS_SUBMITTED)
+        );
+
+        $this->dispatch('setnewinfoldAction', ['ldId' => '9', 'valueLd' => 'v', 'typeld' => 'software', 'relationship' => ' IsReviewedBy ']);
+    }
+
+    public function testTheAddedRelationshipIsStoredInTheLinkedDataVocabulary(): void
+    {
+        $this->logIn();
+        $this->stubDatabase(false, $this->paperOwnedByTheLoggedInUser(\Episciences_Paper::STATUS_SUBMITTED));
+
+        $this->dispatch('addldAction', [
+            'docId' => '77',
+            'typeld' => 'software',
+            'valueld' => 'swh:1:dir:d198bc9d7a6bcf6db04f476d29314f157507d505',
+            'relationship' => ' IsReviewedBy ',
+        ]);
+
+        $inserts = array_values(array_filter(
+            $this->queries,
+            static fn(string $sql): bool => str_starts_with($sql, 'INSERT') && str_contains($sql, T_PAPER_DATASETS)
+        ));
+        self::assertCount(1, $inserts);
+        self::assertStringContainsString("'hasReview'", $inserts[0]);
+        self::assertStringNotContainsString('IsReviewedBy', $inserts[0]);
+    }
+
+    /**
+     * @return array<string, array{string, array<string, mixed>}>
+     */
+    public static function unknownRelationshipProvider(): array
+    {
+        return [
+            'add' => ['addldAction', ['docId' => '77', 'typeld' => 'software', 'valueld' => 'swh:1:dir:d198bc9d7a6bcf6db04f476d29314f157507d505', 'relationship' => 'isWhatever']],
+            'update' => ['setnewinfoldAction', ['ldId' => '9', 'valueLd' => 'v', 'typeld' => 'software', 'relationship' => '<b>references</b>']],
+            'update without relationship' => ['setnewinfoldAction', ['ldId' => '9', 'valueLd' => 'v', 'typeld' => 'software']],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $post
+     * @dataProvider unknownRelationshipProvider
+     */
+    public function testAnUnknownRelationshipIsRejected(string $action, array $post): void
+    {
+        $this->logIn();
+        $this->assertNothingWasWritten();
+        $this->stubDatabase(
+            ['id' => 9, 'doc_id' => 77, 'code' => 'x', 'value' => 'v', 'name' => 'n'],
+            $this->paperOwnedByTheLoggedInUser(\Episciences_Paper::STATUS_SUBMITTED)
+        );
+
+        self::assertSame(self::DENIED, $this->dispatch($action, $post));
     }
 
     /**
