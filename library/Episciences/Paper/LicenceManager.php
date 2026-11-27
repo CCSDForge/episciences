@@ -8,6 +8,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Episciences\Paper\WriteFailure;
+use Episciences\Hal\HalTeiSource;
 
 class Episciences_Paper_LicenceManager
 {
@@ -92,7 +93,7 @@ class Episciences_Paper_LicenceManager
      */
     public static function getLicenceFromTeiHal(string $identifier, int $version): string
     {
-        $cacheTeiHal = Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version);
+        $cacheTeiHal = Episciences_Hal_TeiCacheManager::fetchAndGet(HalTeiSource::hal($identifier, $version));
         $xmlString = simplexml_load_string($cacheTeiHal);
         $licence = '';
         if (isset($xmlString->text->body->listBibl->biblFull->publicationStmt->availability->licence, $xmlString->text->body->listBibl->biblFull->publicationStmt->availability->licence->attributes()->target)) {
