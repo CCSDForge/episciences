@@ -8,6 +8,7 @@ use Episciences_Hal_TeiCacheManager;
 use Episciences_Paper;
 use Episciences_Paper_Authors_EnrichmentService;
 use Episciences_Paper_Authors_Repository;
+use Episciences_Repositories;
 use GetCreatorDataCommand;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -123,7 +124,7 @@ class GetCreatorDataCommandTest extends TestCase
 XML;
 
         $teiCache = new ArrayAdapter();
-        $teiItem = $teiCache->getItem('hal-tei-' . $identifier . '-' . $version . '.xml');
+        $teiItem = $teiCache->getItem('hal-tei-' . Episciences_Repositories::HAL_REPO_ID . '-' . $identifier . '-v' . $version . '.xml');
         $teiItem->set($teiXml);
         $teiCache->save($teiItem);
         Episciences_Hal_TeiCacheManager::setCachePool($teiCache);
