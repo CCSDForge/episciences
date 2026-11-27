@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Paper;
 
+use Episciences\Security\AccessLog;
 use Episciences\User\SuLogger;
 use Episciences_Acl;
 use Episciences_Auth;
@@ -18,6 +19,9 @@ use Zend_Db_Table_Abstract;
 use Zend_Session;
 use Zend_Session_Namespace;
 use Zend_View;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Captures the flash messages and redirections issued by the trait instead of
@@ -99,6 +103,16 @@ final class AccessControlHarness
         $this->actionName = $actionName;
     }
 
+    /**
+     * Same as DefaultController::paperLogContext()
+     *
+     * @return array<string, mixed>
+     */
+    protected static function paperLogContext(\Episciences_Paper $paper): array
+    {
+        return ['docid' => $paper->getDocid(), 'paperid' => $paper->getPaperid()];
+    }
+
     public function getRequest(): object
     {
         return new class($this->actionName) {
@@ -149,6 +163,8 @@ final class AccessControlHarness
  */
 final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const ACCESS_DENIED_MESSAGE = "Vous n'avez pas les droits suffisants pour accéder à cet article";
     private const CONFIRMATION_REQUIRED_MESSAGE = "Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission";
 
@@ -294,6 +310,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         self::assertSame([self::ACCESS_DENIED_MESSAGE], $this->harness->_helper->messages);
         self::assertContains('warning', $this->harness->_helper->namespaces);
         self::assertSame([], $this->harness->_helper->urlParams);
+        self::assertSame([[AccessLog::ACCESS_REDIRECTED, 'paper_permissions', 123]], $this->loggedEvents('reason', 'docid'));
     }
 
     public function testAssignedEditorIsNotRedirectedWhenEncapsulationIsOn(): void
@@ -507,6 +524,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
 
         self::assertNull($this->harness->_helper->redirectedTo);
         self::assertSame([], $this->harness->_helper->messages);
+        self::assertSame([], $this->loggedEvents('reason', 'docid'));
     }
 
     public function testOwnerIsRedirectedToThePaperPublicView(): void
@@ -519,6 +537,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         );
 
         self::assertSame('/paper/view?id=123', $this->harness->_helper->redirectedTo);
+        self::assertSame([[AccessLog::ACCESS_REDIRECTED, 'own_submission', 123]], $this->loggedEvents('reason', 'docid'));
         self::assertCount(1, $this->harness->_helper->messages);
         self::assertStringContainsString('vous-même déposé', $this->harness->_helper->messages[0]);
         self::assertContains('warning', $this->harness->_helper->namespaces);
@@ -568,6 +587,7 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         );
 
         self::assertSame('/coi/report?id=123', $this->harness->_helper->redirectedTo);
+        self::assertSame([[AccessLog::ACCESS_REDIRECTED, 'conflict_of_interest', 123]], $this->loggedEvents('reason', 'docid'));
         self::assertSame(
             ["Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission."],
             $this->harness->_helper->messages
@@ -641,6 +661,11 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         self::assertStringContainsString('User 99', $message);
         self::assertStringContainsString('Vous êtes maintenant connecté à votre compte', $message);
         self::assertStringContainsString(self::CONFIRMATION_REQUIRED_MESSAGE, $message);
+        // logged before the switch back: under the identity that was refused
+        $context = $this->securityLogRecords()[0]->context;
+        self::assertSame('conflict_of_interest', $context['reason']);
+        self::assertSame(42, $context['uid']);
+        self::assertSame(99, $context['original_uid']);
         // the original account has been restored so it can confirm the conflict absence
         self::assertSame(99, Episciences_Auth::getUid());
         self::assertFalse(Episciences_Auth::isImpersonating(), 'the switch user state is closed');
@@ -648,59 +673,93 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
 
     // =========================================================================
     // Usage guards: the controllers must keep delegating to the trait
+    // (the calls to its guards are covered by PaperManagementPagesAccessTest)
     // =========================================================================
 
     /**
-     * @return iterable<string, array{string}>
+     * @return iterable<string, array{class-string}>
      */
     public static function usingControllers(): iterable
     {
-        yield 'AdministratepaperController' => [APPLICATION_PATH . '/modules/journal/controllers/AdministratepaperController.php'];
-        yield 'ActivityController' => [APPLICATION_PATH . '/modules/journal/controllers/ActivityController.php'];
+        yield 'AdministratepaperController' => [self::loadController('journal', 'AdministratepaperController')];
+        yield 'ActivityController' => [self::loadController('journal', 'ActivityController')];
     }
 
     /**
      * @dataProvider usingControllers
+     * @param class-string $controller
      */
-    public function testControllerUsesTheTraitAndItsGuards(string $path): void
+    public function testControllerUsesTheTrait(string $controller): void
     {
-        $source = (string)file_get_contents($path);
-
-        self::assertStringContainsString('use Episciences_Paper_AccessControlControllerTrait;', $source);
-        self::assertStringContainsString('$this->checkPermissions(', $source);
-        self::assertStringContainsString('$this->redirectWithFlashMessageIfConflictDetected(', $source);
+        self::assertContains(Episciences_Paper_AccessControlControllerTrait::class, class_uses($controller));
     }
 
     /**
      * A method defined in the using class silently takes precedence over the
-     * trait method with the same name: no controller (or parent) may redefine
-     * one of the trait's methods.
+     * trait method with the same name: no controller may redefine one of the trait's methods.
      *
-     * @dataProvider classesInTheTraitHierarchy
+     * @dataProvider usingControllers
+     * @param class-string $controller
      */
-    public function testTraitMethodsAreNotOverriddenByTheControllers(string $path): void
+    public function testTraitMethodsAreNotOverriddenByTheControllers(string $controller): void
     {
-        $source = (string)file_get_contents($path);
+        $traitFile = (new \ReflectionClass(Episciences_Paper_AccessControlControllerTrait::class))->getFileName();
 
-        $traitMethods = (new \ReflectionClass(Episciences_Paper_AccessControlControllerTrait::class))->getMethods();
-        self::assertNotEmpty($traitMethods);
-
-        foreach ($traitMethods as $method) {
-            self::assertStringNotContainsString(
-                'function ' . $method->getName() . '(',
-                $source,
-                basename($path) . " must not redefine the trait method {$method->getName()}()"
+        foreach (self::traitMethods() as $name) {
+            self::assertSame(
+                $traitFile,
+                (new \ReflectionMethod($controller, $name))->getFileName(),
+                "$controller must not redefine the trait method $name()"
             );
         }
     }
 
     /**
-     * @return iterable<string, array{string}>
+     * The parent controllers must not define the trait's methods either: the trait would silently replace them.
+     *
+     * @dataProvider parentControllers
+     * @param class-string $controller
      */
-    public static function classesInTheTraitHierarchy(): iterable
+    public function testTraitMethodsAreNotDefinedByTheParentControllers(string $controller): void
     {
-        yield from self::usingControllers();
-        yield 'PaperDefaultController' => [APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php'];
-        yield 'DefaultController' => [APPLICATION_PATH . '/modules/common/controllers/DefaultController.php'];
+        foreach (self::traitMethods() as $name) {
+            self::assertFalse(method_exists($controller, $name), "$controller must not define the trait method $name()");
+        }
+    }
+
+    /**
+     * @return iterable<string, array{class-string}>
+     */
+    public static function parentControllers(): iterable
+    {
+        yield 'PaperDefaultController' => [self::loadController('common', 'PaperDefaultController')];
+        yield 'DefaultController' => [self::loadController('common', 'DefaultController')];
+    }
+
+    /**
+     * Methods implemented by the trait (the abstract ones are the ones the controllers must provide).
+     *
+     * @return list<string>
+     */
+    private static function traitMethods(): array
+    {
+        $methods = (new \ReflectionClass(Episciences_Paper_AccessControlControllerTrait::class))->getMethods();
+        $names = array_values(array_map(
+            static fn(\ReflectionMethod $method): string => $method->getName(),
+            array_filter($methods, static fn(\ReflectionMethod $method): bool => !$method->isAbstract())
+        ));
+        self::assertNotEmpty($names);
+
+        return $names;
+    }
+
+    /**
+     * @return class-string
+     */
+    private static function loadController(string $module, string $class): string
+    {
+        require_once APPLICATION_PATH . '/modules/' . $module . '/controllers/' . $class . '.php';
+
+        return $class;
     }
 }

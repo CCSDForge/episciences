@@ -389,6 +389,36 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         self::assertStringContainsString('operation ended', $result['error']);
     }
 
+    public function testBuildCcsdErrorResultEscapesTheRawErrorMessageOnTheWeb(): void
+    {
+        $hadServerSoftware = array_key_exists('SERVER_SOFTWARE', $_SERVER);
+        $previousServerSoftware = $_SERVER['SERVER_SOFTWARE'] ?? null;
+        $_SERVER['SERVER_SOFTWARE'] = 'Apache';
+
+        try {
+            $result = $this->invoke('buildCcsdErrorResult', [new Ccsd_Error('unexpected <b>answer</b> & more'), 9999]);
+        } finally {
+            if ($hadServerSoftware) {
+                $_SERVER['SERVER_SOFTWARE'] = $previousServerSoftware;
+            } else {
+                unset($_SERVER['SERVER_SOFTWARE']);
+            }
+        }
+
+        self::assertStringContainsString('unexpected &lt;b&gt;answer&lt;/b&gt; &amp; more', $result['error']);
+        self::assertStringNotContainsString('<b>answer</b>', $result['error']);
+    }
+
+    public function testBuildCcsdErrorResultKeepsTheRawErrorMessageFromTheCommandLine(): void
+    {
+        $result = $this->invoke('buildCcsdErrorResult', [new Ccsd_Error('unexpected <b>answer</b> & more'), 9999]);
+
+        // The diagnostic is kept as it is, the markup of the message itself is removed
+        self::assertStringContainsString('[unexpected <b>answer</b> & more]', $result['error']);
+        self::assertStringNotContainsString('<strong>', $result['error']);
+        self::assertStringNotContainsString('<a ', $result['error']);
+    }
+
     // =========================================================================
     // GROUP A — assertNewVersionConsistency()
     // =========================================================================
@@ -493,20 +523,20 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
 
     public function testParseEnrichmentWithEmptyHEnrichment(): void
     {
-        $result = $this->invoke('parseEnrichment', [['h_enrichment' => '']], false);
+        $result = $this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => '']], false);
         self::assertSame([], $result);
     }
 
     public function testParseEnrichmentWithValidJson(): void
     {
         $enrichment = ['authors' => ['Alice', 'Bob'], 'keywords' => ['PHP']];
-        $result = $this->invoke('parseEnrichment', [['h_enrichment' => json_encode($enrichment)]], false);
+        $result = $this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode($enrichment)]], false);
         self::assertSame($enrichment, $result);
     }
 
     public function testParseEnrichmentConvertsTextTypeToDefault(): void
     {
-        $data = ['h_enrichment' => json_encode(['type' => Episciences_Paper::TEXT_TYPE_TITLE])];
+        $data = [Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode(['type' => Episciences_Paper::TEXT_TYPE_TITLE])];
         $result = $this->invoke('parseEnrichment', [$data], false);
         self::assertSame(Episciences_Paper::DEFAULT_TYPE_TITLE, $result['type']);
     }
@@ -514,15 +544,47 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
     public function testParseEnrichmentWithInvalidJsonReturnsEmpty(): void
     {
         // trigger_error() inside catch block emits E_USER_NOTICE — suppress it
-        $result = @$this->invoke('parseEnrichment', [['h_enrichment' => 'not-valid-json']], false);
+        $result = @$this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => 'not-valid-json']], false);
         self::assertSame([], $result);
     }
 
     public function testParseEnrichmentPreservesOtherTypes(): void
     {
-        $data = ['h_enrichment' => json_encode(['type' => 'article'])];
+        $data = [Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode(['type' => 'article'])];
         $result = $this->invoke('parseEnrichment', [$data], false);
         self::assertSame('article', $result['type']);
+    }
+
+    public function testParseEnrichmentIgnoresAScalar(): void
+    {
+        // Valid JSON, but not an object: the method returns an array
+        $result = $this->invoke('parseEnrichment', [[Episciences_Submit::ENRICHMENT_ELEMENT_NAME => '42']], false);
+        self::assertSame([], $result);
+    }
+
+    /**
+     * @return iterable<string, array{mixed}>
+     */
+    public static function submittedFilesProvider(): iterable
+    {
+        yield 'file records' => [[['key' => 'article.pdf', 'size' => 12, 'links' => ['self' => 'https://example.test/a.pdf']]]];
+        yield 'a string' => ['article.pdf'];
+        yield 'a list of strings' => [['article.pdf']];
+        yield 'a record and a string' => [[['key' => 'article.pdf'], 'x']];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('submittedFilesProvider')]
+    public function testParseEnrichmentLeavesTheFilesToTheFilesHooks(mixed $files): void
+    {
+        // The files hooks load the files from the repository
+        $data = [Episciences_Submit::ENRICHMENT_ELEMENT_NAME => json_encode(['files' => $files, 'type' => 'article'])];
+
+        self::assertSame(['type' => 'article'], Episciences_Submit::parseEnrichment($data));
+    }
+
+    public function testParseEnrichmentIgnoresANonStringValue(): void
+    {
+        self::assertSame([], Episciences_Submit::parseEnrichment([Episciences_Submit::ENRICHMENT_ELEMENT_NAME => ['files' => []]]));
     }
 
     // =========================================================================
@@ -809,5 +871,87 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $recipients = [7 => 'uid7', 8 => 'uid8'];
 
         self::assertSame($recipients, $this->invoke('removeConflictingRecipients', [$recipients, []]));
+    }
+
+    public function testFilterConflictRecipientsKeepsEveryoneWhenConflictsAreDisabled(): void
+    {
+        $previous = \Zend_Registry::isRegistered('reviewSettings') ? \Zend_Registry::get('reviewSettings') : null;
+        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED => '0']);
+
+        try {
+            $recipients = [2 => 'editor', 3 => 'secretary'];
+            $paper = $this->createMock(Episciences_Paper::class);
+            // Conflict declarations are not even read
+            $paper->expects($this->never())->method('getPaperid');
+
+            self::assertSame($recipients, Episciences_Submit::filterConflictRecipients($recipients, $paper));
+        } finally {
+            \Zend_Registry::set('reviewSettings', $previous);
+        }
+    }
+
+    public function testNewPaperKeepsTheNotificationFallbackEvenWithAssignedEditors(): void
+    {
+        self::assertFalse(Episciences_Submit::isStrictNotification(false, [2 => 'editor']));
+        self::assertFalse(Episciences_Submit::isStrictNotification(false, []));
+    }
+
+    public function testUpdatedPaperOnlyNotifiesTheCheckedRolesWhenItHasEditors(): void
+    {
+        self::assertTrue(Episciences_Submit::isStrictNotification(true, [2 => 'editor']));
+        self::assertFalse(Episciences_Submit::isStrictNotification(true, []));
+    }
+
+    // =========================================================================
+    // cleanIdentifier() / stripArxivPrefix() - issue #1481
+    // =========================================================================
+
+    /**
+     * @dataProvider arxivPrefixProvider
+     */
+    public function testStripArxivPrefix(string $input, string $expected): void
+    {
+        self::assertSame($expected, $this->invoke('stripArxivPrefix', [$input]));
+    }
+
+    public static function arxivPrefixProvider(): array
+    {
+        return [
+            'capitalized prefix' => ['arXiv:2409.09809', '2409.09809'],
+            'lowercase prefix' => ['arxiv:2409.09809', '2409.09809'],
+            'uppercase prefix with spaces' => ['ARXIV : 2409.09809', '2409.09809'],
+            'prefix with version' => ['arXiv:2409.09809v3', '2409.09809v3'],
+            'old-style identifier' => ['arXiv:math/0601001', 'math/0601001'],
+            'no prefix' => ['2409.09809', '2409.09809'],
+            'old-style identifier without prefix' => ['math/0601001', 'math/0601001'],
+            'prefix not at the start' => ['2409.09809arXiv:', '2409.09809arXiv:'],
+            'non-breaking spaces around the prefix' => ["\u{00A0}arXiv\u{00A0}:\u{00A0}2409.09809", '2409.09809'],
+        ];
+    }
+
+    public function testCleanIdentifierStripsArxivPrefixForArxiv(): void
+    {
+        self::assertSame(
+            '2409.09809',
+            $this->invoke('cleanIdentifier', [' arXiv:2409.09809 ', Episciences_Repositories::ARXIV_REPO_ID])
+        );
+    }
+
+    public function testCleanIdentifierKeepsPrefixForOtherRepositories(): void
+    {
+        self::assertSame(
+            'arXiv:2409.09809',
+            $this->invoke('cleanIdentifier', ['arXiv:2409.09809', Episciences_Repositories::HAL_REPO_ID])
+        );
+    }
+
+    public function testArxivPrefixIsStrippedBeforeVersionExtraction(): void
+    {
+        $id = $this->invoke('cleanIdentifier', ['arXiv:2409.09809v3', Episciences_Repositories::ARXIV_REPO_ID]);
+        $version = null;
+        $this->invoke('extractVersionSuffix', [&$id, &$version]);
+
+        self::assertSame('2409.09809', $id);
+        self::assertEquals(3, $version);
     }
 }

@@ -64,36 +64,67 @@ $(function () {
         const csrfToken = csrfMeta ? csrfMeta.content : '';
 
         replyForm.querySelectorAll('.upload_filename').forEach(hiddenInput => {
+            const tokenInput = hiddenInput.nextElementSibling;
+            const token =
+                tokenInput && tokenInput.classList.contains('upload_token')
+                    ? tokenInput.value
+                    : '';
+
+            // No token: the file is not stored on the server (see es.filepond.js)
+            if (!token) {
+                hiddenInput.remove();
+                if (tokenInput) {
+                    tokenInput.remove();
+                }
+                return;
+            }
+
             const body = new URLSearchParams({
                 ...context,
                 file: hiddenInput.value,
+                token,
             });
 
+            // keepalive: the request survives the page being left (see pagehide below)
             fetch('/file/delete', {
                 method: 'POST',
                 headers: { 'X-CSRF-Token': csrfToken },
                 body,
-            }).then(response => {
-                // fetch() only rejects on network failure, not on HTTP error status
-                // (403 CSRF failure, 500, ...) — only drop the tracking element once the
-                // server has actually confirmed the deletion.
-                if (response.ok) {
-                    hiddenInput.remove();
-                } else {
-                    console.log(
-                        'file delete failed: ' +
-                            hiddenInput.value +
-                            ' (' +
-                            response.status +
-                            ')'
-                    );
-                }
-            });
+                credentials: 'same-origin',
+                keepalive: true,
+            })
+                .then(response => {
+                    // fetch() only rejects on network failure, not on HTTP error status
+                    // (403 CSRF failure, 500, ...) - only drop the tracking elements once the
+                    // server has actually confirmed the deletion.
+                    if (response.ok) {
+                        hiddenInput.remove();
+                        tokenInput.remove();
+                    } else {
+                        console.log(
+                            'file delete failed: ' +
+                                hiddenInput.value +
+                                ' (' +
+                                response.status +
+                                ')'
+                        );
+                    }
+                })
+                .catch(() => {});
         });
     }
 
-    $(window).on('unload', function () {
-        deleteAllAttachedFiles();
+    // The files of a submitted answer are kept: only an abandoned answer is cleaned up
+    let isSubmitting = false;
+
+    $(document).on('submit', 'form', function () {
+        isSubmitting = true;
+    });
+
+    $(window).on('pagehide', function () {
+        if (!isSubmitting) {
+            deleteAllAttachedFiles();
+        }
     });
 
     if (isFromZSubmit) {

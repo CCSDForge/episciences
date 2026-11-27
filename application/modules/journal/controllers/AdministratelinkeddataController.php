@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Paper\RelationshipMapper;
+
 class AdministratelinkeddataController extends Zend_Controller_Action
 {
     public function addldAction(){
@@ -17,8 +19,12 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         $inputTypeLd = filter_var(trim($this->getRequest()->getPost('typeld') ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $rawValueLd = str_replace(' ','',trim($this->getRequest()->getPost('valueld')));
         $paperId = (string)$paper->getPaperid();
-        $relationship = htmlspecialchars(trim($this->getRequest()->getPost('relationship')), ENT_QUOTES, 'UTF-8');
-        
+        $relationship = RelationshipMapper::toCrossref((string)$this->getRequest()->getPost('relationship'));
+        if ($relationship === null) {
+            $this->rejectUnknownRelationship();
+            return;
+        }
+
         // Validate the format first with raw input, then sanitize for storage
         $typeLd = Episciences_Tools::checkValueType($rawValueLd);
         if ($typeLd === false) {
@@ -193,6 +199,12 @@ class AdministratelinkeddataController extends Zend_Controller_Action
     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Suppression de la donnée liée bien prise en compte');
     }
 
+    private function rejectUnknownRelationship(): void
+    {
+        echo json_encode([false], JSON_THROW_ON_ERROR);
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Type de relation non reconnu');
+    }
+
     private function denyLinkedDataChange(): void
     {
         if (ob_get_level() > 0) {
@@ -236,6 +248,8 @@ class AdministratelinkeddataController extends Zend_Controller_Action
     {
         $request = $this->getRequest();
         $this->_helper->layout()->disableLayout();
+        // The form is rendered below only for allowed AJAX requests: no view otherwise
+        $this->_helper->viewRenderer->setNoRender();
         if ($request->isXmlHttpRequest() && $request->isPost()
             && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
             $valueLd = '';
@@ -278,32 +292,40 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         // The paper is derived from the stored dataset, never from the request
         $paper = $datasetInDb instanceof Episciences_Paper_Dataset ? $this->getManageablePaper($datasetInDb->getDocId()) : null;
 
-        if ($paper !== null) {
-            // Sanitize all input parameters
-            $relationship = htmlspecialchars(trim($request->getPost('relationship') ?? ''), ENT_QUOTES, 'UTF-8');
-            $typeLd = filter_var(trim($request->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
-            $valueLd = htmlspecialchars(trim($request->getPost('valueLd')), ENT_QUOTES, 'UTF-8');
-            $docId = $paper->getDocid();
-            $paperId = (string)$paper->getPaperid();
-
-            $ld = new Episciences_Paper_Dataset();
-            $ld->setId($ldId);
-            $ld->setRelationship($relationship);
-            $ld->setCode($typeLd);
-            $ld->setSourceId(Episciences_Repositories::EPI_USER_ID);
-            if (Episciences_Paper_DatasetsManager::updateRelationAndTypeById($ld) > 0){
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Modification de la donnée liée bien prise en compte");
-                Episciences_Paper_Logger::log($paperId, $docId, Episciences_Paper_Logger::CODE_LD_CHANGED, Episciences_Auth::getUid(),
-                    json_encode(['typeLd' => $typeLd,
-                        'valueLd' => $valueLd,
-                        'relationship' => $relationship,
-                        'docId' => $docId,
-                        'paperId' => $paperId,
-                        'username' => Episciences_Auth::getFullName()]));
-                return json_encode([true], JSON_THROW_ON_ERROR);
-            }
+        if ($paper === null) {
+            $this->denyLinkedDataChange();
+            return;
         }
-        return json_encode([false], JSON_THROW_ON_ERROR);
+
+        // Sanitize all input parameters
+        $relationship = RelationshipMapper::toCrossref((string)$request->getPost('relationship'));
+        if ($relationship === null) {
+            $this->rejectUnknownRelationship();
+            return;
+        }
+        $typeLd = filter_var(trim($request->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
+        $valueLd = htmlspecialchars(trim($request->getPost('valueLd')), ENT_QUOTES, 'UTF-8');
+        $docId = $paper->getDocid();
+        $paperId = (string)$paper->getPaperid();
+
+        $ld = new Episciences_Paper_Dataset();
+        $ld->setId($ldId);
+        $ld->setRelationship($relationship);
+        $ld->setCode($typeLd);
+        $ld->setSourceId(Episciences_Repositories::EPI_USER_ID);
+        if (Episciences_Paper_DatasetsManager::updateRelationAndTypeById($ld) > 0){
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage("Modification de la donnée liée bien prise en compte");
+            Episciences_Paper_Logger::log($paperId, $docId, Episciences_Paper_Logger::CODE_LD_CHANGED, Episciences_Auth::getUid(),
+                json_encode(['typeLd' => $typeLd,
+                    'valueLd' => $valueLd,
+                    'relationship' => $relationship,
+                    'docId' => $docId,
+                    'paperId' => $paperId,
+                    'username' => Episciences_Auth::getFullName()]));
+            echo json_encode([true], JSON_THROW_ON_ERROR);
+            return;
+        }
+        echo json_encode([false], JSON_THROW_ON_ERROR);
     }
 
 }

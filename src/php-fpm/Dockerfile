@@ -41,9 +41,8 @@ RUN pecl install xdebug && \
 RUN docker-php-ext-install curl gd dom fileinfo iconv intl pdo pdo_mysql posix simplexml xml xsl zip
 RUN docker-php-ext-enable curl gd dom fileinfo iconv intl pdo pdo_mysql posix simplexml xml xsl zip
 
-# Install Node.js and Yarn
-# Install Node.js (version 18.x) and Yarn
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+# Install Node.js (the major version of .nvmrc) and Yarn
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y nodejs \
     && apt-get clean \
     && npm install -g yarn

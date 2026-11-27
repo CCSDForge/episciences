@@ -21,7 +21,7 @@ $this->getHelper('webpackAssets')->queueStylesheet('jquery-ui-theme');
 $description = $this->translate("Inviter un relecteur à évaluer l'article");
 $description .=  ' : <br>';
 $description .= '#' . $this->paper->getDocId();
-$description .= ' - ' . $this->paper->getTitle();
+$description .= ' - ' . $this->escape($this->paper->getTitle());
 ?>
 <?php $this->layout()->description = $description; ?>
 

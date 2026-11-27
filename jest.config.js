@@ -1,4 +1,6 @@
 module.exports = {
+    // only the tests and the scripts of the project are crawled
+    roots: ['<rootDir>/tests/js', '<rootDir>/public/js'],
     testEnvironment: 'jsdom',
     setupFilesAfterEnv: ['<rootDir>/tests/js/setup.js'],
     moduleNameMapper: {

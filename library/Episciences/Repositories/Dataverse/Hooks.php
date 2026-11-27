@@ -22,6 +22,19 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
         $docId = $hookParams['docId'];
         $repoId = $hookParams['repoId'];
 
+        if (empty($files)) {
+            // Loaded from the repository;
+            // a record the caller already loaded (Episciences_PapersManager::updateRecordData()) is not loaded again
+            $response = !empty($hookParams['response']) && is_array($hookParams['response'])
+                ? $hookParams['response']
+                : self::hookApiRecords($hookParams);
+            if (isset($response['error'])) {
+                throw new Ccsd_Error((string)$response['error']);
+            }
+            $files = $response[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::FILES] ?? [];
+            $hookParams['response'] = $response;
+        }
+
         $files = array_map(static function ($file) use ($docId, $repoId) {
             $file['doc_id'] = $docId;
             $file['source'] = $repoId;
@@ -296,11 +309,16 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
                                         $tmp['fullname'] = $currentAuthor;
                                         $tmp['given'] = isset($explodedAuthor[1]) ? trim($explodedAuthor[1]) : '';
                                         $tmp['family'] = isset($explodedAuthor[0]) ? trim($explodedAuthor[0]) : '';
+                                        // The ORCID scheme may be declared without an identifier
+                                        // (e.g. doi:10.57745/1HLI7X version 1)
+                                        $authorIdentifier = $val['authorIdentifier']['value'] ?? null;
                                         if (
                                             isset($val['authorIdentifierScheme']['value']) &&
-                                            $val['authorIdentifierScheme']['value'] === 'ORCID'
+                                            $val['authorIdentifierScheme']['value'] === 'ORCID' &&
+                                            is_string($authorIdentifier) &&
+                                            trim($authorIdentifier) !== ''
                                         ) {
-                                            $tmp['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($val['authorIdentifier']['value']);
+                                            $tmp['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($authorIdentifier);
                                         }
 
                                     } else {

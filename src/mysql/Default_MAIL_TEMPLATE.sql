@@ -100,7 +100,6 @@ INSERT INTO `MAIL_TEMPLATE` (`ID`, `PARENTID`, `RVID`, `RVCODE`, `KEY`, `TYPE`, 
 (NULL, NULL, NULL, NULL, 'paper_formatted_by_journal_waiting_author_validation', 'paper_copy_editing', 17),
 (NULL, NULL, NULL, NULL, 'paper_new_version_submission_author', 'paper_submission', NULL),
 (NULL, NULL, NULL, NULL, 'paper_new_version_temporary_submission_author', 'paper_submission', NULL),
-(NULL, NULL, NULL, NULL, 'inbox_paper_submission_author_copy', 'paper_submission', 1),
-;
+(NULL, NULL, NULL, NULL, 'inbox_paper_submission_author_copy', 'paper_submission', 1);
 
 

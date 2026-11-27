@@ -88,7 +88,6 @@ class Episciences_Acl extends Ccsd_Acl
         'administratepaper-ajaxcontrolboard', // not used
         'administratemail-savetemplate', // idem edittemplate
         'administrate-review',
-        'administrate-users',
         'test-index',
         'test-tei',
         'test-upload',
@@ -115,6 +114,7 @@ class Episciences_Acl extends Ccsd_Acl
         'review-assignationmode', // obsolete
         'rss-index',
         'rss-news', // idem rss-papers
+        'rss-atom', // idem rss-papers
         'section-index',
         'section-list',
         'user-displaytags',
@@ -213,7 +213,8 @@ class Episciences_Acl extends Ccsd_Acl
         self::ROLE_SECRETARY => [
             'administratepaper-suggeststatus' => self::NOT_CONFIGURABLE_RESOURCE,
             'administratepaper-saverefusedmonitoring' => self::NOT_CONFIGURABLE_RESOURCE,
-            'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE
+            'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE,
+            'stats-papers' => self::CONFIGURABLE_RESOURCE
         ],
 
         self::ROLE_WEBMASTER => [

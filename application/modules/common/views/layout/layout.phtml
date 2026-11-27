@@ -74,7 +74,7 @@ echo $this->doctype('HTML5');
     <script>
         // MathJax v3+ requires this configuration to be set on window.MathJax before the library script
         // loads — the old <script type="text/x-mathjax-config"> block is no longer supported.
-        // loader.paths.fonts points at the self-hosted font package (see webpack.config.js /
+        // loader.paths.fonts points at the self-hosted font package (see webpack.config.mjs /
         // public/const.php) since MathJax otherwise fetches its default font from cdn.jsdelivr.net.
         // Turns off the accessibility Web Worker MathJax v4 spawns by default (absent in v2) — its
         // per-language speech-rule data isn't self-hostable without errors as of 4.1.3 (worker crashes

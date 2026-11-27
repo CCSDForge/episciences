@@ -419,4 +419,92 @@ final class Episciences_Repositories_Dataverse_HooksTest extends TestCase
             "hookFilesProcessing() must guard against missing 'files' key with ?? []."
         );
     }
+
+    // =========================================================================
+    // hookFilesProcessing() — record already loaded by the caller
+    // =========================================================================
+
+    /**
+     * A record already loaded (Episciences_PapersManager::updateRecordData()) is used, not requested again:
+     * the unknown repository id would fail (undefined key / TypeError) if hookApiRecords() were called.
+     */
+    public function testHookFilesProcessingReusesTheLoadedRecord(): void
+    {
+        // A warning (undefined repository) fails the test instead of letting the request go out
+        set_error_handler(static function (int $errno, string $errstr): never {
+            throw new \ErrorException($errstr, 0, $errno);
+        });
+
+        try {
+            $result = Episciences_Repositories_Dataverse_Hooks::hookFilesProcessing([
+                'docId' => 1,
+                'repoId' => -1,
+                'identifier' => 'doi:10.1234/ABC',
+                'response' => [Episciences_Repositories_Common::ENRICHMENT => [Episciences_Repositories_Common::FILES => []]],
+            ]);
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame(0, $result['affectedRows']);
+    }
+
+    /**
+     * The loaded record carries the repository error: it is thrown, as when the hook loads the record itself.
+     */
+    public function testHookFilesProcessingThrowsTheErrorOfTheLoadedRecord(): void
+    {
+        $this->expectException(\Ccsd_Error::class);
+        $this->expectExceptionMessage('record unavailable');
+
+        Episciences_Repositories_Dataverse_Hooks::hookFilesProcessing([
+            'docId' => 1,
+            'repoId' => -1,
+            'identifier' => 'doi:10.1234/ABC',
+            'response' => ['error' => 'record unavailable'],
+        ]);
+    }
+
+    // =========================================================================
+    // dataProcess() — authors
+    // =========================================================================
+
+    /**
+     * An author may declare the ORCID scheme without any identifier
+     * (doi:10.57745/1HLI7X version 1): the author is kept, without an ORCID,
+     * instead of a TypeError from normalizeOrcid(null).
+     */
+    public function testDataProcessKeepsAuthorWithOrcidSchemeButNoIdentifier(): void
+    {
+        $data = [
+            'versionNumber' => 1,
+            'versionMinorNumber' => 0,
+            'datasetPersistentId' => 'doi:10.57745/1HLI7X',
+            'metadataBlocks' => ['citation' => ['fields' => [[
+                'typeName' => 'author',
+                'multiple' => true,
+                'value' => [
+                    [
+                        'authorName' => ['typeName' => 'authorName', 'value' => 'Svoboda, Pavel'],
+                        'authorAffiliation' => ['typeName' => 'authorAffiliation', 'value' => 'CRI'],
+                        'authorIdentifierScheme' => ['typeName' => 'authorIdentifierScheme', 'value' => 'ORCID'],
+                    ],
+                    [
+                        'authorName' => ['typeName' => 'authorName', 'value' => 'Holubec, Vojtech'],
+                        'authorIdentifierScheme' => ['typeName' => 'authorIdentifierScheme', 'value' => 'ORCID'],
+                        'authorIdentifier' => ['typeName' => 'authorIdentifier', 'value' => '0000-0001-8113-0111'],
+                    ],
+                ],
+            ]]]],
+        ];
+
+        $method = new ReflectionMethod(Episciences_Repositories_Dataverse_Hooks::class, 'dataProcess');
+        $method->invokeArgs(null, [&$data, []]);
+
+        $authors = $data[Episciences_Repositories_Common::ENRICHMENT]['authors'];
+        self::assertCount(2, $authors);
+        self::assertSame('Svoboda, Pavel', $authors[0]['fullname']);
+        self::assertArrayNotHasKey('orcid', $authors[0]);
+        self::assertSame('0000-0001-8113-0111', $authors[1]['orcid']);
+    }
 }

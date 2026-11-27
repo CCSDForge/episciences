@@ -3,6 +3,8 @@
 use Episciences\Repositories\CommonHooksInterface;
 use Episciences\Repositories\ConceptIdentifierInterface;
 use Episciences\Repositories\FilesEnrichmentInterface;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
 
 class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, FilesEnrichmentInterface, \Episciences\Repositories\InputSanitizerInterface, ConceptIdentifierInterface
@@ -15,13 +17,38 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
      */
     public const METADATA_PREFIX = 'oai_openaire';
     public const IDENTIFIER_EXEMPLE = '(Handle) 1822/79894';
+    // Seconds: the bitstreams are requested during the submission
+    public const API_TIMEOUT = 10;
+    public const API_CONNECT_TIMEOUT = 5;
+    // Client error status of a request worth retrying (throttling): thrown, the other client errors skip the file
+    public const RETRYABLE_CLIENT_STATUS = 429;
 
 
-    public static function hookFilesProcessing(array $hookParams): array
+    /**
+     * @param array<string, mixed> $hookParams
+     * @param Client|null $client HTTP client of the bitstream requests (injected by the tests)
+     * @return array<string, mixed>
+     * @throws Ccsd_Error a file could not be loaded: the stored files are kept, or the files available are stored
+     *                    when none are (initial submission)
+     */
+    public static function hookFilesProcessing(array $hookParams, ?Client $client = null): array
     {
 
         $data = [];
         $files = $hookParams['files'] ?? [];
+
+        if (empty($files)) {
+            // Loaded from the repository.
+            // A record the caller already loaded (Episciences_PapersManager::updateRecordData()) is not loaded again
+            $response = !empty($hookParams['response']) && is_array($hookParams['response'])
+                ? $hookParams['response']
+                : self::hookApiRecords($hookParams);
+            $files = $response[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::FILES] ?? [];
+            $hookParams['response'] = $response;
+        }
+
+        $client ??= self::createApiClient();
+        $failures = [];
 
         foreach ($files as $file) {
 
@@ -31,7 +58,12 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
                 continue;
             }
 
-            $infoFromApi = self::getFileInfoFromApi($name);
+            try {
+                $infoFromApi = self::getFileInfoFromApi($name, $client);
+            } catch (GuzzleException|Ccsd_Error $e) {
+                $failures[] = sprintf('%s (%s: %s)', $name, $e::class, $e->getMessage());
+                continue;
+            }
 
             if (!$infoFromApi) {
                 continue;
@@ -55,9 +87,42 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
             $data[] = $tmpData;
         }
 
+        if ($failures !== [] && self::hasStoredFiles((int)$hookParams['docId'])) {
+            // A partial list would replace the stored files (the others would be deleted): they are kept
+            throw new Ccsd_Error('Files not updated: ' . implode('; ', $failures));
+        }
+
+        // Nothing stored yet (initial submission): the files available are stored
         $hookParams['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
 
+        if ($failures !== []) {
+            // Reported after the available files are stored: the files step fails
+            throw new Ccsd_Error('Files not stored: ' . implode('; ', $failures));
+        }
+
         return $hookParams;
+    }
+
+    /**
+     * HTTP client of the bitstream requests, shared by the files of a record
+     */
+    private static function createApiClient(): Client
+    {
+        return new Client([
+            'headers' => ['Content-type' => 'application/json'],
+            'timeout' => self::API_TIMEOUT,
+            'connect_timeout' => self::API_CONNECT_TIMEOUT,
+        ]);
+    }
+
+    /**
+     * @throws Zend_Db_Statement_Exception
+     */
+    private static function hasStoredFiles(int $docId): bool
+    {
+        $select = Episciences_Paper_FilesManager::findByDocIdQuery($docId, ['id'])?->limit(1);
+
+        return $select !== null && $select->query()->fetchColumn() !== false;
     }
 
     /**
@@ -306,11 +371,19 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
     }
 
     /**
+     * Bitstream of a file, from the DSpace REST API.
+     * A file the API refuses or no longer has (client error: restricted, under embargo, removed, bad request)
+     * is not stored, as before: the same request would fail again. A failure that may not happen again
+     * (throttling, server error, timeout, network) or an unexpected payload is thrown:
+     * hookFilesProcessing() does not replace the stored files with a partial list.
+     *
      * @param string|null $fileUrl
-     * @return string|array|bool|null
+     * @param Client|null $client HTTP client (injected by the tests)
+     * @return array<string, mixed>|null null when the file is not stored
+     * @throws GuzzleException|Ccsd_Error
      */
 
-    private static function getFileInfoFromApi(?string $fileUrl = null): string|array|bool|null
+    private static function getFileInfoFromApi(?string $fileUrl = null, ?Client $client = null): ?array
     {
 
         if (!$fileUrl) {
@@ -319,16 +392,33 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
 
         $guid = Episciences_Tools::parseGuidFromText($fileUrl);
         $host = parse_url($fileUrl, PHP_URL_HOST);
+        $bitstreamsUrl = sprintf('https://%s/server/api/core/bitstreams/%s', $host, $guid);
+
+        $client ??= self::createApiClient();
 
         try {
-            $bitstreamsUrl = sprintf('https://%s/server/api/core/bitstreams/%s', $host, $guid);
-            return Episciences_Tools::callApi($bitstreamsUrl);
-        } catch (GuzzleException $e) {
+            $response = $client->get($bitstreamsUrl);
+        } catch (ClientException $e) {
+            if ($e->getResponse()->getStatusCode() === self::RETRYABLE_CLIENT_STATUS) {
+                throw $e;
+            }
             // exp. de réponse : Client error: `GET https://repositorium.uminho.pt/server/api/core/bitstreams/61ba5e92-bab4-4901-aa31-9c68d2560510` resulted in a `401 Unauthorized` response:
             //{"timestamp":"2026-02-19T08:17:17.606+00:00","status":401,"error":"Unauthorized","message":"Authentication is required", (truncated...)
             Episciences_View_Helper_Log::log($e->getMessage());
             return null;
         }
+
+        try {
+            $bitstream = json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw new Ccsd_Error(sprintf('Unexpected bitstream response (%s): %s', $bitstreamsUrl, $e->getMessage()));
+        }
+
+        if (!is_array($bitstream)) {
+            throw new Ccsd_Error(sprintf('Unexpected bitstream response (%s)', $bitstreamsUrl));
+        }
+
+        return $bitstream;
     }
 
     public static function hookVersion(array $hookParams): array

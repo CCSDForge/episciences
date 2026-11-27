@@ -451,10 +451,10 @@ class ScholexplorerApiClient extends AbstractApiClient
     // -------------------------------------------------------------------------
 
     /**
-     * Read a credential/config constant, falling back to a second constant, then to
-     * a default. Used by create() to prefer SCHOLEXPLORER_* config over OPENAIRE_*.
+     * Read a credential/config constant, falling back to a second constant, then to null.
+     * Used by create() to prefer SCHOLEXPLORER_* config over OPENAIRE_*.
      */
-    private static function resolveConfigConstant(string $constant, ?string $fallbackConstant, ?string $default = null): ?string
+    private static function resolveConfigConstant(string $constant, ?string $fallbackConstant): ?string
     {
         // @phpstan-ignore notIdentical.alwaysTrue
         if (defined($constant) && (string) constant($constant) !== '') {
@@ -466,7 +466,7 @@ class ScholexplorerApiClient extends AbstractApiClient
             return (string) constant($fallbackConstant);
         }
 
-        return $default;
+        return null;
     }
 
     /**
@@ -487,7 +487,7 @@ class ScholexplorerApiClient extends AbstractApiClient
         if ($tokenProvider === null) {
             $clientId     = self::resolveConfigConstant('SCHOLEXPLORER_CLIENT_ID', 'OPENAIRE_CLIENT_ID');
             $clientSecret = self::resolveConfigConstant('SCHOLEXPLORER_CLIENT_SECRET', 'OPENAIRE_CLIENT_SECRET');
-            $authUrl      = self::resolveConfigConstant('SCHOLEXPLORER_AUTH_URL', 'OPENAIRE_AUTH_URL', 'https://aai.openaire.eu/oidc/token');
+            $authUrl      = self::resolveConfigConstant('SCHOLEXPLORER_AUTH_URL', 'OPENAIRE_AUTH_URL');
 
             $tokenProvider = new OpenAireTokenProvider(
                 new Client(),
@@ -495,7 +495,8 @@ class ScholexplorerApiClient extends AbstractApiClient
                 $logger,
                 $clientId,
                 $clientSecret,
-                $authUrl
+                $authUrl,
+                'SCHOLEXPLORER.AUTH_URL (or OPENAIRE.AUTH_URL)'
             );
         }
 

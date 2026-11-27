@@ -20,6 +20,11 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
     public const LICENSE = 'license';
     public const KEYWORDS = 'kwd';
     public const COLLECTION = 'collection';
+    private const ARTICLE_META_PATH = '/article/front/article-meta';
+    /** subj-group types holding the document type, in order of precedence */
+    private const TYPE_SUBJECT_GROUPS = ['author-type', 'heading'];
+    private const ORCID_PATTERN = '/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/';
+    private const CC_LICENSE_URL = 'https://creativecommons.org/licenses/';
 
 
     private string $doiPrefix = self::DOI_PREFIX;
@@ -273,34 +278,16 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
             return;
         }
 
-        $contributors = [];
-        $institutions = [];
-        $license = '';
-        $citations = [];
-        $kwd = [];
-        $type = [];
-
-        try {
-            $json = json_encode($simpleXlmDoc, JSON_THROW_ON_ERROR);
-            $doc = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            trigger_error($e->getMessage());
-            return;
-        }
-
-        $articleMeta = $doc['front']['article-meta'] ?? [];
-        $references = $doc['back']['ref-list']['ref'] ?? [];
-
-        self::articleMetaProcess($articleMeta, $license, $contributors, $institutions, $kwd);
-        self::referencesProcess($references, $citations);
-
-        if (isset($articleMeta['article-categories']['subj-group'])) {
-            self::typeProcess($articleMeta['article-categories']['subj-group'], $type);
-        }
+        $contributors = self::contributorsProcess($simpleXlmDoc);
+        $license = self::licenseProcess($simpleXlmDoc);
+        $kwd = self::keywordsProcess($simpleXlmDoc);
+        $citations = self::referencesProcess($simpleXlmDoc);
+        $type = self::typeProcess($simpleXlmDoc);
 
         if (
             !empty($contributors) ||
             !empty($license) ||
+            !empty($kwd) ||
             !empty($citations) ||
             !empty($type)
         ) {
@@ -317,173 +304,276 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
 
 
     /**
-     * @param array $articleMeta
-     * @param string $strLicense
-     * @param array $contributors
-     * @param array $institutions
-     * @param array $keyWords
-     * @return void
+     * Authors of the JATS contrib-group, read from the XML document itself.
+     * Once converted to an array (json_encode()), a single <contrib>, <aff> or <kwd> is not decoded as a list:
+     * a preprint with a single author made the submission fail.
+     * @return array<int, array<string, mixed>>
      */
-    private static function articleMetaProcess(
-        array  $articleMeta,
-        string &$strLicense = '',
-        array  &$contributors = [],
-        array  &$institutions = [],
-        array  &$keyWords = []
-    ): void
+    private static function contributorsProcess(SimpleXMLElement $doc): array
     {
+        $affiliations = self::affiliationsProcess($doc);
+        $contributors = [];
 
-        foreach ($articleMeta as $ak => $aVals) {
+        foreach ($doc->xpath(self::ARTICLE_META_PATH . '/contrib-group/contrib') ?: [] as $contrib) {
 
-            if ($ak !== 'contrib-group' && $ak !== 'permissions' && $ak !== 'kwd-group') {
+            $contributor = self::contributorProcess($contrib);
+
+            if ($contributor === null) {
                 continue;
             }
 
-            if ($ak === 'contrib-group') {
-
-                $aff = $aVals['aff'] ?? [];
-
-                foreach ($aff as $affVals) {
-
-                    if (!is_array($affVals)) { // bioRxiv
-                        $institutions[1] = ['name' => implode(', ', $aff)];
-                        break;
-                    }
-
-                    // medRxiv
-                    $name = $affVals['institution'] ?? $aff['institution'] ?? '';
-                    $label = $affVals['label'] ?? null;
-                    if (isset($affVals['country']) || isset($aff['country'])) {
-                        $name .= ', ';
-                        if (isset($affVals['country'])) {
-                            $name .= $affVals['country'];
-                        } elseif ($aff['country']) {
-                            $name .= $aff['country'];
-                        }
-                    }
-                    $institutions[$label] = ['name' => $name];
+            foreach (self::affiliationIds($contrib) as $affiliationId) {
+                if (isset($affiliations[$affiliationId])) {
+                    $contributor['affiliation'][] = $affiliations[$affiliationId];
                 }
-
-                $contrib = $aVals['contrib'] ?? [];
-
-                foreach ($contrib as $cVals) {
-
-                    $xref = $cVals['xref'] ?? [];
-
-                    if (!is_array($xref)) {
-                        $xref = [$xref];
-                    }
-
-                    $contribLabelAffiliation = array_filter($xref, static function ($value) {
-                        return is_numeric($value);
-                    }); // affiliation labels
-
-                    $orcid = isset($cVals['contrib-id']) ? preg_replace('#^https?://orcid.org/#', '', $cVals['contrib-id']) : '';
-
-                    $tmp = [
-                        'degrees' => $cVals['degrees'] ?? '',
-                        'fullname' => $cVals['name']['given-names'] . ' ' . $cVals['name']['surname'],
-                        'family' => $cVals['name']['surname'],
-                        'given' => $cVals['name']['given-names'],
-                        'email' => $cVals['email'] ?? '',
-                    ];
-
-                    if ($orcid !== '') {
-                        $tmp['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($orcid);
-                    }
-
-                    foreach ($contribLabelAffiliation as $label) {
-                        if (isset($institutions[$label])) {
-                            $tmp['affiliation'][] = $institutions[$label];
-                        }
-
-                    }
-
-                    $contributors[] = $tmp;
-
-                }
-
-            } elseif ($ak === 'permissions') {
-                $strLicense = isset($aVals[self::LICENSE]['p']) ?
-                    self::extractLicenseFromString($aVals[self::LICENSE]['p']) :
-                    '';
-            } elseif ($ak === 'kwd-group') {
-                $keyWords = $aVals[self::KEYWORDS] ?? [];
-                self::cleanRepairKeywords($keyWords);
             }
 
-        } // end foreach articleMeta
+            $contributors[] = $contributor;
+        }
 
+        return $contributors;
     }
 
-
-    private static function referencesProcess(array $references, array &$citations = []): void
+    /**
+     * @return array<string, mixed>|null null when the contributor has no name
+     */
+    private static function contributorProcess(SimpleXMLElement $contrib): ?array
     {
+        $family = self::nodeText($contrib, 'name/surname');
+        $given = self::nodeText($contrib, 'name/given-names');
+        $fullname = trim($given . ' ' . $family);
 
-        foreach ($references as $reference) {
+        if ($fullname === '') {
+            // Group author (<collab>): stored like an author name without given names
+            $fullname = self::nodeText($contrib, 'collab');
+            $family = $fullname;
+        }
 
-            $currentCitation = $reference['citation'] ?? [];
+        if ($fullname === '') {
+            return null;
+        }
 
-            if (!empty($currentCitation)) {
+        $contributor = [
+            'degrees' => self::nodeText($contrib, 'degrees'),
+            'fullname' => $fullname,
+            'family' => $family,
+            'given' => $given,
+            'email' => self::nodeText($contrib, 'email'),
+        ];
 
-                $authorStr = '';
-                $title = '';
-                $page = '';
-                $stringName = $currentCitation['string-name'] ?? [];
+        $orcid = self::orcidProcess($contrib);
 
-                foreach ($stringName as $index => $sn) {
+        if ($orcid !== '') {
+            $contributor['orcid'] = $orcid;
+        }
 
-                    if (!isset($sn['surname']) && !isset($sn['given-names'])) {
-                        continue;
-                    }
+        return $contributor;
+    }
 
-                    $authorStr .= $sn['surname'] ?? '';
+    /**
+     * ORCID of a contributor: an id typed as ORCID first, otherwise an untyped id in the ORCID format.
+     */
+    private static function orcidProcess(SimpleXMLElement $contrib): string
+    {
+        $orcid = self::nodeText($contrib, 'contrib-id[@contrib-id-type="orcid"][normalize-space()]');
 
-                    if (isset($sn['given-names'])) {
-                        $authorStr .= ', ' . $sn['given-names'];
-                    }
+        if ($orcid !== '') {
+            return Episciences_Paper_AuthorsManager::normalizeOrcid($orcid);
+        }
 
-                    if ($index < count($stringName) - 1) {
-                        $authorStr .= '; ';
-                    }
+        foreach ($contrib->xpath('contrib-id[not(@contrib-id-type)]') ?: [] as $id) {
+            $candidate = Episciences_Paper_AuthorsManager::normalizeOrcid(self::normalizeText($id));
+
+            if (preg_match(self::ORCID_PATTERN, $candidate)) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Ids of the affiliations of a contributor (an xref "rid" may hold several ids).
+     * @return string[]
+     */
+    private static function affiliationIds(SimpleXMLElement $contrib): array
+    {
+        $ids = [];
+
+        foreach ($contrib->xpath('xref[@ref-type="aff"]/@rid') ?: [] as $rid) {
+            $ids[] = preg_split('/\s+/', trim((string)$rid), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        }
+
+        return array_merge(...$ids);
+    }
+
+    /**
+     * @return array<string, array{name: string}> affiliations by id
+     */
+    private static function affiliationsProcess(SimpleXMLElement $doc): array
+    {
+        $affiliations = [];
+
+        foreach ($doc->xpath(self::ARTICLE_META_PATH . '//aff[@id]') ?: [] as $aff) {
+
+            $name = self::affiliationName($aff);
+
+            if ($name !== '') {
+                $affiliations[(string)$aff['id']] = ['name' => $name];
+            }
+        }
+
+        return $affiliations;
+    }
+
+    /**
+     * Institution(s) and country of a tagged affiliation, or its whole text (without its label).
+     */
+    private static function affiliationName(SimpleXMLElement $aff): string
+    {
+        $institutions = array_filter(array_map(
+            static fn(SimpleXMLElement $institution): string => self::normalizeText($institution),
+            $aff->xpath('institution') ?: []
+        ), static fn(string $name): bool => $name !== '');
+
+        if ($institutions === []) {
+            $text = '';
+
+            foreach (dom_import_simplexml($aff)->childNodes as $child) {
+                if ($child->nodeName !== 'label') {
+                    $text .= $child->textContent;
                 }
+            }
 
-                if (isset($currentCitation['article-title'])) {
-                    $title = $currentCitation['article-title'];
-                } elseif (isset($currentCitation['chapter-title'])) {
-                    $title = $currentCitation['chapter-title'];
-                }
+            return trim(self::normalizeSpaces($text), ' ,');
+        }
 
+        // An affiliation may name the same institution twice (one per site)
+        $name = implode(', ', array_unique($institutions));
+        $country = self::nodeText($aff, 'country');
 
-                if (isset($currentCitation['fpage'])) {
+        return $country === '' ? $name : $name . ', ' . $country;
+    }
 
-                    $page = $currentCitation['fpage'];
+    /**
+     * Keywords of all the kwd-groups; their inline markup (<italic>...) is kept as text.
+     * @return string[]
+     */
+    private static function keywordsProcess(SimpleXMLElement $doc): array
+    {
+        $keywords = array_map(
+            static fn(SimpleXMLElement $kwd): string => self::normalizeText($kwd),
+            $doc->xpath(self::ARTICLE_META_PATH . '/kwd-group/kwd') ?: []
+        );
 
-                    if (isset($currentCitation['lpage'])) {
-                        $page .= '-' . $currentCitation['lpage'];
-                    }
+        return array_values(array_unique(array_filter($keywords, static fn(string $kwd): bool => $kwd !== '')));
+    }
 
-                }
+    /**
+     * Licence of the first paragraph granting a Creative Commons licence, otherwise of the first paragraph.
+     */
+    private static function licenseProcess(SimpleXMLElement $doc): string
+    {
+        $licenses = [];
 
-                if ($authorStr !== '') {
-                    $currentCitation['authorsStr'] = trim($authorStr);
-                }
+        foreach ($doc->xpath(self::ARTICLE_META_PATH . '/permissions/license/p') ?: [] as $paragraph) {
 
-                if (!empty($title)) {
-                    $currentCitation['title'] = trim(is_array($title) ? $title[array_key_first($title)] : $title);
-                }
+            $statement = self::normalizeText($paragraph);
 
-                if ($page !== '') {
-                    $currentCitation['page'] = trim($page);
-                }
+            if ($statement === '') {
+                continue;
+            }
 
-                $tmp = Episciences_Repositories_Common::formatReferences($currentCitation);
+            $license = self::extractLicenseFromString($statement);
 
-                if (!empty($tmp)) {
-                    $citations[] = $tmp;
+            if (str_starts_with($license, self::CC_LICENSE_URL)) {
+                return $license;
+            }
+
+            $licenses[] = $license;
+        }
+
+        return $licenses[0] ?? '';
+    }
+
+    /**
+     * Document types: subjects of the "author-type" (e.g. "Regular Article") and "heading" (e.g. "New Results")
+     * groups. The "hwp-journal-coll" group holds the subject area, not a type: it is ignored.
+     * @return string[]
+     */
+    private static function typeProcess(SimpleXMLElement $doc): array
+    {
+        $types = [];
+
+        foreach (self::TYPE_SUBJECT_GROUPS as $groupType) {
+
+            $path = sprintf('%s/article-categories/subj-group[@subj-group-type="%s"]/subject', self::ARTICLE_META_PATH, $groupType);
+
+            foreach ($doc->xpath($path) ?: [] as $subject) {
+                $type = self::normalizeText($subject);
+
+                if ($type !== '') {
+                    $types[] = $type;
                 }
             }
         }
+
+        return $types;
+    }
+
+    /**
+     * Text of the first node matching $path, inline markup included, whitespace normalized ('' if none).
+     */
+    private static function nodeText(SimpleXMLElement $context, string $path): string
+    {
+        $nodes = $context->xpath($path) ?: [];
+
+        return isset($nodes[0]) ? self::normalizeText($nodes[0]) : '';
+    }
+
+    private static function normalizeText(SimpleXMLElement $node): string
+    {
+        return self::normalizeSpaces((string)dom_import_simplexml($node)->textContent);
+    }
+
+    private static function normalizeSpaces(string $text): string
+    {
+        return trim((string)preg_replace('/\s+/u', ' ', $text));
+    }
+
+
+    /**
+     * References of the JATS ref-list, as displayed by bioRxiv / medRxiv.
+     * The text of each citation is already formatted by the repository (hw:use-reference-as-is="yes"):
+     * it is kept as is rather than rebuilt from its tagged parts.
+     * <element-citation> holds tagged fields without punctuation: its text would run the fields together.
+     * It is not used by bioRxiv / medRxiv and is ignored.
+     * @return array<int, array{raw_reference: string, doi?: string}>
+     */
+    private static function referencesProcess(SimpleXMLElement $doc): array
+    {
+        $citations = [];
+
+        foreach ($doc->xpath('/article/back/ref-list/ref/*[self::citation or self::mixed-citation]') ?: [] as $citation) {
+
+            $rawReference = trim((string)preg_replace('/\s+/u', ' ', (string)dom_import_simplexml($citation)->textContent));
+
+            if ($rawReference === '') {
+                continue;
+            }
+
+            $reference = ['raw_reference' => $rawReference];
+
+            $doi = trim((string)($citation->xpath('pub-id[@pub-id-type="doi"]')[0] ?? ''));
+
+            if ($doi !== '') {
+                $reference['doi'] = $doi;
+            }
+
+            $citations[] = $reference;
+        }
+
+        return $citations;
     }
 
     private static function extractLicenseFromString(string $string): string
@@ -499,7 +589,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
 
         if (strtolower($explodedStr[0]) === 'cc') {
 
-            $license = 'https://creativecommons.org/licenses/';
+            $license = self::CC_LICENSE_URL;
 
             if (isset($explodedStr[1])) {
                 $license .= (strtolower($explodedStr[1]) . '/');
@@ -517,39 +607,6 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
         }
 
         return $license;
-    }
-
-    private static function cleanRepairKeywords(array &$keywords = []): void
-    {
-        foreach ($keywords as $index => $keyword) {
-            if (is_array($keyword)) { // exp. ['italic => "Cebus"] bioRxiv => 10.1101/011908v1
-                $keywords[$index] = array_shift($keyword);
-            }
-        }
-    }
-
-    /**
-     * @param array $rawTypes
-     * @param array $type
-     * @return void
-     */
-    private static function typeProcess(array $rawTypes = [], array &$type = []): void
-    {
-        foreach ($rawTypes as $values) {
-            if (is_array($values)) {
-                foreach ($values as $k => $value) {
-
-                    if ($k !== 'subject' && $k !== 'subj-group-type') {
-                        continue;
-                    }
-
-                    $type[] = $value;
-                }
-            } else {
-                $type[] = $values;
-            }
-        }
-
     }
 
     public static function hookIsIdentifierCommonToAllVersions(): array

@@ -112,10 +112,11 @@ class VolumeController extends Zend_Controller_Action
 
         if ($request->isPost() && Episciences_Csrf_Helper::validateRequestToken($request)) {
             $params = $request->getPost('params');
-            $id = (int) $params['id'] ?? $request->getQuery('id');
+            $rawId = (is_array($params) ? ($params['id'] ?? null) : null) ?: ($request->getQuery('id') ?: $request->getParam('id'));
+            $id = is_scalar($rawId) && ctype_digit((string) $rawId) ? (int) $rawId : 0;
 
             // Only volumes of the current journal can be deleted
-            $respond = Episciences_VolumesManager::find($id, RVID) ? Episciences_VolumesManager::delete($id) : false;
+            $respond = ($id > 0 && Episciences_VolumesManager::find($id, RVID)) ? Episciences_VolumesManager::delete($id) : false;
         } else {
             // Shown by the delete button as the reason of the failure
             $respond = $this->view->translate('Votre session a expiré, veuillez réessayer.');
@@ -307,7 +308,7 @@ class VolumeController extends Zend_Controller_Action
         }
 
         if (!$errorMessage) {
-            $volume = Episciences_VolumesManager::find($vid);
+            $volume = Episciences_VolumesManager::find($vid, RVID);
             if (!$volume) {
                 $errorMessage = "Ce volume n'existe pas.";
             } else {

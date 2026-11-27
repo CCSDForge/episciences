@@ -9,7 +9,18 @@ JEST_CONFIG := jest.config.js
 # =============================================================================
 # Test Commands
 # =============================================================================
-.PHONY: test test-all test-php test-js test-php-unit test-php-integration test-js-unit test-js-watch test-js-coverage test-e2e test-coverage lint-php
+.PHONY: test test-all test-php test-js test-php-unit test-php-integration test-php-coverage test-diff-coverage test-js-unit test-js-watch test-js-coverage test-e2e test-e2e-restore test-coverage lint-php check-source-reading-tests check-yarn
+
+check-yarn:
+	@if ! command -v yarn >/dev/null 2>&1; then \
+		echo "❌ Error: 'yarn' command not found."; \
+		if command -v corepack >/dev/null 2>&1; then \
+			echo "💡 Solution: Run 'corepack enable yarn' (or 'corepack enable') to activate it."; \
+		else \
+			echo "💡 Solution: Please install Yarn or enable corepack."; \
+		fi; \
+		exit 1; \
+	fi
 
 test: test-all ## Run all tests (PHP + JavaScript)
 
@@ -26,12 +37,15 @@ test-php: ## Run PHP tests (PHPUnit, usage: make test-php [SUITE=unit|integratio
 	@echo "Running PHP tests..."
 	@if [ -f $(PHPUNIT_CONFIG) ]; then \
 		echo "Using PHPUnit configuration: $(PHPUNIT_CONFIG)"; \
-		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/build && \
-		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod 777 $(CNTR_APP_DIR)/build; \
+		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/build $(CNTR_APP_DIR)/.phpunit.cache && \
+		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod -R 777 $(CNTR_APP_DIR)/build $(CNTR_APP_DIR)/.phpunit.cache; \
 		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=off -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit --no-coverage $(if $(SUITE),--testsuite $(SUITE)) $(if $(FILTER),--filter $(FILTER)); \
 	else \
 		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP tests"; \
 	fi
+
+check-source-reading-tests: ## Refuse new tests that read the application source instead of running it
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php .github/scripts/check-source-reading-tests.php
 
 test-php-unit: ## Run PHP unit tests only
 	@$(MAKE) test-php SUITE=unit
@@ -39,7 +53,7 @@ test-php-unit: ## Run PHP unit tests only
 test-php-integration: ## Run PHP integration tests only
 	@$(MAKE) test-php SUITE=integration
 
-test-js: ## Run JavaScript tests (Jest)  
+test-js: check-yarn ## Run JavaScript tests (Jest)  
 	@echo "Running JavaScript tests..."
 	@if [ -f package.json ]; then \
 		yarn test; \
@@ -57,19 +71,32 @@ test-js-coverage: ## Run JavaScript tests with coverage report
 	@echo "Running JavaScript tests with coverage..."
 	@yarn test:coverage
 
-test-e2e: ## Run Playwright E2E tests (usage: make test-e2e [APP_MODE=manager] [BASE_URL=https://...])
+test-e2e: check-yarn ## Run Playwright E2E tests (usage: make test-e2e [APP_MODE=manager] [BASE_URL=https://...])
 	@echo "Running Playwright E2E tests..."
 	@$(if $(APP_MODE),APP_MODE=$(call shell_quote,$(APP_MODE))) $(if $(BASE_URL),BASE_URL=$(call shell_quote,$(BASE_URL))) yarn test:e2e
+
+test-e2e-restore: ## Restore journal settings backed up before E2E tests
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:e2e-seed --restore-settings
+
+test-php-coverage: ## Run PHP tests with Xdebug coverage (usage: make test-php-coverage [SUITE=unit|integration] [FILTER=pattern] [TEST=path] [HTML=1])
+	@echo "Running PHP tests with coverage..."
+	@if [ -f $(PHPUNIT_CONFIG) ]; then \
+		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/build $(CNTR_APP_DIR)/.phpunit.cache && \
+		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod -R 777 $(CNTR_APP_DIR)/build $(CNTR_APP_DIR)/.phpunit.cache; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=coverage -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit $(if $(SUITE),--testsuite $(SUITE)) $(if $(FILTER),--filter $(FILTER)) $(if $(HTML),--coverage-html build/coverage-html) $(TEST); \
+	else \
+		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP coverage"; \
+	fi
+
+test-diff-coverage: ## Check new-code PHP line coverage against build/coverage.xml (usage: make test-diff-coverage [BASE=origin/main] [THRESHOLD=85])
+	@git diff --unified=0 --diff-filter=AM $(if $(filter HEAD,$(BASE)),HEAD,$(or $(BASE),origin/main)...HEAD) -- application library scripts src | \
+		$(DOCKER_COMPOSE) exec -T -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php .github/scripts/check-diff-coverage.php --stdin $(if $(THRESHOLD),--threshold=$(THRESHOLD))
 
 test-coverage: ## Run all tests with coverage (where available)
 	@echo "Running tests with coverage..."
 	@echo "================================"
 	@echo "PHP Tests:"
-	@if [ -f $(PHPUNIT_CONFIG) ]; then \
-		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=coverage -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit || true; \
-	else \
-		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP coverage"; \
-	fi
+	@$(MAKE) test-php-coverage || true
 	@echo ""
 	@echo "JavaScript Tests:"
 	@if [ -f package.json ]; then \
@@ -137,7 +164,7 @@ test-status: ## Show testing setup status
 	@if command -v yarn >/dev/null 2>&1; then \
 		echo "  ✅ Yarn available"; \
 	else \
-		echo "  ❌ Yarn not found"; \
+		echo "  ❌ Yarn not found (run 'corepack enable yarn' if Node.js is installed)"; \
 	fi
 	@if [ -d node_modules/jest ]; then \
 		echo "  ✅ Jest installed"; \

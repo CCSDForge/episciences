@@ -400,10 +400,19 @@ class SubmitController extends DefaultController
             return;
         }
 
-        $this->_helper
-            ->FlashMessenger
-            ->setNamespace('success')
-            ->addMessage($message);
+        if (!empty($result[Episciences_Submit::RESULT_POST_SAVE_FAILURE])) {
+            // Saved, but a step of the processing that follows the save failed (files, linked data, authors, enrichment):
+            // the warning alone, it also says that the paper is saved
+            $this->_helper
+                ->FlashMessenger
+                ->setNamespace(Ccsd_View_Helper_Message::MSG_WARNING)
+                ->addMessage($this->view->translate(Episciences_Submit::POST_SAVE_FAILURE_MESSAGE));
+        } else {
+            $this->_helper
+                ->FlashMessenger
+                ->setNamespace('success')
+                ->addMessage($message);
+        }
 
         $docId = $result['docId'] ?? null;
 
@@ -646,50 +655,59 @@ class SubmitController extends DefaultController
         return $cEditors;
     }
 
-    public function ajaxhashookAction()
+    public function ajaxhashookAction(): void
     {
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
+        $repoId = $this->ajaxRepositoryId();
 
-        if (!$request->isXmlHttpRequest() || !$request->isPost()) {
+        if ($repoId === null) {
             return;
         }
-
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-
-        $repoId = (int)$request->get('repoId');
 
         $isRequiredVersion = $repoId !== (int)Episciences_Repositories::CWI_REPO_ID
             && Episciences_Repositories::isVersionRequired($repoId);
 
         // Kept nested: public/js/submit/index.js reads isRequiredVersion.result
-        $response = ['isRequiredVersion' => ['result' => $isRequiredVersion]];
-
-        try {
-            echo json_encode($response, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            trigger_error($e->getMessage());
-        }
-
+        $this->echoJson(['isRequiredVersion' => ['result' => $isRequiredVersion]]);
     }
 
-    public function ajaxisdataverseAction()
+    public function ajaxisdataverseAction(): void
     {
+        $repoId = $this->ajaxRepositoryId();
+
+        if ($repoId !== null) {
+            $this->echoJson(['isDataverse' => Episciences_Repositories::isDataverse($repoId)]);
+        }
+    }
+
+    /**
+     * Disable the views of a repository AJAX action, which answers in JSON or not at all.
+     *
+     * @return int|null the posted repository, null when the request is not an AJAX POST
+     */
+    private function ajaxRepositoryId(): ?int
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
         if (!$request->isXmlHttpRequest() || !$request->isPost()) {
-            return;
+            return null;
         }
 
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
+        return (int)$request->get('repoId');
+    }
 
-        $repoId = (int)$request->get('repoId');
-
+    /**
+     * Echo $response as JSON: public/js/submit/index.js parses the response text itself.
+     *
+     * @param array<string, mixed> $response
+     */
+    private function echoJson(array $response): void
+    {
         try {
-            echo json_encode(['isDataverse' => Episciences_Repositories::isDataverse($repoId)], JSON_THROW_ON_ERROR);
+            echo json_encode($response, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             trigger_error($e->getMessage());
         }

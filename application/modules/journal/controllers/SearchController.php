@@ -89,6 +89,10 @@ class SearchController extends Zend_Controller_Action
 
         $search->setParsedSearchParamsbyKey('q', $q);
 
+        $facetsConfig = Episciences_Settings::getConfigFile('solr.es.facets.json');
+        // Only the fields used by the facet links are accepted as filters
+        $search->setAllowedFilterFields(Ccsd_Search_Solr_Search::getFilterFieldsFromFacetsConfig($facetsConfig));
+
         $search->queryAddSort()
             ->queryAddDefaultFilters(Episciences_Settings::getConfigFile('solr.es.defaultFilters.json'))
             ->queryAddFilters();
@@ -97,7 +101,7 @@ class SearchController extends Zend_Controller_Action
         $client->createRequest($query);
 
         $search->setQuery($query);
-        $search->queryAddFacets(Episciences_Settings::getConfigFile('solr.es.facets.json'))
+        $search->queryAddFacets($facetsConfig)
             ->queryAddResultPerPage(Episciences_Settings_Search::$_numberSearchResultsArray, Episciences_Settings_Search::DEFAULT_NUMBER_SEARCH_RESULTS);
         $query = $search->getQuery();
 

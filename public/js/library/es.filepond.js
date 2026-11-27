@@ -146,7 +146,11 @@ function createUploadWidget(input, csrfToken) {
                         return;
                     }
 
-                    trackAttachedFile(widget, result.filename);
+                    trackAttachedFile(
+                        widget,
+                        result.filename,
+                        result.fileToken || ''
+                    );
                     load(result.filename);
                 };
 
@@ -165,7 +169,19 @@ function createUploadWidget(input, csrfToken) {
             },
 
             revert: (filename, load, error) => {
-                const body = buildRequestBody(context, { file: filename });
+                const token = getAttachedFileToken(widget, filename);
+
+                // No token: the file is not stored on the server, nothing to delete
+                if (!token) {
+                    untrackAttachedFile(widget, filename);
+                    load();
+                    return;
+                }
+
+                const body = buildRequestBody(context, {
+                    file: filename,
+                    token,
+                });
 
                 fetch('/file/delete', {
                     method: 'POST',
@@ -260,22 +276,51 @@ function getUploadErrorMessages(messages) {
     return [translate('Erreur inconnue.')];
 }
 
-function trackAttachedFile(widget, filename) {
+// The upload token (see UploadedFileToken) proves the file was uploaded by the current user: it is
+// sent back to delete the file, and with the form so the server attaches it. The server pairs the
+// "attachment_tokens[]" values with the "attachments[]" names by position, hence one token input
+// right after each name input, added and removed together.
+function trackAttachedFile(widget, filename, token) {
     const hidden = document.createElement('input');
     hidden.type = 'hidden';
     hidden.name = 'attachments[]';
     hidden.className = 'upload_filename';
     hidden.value = filename;
+
+    const tokenInput = document.createElement('input');
+    tokenInput.type = 'hidden';
+    tokenInput.name = 'attachment_tokens[]';
+    tokenInput.className = 'upload_token';
+    tokenInput.value = token;
+
     widget.appendChild(hidden);
+    widget.appendChild(tokenInput);
+}
+
+function findAttachedFileInput(widget, filename) {
+    return Array.from(widget.querySelectorAll('input.upload_filename')).find(
+        el => el.value === filename
+    );
+}
+
+function getAttachedFileToken(widget, filename) {
+    const hidden = findAttachedFileInput(widget, filename);
+    const tokenInput = hidden ? hidden.nextElementSibling : null;
+    return tokenInput && tokenInput.classList.contains('upload_token')
+        ? tokenInput.value
+        : '';
 }
 
 function untrackAttachedFile(widget, filename) {
-    const hidden = Array.from(
-        widget.querySelectorAll('input.upload_filename')
-    ).find(el => el.value === filename);
-    if (hidden) {
-        hidden.remove();
+    const hidden = findAttachedFileInput(widget, filename);
+    if (!hidden) {
+        return;
     }
+    const tokenInput = hidden.nextElementSibling;
+    if (tokenInput && tokenInput.classList.contains('upload_token')) {
+        tokenInput.remove();
+    }
+    hidden.remove();
 }
 
 if (typeof module !== 'undefined') {
@@ -283,5 +328,8 @@ if (typeof module !== 'undefined') {
         setSubmitButtonsDisabled,
         getFileExtension,
         getUploadErrorMessages,
+        trackAttachedFile,
+        getAttachedFileToken,
+        untrackAttachedFile,
     };
 }

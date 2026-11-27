@@ -76,8 +76,10 @@ OpenAIRE XML, DataCite XML, or JATS XML), Episciences uses a two-tier storage mo
    - `PAPER_FILES` (via `Episciences_Paper_FilesManager`): file name, MIME type,
      file size, checksum, and download URL.
    - `PAPER_DATASETS` (via `Episciences_Submit::processDatasets()`): related DOIs,
-     handles, SWHIDs and HAL ids, with their relation types (`IsSupplementTo`,
-     `References`, etc.). Any other plain URL is ignored.
+     handles, SWHIDs and HAL ids, with their relation types. The DataCite relation
+     type (`IsSupplementTo`, `IsReviewedBy`, etc.) is stored in the Crossref vocabulary
+     (`isSupplementTo`, `hasReview`), see [Linked Data Relationships](./linked-data-relationships.md).
+     Any other plain URL is ignored.
    - `PAPER_LICENCES` (via `Episciences_Paper_LicenceManager`): not from the
      `$enrichment` array but from a per-repository lookup in
      `getApiResponseByRepoId()`/`extractLicenceData()`; a repository missing from
@@ -183,6 +185,16 @@ fallback when `base_url` is not set or OAI-PMH fails.
       `docker compose exec -u www-data -w /var/www/htdocs php-fpm ./vendor/bin/phpunit --no-coverage tests/unit/library/Episciences/Repositories/`
       or `make test-php`) and confirm all repository tests pass.
 - [ ] Add an entry under `### Added` in `CHANGELOG.md`.
+- [ ] If the hook returns `relatedIdentifiers` in DataCite shape
+      (`identifier`/`relation`/`resource_type`/`scheme`), add the repository to
+      `Episciences_Submit::isDataCiteShapedRepo()`. Otherwise `processDatasets()`
+      treats the array values as identifiers and silently creates bogus datasets.
+      The `relation` is then normalized by `Episciences\Paper\RelationshipMapper::fromDataCite()`
+      (see [Linked Data Relationships](./linked-data-relationships.md)).
+      Also filter irrelevant related identifiers (e.g. community memberships) in the hook.
+- [ ] If papers from the repository need a licence, add it to the per-repository
+      lookup in `Episciences_Paper_LicenceManager::getApiResponseByRepoId()` and
+      `extractLicenceData()`; `$enrichment['license']` is not consumed.
 - [ ] Manually submit a real paper from the new repository in a dev environment
       and confirm: metadata retrieval, file download link (or mirrored file, if
       `FilesEnrichmentInterface` is implemented), and the version field's

@@ -213,7 +213,6 @@ function defineSQLTableConstants(): void
             'T_USER_INVITATION_ANSWER_DETAIL' => 'USER_INVITATION_ANSWER_DETAIL',
             'T_USER_MERGE' => 'USER_MERGE',
             'T_USER_ROLES' => 'USER_ROLES',
-            'T_USER_TOKENS' => 'USER_TOKEN',
             'T_VOLUMES' => 'VOLUME',
             'T_VOLUME_METADATAS' => 'VOLUME_METADATA',
             'T_VOLUME_PAPER' => 'VOLUME_PAPER',
@@ -278,7 +277,7 @@ function defineSimpleConstants(): void
 function defineVendorJsLibraries(): void
 {
     $jsLibraries = [
-        // Self-hosted via webpack copyFiles() (see webpack.config.js), previously loaded from cdnjs.
+        // Self-hosted via webpack copyFiles() (see webpack.config.mjs), previously loaded from cdnjs.
         // The font glyphs it renders with are self-hosted too (see VENDOR_MATHJAX_FONTS_PATH below) —
         // just self-hosting this script isn't enough, since it fetches its default font from
         // cdn.jsdelivr.net at runtime unless told otherwise. Its accessibility speech-generation Web
@@ -286,7 +285,7 @@ function defineVendorJsLibraries(): void
         // options.enableSpeech in layout.phtml.
         'VENDOR_MATHJAX' => '/build/mathjax/tex-mml-chtml.js',
         'VENDOR_MATHJAX_FONTS_PATH' => '/build/mathjax-fonts',
-        // Self-hosted via webpack copyFiles() (see webpack.config.js), previously loaded from cdnjs.
+        // Self-hosted via webpack copyFiles() (see webpack.config.mjs), previously loaded from cdnjs.
         'VENDOR_TINYMCE' => '/build/tinymce/tinymce.min.js',
     ];
 
@@ -316,6 +315,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('EPISCIENCES_SOLR_LOG_PATH', '');
         define('EPISCIENCES_API_URL', '');
         define('EPISCIENCES_API_SECRET_KEY', '');
+        define('EPISCIENCES_API_STATS_DELEGATION_SECRET', '');
         define('EPISCIENCES_UID', 0);
         define('EPISCIENCES_Z_SUBMIT', 0);
         define('EPISCIENCES_USER_AGENT', '');
@@ -390,6 +390,9 @@ function fixUndefinedConstantsForCodeAnalysis(): void
 
         // Reviewer invitation link token
         define('REVIEWER_INVITATION_HMAC_SECRET', '');
+
+        // Uploaded file token
+        define('UPLOADED_FILE_HMAC_SECRET', '');
 
         // ========================================
         // Protocol constants
@@ -478,7 +481,6 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('T_USER_INVITATION_ANSWER_DETAIL', '');
         define('T_USER_MERGE', '');
         define('T_USER_ROLES', '');
-        define('T_USER_TOKENS', '');
         define('T_VOLUMES', '');
         define('T_VOLUME_METADATAS', '');
         define('T_VOLUME_PAPER', '');

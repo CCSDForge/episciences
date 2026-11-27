@@ -1,6 +1,11 @@
 <?php
+use Episciences\Security\AccessLog;
+use Episciences\Upload\SafeFileName;
+use Episciences\Http\PublicAddressGuard;
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\HandlerStack;
 use Monolog\Logger;
 
 
@@ -23,50 +28,74 @@ class DefaultController extends Zend_Controller_Action
 
 
     /**
-     *
-     * Requesting the file of an unpublished version
-     * -> Redirects to the published version
-     * (eg in case of access with a previous Docid or access by a paperId)
-     * But if there's no published version and the user is not logged in
-     * -> Redirect to Auth
+     * Requesting the file of an unpublished version: see redirectFromUnpublishedVersion(). The move to the published
+     * version is permanent (301).
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     protected function requestingAnUnpublishedFile(Episciences_Paper $paper): void
     {
+        $this->redirectFromUnpublishedVersion(
+            $paper,
+            '/%d/pdf',
+            '/user/login/forward-controller/paper/forward-action/pdf/id/' . $paper->getDocid(),
+            true
+        );
+    }
 
-        if ($this->isRestrictedAccess($paper)) {
-
-            $paperId = $paper->getPaperid() ?: $paper->getDocid();
-            $publishedId = Episciences_PapersManager::getPublishedPaperId($paperId);
-
-            if ($publishedId !== 0) {
-
-                $publishedPaper = Episciences_PapersManager::get($publishedId, false);
-
-                if (!$publishedPaper) {
-                    $this->getResponse()?->setHttpResponseCode(404);
-                    $this->renderScript('index/notfound.phtml');
-                    return;
-                }
-
-                Episciences_Tools::header('HTTP/1.1 301 Moved Permanently', 301);
-                $location = sprintf('/%s/pdf', $publishedPaper->getDocid());
-                header('Location: ' . $location);
-                exit();
-
-            }
-
-            if (!Episciences_Auth::isLogged()) {
-                $this->redirect('/user/login/forward-controller/paper/forward-action/pdf/id/' . $paper->getDocid());
-            }
-
-            $message = $this->view->translate("Vous n'avez pas accès à cet article.");
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
-            $this->redirect('/');
-
+    /**
+     * An unpublished version is only shown to the users allowed on it (see isRestrictedAccess()). The others are
+     * redirected: to the published version when there is one, to the login page when they are not logged in,
+     * to the home page otherwise. The redirection ends the request.
+     *
+     * @param string $publishedUrlFormat URL of the published version, "%d" standing for its docid
+     * @param string $loginUrl login page, coming back to the requested page once logged in
+     * @param bool $permanent whether the move to the published version is permanent (301)
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    protected function redirectFromUnpublishedVersion(
+        Episciences_Paper $paper,
+        string $publishedUrlFormat,
+        string $loginUrl,
+        bool $permanent = false
+    ): void
+    {
+        if (!$this->isRestrictedAccess($paper)) {
+            return;
         }
 
+        $publishedDocId = $this->findPublishedDocId((int)($paper->getPaperid() ?: $paper->getDocid()));
+
+        if ($publishedDocId !== 0) {
+            $this->redirectToPublishedVersion(sprintf($publishedUrlFormat, $publishedDocId), $permanent);
+            return;
+        }
+
+        if (!Episciences_Auth::isLogged()) {
+            AccessLog::denied(AccessLog::AUTH_REQUIRED, 'unpublished_paper', self::paperLogContext($paper));
+            $this->redirect($loginUrl);
+            return;
+        }
+
+        $this->redirectHomeWithoutAccess($paper);
+    }
+
+    /**
+     * The docid of the published version of a paper, 0 when none is published or when it cannot be loaded:
+     * the request is then refused as for an unpublished paper rather than redirected to a broken page
+     * (a 301 would be cached by the browser)
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function findPublishedDocId(int $paperId): int
+    {
+        $publishedDocId = Episciences_PapersManager::getPublishedPaperId($paperId);
+
+        if ($publishedDocId === 0 || !Episciences_PapersManager::get($publishedDocId, false)) {
+            return 0;
+        }
+
+        return $publishedDocId;
     }
 
     /**
@@ -79,10 +108,42 @@ class DefaultController extends Zend_Controller_Action
     {
 
         if ($this->isRestrictedAccess($paper)) {
-            $message = $this->view->translate("Vous n'avez pas accès à cet article.");
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
-            $this->redirect('/');
+            // Guests too are sent to the home page, not to the login page
+            $this->redirectHomeWithoutAccess($paper);
         }
+    }
+
+    /**
+     * The status code is kept by the shared redirector helper: it is put back for the next redirections
+     * (reached only when the redirection does not end the request)
+     */
+    private function redirectToPublishedVersion(string $url, bool $permanent): void
+    {
+        /** @var Zend_Controller_Action_Helper_Redirector $redirector */
+        $redirector = $this->_helper->getHelper('Redirector');
+        $code = $redirector->getCode();
+
+        try {
+            $this->redirect($url, $permanent ? ['code' => 301] : []);
+        } finally {
+            $redirector->setCode($code);
+        }
+    }
+
+    private function redirectHomeWithoutAccess(Episciences_Paper $paper): void
+    {
+        AccessLog::denied(AccessLog::ACCESS_REDIRECTED, 'unpublished_paper', self::paperLogContext($paper));
+        $message = $this->view->translate("Vous n'avez pas accès à cet article.");
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_WARNING)->addMessage($message);
+        $this->redirect('/');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function paperLogContext(Episciences_Paper $paper): array
+    {
+        return ['docid' => $paper->getDocid(), 'paperid' => $paper->getPaperid()];
     }
 
     /**
@@ -106,7 +167,9 @@ class DefaultController extends Zend_Controller_Action
     /**
      * The logged user handles the paper for the journal: secretaries and administrators, the editors and copy
      * editors assigned to the paper, the editors and copy editors of a journal that does not restrict them to
-     * their assigned papers. An encapsulation setting the journal never saved counts as restrictive.
+     * their assigned papers. Only a non-empty encapsulation setting (e.g. '1') restricts them, matching
+     * PaperController and Episciences_Auth::isAllowedToListOnlyAssignedPapers() (legacy journals may have '' or
+     * no row stored for unchecked checkboxes).
      *
      * @param array<string, mixed> $journalSettings
      * @throws Zend_Db_Statement_Exception
@@ -126,8 +189,8 @@ class DefaultController extends Zend_Controller_Action
     protected static function isEditorialStaffOfEveryPaper(array $journalSettings): bool
     {
         return Episciences_Auth::isSecretary() ||
-            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS] ?? null) === '0' && Episciences_Auth::isEditor()) ||
-            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS] ?? null) === '0' && Episciences_Auth::isCopyEditor());
+            (empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]) && Episciences_Auth::isEditor()) ||
+            (empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS]) && Episciences_Auth::isCopyEditor());
     }
 
     protected function redirectWithFlashMessageIfPaperIsRemovedOrDeleted(Episciences_Paper $paper, bool $forceRedirection = true): void
@@ -303,22 +366,13 @@ class DefaultController extends Zend_Controller_Action
         $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid(), \Episciences_ReviewsManager::findByRvid($paper->getRvid())->getCode());
         $hasDocumentBackupFile = $paperDocBackup->hasDocumentBackupFile();
 
-        $clientHeaders = [
-            'headers' =>
-                [
-                    'User-Agent' => DOMAIN,
-                    'connect_timeout' => 10,
-                    'timeout' => 20
-                ]
-        ];
-
         Episciences_Tools::mbstringBinarySafeEncoding();
 
-        $client = new Client($clientHeaders);
+        $client = $this->createDocumentHttpClient();
         $saveCopy = false;
 
         try {
-            $res = $client->get($url);
+            $res = $client->request('GET', $url);
             $headers = $res->getHeaders();
             $mainDocumentContent = $res->getBody()->getContents();
 
@@ -335,7 +389,7 @@ class DefaultController extends Zend_Controller_Action
 
             }
 
-        } catch (GuzzleHttp\Exception\RequestException $e) {
+        } catch (GuzzleException $e) {
 
             // we failed to get content via http, try a local backup
             if ($hasDocumentBackupFile) {
@@ -367,6 +421,34 @@ class DefaultController extends Zend_Controller_Action
 
     }
 
+
+    /**
+     * HTTP client fetching the main document from its repository: HTTP(S) only,
+     * public addresses only (every redirect included), bounded connect and transfer times.
+     * The overall timeout leaves room for large PDFs on slow repositories, while the
+     * low-speed limit drops a stalled transfer before it holds a PHP worker until the timeout.
+     * cURL also counts the wait for the first byte in the low-speed window: some repositories
+     * (Zenodo's /content endpoint) take tens of seconds to start sending a file.
+     *
+     * @param callable|null $handler transport handler, the cURL one by default
+     */
+    protected function createDocumentHttpClient(?callable $handler = null): ClientInterface
+    {
+        $stack = HandlerStack::create($handler);
+        $stack->push((new PublicAddressGuard())->middleware(), 'public_address_guard');
+
+        return new Client([
+            'handler' => $stack,
+            'headers' => ['User-Agent' => DOMAIN],
+            'connect_timeout' => 10,
+            'timeout' => 240,
+            'allow_redirects' => ['max' => 5, 'protocols' => ['http', 'https']],
+            'curl' => [
+                CURLOPT_LOW_SPEED_LIMIT => 1024, // bytes per second
+                CURLOPT_LOW_SPEED_TIME => 120,
+            ],
+        ]);
+    }
 
     protected function renderFormErrors(Zend_Form $form = null): void{
 
@@ -425,7 +507,12 @@ class DefaultController extends Zend_Controller_Action
     protected function resolveSafePath(string $baseDir, string $relativePath): ?string
     {
         // Reject empty input and any NUL byte / control character
-        if ($relativePath === '' || preg_match('/[\x00-\x1f]/', $relativePath)) {
+        if ($relativePath === '') {
+            return null;
+        }
+
+        if (SafeFileName::hasControlCharacter($relativePath)) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'control_character', ['path' => $relativePath]);
             return null;
         }
 
@@ -436,15 +523,43 @@ class DefaultController extends Zend_Controller_Action
 
         $real = realpath($realBase . DIRECTORY_SEPARATOR . $relativePath);
         if ($real === false) {
+            // A missing file is not an attempt, unless the path climbs above the base directory
+            if (self::climbsAboveBase($relativePath)) {
+                AccessLog::denied(AccessLog::UNSAFE_PATH, 'outside_base_directory', ['path' => $relativePath]);
+            }
             return null;
         }
 
         // The resolved path must be the base directory itself or strictly inside it
         if ($real !== $realBase && !str_starts_with($real, $realBase . DIRECTORY_SEPARATOR)) {
+            AccessLog::denied(AccessLog::UNSAFE_PATH, 'outside_base_directory', ['path' => $relativePath]);
             return null;
         }
 
         return $real;
+    }
+
+    /**
+     * Whether the ".." segments of a relative path lead above its starting directory, as written
+     * (symbolic links are not followed: realpath() covers them for existing files).
+     * Not Symfony's Path::canonicalize(): it expands a leading "~" to the home directory and only
+     * splits on backslashes under Windows.
+     */
+    protected static function climbsAboveBase(string $relativePath): bool
+    {
+        $depth = 0;
+
+        foreach (preg_split('#[/\\\\]#', $relativePath) ?: [] as $segment) {
+            if ($segment === '..') {
+                if (--$depth < 0) {
+                    return true;
+                }
+            } elseif ($segment !== '' && $segment !== '.') {
+                $depth++;
+            }
+        }
+
+        return false;
     }
 
     protected function getSession(): Zend_Session_Namespace

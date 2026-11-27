@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Security\AccessLog;
 use Episciences\Upload\PublicFileStore;
 use Episciences\Upload\UploadChecker;
 
@@ -33,6 +34,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function commonAction()
     {
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
+
         $common = new Ccsd_Website_Common(RVID, ['languages' => Episciences_Translation_Plugin::getAvailableLanguages()]);
         $form = $common->getForm();
         Episciences_Csrf_Helper::addSessionTokenElement($form);
@@ -53,6 +58,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function styleAction()
     {
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
+
         $styles = new Episciences_Website_Style();
         Episciences_Csrf_Helper::addSessionTokenElement($styles->getForm());
         if ($this->getRequest()->isPost() && !$this->_validateCsrf()) {
@@ -70,10 +79,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function headerAction()
     {
-        // Secretaries include administrators, chief editors and root
-        if (!Episciences_Auth::isSecretary() && !Episciences_Auth::isWebmaster()) {
-            $this->getResponse()->setHttpResponseCode(403);
-            $this->_helper->viewRenderer->setNoRender();
+        if (!$this->allowSiteManagers()) {
             return;
         }
 
@@ -108,6 +114,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
     public function ajaxheaderAction()
     {
         $this->_helper->layout()->disableLayout();
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
+
         $header = new Episciences_Website_Header();
         $this->view->form = $header->getLogoForm($this->getRequest()->getParam('id', '0'));
         $this->render('header-logo-form');
@@ -118,7 +128,9 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function publicAction(): void
     {
-
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
 
         $dir = REVIEW_PATH . 'public/';
         if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
@@ -206,6 +218,61 @@ class WebsiteDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * The site settings are managed by the secretaries (which include administrators, chief
+     * editors and root) and the webmasters: other users get a 403, logged in the security log,
+     * and nothing is rendered.
+     */
+    private function allowSiteManagers(): bool
+    {
+        if (Episciences_Auth::isSecretary() || Episciences_Auth::isWebmaster()) {
+            return true;
+        }
+
+        AccessLog::denied(AccessLog::ACL_DENIED, 'role_check');
+        $this->getResponse()->setHttpResponseCode(403);
+        $this->_helper->viewRenderer->setNoRender();
+
+        return false;
+    }
+
+    /**
+     * Guard of the AJAX changes of the site pages: the role first, then the request token
+     * (a refused token is logged by Episciences_Csrf_Helper). Nothing is rendered unless the
+     * action asks for it.
+     */
+    private function allowAjaxSiteChange(): bool
+    {
+        $this->_helper->layout()->disableLayout();
+        if (!$this->allowSiteManagers()) {
+            return false;
+        }
+
+        $this->_helper->viewRenderer->setNoRender();
+        if (!$this->_validateCsrf()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * The navigation being edited, kept in session until it is saved or reset
+     *
+     * @return Episciences_Website_Navigation
+     */
+    private function sessionNavigation()
+    {
+        if (!isset($this->_session->website)) {
+            //Récupération de la navigation du portail ou d'un journal
+            $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
+            $this->_session->website->load();
+        }
+
+        return $this->_session->website;
+    }
+
+    /**
      * Flash the message shown when a form is submitted with a missing or wrong token
      */
     private function addCsrfError(): void
@@ -227,6 +294,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function menuAction(): void
     {
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
@@ -236,17 +307,14 @@ class WebsiteDefaultController extends Zend_Controller_Action
             unset($this->_session->website);
         }
 
-        if (!isset($this->_session->website)) {
-            //Récupération de la navigation du portail ou d'un journal
-            $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
-            $this->_session->website->load();
-        }
+        $this->sessionNavigation();
 
         if ($request->isPost() && !$this->_validateCsrf()) {
             $this->addCsrfError();
         } elseif ($request->isPost()) {
             $valid = true;
             $pagesDisplay = [];
+            $hasPermalienError = false;
 
             foreach ($request->getPost() as $id => $options) {
 
@@ -269,7 +337,8 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 }
 
                 // The class of the page stored in session decides, never the type sent by the browser
-                $isFilePage = $this->_session->website->getPage($pageid) instanceof Episciences_Website_Navigation_Page_File;
+                $currentPage = $this->_session->website->getPage($pageid);
+                $isFilePage = $currentPage instanceof Episciences_Website_Navigation_Page_File;
                 $uploadError = $isFilePage ? Episciences_Website_Navigation_Page_File::validateUpload($_FILES[$id] ?? null) : null;
 
                 if ($uploadError !== null) {
@@ -277,14 +346,63 @@ class WebsiteDefaultController extends Zend_Controller_Action
                     unset($options['src']);
                 }
 
+                // Validate permalink before setPage() to avoid file renaming on error
+                $pagePermalienError = false;
+                if ($currentPage instanceof Episciences_Website_Navigation_Page_Custom && isset($options['permalien'])) {
+                    $permalien = $options['permalien'];
+
+                    // Check if permalien is reserved for predefined pages
+                    if (Episciences_Website_Navigation_Page_Predefined::isPredefinedPage($permalien)) {
+                        $message = sprintf($this->view->translate("Le permalien '%s' est réservé aux pages prédéfinies. Veuillez choisir un autre permalien."), $permalien);
+                        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                            ->addMessage($message);
+                        $pagesDisplay[$pageid] = true;
+                        $valid = false;
+                        $hasPermalienError = true;
+                        $pagePermalienError = true;
+                    }
+
+                    // Check if permalien is already used by another custom page
+                    if (!$pagePermalienError) {
+                        $currentPermalien = $currentPage->getPermalien();
+
+                        // Only check if the permalien is different from the current one (changing permalien)
+                        if ($permalien !== $currentPermalien) {
+                            $existingPage = Episciences_Page_Manager::findByCodeAndPageCode(RVCODE, $permalien);
+                            if ($existingPage->getId() > 0) {
+                                $message = sprintf($this->view->translate("Le permalien '%s' est déjà utilisé par une autre page. Veuillez choisir un autre permalien."), $permalien);
+                                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                                    ->addMessage($message);
+                                $pagesDisplay[$pageid] = true;
+                                $valid = false;
+                                $hasPermalienError = true;
+                                $pagePermalienError = true;
+                            }
+                        }
+                    }
+
+                    // If permalink is invalid, remove it from options to preserve other fields
+                    // but don't trigger file renaming with the invalid permalink
+                    if ($pagePermalienError) {
+                        unset($options['permalien']);
+                    }
+                }
+
+                // Predefined page titles are managed by translations, ignore any submitted labels
+                $isPredefinedPage = $currentPage instanceof Episciences_Website_Navigation_Page_Predefined;
+                if ($isPredefinedPage) {
+                    unset($options['labels']);
+                }
+
                 $this->_session->website->setPage($pageid, $options);
                 $this->_session->website->getPage($pageid)->initForm();
 
+                // Skip form validation for File pages and Predefined pages (labels are managed via translations)
                 if ($uploadError !== null) {
                     $this->_session->website->getPage($pageid)->setUploadError($uploadError);
                     $pagesDisplay[$pageid] = true;
                     $valid = false;
-                } elseif (!$isFilePage && !$this->_session->website->getPage($pageid)->getForm($pageid)->isValid($options)) {
+                } elseif (!$isFilePage && !$isPredefinedPage && !$this->_session->website->getPage($pageid)->getForm($pageid)->isValid($options)) {
                     $pagesDisplay[$pageid] = true;
                     $valid = false;
                 } else {
@@ -304,7 +422,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 }
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
                 $this->redirect('/website/menu');
-            } else {
+            } elseif (!$hasPermalienError) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur de saisie");
             }
             $this->view->pagesDisplay = $pagesDisplay;
@@ -320,31 +438,16 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxformpageAction()
     {
-        if (!$this->_validateCsrf()) {
-            $this->getResponse()->setHttpResponseCode(403);
+        if (!$this->allowAjaxSiteChange()) {
             return;
         }
-
-        if (!isset($this->_session->website)) {
-            $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
-            $this->_session->website->load();
-        }
-
-        if (!Episciences_Auth::isAdministrator()
-            && !Episciences_Auth::isChiefEditor()
-            && !Episciences_Auth::isSecretary()
-            && !Episciences_Auth::isWebmaster()
-            && !Episciences_Auth::isRoot()) {
-            return;
-        }
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
         $params = $request->getPost();
         if ($request->isXmlHttpRequest() && $request->isPost() && isset($params['type']) && $params['type'] != '') {
-            $this->view->i = $this->_session->website->addPage($params['type']);
-            $this->view->page = $this->_session->website->getPage($this->view->i);
+            $navigation = $this->sessionNavigation();
+            $this->view->i = $navigation->addPage($params['type']);
+            $this->view->page = $navigation->getPage($this->view->i);
             $this->render('menu-page-form');
         }
     }
@@ -354,30 +457,14 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxorderAction()
     {
-        if (!$this->_validateCsrf()) {
-            $this->getResponse()->setHttpResponseCode(403);
+        if (!$this->allowAjaxSiteChange()) {
             return;
         }
-
-        if (!isset($this->_session->website)) {
-            $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
-            $this->_session->website->load();
-        }
-
-        if (!Episciences_Auth::isAdministrator()
-            && !Episciences_Auth::isChiefEditor()
-            && !Episciences_Auth::isSecretary()
-            && !Episciences_Auth::isWebmaster()
-            && !Episciences_Auth::isRoot()) {
-            return;
-        }
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
         $params = $request->getPost();
         if ($request->isXmlHttpRequest() && $request->isPost() && isset($params['page']) && is_array($params['page'])) {
-            $this->_session->website->changeOrder($params['page']);
+            $this->sessionNavigation()->changeOrder($params['page']);
         }
     }
 
@@ -386,32 +473,16 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxrmpageAction(): void
     {
-        if (!$this->_validateCsrf()) {
-            $this->getResponse()->setHttpResponseCode(403);
+        if (!$this->allowAjaxSiteChange()) {
             return;
         }
 
-        if (!isset($this->_session->website)) {
-            $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
-            $this->_session->website->load();
-        }
-
-        if (!Episciences_Auth::isAdministrator()
-            && !Episciences_Auth::isChiefEditor()
-            && !Episciences_Auth::isSecretary()
-            && !Episciences_Auth::isWebmaster()
-            && !Episciences_Auth::isRoot()) {
-            return;
-        }
         $pageCodeToRemove = null;
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
         $params = $request->getPost();
         if ($request->isXmlHttpRequest() && $request->isPost() && isset($params['idx'])) {
-            $nav = $this->_session->website;
-            /** @var Ccsd_Website_Navigation $nav */
+            $nav = $this->sessionNavigation();
             if (!empty($params['page_id'])) {
                 $pageCodeToRemove = $params['page_id'];
             }
@@ -425,6 +496,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function resetAction()
     {
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
+
         unset($this->_session->website);
         $this->redirect('/website/menu');
     }
@@ -434,6 +509,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function newsAction(): void
     {
+        if (!$this->allowSiteManagers()) {
+            return;
+        }
+
         $newsObj = new Episciences_News();
         $newsid  = (int) $this->getRequest()->getParam('newsid', 0);
 

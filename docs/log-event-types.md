@@ -10,11 +10,13 @@ This document lists the various log event types used in the Episciences platform
 | `restoration_of_status` | `CODE_RESTORATION_OF_STATUS` | Restoration of status | Restauration du statut | success |
 | `editor_assignment` | `CODE_EDITOR_ASSIGNMENT` | Editor assignment | Assignation d'un rédacteur | warning |
 | `editor_unassignment` | `CODE_EDITOR_UNASSIGNMENT` | Editor unassignment | Désassignation d'un rédacteur | warning |
+| `contributor_changed` | `CODE_CONTRIBUTOR_CHANGED` | Contributor changed | Changement de contributeur | warning |
 | `reviewer_invitation` | `CODE_REVIEWER_INVITATION` | Reviewer invitation | Invitation d'un relecteur | warning |
 | `reviewer_invitation_accepted` | `CODE_REVIEWER_INVITATION_ACCEPTED` | Accepted invitation | Invitation de relecture acceptée | warning |
 | `reviewer_invitation_declined` | `CODE_REVIEWER_INVITATION_DECLINED` | Declined invitation | Invitation de relecture refusée | warning |
 | `reviewer_assignment` | `CODE_REVIEWER_ASSIGNMENT` | Reviewer assignment | Assignation d'un relecteur | warning |
 | `reviewer_unassignment` | `CODE_REVIEWER_UNASSIGNMENT` | Reviewer unassignment | Suppression d'un relecteur | warning |
+| `reviewer_invitation_linked` | `CODE_REVIEWER_INVITATION_LINKED` | Invitation linked to another account | Invitation de relecture associée à un autre compte | warning |
 | `reviewing_in_progress` | `CODE_REVIEWING_IN_PROGRESS` | Ongoing review | Relecture en cours | warning |
 | `reviewing_completed` | `CODE_REVIEWING_COMPLETED` | Review Completed | Relecture terminée | warning |
 | `mail_sent` | `CODE_MAIL_SENT` | E-mail sent | Envoi d'un e-mail | info |
@@ -43,6 +45,8 @@ This document lists the various log event types used in the Episciences platform
 | `copy_editing_author_final_version_submitted` | `CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED` | Copy ed. final version submitted (new version) | - | violet |
 | `author_comment_cover_letter` | `CODE_AUTHOR_COMMENT_COVER_LETTER` | Author comment / Cover letter | - | primary |
 | `editor_comment` | `CODE_EDITOR_COMMENT` | Editor comment | - | violet |
+| `paper_comment_from_author_to_editor` | `CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR` | Author's message to assigned editors | Message de l'auteur aux rédacteurs assignés | violet |
+| `paper_comment_from_editor_to_author` | `CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR` | Editor's message to the author | Message du rédacteur à l'auteur | violet |
 | `paper_comment_form_reviewer_to_contributor` | `CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR` | Clarification request (reviewer to contributor) | Demande d'éclaircissements (relecteur au contributeur) | violet |
 | `paper_comment_form_contributor_to_reviewer` | `CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER` | Clarification answer (contributor to reviewer) | Réponse à une demande d'éclaircissement | violet |
 | `paper_updated` | `CODE_PAPER_UPDATED` | Update | - | warning |
@@ -50,6 +54,7 @@ This document lists the various log event types used in the Episciences platform
 | `doi_assigned` | `CODE_DOI_ASSIGNED` | DOI assignment | DOI assigné | info |
 | `doi_updated` | `CODE_DOI_UPDATED` | DOI Updated | - | info |
 | `doi_canceled` | `CODE_DOI_CANCELED` | DOI canceled | DOI Annulé | info |
+| `paper_license_updated` | `CODE_LICENSE_UPDATED` | License updated | Licence mise à jour | info |
 | `coi_reported` | `CODE_COI_REPORTED` | Conflict Of Interest (COI) | Conflit d'intérêts (CI) | danger |
 | `coi_reverted` | `CODE_COI_REVERTED` | Conflict Of Interest (COI): cancelled | Conflit d'intérêts (CI) : annulé | success |
 | `accepted_ask_authors_final_version` | `CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION` | Accepted, ask author's final version | Accepté, demande de la version finale à l'auteur | violet |
@@ -73,6 +78,11 @@ This document lists the various log event types used in the Episciences platform
 
 ### Log Detail
 Some actions include additional information in the `DETAIL` column (JSON encoded).
+
+### Detecting that a reminder was sent
+Automatic reminders (`scripts/reminders.php`) are recorded with `CODE_REMINDER_SENT` (`reminder_sent`); this is the source of truth, not the subject text of `MAIL_LOG`.
+- The `UID` of the log row is the system user (`EPISCIENCES_UID`), not the recipient.
+- The recipients are in `DETAIL`: `mail.To` is an array of `"Name <email>"` or bare email strings. Compare emails with exact, case-insensitive equality, never substring matching.
 
 ### CSS Classes
 The CSS classes are used in the management interface to colorize the log entries:

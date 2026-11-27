@@ -137,10 +137,12 @@ class Mysql implements AdapterInterface
     public function pre_auth($controller): bool
     {
         $request = $controller->getRequest();
-        $params = $request->getParams();
+        // Credentials are only read from the posted login form, never from the URL
+        $params = $request->isPost() ? $request->getPost() : [];
 
         // Check if credentials are provided and not empty
         if (!isset($params['username']) || !isset($params['password']) ||
+            !is_string($params['username']) || !is_string($params['password']) ||
             empty(trim($params['username'])) || empty(trim($params['password']))) {
             // Display login form with user icon (not envelope)
             $form = new \Ccsd_User_Form_Login();

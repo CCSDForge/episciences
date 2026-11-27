@@ -121,6 +121,15 @@ final class CommonModuleAclCoverageTest extends TestCase
         self::assertNotContains('guest', $roles, "'$resource' must not be declared for guest");
     }
 
+    /**
+     * Controllers redirect denied users to /error/deny: the page must be declared for guest,
+     * otherwise the request is handled as an unknown resource and answered with a 404.
+     */
+    public function testErrorDenyPageIsDeclaredForGuest(): void
+    {
+        self::assertContains('guest', $this->rolesFor('error-deny'), "'error-deny' must be declared for 'guest' in acl.ini");
+    }
+
     public function testUserUnsuIsDeclaredUnderMember(): void
     {
         $roles = $this->rolesFor('user-unsu');

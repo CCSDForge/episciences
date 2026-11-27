@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/GenerateUsersCommand.php';
 require_once __DIR__ . '/InitDevUsersCommand.php';
+require_once __DIR__ . '/E2ESeedCommand.php';
 require_once __DIR__ . '/CreateBotUserCommand.php';
 require_once __DIR__ . '/ExtractBiblioRefsCommand.php';
 require_once __DIR__ . '/GetCitationsDataCommand.php';
@@ -33,15 +34,22 @@ require_once __DIR__ . '/UpdateGeoIpCommand.php';
 require_once __DIR__ . '/GenerateDownloadKpiCommand.php';
 require_once __DIR__ . '/UpdatePapersDocumentCommand.php';
 require_once __DIR__ . '/CleanHalRecordDescriptionsCommand.php';
+require_once __DIR__ . '/DeletePapersCommand.php';
 require_once __DIR__ . '/UpdateTranslationsCommand.php';
 require_once __DIR__ . '/GetDoiCommand.php';
 require_once __DIR__ . '/Command/AbstractCommand.php';
 require_once __DIR__ . '/Command/Bootstrapper.php';
+require_once __DIR__ . '/Command/E2EExternalAccountCommand.php';
+require_once __DIR__ . '/Command/E2EExpireInvitationCommand.php';
+// Extends Command/AbstractCommand.php: must be loaded after it
+require_once __DIR__ . '/NormalizeRecordTitlesCommand.php';
 require_once __DIR__ . '/UpdateLicensesCommand.php';
 require_once __DIR__ . '/ImportSpdxLicenseListCommand.php';
 require_once __DIR__ . '/NormalizeUserAffiliationsCommand.php';
 require_once __DIR__ . '/RevalidateNextCacheCommand.php';
 require_once __DIR__ . '/AnonymizeSuLogsCommand.php';
+require_once __DIR__ . '/PurgeExpiredUserTokensCommand.php';
+require_once __DIR__ . '/ImportLegacyUserTokensCommand.php';
 
 // Solr indexing commands
 require_once __DIR__ . '/SolrIndexCommand.php';
@@ -54,6 +62,9 @@ require_once __DIR__ . '/EpisciencesQueueCommand.php';
 // COAR Notify inbox processing command
 require_once __DIR__ . '/ProcessInboxNotificationsCommand.php';
 
+// Turnitin (TCA) manuscript acquisition diagnostic
+require_once __DIR__ . '/ManuscriptProbeCommand.php';
+
 // Journal provisioning commands
 require_once __DIR__ . '/CreateJournalCommand.php';
 require_once __DIR__ . '/SeedJournalDemoCommand.php';
@@ -65,8 +76,13 @@ $application = new Application('Episciences CLI', '1.0.0');
 // Register commands
 $application->addCommand(new GenerateUsersCommand());
 $application->addCommand(new InitDevUsersCommand());
+$application->addCommand(new E2ESeedCommand());
+$application->addCommand(new \scripts\Command\E2EExternalAccountCommand());
+$application->addCommand(new \scripts\Command\E2EExpireInvitationCommand());
 $application->addCommand(new CreateBotUserCommand());
 $application->addCommand(new AnonymizeSuLogsCommand());
+$application->addCommand(new PurgeExpiredUserTokensCommand());
+$application->addCommand(new ImportLegacyUserTokensCommand());
 
 // Enrichment commands
 $application->addCommand(new ExtractBiblioRefsCommand());
@@ -122,6 +138,8 @@ $application->addCommand(new UpdatePapersDocumentCommand());
 $application->addCommand(new UpdateLicensesCommand());
 $application->addCommand(new ImportSpdxLicenseListCommand());
 $application->addCommand(new CleanHalRecordDescriptionsCommand());
+$application->addCommand(new NormalizeRecordTitlesCommand());
+$application->addCommand(new DeletePapersCommand());
 
 // Translation commands
 $application->addCommand(new UpdateTranslationsCommand());
@@ -139,6 +157,9 @@ $application->addCommand(new RevalidateNextCacheCommand());
 
 // COAR Notify inbox processing command
 $application->addCommand(new ProcessInboxNotificationsCommand());
+
+// Turnitin (TCA) manuscript acquisition diagnostic
+$application->addCommand(new ManuscriptProbeCommand());
 
 // Journal provisioning commands
 $application->addCommand(new CreateJournalCommand());

@@ -1,0 +1,28 @@
+<?php
+/**
+ * Volume and section cells of a row of a paper list.
+ *
+ * @var Zend_View $this
+ * @var Episciences_Paper $this->paper
+ * @var Episciences_Volume[] $this->volumes indexed by volume id
+ * @var Episciences_Section[] $this->sections indexed by section id
+ */
+$paper = $this->paper;
+?>
+        <?php // article volume ******************************************* ?>
+        <td class="text-center"><?php
+            if (array_key_exists($paper->getVid(), $this->volumes)) {
+                echo $this->escape($this->volumes[$paper->getVid()]->getNameKey());
+            } else {
+                echo '-';
+            }
+            ?></td>
+
+        <?php // article section ******************************************* ?>
+        <td class="text-center"><?php
+            if (array_key_exists($paper->getSid(), $this->sections)) {
+                echo $this->escape($this->translate($this->sections[$paper->getSid()]->getNameKey()));
+            } else {
+                echo '-';
+            }
+            ?></td>

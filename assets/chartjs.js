@@ -1,12 +1,12 @@
-// Chart.js 2.9.4 CSS, previously loaded from cdnjs (VENDOR_CHART_CSS), now self-hosted via webpack.
-// Only used on the journal statistics page (stats/index).
-import 'chart.js/dist/Chart.min.css';
-// Chart.js 2.9.4 JS, previously loaded from cdnjs (VENDOR_CHART). Exposed as window.Chart, used as a
-// bare global in public/js/stats/common.js.
-import Chart from 'chart.js';
-// Chart.js Datalabels plugin 0.7.0, previously loaded from cdnjs (VENDOR_CHART_PLUGIN_DATALABELS).
-// Self-registers against the Chart.js instance it requires internally, which webpack resolves to the
-// same bundled chart.js module as the import above.
-import 'chartjs-plugin-datalabels';
+// Chart.js 4, previously loaded from jsDelivr (VENDOR_CHART), now self-hosted via webpack.
+// Only used on the journal statistics page (stats/index). Exposed as window.Chart, used as a
+// bare global in public/js/stats/*.js. The "auto" entry registers every controller, element,
+// scale and plugin, as the UMD build loaded from the CDN did. Chart.js 4 ships no CSS.
+import Chart from 'chart.js/auto';
+// Chart.js Datalabels plugin 2, previously loaded from jsDelivr (VENDOR_CHART_PLUGIN_DATALABELS).
+// It no longer registers itself: public/js/stats/common.js adds it to the charts showing their
+// values, through the window.ChartDataLabels global.
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 window.Chart = Chart;
+window.ChartDataLabels = ChartDataLabels;

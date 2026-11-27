@@ -301,8 +301,9 @@ class Episciences_Volume
             [Episciences_Acl::ROLE_GUEST_EDITOR, Episciences_Acl::ROLE_EDITOR, Episciences_Acl::ROLE_CHIEF_EDITOR] :
             (array)$role;
 
+        // the latest assignment of each user (highest ID: two assignments can have the same date)
         $subquery = $this->_db->select()
-            ->from(T_ASSIGNMENTS, ['UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', Episciences_User_Assignment::ITEM_VOLUME)
             ->where('ITEMID = ?', $this->getVid())
             ->where('ROLEID = ?', $role)
@@ -311,7 +312,7 @@ class Episciences_Volume
         return $this->_db->select()
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinUsing(T_USERS, 'UID', ['LANGUEID', 'SCREEN_NAME'])
-            ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subquery], 'a.ID = b.LAST_ID', [])
             ->join(['ur' => T_USER_ROLES], 'ur.UID = a.UID')
             ->where('ur.ROLEID IN (?)', $roles)
             ->where('ur.RVID = ?', $this->getRvid() ?: (defined('RVID') ? RVID : 0));
@@ -767,7 +768,7 @@ class Episciences_Volume
         }
 
         $this->setVol_year(!empty($post['year']) ? $post['year'] : null);
-        $this->setVol_num(!empty($post['num']) ? $post['num'] : null);
+        $this->setVol_num($post['num'] ?? null);
         $this->setBib_reference($post['bib_reference']);
 
         if ($data['special_issue'] === "1" && $data['is_proceeding'] === "1") {
@@ -1492,7 +1493,14 @@ class Episciences_Volume
 
     public function setVol_num($volNum): \Episciences_Volume
     {
-        $this->_vol_num = $volNum ? trim(strip_tags($volNum)) : null;
+        if ($volNum !== null && $volNum !== '') {
+            $cleaned = (string) preg_replace('/[\x00-\x1F\x7F]/u', '', strip_tags((string)$volNum));
+            $cleaned = trim($cleaned);
+            $this->_vol_num = $cleaned !== '' ? $cleaned : null;
+        } else {
+            $this->_vol_num = null;
+        }
+
         return $this;
     }
 

@@ -77,6 +77,7 @@ const {
     validateDoiInput,
     updateDoiDisplay,
     DOI_PATTERN,
+    removeCoAuthor,
 } = require('../../../public/js/administratepaper/view');
 
 // ---------------------------------------------------------------------------
@@ -257,5 +258,54 @@ describe('updateDoiDisplay', () => {
         // The value must be stored as text; no <img> element must be created.
         expect(doiLink.children).toHaveLength(0);
         expect(doiLink.textContent).toContain('<img');
+    });
+});
+
+describe('removeCoAuthor', () => {
+    beforeEach(() => {
+        global.fetch = jest.fn().mockResolvedValue({ ok: true });
+        document.head.innerHTML =
+            '<meta name="csrf-token" content="session-token">';
+    });
+
+    afterEach(() => {
+        document.head.innerHTML = '';
+    });
+
+    test('posts the co-author to remove as an AJAX request', async () => {
+        await removeCoAuthor(12, 34, 5);
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        const [url, options] = global.fetch.mock.calls[0];
+        expect(url).toBe('/administratepaper/ajaxrequestremovecoauthor');
+        expect(options.method).toBe('POST');
+        expect(options.headers['X-Requested-With']).toBe('XMLHttpRequest');
+        expect(Object.fromEntries(options.body)).toEqual({
+            docId: '12',
+            uid: '34',
+            rvid: '5',
+        });
+    });
+
+    test('sends the session request token', async () => {
+        await removeCoAuthor(12, 34, 5);
+
+        const [, options] = global.fetch.mock.calls[0];
+        expect(options.headers['X-CSRF-Token']).toBe('session-token');
+    });
+
+    test('sends an empty token when the page has none (rejected server-side)', async () => {
+        document.head.innerHTML = '';
+
+        await removeCoAuthor(12, 34, 5);
+
+        const [, options] = global.fetch.mock.calls[0];
+        expect(options.headers['X-CSRF-Token']).toBe('');
+    });
+
+    test('does not throw on a network error', async () => {
+        global.fetch = jest.fn().mockRejectedValue(new Error('offline'));
+
+        await expect(removeCoAuthor(12, 34, 5)).resolves.toBeUndefined();
     });
 });

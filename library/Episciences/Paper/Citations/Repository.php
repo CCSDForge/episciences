@@ -1,5 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
+use Episciences\Paper\WriteFailure;
+
 /**
  * Database layer for paper citations.
  * All SQL operations related to T_PAPER_CITATIONS are centralized here.
@@ -10,10 +14,24 @@ class Episciences_Paper_Citations_Repository
      * Insert or update citation records (upsert).
      * Uses the MySQL 8.0+ alias syntax for ON DUPLICATE KEY UPDATE.
      *
+     * A database failure is reported as a warning: see insertOrFail() to handle it.
+     *
      * @param array $citations array of Episciences_Paper_Citations objects or associative arrays
      * @return int number of affected rows
      */
     public static function insert(array $citations): int
+    {
+        return WriteFailure::reportAsWarning(__METHOD__, static fn(): int => self::insertOrFail($citations));
+    }
+
+    /**
+     * Same as insert(), but a database failure is thrown: 0 also means "nothing changed" (upsert)
+     *
+     * @param array<int, Episciences_Paper_Citations|array<string, mixed>> $citations array of Episciences_Paper_Citations objects or associative arrays
+     * @return int number of affected rows
+     * @throws Zend_Db_Exception
+     */
+    public static function insertOrFail(array $citations): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -40,15 +58,10 @@ class Episciences_Paper_Citations_Repository
             . implode(', ', $values)
             . ' AS new_citation ON DUPLICATE KEY UPDATE citation = new_citation.citation';
 
-        try {
-            /** @var Zend_Db_Statement_Interface $result */
-            $result = $db->query($sql);
-            $affectedRows = $result->rowCount();
-        } catch (Exception $e) {
-            trigger_error($e->getMessage(), E_USER_ERROR);
-        }
+        /** @var Zend_Db_Statement_Interface $result */
+        $result = $db->query($sql);
 
-        return $affectedRows;
+        return $result->rowCount();
     }
 
     /**

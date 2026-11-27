@@ -1,0 +1,43 @@
+<?php
+// Papers of a figure: button opening the papers window, and number of papers not listed (conflict of interest);
+// the window takes the title of the figure, or the title given with the list (a list shown under another title)
+$paperList = $this->paperList ?? null;
+
+if (!is_array($paperList) || !isset($paperList['figure'])) {
+    return;
+}
+
+$count = (int)($paperList['count'] ?? 0);
+$hidden = (int)($paperList['hidden'] ?? 0);
+$label = $this->label ?? 'Voir les articles (%s)';
+
+if (!$count && !$hidden) {
+    return;
+}
+?>
+<div class="stat-papers">
+    <?php if ($count): ?>
+        <button type="button" class="btn btn-link btn-xs stat-papers-open" aria-haspopup="dialog"
+                data-figure="<?= $this->escape($paperList['figure']) ?>"<?php if (!empty($paperList['title'])): ?> data-title="<?= $this->escape($paperList['title']) ?>"<?php endif; ?>>
+            <span class="fas fa-list fa-sm" aria-hidden="true"></span>
+            <?= sprintf($this->translate($label), $count) ?>
+        </button>
+    <?php endif; ?>
+    <?php if ($hidden): ?>
+        <p class="help-block small">
+            <?php if (!empty($paperList['reviews'])): // a list of reviews (invitations, reports) ?>
+                <?= sprintf($this->translate($hidden > 1 ? "%s évaluations non listées : conflit d'intérêts déclaré" : "%s évaluation non listée : conflit d'intérêts déclaré"), $hidden) ?>
+            <?php else: ?>
+                <?= sprintf($this->translate($hidden > 1 ? "%s articles non listés : conflit d'intérêts déclaré" : "%s article non listé : conflit d'intérêts déclaré"), $hidden) ?>
+            <?php endif; ?>
+        </p>
+    <?php endif; ?>
+    <?php if (!empty($paperList['incomplete'])): ?>
+        <p class="help-block small">
+            <span class="fas fa-exclamation-triangle fa-sm" aria-hidden="true"></span>
+            <?= $this->translate(!empty($paperList['reviews'])
+                ? "Liste incomplète : le nombre d'évaluations ne correspond pas au chiffre affiché"
+                : "Liste incomplète : le nombre d'articles ne correspond pas au chiffre affiché") ?>
+        </p>
+    <?php endif; ?>
+</div>

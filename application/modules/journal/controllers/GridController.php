@@ -236,55 +236,13 @@ class GridController extends Zend_Controller_Action
      */
     private function savecriterion(Episciences_Rating_Grid $oGrid, Episciences_Rating_Criterion $oCriterion, $type = 'criterion')
     {
-        $subType = null; // Initialize subType variable
-        
+        $subType = '';
+        $options = null;
+
         if ($type == 'criterion') {
-
-            // options
-            $options = [];
-            $i = 0;
-
-
-            foreach ($_POST as $key => $value) {
-                if (str_starts_with($key, 'option_')) {
-                    $labels = [];
-                    foreach ($value as $lang => $label) {
-                        $cleanLabel = trim(strip_tags($label));
-                        if ($cleanLabel != '') {
-                            $labels [$lang] = htmlspecialchars($cleanLabel, ENT_QUOTES, 'UTF-8');
-                        }
-                    }
-                    $options [$i] = ['value' => $i, 'label' => $labels];
-                    $i++;
-                }
-            }
-
-
-            if ($_POST ['evaluation_type'] == Episciences_Rating_Criterion::EVALUATION_TYPE_FREE) {
-                unset ($options);
-                $subType = Episciences_Rating_Criterion::EVALUATION_TYPE_FREE;
-            }
-
-            // if standard values, force back standard options labels
-            if ($_POST ['evaluation_type'] == Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE && $_POST ['quantitative_rating_type'] == 0) {
-                $subType = Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE;
-                $options = [];
-                for ($i = 0; $i <= 10; $i++) {
-                    $options [] = ['value' => $i, 'label' => []];
-                }
-            } elseif ($_POST ['evaluation_type'] == Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE && $_POST ['quantitative_rating_type'] == 2) {
-                $options = [];
-                for ($i = 0; $i <= 5; $i++) {
-                    $options [] = ['value' => $i, 'label' => []];
-                }
-            } elseif ($_POST ['evaluation_type'] == Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE && $_POST ['qualitative_rating_type'] == 0) {
-                $subType = Episciences_Rating_Criterion::EVALUATION_TYPE_QUALITATIVE;
-                $options = [
-                    ['value' => 0, 'label' => ['fr' => 'Oui', 'en' => 'Yes']],
-                    ['value' => 1, 'label' => ['fr' => 'Non', 'en' => 'No']],
-                    ['value' => 2, 'label' => ['fr' => 'Peut-être', 'en' => 'Maybe']]
-                ];
-            }
+            $rating = Episciences_GridsManager::getCriterionRatingFromPost($_POST);
+            $subType = $rating['subType'];
+            $options = $rating['options'];
         }
 
 
@@ -309,14 +267,14 @@ class GridController extends Zend_Controller_Action
         // populate criterion
         $values = [
             'type' => $type,
-            '$subType' => $subType,
+            'subType' => $subType,
             'labels' => $cleanedLabels,
             'descriptions' => $cleanedDescriptions,
             'visibility' => htmlspecialchars(trim($_POST['visibility']), ENT_QUOTES, 'UTF-8'),
             'coefficient' => (array_key_exists('evaluation_type', $_POST) && $_POST['evaluation_type'] == Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE) ? (float)filter_var($_POST['coef'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION) : null,
             'comment_setting' => Ccsd_Tools::ifsetor($_POST ['comment'], null),
             'attachment_setting' => Ccsd_Tools::ifsetor($_POST ['upload'], null),
-            'options' => Ccsd_Tools::ifsetor($options, null)
+            'options' => $options
         ];
         $oCriterion->populate($values);
 

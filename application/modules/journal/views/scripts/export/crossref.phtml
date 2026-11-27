@@ -1,4 +1,8 @@
 <?php
+
+use Episciences\Paper\Relationship;
+use Episciences\Paper\RelationshipMapper;
+
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
 $onlineType = 'online';
@@ -45,14 +49,14 @@ $journalDoiPrefix = $journal->getDoiSettings()->getDoiPrefix();
 
 $enrichmentAuthors = $paper->getAuthors();
 $enrichmentLicence = $paper->getLicence();
-$enrichmentFundings = $paper->getFundings();
+$fundingReferences = $paper->getFundingReferences();
 $enrichmentLinkedData = $paper->getLinkedData();
 $bibliographicalRef = $paper->getBibRef();
 
-$interWorkRelationship = \Episciences\Paper\Relationship::getFlattenedRelationships();
+$interWorkRelationship = Relationship::getFlattenedRelationships();
 // Use the full intra list (including UI-hidden types) so that records stored via import
 // (e.g. isVersionOf, isFormatOf from HAL) are correctly classified in CrossRef XML.
-$intraWorkRelationship = \Episciences\Paper\Relationship::getFlattenedRelationshipsIntraWorkRelation();
+$intraWorkRelationship = Relationship::getFlattenedRelationshipsIntraWorkRelation();
 
 $issn = Ccsd_View_Helper_FormatIssn::FormatIssn($journal->getSetting(Episciences_Review::SETTING_ISSN));
 
@@ -230,8 +234,7 @@ $paperLanguageRaw = $this->paperLanguage;
                             $abstractLang = '';
                         }
                         $abstract = array_values($abstractArray);
-                        $abstract = $this->escape($abstract[0]);
-                        $abstract = trim($abstract);
+                        $abstract = trim((string)$abstract[0]);
 
 
                         echo '<jats:p' . $abstractLang . '>';
@@ -261,26 +264,7 @@ $paperLanguageRaw = $this->paperLanguage;
             <publisher_item> <?php //A container for item identification numbers set by a publisher. ?>
                 <item_number item_number_type="article_number"><?php echo $paper->getPaperid(); ?></item_number>
             </publisher_item>
-            <?php if (!empty($enrichmentFundings)): ?>
-                <program name="fundref" xmlns="http://www.crossref.org/fundref.xsd">
-                    <?php foreach ($enrichmentFundings as $fundingInfo) {
-                        $isFunderName = isset($fundingInfo['funderName']) && $fundingInfo['funderName'] !== "unidentified";
-                        ?>
-                        <?php if ($isFunderName || $fundingInfo['code'] !== "unidentified" || $fundingInfo['projectTitle'] !== "unidentified") : ?>
-                            <assertion name="fundgroup">
-                                <?php if ($isFunderName) : ?>
-                                    <assertion
-                                            name="funder_name"><?= $this->escape($fundingInfo['funderName']) ?></assertion>
-                                <?php endif; ?>
-                                <?php if ($fundingInfo['code'] !== "unidentified") : ?>
-                                    <assertion
-                                            name="award_number"><?= $this->escape($fundingInfo['code']) ?></assertion>
-                                <?php endif; ?>
-                            </assertion>
-                        <?php endif; ?>
-                    <?php } ?>
-                </program>
-            <?php endif; ?>
+            <?= $this->partial('fundref.phtml', ['fundingReferences' => $fundingReferences]) ?>
 
             <?php if ($enrichmentLicence !== ""): ?>
                 <program name="AccessIndicators" xmlns="http://www.crossref.org/AccessIndicators.xsd">
@@ -336,10 +320,7 @@ $paperLanguageRaw = $this->paperLanguage;
 
                 <?php if (!empty($enrichmentLinkedData)) : ?>
                     <?php foreach ($enrichmentLinkedData as $linkedData) {
-                        if (!isset($linkedData['relationship'])) {
-                            $linkedData['relationship'] = 'references';
-                        }
-                        $relationshipType = lcfirst($linkedData['relationship']);
+                        $relationshipType = RelationshipMapper::toCrossrefOrDefault($linkedData['relationship'] ?? null);
                         $isIntra = in_array($relationshipType, $intraWorkRelationship, true);
                         $isInter = in_array($relationshipType, $interWorkRelationship, true);
                         ?>
@@ -347,7 +328,11 @@ $paperLanguageRaw = $this->paperLanguage;
                         <?php if ($isIntra || $isInter) : ?>
                             <related_item>
                                 <?php
-                                $identifierType = strtolower($linkedData['link']);
+                                $identifierType = strtolower((string)$linkedData['link']);
+                                // Scholexplorer stores the resolver URL in "link" and the identifier scheme in "name"
+                                if (preg_match('~^https?://~', $identifierType) === 1) {
+                                    $identifierType = strtolower((string)($linkedData['name'] ?? 'url'));
+                                }
                                 if ($identifierType === 'url') {
                                     $identifierType = 'uri';
                                     $cleanDomainIfExist = Episciences_DoiTools::cleanDoi($linkedData['value']);
@@ -380,9 +365,9 @@ $paperLanguageRaw = $this->paperLanguage;
             </program>
 
             <doi_data>
-                <?php $pdfLink = $paper->getMainPaperUrl() ?>
+                <?php $pdfLink = $this->escape($paper->getMainPaperUrl()) ?>
                 <doi><?php echo htmlentities($this->doi, ENT_XML1); ?></doi>
-                <resource><?php echo $journalUrl . '/' . $paper->getPaperid(); ?></resource>
+                <resource><?php echo $this->escape($journalUrl . '/' . $paper->getPaperid()); ?></resource>
                 <collection property="crawler-based">
                     <item crawler="iParadigms">
                         <resource><?= $pdfLink ?></resource>

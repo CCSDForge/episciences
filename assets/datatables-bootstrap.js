@@ -7,5 +7,5 @@ import 'datatables.net-bs/css/dataTables.bootstrap.min.css';
 // run DataTables twice. The production build minifies it anyway.
 import 'datatables.net';
 // DataTables Bootstrap 3 integration JS, previously loaded from cdnjs (VENDOR_DATATABLES_BOOTSTRAP).
-// Both attach to the global jQuery (see addExternals in webpack.config.js).
+// Both attach to the global jQuery (see addExternals in webpack.config.mjs).
 import 'datatables.net-bs';

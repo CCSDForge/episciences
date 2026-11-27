@@ -28,7 +28,7 @@ import 'cookieconsent/build/cookieconsent.min.js';
 // Kept at 3.2.0 (not the 3.3.7 used for the CSS above) to match the version already in production —
 // aliased in package.json as "bootstrap-legacy-js" so it can coexist with the 3.3.7 CSS package.
 // Attaches its plugins ($.fn.modal, $.fn.tooltip, ...) to the global jQuery (see addExternals in
-// webpack.config.js), so it behaves exactly like the previous <script> tag.
+// webpack.config.mjs), so it behaves exactly like the previous <script> tag.
 import 'bootstrap-legacy-js/dist/js/bootstrap.min.js';
 
 // Bootbox 5.5.3 JS, previously loaded from cdnjs (VENDOR_BOOTBOX), now self-hosted via webpack.

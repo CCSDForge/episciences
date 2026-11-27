@@ -2,7 +2,7 @@
 // window.jQuery/window.$ globals expected by non-bundled inline scripts, ZendX_JQuery_Form_Element
 // widgets and assets/jquery-ui.js. Imported from the concrete dist file rather than the bare
 // "jquery" specifier so this entry actually bundles the library instead of being redirected to the
-// external "jQuery" global by webpack.config.js's addExternals (which exists precisely so every
+// external "jQuery" global by webpack.config.mjs's addExternals (which exists precisely so every
 // *other* module gets that same global instead of its own private copy).
 import $ from 'jquery/dist/jquery.js';
 

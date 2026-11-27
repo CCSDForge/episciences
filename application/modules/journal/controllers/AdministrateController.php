@@ -11,9 +11,4 @@ class AdministrateController extends Zend_Controller_Action
     {
         $this->renderScript('index/submenu.phtml');
     }
-
-    public function usersAction()
-    {
-        $this->renderScript('index/submenu.phtml');
-    }
 }

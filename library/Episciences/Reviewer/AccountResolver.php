@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Episciences\User\EmailAlreadyInUseException;
 use Episciences\User\EmailPolicy;
+use Episciences\User\Token\AccountTokenRepository;
+use Episciences\User\Token\TokenPurpose;
 
 /**
  * Resolves (looks up or creates) a real CAS reviewer account from an invitation
@@ -406,19 +408,15 @@ class Episciences_Reviewer_AccountResolver
      * can set their own password and access the review.
      *
      * @param Episciences_Reviewer $user
+     * @param (callable(array<string, string>): string)|null $urlBuilder application path of a route;
+     *        defaults to the view url() helper, available during an MVC dispatch only
      * @return void
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    public static function sendNewAccountPasswordEmail(Episciences_Reviewer $user): void
+    public static function sendNewAccountPasswordEmail(Episciences_Reviewer $user, ?callable $urlBuilder = null): void
     {
-        $userToken = new Ccsd_User_Models_UserTokens([
-            'UID'   => $user->getUid(),
-            'EMAIL' => $user->getEmail(),
-            'USAGE' => 'PASSWORD',
-        ]);
-        $userToken->generateUserToken();
-        (new Ccsd_User_Models_UserTokensMapper())->save($userToken);
+        $token = (new AccountTokenRepository())->issue((int)$user->getUid(), (string)$user->getEmail(), TokenPurpose::ACCOUNT_SETUP);
 
         $locale = $user->getLangueid(true);
 
@@ -427,12 +425,9 @@ class Episciences_Reviewer_AccountResolver
         $template->loadTranslations();
         $template->setLocale($locale);
 
-        $url = APPLICATION_URL . Zend_Controller_Front::getInstance()->getRouter()->assemble([
-            'controller' => 'user',
-            'action'     => 'resetpassword',
-            'lang'       => $locale,
-            'token'      => $userToken->getToken(),
-        ], null, true);
+        $urlBuilder ??= static fn(array $params): string =>
+            Zend_Controller_Action_HelperBroker::getStaticHelper('viewRenderer')->view->url($params, null, true);
+        $url = self::buildAccountSetupUrl(APPLICATION_URL, $urlBuilder, $locale, $token);
 
         $mail = new Episciences_Mail();
         $mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $url);
@@ -441,6 +436,34 @@ class Episciences_Reviewer_AccountResolver
         $mail->setSubject($template->getSubject());
         $mail->setTemplate($template->getPath(), $template->getKey() . '.phtml');
         $mail->writeMail();
+    }
+
+    /**
+     * Link of the account setup e-mail: origin of the application URL + path returned by the URL builder.
+     *
+     * The path comes from the view url() helper, like the other e-mails: deployments with a journal URL
+     * prefix override it to add the prefix. Only the origin (scheme, host, port) of the application URL is
+     * kept, so the prefix is not doubled; without a scheme or host, the application URL is used as is.
+     *
+     * @param string $applicationUrl APPLICATION_URL
+     * @param callable(array<string, string>): string $urlBuilder application path of a route
+     * @param string $locale
+     * @param string $token
+     * @return string
+     */
+    public static function buildAccountSetupUrl(string $applicationUrl, callable $urlBuilder, string $locale, string $token): string
+    {
+        $parts = parse_url($applicationUrl);
+        $origin = is_array($parts) && isset($parts['scheme'], $parts['host'])
+            ? $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '')
+            : rtrim($applicationUrl, '/');
+
+        return $origin . $urlBuilder([
+            'controller' => 'user',
+            'action'     => 'resetpassword',
+            'lang'       => $locale,
+            'token'      => $token,
+        ]);
     }
 
     /**

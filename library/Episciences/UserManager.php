@@ -26,7 +26,8 @@ class Episciences_UserManager
     }
 
     /**
-     * Retourne le nombre d'invitations envoyées à un utilisateur
+     * Returns the number of invitations sent to a user by the current journal: one by invitation, as an answer or a
+     * cancellation inserts another USER_INVITATION row with the same AID (the assignment created with the invitation)
      * @param $uid
      * @return mixed
      */
@@ -35,8 +36,7 @@ class Episciences_UserManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db?->select()
-            ->distinct('UID')
-            ->from(['ua' => T_ASSIGNMENTS], ['stats_invitations_nbr' => 'COUNT(UID)'])
+            ->from(['ua' => T_ASSIGNMENTS], ['stats_invitations_nbr' => new Zend_Db_Expr('COUNT(DISTINCT ui.AID)')])
             ->join(['ui' => T_USER_INVITATIONS], 'ua.ID = ui.AID', [])
             ->where('ua.UID = ?', $uid)
             ->where('ua.RVID = ?', RVID);

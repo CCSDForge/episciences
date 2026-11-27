@@ -7,7 +7,6 @@ use Episciences\Repositories\FilesEnrichmentInterface;
 use Episciences\Repositories\InputSanitizerInterface;
 use Episciences\Repositories\LinkedDataEnrichmentInterface;
 use Episciences\Repositories\Zenodo\HooksInterface;
-use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Intl\Languages;
@@ -44,6 +43,8 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
         if (empty($files)) {
             $response = self::checkResponse($hookParams);
             $files = $response['files'] ?? [];
+            // Returned: the linked data hook that follows reuses the record instead of loading it again
+            $hookParams['response'] = $response;
         }
 
 
@@ -276,21 +277,13 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
     public static function hookLinkedDataProcessing(array $hookParams): array
     {
+        // Loaded once: hookGetLinkedIdentifiers() and the returned record use the same one
+        $hookParams['response'] = self::checkResponse($hookParams);
         $linkedIdentifiers = self::hookGetLinkedIdentifiers($hookParams);
-        $affectedRows = Episciences_Submit::processDatasets($hookParams['docId'], $linkedIdentifiers);
+        // Also reindexed when some linked data could not be stored (thrown after the reindex)
+        $affectedRows = Episciences_Submit::processLinkedDataAndReindex((int)$hookParams['docId'], $linkedIdentifiers);
 
-        if ($affectedRows > 0) {
-            $paper = Episciences_PapersManager::get((int) $hookParams['docId'], false);
-            if ($paper && $paper->isPublished()) {
-                try {
-                    SolrIndexing::enqueueIndex($paper->getDocid());
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage());
-                }
-            }
-        }
-
-        $response = self::checkResponse($hookParams);
+        $response = $hookParams['response'];
         $response['affectedRows'] = $affectedRows;
         return $response;
     }

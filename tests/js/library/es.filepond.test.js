@@ -4,6 +4,9 @@ const {
     setSubmitButtonsDisabled,
     getFileExtension,
     getUploadErrorMessages,
+    trackAttachedFile,
+    getAttachedFileToken,
+    untrackAttachedFile,
 } = require('../../../public/js/library/es.filepond');
 
 function buildForm(buttonIds) {
@@ -138,4 +141,57 @@ describe('getUploadErrorMessages', () => {
             ]);
         }
     );
+});
+
+describe('attached file tracking', () => {
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    function buildWidget() {
+        const widget = document.createElement('div');
+        widget.className = 'upload_widget';
+        document.body.appendChild(widget);
+        return widget;
+    }
+
+    test('adds a name and its upload token, paired by position', () => {
+        const widget = buildWidget();
+
+        trackAttachedFile(widget, 'a.pdf', 'token-a');
+        trackAttachedFile(widget, 'b.pdf', 'token-b');
+
+        const names = Array.from(
+            widget.querySelectorAll('input[name="attachments[]"]')
+        ).map(input => input.value);
+        const tokens = Array.from(
+            widget.querySelectorAll('input[name="attachment_tokens[]"]')
+        ).map(input => input.value);
+
+        expect(names).toEqual(['a.pdf', 'b.pdf']);
+        expect(tokens).toEqual(['token-a', 'token-b']);
+    });
+
+    test('returns the upload token of a file', () => {
+        const widget = buildWidget();
+        trackAttachedFile(widget, 'a.pdf', 'token-a');
+        trackAttachedFile(widget, 'b.pdf', 'token-b');
+
+        expect(getAttachedFileToken(widget, 'b.pdf')).toBe('token-b');
+        expect(getAttachedFileToken(widget, 'missing.pdf')).toBe('');
+    });
+
+    test('removes a name together with its upload token', () => {
+        const widget = buildWidget();
+        trackAttachedFile(widget, 'a.pdf', 'token-a');
+        trackAttachedFile(widget, 'b.pdf', 'token-b');
+
+        untrackAttachedFile(widget, 'a.pdf');
+
+        expect(
+            Array.from(widget.querySelectorAll('input')).map(
+                input => input.value
+            )
+        ).toEqual(['b.pdf', 'token-b']);
+    });
 });

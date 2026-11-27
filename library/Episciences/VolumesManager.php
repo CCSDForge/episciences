@@ -3,7 +3,7 @@
 class Episciences_VolumesManager
 {
     public const MAX_STRING_LENGTH = 1024;
-    public const MAX_STRING_LENGTH_VOL_NUM = 6;
+    public const MAX_STRING_LENGTH_VOL_NUM = 20;
 
     /**
      * Retourne la liste des volumes
@@ -136,8 +136,9 @@ class Episciences_VolumesManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        // the latest assignment of each editor to each volume (highest ID: two assignments can have the same date)
         $subquery = $db->select()
-            ->from(T_ASSIGNMENTS, ['UID', 'ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', Episciences_User_Assignment::ITEM_VOLUME)
             ->where('ITEMID IN (?)', $vids)
             ->where('ROLEID = ?', Episciences_User_Assignment::ROLE_EDITOR)
@@ -152,7 +153,7 @@ class Episciences_VolumesManager
         $select = $db->select()
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN', 'ITEMID'])
             ->joinUsing(T_USERS, 'UID', [])
-            ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN` AND a.ITEMID = b.ITEMID')
+            ->join(['b' => $subquery], 'a.ID = b.LAST_ID', [])
             ->join(['ur' => T_USER_ROLES], 'ur.UID = a.UID')
             ->where('ur.ROLEID IN (?)', $roles)
             ->where('ur.RVID = ?', RVID);
@@ -638,6 +639,7 @@ class Episciences_VolumesManager
             'maxlength' => self::MAX_STRING_LENGTH_VOL_NUM,
             'style' => 'width:300px;position: static;',
             'description' => sprintf(Zend_Registry::get('Zend_Translate')->translate('%u caractères maximum'), self::MAX_STRING_LENGTH_VOL_NUM),
+            'filters' => ['StringTrim', 'StripTags'],
             'validators' => [
                 [new Zend_Validate_StringLength(['max' => self::MAX_STRING_LENGTH_VOL_NUM])],
             ],

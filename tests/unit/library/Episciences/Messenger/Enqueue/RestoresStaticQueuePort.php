@@ -20,16 +20,17 @@ use ReflectionProperty;
  */
 trait RestoresStaticQueuePort
 {
-    private mixed $originalStaticQueuePort = null;
+    /** @var array<string, mixed> prior port of each captured facade, so a test can capture several facades */
+    private array $originalStaticQueuePorts = [];
 
     private function captureStaticQueuePort(string $facadeClass): void
     {
-        $this->originalStaticQueuePort = self::readStaticQueuePort($facadeClass);
+        $this->originalStaticQueuePorts[$facadeClass] = self::readStaticQueuePort($facadeClass);
     }
 
     private function restoreStaticQueuePort(string $facadeClass): void
     {
-        self::writeStaticQueuePort($facadeClass, $this->originalStaticQueuePort);
+        self::writeStaticQueuePort($facadeClass, $this->originalStaticQueuePorts[$facadeClass] ?? null);
     }
 
     private static function readStaticQueuePort(string $facadeClass): mixed

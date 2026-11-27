@@ -19,6 +19,7 @@ class Episciences_Paper_Projects_ViewFormatter
     private const KEY_CALL_ID           = 'callId';
     private const KEY_PROJECT_FINANCING = 'projectFinancing';
     private const KEY_URL               = 'url';
+    private const KEY_FUNDING_STATEMENT = 'fundingStatement';
 
     /**
      * Build the HTML funding block for a paper.
@@ -90,6 +91,9 @@ class Episciences_Paper_Projects_ViewFormatter
         } elseif ($hasFunder) {
             $html .= "<li>" . $tr->translate("Funder") . ": "
                 . htmlspecialchars((string) $vfunding[self::KEY_FUNDER_NAME], ENT_QUOTES, 'UTF-8');
+        } elseif (isset($vfunding[self::KEY_FUNDING_STATEMENT]) && trim((string) $vfunding[self::KEY_FUNDING_STATEMENT]) !== '') {
+            // free-text funding typed by the depositor (HAL funding_s)
+            return '<li>' . htmlspecialchars(trim((string) $vfunding[self::KEY_FUNDING_STATEMENT]), ENT_QUOTES, 'UTF-8') . '</li>';
         } else {
             return '';
         }

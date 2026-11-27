@@ -55,7 +55,7 @@ class Episciences_Website_Navigation_Page_Rss extends Episciences_Website_Naviga
     
     public function setNbResults($nbResults)
     {
-    	$this->_nbResults = (is_numeric($nbResults) && $nbResults > 0) ? $nbResults : 10;
+    	$this->_nbResults = (is_numeric($nbResults) && $nbResults > 0) ? $nbResults : Episciences_Rss::DEFAULT_MAX_ENTRIES;
     	return $this;
     }
     

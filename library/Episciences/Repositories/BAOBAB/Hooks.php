@@ -5,7 +5,6 @@ use Episciences\Repositories\ConceptIdentifierInterface;
 use Episciences\Repositories\FilesEnrichmentInterface;
 use Episciences\Repositories\InputSanitizerInterface;
 use Episciences\Repositories\LinkedDataEnrichmentInterface;
-use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 
 /**
@@ -41,24 +40,26 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     public const API_TIMEOUT = 10;
     // An InvenioRDM record id is a single URL path segment ("xkpt8-rjr81")
     public const RECORD_ID_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9._-]*$/';
-
-    /**
-     * Last record fetched by fetchRecord(): the submission fetches it in
-     * hookApiRecords(), then Paper::save() needs it again for the licence.
-     * A single entry, so a batch over many records does not grow it.
-     *
-     * @var array{0: string, 1: array<string, mixed>}|null
-     */
-    private static ?array $lastRecord = null;
     public const ROR_ID_PATTERN = '/^0[a-hj-km-np-tv-z0-9]{6}[0-9]{2}$/';
     public const ARK_PATTERN = '#^(?:https?://[^/]+/)?(ark:/?\d+/[^?\#\s]+)#';
 
     /**
+     * Last record fetched by fetchRecord(): hookApiRecords() fetches it again,
+     * then the hooks run without a response and the licence lookup that follow
+     * in the same process (PapersManager::updateRecordData()) reuse it.
+     * A single entry, so a batch over many records does not grow it.
+     *
+     * @var array{0: string, 1: array<string, mixed>}|null [record id, REST JSON]
+     */
+    private static ?array $lastRecord = null;
+
+    /**
      * @param array<string, mixed> $hookParams
+     * @param bool $freshRecord false to reuse the record kept from the previous fetch
      * @return array<string, mixed>
      * @throws Ccsd_Error
      */
-    public static function hookApiRecords(array $hookParams): array
+    public static function hookApiRecords(array $hookParams, bool $freshRecord = true): array
     {
         if (!isset($hookParams[Episciences_Repositories_Common::META_IDENTIFIER])) {
             return [];
@@ -67,7 +68,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         $identifier = (string)$hookParams[Episciences_Repositories_Common::META_IDENTIFIER];
 
         try {
-            $json = self::fetchRecord($identifier);
+            $json = self::fetchRecord($identifier, $freshRecord);
         } catch (GuzzleException $e) {
             throw new Ccsd_Error($e->getMessage(), (int)$e->getCode());
         }
@@ -222,6 +223,8 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         if (empty($entries)) {
             $response = self::checkResponse($hookParams);
             $entries = $response['files']['entries'] ?? [];
+            // Returned: the linked data hook that follows reuses the record instead of loading it again
+            $hookParams['response'] = $response;
         }
 
         $data = [];
@@ -277,18 +280,8 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         $response = self::checkResponse($hookParams);
         $relatedIdentifiers = $response[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RELATED_IDENTIFIERS] ?? [];
 
-        $affectedRows = Episciences_Submit::processDatasets($hookParams['docId'], $relatedIdentifiers);
-
-        if ($affectedRows > 0) {
-            $paper = Episciences_PapersManager::get((int)$hookParams['docId'], false);
-            if ($paper && $paper->isPublished()) {
-                try {
-                    SolrIndexing::enqueueIndex($paper->getDocid());
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage());
-                }
-            }
-        }
+        // Also reindexed when some linked data could not be stored (thrown after the reindex)
+        $affectedRows = Episciences_Submit::processLinkedDataAndReindex((int)$hookParams['docId'], $relatedIdentifiers);
 
         $response['affectedRows'] = $affectedRows;
         return $response;
@@ -299,12 +292,16 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      * (e.g. an ARK left unresolved by hookCleanIdentifiers()) or the record does
      * not exist.
      *
+     * @param bool $fresh true to ignore the record kept from the previous call
      * @return array<string, mixed>|null
      * @throws GuzzleException
      */
-    public static function fetchRecord(string $identifier): ?array
+    public static function fetchRecord(string $identifier, bool $fresh = false): ?array
     {
-        if (self::$lastRecord !== null && self::$lastRecord[0] === $identifier) {
+        if ($fresh) {
+            // A failed reload must not leave the previous record behind
+            self::$lastRecord = null;
+        } elseif (self::$lastRecord !== null && self::$lastRecord[0] === $identifier) {
             return self::$lastRecord[1];
         }
 
@@ -333,7 +330,12 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      */
     private static function checkResponse(array $hookParams): array
     {
-        return Episciences_Repositories_Common::resolveResponse($hookParams, [self::class, 'hookApiRecords']);
+        // A hook run without a response follows hookApiRecords() in the same
+        // process (PapersManager::updateRecordData()): reuse its record
+        return Episciences_Repositories_Common::resolveResponse(
+            $hookParams,
+            static fn(array $params): array => self::hookApiRecords($params, false)
+        );
     }
 
     /**

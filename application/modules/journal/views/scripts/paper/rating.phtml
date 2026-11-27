@@ -144,8 +144,8 @@ $previousRatings = $this->previousRatings;
                              data-target="#current-rating">
                             <h4 class="panel-title">
                                 <?php $score = $this->report->getScore(); ?>
-                                <?php if ($score && is_numeric($score)) : ?>
-                                    <strong><?= round(($this->report->getScore() / $this->report->getMax_score()), 1) ?></strong><?php endif; ?>
+                                <?php if (is_numeric($score)) : ?>
+                                    <strong><?= $this->escape(round((float)$score, 1) . '/' . $this->report->getMax_score()) ?></strong><?php endif; ?>
                                 <?php
 
                                 echo '(' . $this->translate('round') . ' ' . (count($previousRatings) + 1) . ')';
@@ -175,8 +175,8 @@ $previousRatings = $this->previousRatings;
                                  data-target="#previous-rating-<?php echo $id ?>">
                                 <h4 class="panel-title grey">
                                     <?php $rScore = $report->getScore(); ?>
-                                    <?php if ($rScore && is_numeric($rScore)) : ?>
-                                        <strong><?= round(($rScore / $report->getMax_score()), 1) ?></strong>
+                                    <?php if (is_numeric($rScore)) : ?>
+                                        <strong><?= $this->escape(round((float)$rScore, 1) . '/' . $report->getMax_score()) ?></strong>
                                     <?php endif; ?>
                                     (<?= $this->translate('round') . ' ' . $count ?>
                                     <?php $count--; ?>)

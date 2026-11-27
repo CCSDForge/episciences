@@ -3,11 +3,13 @@
 namespace unit\library\Episciences\Log;
 
 use Episciences\Log\LoggerFactory;
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 
 /**
  * rotating() takes an explicit $file, so its tests write to a throwaway
@@ -91,6 +93,39 @@ class LoggerFactoryTest extends TestCase
         self::assertNotNull($writtenFile);
         self::assertFileExists($writtenFile);
         self::assertStringContainsString('hello', file_get_contents($writtenFile));
+    }
+
+    public function testRotatingKeepsEveryFileByDefault(): void
+    {
+        $logger = LoggerFactory::rotating('appLogger', $this->logDir . 'app.log');
+
+        self::assertSame(0, $this->maxFiles($logger->getHandlers()[0]));
+    }
+
+    public function testRotatingHonoursTheRequestedRetention(): void
+    {
+        $logger = LoggerFactory::rotating('security', $this->logDir . 'security.log', Level::Info, 180);
+
+        self::assertSame(180, $this->maxFiles($logger->getHandlers()[0]));
+    }
+
+    public function testRotatingWritesJsonLinesWithAJsonFormatter(): void
+    {
+        $logger = LoggerFactory::rotating('security', $this->logDir . 'security.log', Level::Info, 180, new JsonFormatter());
+
+        $logger->warning('acl_denied', ['uid' => 42]);
+
+        /** @var RotatingFileHandler $handler */
+        $handler = $logger->getHandlers()[0];
+        $line = json_decode(trim((string)file_get_contents((string)$handler->getUrl())), true);
+        self::assertSame('acl_denied', $line['message']);
+        self::assertSame(42, $line['context']['uid']);
+        self::assertSame('WARNING', $line['level_name']);
+    }
+
+    private function maxFiles(object $handler): int
+    {
+        return (int)(new ReflectionProperty(RotatingFileHandler::class, 'maxFiles'))->getValue($handler);
     }
 
     public function testCliWithStdoutPushesTwoHandlersIncludingStdout(): void

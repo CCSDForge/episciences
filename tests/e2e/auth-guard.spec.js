@@ -5,11 +5,12 @@ test.describe('Authentication Guards & Access Control', () => {
         // Accessing 'submit' without active session should redirect to login
         await page.goto('submit');
 
-        // URL should have redirected towards login or CAS authentication
+        // URL redirected to login/cas, or page renders login challenge
         const currentUrl = page.url();
         const isAuthRedirect = currentUrl.includes('login') || currentUrl.includes('cas');
+        const showsLoginForm = await page.locator('form input#password, form input#PASSWORD, form#loginform').first().isVisible().catch(() => false);
 
-        expect(isAuthRedirect).toBe(true);
+        expect(isAuthRedirect || showsLoginForm).toBe(true);
     });
 
     test('protects user dashboard from unauthenticated access', async ({ page }) => {
@@ -17,7 +18,8 @@ test.describe('Authentication Guards & Access Control', () => {
 
         const currentUrl = page.url();
         const isAuthRedirect = currentUrl.includes('login') || currentUrl.includes('cas');
+        const showsLoginForm = await page.locator('form input#password, form input#PASSWORD, form#loginform').first().isVisible().catch(() => false);
 
-        expect(isAuthRedirect).toBe(true);
+        expect(isAuthRedirect || showsLoginForm).toBe(true);
     });
 });

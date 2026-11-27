@@ -1,3 +1,8 @@
+-- DEPRECATED: Legacy initial dump kept only for backwards compatibility with docker-compose.override.yml.dist.
+-- Do NOT use this file for new setups or CI:
+--   * Development & E2E CI: use src/mysql/docker/episciences/dev-episciences.sql (via `make load-dev-db`)
+--   * PHPUnit CI:           use tests/fixtures/schema-episciences.sql + tests/fixtures/seed.sql
+--
 -- Generation Time: Jul 12, 2026 at 08:51 PM
 -- Server version: 8.0.*
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -801,7 +806,7 @@ CREATE TABLE `VOLUME` (
                           `descriptions` json DEFAULT NULL,
                           `vol_year` varchar(9) DEFAULT NULL,
                           `vol_type` set('special_issue','proceedings') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
-                          `vol_num` varchar(6) DEFAULT NULL
+                          `vol_num` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='Journal volumes';
 
 -- --------------------------------------------------------

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 use Episciences\MailingList\MailingList;
 use Episciences\MailingList\Manager as MailingListsManager;
+use Episciences\Security\AccessLog;
 
 class AdministratemailinglistController extends Zend_Controller_Action
 {
@@ -14,6 +15,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
                      Episciences_Auth::isRoot();
 
         if (!$isAllowed) {
+            AccessLog::denied(AccessLog::ACL_DENIED, 'role_check');
             $this->_helper->redirector->gotoUrl('/error/deny');
         }
     }

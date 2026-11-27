@@ -232,4 +232,21 @@ final class DocumentFilePolicyTest extends TestCase
         // Reviewers among them: they read the author's answer but must not alter it
         self::assertFalse(DocumentFilePolicy::isTemporaryVersionFileWritable(false, false, false));
     }
+
+    public function testAuthorWritesTheCopyEditingFiles(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isCopyEditingFileWritable(true, false, false));
+    }
+
+    public function testEditorialStaffWritesTheCopyEditingFilesUnlessInConflictOfInterest(): void
+    {
+        self::assertTrue(DocumentFilePolicy::isCopyEditingFileWritable(false, false, true));
+        self::assertFalse(DocumentFilePolicy::isCopyEditingFileWritable(false, true, true));
+    }
+
+    public function testAnyOtherMemberDoesNotWriteTheCopyEditingFiles(): void
+    {
+        // Reviewers among them: copy-editing files are not for them
+        self::assertFalse(DocumentFilePolicy::isCopyEditingFileWritable(false, false, false));
+    }
 }

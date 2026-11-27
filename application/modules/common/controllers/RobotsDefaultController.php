@@ -5,53 +5,67 @@
  */
 class RobotsDefaultController extends Zend_Controller_Action
 {
-    public function indexAction()
+    private const DISALLOWED_PATHS = [
+        '/search',
+        '/index.php/search',
+        '*/tei',
+        '*/bibtex',
+        '*/dc',
+        '*/datacite',
+        '*/openaire',
+        '*/crossref',
+        '*/doaj',
+        '*/zbjats',
+        '*/json',
+        '*/jsonv2',
+        '/browse/latest',
+        '/login',
+        '/logout',
+        '/submit',
+        '/user',
+        '/error'
+    ];
+
+    public function indexAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
-        header('Content-Type: text/plain; charset: utf-8');
-        echo '# Episciences robots.txt' . PHP_EOL;
 
-        $isNewFrontSwitched = defined('RVID') && Episciences_ReviewsManager::isNewFrontSwitched((int) RVID);
+        $lines = ['# Episciences robots.txt', 'User-agent: *'];
 
-        echo "User-Agent: *\n";
-        if (APPLICATION_ENV == ENV_PROD && !$isNewFrontSwitched) {
-            $pathsToDisallow = [
-                '/search',
-                '/index.php/search',
-                '*/tei',
-                '*/bibtex',
-                '*/dc',
-                '*/datacite',
-                '*/openaire',
-                '*/crossref',
-                '*/doaj',
-                '*/zbjats',
-                '*/json',
-                '*/jsonv2',
-                '/browse/latest',
-                '/login',
-                '/logout',
-                '/submit',
-                '/user',
-                '/error'
-            ];
-
-            foreach ($pathsToDisallow as $path) {
-                echo 'Disallow: ' . $path . PHP_EOL;
+        if ($this->isIndexingAllowed()) {
+            foreach (self::DISALLOWED_PATHS as $path) {
+                $lines[] = 'Disallow: ' . $path;
             }
 
             // Robots we do not care about:
-            echo 'User-agent: barkrowler' . PHP_EOL;
-            echo 'Disallow: /' . PHP_EOL;
+            $lines[] = 'User-agent: barkrowler';
+            $lines[] = 'Disallow: /';
 
-            echo "# Sitemap\n";
+            $lines[] = '# Sitemap';
             // Use the configured application base rather than the request host.
-            echo "Sitemap: " . rtrim(APPLICATION_URL, '/') . "/sitemap\n";
+            $lines[] = 'Sitemap: ' . rtrim(APPLICATION_URL, '/') . '/sitemap';
         } else {
-            echo "Disallow: *\n";
+            $lines[] = 'Disallow: /';
         }
 
+        $this->getResponse()
+            ->setHeader('Content-Type', 'text/plain; charset=utf-8', true)
+            ->setBody(implode(PHP_EOL, $lines) . PHP_EOL);
+    }
+
+    /**
+     * Only production journals still served by this application are open to robots.
+     */
+    protected function isIndexingAllowed(): bool
+    {
+        return $this->isProductionEnvironment()
+            && !(defined('RVID') && Episciences_ReviewsManager::isNewFrontSwitched((int)RVID));
+    }
+
+    protected function isProductionEnvironment(): bool
+    {
+        return APPLICATION_ENV === ENV_PROD;
     }
 
     /*
@@ -67,4 +81,3 @@ class RobotsDefaultController extends Zend_Controller_Action
     }
     */
 }
-

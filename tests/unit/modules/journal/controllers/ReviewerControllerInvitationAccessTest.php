@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace unit\modules\journal\controllers;
 
 use Episciences\Reviewer\InvitationToken;
+use Episciences\Security\AccessLog;
 use Episciences_Paper;
 use Episciences_User;
 use Episciences_User_Assignment;
@@ -19,8 +20,12 @@ use Zend_Auth_Storage_NonPersistent;
 use Zend_Controller_Request_HttpTestCase;
 use Zend_Controller_Front;
 use Zend_Controller_Response_HttpTestCase;
+use Zend_Db_Statement_Interface;
 use Zend_Db_Table_Abstract;
 use Zend_View;
+use unit\library\Episciences\Security\SecurityLogCaptureTrait;
+
+require_once dirname(__DIR__, 3) . '/library/Episciences/Security/SecurityLogCaptureTrait.php';
 
 /**
  * Access to the reviewer invitation page: holding the link is the proof.
@@ -31,11 +36,14 @@ use Zend_View;
  */
 final class ReviewerControllerInvitationAccessTest extends TestCase
 {
+    use SecurityLogCaptureTrait;
+
     private const SECRET = 'access-test-secret';
     private const ROW_SECRET = '0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0';
     private const INVITATION_ID = 7;
     private const INVITED_UID = 200;
     private const OTHER_UID = 100;
+    private const INVITED_AID = 300;
     private const TMP_EMAIL = 'invited@example.org';
     private const INVALID_LINK = 'Lien non valide; le jeton transmis dans la requête est erroné.';
 
@@ -55,6 +63,14 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
             new Zend_Controller_Response_HttpTestCase()
         ) extends \ReviewerController {
             public ?string $redirectedTo = null;
+
+            /** @var array<int, int> assignment id => account that accepted its invitation, instead of the database */
+            public array $acceptedWith = [];
+
+            protected function isAcceptedWithAccount(int $invitedAid, int $uid): bool
+            {
+                return ($this->acceptedWith[$invitedAid] ?? null) === $uid;
+            }
 
             protected function getInvitationToken(): InvitationToken
             {
@@ -107,6 +123,7 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     private function assignment(bool $tmpUser = false)
     {
         $assignment = $this->createMock(Episciences_User_Assignment::class);
+        $assignment->method('getId')->willReturn(self::INVITED_AID);
         $assignment->method('getUid')->willReturn(self::INVITED_UID);
         $assignment->method('isTmp_user')->willReturn($tmpUser);
 
@@ -267,6 +284,7 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
 
         self::assertFalse($result);
         self::assertSame(self::INVALID_LINK, $controller->view->errors);
+        self::assertSame([], $this->loggedEvents(), 'a configuration error is not an invalid token');
     }
 
     // -------------------------------------------------------------------------
@@ -287,6 +305,60 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     {
         self::assertFalse($this->isAuthorized($this->invitation(null), $this->assignment(true), ['tmp' => md5('other@example.org')], $this->tmpUser()));
         self::assertSame(self::INVALID_LINK, $this->controller->view->errors);
+    }
+
+    // -------------------------------------------------------------------------
+    // security log
+    // -------------------------------------------------------------------------
+
+    public function testWrongTokenIsLogged(): void
+    {
+        $this->isAuthorized($this->invitation(), $this->assignment(), ['token' => self::linkToken(8)]);
+
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'invitation_token', self::INVITATION_ID]], $this->loggedEvents('reason', 'invitation_id'));
+    }
+
+    public function testTemporaryUserThatNoLongerExistsIsLogged(): void
+    {
+        $this->isAuthorized($this->invitation(), $this->assignment(true), ['token' => self::linkToken()]);
+
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'unknown_temporary_reviewer', self::INVITATION_ID]], $this->loggedEvents('reason', 'invitation_id'));
+    }
+
+    public function testLegacyLinkWithAWrongMd5IsLogged(): void
+    {
+        $this->isAuthorized($this->invitation(null), $this->assignment(true), ['tmp' => md5('other@example.org')], $this->tmpUser());
+
+        self::assertSame([[AccessLog::TOKEN_INVALID, 'legacy_invitation_link', self::INVITATION_ID]], $this->loggedEvents('reason', 'invitation_id'));
+    }
+
+    /**
+     * @return array<string, array{bool, ?string, array<string, string>}>
+     */
+    public static function grantedAccessProvider(): array
+    {
+        return [
+            'valid token' => [false, self::ROW_SECRET, []],
+            'legacy invitation of an account' => [false, null, []],
+            'invitee logged in' => [true, self::ROW_SECRET, []],
+        ];
+    }
+
+    /**
+     * @dataProvider grantedAccessProvider
+     * @param array<string, string> $params
+     */
+    public function testGrantedAccessIsNotLogged(bool $inviteeLoggedIn, ?string $rowSecret, array $params): void
+    {
+        if ($inviteeLoggedIn) {
+            $this->logIn(self::INVITED_UID);
+        }
+        if ($rowSecret !== null && !$inviteeLoggedIn) {
+            $params['token'] = self::linkToken();
+        }
+
+        self::assertTrue($this->isAuthorized($this->invitation($rowSecret), $this->assignment(), $params));
+        self::assertSame([], $this->loggedEvents('reason', 'invitation_id'));
     }
 
     // -------------------------------------------------------------------------
@@ -322,6 +394,26 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
 
         self::assertFalse($this->isAuthorized($this->invitation(null, false), $this->assignment()));
         self::assertSame('Vous avez déjà répondu à cette invitation.', $this->controller->view->errors);
+    }
+
+    public function testStatusRowTellsTheAccountCreatedOnAcceptingTheyAlreadyAnswered(): void
+    {
+        // invited without an account, the reviewer accepted by creating this one
+        $this->controller->acceptedWith[self::INVITED_AID] = self::OTHER_UID;
+        $this->logIn(self::OTHER_UID);
+
+        self::assertFalse($this->isAuthorized($this->invitation(null, false), $this->assignment(true)));
+        self::assertSame('Vous avez déjà répondu à cette invitation.', $this->controller->view->errors);
+    }
+
+    public function testStatusRowOfATemporaryUserTellsAnotherAccountOnlyThatAReplyWasSent(): void
+    {
+        $this->controller->acceptedWith[self::INVITED_AID] = self::OTHER_UID;
+        // same id as the temporary user: not the invitee either
+        $this->logIn(self::INVITED_UID);
+
+        self::assertFalse($this->isAuthorized($this->invitation(null, false), $this->assignment(true)));
+        self::assertSame("Il apparaît qu'une réponse a déjà été transmise.", $this->controller->view->errors);
     }
 
     // -------------------------------------------------------------------------
@@ -389,21 +481,53 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // invitation whose assignment no longer exists
+    // invitation that cannot be shown: no assignment, another journal, no paper
     // -------------------------------------------------------------------------
 
-    public function testInvitationWithoutAssignmentIsReportedAsMissing(): void
+    /**
+     * Runs invitationAction() on mocked database rows. As the database would, the assignment lookup does not return
+     * the row when it filters on another RVID; the paper query is expected $paperQueries times.
+     *
+     * @param array<string, mixed>|false $assignmentRow
+     * @param array<string, mixed>|false $paperRow
+     */
+    private function runInvitationActionOn(
+        array|false $assignmentRow,
+        array|false $paperRow = false,
+        int         $paperQueries = 0,
+        string      $expirationDate = '+1 week'
+    ): void
     {
+        $invitationRow = [
+            'ID' => self::INVITATION_ID,
+            // an assignment id no other test caches
+            'AID' => $assignmentRow['ID'] ?? 987654321,
+            'STATUS' => Episciences_User_Invitation::STATUS_PENDING,
+            'EXPIRATION_DATE' => date('Y-m-d H:i:s', (int)strtotime($expirationDate)),
+        ];
+
         $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
         $adapter = $this->getMockBuilder($previousAdapter::class)
             ->setConstructorArgs([$previousAdapter->getConfig()])
-            ->onlyMethods(['fetchRow'])
+            ->onlyMethods(['fetchRow', 'query'])
             ->getMock();
-        // first the invitation row, then no assignment row (an assignment id no other test caches)
-        $adapter->method('fetchRow')->willReturnOnConsecutiveCalls(
-            ['ID' => self::INVITATION_ID, 'AID' => 987654321, 'STATUS' => Episciences_User_Invitation::STATUS_PENDING],
-            false
+        $adapter->method('fetchRow')->willReturnCallback(
+            static function ($select) use ($invitationRow, $assignmentRow): array|false {
+                $sql = (string)$select;
+                if (str_contains($sql, T_ASSIGNMENTS)) {
+                    // the row of another journal is filtered out by the RVID condition, kept without it
+                    $otherJournal = $assignmentRow && preg_match('/RVID = (\d+)/', $sql, $rvId) && (int)$rvId[1] !== $assignmentRow['RVID'];
+                    return $otherJournal ? false : $assignmentRow;
+                }
+                if (str_contains($sql, T_USER_INVITATION_ANSWER)) {
+                    return false;
+                }
+                return str_contains($sql, T_USER_INVITATIONS) ? $invitationRow : false;
+            }
         );
+        $statement = $this->createMock(Zend_Db_Statement_Interface::class);
+        $statement->method('fetch')->willReturn($paperRow);
+        $adapter->expects(self::exactly($paperQueries))->method('query')->willReturn($statement);
 
         Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
         try {
@@ -412,8 +536,54 @@ final class ReviewerControllerInvitationAccessTest extends TestCase
         } finally {
             Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
         }
+    }
+
+    /**
+     * @param int $id an assignment id no other test caches
+     * @return array<string, mixed>
+     */
+    private static function assignmentRow(int $id, int $rvId): array
+    {
+        return ['ID' => $id, 'RVID' => $rvId, 'ITEMID' => 4159, 'ITEM' => 'paper', 'UID' => self::INVITED_UID, 'TMP_USER' => 0];
+    }
+
+    public function testInvitationWithoutAssignmentIsReportedAsMissing(): void
+    {
+        $this->runInvitationActionOn(false);
 
         self::assertSame(["Cette invitation n'existe pas !"], $this->controller->view->errors);
         self::assertNull($this->controller->view->invitation);
+    }
+
+    public function testInvitationOfAnotherJournalIsReportedAsMissingAndLogged(): void
+    {
+        // opened with the URL of the current journal (RVID 1 in the tests) while it belongs to journal 8
+        $this->runInvitationActionOn(self::assignmentRow(987654322, RVID + 7));
+
+        self::assertSame(["Cette invitation n'existe pas !"], $this->controller->view->errors);
+        self::assertNull($this->controller->view->invitation);
+        self::assertNull($this->controller->view->paper);
+        self::assertSame(
+            [[AccessLog::NOT_FOUND_MASKED, 'invitation_not_in_journal', self::INVITATION_ID]],
+            $this->loggedEvents('reason', 'invitation_id')
+        );
+    }
+
+    public function testInvitationWhosePaperNoLongerExistsIsReportedAsMissing(): void
+    {
+        $this->runInvitationActionOn(self::assignmentRow(987654323, RVID), false, 1);
+
+        self::assertSame(["Cette invitation n'existe pas !"], $this->controller->view->errors);
+        self::assertNull($this->controller->view->invitation);
+        self::assertNull($this->controller->view->paper);
+    }
+
+    public function testExpiredInvitationKeepsItsMessageWithoutLoadingThePaper(): void
+    {
+        $this->runInvitationActionOn(self::assignmentRow(987654324, RVID), false, 0, '-1 day');
+
+        self::assertSame('Cette invitation a expiré.', $this->controller->view->errors);
+        self::assertTrue($this->controller->view->displayInvitationDetails);
+        self::assertNull($this->controller->view->paper);
     }
 }

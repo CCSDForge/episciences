@@ -4,18 +4,20 @@ declare(strict_types=1);
 namespace Episciences\Paper\Import;
 
 use Ccsd_Tools;
-use DateTime;
+use DOMDocument;
+use DOMXPath;
+use Episciences\Hal\HalTeiSource;
+use Episciences_Hal_TeiCacheManager;
 use Episciences_Paper;
+use Episciences_Repositories;
 use Episciences_Tools;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 
 /**
  * Resolves the publication date for a paper being imported/updated, trying in order:
  *   1. the CSV row's publication_date column
  *   2. the paper's own current publication date (relevant for updates)
  *   3. the OAI dc:date field of the freshly fetched record
- *   4. the archives-ouvertes.fr (HAL) API
+ *   4. HAL papers: the publication date of the paper version, read from its HAL TEI
  *   5. now()
  *
  * Ported from scripts/update_papers.php's getPublicationDate*() methods, fixing a bug
@@ -23,16 +25,20 @@ use GuzzleHttp\Exception\GuzzleException;
  */
 final class PublicationDateResolver
 {
-    public function __construct(private readonly Client $httpClient = new Client())
-    {
-    }
+    /**
+     * Where the HAL TEI holds the publication date, in order of preference
+     */
+    private const HAL_PUBLICATION_DATE_PATHS = [
+        '//tei:biblFull//tei:monogr/tei:imprint/tei:date[@type="datePub"][1]',
+        '//tei:biblFull/tei:editionStmt/tei:edition[@type="current"]/tei:date[@type="whenProduced"][1]',
+    ];
 
     public function resolve(Row $row, Episciences_Paper $paper): string
     {
         return $this->fromArgs($row)
             ?? $this->fromPaper($paper)
             ?? $this->fromOai($paper->getRecord())
-            ?? $this->fromHalApi($paper)
+            ?? $this->fromHalTei($paper)
             ?? date('Y-m-d H:i:s');
     }
 
@@ -76,47 +82,74 @@ final class PublicationDateResolver
         return $this->validated(Episciences_Tools::getValidSQLDateTime($dcDate));
     }
 
-    private function fromHalApi(Episciences_Paper $paper): ?string
+    /**
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    private function fromHalTei(Episciences_Paper $paper): ?string
     {
-        $identifier = $paper->getIdentifier();
-        if (!$identifier) {
+        if ((string)$paper->getIdentifier() === '' || !Episciences_Repositories::isFromHalRepository((int)$paper->getRepoid())) {
             return null;
         }
 
-        $url = self::buildHalApiUrl($identifier, (string)($paper->getVersion() ?: 1));
+        // Same TEI as the linked data (Episciences_Submit::datasetsProcessing()): 0 = latest version
+        $tei = Episciences_Hal_TeiCacheManager::fetchAndGet(HalTeiSource::ofPaper($paper));
 
-        try {
-            $response = $this->httpClient->get($url, [
-                'headers' => ['Content-type' => 'application/json'],
-                'connect_timeout' => 5,
-                'timeout' => 10,
-            ]);
-        } catch (GuzzleException) {
-            return null;
-        }
-
-        $result = json_decode($response->getBody()->getContents(), true);
-        $rawDate = $result['response']['docs'][0]['publicationDate_tdate'] ?? null;
-
-        if (!is_string($rawDate) || $rawDate === '') {
-            return null;
-        }
-
-        // expecting e.g. 2000-12-10T00:00:00Z
-        try {
-            return (new DateTime($rawDate))->format('Y-m-d H:i:s');
-        } catch (\Exception) {
-            return null;
-        }
+        return self::publicationDateFromTei($tei);
     }
 
-    public static function buildHalApiUrl(string $identifier, string $version): string
+    /**
+     * Publication date of the HAL document, as the publicationDate_tdate field of the HAL search API:
+     * the date of publication (<imprint><date type="datePub">), or, for a document without one
+     * (preprint), the production date of the current version (<edition><date type="whenProduced">).
+     * A year or a month is completed with the first day; a date that is not valid is skipped.
+     *
+     * @return string|null SQL date time, null when the TEI holds no valid publication date
+     */
+    public static function publicationDateFromTei(string $tei): ?string
     {
-        return sprintf(
-            'https://api.archives-ouvertes.fr/search/?indent=true&q=halId_s:%s&fq=version_i:%s&fl=publicationDate_tdate&wt=json',
-            rawurlencode($identifier),
-            rawurlencode($version)
-        );
+        if (trim($tei) === '') {
+            return null;
+        }
+
+        $dom = new DOMDocument();
+
+        if (!@$dom->loadXML($tei)) {
+            return null;
+        }
+
+        $xpath = new DOMXPath($dom);
+        $xpath->registerNamespace('tei', 'http://www.tei-c.org/ns/1.0');
+
+        foreach (self::HAL_PUBLICATION_DATE_PATHS as $path) {
+            $date = self::toSqlDateTime(trim((string)$xpath->evaluate('string(' . $path . ')')));
+
+            if ($date !== null) {
+                return $date;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param string $rawDate YYYY, YYYY-MM or YYYY-MM-DD
+     * @return string|null SQL date time, null when the date is not valid
+     */
+    private static function toSqlDateTime(string $rawDate): ?string
+    {
+        if (preg_match('/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/', $rawDate, $matches) !== 1) {
+            return null;
+        }
+
+        $year = $matches[1];
+        $month = ($matches[2] ?? '') ?: '01';
+        $day = ($matches[3] ?? '') ?: '01';
+
+        if (!checkdate((int)$month, (int)$day, (int)$year)) {
+            return null;
+        }
+
+        return sprintf('%s-%s-%s 00:00:00', $year, $month, $day);
     }
 
     private function validated(mixed $dateTested): ?string
