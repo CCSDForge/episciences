@@ -1,20 +1,20 @@
 <ul>
     <li>
-        <span><i class="fas fa-rss"></i></span>
+        <span><i class="fas fa-rss" aria-hidden="true"></i></span>
         <a target="_blank"
-           href="/rss/papers"><?php echo $this->translate('Retrouvez les derniers articles publiés.'); ?></a>
+           href="<?php echo $this->escape($this->url(['controller' => 'rss', 'action' => 'papers'], null, true)); ?>"><?php echo $this->translate('Retrouvez les derniers articles publiés.'); ?></a>
     </li>
 
     <li>
-        <span><i class="fas fa-rss"></i></span>
+        <span><i class="fas fa-rss" aria-hidden="true"></i></span>
         <a target="_blank"
-           href="/rss/atom"><?php echo $this->translate('Retrouvez les derniers articles publiés (format Atom).'); ?></a>
+           href="<?php echo $this->escape($this->url(['controller' => 'rss', 'action' => 'atom'], null, true)); ?>"><?php echo $this->translate('Retrouvez les derniers articles publiés (format Atom).'); ?></a>
     </li>
 
 
     <li>
-        <span><i class="fas fa-rss"></i></span>
-        <a target="_blank" href="/rss/news"><?php echo $this->translate('Retrouvez les dernières actualités.'); ?></a>
+        <span><i class="fas fa-rss" aria-hidden="true"></i></span>
+        <a target="_blank" href="<?php echo $this->escape($this->url(['controller' => 'rss', 'action' => 'news'], null, true)); ?>"><?php echo $this->translate('Retrouvez les dernières actualités.'); ?></a>
     </li>
 
 </ul>
