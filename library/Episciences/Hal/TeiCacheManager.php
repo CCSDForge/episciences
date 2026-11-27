@@ -185,7 +185,7 @@ class Episciences_Hal_TeiCacheManager
         $url = $source->getRecordUrl();
 
         if ($url === null) {
-            AppRegistry::getMonoLogger()?->warning(sprintf('HAL TEI of %s: the repository has no OAI-PMH server', $source->describe()));
+            AppRegistry::getMonoLogger()?->warning(sprintf('HAL TEI of %s: no identifier, or the repository has no OAI-PMH server', $source->describe()));
             return null;
         }
 

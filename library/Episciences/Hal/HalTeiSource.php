@@ -55,10 +55,14 @@ final class HalTeiSource
     /**
      * OAI-PMH GetRecord URL of the TEI
      *
-     * @return string|null null when the repository has no HTTP(S) OAI-PMH server or no OAI identifier
+     * @return string|null null when the document has no identifier, or the repository has no HTTP(S) OAI-PMH server or no OAI identifier
      */
     public function getRecordUrl(): ?string
     {
+        if (trim($this->identifier) === '') {
+            return null;
+        }
+
         $baseUrl = (string)Episciences_Repositories::getBaseUrl($this->repoId);
         $oaiIdentifier = Episciences_Repositories::getIdentifier(
             $this->repoId,

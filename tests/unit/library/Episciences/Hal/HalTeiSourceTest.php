@@ -65,6 +65,34 @@ final class HalTeiSourceTest extends TestCase
         self::assertNull((new HalTeiSource(self::REPO_ID, 'hal-01234567', 1))->getRecordUrl());
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function blankIdentifierProvider(): iterable
+    {
+        yield 'empty' => [''];
+        yield 'whitespace' => ['  '];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('blankIdentifierProvider')]
+    public function testDocumentWithoutIdentifierHasNoRecordUrl(string $identifier): void
+    {
+        // The template alone would otherwise yield the OAI identifier "oai:HAL:v1"
+        $this->givenRepository('https://api.hal.test/oai/hal/', 'oai:HAL:%%IDv%%VERSION');
+
+        self::assertNull((new HalTeiSource(self::REPO_ID, $identifier, 1))->getRecordUrl());
+    }
+
+    public function testDocumentVersionHasRecordUrl(): void
+    {
+        $this->givenRepository('https://api.hal.test/oai/hal/', 'oai:HAL:%%IDv%%VERSION');
+
+        self::assertSame(
+            'https://api.hal.test/oai/hal?verb=GetRecord&metadataPrefix=xml-tei&identifier=oai%3AHAL%3Ahal-01234567v1',
+            (new HalTeiSource(self::REPO_ID, 'hal-01234567', 1))->getRecordUrl()
+        );
+    }
+
     private function givenRepository(string $baseUrl, string $identifierTemplate): void
     {
         (new ReflectionProperty(Episciences_Repositories::class, '_repositories'))->setValue(null, [

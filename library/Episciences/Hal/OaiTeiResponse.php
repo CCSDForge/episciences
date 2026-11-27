@@ -99,10 +99,11 @@ final class OaiTeiResponse
             return;
         }
 
-        $copy = $parent->appendChild($target->createElementNS(self::TEI_NS, $node->localName));
+        $copy = $target->createElementNS(self::TEI_NS, (string)$node->localName);
+        $parent->appendChild($copy);
 
         foreach ($node->attributes ?? [] as $attribute) {
-            $copy->setAttributeNS((string)$attribute->namespaceURI, $attribute->nodeName, $attribute->nodeValue);
+            $copy->setAttributeNS($attribute->namespaceURI, $attribute->nodeName, $attribute->value);
         }
 
         foreach ($node->childNodes as $child) {
