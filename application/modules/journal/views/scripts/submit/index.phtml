@@ -35,6 +35,7 @@ $zSubmitUrl .= '/deposit?epi-rvcode=' . RVCODE;
 <div id="showResult" style="display:none"></div>
 <?php echo $this->form; ?>
 
+<?php $this->jQuery()->addJavascriptFile('/js/submit/checklist.js'); // before functions.js, which uses it ?>
 <?php $this->jQuery()->addJavascriptFile('/js/submit/functions.js'); ?>
 <?php $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js'); ?>
 <?php $this->jQuery()->addJavascriptFile('/js/submit/identifier.js'); ?>

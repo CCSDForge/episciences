@@ -1,0 +1,142 @@
+<?php
+/**
+ *
+ * @var Zend_View $this
+ * @var string $this->action form URL
+ * @var string $this->cancelUrl page URL (Cancel)
+ * @var array{name: string, value: string} $this->token form token
+ * @var list<array<string, mixed>> $this->rows [{key, labels: {en, fr}}]
+ * @var list<array{message: string, item: ?int}> $this->errors item = 1-based row position
+ * @var int $this->maxItems
+ * @var int $this->maxLength
+ */
+
+$listErrors = [];
+$rowErrors = [];
+foreach ($this->errors as $error) {
+    if ($error['item'] === null) {
+        $listErrors[] = $error['message'];
+    } else {
+        $rowErrors[(int)$error['item']][] = $error['message'];
+    }
+}
+
+$rows = array_values($this->rows);
+$locales = ['en' => 'English text', 'fr' => 'French text'];
+
+/**
+ * One block. $index (name of the fields) and $position (label, ids) are strings so that the
+ * <template> can use the placeholders __INDEX__ / __POSITION__ replaced by the JS.
+ *
+ * @param array<string, mixed> $row
+ * @param list<string> $errors
+ */
+$renderRow = function (string $index, string $position, array $row, array $errors) use ($locales): string {
+    $rowId = 'submission-checklist-' . $position;
+    $describedBy = $errors !== [] ? ' aria-describedby="' . $this->escape($rowId . '-errors') . '" aria-invalid="true"' : '';
+    $key = is_string($row['key'] ?? null) ? $row['key'] : '';
+
+    ob_start(); ?>
+    <fieldset class="panel panel-default submission-checklist-row">
+        <legend class="panel-heading"><?php echo $this->escape(sprintf($this->translate('Statement %s'), $position)); ?></legend>
+        <div class="panel-body">
+
+            <input type="hidden" name="items[<?php echo $this->escape($index); ?>][key]" value="<?php echo $this->escape($key); ?>">
+
+            <?php foreach ($locales as $locale => $label): ?>
+                <?php $text = is_string($row['labels'][$locale] ?? null) ? $row['labels'][$locale] : ''; ?>
+                <div class="form-group">
+                    <label for="<?php echo $this->escape($rowId . '-' . $locale); ?>"><?php echo $this->escape($this->translate($label)); ?></label>
+                    <textarea class="form-control" rows="2"
+                              id="<?php echo $this->escape($rowId . '-' . $locale); ?>"
+                              name="items[<?php echo $this->escape($index); ?>][<?php echo $locale; ?>]"
+                              maxlength="<?php echo (int)$this->maxLength; ?>"<?php echo $describedBy; ?>><?php echo $this->escape($text); ?></textarea>
+                </div>
+            <?php endforeach; ?>
+
+            <?php if ($errors !== []): ?>
+                <ul class="text-danger" id="<?php echo $this->escape($rowId . '-errors'); ?>">
+                    <?php foreach ($errors as $message): ?>
+                        <li><?php echo $this->escape($this->translate($message)); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+
+            <p class="text-right">
+                <button type="button" class="btn btn-danger btn-sm js-submission-checklist-remove" hidden
+                        aria-label="<?php echo $this->escape(sprintf($this->translate('Delete statement %s'), $position)); ?>">
+                    <?php echo $this->escape($this->translate('Supprimer')); ?>
+                </button>
+            </p>
+        </div>
+    </fieldset>
+    <?php
+    return (string)ob_get_clean();
+};
+?>
+<form method="post" action="<?php echo $this->escape($this->action); ?>" class="submission-checklist-editor"
+      data-max-items="<?php echo (int)$this->maxItems; ?>"
+      data-legend="<?php echo $this->escape(sprintf($this->translate('Statement %s'), '__POSITION__')); ?>"
+      data-remove-label="<?php echo $this->escape(sprintf($this->translate('Delete statement %s'), '__POSITION__')); ?>"
+      data-remove-confirm="<?php echo $this->escape(sprintf($this->translate('Delete statement %s? Its texts will be lost. The checklist only changes when you click "Save the checklist".'), '__POSITION__')); ?>"
+      data-confirm-dialog="submission-checklist-confirm"<?php
+      // A list refused with errors is not saved: leaving the page must warn (editor.js)
+      echo ($listErrors !== [] || $rowErrors !== []) ? ' data-unsaved="1"' : ''; ?>>
+    <input type="hidden" name="<?php echo $this->escape($this->token['name']); ?>" value="<?php echo $this->escape($this->token['value']); ?>">
+
+    <?php if ($listErrors !== [] || $rowErrors !== []): ?>
+        <div class="alert alert-danger" role="alert">
+            <p><?php echo $this->escape($this->translate('The checklist has not been saved: please correct the errors.')); ?></p>
+            <?php if ($listErrors !== []): ?>
+                <ul>
+                    <?php foreach ($listErrors as $message): ?>
+                        <li><?php echo $this->escape($this->translate($message)); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
+    <p class="help-block">
+        <?php echo $this->escape(sprintf(
+            $this->translate('Up to %1$d statements, %2$d characters per text.'),
+            $this->maxItems,
+            $this->maxLength
+        )); ?>
+    </p>
+
+    <div class="submission-checklist-rows">
+        <?php foreach ($rows as $index => $row): ?>
+            <?php echo $renderRow((string)$index, (string)($index + 1), $row, $rowErrors[$index + 1] ?? []); ?>
+        <?php endforeach; ?>
+    </div>
+
+    <template class="submission-checklist-row-template">
+        <?php echo $renderRow('__INDEX__', '__POSITION__', ['key' => null, 'labels' => ['en' => '', 'fr' => '']], []); ?>
+    </template>
+
+    <p class="submission-checklist-add">
+        <!-- Shown by editor.js: adding a block needs JavaScript -->
+        <button type="button" class="btn btn-default js-submission-checklist-add" hidden>
+            <span aria-hidden="true">+</span> <?php echo $this->escape($this->translate('Add a statement')); ?>
+        </button>
+    </p>
+
+    <a class="btn btn-default js-submission-checklist-cancel" href="<?php echo $this->escape($this->cancelUrl); ?>"><?php echo $this->escape($this->translate('Annuler')); ?></a>
+    <button type="submit" class="btn btn-primary"><?php echo $this->escape($this->translate('Save the checklist')); ?></button>
+
+</form>
+
+<!-- Confirmation before deleting a checkbox that holds text (editor.js); outside the form: its buttons must not submit it -->
+<dialog id="submission-checklist-confirm" class="submission-checklist-confirm"
+        aria-labelledby="submission-checklist-confirm-title" aria-describedby="submission-checklist-confirm-message">
+    <h2 id="submission-checklist-confirm-title" class="submission-checklist-confirm-title">
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        <?php echo $this->escape($this->translate('Attention')); ?>
+    </h2>
+    <p id="submission-checklist-confirm-message" class="submission-checklist-confirm-message"></p>
+    <div class="submission-checklist-confirm-actions">
+        <button type="button" class="btn btn-default js-submission-checklist-confirm-cancel"><?php echo $this->escape($this->translate('Annuler')); ?></button>
+        <button type="button" class="btn btn-primary js-submission-checklist-confirm-ok"><?php echo $this->escape($this->translate('Supprimer')); ?></button>
+    </div>
+</dialog>
