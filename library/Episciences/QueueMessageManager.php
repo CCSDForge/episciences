@@ -29,6 +29,11 @@ class QueueMessageManager
             throw new InvalidArgumentException("rvcode cannot be empty");
         }
 
+        // queue_messages.type is NOT NULL: a message without a type is refused here, not by the database
+        if ($queue->getType() === null) {
+            throw new InvalidArgumentException("type cannot be empty");
+        }
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $unprocessed = self::UNPROCESSED;
         $table = self::TABLE;

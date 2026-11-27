@@ -1,4 +1,5 @@
 const { test, expect, E2E_USERNAMES } = require('../../fixtures/e2e-fixtures');
+const { toAppPath } = require('../../helpers/app-url');
 const {
     REPOSITORY_TIMEOUT,
     submitArxivPaper,
@@ -70,7 +71,7 @@ test.describe('Reviewer management by the editorial team', () => {
             const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
             expect(invitationUrl).toBeTruthy();
 
-            await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+            await reviewerPage.goto(toAppPath(invitationUrl));
             await reviewerPage.locator('#submitaccept').click();
             await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
             await expect(reviewerPage.locator('form#rating-grid')).toBeVisible();
@@ -78,7 +79,7 @@ test.describe('Reviewer management by the editorial team', () => {
 
         await test.step('the editorial team extends the reviewing deadline', async () => {
             await openActiveReviewerMenu(adminPage, docid);
-            await adminPage.locator('.popover .context-menu a[href^="/administratepaper/updatedeadline/"]').click();
+            await adminPage.locator('.popover .context-menu a[href*="/administratepaper/updatedeadline/"]').click();
 
             const modal = adminPage.locator('#modal-box');
             const deadlineInput = modal.locator('#deadline-id');
@@ -111,7 +112,7 @@ test.describe('Reviewer management by the editorial team', () => {
 
         await test.step('the editorial team unassigns the reviewer and revokes their rating access', async () => {
             await openActiveReviewerMenu(adminPage, docid);
-            await adminPage.locator('.popover .context-menu a[href^="/administratepaper/removereviewer/"]').click();
+            await adminPage.locator('.popover .context-menu a[href*="/administratepaper/removereviewer/"]').click();
 
             const modal = adminPage.locator('#modal-box');
             await expect(modal.locator('#reviewer-removal-form')).toBeVisible();
@@ -173,7 +174,7 @@ test.describe('Reviewer management by the editorial team', () => {
 
             await openPaperManagement(adminPage, docidV1);
             const version2Link = adminPage
-                .locator('.panel:has(h2:has-text("Versions")) a[href^="/administratepaper/view/id/"]')
+                .locator('.panel:has(h2:has-text("Versions")) a[href*="/administratepaper/view/id/"]')
                 .filter({ hasText: 'Version 2' });
             await expect(version2Link).toBeVisible();
             docidV2 = Number((await version2Link.getAttribute('href')).split('/').pop());
@@ -189,7 +190,7 @@ test.describe('Reviewer management by the editorial team', () => {
             const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
             expect(invitationUrl).toBeTruthy();
 
-            await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+            await reviewerPage.goto(toAppPath(invitationUrl));
             await reviewerPage.locator('#submitaccept').click();
             await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docidV2}`));
 

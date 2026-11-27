@@ -3,6 +3,7 @@
 use Episciences\DataSet;
 use Episciences\Files\File;
 use Episciences\Files\Uploader;
+use Episciences\Hal\HalTeiSource;
 use Episciences\Paper\DataDescriptor;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\LinkedDataNotStoredException;
@@ -12,7 +13,6 @@ use Episciences\Paper\RelationshipMapper;
 use Episciences\Repositories\HAL\TeiLinkedDataParser;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Submit\SubmittedRecord;
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
@@ -35,8 +35,6 @@ class Episciences_Submit
     protected $_db = null;
     public const POSTED_VOLUME_KEY = 'volumes';
     public const POSTED_SECTION_KEY = 'sections';
-    public const HAL_API_TIMEOUT = 10;
-    public const HAL_API_CONNECT_TIMEOUT = 5;
     /**
      * Key of a saveDoc() result: set when a step of the processing that follows the save failed
      * (files, linked data, authors or enrichment, see processSavedPaper())
@@ -2045,11 +2043,12 @@ class Episciences_Submit
 
     /**
      * Repository processing of a saved paper: files, linked data, then HAL datasets / SWHID.
-     * The files are loaded from the repository.
+     * The files are loaded from the repository; the HAL datasets are read from the TEI of the paper
+     * version, served by the OAI-PMH server of its repository.
      *
      * @param Episciences_Paper|DataSet $paper
      * @return bool false when a step failed: the files or the linked data of the paper may be missing
-     *              (an HTTP failure of the HAL datasets request is only reported, see datasetsProcessing())
+     *              (a failure to read the HAL TEI is only reported, see datasetsProcessing())
      */
     public static function processRepositoryHooks(Episciences_Paper|DataSet $paper): bool
     {
@@ -2090,9 +2089,10 @@ class Episciences_Submit
             },
         ];
 
+        // HAL linked data: the TEI is read from the OAI-PMH server of the repository, not from its API
         if (
             !Episciences_Repositories::handlesOwnEnrichment($repoId) &&
-            Episciences_Repositories::getApiUrl($repoId) !== ''
+            Episciences_Repositories::isFromHalRepository($repoId)
         ) {
             // datasetsProcessing() only handles the HTTP errors, not the database ones
             $steps['datasetsProcessing'] = static fn() => self::datasetsProcessing($paper);
@@ -2926,37 +2926,36 @@ class Episciences_Submit
     }
 
     /**
-     * Update the paper linked data from the HAL TEI (search API): related works and SWHID
+     * Update the paper linked data from the HAL TEI of the paper version: related works and SWHID
      * @param Episciences_Paper $paper
-     * @param Client|null $client HTTP client (injected by the tests)
+     * @param bool $refreshTei read the TEI from HAL again instead of the cached one, so that the linked data
+     *                         edited on HAL without a new version are seen (update of the paper record);
+     *                         when HAL does not return it, the TEI cached before, if any, is read
+     * @param HalTeiSource|null $source document version to read, when it differs from the paper version
+     *                                  (update of the record to the version of the archive); null: the paper version
      * @return int
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function datasetsProcessing(Episciences_Paper $paper, ?Client $client = null): int
+    public static function datasetsProcessing(Episciences_Paper $paper, bool $refreshTei = false, ?HalTeiSource $source = null): int
     {
-        try {
-
-            if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
-                $client ??= new Client([
-                    'timeout' => self::HAL_API_TIMEOUT,
-                    'connect_timeout' => self::HAL_API_CONNECT_TIMEOUT,
-                ]);
-                // The TEI holds the related works with their relation and resource types (<relatedItem>)
-                // and the SWHID (<idno type="swhid">), which the search fields do not all give.
-                // No version filter: the HAL search index only holds the latest version of a document
-                $url = Episciences_Repositories::getApiUrl($paper->getRepoid())
-                    . '/search/?q=halId_s:' . urlencode((string)$paper->getIdentifier())
-                    . '&wt=xml-tei';
-                $tei = $client->get($url)->getBody()->getContents();
-                // A TEI without the document (unreadable, empty search result) yields no linked data
-                return self::processDatasets($paper, TeiLinkedDataParser::parse($tei) ?? []);
-            }
-
-        } catch (GuzzleException $e) {
-            trigger_error($e->getMessage());
+        if (!Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
+            return 0;
         }
 
-        return 0;
+        // The TEI holds the related works with their relation and resource types (<relatedItem>)
+        // and the SWHID (<idno type="swhid">), which the search fields do not all give.
+        // A failed request is reported by the TEI cache manager.
+        // 0 = latest version, as for the publication date (PublicationDateResolver)
+        $source ??= HalTeiSource::ofPaper($paper);
 
+        if ($refreshTei) {
+            Episciences_Hal_TeiCacheManager::refresh($source);
+        }
+
+        $tei = Episciences_Hal_TeiCacheManager::fetchAndGet($source);
+
+        // A TEI without the document (unreadable, unavailable) yields no linked data
+        return self::processDatasets($paper, TeiLinkedDataParser::parse($tei) ?? []);
     }
 
     /**

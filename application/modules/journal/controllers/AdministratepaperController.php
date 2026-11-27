@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\AppRegistry;
 use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\Reviewer\InvitationToken;
 use Episciences\Paper\Spdx\LicenseCodeManager;
@@ -952,7 +953,7 @@ class AdministratepaperController extends PaperDefaultController
         // paper password bloc
 
         $displayPaperPasswordBloc = (
-            in_array(Episciences_Repositories::ARXIV_REPO_ID, $review->getSetting($review::SETTING_REPOSITORIES)) &&
+            $review->acceptsRepository(Episciences_Repositories::ARXIV_REPO_ID) &&
             $review->getSetting($review::SETTING_ARXIV_PAPER_PASSWORD) &&
             $paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID &&
             !in_array($paper->getStatus(), $paper::$_noEditableStatus, true) &&
@@ -1190,6 +1191,14 @@ class AdministratepaperController extends PaperDefaultController
             $oReviewers = Episciences_Review::getReviewers();
             $allReviewers = Episciences_PapersManager::getReviewers($docId, ['pending'], true);
 
+            // get active or pending invitations
+            $invitations = $oPaper->getInvitations([
+                Episciences_User_Assignment::STATUS_ACTIVE,
+                Episciences_User_Assignment::STATUS_PENDING], true);
+            // reviewers with an accepted or pending invitation for this paper, left out of the
+            // known reviewers and of the user search, even if the journal has no reviewer yet
+            $ignore_list = $this->ongoingInvitationUserIds($invitations);
+            $this->view->js_ignore_list = Zend_Json::encode($ignore_list);
 
             if ($oReviewers) {
                 // On ne peut pas inviter un relecteur à relire son article.
@@ -1212,25 +1221,9 @@ class AdministratepaperController extends PaperDefaultController
                 // TODO: get this code out of the controller: move this to a model
                 // TODO: write a reviewers collection class ?
 
-                // get active or pending invitations
-                $invitations = $oPaper->getInvitations([
-                    Episciences_User_Assignment::STATUS_ACTIVE,
-                    Episciences_User_Assignment::STATUS_PENDING], true);
-                $ignore_list = [];
-                // remove reviewers who already have an accepted invitation for this paper
-                foreach ($invitations[Episciences_User_Assignment::STATUS_ACTIVE] as $invitation) {
-                    $ignore_list[$invitation['UID']] = $invitation['UID'];
-                    if (array_key_exists($invitation['UID'], $oReviewers)) {
-                        unset($oReviewers[$invitation['UID']]);
-                    }
-                }
-
-                // remove reviewers who already have a pending invitation for this paper
-                foreach ($invitations[Episciences_User_Assignment::STATUS_PENDING] as $invitation) {
-                    $ignore_list[$invitation['UID']] = $invitation['UID'];
-                    if (array_key_exists($invitation['UID'], $oReviewers)) {
-                        unset($oReviewers[$invitation['UID']]);
-                    }
+                // remove reviewers who already have an accepted or pending invitation for this paper
+                foreach ($ignore_list as $uid) {
+                    unset($oReviewers[$uid]);
                 }
 
                 // prepare js array
@@ -1245,7 +1238,6 @@ class AdministratepaperController extends PaperDefaultController
 
                 $this->view->js_reviewers = Zend_Json::encode($reviewers);
                 $this->view->js_invitations = Zend_Json::encode(array_keys($invitations));
-                $this->view->js_ignore_list = Zend_Json::encode(array_keys($ignore_list));
 
                 $this->view->reviewers = $oReviewers;
             }
@@ -1576,6 +1568,66 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * User ids of the reviewers with an accepted or pending (not expired) invitation:
+     * user ids only, temporary accounts have their own ids
+     * @param array<string, array<int, array<string, mixed>>> $invitations sorted invitations (Episciences_Paper::getInvitations())
+     * @return int[]
+     */
+    private function ongoingInvitationUserIds(array $invitations): array
+    {
+        $uids = [];
+
+        foreach ([Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING] as $status) {
+            foreach ($invitations[$status] ?? [] as $invitation) {
+                if (!$invitation['TMP_USER']) {
+                    $uids[(int)$invitation['UID']] = (int)$invitation['UID'];
+                }
+            }
+        }
+
+        return array_values($uids);
+    }
+
+    /**
+     * Whether the reviewer has a pending (not expired) or accepted invitation for the paper:
+     * the same invitations as the ones left out of the lists of invitereviewerAction().
+     * A new temporary account (no id yet) is matched by its e-mail address.
+     */
+    private function hasOngoingReviewerInvitation(Episciences_Paper $paper, int $uid, bool $isTmpUser, string $email = ''): bool
+    {
+        if ($uid <= 0 && (!$isTmpUser || trim($email) === '')) {
+            return false;
+        }
+
+        $statuses = [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING];
+        $invitations = $paper->getInvitations($statuses, true);
+
+        foreach ($statuses as $status) {
+            foreach ($invitations[$status] ?? [] as $invitation) {
+                if (self::isInvitationOf($invitation, $uid, $isTmpUser, $email)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, mixed> $invitation
+     */
+    private static function isInvitationOf(array $invitation, int $uid, bool $isTmpUser, string $email): bool
+    {
+        if ($uid > 0) {
+            return (int)$invitation['UID'] === $uid && (bool)$invitation['TMP_USER'] === $isTmpUser;
+        }
+
+        $invitedEmail = (string)($invitation['reviewer']['email'] ?? '');
+
+        return $invitedEmail !== '' && strcasecmp(trim($invitedEmail), trim($email)) === 0;
+    }
+
+    /**
      * save reviewer invitation sent to a user
      * @return bool
      * @throws Zend_Db_Adapter_Exception
@@ -1630,6 +1682,26 @@ class AdministratepaperController extends PaperDefaultController
         if (!isset($reviewer['firstname'])) {
             $reviewer['firstname'] = '';
         }
+
+        // A reviewer whose invitation for this paper is pending or accepted is not invited again
+        // (a new temporary account, without id yet, by its e-mail address)
+        $isTmpReviewer = (int)($reviewer['invitation_type'] ?? 0) === 3;
+        $reviewerId = (int)($reviewer['id'] ?? 0);
+        if ($this->hasOngoingReviewerInvitation($paper, $reviewerId, $isTmpReviewer, is_string($reviewer['email'] ?? null) ? $reviewer['email'] : '')) {
+            AppRegistry::getMonoLogger()?->warning(sprintf(
+                'Reviewer invitation refused for document #%d: %s already has a pending or accepted invitation (sender %d)',
+                $paper->getDocid(),
+                $reviewerId > 0 ? 'user ' . ($isTmpReviewer ? 'tmp_' : '') . $reviewerId : 'the address of the new temporary account',
+                (int)Episciences_Auth::getUid()
+            ));
+            $message = $translator->translate('Ce relecteur a déjà une invitation en attente ou acceptée pour cet article.');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            if (!empty($referer)) {
+                $this->_helper->redirector->gotoUrl($referer);
+            }
+            return false;
+        }
+
         // save temporary user in USER_TMP table
         if (!$reviewer['id'] && $reviewer['invitation_type'] == 3) {
             $tmp_user = new Episciences_User_Tmp([

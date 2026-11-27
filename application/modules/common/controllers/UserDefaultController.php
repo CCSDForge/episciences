@@ -79,8 +79,7 @@ class UserDefaultController extends Zend_Controller_Action
             $identity = Episciences_Auth::getInstance()->getIdentity()->toArray();
         } else {
             $this->view->message = "Vous n'êtes pas connecté";
-            $this->view->description = "<a href='/user/login'>Connectez-vous</a>, ou <a href='/user/create'>créez votre compte</a>.";
-            $this->view->descriptionIsHtml = true; // static markup, rendered unescaped by error.phtml
+            $this->view->showLoginLinks = true;
             $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }
@@ -2174,11 +2173,11 @@ class UserDefaultController extends Zend_Controller_Action
         if ($request) {
 
             $params = $request->getPost();
-            $uid = $params['uid'];
+            $uid = (int) ($params['uid'] ?? 0);
 
             $user = new Episciences_User();
             $user->find($uid);
-            $userRoles = $user->getRoles();
+            $userRoles = $user->getRoles() ?? [];
 
             $acl = new Episciences_Acl();
             $roles = $acl->getEditableRoles();
@@ -2340,7 +2339,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         $user = new Episciences_User();
         $user->find($uid);
-        $userRoles = $user->getRoles();
+        $userRoles = $user->getRoles() ?? [];
         if (count($userRoles) > 1) {
             foreach (array_keys($userRoles, Episciences_Acl::ROLE_MEMBER) as $key) {
                 unset ($userRoles[$key]);

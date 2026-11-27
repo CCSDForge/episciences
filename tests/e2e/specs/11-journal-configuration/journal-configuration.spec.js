@@ -24,19 +24,19 @@ test.describe('Journal configuration', () => {
         const criterionTitle = `E2E clarity ${Date.now()}`;
         const vid = await createVolume(adminPage, `E2E Grid volume ${Date.now()}`);
         const gridActions = adminPage.locator('#grid-actions', {
-            has: adminPage.locator(`a[href="/grid/addcriterion?rgid=${vid}"]`),
+            has: adminPage.locator(`a[href$="/grid/addcriterion?rgid=${vid}"]`),
         });
 
         await test.step('the grid is created empty, with the actions of a volume grid', async () => {
             await createVolumeGrid(adminPage, vid);
             await expect(gridActions.getByRole('button', { name: 'Copy default grid' })).toBeVisible();
-            await expect(gridActions.locator(`a.delete[href="/grid/delete?rgid=${vid}"]`)).toBeVisible();
+            await expect(gridActions.locator(`a.delete[href$="/grid/delete?rgid=${vid}"]`)).toBeVisible();
         });
 
         await test.step('a criterion is added, then renamed', async () => {
             await addQuantitativeCriterion(adminPage, vid, { title: criterionTitle, description: 'Is the paper clear?' });
 
-            await adminPage.locator(`a[href^="/grid/editcriterion?rgid=${vid}&"]`).first().click();
+            await adminPage.locator(`a[href*="/grid/editcriterion?rgid=${vid}&"]`).first().click();
             const name = adminPage.locator('#critere-element');
             // Multilingual field: the pencil moves the value back into the input, the visible button saves it
             await name.locator('button:has(.glyphicon-pencil)').click();
@@ -54,11 +54,11 @@ test.describe('Journal configuration', () => {
 
         await test.step('the criterion, then the grid are removed', async () => {
             await adminPage.goto('grid/list');
-            await adminPage.locator(`a.delete[href^="/grid/deletecriterion?rgid=${vid}&"]`).first().click();
+            await adminPage.locator(`a.delete[href*="/grid/deletecriterion?rgid=${vid}&"]`).first().click();
             await adminPage.locator('.bootbox-confirm .bootbox-accept').click();
             await expect(adminPage.getByText(`${criterionTitle} (renamed)`)).toHaveCount(0);
 
-            await gridActions.locator(`a.delete[href="/grid/delete?rgid=${vid}"]`).click();
+            await gridActions.locator(`a.delete[href$="/grid/delete?rgid=${vid}"]`).click();
             await adminPage.locator('.bootbox-confirm .bootbox-accept').click();
             await expect(adminPage.locator(`a[href*="rgid=${vid}"]`)).toHaveCount(0);
         });

@@ -6,6 +6,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
 use Episciences\Paper\Funding\HalTeiFundingParser;
+use Episciences\Hal\HalTeiSource;
 
 /**
  * Orchestration of the funding enrichment pipeline.
@@ -90,7 +91,7 @@ class Episciences_Paper_Projects_EnrichmentService
      */
     public static function enrichHalFundingFromTei(int $paperId, string $identifier, int $version): int
     {
-        $tei = Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version);
+        $tei = Episciences_Hal_TeiCacheManager::fetchAndGet(HalTeiSource::hal($identifier, $version));
 
         if (trim($tei) === '') {
             throw new RuntimeException(sprintf('HAL TEI unavailable for %s (version %d): HAL fundings not updated', $identifier, $version));

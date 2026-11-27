@@ -1,4 +1,5 @@
 const { test, expect } = require('../../fixtures/e2e-fixtures');
+const { toAppPath } = require('../../helpers/app-url');
 const {
     submitArxivPaper,
     openPaperManagement,
@@ -54,9 +55,7 @@ test.describe('Reviewer invitation and review', () => {
         });
 
         await test.step('the reviewer accepts the invitation', async () => {
-            // The link targets the configured application URL: only its path is kept
-            const { pathname } = new URL(invitationUrl);
-            await reviewerPage.goto(pathname.replace(/^\//, ''));
+            await reviewerPage.goto(toAppPath(invitationUrl));
             await reviewerPage.locator('#submitaccept').click();
             await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
         });

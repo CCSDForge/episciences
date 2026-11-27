@@ -5,16 +5,22 @@ declare(strict_types=1);
 namespace unit\modules\journal\controllers;
 
 use Ccsd_Error;
+use Episciences_Hal_TeiCacheManager;
 use Episciences_Paper;
 use Episciences_Repositories;
 use Episciences_Repositories_NewVersionSpy_Hooks;
 use Episciences_Submit;
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
 use Monolog\Handler\NullHandler;
 use Monolog\Logger;
 use PaperController;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use unit\modules\ControllerTestCase;
 use Zend_Registry;
 
@@ -30,9 +36,8 @@ use Zend_Registry;
 final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
 {
     private const REPO_ID = 9998;
-    /** Fake HAL-like repository (the label contains "HAL"), without hooks, with an API that refuses connections */
+    /** Fake HAL-like repository (the label contains "HAL"), without hooks */
     private const HAL_REPO_ID = 9997;
-    private const HAL_API_URL = 'http://127.0.0.1:1';
     private const DOCID = 1234;
     private const IDENTIFIER = '42';
 
@@ -65,13 +70,21 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
             self::HAL_REPO_ID => [
                 Episciences_Repositories::REPO_LABEL => 'HAL Spy',
                 Episciences_Repositories::REPO_TYPE => Episciences_Repositories::TYPE_PAPERS_REPOSITORY,
-                Episciences_Repositories::REPO_API_URL => self::HAL_API_URL,
+                // the TEI is read from the OAI-PMH server of the repository
+                Episciences_Repositories::REPO_BASEURL => 'https://api.hal.test/oai/hal/',
+                Episciences_Repositories::REPO_IDENTIFIER => 'oai:HAL:%%IDv%%VERSION',
             ],
         ]);
 
         Episciences_Repositories_NewVersionSpy_Hooks::$calls = [];
         Episciences_Repositories_NewVersionSpy_Hooks::$exceptions = [];
         Episciences_Repositories_NewVersionSpy_Hooks::$loadedRecord = [];
+
+        // The HAL TEI requests get an unavailable service
+        Episciences_Hal_TeiCacheManager::setCachePool(new ArrayAdapter(0, false));
+        Episciences_Hal_TeiCacheManager::setHttpClient(new Client([
+            'handler' => HandlerStack::create(new MockHandler([new Response(503, [], 'Service Unavailable')])),
+        ]));
 
         // The cover letter upload (Uploader) reports a missing application logger as a notice:
         // these tests count the notices, they must not depend on what an earlier test left in the registry
@@ -82,6 +95,9 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
 
     protected function tearDown(): void
     {
+        Episciences_Hal_TeiCacheManager::setCachePool(null);
+        Episciences_Hal_TeiCacheManager::setHttpClient(null);
+
         $repositories = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
         $repositories->setAccessible(true);
         $repositories->setValue(null, $this->previousRepositories);
@@ -167,14 +183,14 @@ final class PaperControllerNewVersionLinkedDataTest extends ControllerTestCase
 
     public function testHalNewVersionQueriesTheDatasets(): void
     {
-        // datasetsProcessing() reports the refused connection: it did query the HAL API
+        // datasetsProcessing() reports the unavailable service: it did query HAL
         $notices = $this->collectNotices(fn() => $this->processRepositoryHooks([], self::HAL_REPO_ID));
 
         self::assertCount(1, $notices);
-        self::assertStringContainsString('127.0.0.1', $notices[0]);
+        self::assertStringContainsString('503', $notices[0]);
     }
 
-    public function testRepositoryWithoutApiDoesNotQueryTheDatasets(): void
+    public function testRepositoryOtherThanHalDoesNotQueryTheDatasets(): void
     {
         $notices = $this->collectNotices(fn() => self::assertTrue($this->processRepositoryHooks([])));
 

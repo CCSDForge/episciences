@@ -11,7 +11,7 @@ use Episciences\Paper\RelationshipMapper;
 use Episciences_Paper_DatasetsManager;
 
 /**
- * Reads the linked data of a HAL document from its TEI (HAL search API, wt=xml-tei):
+ * Reads the linked data of a HAL document from its TEI (OAI-PMH server of its repository, metadataPrefix=xml-tei):
  *
  *  - <relatedItem target="..." type="IsSupplementedBy" subtype="http://purl.org/coar/resource_type/c_ddb1"/>:
  *    the related works declared in HAL, with their DataCite relation type and their COAR resource type;

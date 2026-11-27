@@ -1,4 +1,5 @@
 const { test, expect, E2E_USERNAMES } = require('../../fixtures/e2e-fixtures');
+const { toAppPath } = require('../../helpers/app-url');
 const { E2E_PASSWORD } = require('../../helpers/login');
 const { runPhp } = require('../../helpers/app-cli');
 const {
@@ -44,9 +45,7 @@ async function receivedInvitationPath(mailpit, docid, to) {
     const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
     expect(invitationUrl).toBeTruthy();
 
-    // The link targets the configured application URL: only its path is kept (the link token is a path segment)
-    const url = new URL(invitationUrl);
-    return url.pathname.replace(/^\//, '') + url.search;
+    return toAppPath(invitationUrl);
 }
 
 /**
@@ -729,8 +728,7 @@ test.describe('Reviewer invitation answer', () => {
                 const resetUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/user/resetpassword/'));
                 expect(resetUrl).toBeTruthy();
 
-                const url = new URL(resetUrl);
-                await page.goto(url.pathname.replace(/^\//, '') + url.search);
+                await page.goto(toAppPath(resetUrl));
                 await page.locator('input[name="PASSWORD"]').fill(E2E_PASSWORD);
                 await page.locator('input[name="PASSWORD_VERIFY"]').fill(E2E_PASSWORD);
                 await page.locator('form:has(input[name="PASSWORD_VERIFY"]) [type="submit"]').click();
@@ -813,8 +811,7 @@ test.describe('Reviewer invitation answer', () => {
                 const activationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/user/resetpassword/'));
                 expect(activationUrl).toBeTruthy();
 
-                const url = new URL(activationUrl);
-                await page.goto(url.pathname.replace(/^\//, '') + url.search);
+                await page.goto(toAppPath(activationUrl));
                 await expect(page.getByRole('heading', { name: 'Account activation' })).toBeVisible();
                 await page.locator('input[name="PASSWORD"]').fill(E2E_PASSWORD);
                 await page.locator('input[name="PASSWORD_VERIFY"]').fill(E2E_PASSWORD);

@@ -214,7 +214,8 @@ class GetCreatorDataCommand extends Command
         $newAuthorInfos = new Episciences_Paper_Authors();
         $newAuthorInfos->setAuthors(json_encode($enrichedAuthors, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
         $newAuthorInfos->setPaperId($paperId);
-        $newAuthorInfos->setAuthorsId(array_key_first($selectAuthor));
+        // Do not restrict to a single idauthors: if duplicate rows exist for this paperid,
+        // update all of them so getDecodedAuthors() does not keep reading a stale trailing row.
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
     }
 

@@ -1,4 +1,5 @@
 const { test, expect, E2E_USERNAMES } = require('../../fixtures/e2e-fixtures');
+const { toAppPath } = require('../../helpers/app-url');
 const {
     submitArxivPaper,
     openPaperManagement,
@@ -55,7 +56,7 @@ test.describe('Reviewer on-behalf rating, communications and dashboard', () => {
             const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
             expect(invitationUrl).toBeTruthy();
 
-            await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+            await reviewerPage.goto(toAppPath(invitationUrl));
             await reviewerPage.locator('#submitaccept').click();
             await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
         });
@@ -64,7 +65,7 @@ test.describe('Reviewer on-behalf rating, communications and dashboard', () => {
             await openPaperManagement(adminPage, docid);
             const activeReviewer = adminPage.locator('#active-invitations .reviewer', { hasText: REVIEWER_NAME });
             await activeReviewer.locator('.popover-link').click();
-            await adminPage.locator(`.popover .context-menu a[href^="/paper/rating?id=${docid}"]`).click();
+            await adminPage.locator(`.popover .context-menu a[href*="/paper/rating?id=${docid}"]`).click();
 
             await expect(adminPage).toHaveURL(new RegExp(`paper/rating\\?id=${docid}`));
             await expect(adminPage.locator('h2 .alert-warning')).toBeVisible();
@@ -80,7 +81,7 @@ test.describe('Reviewer on-behalf rating, communications and dashboard', () => {
             // Completed review exposes the reopen action in the reviewer context menu
             await adminPage.locator('#active-invitations .reviewer', { hasText: REVIEWER_NAME }).locator('.popover-link').click();
             await expect(
-                adminPage.locator(`.popover .context-menu a[href^="/administratepaper/refreshrating/id/${docid}"]`)
+                adminPage.locator(`.popover .context-menu a[href*="/administratepaper/refreshrating/id/${docid}"]`)
             ).toBeVisible();
         });
     });
@@ -112,7 +113,7 @@ test.describe('Reviewer on-behalf rating, communications and dashboard', () => {
             const invitationUrl = mailpit.extractLinks(email.Text).find(link => link.includes('/reviewer/invitation/'));
             expect(invitationUrl).toBeTruthy();
 
-            await reviewerPage.goto(new URL(invitationUrl).pathname.replace(/^\//, ''));
+            await reviewerPage.goto(toAppPath(invitationUrl));
             await reviewerPage.locator('#submitaccept').click();
             await expect(reviewerPage).toHaveURL(new RegExp(`paper/rating/id/${docid}`));
 
