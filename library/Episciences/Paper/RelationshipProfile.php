@@ -9,7 +9,7 @@ namespace Episciences\Paper;
  *
  *  - OpenAire: OpenAIRE Guidelines for Literature Repositories 4.0 (export/datacite.phtml, openaire.xsd),
  *    which validates relationType against the DataCite 4.1 vocabulary;
- *  - DataCite: DataCite Metadata Schema 4.5+ (HAL TEI, Episciences\Paper\Tei).
+ *  - DataCite: DataCite Metadata Schema 4.6 (HAL TEI, Episciences\Paper\Tei).
  */
 enum RelationshipProfile: string
 {
@@ -37,9 +37,10 @@ enum RelationshipProfile: string
     ];
 
     /**
-     * relationType values added by DataCite 4.4 and 4.5
+     * relationType values added after DataCite 4.1: Obsoletes pair (4.2), IsPublishedIn (4.4),
+     * Collects pair (4.5), translation pair (4.6)
      */
-    private const array DATACITE_4_5_ADDITIONS = [
+    private const array DATACITE_4_2_TO_4_6_ADDITIONS = [
         'IsObsoletedBy', 'Obsoletes',
         'IsCollectedBy', 'Collects',
         'IsPublishedIn',
@@ -53,7 +54,7 @@ enum RelationshipProfile: string
     {
         return match ($this) {
             self::OpenAire => self::DATACITE_4_1,
-            self::DataCite => [...self::DATACITE_4_1, ...self::DATACITE_4_5_ADDITIONS],
+            self::DataCite => [...self::DATACITE_4_1, ...self::DATACITE_4_2_TO_4_6_ADDITIONS],
         };
     }
 

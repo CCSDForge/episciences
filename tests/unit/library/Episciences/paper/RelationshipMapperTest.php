@@ -89,7 +89,7 @@ final class RelationshipMapperTest extends TestCase
         yield 'empty' => [''];
         yield 'blank' => ['   '];
         yield 'DataCite without equivalent' => ['HasMetadata'];
-        yield 'DataCite 4.5 without equivalent' => ['IsPublishedIn'];
+        yield 'DataCite 4.4 without equivalent' => ['IsPublishedIn'];
         yield 'unknown' => ['IsWhatever'];
         yield 'free text' => ['Is supplemented by'];
     }
@@ -144,11 +144,11 @@ final class RelationshipMapperTest extends TestCase
     }
 
     /**
-     * Relations of DataCite 4.4 / 4.5, unknown to OpenAIRE 4.0 (DataCite 4.1)
+     * Relations added after DataCite 4.1 (4.2 and 4.6), unknown to OpenAIRE 4.0
      *
      * @return iterable<string, array{string, string}>
      */
-    public static function dataCite45OnlyProvider(): iterable
+    public static function dataCiteAfter41Provider(): iterable
     {
         yield 'translation of' => ['isTranslationOf', 'IsTranslationOf'];
         yield 'has translation' => ['hasTranslation', 'HasTranslation'];
@@ -156,8 +156,8 @@ final class RelationshipMapperTest extends TestCase
         yield 'replaces' => ['replaces', 'Obsoletes'];
     }
 
-    #[DataProvider('dataCite45OnlyProvider')]
-    public function testDataCite45RelationsAreOnlyExportedWithTheDataCiteProfile(string $relationship, string $expected): void
+    #[DataProvider('dataCiteAfter41Provider')]
+    public function testRelationsAddedAfterDataCite41AreOnlyExportedWithTheDataCiteProfile(string $relationship, string $expected): void
     {
         self::assertSame($expected, RelationshipMapper::toDataCite($relationship, RelationshipProfile::DataCite));
         self::assertNull(RelationshipMapper::toDataCite($relationship, RelationshipProfile::OpenAire));

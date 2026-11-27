@@ -95,8 +95,8 @@ case of the first letter does not matter (`IsReviewedBy` and `isReviewedBy` give
    | `IsRelatedTo` | `isRelatedMaterial` | Scholix only, not a DataCite 4.x type |
    | `IsDescribedBy` | `isDocumentedBy` | lossy: exported back as `IsDocumentedBy` |
    | `Describes` | `documents` | lossy: exported back as `Documents` |
-   | `IsObsoletedBy` | `isReplacedBy` | DataCite 4.4+ |
-   | `Obsoletes` | `replaces` | DataCite 4.4+ |
+   | `IsObsoletedBy` | `isReplacedBy` | DataCite 4.2+ |
+   | `Obsoletes` | `replaces` | DataCite 4.2+ |
 
 2. **Generic rule**: `lcfirst()` of the DataCite type when it is a stored relation
    (`IsSupplementedBy` gives `isSupplementedBy`, `IsTranslationOf` gives `isTranslationOf`, ...).
@@ -123,8 +123,8 @@ It first looks up `CROSSREF_TO_DATACITE`, for the stored relations whose `ucfirs
 | `basedOnData` | `IsDerivedFrom` | 4.1 |
 | `isBasisFor` | `IsSourceOf` | 4.1 |
 | `isDataBasisFor` | `IsSourceOf` | 4.1 |
-| `isReplacedBy` | `IsObsoletedBy` | 4.4 |
-| `replaces` | `Obsoletes` | 4.4 |
+| `isReplacedBy` | `IsObsoletedBy` | 4.2 |
+| `replaces` | `Obsoletes` | 4.2 |
 
 Otherwise it uses `ucfirst()`. The result is kept only when the profile accepts it.
 
@@ -193,9 +193,9 @@ Otherwise it uses `ucfirst()`. The result is kept only when the profile accepts 
 | Profile | Used by | Vocabulary |
 | :--- | :--- | :--- |
 | `RelationshipProfile::OpenAire` | `export/datacite.phtml` (OpenAIRE Guidelines for Literature Repositories 4.0, `openaire.xsd`) | DataCite 4.1 (31 types) |
-| `RelationshipProfile::DataCite` (default) | `Episciences_Paper_Tei` (HAL TEI) | DataCite 4.5 |
+| `RelationshipProfile::DataCite` (default) | `Episciences_Paper_Tei` (HAL TEI) | DataCite 4.6 |
 
-The DataCite 4.4 and 4.5 types (`IsObsoletedBy`, `Obsoletes`, `IsCollectedBy`, `Collects`, `IsPublishedIn`,
+The types added after DataCite 4.1 (`IsObsoletedBy`, `Obsoletes`, `IsCollectedBy`, `Collects`, `IsPublishedIn`,
 `IsTranslationOf`, `HasTranslation`) are not in `openaire.xsd`: exporting them would make the OpenAIRE record invalid.
 `IsRelatedTo` is in neither profile.
 
