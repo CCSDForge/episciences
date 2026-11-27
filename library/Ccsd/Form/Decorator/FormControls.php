@@ -43,8 +43,7 @@ JAVASCRIPT;
         }
         
         if ($founded) {
-            $view->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY)
-                           ->addJavascriptFile(VENDOR_TINYMCE)
+            $view->jQuery()->addJavascriptFile(VENDOR_TINYMCE)
                            ->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
         }
         

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Episciences\AppRegistry;
+
 /**
  * Renders <script> tags, or exposes raw URLs, for a webpack-encore entry by reading entrypoints.json.
  */
@@ -80,19 +82,16 @@ class Episciences_View_Helper_WebpackAssets extends Zend_View_Helper_Abstract
             ? self::$entrypointsPathOverride
             : APPLICATION_PUBLIC_PATH . '/build/entrypoints.json';
 
-        if (!is_file($path)) {
-            self::$entrypoints = [];
-            return self::$entrypoints;
+        $contents = is_file($path) ? file_get_contents($path) : false;
+        $decoded = $contents !== false ? json_decode($contents, true) : null;
+
+        if (!is_array($decoded)) {
+            // Without it no page loads any webpack entry, jQuery included: make it visible
+            AppRegistry::getMonoLogger()?->error(sprintf('Webpack entrypoints missing or invalid: %s (run the assets build)', $path));
+            $decoded = [];
         }
 
-        $contents = file_get_contents($path);
-        if ($contents === false) {
-            self::$entrypoints = [];
-            return self::$entrypoints;
-        }
-
-        $decoded = json_decode($contents, true);
-        self::$entrypoints = is_array($decoded) ? $decoded : [];
+        self::$entrypoints = $decoded;
         return self::$entrypoints;
     }
 }

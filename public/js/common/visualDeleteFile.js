@@ -1,93 +1,103 @@
 /**
  * Deletes contents
- * @param index
+ * @param fileInputId the id of the <input type="file"> to clear (see
+ *   Episciences_Form_Decorator_BootstrapInputFile, which renders it alongside a
+ *   paired "value_<fileInputId>" text input)
  */
-function clearFile(index) {
-    let object_inputs = getElements('input', 'value');
-    let self_id = object_inputs[index].id;
-    let $identifier = $('#' + self_id.replace('value_', ''));
-    $('#' + self_id).val(''); // to clear the value from the input field
-    $identifier.val('').trigger('change'); // The .trigger('change') is crucial here: if the input is marked as required in a form to prevent submission (for example data descriptor file; if a listener "change" is attached to it)
-    $('#tempFile_content_' + index).html('');
+function clearFile(fileInputId) {
+    const valueInput = document.getElementById('value_' + fileInputId);
+    if (valueInput) {
+        valueInput.value = ''; // to clear the value from the input field
+    }
+
+    const fileInput = document.getElementById(fileInputId);
+    if (fileInput) {
+        fileInput.value = '';
+        // Dispatching "change" is crucial here: if the input is marked as required in a form to prevent submission (for example data descriptor file; if a listener "change" is attached to it)
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    const container = document.getElementById(
+        'tempFile_content_' + fileInputId
+    );
+    if (container) {
+        container.replaceChildren();
+    }
 }
 
 /**
  *
  * @param label
- * @param index
- * @returns {string}
+ * @param fileInputId
+ * @returns {HTMLElement}
  */
 
-function formatFileLabel(label, index) {
-    let html = '';
-    html += '<div class="small grey">';
-    html +=
-        '<span class="glyphicon glyphicon-remove-circle" title="' +
-        translate('Annuler') +
-        '"' +
-        'onclick="clearFile(' +
-        index +
-        ')" style="margin-right: 5px; cursor: pointer">' +
-        '</span>';
-    html += $('<div>').text(label).html();
-    html += '</div>';
-    return html;
+function formatFileLabel(label, fileInputId) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'small grey';
+
+    const cancel = document.createElement('span');
+    cancel.className = 'glyphicon glyphicon-remove-circle';
+    cancel.title = translate('Annuler');
+    cancel.style.marginRight = '5px';
+    cancel.style.cursor = 'pointer';
+    cancel.addEventListener('click', () => clearFile(fileInputId));
+
+    wrapper.append(cancel, label);
+    return wrapper;
 }
 
 /**
  *
  * @param element
- * @param index
- * @returns {string}
+ * @param fileInputId
+ * @returns {HTMLElement|null}
  */
 
-function getContainer(element, index) {
-    let container_id = 'tempFile_content_' + index;
-    if (!$('#' + container_id).length) {
-        $(element)
-            .parent('div')
-            .append(
-                '<div id="' +
-                    container_id +
-                    '" style="padding-top: 10px">' +
-                    '</div>'
-            );
+function getContainer(element, fileInputId) {
+    const containerId = 'tempFile_content_' + fileInputId;
+    let container = document.getElementById(containerId);
+
+    if (!container && element.parentElement?.tagName === 'DIV') {
+        container = document.createElement('div');
+        container.id = containerId;
+        container.style.paddingTop = '10px';
+        element.parentElement.appendChild(container);
     }
-    return '#' + container_id;
+
+    return container;
 }
 
-/**
- *
- * @param element
- * @param attr
- * @returns {*|jQuery|HTMLElement}
- */
-function getElements(element, attr) {
-    let object_elements = element + '[id^=' + attr + ']';
-    return $(object_elements);
+// Event delegation handles both existing and dynamically added file inputs. Each file input's
+// own id (unique per form/element) directly identifies its paired "value_<id>" input and
+// "tempFile_content_<id>" container. FilePond's internal file input ("filepond--browser-<id>",
+// see public/js/library/es.filepond.js) also starts with "file" but has its own file list, so it
+// is left alone. Registered once, as some views load this script again with each modal they open.
+if (!window.visualDeleteFileListening) {
+    window.visualDeleteFileListening = true;
+
+    document.addEventListener('change', event => {
+        const input = event.target;
+
+        if (
+            !(input instanceof HTMLInputElement) ||
+            !input.id.startsWith('file') ||
+            input.id.startsWith('filepond--')
+        ) {
+            return;
+        }
+
+        const container = getContainer(input, input.id);
+        if (!container) {
+            return;
+        }
+
+        const filename =
+            input.files && input.files.length ? input.files[0].name : '';
+        container.replaceChildren(formatFileLabel(filename, input.id));
+    });
 }
 
-$(document).ready(function () {
-    // Use event delegation to handle both existing and dynamically added file inputs
-    $(document)
-        .off('change', 'input[id^=file]')
-        .on('change', 'input[id^=file]', function () {
-            // Get all file inputs to determine the correct index for this input
-            let object_inputs = getElements('input', 'file');
-            let index = -1;
-            for (let i = 0; i < object_inputs.length; i++) {
-                if (object_inputs[i].id === this.id) {
-                    index = i;
-                    break;
-                }
-            }
-
-            if (index !== -1) {
-                let container = getContainer($(this), index);
-                let filename = $(this)[0].files.length
-                    ? $(this)[0].files[0].name
-                    : '';
-                $(container).html(formatFileLabel(filename, index));
-            }
-        });
-});
+if (typeof module !== 'undefined') {
+    module.exports = { clearFile, formatFileLabel, getContainer };
+}

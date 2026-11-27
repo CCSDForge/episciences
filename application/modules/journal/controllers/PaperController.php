@@ -742,7 +742,7 @@ class PaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $attachments = $request->getPost(Episciences_Mail_Send::ATTACHMENTS); // see js/library/es.fileupload.js
+        $attachments = $request->getPost(Episciences_Mail_Send::ATTACHMENTS); // see js/library/es.filepond.js
         $attachments = is_array($attachments) ? $attachments : [];
 
         $templateAuthorType = '';
@@ -1393,7 +1393,7 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $post = $request->getPost();
 
-        $attachments = $post[Episciences_Mail_Send::ATTACHMENTS] ?? []; // see js/library/es.fileupload.js
+        $attachments = $post[Episciences_Mail_Send::ATTACHMENTS] ?? []; // see js/library/es.filepond.js
 
         if (!is_array($attachments)) {
             $attachments = [];
@@ -1421,7 +1421,7 @@ class PaperController extends PaperDefaultController
         $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
 
         // Every file the author attached must have been uploaded: otherwise, nothing is recorded and the author can try again.
-        // An empty name is sent back by es.fileupload.js when the upload failed. The directory is shared by the
+        // An empty name is sent back by es.filepond.js when the upload failed. The directory is shared by the
         // answers of the paper: a file not uploaded by the user for this answer is refused too.
         $checkedAttachments = $this->checkedAttachments(REVIEW_FILES_PATH . $paperId . '/tmp/', $attachments);
 
@@ -1641,7 +1641,7 @@ class PaperController extends PaperDefaultController
     /**
      * The attachment names sent with the form whose upload token is valid for the directory (see UploadedFileToken):
      * the files the user uploaded there, not the other files of the directory. Empty names (failed uploads, see
-     * es.fileupload.js) are dropped silently, the others are logged.
+     * es.filepond.js) are dropped silently, the others are logged.
      *
      * @param array<mixed> $attachments names submitted by the client
      * @return array<int|string, string> accepted names, with their keys in $attachments
@@ -1662,7 +1662,7 @@ class PaperController extends PaperDefaultController
     /**
      * Every file the user attached must have been uploaded by them in the directory of the form: otherwise, nothing
      * is recorded and the user is asked to attach the files again. Rejected: a failed upload (empty name, see
-     * es.fileupload.js), a name without a valid upload token (see uploadedAttachments()) or a file no longer stored.
+     * es.filepond.js), a name without a valid upload token (see uploadedAttachments()) or a file no longer stored.
      *
      * @param array<mixed> $attachments names submitted by the client
      * @return array{accepted: array<string>, rejected: array<mixed>}

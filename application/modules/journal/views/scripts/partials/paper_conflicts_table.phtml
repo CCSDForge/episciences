@@ -48,8 +48,7 @@ $tableId = 'conflict-list_' . $answer;
 
 <?php
 
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
 $this->jQuery()->addJavascriptFile('/js/common/datatableInit.js');
 
 

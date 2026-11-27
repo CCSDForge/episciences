@@ -96,8 +96,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Predefined pages: title field is now read-only (disabled) in the menu editor.
 - Predefined pages: visibility selection is now disabled (always public).
 - [#1538](https://github.com/CCSDForge/episciences/pull/1538): Journal administration menu: the users list ("Users") is now under "Manage the journal > Journal" instead of the two-level "Users > List" submenu; the `/administrate/users` submenu page is removed. Access rights are unchanged.
+- Upgrade `@fortawesome/fontawesome-free` to 7.3.0 and `tinymce` to 8.7.0.
+- Self-host all third-party vendor assets (jQuery, jQuery UI, DOMPurify, Tom Select, SortableJS, TinyMCE, MathJax, Bootstrap, Font Awesome, Cookie Consent, Bootbox, Chart.js, DataTables) via Webpack bundles instead of loading them from external CDNs (like `cdnjs`).
+- Upgrade MathJax from v2.7.7 to v4.1.3 (self-hosted).
+- Replace archived jQuery File Upload with FilePond.
+- Replace `jquery.fastLiveFilter` with vanilla JS implementation.
+- Remove `jquery-url-parser` (`purl`) dependency in favor of vanilla `parseUrl()`.
+- Upgrade `@symfony/webpack-encore` from 5 to 7 and Babel from 7 to 8, required by webpack 5.112 (Encore 5's `copyFiles()` no longer loaded): the Webpack configuration is now an ES module (`webpack.config.mjs`), the core-js polyfills come from `babel-plugin-polyfill-corejs3` and the production CSS is minified with cssnano. The bundles target the browserslist `defaults` query (current browsers, no longer ES5 for Internet Explorer). The self-hosted Chart.js bundle follows the statistics page on Chart.js 4 and `chartjs-plugin-datalabels` 2.
 
 ### Fixed
+- Restore jQuery UI datepicker/autocomplete theme lost during the self-host migration.
+- Bundle jQuery UI's `disable-selection` module to prevent JavaScript errors.
+- Stop double-execution of `bootstrap.min.js` via raw script echo in volumes/sections partial.
+- Correlate the clear-file button by input ID instead of list position.
 
 - Linked data relations: the relation types given by the DataCite shaped repositories (Zenodo, ARCHE, BAOBAB, DSpace), HAL TEI and Scholexplorer are stored in the Crossref vocabulary of the linked data (e.g. `IsReviewedBy` as `hasReview`, `Cites` as `references`, `IsSourceOf` as `hasDerivation`; an unknown Scholexplorer relation as `isRelatedMaterial`), and a manual entry with an unknown relation is refused. The OpenAIRE export gives the relation in PascalCase as its schema requires (it was written in camelCase), now also exports `hasReview`, `isReviewOf`, `hasDerivation`, `isBasedOn` and `isBasisFor`, and leaves out the relations unknown to OpenAIRE 4.0. The Crossref export no longer drops the rows stored with a DataCite relation type, the TEI export gives the DataCite relation type in `<relatedItem type>`, and the paper page groups a linked data stored with a DataCite relation type with its stored relation ("Other" / "Autre" when it has no relation or one without equivalent, instead of an untranslated label). New `Episciences\Paper\RelationshipMapper`, see `docs/linked-data-relationships.md`. Run `src/mysql/2026-11-22-normalize-paper-datasets-relationships.sql`, then `papers:update-document` and a Solr reindexing for the DOCIDs it lists.
 - Automatic reminders: saving a reminder with a custom template failed for a journal without translation folder yet (the folder of the e-mail templates was not created with its parents).
@@ -154,6 +165,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - [#1388](https://github.com/CCSDForge/episciences/issues/1388), [#1390](https://github.com/CCSDForge/episciences/pull/1390): Remove the legacy `scripts/DeletePaper.php` script (replaced by the `papers:delete` console command), which reported a deletion as successful even when it had failed.
+- Remove unused `jquery.ui.autocomplete.html.js` vendor dependency.
+- Remove unused `bootstrap-colorpicker` widget (and its `colorpicker` CSS class hooks in `website/style` and `website/header` admin forms) — not self-hosted as part of the vendor asset migration since it had no actual usage.
+- Remove obsolete `cdnjs.cloudflare.com` preconnect and dns-prefetch link tags.
+
+### Performances
+- Skip loading editor-only JavaScript assets (TinyMCE, FilePond, etc.) on the paper view page for anonymous visitors to reduce page load size by ~1MB.
 
 ## v1.0.58.3 - 2026-11-23
 

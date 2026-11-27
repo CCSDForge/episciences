@@ -23,7 +23,7 @@ final class UploadedFileToken
 {
     public const SECRET_CONSTANT_NAME = 'UPLOADED_FILE_HMAC_SECRET';
 
-    /** Request field of the tokens, in the order of the attachments[] names (see es.fileupload.js) */
+    /** Request field of the tokens, in the order of the attachments[] names (see es.filepond.js) */
     public const POST_KEY = 'attachment_tokens';
 
     /** Lifetime of a token, in seconds: longer than an answer can reasonably take to write */

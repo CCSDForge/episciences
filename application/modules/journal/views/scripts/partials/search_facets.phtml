@@ -1,7 +1,5 @@
 <!-- <div id="facets"> -->
 <?php
-$this->jQuery()->addJavascriptFile('/js/vendor/jquery.fastLiveFilter.js');
-
 // supprime le nombre de page dans l'url si c'est le meme que par défaut
 if ((isset($this->parsedSearchParams['rpp'])) and ($this->parsedSearchParams['rpp'] == Episciences_Settings_Search::DEFAULT_NUMBER_SEARCH_RESULTS)) {
     unset($this->parsedSearchParams['rpp']);

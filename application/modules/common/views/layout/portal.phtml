@@ -19,11 +19,8 @@ echo $this->doctype('HTML5');
     <link rel="shortcut icon" href="/favicon.ico?v=20211124">
 
     <?php
+    // Episciences Main CSS (includes Bootstrap and Font Awesome, bundled via webpack)
     $this->jQuery()->addStylesheet("/css/main.css");
-    $this->jQuery()->addStylesheet(VENDOR_BOOTSTRAP);
-    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME);
-    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_SOLID);
-    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_BRAND);
     echo $this->jQuery();
     ?>
 

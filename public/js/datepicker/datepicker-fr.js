@@ -2,8 +2,8 @@ $(function () {
     //Français
     $.datepicker.regional['fr'] = {
         closeText: 'Fermer',
-        prevText: '&#x3c;Préc',
-        nextText: 'Suiv&#x3e;',
+        prevText: 'Précédent', // plain text: jQuery UI >= 1.13 no longer parses HTML here
+        nextText: 'Suivant',
         currentText: 'Courant',
         monthNames: [
             'Janvier',

@@ -21,6 +21,7 @@ const htmlEntitiesSource = functionsJs.match(/function htmlEntities\(str\) \{[\s
 global.htmlEntities = new Function(`${htmlEntitiesSource} return htmlEntities;`)();
 global.createUserAutocomplete = jest.fn().mockReturnValue({ inputId: 'autocomplete' });
 global.clearErrors = jest.fn();
+global.parseUrl = jest.fn(() => ({ param: (name) => '42' }));
 
 // Mock TinyMCE
 const mockTinyMCEEditor = {
@@ -229,11 +230,6 @@ const jQueryMock = (selector) => {
                 return params.toString();
             }
             return '';
-        },
-        url: function () {
-            return {
-                param: (name) => '42'
-            };
         },
         dataTable: function (opts) {
             return this;

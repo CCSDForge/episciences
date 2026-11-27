@@ -125,7 +125,7 @@ function replaceTags(string, reviewer, locale) {
 }
 
 function submit() {
-    var url = $('#modal-box form').url();
+    var url = parseUrl(document.querySelector('#modal-box form').action);
     var docid = url.param('docid');
 
     tinyMCE.triggerSave();

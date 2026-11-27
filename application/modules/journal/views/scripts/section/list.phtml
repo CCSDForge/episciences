@@ -2,15 +2,14 @@
 if ($this->sections) {
     $this->layout()->pageTitle = $this->translate('Rubriques') . '<span class="badge badge-secondary" style="margin-left: 5px;">' . count($this->sections) . '</span>';
 }
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
 $this->jQuery()->addJavascriptFile('/js/library/es.dataTables.delete-buttons.js');
-$this->jQuery()->addJavascriptFile(VENDOR_SORTABLE_JS);
+$this->getHelper('webpackAssets')->queueScript('sortablejs');
 $this->jQuery()->addJavascriptFile('/js/library/reorder-datatable.js');
 $this->jQuery()->addJavascriptFile('/js/section/datatable.js');
 $this->jQuery()->addJavascriptFile('/js/editors/section-assignment.js');
 
-$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+$this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
 
 ?>
 

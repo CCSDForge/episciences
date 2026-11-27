@@ -152,7 +152,7 @@ final class PaperControllerCopyEditingAnswerFilesTest extends TestCase
     {
         $this->store($this->requestDir, 'sources.zip');
 
-        // An empty name is sent back by es.fileupload.js when the upload failed
+        // An empty name is sent back by es.filepond.js when the upload failed
         $files = $this->saveAnswerFiles(['sources.zip', ''], [$this->sign('sources.zip'), '']);
 
         self::assertSame([''], $files['rejected']);
