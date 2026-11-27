@@ -87,5 +87,9 @@
     "sortablejs": "1.15.7",
     "tinymce": "8.7.0",
     "tom-select": "2.6.2"
-  }
+  },
+  "browserslist": [
+    "defaults",
+    "ie 11"
+  ]
 }

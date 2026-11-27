@@ -102,7 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace archived jQuery File Upload with FilePond.
 - Replace `jquery.fastLiveFilter` with vanilla JS implementation.
 - Remove `jquery-url-parser` (`purl`) dependency in favor of vanilla `parseUrl()`.
-- Upgrade `@symfony/webpack-encore` from 5 to 7 and Babel from 7 to 8, required by webpack 5.112 (Encore 5's `copyFiles()` no longer loaded): the Webpack configuration is now an ES module (`webpack.config.mjs`), the core-js polyfills come from `babel-plugin-polyfill-corejs3` and the production CSS is minified with cssnano. The self-hosted Chart.js bundle follows the statistics page on Chart.js 4 and `chartjs-plugin-datalabels` 2.
+- Upgrade `@symfony/webpack-encore` from 5 to 7 and Babel from 7 to 8, required by webpack 5.112 (Encore 5's `copyFiles()` no longer loaded): the Webpack configuration is now an ES module (`webpack.config.mjs`), the core-js polyfills come from `babel-plugin-polyfill-corejs3` and the production CSS is minified with cssnano. A `browserslist` (`defaults, ie 11`) keeps the ES5 output and the polyfills Babel 7 produced without targets (Babel 8 targets recent browsers by default). The self-hosted Chart.js bundle follows the statistics page on Chart.js 4 and `chartjs-plugin-datalabels` 2.
 
 ### Fixed
 - Restore jQuery UI datepicker/autocomplete theme lost during the self-host migration.
