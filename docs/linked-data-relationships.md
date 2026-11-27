@@ -223,7 +223,8 @@ The types added after DataCite 4.1 (`IsObsoletedBy`, `Obsoletes`, `IsCollectedBy
 
 Rows stored before the normalization may hold DataCite types. `src/mysql/2026-11-22-normalize-paper-datasets-relationships.sql`
 converts them with the same mapping (case-sensitive comparisons, `utf8mb4_bin`, so that running it twice changes
-nothing) and lists the affected DOCIDs. For these DOCIDs, then:
+nothing) and lists the affected DOCIDs: the papers with a converted row, and the papers with a relation left without
+equivalent, which the Crossref export now gives as `references`. For these DOCIDs, then:
 
 1. rebuild `PAPERS.DOCUMENT`, built from the Crossref export:
    `php scripts/console.php papers:update-document --sqlwhere "DOCID IN (...)"`;
