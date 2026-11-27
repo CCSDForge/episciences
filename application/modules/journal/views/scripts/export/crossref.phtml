@@ -328,7 +328,11 @@ $paperLanguageRaw = $this->paperLanguage;
                         <?php if ($isIntra || $isInter) : ?>
                             <related_item>
                                 <?php
-                                $identifierType = strtolower($linkedData['link']);
+                                $identifierType = strtolower((string)$linkedData['link']);
+                                // Scholexplorer stores the resolver URL in "link" and the identifier scheme in "name"
+                                if (preg_match('~^https?://~', $identifierType) === 1) {
+                                    $identifierType = strtolower((string)($linkedData['name'] ?? 'url'));
+                                }
                                 if ($identifierType === 'url') {
                                     $identifierType = 'uri';
                                     $cleanDomainIfExist = Episciences_DoiTools::cleanDoi($linkedData['value']);

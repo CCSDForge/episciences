@@ -91,6 +91,35 @@ final class Episciences_Paper_CrossrefExportTemplateTest extends TestCase
     }
 
     /**
+     * Scholexplorer rows hold the resolver URL in "link": the identifier type comes from the scheme in "name"
+     */
+    public function testLinkedDataWithAResolverUrlIsExportedWithItsIdentifierScheme(): void
+    {
+        $linkedData = [
+            ['value' => '10.5061/dryad.j2c4g/4', 'link' => 'https://dx.doi.org/10.5061/dryad.j2c4g/4', 'name' => 'doi', 'relationship' => 'isSupplementedBy'],
+            ['value' => '20.500.12345/678', 'link' => 'https://hdl.handle.net/20.500.12345/678', 'name' => 'handle', 'relationship' => 'isSupplementedBy'],
+            ['value' => 'https://example.org/data', 'link' => 'https://example.org/data', 'name' => 'url', 'relationship' => 'isSupplementedBy'],
+            ['value' => 'https://example.org/unnamed', 'link' => 'https://example.org/unnamed', 'relationship' => 'isSupplementedBy'],
+        ];
+
+        $xpath = $this->render('https://example.org/paper.pdf', 'https://journal.example.org', [], $linkedData);
+
+        $exported = [];
+        foreach ($xpath->query('//r:related_item/*') ?: [] as $relation) {
+            if ($relation instanceof DOMElement) {
+                $exported[trim($relation->textContent)] = $relation->getAttribute('identifier-type');
+            }
+        }
+
+        self::assertSame([
+            '10.5061/dryad.j2c4g/4' => 'doi',
+            '20.500.12345/678' => 'handle',
+            'https://example.org/data' => 'uri',
+            'https://example.org/unnamed' => 'uri',
+        ], $exported);
+    }
+
+    /**
      * @param array<int, array<string, string>> $abstracts
      * @param list<array<string, string|null>> $linkedData
      */
