@@ -115,6 +115,7 @@ class Episciences_Acl extends Ccsd_Acl
         'review-assignationmode', // obsolete
         'rss-index',
         'rss-news', // idem rss-papers
+        'rss-atom', // idem rss-papers
         'section-index',
         'section-list',
         'user-displaytags',
