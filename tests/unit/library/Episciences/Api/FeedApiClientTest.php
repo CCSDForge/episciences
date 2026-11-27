@@ -35,6 +35,9 @@ final class FeedApiClientTest extends TestCase
 
     private ArrayAdapter $cache;
 
+    // Current Unix time seen by the client
+    private int $now = 1_800_000_000;
+
     /** @var AbstractLogger&object{messages: list<string>} */
     private AbstractLogger $logger;
 
@@ -63,7 +66,13 @@ final class FeedApiClientTest extends TestCase
             }
         };
 
-        return new FeedApiClient(new Client(['handler' => $stack]), $this->cache, $this->logger, self::API_URL);
+        return new FeedApiClient(
+            new Client(['handler' => $stack]),
+            $this->cache,
+            $this->logger,
+            self::API_URL,
+            fn(): int => $this->now
+        );
     }
 
     /**
@@ -128,13 +137,16 @@ final class FeedApiClientTest extends TestCase
             'unreachable' => [new ConnectException('timeout', new Request('GET', self::API_URL))],
             'empty answer' => [new Response(200, [], " \n")],
             'not a full answer' => [new Response(204)],
+            'malformed page' => [new Response(200, [], '<html><body>Maintenance<br></body>')],
+            'well-formed page' => [new Response(200, [], '<html><body>Maintenance</body></html>')],
+            'feed of another format' => [new Response(200, [], self::ATOM)],
         ];
     }
 
     /**
      * @dataProvider failureProvider
      */
-    public function testFetchReturnsNullAndLogsWhenTheApiFails(Response|\Throwable $answer): void
+    public function testFetchReturnsNullAndLogsWhenTheApiFailsAndNoCopyIsLeft(Response|\Throwable $answer): void
     {
         $client = $this->client([$answer, new Response(200, [], self::RSS)]);
 
@@ -142,6 +154,41 @@ final class FeedApiClientTest extends TestCase
         self::assertCount(1, $this->logger->messages);
         // A failure is not cached: the next call asks the API again
         self::assertSame(self::RSS, $client->fetch(FeedApiClient::FORMAT_RSS, 'jtcam'));
+    }
+
+    public function testFetchAsksTheApiAgainOnceTheCachedFeedIsStale(): void
+    {
+        $client = $this->client([new Response(200, [], self::RSS), new Response(200, [], '<rss>new</rss>')]);
+
+        $client->fetch(FeedApiClient::FORMAT_RSS, 'jtcam');
+        $this->now += FeedApiClient::CACHE_TTL;
+
+        self::assertSame('<rss>new</rss>', $client->fetch(FeedApiClient::FORMAT_RSS, 'jtcam'));
+        self::assertCount(2, $this->history);
+    }
+
+    /**
+     * @dataProvider failureProvider
+     */
+    public function testFetchServesTheLastValidCopyWhenTheApiFails(Response|\Throwable $answer): void
+    {
+        $client = $this->client([new Response(200, [], self::RSS), $answer, new Response(200, [], '<rss>new</rss>')]);
+
+        $client->fetch(FeedApiClient::FORMAT_RSS, 'jtcam');
+        $this->now += FeedApiClient::CACHE_TTL;
+
+        self::assertSame(self::RSS, $client->fetch(FeedApiClient::FORMAT_RSS, 'jtcam'));
+        self::assertCount(2, $this->history);
+        self::assertCount(2, $this->logger->messages);
+
+        // The API is not asked again before the retry delay
+        $this->now += FeedApiClient::RETRY_DELAY - 1;
+        self::assertSame(self::RSS, $client->fetch(FeedApiClient::FORMAT_RSS, 'jtcam'));
+        self::assertCount(2, $this->history);
+
+        $this->now += 1;
+        self::assertSame('<rss>new</rss>', $client->fetch(FeedApiClient::FORMAT_RSS, 'jtcam'));
+        self::assertCount(3, $this->history);
     }
 
     public function testFetchRefusesAnUnknownFormat(): void

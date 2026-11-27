@@ -10,7 +10,7 @@ class RssController extends Zend_Controller_Action
 {
     private const FEED_CONTENT_TYPE = 'text/xml; charset=UTF-8';
     // Delay before asking again for a feed the Episciences API could not provide (seconds)
-    public const RETRY_AFTER = 600;
+    public const RETRY_AFTER = FeedApiClient::RETRY_DELAY;
 
     public function init(): void
     {
@@ -64,7 +64,7 @@ class RssController extends Zend_Controller_Action
     {
         return new FeedApiClient(
             new Client(),
-            new FilesystemAdapter('journalFeeds', FeedApiClient::CACHE_TTL, dirname(APPLICATION_PATH) . '/cache/'),
+            new FilesystemAdapter('journalFeeds', FeedApiClient::STALE_TTL, dirname(APPLICATION_PATH) . '/cache/'),
             AppRegistry::getMonoLogger() ?? new NullLogger(),
             (string)EPISCIENCES_API_URL
         );
