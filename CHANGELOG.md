@@ -95,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom pages: validation prevents using a permalien already in use by another custom page.
 - Predefined pages: title field is now read-only (disabled) in the menu editor.
 - Predefined pages: visibility selection is now disabled (always public).
+- [#1538](https://github.com/CCSDForge/episciences/pull/1538): Journal administration menu: the users list ("Users") is now under "Manage the journal > Journal" instead of the two-level "Users > List" submenu; the `/administrate/users` submenu page is removed. Access rights are unchanged.
 
 ### Fixed
 
