@@ -27,7 +27,7 @@ Episciences has received funding from:
 
 Episciences runs on Docker and depends on [CCSDForge/episciences-infrastructure](https://github.com/CCSDForge/episciences-infrastructure) for its shared services (MySQL 8.4 databases, Apache Solr, Traefik reverse proxy, Mailpit, phpMyAdmin, and the `epi-network` Docker network).
 
-- **Start `episciences-infrastructure` first** (`make up`, `make solr-setup`, and `make db-import` on first init) to provide the database engines, search index, and `epi-network`.
+- **Start `episciences-infrastructure` first** (`make up`, `make db-import` for shared auxiliary DBs, and `make solr-setup` on first init) to provide the database engines, search index, and `epi-network`.
 - **Then set up this repository** (`make dev-setup`), which starts the application containers (`httpd`, `php-fpm`, Messenger workers) and loads the `episciences` schema and dev dataset (`src/mysql/docker/episciences/dev-episciences.sql`) matching your current branch.
 
 See the [Developer Setup Guide](./docs/dev-setup.md) for the full onboarding walkthrough.

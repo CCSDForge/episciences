@@ -62,8 +62,8 @@ Clone it alongside this repository (if not already done) and start it **before**
 ```bash
 git clone https://github.com/CCSDForge/episciences-infrastructure.git ../episciences-infrastructure
 cd ../episciences-infrastructure
-make up          # creates epi-network, starts Traefik + MySQL DBs + Solr + Mailpit + phpMyAdmin
-make db-import   # first-time DB init (creates/initializes shared DB volumes when empty)
+make up          # creates epi-network, starts Traefik + MySQL 8.4 DBs + Solr + Mailpit + phpMyAdmin
+make db-import   # first-time init of shared auxiliary DBs (indexing, citations, inbox)
 make solr-setup  # uploads Solr configset to ZooKeeper and creates the 'episciences' collection
 ```
 
@@ -410,5 +410,5 @@ If you need to wipe the MySQL volumes completely, manage them from `episciences-
 | `make backup-db` | Dump current `episciences` and `cas_users` databases to `~/tmp/` |
 | `make shell-mysql-episciences` | Open a MySQL shell on the `episciences` database |
 | `make shell-mysql-auth` | Open a MySQL shell on the `cas_users` database |
-| `make shell-mysql-indexing` | Open a MySQL shell on the `solr_index_queue` database |
+| `make shell-mysql-indexing` | Open a MySQL shell on the `solr_index` database |
 | `make wait-for-db` | Wait until all 3 MySQL containers (`episciences-infrastructure`) accept connections |
