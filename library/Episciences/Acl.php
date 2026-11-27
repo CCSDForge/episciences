@@ -88,7 +88,6 @@ class Episciences_Acl extends Ccsd_Acl
         'administratepaper-ajaxcontrolboard', // not used
         'administratemail-savetemplate', // idem edittemplate
         'administrate-review',
-        'administrate-users',
         'test-index',
         'test-tei',
         'test-upload',

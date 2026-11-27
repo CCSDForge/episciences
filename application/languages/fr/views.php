@@ -289,7 +289,7 @@ return [
     "user-create" => "Créer un nouveau compte",
     "user-changepassword" => "Modifier son mot de passe",
     "user-edit" => "Modifier son profil",
-    "user-list" => "Gérer la revue : lister tous les utilistaeurs",
+    "user-list" => "Gérer la revue : lister tous les utilisateurs",
     "user-lostlogin" => "Recupérer son login",
     "user-lostpassword" => "Mot de passe oublié",
     "user-resetpassword" => "Réinitialiser son mot de passe",
