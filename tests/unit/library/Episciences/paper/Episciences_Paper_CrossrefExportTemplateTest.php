@@ -98,6 +98,7 @@ final class Episciences_Paper_CrossrefExportTemplateTest extends TestCase
         $linkedData = [
             ['value' => '10.5061/dryad.j2c4g/4', 'link' => 'https://dx.doi.org/10.5061/dryad.j2c4g/4', 'name' => 'doi', 'relationship' => 'isSupplementedBy'],
             ['value' => '20.500.12345/678', 'link' => 'https://hdl.handle.net/20.500.12345/678', 'name' => 'handle', 'relationship' => 'isSupplementedBy'],
+            ['value' => 'swh:1:dir:d198bc9d7a6bcf6db04f476d29314f157507d505', 'link' => 'https://archive.softwareheritage.org/swh:1:dir:d198bc9d7a6bcf6db04f476d29314f157507d505', 'name' => 'swhid', 'relationship' => 'isSupplementedBy'],
             ['value' => 'https://example.org/data', 'link' => 'https://example.org/data', 'name' => 'url', 'relationship' => 'isSupplementedBy'],
             ['value' => 'https://example.org/unnamed', 'link' => 'https://example.org/unnamed', 'relationship' => 'isSupplementedBy'],
         ];
@@ -114,6 +115,7 @@ final class Episciences_Paper_CrossrefExportTemplateTest extends TestCase
         self::assertSame([
             '10.5061/dryad.j2c4g/4' => 'doi',
             '20.500.12345/678' => 'handle',
+            'swh:1:dir:d198bc9d7a6bcf6db04f476d29314f157507d505' => 'other',
             'https://example.org/data' => 'uri',
             'https://example.org/unnamed' => 'uri',
         ], $exported);
