@@ -1,5 +1,8 @@
 <?php
 
+use Episciences\AppRegistry;
+use Episciences\Hal\HalTeiSource;
+use Episciences\Hal\OaiTeiResponse;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
@@ -7,6 +10,10 @@ use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
+/**
+ * TEI of HAL document versions, read from the OAI-PMH server of their repository (see HalTeiSource)
+ * and cached: the licence, author, funding and linked data enrichments of a paper share one request.
+ */
 class Episciences_Hal_TeiCacheManager
 {
     public const ONE_MONTH = 3600 * 24 * 31;
@@ -20,7 +27,6 @@ class Episciences_Hal_TeiCacheManager
     private const CACHE_NAMESPACE = 'halTei';
     private const CACHE_KEY_PREFIX = 'hal-tei-';
     private const CACHE_KEY_EXTENSION = '.xml';
-    private const HAL_API_BASE_URL = 'https://api.archives-ouvertes.fr/search/';
     private const HAL_USER_AGENT = 'CCSD Episciences support@episciences.org';
     private const TIMEOUT_WEB = 3;
     private const TIMEOUT_CLI = 40;
@@ -56,28 +62,24 @@ class Episciences_Hal_TeiCacheManager
     }
 
     /**
-     * Fetch TEI from HAL API and store it in cache
-     *
-     * @param string $identifier HAL document identifier
-     * @param int $version HAL document version (0 = latest)
-     * An empty response (failed HAL call) is not cached, so that the next process tries again;
+     * Fetch the TEI from HAL and store it in cache, unless it is cached already.
+     * A failed request is not cached, so that the next process tries again;
      * within this process, the failed TEI is not requested again.
      *
      * @return bool true if fetched from HAL and cached, false if already cached or unavailable
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function fetchAndCache(string $identifier, int $version = 0): bool
+    public static function fetchAndCache(HalTeiSource $source): bool
     {
-        $cacheKey = self::buildCacheKey($identifier, $version);
         $cache = self::createCacheAdapter();
-        $cacheItem = $cache->getItem($cacheKey);
+        $cacheItem = $cache->getItem(self::buildCacheKey($source));
         $cacheItem->expiresAfter(self::CACHE_TTL);
 
-        if (self::holdsTei($cacheItem) || isset(self::$unavailable[$cacheKey])) {
+        if (self::holdsTei($cacheItem) || isset(self::$unavailable[$cacheItem->getKey()])) {
             return false;
         }
 
-        return self::fetchAndStore($cache, $cacheItem, $identifier, $version);
+        return self::fetchAndStore($cache, $cacheItem, $source);
     }
 
     /**
@@ -85,54 +87,60 @@ class Episciences_Hal_TeiCacheManager
      * The cached TEI is replaced only once HAL returned the new one: when HAL fails, the TEI cached
      * before, if any, is kept, and the failed TEI is not requested again in this process.
      *
-     * @param string $identifier HAL document identifier
-     * @param int $version HAL document version (0 = latest)
      * @return bool true if the TEI was read from HAL and cached
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function refresh(string $identifier, int $version = 0): bool
+    public static function refresh(HalTeiSource $source): bool
     {
         $cache = self::createCacheAdapter();
-        $cacheItem = $cache->getItem(self::buildCacheKey($identifier, $version));
+        $cacheItem = $cache->getItem(self::buildCacheKey($source));
         $cacheItem->expiresAfter(self::CACHE_TTL);
 
-        return self::fetchAndStore($cache, $cacheItem, $identifier, $version);
+        return self::fetchAndStore($cache, $cacheItem, $source);
     }
 
     /**
-     * Fetch the TEI from HAL and store it in the cache item; an empty response is not stored
+     * Retrieve the cached TEI
+     *
+     * @return string TEI XML content, or empty string if not cached
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    private static function fetchAndStore(CacheItemPoolInterface $cache, CacheItemInterface $cacheItem, string $identifier, int $version): bool
+    public static function getFromCache(HalTeiSource $source): string
     {
-        $teiXml = self::fetchFromApi($identifier, $version);
+        $cacheItem = self::createCacheAdapter()->getItem(self::buildCacheKey($source));
 
-        if (trim($teiXml) === '') {
+        return self::holdsTei($cacheItem) ? $cacheItem->get() : '';
+    }
+
+    /**
+     * Fetch the TEI from HAL if not cached, then return the cached content
+     *
+     * @return string TEI XML content, or empty string on failure
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public static function fetchAndGet(HalTeiSource $source): string
+    {
+        self::fetchAndCache($source);
+        return self::getFromCache($source);
+    }
+
+    /**
+     * Fetch the TEI from HAL and store it in the cache item; a failure is not stored
+     */
+    private static function fetchAndStore(CacheItemPoolInterface $cache, CacheItemInterface $cacheItem, HalTeiSource $source): bool
+    {
+        $tei = self::fetchFromOai($source);
+
+        if ($tei === null) {
             self::$unavailable[$cacheItem->getKey()] = true;
             return false;
         }
 
         unset(self::$unavailable[$cacheItem->getKey()]);
-        $cacheItem->set($teiXml);
+        $cacheItem->set($tei);
         $cache->save($cacheItem);
 
         return true;
-    }
-
-    /**
-     * Retrieve cached TEI XML string
-     *
-     * @param string $identifier HAL document identifier
-     * @param int $version HAL document version (0 = latest)
-     * @return string TEI XML content, or empty string if not cached
-     * @throws \Psr\Cache\InvalidArgumentException
-     */
-    public static function getFromCache(string $identifier, int $version = 0): string
-    {
-        $cacheKey = self::buildCacheKey($identifier, $version);
-        $cache = self::createCacheAdapter();
-        $cacheItem = $cache->getItem($cacheKey);
-
-        return self::holdsTei($cacheItem) ? $cacheItem->get() : '';
     }
 
     /**
@@ -150,75 +158,59 @@ class Episciences_Hal_TeiCacheManager
         return is_string($tei) && trim($tei) !== '';
     }
 
-    /**
-     * Fetch TEI from HAL API if not cached, then return the cached content
-     *
-     * @param string $identifier HAL document identifier
-     * @param int $version HAL document version (0 = latest)
-     * @return string TEI XML content, or empty string on failure
-     * @throws \Psr\Cache\InvalidArgumentException
-     */
-    public static function fetchAndGet(string $identifier, int $version = 0): string
-    {
-        self::fetchAndCache($identifier, $version);
-        return self::getFromCache($identifier, $version);
-    }
-
     private static function createCacheAdapter(): CacheItemPoolInterface
     {
         return self::$cachePool ?? new FilesystemAdapter(self::CACHE_NAMESPACE, self::CACHE_TTL, dirname(APPLICATION_PATH) . '/cache/');
     }
 
-    private static function buildCacheKey(string $identifier, int $version): string
+    /**
+     * One key per repository: two HAL instances (production, preprod) may hold the same identifier
+     */
+    private static function buildCacheKey(HalTeiSource $source): string
     {
-        $key = self::CACHE_KEY_PREFIX . $identifier;
+        $key = self::CACHE_KEY_PREFIX . $source->repoId . '-' . $source->identifier;
 
-        if ($version !== 0) {
-            $key .= '-' . $version;
+        if ($source->version !== 0) {
+            $key .= '-v' . $source->version;
         }
 
         return $key . self::CACHE_KEY_EXTENSION;
     }
 
     /**
-     * @param string $identifier HAL document identifier
-     * @param int $version HAL document version (0 = latest)
-     * @return string raw TEI XML response
+     * @return string|null the TEI, null on failure (reported)
      */
-    private static function fetchFromApi(string $identifier, int $version): string
+    private static function fetchFromOai(HalTeiSource $source): ?string
     {
+        $url = $source->getRecordUrl();
+
+        if ($url === null) {
+            AppRegistry::getMonoLogger()?->warning(sprintf('HAL TEI of %s: the repository has no OAI-PMH server', $source->describe()));
+            return null;
+        }
+
         $client = self::$httpClient ?? new GuzzleClient();
-        $url = self::buildApiUrl($identifier, $version);
-        $timeout = (PHP_SAPI === 'cli') ? self::TIMEOUT_CLI : self::TIMEOUT_WEB;
 
         try {
-            return $client->request('GET', $url, [
+            $body = $client->request('GET', $url, [
                 'headers' => [
                     'User-Agent' => self::HAL_USER_AGENT,
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
+                    'Accept' => 'application/xml, text/xml',
                 ],
-                'timeout' => $timeout
+                'timeout' => (PHP_SAPI === 'cli') ? self::TIMEOUT_CLI : self::TIMEOUT_WEB,
             ])->getBody()->getContents();
         } catch (GuzzleException $e) {
             trigger_error($e->getMessage());
+            return null;
         }
 
-        return '';
-    }
+        // An OAI-PMH error (unknown identifier or version) or a maintenance page come with a 200 status
+        $response = OaiTeiResponse::parse($body);
 
-    /**
-     * @todo Solr query escaping is also missing in 5+ other files across the codebase
-     */
-    private static function buildApiUrl(string $identifier, int $version): string
-    {
-        $safeIdentifier = urlencode($identifier);
-        $halIdQuery = '(halId_s:' . $safeIdentifier . ' OR halIdSameAs_s:' . $safeIdentifier . ')';
-
-        if ($version === 0) {
-            return self::HAL_API_BASE_URL . '?q=(' . $halIdQuery . ')&wt=xml-tei';
+        if (!$response->isTei()) {
+            AppRegistry::getMonoLogger()?->warning(sprintf('HAL TEI of %s not read from %s: %s', $source->describe(), $url, $response->error));
         }
 
-        return self::HAL_API_BASE_URL . '?q=(' . $halIdQuery . ' AND version_i:' . $version . ')&wt=xml-tei';
+        return $response->tei;
     }
 }

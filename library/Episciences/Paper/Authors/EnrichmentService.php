@@ -3,6 +3,7 @@ declare(strict_types=1);
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
+use Episciences\Hal\HalTeiSource;
 
 class Episciences_Paper_Authors_EnrichmentService
 {
@@ -71,7 +72,7 @@ class Episciences_Paper_Authors_EnrichmentService
      */
     public static function getHalTeiAuthors(string $identifier, int $version): array
     {
-        $cachedTeiXml = Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version);
+        $cachedTeiXml = Episciences_Hal_TeiCacheManager::fetchAndGet(HalTeiSource::hal($identifier, $version));
 
         if ($cachedTeiXml === '') {
             return [];
