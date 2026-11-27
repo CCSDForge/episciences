@@ -309,11 +309,16 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
                                         $tmp['fullname'] = $currentAuthor;
                                         $tmp['given'] = isset($explodedAuthor[1]) ? trim($explodedAuthor[1]) : '';
                                         $tmp['family'] = isset($explodedAuthor[0]) ? trim($explodedAuthor[0]) : '';
+                                        // The ORCID scheme may be declared without an identifier
+                                        // (e.g. doi:10.57745/1HLI7X version 1)
+                                        $authorIdentifier = $val['authorIdentifier']['value'] ?? null;
                                         if (
                                             isset($val['authorIdentifierScheme']['value']) &&
-                                            $val['authorIdentifierScheme']['value'] === 'ORCID'
+                                            $val['authorIdentifierScheme']['value'] === 'ORCID' &&
+                                            is_string($authorIdentifier) &&
+                                            trim($authorIdentifier) !== ''
                                         ) {
-                                            $tmp['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($val['authorIdentifier']['value']);
+                                            $tmp['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($authorIdentifier);
                                         }
 
                                     } else {

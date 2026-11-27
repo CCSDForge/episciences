@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace unit\library\Episciences\Submit;
 
 use Ccsd_Error;
+use Episciences\Hal\HalTeiSource;
+use Episciences_Hal_TeiCacheManager;
 use Episciences_Paper;
 use Episciences_Repositories;
 use Episciences_Repositories_NewVersionSpy_Hooks;
@@ -16,6 +18,7 @@ use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 /**
  * Repository processing of an initial submission, after the paper is saved and the notifications are sent:
@@ -27,7 +30,6 @@ final class RepositoryHooksTest extends TestCase
     private const SPY_REPO_ID = 9998;
     /** Fake HAL repository: the label contains "HAL" */
     private const HAL_REPO_ID = 9997;
-    private const HAL_API_URL = 'https://api.hal.test';
     private const DOCID = 1234;
 
     /** @var array<mixed> */
@@ -56,17 +58,21 @@ final class RepositoryHooksTest extends TestCase
             self::HAL_REPO_ID => [
                 Episciences_Repositories::REPO_LABEL => 'HAL Spy',
                 Episciences_Repositories::REPO_TYPE => Episciences_Repositories::TYPE_PAPERS_REPOSITORY,
-                Episciences_Repositories::REPO_API_URL => self::HAL_API_URL,
+                Episciences_Repositories::REPO_BASEURL => 'https://api.hal.test/oai/hal/',
+                Episciences_Repositories::REPO_IDENTIFIER => 'oai:HAL:%%IDv%%VERSION',
             ],
         ]);
 
         Episciences_Repositories_NewVersionSpy_Hooks::$calls = [];
         Episciences_Repositories_NewVersionSpy_Hooks::$exceptions = [];
         Episciences_Repositories_NewVersionSpy_Hooks::$loadedRecord = [];
+        Episciences_Hal_TeiCacheManager::setCachePool(new ArrayAdapter(0, false));
     }
 
     protected function tearDown(): void
     {
+        Episciences_Hal_TeiCacheManager::setCachePool(null);
+        Episciences_Hal_TeiCacheManager::setHttpClient(null);
         $repositories = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
         $repositories->setAccessible(true);
         $repositories->setValue(null, $this->previousRepositories);
@@ -196,53 +202,72 @@ final class RepositoryHooksTest extends TestCase
      */
     public static function unexpectedHalPayloadProvider(): iterable
     {
-        yield 'docs is a string' => ['{"response":{"docs":"x"}}'];
-        yield 'doc is a string' => ['{"response":{"docs":["x"]}}'];
-        yield 'response is a string' => ['{"response":"x"}'];
-        yield 'payload is a scalar' => ['42'];
-        yield 'field is a string' => ['{"response":{"docs":[{"swhidId_s":"swh:1:dir:abc"}]}}'];
+        yield 'empty body' => [''];
+        yield 'not XML' => ['{"response":{"docs":[{"swhidId_s":"swh:1:dir:abc"}]}}'];
+        yield 'truncated XML' => ['<TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body><listBibl><biblFull>'];
+        yield 'no document' => ['<TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body><listBibl/></body></text></TEI>'];
     }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('unexpectedHalPayloadProvider')]
     public function testUnexpectedHalPayloadYieldsNoDatasets(string $body): void
     {
         $requests = [];
-        $client = $this->halClient($requests, new Response(200, [], $body));
+        $this->halServes($requests, new Response(200, [], $body));
 
         // Not a TypeError: datasetsProcessing() is also called outside processRepositoryHooks() (inbox, PapersManager)
         $errors = $this->collectErrors(
-            fn() => self::assertSame(0, Episciences_Submit::datasetsProcessing($this->halPaper('hal-01234567'), $client))
+            fn() => self::assertSame(0, Episciences_Submit::datasetsProcessing($this->halPaper('hal-01234567')))
         );
 
         self::assertSame([], $errors);
     }
 
-    public function testHalRequestHasNoVersionAndAnEncodedIdentifier(): void
+    /**
+     * The HAL search index only holds the latest version of a document: the TEI of the paper version is read
+     * from the OAI-PMH server of its repository, so that the linked data are those of the published version
+     */
+    public function testHalRequestAsksTheTeiOfThePaperVersionWithAnEncodedIdentifier(): void
     {
         $requests = [];
-        $client = $this->halClient($requests, new Response(200, [], '{"response":{"numFound":0,"docs":[]}}'));
+        $this->halServes($requests, new Response(200, [], '<TEI xmlns="http://www.tei-c.org/ns/1.0"/>'));
 
-        $affectedRows = Episciences_Submit::datasetsProcessing($this->halPaper('hal-01234567&rows=1000'), $client);
+        $affectedRows = Episciences_Submit::datasetsProcessing($this->halPaper('hal-01234567&rows=1000'));
 
         self::assertSame(0, $affectedRows);
         self::assertCount(1, $requests);
-        $uri = $requests[0]['request']->getUri();
-        self::assertSame('api.hal.test', $uri->getHost());
-        self::assertSame('/search/', $uri->getPath());
-        parse_str($uri->getQuery(), $query);
-        self::assertSame('halId_s:hal-01234567&rows=1000', $query['q'], 'the identifier is encoded');
-        self::assertArrayNotHasKey('rows', $query);
-        self::assertSame('swhidId_s,researchData_s', $query['fl']);
-        self::assertStringNotContainsString('version_i', $uri->getQuery(), 'the HAL index only holds the latest version');
+        self::assertSame(
+            'https://api.hal.test/oai/hal?verb=GetRecord&metadataPrefix=xml-tei&identifier=oai%3AHAL%3Ahal-01234567%26rows%3D1000v1',
+            (string)$requests[0]['request']->getUri(),
+            'the identifier is encoded'
+        );
+    }
+
+    /**
+     * Update of a record to a newer version of the archive: the linked data are those of that version,
+     * not of the version the paper still holds
+     */
+    public function testHalRequestAsksTheVersionGivenInsteadOfThePaperVersion(): void
+    {
+        $requests = [];
+        $this->halServes($requests, new Response(200, [], '<TEI xmlns="http://www.tei-c.org/ns/1.0"/>'));
+
+        Episciences_Submit::datasetsProcessing(
+            $this->halPaper('hal-01234567'),
+            false,
+            new HalTeiSource(self::HAL_REPO_ID, 'hal-01234567', 3)
+        );
+
+        self::assertCount(1, $requests);
+        self::assertStringEndsWith('identifier=oai%3AHAL%3Ahal-01234567v3', (string)$requests[0]['request']->getUri());
     }
 
     public function testHalResponseWithoutDocsDoesNotFail(): void
     {
         $requests = [];
-        $client = $this->halClient($requests, new Response(200, [], '{"response":{"numFound":0}}'));
+        $this->halServes($requests, new Response(200, [], '<TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body><listBibl/></body></text></TEI>'));
 
         $errors = $this->collectErrors(
-            fn() => self::assertSame(0, Episciences_Submit::datasetsProcessing($this->halPaper('hal-01234567'), $client))
+            fn() => self::assertSame(0, Episciences_Submit::datasetsProcessing($this->halPaper('hal-01234567')))
         );
 
         self::assertSame([], $errors);
@@ -251,10 +276,10 @@ final class RepositoryHooksTest extends TestCase
     public function testHalApiFailureIsReported(): void
     {
         $requests = [];
-        $client = $this->halClient($requests, new Response(503, [], 'Service Unavailable'));
+        $this->halServes($requests, new Response(503, [], 'Service Unavailable'));
 
         $errors = $this->collectErrors(
-            fn() => self::assertSame(0, Episciences_Submit::datasetsProcessing($this->halPaper('hal-01234567'), $client))
+            fn() => self::assertSame(0, Episciences_Submit::datasetsProcessing($this->halPaper('hal-01234567')))
         );
 
         self::assertCount(1, $errors);
@@ -264,10 +289,10 @@ final class RepositoryHooksTest extends TestCase
     public function testNonHalRepositoryDoesNotQueryTheApi(): void
     {
         $requests = [];
-        $client = $this->halClient($requests);
+        $this->halServes($requests);
         $paper = new Episciences_Paper(['docid' => self::DOCID, 'repoid' => self::SPY_REPO_ID, 'identifier' => '42']);
 
-        self::assertSame(0, Episciences_Submit::datasetsProcessing($paper, $client));
+        self::assertSame(0, Episciences_Submit::datasetsProcessing($paper));
         self::assertSame([], $requests);
     }
 
@@ -275,12 +300,12 @@ final class RepositoryHooksTest extends TestCase
      * @param array<mixed> $requests receives the Guzzle history of the requests sent
      * @param-out array<mixed>|\ArrayAccess<int, array<mixed>> $requests
      */
-    private function halClient(array &$requests, Response ...$responses): Client
+    private function halServes(array &$requests, Response ...$responses): void
     {
         $stack = HandlerStack::create(new MockHandler($responses));
         $stack->push(Middleware::history($requests));
 
-        return new Client(['handler' => $stack]);
+        Episciences_Hal_TeiCacheManager::setHttpClient(new Client(['handler' => $stack]));
     }
 
     private function halPaper(string $identifier): Episciences_Paper

@@ -464,4 +464,47 @@ final class Episciences_Repositories_Dataverse_HooksTest extends TestCase
             'response' => ['error' => 'record unavailable'],
         ]);
     }
+
+    // =========================================================================
+    // dataProcess() — authors
+    // =========================================================================
+
+    /**
+     * An author may declare the ORCID scheme without any identifier
+     * (doi:10.57745/1HLI7X version 1): the author is kept, without an ORCID,
+     * instead of a TypeError from normalizeOrcid(null).
+     */
+    public function testDataProcessKeepsAuthorWithOrcidSchemeButNoIdentifier(): void
+    {
+        $data = [
+            'versionNumber' => 1,
+            'versionMinorNumber' => 0,
+            'datasetPersistentId' => 'doi:10.57745/1HLI7X',
+            'metadataBlocks' => ['citation' => ['fields' => [[
+                'typeName' => 'author',
+                'multiple' => true,
+                'value' => [
+                    [
+                        'authorName' => ['typeName' => 'authorName', 'value' => 'Svoboda, Pavel'],
+                        'authorAffiliation' => ['typeName' => 'authorAffiliation', 'value' => 'CRI'],
+                        'authorIdentifierScheme' => ['typeName' => 'authorIdentifierScheme', 'value' => 'ORCID'],
+                    ],
+                    [
+                        'authorName' => ['typeName' => 'authorName', 'value' => 'Holubec, Vojtech'],
+                        'authorIdentifierScheme' => ['typeName' => 'authorIdentifierScheme', 'value' => 'ORCID'],
+                        'authorIdentifier' => ['typeName' => 'authorIdentifier', 'value' => '0000-0001-8113-0111'],
+                    ],
+                ],
+            ]]]],
+        ];
+
+        $method = new ReflectionMethod(Episciences_Repositories_Dataverse_Hooks::class, 'dataProcess');
+        $method->invokeArgs(null, [&$data, []]);
+
+        $authors = $data[Episciences_Repositories_Common::ENRICHMENT]['authors'];
+        self::assertCount(2, $authors);
+        self::assertSame('Svoboda, Pavel', $authors[0]['fullname']);
+        self::assertArrayNotHasKey('orcid', $authors[0]);
+        self::assertSame('0000-0001-8113-0111', $authors[1]['orcid']);
+    }
 }

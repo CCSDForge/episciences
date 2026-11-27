@@ -116,6 +116,35 @@ Logs are retained for **180 days**.
 | `token_invalid` | `AccessLog::TOKEN_INVALID` | Expired, forged, or mismatched security token |
 | `unsafe_path` | `AccessLog::UNSAFE_PATH` | Path traversal attempt (`../`, control characters) |
 | `unknown_resource` | `AccessLog::UNKNOWN_RESOURCE` | XHR request targeting non-existent resource |
+| `http_forbidden` | `AccessLog::HTTP_FORBIDDEN` | 401/403 response not logged by a more specific event |
+| `access_redirected` | `AccessLog::ACCESS_REDIRECTED` | Access refused by redirecting the user elsewhere |
+| `not_found_masked` | `AccessLog::NOT_FOUND_MASKED` | Access refused by answering "not found", to hide that the resource exists (e.g. reviewer invitation of another journal) |
+
+### Checking the Log Locally
+
+`scripts/check-security-log.sh` sends real HTTP requests to the local Docker environment and checks the events written to `logs/security-*.log` (requires `curl`, `jq` and the running Docker stack):
+
+```bash
+bash scripts/check-security-log.sh
+# journal prefixed URLs of the *-epi-manager branches
+BASE_URL=https://manager-dev.episciences.org/dev bash scripts/check-security-log.sh
+```
+
+Each scenario uses its own User-Agent, so only the events of the run are read:
+
+| Scenario | Expected event |
+|----------|----------------|
+| Guest on a protected page | `auth_required` (INFO) |
+| Unknown URL | nothing |
+| Existing action removed from `acl.ini` (restored on exit) | `acl_missing` (ERROR) |
+| Reviewer invitation of another journal | `not_found_masked` (NOTICE) |
+| Wrong password | `login_failed` (NOTICE), the password never written |
+| Member on an editorial page | `acl_denied` (WARNING) |
+| AJAX POST without request token | `csrf_failed` (WARNING) and a 403 response |
+
+- The journal is read from `BASE_URL`: its first path segment when there is one, otherwise the first label of the host name; `JOURNAL_CODE` overrides it. A journal served under a prefix needs `REVIEW.is_new_front_switched = 'yes'`.
+- The logged-in scenarios need the MySQL authentication adapter (`"AUTH_ADAPTER_NAME": "MYSQL"` in `config/pwd.json`) and a member-only account of the journal created by `make init-dev-users`; they are skipped under CAS. `MEMBER_USERNAME` and `MEMBER_PASSWORD` select another account.
+- The script exits with a non-zero status when a scenario fails.
 
 ### Parameter Redaction (`ParamRedactor`)
 Sensitive query parameters (passwords, auth tokens, session cookies, API secrets) are stripped or masked before being written to disk.

@@ -1,5 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
+use Episciences\Hal\HalTeiSource;
+
 class Episciences_Paper_AuthorsManager
 {
     /** @deprecated Use Episciences_Hal_TeiCacheManager::ONE_MONTH */
@@ -60,7 +64,7 @@ class Episciences_Paper_AuthorsManager
      */
     public static function getHalTei(string $identifier, int $version = 0): bool
     {
-        return Episciences_Hal_TeiCacheManager::fetchAndCache($identifier, $version);
+        return Episciences_Hal_TeiCacheManager::fetchAndCache(HalTeiSource::hal($identifier, $version));
     }
 
     /**
@@ -68,7 +72,7 @@ class Episciences_Paper_AuthorsManager
      */
     public static function getTeiHalByIdentifier(string $identifier, int $version = 0): string
     {
-        return Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version);
+        return Episciences_Hal_TeiCacheManager::fetchAndGet(HalTeiSource::hal($identifier, $version));
     }
 
     /**
@@ -77,7 +81,7 @@ class Episciences_Paper_AuthorsManager
      */
     public static function getHalTeiCache(string $identifier, int $version = 0): string
     {
-        return Episciences_Hal_TeiCacheManager::getFromCache($identifier, $version);
+        return Episciences_Hal_TeiCacheManager::getFromCache(HalTeiSource::hal($identifier, $version));
     }
 
     // ────────────────────────────────────────────

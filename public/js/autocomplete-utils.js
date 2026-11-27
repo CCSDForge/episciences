@@ -14,6 +14,8 @@ class ModernUserAutocomplete {
             minLength: 2,
             debounceDelay: 300,
             maxResults: 100,
+            // user ids left out of the results (sent as ignore_list[])
+            ignoreList: [],
             onSelectCallback: null,
             onErrorCallback: null,
             ...options,
@@ -276,12 +278,28 @@ class ModernUserAutocomplete {
         }
     }
 
+    /**
+     * @param {string} term
+     * @returns {string} search URL, with the ignored user ids
+     */
+    buildSearchUrl(term) {
+        const params = new URLSearchParams({ term });
+        (Array.isArray(this.config.ignoreList)
+            ? this.config.ignoreList
+            : []
+        ).forEach(uid => {
+            params.append('ignore_list[]', String(uid));
+        });
+        const separator = this.config.url.includes('?') ? '&' : '?';
+        return `${this.config.url}${separator}${params.toString()}`;
+    }
+
     fetchUsers(term) {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             this.currentXhr = xhr;
 
-            const url = `${this.config.url}?term=${encodeURIComponent(term)}`;
+            const url = this.buildSearchUrl(term);
 
             xhr.open('GET', url, true);
             xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
@@ -357,7 +375,7 @@ class ModernUserAutocomplete {
                 `${user.firstname || ''} ${user.lastname || ''}`.trim();
             const email = user.email || user.EMAIL || '';
             const uid = user.id || user.UID || '';
-            const locale = user.locale
+            const locale = user.locale;
 
             // Create item container
             const itemDiv = document.createElement('div');
@@ -519,4 +537,8 @@ class ModernUserAutocomplete {
 // Backward compatibility function
 function createUserAutocomplete(options = {}) {
     return new ModernUserAutocomplete(options);
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { ModernUserAutocomplete, createUserAutocomplete };
 }

@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Hal\HalTeiSource;
+use Episciences\Paper\Record\TitleNormalizer;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LogLevel;
@@ -3320,10 +3322,10 @@ class Episciences_PapersManager
         $context = self::initializeContext($params);
         $recordData = self::fetchRecordData($context); // as well as updating the version from the original archive
 
-        // before the licence, authors and funding steps, which all read the TEI of this version
+        // before the linked data, licence, authors and funding steps, which all read the TEI of this version
         $halTeiRefreshFailed = $refreshHalTei
-            && (string)$context['repoId'] === Episciences_Repositories::HAL_REPO_ID
-            && !Episciences_Hal_TeiCacheManager::refresh($context['identifier'], (int)$context['version']);
+            && Episciences_Repositories::isFromHalRepository((int)$context['repoId'])
+            && !Episciences_Hal_TeiCacheManager::refresh(self::halTeiSourceOf($context));
         $record = self::cleanRecord($recordData['record'], $context['repoId']);
         $enrichment = $recordData['enrichment'];
         // The record already loaded, if any: the files and the linked data hooks do not load it again
@@ -3331,7 +3333,8 @@ class Episciences_PapersManager
 
         $affectedRows = Episciences_Submit::runPostSaveSteps($paper, [
             'hookFilesProcessing' => static fn(): int => self::updateRecordDataProcessFilesHook($context, $enrichment, $response),
-            'linkedData' => static fn(): int => self::processLinkedDataOrDatasets($paper, $context, $response),
+            // HAL linked data: the TEI read again from HAL, unless it was just refreshed above
+            'linkedData' => static fn(): int => self::processLinkedDataOrDatasets($paper, $context, $response, !$refreshHalTei),
             'enrichmentProcess' => static fn(): int => Episciences_Submit::storeEnrichmentOrFail($paper, $enrichment),
             'verifyExistOrInsertAuthors' => static fn(): int => Episciences_Paper_Authors_Repository::verifyExistOrInsertOrFail(
                 $context['docId'], $context['paperId']
@@ -3449,6 +3452,10 @@ class Episciences_PapersManager
             return $record;
         }
 
+        // Before the default namespace is stripped below, while the record is still well-formed XML:
+        // some repositories (e.g. arXiv, HAL) accept line breaks in titles, stored on a single line
+        $record = TitleNormalizer::normalize($record);
+
         $record = preg_replace('#xmlns="(.*)"#', '', $record);
 
         if ($repoId === (int)Episciences_Repositories::CWI_REPO_ID) {
@@ -3467,12 +3474,13 @@ class Episciences_PapersManager
      * @param Episciences_Paper $paper
      * @param array<string, mixed> $context
      * @param array<string, mixed> $response repository record already loaded by fetchRecordData(), if any
+     * @param bool $refreshHalTei HAL papers: read the TEI from HAL again (see Episciences_Submit::datasetsProcessing())
      * @return int number of rows affected by this step
      * @throws Exception the linked data could not be loaded or stored
      */
 
     private static function processLinkedDataOrDatasets(
-        Episciences_Paper $paper, array $context, array $response = []
+        Episciences_Paper $paper, array $context, array $response = [], bool $refreshHalTei = false
     ): int
     {
         if (Episciences_Repositories::handlesOwnEnrichment((int)$context['repoId'])) {
@@ -3490,7 +3498,18 @@ class Episciences_PapersManager
             return (int)($hookData['affectedRows'] ?? 0);
         }
 
-        return Episciences_Submit::datasetsProcessing($paper);
+        // the version the record is updated to, which may be newer than the paper version (fetchRecordData())
+        return Episciences_Submit::datasetsProcessing($paper, $refreshHalTei, self::halTeiSourceOf($context));
+    }
+
+    /**
+     * HAL document version the record is updated to: the TEI refreshed and read by updateRecordData()
+     *
+     * @param array<string, mixed> $context
+     */
+    private static function halTeiSourceOf(array $context): HalTeiSource
+    {
+        return new HalTeiSource((int)$context['repoId'], (string)$context['identifier'], (int)$context['version']);
     }
 
     /**
@@ -4884,6 +4903,12 @@ class Episciences_PapersManager
         try {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $toJson = $paper->toJson();
+
+            // Keep the stored document rather than wiping it when generation fails
+            if ($toJson === null) {
+                return false;
+            }
+
             $str = sprintf('UPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', $db->quote($toJson), $docId);
             $db->query($str)->closeCursor();
         } catch (Zend_Db_Statement_Exception $e) {

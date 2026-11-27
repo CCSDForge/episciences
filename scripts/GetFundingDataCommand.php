@@ -13,6 +13,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
+use Episciences\Hal\HalTeiSource;
 
 /**
  * Symfony Console command: enrich funding data from OpenAIRE Research Graph + HAL.
@@ -165,7 +166,7 @@ class GetFundingDataCommand extends Command
 
                 if (!$dryRun) {
                     // replaced only once HAL returned it: the author and licence enrichments share it
-                    if ($noCache && !Episciences_Hal_TeiCacheManager::refresh($trimIdentifier, $version)) {
+                    if ($noCache && !Episciences_Hal_TeiCacheManager::refresh(HalTeiSource::hal($trimIdentifier, $version))) {
                         $logger->warning("HAL TEI of {$trimIdentifier} (version {$version}) could not be read again: cached TEI used, if any");
                     }
 

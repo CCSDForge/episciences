@@ -3,13 +3,15 @@
 use Episciences\DataSet;
 use Episciences\Files\File;
 use Episciences\Files\Uploader;
+use Episciences\Hal\HalTeiSource;
 use Episciences\Paper\DataDescriptor;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\LinkedDataNotStoredException;
 use Episciences\Paper\PartiallyStoredException;
+use Episciences\Paper\Record\TitleNormalizer;
+use Episciences\Repositories\HAL\TeiLinkedDataParser;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Submit\SubmittedRecord;
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
@@ -32,8 +34,6 @@ class Episciences_Submit
     protected $_db = null;
     public const POSTED_VOLUME_KEY = 'volumes';
     public const POSTED_SECTION_KEY = 'sections';
-    public const HAL_API_TIMEOUT = 10;
-    public const HAL_API_CONNECT_TIMEOUT = 5;
     /**
      * Key of a saveDoc() result: set when a step of the processing that follows the save failed
      * (files, linked data, authors or enrichment, see processSavedPaper())
@@ -42,6 +42,15 @@ class Episciences_Submit
     public const POST_SAVE_FAILURE_MESSAGE = "Votre article a bien été enregistré, mais une partie de ses données (fichiers, données liées, auteurs ou enrichissements) n'a pas pu être enregistrée : merci de contacter la revue.";
     // Shown to the journal staff who posted the new version of a paper in place of its author
     public const POST_SAVE_FAILURE_MESSAGE_STAFF = "La nouvelle version a bien été enregistrée, mais une partie de ses données (fichiers, données liées, auteurs ou enrichissements) n'a pas pu être enregistrée : mettez à jour ses métadonnées depuis la page de l'article.";
+    /** Key of getDoc()'s result naming where the record comes from, when not from the repository itself */
+    public const RECORD_SOURCE = 'recordSource';
+    /** Versions of the document given by the fallback source (internal to getDoc()) */
+    private const FALLBACK_VERSIONS = 'fallbackVersions';
+    private const FALLBACK_LATEST_VERSION = 'fallbackLatestVersion';
+
+    /** @var null|callable(string): Episciences_Oai_Client */
+    private static $oaiClientFactory = null;
+
 
     /**
      * Validate cover letter file requirement.
@@ -975,7 +984,12 @@ class Episciences_Submit
             //OAI identifier
             $identifier = Episciences_Repositories::getIdentifier($repoId, $id, $version !== null ? (int)$version : null);
 
-            $result['record'] = self::loadRecord($hookApiRecord, $repoId, $identifier, $result, $oai);
+            $result['record'] = self::loadRecord($hookApiRecord, $repoId, $identifier, $result, $oai, $id);
+
+            // Some repositories (e.g. arXiv, HAL) accept line breaks in titles: store them on a single line
+            if (is_string($result['record'])) {
+                $result['record'] = TitleNormalizer::normalize($result['record']);
+            }
             $result['hookVersion'] = $version;
             $result['hookId'] = $id;
             $result['hookRepoId'] = (int)$repoId;
@@ -1031,8 +1045,10 @@ class Episciences_Submit
             if (Episciences_Repositories::isFromHalRepository($repoId)) {
                 self::assertHalSubmissionAllowed($result['record'], $id, $identifier, $oai);
             } elseif (Episciences_Repositories::isFromArxivRepository((int)$repoId)) {
-                self::assertArxivVersionExists($oai, $identifier, $version !== null ? (int)$version : null);
+                self::assertArxivRequestedVersion($result, $oai, $identifier, $version !== null ? (int)$version : null, $repoId, $id);
             }
+
+            unset($result[self::FALLBACK_VERSIONS], $result[self::FALLBACK_LATEST_VERSION]);
 
         } catch (Ccsd_Error $e) {
             return self::buildCcsdErrorResult($e, $repoId);
@@ -1115,6 +1131,11 @@ class Episciences_Submit
     private static function cleanIdentifier(string $id, $repoId): string
     {
         $id = trim($id);
+
+        if (Episciences_Repositories::isFromArxivRepository((int)$repoId)) {
+            $id = self::stripArxivPrefix($id);
+        }
+
         $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', [
             'id' => $id,
             'repoId' => $repoId,
@@ -1125,6 +1146,15 @@ class Episciences_Submit
         }
 
         return $id;
+    }
+
+    /**
+     * Remove the "arXiv:" prefix (any case) that authors often copy with the identifier,
+     * e.g. "arXiv:2409.09809" -> "2409.09809". arXiv tolerates it, but the stored identifier must not carry it.
+     */
+    private static function stripArxivPrefix(string $id): string
+    {
+        return (string)preg_replace('/^[\s\x{00A0}]*arxiv[\s\x{00A0}]*:[\s\x{00A0}]*/iu', '', $id);
     }
 
     /**
@@ -1150,7 +1180,106 @@ class Episciences_Submit
     }
 
     /**
-     * Load record either from hookApiRecords or from OAI.
+     * Replace the creation of the OAI-PMH client (tests); null restores the default
+     * @param null|callable(string): Episciences_Oai_Client $factory receives the base URL
+     */
+    public static function setOaiClientFactory(?callable $factory): void
+    {
+        self::$oaiClientFactory = $factory;
+    }
+
+    /**
+     * Hooks of the OAI-PMH requests and of their fallback: arXiv only (Episciences_Repositories_ArXiv_SubmissionHooks)
+     *
+     * @param array<string, mixed> $hookParams with 'repoId'
+     * @return array<string, mixed> empty for the other repositories
+     */
+    private static function callSubmissionHook(string $hookName, array $hookParams): array
+    {
+        if (!Episciences_Repositories::isFromArxivRepository((int)($hookParams['repoId'] ?? 0))) {
+            return [];
+        }
+
+        return Episciences_Repositories_ArXiv_SubmissionHooks::$hookName($hookParams);
+    }
+
+    /**
+     * OAI-PMH client of the repository, with the request options of the repository hook (attempts, timeouts)
+     */
+    private static function createOaiClient(string $baseUrl, ?string $repoId): Episciences_Oai_Client
+    {
+        $oai = self::$oaiClientFactory !== null
+            ? (self::$oaiClientFactory)($baseUrl)
+            : new Episciences_Oai_Client($baseUrl, 'xml');
+
+        $options = self::callSubmissionHook('hookOaiRequestOptions', ['repoId' => $repoId]);
+
+        if (isset($options['maxAttempts'])) {
+            $oai->setMaxAttempts((int)$options['maxAttempts']);
+        }
+        if (isset($options['requestTimeout'])) {
+            $oai->setRequestTimeout((int)$options['requestTimeout']);
+        }
+        if (isset($options['connectTimeout'])) {
+            $oai->setConnectTimeout((int)$options['connectTimeout']);
+        }
+
+        return $oai;
+    }
+
+    /**
+     * Record from the fallback source of the repository (DataCite for arXiv), when the OAI-PMH server is
+     * unavailable.
+     *
+     * @param Ccsd_Error $oaiError failure of the OAI-PMH request
+     * @return string the record
+     * @throws Ccsd_Error $oaiError when there is no fallback or when the fallback fails too;
+     *  ID_DOES_NOT_EXIST_CODE when the fallback source does not know the document
+     */
+    private static function loadFallbackRecord(Ccsd_Error $oaiError, ?string $repoId, string $id, array &$result): string
+    {
+        if (!Ccsd_Oai_Client::isTransientFailure($oaiError)) {
+            throw $oaiError;
+        }
+
+        $logger = \Episciences\AppRegistry::getMonoLogger();
+
+        try {
+            $fallback = self::callSubmissionHook('hookFallbackRecord', ['repoId' => $repoId, 'identifier' => $id]);
+        } catch (Ccsd_Error $fallbackError) {
+            if ($fallbackError->getMessage() === Ccsd_Error::ID_DOES_NOT_EXIST_CODE) {
+                throw $fallbackError;
+            }
+            $logger?->warning('Fallback record unavailable', [
+                'repoId' => $repoId,
+                'identifier' => $id,
+                'error' => $fallbackError->getMessage(),
+                'code' => $fallbackError->getCode(),
+            ]);
+            throw $oaiError;
+        }
+
+        if (empty($fallback['record']) || !is_string($fallback['record'])) {
+            throw $oaiError;
+        }
+
+        $result[self::RECORD_SOURCE] = (string)($fallback['source'] ?? '');
+        $result[self::FALLBACK_VERSIONS] = (array)($fallback['versions'] ?? []);
+        $result[self::FALLBACK_LATEST_VERSION] = $fallback['latestVersion'] ?? null;
+
+        $logger?->notice('Record loaded from the fallback source', [
+            'repoId' => $repoId,
+            'identifier' => $id,
+            'source' => $result[self::RECORD_SOURCE],
+            'oai_error' => $oaiError->getMessage(),
+        ]);
+
+        return $fallback['record'];
+    }
+
+    /**
+     * Load record either from hookApiRecords or from OAI, or from the fallback source when OAI is unavailable.
+     * @param string $id repository identifier of the document, without version
      * @throws Ccsd_Error
      * @throws Exception
      */
@@ -1159,7 +1288,8 @@ class Episciences_Submit
         ?string                 $repoId,
         ?string                 $identifier,
         array                   &$result,
-        ?Episciences_Oai_Client &$oai
+        ?Episciences_Oai_Client &$oai,
+        string                  $id = ''
     )
     {
         if (!empty($hookApiRecord)) {
@@ -1177,8 +1307,14 @@ class Episciences_Submit
         $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
 
         if ($baseUrl) {
-            $oai = new Episciences_Oai_Client($baseUrl, 'xml');
-            $record = $oai->getRecord($identifier);
+            $oai = self::createOaiClient($baseUrl, $repoId);
+
+            try {
+                $record = $oai->getRecord($identifier);
+            } catch (Ccsd_Error $oaiError) {
+                $record = self::loadFallbackRecord($oaiError, $repoId, $id, $result);
+                $oai = null; // the OAI-PMH server is unavailable: no other request to it
+            }
 
             $cleanedRecord = Episciences_Repositories::callHook('hookCleanXMLRecordInput', [
                 'record' => $record,
@@ -1302,10 +1438,85 @@ class Episciences_Submit
         } else {
             $error = $translator->translate(
                     "Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : "
-                ) . '<strong class="alert-warning">' . $displayDate . '</strong>';
+                ) . '<strong>' . $displayDate . '</strong>';
         }
 
         throw new Ccsd_Error('docUnderEmbargo: ' . $error);
+    }
+
+    /**
+     * arXiv: check that the requested version exists, from arXivRaw, or from the fallback source
+     * (DataCite) when the record comes from it or when the arXivRaw request fails transiently.
+     * @param string $id repository identifier of the document, without version
+     * @throws Ccsd_Error
+     * @throws Exception
+     */
+    private static function assertArxivRequestedVersion(
+        array                   &$result,
+        ?Episciences_Oai_Client $oai,
+        ?string                 $identifier,
+        ?int                    $version,
+        ?string                 $repoId,
+        string                  $id
+    ): void
+    {
+        if (isset($result[self::RECORD_SOURCE])) {
+            self::assertFallbackVersionExists($result, $version);
+            return;
+        }
+
+        try {
+            self::assertArxivVersionExists($oai, $identifier, $version);
+        } catch (Ccsd_Error $versionError) {
+            // arXivVersionDoesNotExist and the other non transient errors are rethrown
+            self::loadFallbackVersions($versionError, $repoId, $id, $result);
+            self::assertFallbackVersionExists($result, $version);
+        }
+    }
+
+    /**
+     * Versions of the document from the fallback source (DataCite for arXiv), when the version check
+     * request to the OAI-PMH server fails transiently. The record itself comes from the repository:
+     * RECORD_SOURCE is not set.
+     *
+     * Unlike loadFallbackRecord(), a document unknown to the fallback source is not reported as missing:
+     * the repository has just served its record, the fallback source is only late.
+     *
+     * @param Ccsd_Error $oaiError failure of the version check request
+     * @throws Ccsd_Error $oaiError when there is no fallback or when the fallback fails too
+     */
+    private static function loadFallbackVersions(Ccsd_Error $oaiError, ?string $repoId, string $id, array &$result): void
+    {
+        if (!Ccsd_Oai_Client::isTransientFailure($oaiError)) {
+            throw $oaiError;
+        }
+
+        $logger = \Episciences\AppRegistry::getMonoLogger();
+
+        try {
+            $fallback = self::callSubmissionHook('hookFallbackRecord', ['repoId' => $repoId, 'identifier' => $id]);
+        } catch (Ccsd_Error $fallbackError) {
+            $logger?->warning('Fallback versions unavailable', [
+                'repoId' => $repoId,
+                'identifier' => $id,
+                'error' => $fallbackError->getMessage(),
+                'code' => $fallbackError->getCode(),
+            ]);
+            throw $oaiError;
+        }
+
+        if (!isset($fallback['versions'])) { // no fallback, or fallback switched off
+            throw $oaiError;
+        }
+
+        $result[self::FALLBACK_VERSIONS] = (array)$fallback['versions'];
+        $result[self::FALLBACK_LATEST_VERSION] = $fallback['latestVersion'] ?? null;
+
+        $logger?->notice('Versions loaded from the fallback source', [
+            'repoId' => $repoId,
+            'identifier' => $id,
+            'oai_error' => $oaiError->getMessage(),
+        ]);
     }
 
     /**
@@ -1322,12 +1533,42 @@ class Episciences_Submit
             return;
         }
 
+        // The fallback source answers when this request fails: no second attempt, to stay within the
+        // time limit of the web server
+        $oai->setMaxAttempts(1);
         $arXivRawRecord = $oai->getArXivRawRecord($identifier);
         $versionHistory = self::extractVersionsFromArXivRaw($arXivRawRecord);
 
         if (!in_array($version, $versionHistory, false)) {
             throw new Ccsd_Error('arXivVersionDoesNotExist:');
         }
+    }
+
+    /**
+     * Check that the requested version exists, from the versions given by the fallback source.
+     * A version just after the latest known one may be online already but not yet in the fallback
+     * source (DataCite is updated a few hours after the arXiv announcement): the author is asked to try again.
+     * @throws Ccsd_Error
+     */
+    private static function assertFallbackVersionExists(array $result, ?int $version): void
+    {
+        if ($version === null) {
+            return;
+        }
+
+        $versions = array_map('intval', (array)($result[self::FALLBACK_VERSIONS] ?? []));
+
+        if (in_array($version, $versions, true)) {
+            return;
+        }
+
+        $latestVersion = $result[self::FALLBACK_LATEST_VERSION] ?? null;
+
+        if ($latestVersion !== null && $version === (int)$latestVersion + 1) {
+            throw new Ccsd_Error(Ccsd_Error::REPOSITORY_UNAVAILABLE_CODE);
+        }
+
+        throw new Ccsd_Error('arXivVersionDoesNotExist:');
     }
 
     /**
@@ -1403,17 +1644,27 @@ class Episciences_Submit
     {
         $result = ['status' => 0];
 
+        $isFromCli = Ccsd_Tools::isFromCli();
         $parsedError = $e->parseError();
-        $mailToStr = sprintf('<a href="mailto:%s">%s</a>', EPISCIENCES_SUPPORT, EPISCIENCES_SUPPORT);
+        // From the command line the message is only logged: plain text, without markup
+        $mailToStr = $isFromCli
+            ? EPISCIENCES_SUPPORT
+            : sprintf('<a href="mailto:%s">%s</a>', EPISCIENCES_SUPPORT, EPISCIENCES_SUPPORT);
 
         try {
-            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
-        } catch (Zend_Exception $e) {
-            Episciences_View_Helper_Log::log($e->getMessage());
+            $translator = $isFromCli ? null : Zend_Registry::get('Zend_Translate');
+        } catch (Zend_Exception $registryException) {
+            // Keep $e: the error to report is the original one, not the failed translator lookup
+            Episciences_View_Helper_Log::log($registryException->getMessage());
             $translator = null;
         }
 
         $error = $translator ? $translator->translate($parsedError) : $parsedError;
+
+        if ($isFromCli) {
+            // Markup of the message itself only: the values inserted below are kept as they are
+            $error = html_entity_decode(strip_tags($error), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
 
         if (
             str_contains($e->getMessage(), Ccsd_Error::ID_DOES_NOT_EXIST_CODE) ||
@@ -1425,20 +1676,22 @@ class Episciences_Submit
                 Episciences_Repositories::getLabel($repoId),
                 Episciences_Repositories::getIdentifierExemple($repoId)
             );
+        } elseif (
+            str_contains($e->getMessage(), Ccsd_Error::REPOSITORY_TIMEOUT_CODE) ||
+            str_contains($e->getMessage(), Ccsd_Error::REPOSITORY_UNAVAILABLE_CODE)
+        ) {
+            $error = sprintf($error, Episciences_Repositories::getLabel($repoId), $mailToStr);
         } elseif (str_contains($parsedError, Ccsd_Error::DEFAULT_PREFIX_CODE)) {
             $error = sprintf(
                 $error,
-                $e->getMessage(),
+                $isFromCli ? $e->getMessage() : htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'),
                 $mailToStr,
                 Episciences_Repositories::getLabel($repoId),
                 Episciences_Repositories::getIdentifierExemple($repoId)
             );
         }
 
-        if ($translator) {
-            $error = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $error;
-        }
-
+        // On the web, the message is displayed under an "Error" heading (see public/js/submit/functions.js)
         $result['error'] = $error;
 
         return $result;
@@ -1449,22 +1702,10 @@ class Episciences_Submit
      */
     private static function buildGenericErrorResult(Exception $e): array
     {
-        $result = ['status' => 0];
+        // HTML on the web, plain text from the command line
+        $error = Ccsd_Tools::isFromCli() ? $e->getMessage() : htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
 
-        try {
-            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
-        } catch (Zend_Exception $e) {
-            Episciences_View_Helper_Log::log($e->getMessage());
-            $translator = null;
-        }
-
-        if ($translator) {
-            $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
-        } else {
-            $result['error'] = $e->getMessage();
-        }
-
-        return $result;
+        return ['status' => 0, 'error' => $error];
     }
 
 
@@ -1801,11 +2042,12 @@ class Episciences_Submit
 
     /**
      * Repository processing of a saved paper: files, linked data, then HAL datasets / SWHID.
-     * The files are loaded from the repository.
+     * The files are loaded from the repository; the HAL datasets are read from the TEI of the paper
+     * version, served by the OAI-PMH server of its repository.
      *
      * @param Episciences_Paper|DataSet $paper
      * @return bool false when a step failed: the files or the linked data of the paper may be missing
-     *              (an HTTP failure of the HAL datasets request is only reported, see datasetsProcessing())
+     *              (a failure to read the HAL TEI is only reported, see datasetsProcessing())
      */
     public static function processRepositoryHooks(Episciences_Paper|DataSet $paper): bool
     {
@@ -1846,9 +2088,10 @@ class Episciences_Submit
             },
         ];
 
+        // HAL linked data: the TEI is read from the OAI-PMH server of the repository, not from its API
         if (
             !Episciences_Repositories::handlesOwnEnrichment($repoId) &&
-            Episciences_Repositories::getApiUrl($repoId) !== ''
+            Episciences_Repositories::isFromHalRepository($repoId)
         ) {
             // datasetsProcessing() only handles the HTTP and JSON errors, not the database ones
             $steps['datasetsProcessing'] = static fn() => self::datasetsProcessing($paper);
@@ -2682,40 +2925,36 @@ class Episciences_Submit
     }
 
     /**
-     * Update paper datasets from the HAL search API
+     * Update the paper linked data from the HAL TEI of the paper version: related works and SWHID
      * @param Episciences_Paper $paper
-     * @param Client|null $client HTTP client (injected by the tests)
+     * @param bool $refreshTei read the TEI from HAL again instead of the cached one, so that the linked data
+     *                         edited on HAL without a new version are seen (update of the paper record);
+     *                         when HAL does not return it, the TEI cached before, if any, is read
+     * @param HalTeiSource|null $source document version to read, when it differs from the paper version
+     *                                  (update of the record to the version of the archive); null: the paper version
      * @return int
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function datasetsProcessing(Episciences_Paper $paper, ?Client $client = null): int
+    public static function datasetsProcessing(Episciences_Paper $paper, bool $refreshTei = false, ?HalTeiSource $source = null): int
     {
-        try {
-
-            if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
-                $client ??= new Client([
-                    'headers' => ['Content-type' => 'application/json'],
-                    'timeout' => self::HAL_API_TIMEOUT,
-                    'connect_timeout' => self::HAL_API_CONNECT_TIMEOUT,
-                ]);
-                // No version filter: the HAL search index only holds the latest version of a document
-                $url = Episciences_Repositories::getApiUrl($paper->getRepoid())
-                    . '/search/?indent=true&q=halId_s:' . urlencode((string)$paper->getIdentifier())
-                    . '&fl=swhidId_s,researchData_s';
-                $response = $client->get($url);
-                $result = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
-                // An unexpected payload yields no datasets: { "swhidId_s": [...], "researchData_s": [...] } is expected
-                $docs = $result['response']['docs'] ?? [];
-                $firstDoc = is_array($docs) && $docs !== [] ? reset($docs) : [];
-                $allDatasets = is_array($firstDoc) ? array_filter($firstDoc, 'is_array') : [];
-                return self::processDatasets($paper, $allDatasets);
-            }
-
-        } catch (GuzzleException|JsonException  $e) {
-            trigger_error($e->getMessage());
+        if (!Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
+            return 0;
         }
 
-        return 0;
+        // The TEI holds the related works with their relation and resource types (<relatedItem>)
+        // and the SWHID (<idno type="swhid">), which the search fields do not all give.
+        // A failed request is reported by the TEI cache manager.
+        // 0 = latest version, as for the publication date (PublicationDateResolver)
+        $source ??= HalTeiSource::ofPaper($paper);
 
+        if ($refreshTei) {
+            Episciences_Hal_TeiCacheManager::refresh($source);
+        }
+
+        $tei = Episciences_Hal_TeiCacheManager::fetchAndGet($source);
+
+        // A TEI without the document (unreadable, unavailable) yields no linked data
+        return self::processDatasets($paper, TeiLinkedDataParser::parse($tei) ?? []);
     }
 
     /**
@@ -3185,15 +3424,22 @@ class Episciences_Submit
                 continue;
             }
 
+            // One related identifier with its relation (DataCite shaped repositories, HAL TEI), or a list of identifiers
+            $isRelatedIdentifier = $isDataCiteShaped || array_key_exists('identifier', $datasets);
+            $entryOptions = $options;
+
             foreach ($datasets as $key => $value) {
 
-                if ($isDataCiteShaped) {
+                if ($isRelatedIdentifier) {
 
                     if ($key !== 'identifier') {
                         continue;
                     }
 
-                    $options['relationship'] = $datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
+                    // Outside the DataCite shaped repositories, the relation is one of the linked data vocabulary ("references" otherwise)
+                    $entryOptions['relationship'] = $isDataCiteShaped
+                        ? ($datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE)
+                        : TeiLinkedDataParser::relationship(is_string($datasets['relation'] ?? null) ? $datasets['relation'] : '');
                 }
 
                 try {
@@ -3201,7 +3447,7 @@ class Episciences_Submit
                         $docId,
                         $value,
                         (string)($datasets['resource_type'] ?? ''),
-                        $options,
+                        $entryOptions,
                         $noProcessed,
                         $failures
                     );
