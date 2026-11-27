@@ -1,0 +1,71 @@
+<?php
+/**
+ * Journal settings > Submission checklist (SubmissionchecklistController).
+ *
+ * @var Zend_View $this
+ * @var bool $this->isCustomised journal has its own list
+ * @var list<\Episciences\Submit\Checklist\ChecklistItem> $this->listItems list shown read-only: the
+ *      journal list, or the default list
+ * @var string $this->locale UI language
+ * @var list<array<string, mixed>> $this->rows rows of the editor
+ * @var list<array{message: string, item: ?int}> $this->errors
+ * @var bool $this->editorOpen editor shown open (list refused with errors)
+ * @var array<string, ?array{name: string, value: string}> $this->tokens form tokens
+ */
+
+$url = fn(string $action): string => $this->url(['controller' => 'submissionchecklist', 'action' => $action], null, true);
+$this->jQuery()->addJavascriptFile('/js/submissionchecklist/editor.js');
+$editor = $this->partial('submissionchecklist/editor.phtml', [
+    'action' => $url('save'),
+    'cancelUrl' => $url('index'),
+    'token' => $this->tokens['save'],
+    'rows' => $this->rows,
+    'errors' => $this->errors,
+    'maxItems' => $this->maxItems,
+    'maxLength' => $this->maxLength,
+]);
+?>
+<div class="submission-checklist">
+    <?php
+    // Same layout in both cases: the list as authors see it, then a button opening the editor
+    $intro = $this->isCustomised
+        ? 'Your journal uses its own checklist. Authors must accept all these statements to submit an article:'
+        : 'Your journal uses the default checklist. Authors must accept all these statements to submit an article:';
+    ?>
+    <p class="lead"><?php echo $this->escape($this->translate($intro)); ?></p>
+    <ul class="submission-checklist-preview">
+        <?php foreach ($this->listItems as $item): ?>
+            <li>
+                <?php echo $this->escape($item->getLabel($this->locale)); ?>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+
+    <details class="submission-checklist-customise"<?php echo $this->editorOpen ? ' open' : ''; ?>>
+        <?php if ($this->isCustomised): ?>
+            <summary class="btn btn-primary"><?php echo $this->escape($this->translate('Edit')); ?></summary>
+            <p class="help-block">
+                <?php echo $this->escape($this->translate('Edit the list below, then save it.')); ?>
+            </p>
+        <?php else: ?>
+            <summary class="btn btn-primary"><?php echo $this->escape($this->translate('Customise')); ?></summary>
+            <p class="help-block">
+                <?php echo $this->escape($this->translate('Edit the list below, then save it. Once saved, your list no longer follows the changes of the default list; you can go back to it at any time with "Back to the default list".')); ?>
+            </p>
+        <?php endif; ?>
+        <?php echo $editor; ?>
+    </details>
+
+    <?php if ($this->isCustomised): ?>
+        <form method="post" action="<?php echo $this->escape($url('reset')); ?>" class="submission-checklist-reset">
+            <input type="hidden" name="<?php echo $this->escape($this->tokens['reset']['name']); ?>" value="<?php echo $this->escape($this->tokens['reset']['value']); ?>">
+            <!-- Separate section: the help text describes this button, not "Save" -->
+            <button type="submit" class="btn btn-default" aria-describedby="submission-checklist-reset-help">
+                <?php echo $this->escape($this->translate('Back to the default list')); ?>
+            </button>
+            <p class="help-block" id="submission-checklist-reset-help">
+                <?php echo $this->escape($this->translate('Your checklist will be deleted and your journal will use the default checklist again.')); ?>
+            </p>
+        </form>
+    <?php endif; ?>
+</div>

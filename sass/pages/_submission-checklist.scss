@@ -1,0 +1,92 @@
+// Submission checklist settings (submissionchecklist/index.phtml, editor.phtml)
+
+// Confirmation before deleting a checkbox: replaces window.confirm(), whose colors cannot be set
+.submission-checklist-confirm {
+  width: min(440px, 92vw);
+  padding: 24px 24px 20px;
+  border: none;
+  border-radius: 12px;
+  color: #333;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.35);
+  }
+
+  .submission-checklist-confirm-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 12px;
+    font-size: 18px;
+    font-weight: 600;
+
+    // warning icon, contrast 5.4:1 on white (WCAG 1.4.11)
+    .fa-triangle-exclamation {
+      color: #b54708;
+      font-size: 20px;
+    }
+  }
+
+  .submission-checklist-confirm-message {
+    margin: 0 0 24px;
+    line-height: 1.5;
+  }
+
+  .submission-checklist-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+
+    .btn {
+      min-width: 96px;
+      border-radius: 6px;
+    }
+  }
+}
+
+// Read-only default list (index.phtml, journal without own list): space between the items, and
+// before the "Customise" button
+.submission-checklist-preview {
+  margin-bottom: 24px;
+
+  li + li {
+    margin-top: 10px;
+  }
+}
+
+// Help texts of the page ("Edit the list below...", limits, reset): the site-wide .help-block
+// (darkgray, 12px, sass/layout/_forms.scss) is too light to read (WCAG 1.4.3); italic is kept
+.submission-checklist .help-block {
+  color: $dark-grey;
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+
+// Space between the "Customise" button and the help text under it (editor open)
+.submission-checklist-customise > summary + .help-block {
+  margin-top: 16px;
+}
+
+// Space between the limits help text ("Up to 10 checkboxes...") and the first checkbox block
+.submission-checklist-editor > .help-block + .submission-checklist-rows {
+  margin-top: 20px;
+}
+
+// Space between "+ Add a checkbox" and the Cancel / Save buttons: adding and saving are two
+// different actions
+.submission-checklist-add {
+  margin-bottom: 24px;
+}
+
+// "Back to the default list" (customised journal): a separate section under the editor, so that
+// its help text is not read as a note about "Save the checklist"
+.submission-checklist-reset {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #ddd;
+
+  .help-block {
+    margin-top: 8px;
+  }
+}

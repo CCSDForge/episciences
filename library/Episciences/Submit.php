@@ -10,6 +10,8 @@ use Episciences\Paper\PartiallyStoredException;
 use Episciences\Paper\Record\TitleNormalizer;
 use Episciences\Repositories\HAL\TeiLinkedDataParser;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
+use Episciences\Submit\Checklist\ChecklistFormBuilder;
+use Episciences\Submit\Checklist\ChecklistProvider;
 use Episciences\Submit\SubmittedRecord;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -417,34 +419,8 @@ class Episciences_Submit
         $form = self::addDdElement($form, $group);
 
 
-        $form->addElement('checkbox', 'disclaimer1', [
-            'required' => true,
-            'uncheckedValue' => null,
-            'label' => "Je certifie être l'auteur de cet article, ou être mandaté par l'un des auteurs",
-            'belongsTo' => "disclaimers",
-            'decorators' => [
-                'ViewHelper',
-                ['Label', ['placement' => 'APPEND']],
-                ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-                ['Errors', ['placement' => 'APPEND']]
-            ]
-        ]);
-        $group[] = 'disclaimer1';
-
-
-        $form->addElement('checkbox', 'disclaimer2', [
-            'required' => true,
-            'uncheckedValue' => null,
-            'label' => "Je certifie ne pas avoir publié/soumis cet article ailleurs",
-            'belongsTo' => "disclaimers",
-            'decorators' => [
-                'ViewHelper',
-                ['Label', ['placement' => 'APPEND']],
-                ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-                ['Errors', ['placement' => 'APPEND']]
-            ]
-        ]);
-        $group[] = 'disclaimer2';
+        (new ChecklistFormBuilder(ChecklistProvider::create()))
+            ->addElements($form, $group, RVID, Episciences_Tools::getLocale() ?? 'en');
 
         $form->addElement('button', 'searchAgain', [
             'label' => 'Annuler',
@@ -802,34 +778,8 @@ class Episciences_Submit
                 self::addDdElement($form, $group, $settings['dataType']);
             }
 
-            $form->addElement('checkbox', 'disclaimer1', [
-                'required' => true,
-                'uncheckedValue' => null,
-                'label' => "Je certifie être l'auteur de cet article, ou être mandaté par l'un des auteurs",
-                'belongsTo' => "disclaimers",
-                'decorators' => [
-                    'ViewHelper',
-                    ['Label', ['placement' => 'APPEND']],
-                    ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-                    ['Errors', ['placement' => 'APPEND']]
-                ]
-            ]);
-            $group[] = 'disclaimer1';
-
-
-            $form->addElement('checkbox', 'disclaimer2', [
-                'required' => true,
-                'uncheckedValue' => null,
-                'label' => "Je certifie ne pas avoir publié/soumis cet article ailleurs",
-                'belongsTo' => "disclaimers",
-                'decorators' => [
-                    'ViewHelper',
-                    ['Label', ['placement' => 'APPEND']],
-                    ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
-                    ['Errors', ['placement' => 'APPEND']]
-                ]
-            ]);
-            $group[] = 'disclaimer2';
+            (new ChecklistFormBuilder(ChecklistProvider::create()))
+                ->addElements($form, $group, (int)$paper->getRvid(), Episciences_Tools::getLocale() ?? 'en');
 
 
             $form->addElement('button', 'submitPaper', [

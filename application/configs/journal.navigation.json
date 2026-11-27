@@ -157,6 +157,13 @@
             "privilege": "chief_editor,administrator,secretary"
           },
           {
+            "label": "Checklist de soumission",
+            "controller": "submissionchecklist",
+            "action": "index",
+            "resource": "submissionchecklist-index",
+            "privilege": "chief_editor,administrator,secretary"
+          },
+          {
             "label": "Paramètres DOI",
             "controller": "doi",
             "action": "settings",

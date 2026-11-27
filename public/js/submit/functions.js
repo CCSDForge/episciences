@@ -13,8 +13,6 @@ $(function () {
     let $suggest_editors = $('#suggestEditors');
     let $sectionsElement = $('#sections-element');
     let $suggestEditorsElement = $('#suggestEditors-element');
-    let $firstDisclaimersDisclaimer = $('#disclaimers-disclaimer1');
-    let $secondDisclaimersDisclaimer = $('#disclaimers-disclaimer2');
     let $specialIssuesAccessCodeElement = $('#specialIssueAccessCode-element');
     let $searchDocVersion = $('#' + subform + '-version');
     let $searchPaperPassword = $('#' + subform + '-paperPassword');
@@ -39,11 +37,8 @@ $(function () {
         activateDeactivateSubmitButton();
     });
 
-    $firstDisclaimersDisclaimer.on('change', function () {
-        activateDeactivateSubmitButton();
-    });
-
-    $secondDisclaimersDisclaimer.on('change', function () {
+    // Checklist checkboxes (any number, any ID): see public/js/submit/checklist.js
+    $(document).on('change', SUBMISSION_CHECKLIST_SELECTOR, function () {
         activateDeactivateSubmitButton();
     });
 
@@ -534,11 +529,8 @@ $(function () {
             }
         }
 
-        //Disclaimers check
-        if (
-            !$firstDisclaimersDisclaimer.is(':checked') ||
-            !$secondDisclaimersDisclaimer.is(':checked')
-        ) {
+        // Checklist check: every checkbox must be checked
+        if (!areChecklistBoxesChecked()) {
             return false;
         }
 
@@ -576,9 +568,6 @@ $(function () {
     }
 
     function doSearching() {
-        let $checkBoxCondition1 = $('#disclaimers-disclaimer1');
-        let $checkBoxCondition2 = $('#disclaimers-disclaimer2');
-
         let version;
         let $isRequiredVersion = $searchDocVersion.length > 0;
 
@@ -587,13 +576,7 @@ $(function () {
         }
 
         // submission error: attempt to re-submit
-        if ($checkBoxCondition1.is(':checked')) {
-            $checkBoxCondition1.prop('checked', false);
-        }
-
-        if ($checkBoxCondition2.is(':checked')) {
-            $checkBoxCondition2.prop('checked', false);
-        }
+        uncheckChecklistBoxes();
 
         if (
             $isRequiredVersion &&
