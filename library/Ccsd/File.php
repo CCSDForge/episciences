@@ -1,9 +1,14 @@
 <?php
 
+use Episciences\AppRegistry;
+
 /**
  * Méthodes permettant d'avoir des informations sur des fichers (extension, taille, ...)
- * @author yannick
  *
+ * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28).
+ *             Replaced by Symfony\Component\Filesystem\Path, Episciences\Upload\PublicFileStore,
+ *             Episciences\File\FilePresenter, and Episciences\User\UserPhotoHelper.
+ * @author yannick
  */
 class Ccsd_File
 {
@@ -129,12 +134,14 @@ class Ccsd_File
     /**
      * Retourne la taille d'un fichier
      *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28). Use Episciences\File\FilePresenter::formattedFileSize() instead.
      * @param string $filename
      * @param string $return
      * @return string
      */
     public static function getSize($filename, $return = 'string')
     {
+        self::logDeprecatedMethod(__METHOD__);
         $bytes = filesize($filename);
         return $return == 'string' ? self::convertFileSize($bytes) : $bytes;
     }
@@ -142,11 +149,13 @@ class Ccsd_File
     /**
      * Retourne la valeur sous forme texte de la taille d'un fichier
      *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28). Use Episciences\File\FilePresenter::formatSize() instead.
      * @param int $bytes
      * @return string
      */
     public static function convertFileSize($bytes)
     {
+        self::logDeprecatedMethod(__METHOD__);
         if ($bytes < 1024) {
             return $bytes . ' B';
         }
@@ -172,11 +181,13 @@ class Ccsd_File
     /**
      * Retourne le type de contenu d'un fichier
      *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28).
      * @param string $filename
      * @return string
      */
     public static function getMimeType($filename)
     {
+        self::logDeprecatedMethod(__METHOD__);
         $finfo = new finfo(FILEINFO_MIME);
         $res = $finfo->file($filename);
         $mime = substr($res, 0, strpos($res, ';'));
@@ -202,11 +213,13 @@ class Ccsd_File
     /**
      * Retourne en minuscule l'extension d'un fichier
      *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28). Use Symfony\Component\Filesystem\Path::getExtension($filename, true) instead.
      * @param string $filename
      * @return string
      */
     public static function getExtension($filename)
     {
+        self::logDeprecatedMethod(__METHOD__);
         $path_info = pathinfo($filename);
         return (isset($path_info['extension']) ? strtolower($path_info['extension']) : '');
     }
@@ -214,11 +227,13 @@ class Ccsd_File
     /**
      * Retourne le répertoire contenant le fichier $filename
      *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28).
      * @param string $filename
      * @return string
      */
     public static function getDirectory($filename)
     {
+        self::logDeprecatedMethod(__METHOD__);
         $dir = substr($filename, 0, strrpos($filename, '/'));
         return ($dir == '' ? '.' : $dir);
     }
@@ -226,11 +241,13 @@ class Ccsd_File
     /**
      * Retourne l'icone associée à une extension
      *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28). Use Episciences\File\FilePresenter::iconClassForExtension() instead.
      * @param string $ext
      * @return string
      */
     public static function getIconeExtension($ext)
     {
+        self::logDeprecatedMethod(__METHOD__);
         $icon = 'file';
         foreach (self::$_extension as $group => $formats) {
             if (in_array($ext, $formats)) {
@@ -244,6 +261,7 @@ class Ccsd_File
     /**
      * Renommage d'un fichier
      *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28). Use Episciences\Upload\PublicFileStore::uniqueSanitizedName() instead.
      * @param string $name
      *            nom du fichier à renommer
      * @param string $path
@@ -253,6 +271,7 @@ class Ccsd_File
      */
     public static function renameFile(string $name, string $path = '', bool $force = true): string
     {
+        self::logDeprecatedMethod(__METHOD__);
         $name = preg_replace('/[^a-z0-9_\.-\/\\\\]/i', '_', self::spaces2space(self::stripAccents(($name))));
         $name = preg_replace("~\.\.*~", ".", $name);
         $name = preg_replace("/__*/", "_", $name);
@@ -276,22 +295,28 @@ class Ccsd_File
 
     /**
      * Remplace toutes séries d'espaces par un seul
+     *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28).
      * @param string $string
      * @return string
      */
     public static function spaces2space($string)
     {
+        self::logDeprecatedMethod(__METHOD__);
         return (preg_replace("/  +/", " ", $string));
     }
 
     /**
      * Remplace les lettres accentuées par une lettre non accentuée
      * TODO: A compléter selon des lettres accentuées trouvées.
+     *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28). Use Symfony\Component\String\UnicodeString::ascii() instead.
      * @param $text
      * @return mixed
      */
     public static function stripAccents($text)
     {
+        self::logDeprecatedMethod(__METHOD__);
         $text = str_replace([
             'æ',
             'Æ',
@@ -333,22 +358,26 @@ class Ccsd_File
     /**
      * Indique si le fichier est une archive
      *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28).
      * @param string $filename
      * @return boolean
      */
     public static function isAnArchive($filename)
     {
+        self::logDeprecatedMethod(__METHOD__);
         return in_array(self::getExtension($filename), self::$_archiveExt);
     }
 
     /**
      * Décompresse une archive zip
      *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28).
      * @param string $filename
      * @return array
      */
     public static function unarchiver($filename)
     {
+        self::logDeprecatedMethod(__METHOD__);
         $extension = self::getExtension($filename);
         $directory = substr($filename, 0, strrpos($filename, '/') + 1);
         if ($extension === 'zip') {
@@ -373,12 +402,15 @@ class Ccsd_File
 
     /**
      * Raccourci à nbChars caractères un nom de fichier
+     *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28).
      * @param string $filename
      * @param int $nbChars
      * @return string
      */
     public static function shortenFilename($filename, $nbChars)
     {
+        self::logDeprecatedMethod(__METHOD__);
         $newFilename = $filename;
 
         if (strlen($filename) > $nbChars) {
@@ -391,11 +423,14 @@ class Ccsd_File
 
     /**
      * Extensions des fichiers convertibles en jpg ou redimensionnables
+     *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28). Use Episciences\User\UserPhotoHelper::isSupportedImage() instead.
      * @param string $filename
      * @return boolean
      */
     public static function canConvertImg($filename)
     {
+        self::logDeprecatedMethod(__METHOD__);
         return (in_array(self::getExtension($filename), self::$_imgConverterExtAccepted));
     }
 
@@ -403,23 +438,27 @@ class Ccsd_File
      * @param string $filename
      * @param string $toExt nouvelle extension
      * @return string
-     * @deprecated
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28). Use replaceFileExtension() instead.
      * Change extension d'un nom de fichier
      */
     public static function changeFileExtension($filename, $toExt)
     {
+        self::logDeprecatedMethod(__METHOD__);
         return self::replaceFileExtension($filename, $toExt);
     }
 
     /**
      * Change extension d'un nom de fichier
      * Case INSENSITIVE
+     *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28).
      * @param string $filename
      * @param string $toExt nouvelle extension
      * @return string
      */
     public static function replaceFileExtension($filename, $toExt)
     {
+        self::logDeprecatedMethod(__METHOD__);
         $name = self::getFilename($filename);
         $extension = self::getExtension($filename);
         return str_ireplace($extension, $toExt, $name);
@@ -428,17 +467,20 @@ class Ccsd_File
     /**
      * Retourne le nom du fichier à partir d'un path
      *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28). Use basename() instead.
      * @param string $filepath
      * @return string
      */
     public static function getFilename($filepath)
     {
+        self::logDeprecatedMethod(__METHOD__);
         return basename($filepath);
     }
 
     /**
      * Convertit une image en jpg
      *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28). Use Episciences\User\UserPhotoHelper::convertToJpeg() instead.
      * @param string $filename // image
      *            source
      * @param string $dest (default null)
@@ -452,6 +494,7 @@ class Ccsd_File
      */
     public static function convertImg($filename, $dest = null, $maxWidth = null, $maxHeight = null, $saveFileAs = null)
     {
+        self::logDeprecatedMethod(__METHOD__);
         // Lit les dimensions de l'image
         // Not a raster image (SVG included): rejected here, so Imagick never interprets
         // vector content (external references, embedded files)
@@ -524,11 +567,14 @@ class Ccsd_File
 
     /**
      * On converti à partir d'Image Magick
+     *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28).
      * @param $filename
      * @return resource
      */
     public static function imagecreatefromother($filename)
     {
+        self::logDeprecatedMethod(__METHOD__);
         $image = new Imagick();           //création d'un objet Imagick
         $image->pingImage($filename); //ping de l'image
         $image->readImage($filename); //on enregistre l'image dans l'objet
@@ -540,6 +586,8 @@ class Ccsd_File
 
     /**
      * Compilation TeX
+     *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28).
      * @param $dir string repertoire de travail
      * @param $sourceTex   string nom du fichier à compiler
      * @param $filenamePdf string nom du fichier pdf à créer
@@ -552,6 +600,7 @@ class Ccsd_File
      */
     public static function compile($dir = '', $sourceTex = '', $filenamePdf = '', $stopOnError = true, $withLogFile = true, $user = null, $password = null, $service = null)
     {
+        self::logDeprecatedMethod(__METHOD__);
         set_time_limit(0);
         if ($service === null) {
             // Compat
@@ -591,6 +640,8 @@ class Ccsd_File
 
     /**
      * Créé un répertoire à partir d'une chaine en la découpant en plusieurs répertoires
+     *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28). Use Episciences\User\UserPhotoHelper::slicedPath() instead.
      * @param string $string
      * @param string $rootDir
      * @param int $lengthOfString
@@ -601,6 +652,7 @@ class Ccsd_File
      */
     public static function slicedPathFromString(string $string, string $rootDir = '', int $lengthOfString = 8, int $lenghtOfSlices = 2, string $stringToPadWith = '0'): string
     {
+        self::logDeprecatedMethod(__METHOD__);
         $docPath = str_pad($string, $lengthOfString, $stringToPadWith, STR_PAD_LEFT);
         $docPath = wordwrap($docPath, $lenghtOfSlices, "/", true);
         return $rootDir . $docPath;
@@ -608,6 +660,8 @@ class Ccsd_File
 
     /**
      * Convert PDF to PDF/A with www.ghostscript.com
+     *
+     * @deprecated Dead code scheduled for removal (dead-code-audit 2026-11-28).
      * @see http://www.ghostscript.com/doc/current/VectorDevices.htm#PDFA
      * @param string $input filename to convert
      * @param string|null $output converted filename
@@ -617,6 +671,7 @@ class Ccsd_File
      */
     public static function pdf2pdfa($input, $output = null, $outputPrefix = 'archivable_', $forceOverwrite = false)
     {
+        self::logDeprecatedMethod(__METHOD__);
         setlocale(LC_CTYPE, "fr_FR.UTF-8"); // escapeshellarg strip les lettres accentuees si on n'est pas dans une locale Utf8
         //ghostscript binary
         $ghostscript_bin = GHOSTSCRIPT_PATH . DIRECTORY_SEPARATOR . 'gs';
@@ -670,5 +725,22 @@ class Ccsd_File
 
         return ['outputFile' => $unescapedOutput, 'execMessage' => $execOutput];
 
+    }
+
+    /**
+     * Log and trigger a deprecation notice for unused methods scheduled for removal.
+     *
+     * @param string $method Method name (e.g. __METHOD__)
+     */
+    private static function logDeprecatedMethod(string $method): void
+    {
+        $message = sprintf(
+            '[DEAD CODE AUDIT 2026-11-28] %s() is deprecated and scheduled for removal.'
+            . ' Do NOT use this method in new code. If this message appears in production logs,'
+            . ' report it to the development team immediately.',
+            $method
+        );
+        AppRegistry::getMonoLogger()?->warning($message);
+        trigger_error($message, E_USER_DEPRECATED);
     }
 }

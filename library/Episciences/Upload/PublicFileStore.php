@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Episciences\Upload;
 
+use Symfony\Component\String\UnicodeString;
+
 /**
  * Helpers for storing an uploaded file in a directory that is served to the public.
  *
@@ -45,5 +47,37 @@ final class PublicFileStore
         }
 
         return $extension === '' ? $base : $base . '.' . $extension;
+    }
+
+    /**
+     * Sanitize a file name to ASCII-safe characters and optionally append a numeric suffix
+     * to avoid overwriting an existing file in the target directory.
+     */
+    public static function uniqueSanitizedName(string $name, string $directory = '', bool $avoidCollision = true): string
+    {
+        $sanitized = (new UnicodeString($name))->ascii()->toString();
+        $sanitized = preg_replace('/  +/', ' ', $sanitized) ?? $sanitized;
+        $sanitized = preg_replace('/[^a-z0-9_.\-\/\\\\]/i', '_', $sanitized) ?? $sanitized;
+        $sanitized = preg_replace('/\.\.+/', '.', $sanitized) ?? $sanitized;
+        $sanitized = preg_replace('/__+/', '_', $sanitized) ?? $sanitized;
+
+        if (!$avoidCollision || $directory === '' || !str_contains($sanitized, '.')) {
+            return $sanitized;
+        }
+
+        $baseDir = rtrim($directory, '/') . '/';
+        while (is_file($baseDir . $sanitized)) {
+            if (preg_match('/_?(\d*)(\.\w*)$/', $sanitized, $matches) !== 1) {
+                break;
+            }
+            $nextNumber = ((int)$matches[1]) + 1;
+            $next = preg_replace('/_?\d*(\.\w*)$/', '_' . $nextNumber . $matches[2], $sanitized);
+            if ($next === null || $next === $sanitized) {
+                break;
+            }
+            $sanitized = $next;
+        }
+
+        return $sanitized;
     }
 }

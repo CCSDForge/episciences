@@ -151,4 +151,22 @@ final class PublicFileStoreTest extends TestCase
         self::assertFalse($metadata->save());
         self::assertFileExists($outside, 'the file was neither moved nor removed');
     }
+
+    public function testUniqueSanitizedNameTransliteratesAndSanitizes(): void
+    {
+        self::assertSame('hello_world.pdf', PublicFileStore::uniqueSanitizedName('hello  world.pdf', '', false));
+        self::assertSame('cafe.pdf', PublicFileStore::uniqueSanitizedName('café.pdf', '', false));
+        self::assertSame('oeuvre.pdf', PublicFileStore::uniqueSanitizedName('œuvre.pdf', '', false));
+        self::assertSame('file.double.pdf', PublicFileStore::uniqueSanitizedName('file..double.pdf', '', false));
+        self::assertSame('file_double.pdf', PublicFileStore::uniqueSanitizedName('file__double.pdf', '', false));
+    }
+
+    public function testUniqueSanitizedNameAvoidsCollisionWhenEnabled(): void
+    {
+        file_put_contents($this->uploads . '/report.pdf', '1');
+        file_put_contents($this->uploads . '/report_1.pdf', '2');
+
+        self::assertSame('report_2.pdf', PublicFileStore::uniqueSanitizedName('report.pdf', $this->uploads, true));
+        self::assertSame('report.pdf', PublicFileStore::uniqueSanitizedName('report.pdf', $this->uploads, false));
+    }
 }

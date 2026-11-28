@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\User\UserPhotoHelper;
+
 /**
  * Gestion des utilisateurs CCSD
  * @author rtournoy
@@ -284,7 +286,7 @@ class Ccsd_User_Models_User
             return $this->getPhotoPathWithUuid();
         }
 
-        return Ccsd_File::slicedPathFromString($this->getUid(), EPISCIENCES_USER_PHOTO_PATH . '/', self::USER_PHOTO_PATH_LENGHT);
+        return UserPhotoHelper::slicedPath((string)$this->getUid(), EPISCIENCES_USER_PHOTO_PATH . '/', self::USER_PHOTO_PATH_LENGHT);
     }
 
 
@@ -295,7 +297,7 @@ class Ccsd_User_Models_User
      */
     public function getPhotoPathWithUuid(): string
     {
-        return Ccsd_File::slicedPathFromString(Episciences_Tools::getCleanedUuid($this->getUuid()), EPISCIENCES_USER_PHOTO_PATH . DIRECTORY_SEPARATOR . 'uuid' . DIRECTORY_SEPARATOR);
+        return UserPhotoHelper::slicedPath(Episciences_Tools::getCleanedUuid($this->getUuid()), EPISCIENCES_USER_PHOTO_PATH . DIRECTORY_SEPARATOR . 'uuid' . DIRECTORY_SEPARATOR);
     }
 
     /**
@@ -629,25 +631,25 @@ class Ccsd_User_Models_User
             }
         }
 
-        if (Ccsd_File::canConvertImg($photoFileName) !== true) {
+        if (!UserPhotoHelper::isSupportedImage((string)$photoFileName)) {
             throw new Exception(htmlspecialchars($photoFileName) . " : Création de miniature : ce type de fichier n'est pas accepté.");
         }
 
         $userPhotoPath .= '/';
 
-        $resThumb = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_THUMB, self::IMG_SIZE_THUMB, self::IMG_PREFIX_THUMB . $this->getUid());
+        $resThumb = UserPhotoHelper::convertToJpeg((string)$photoFileName, $userPhotoPath, self::IMG_SIZE_THUMB, self::IMG_SIZE_THUMB, self::IMG_PREFIX_THUMB . $this->getUid());
 
-        if (!$resThumb) {
+        if ($resThumb === null) {
             throw new Exception("Échec de création de la taille IMG_SIZE_THUMB.");
         }
 
-        $resUser = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_NORMAL, self::IMG_SIZE_NORMAL, self::IMG_PREFIX_NORMAL . $this->getUid());
-        if (!$resUser) {
+        $resUser = UserPhotoHelper::convertToJpeg((string)$photoFileName, $userPhotoPath, self::IMG_SIZE_NORMAL, self::IMG_SIZE_NORMAL, self::IMG_PREFIX_NORMAL . $this->getUid());
+        if ($resUser === null) {
             throw new Exception("Échec de création de la taille IMG_SIZE_NORMAL.");
         }
 
-        $resLarge = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_LARGE, self::IMG_SIZE_LARGE, self::IMG_PREFIX_LARGE . $this->getUid());
-        if (!$resLarge) {
+        $resLarge = UserPhotoHelper::convertToJpeg((string)$photoFileName, $userPhotoPath, self::IMG_SIZE_LARGE, self::IMG_SIZE_LARGE, self::IMG_PREFIX_LARGE . $this->getUid());
+        if ($resLarge === null) {
             throw new Exception("Échec de création de la taille IMG_SIZE_LARGE.");
         }
 

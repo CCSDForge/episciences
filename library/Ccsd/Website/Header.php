@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Upload\PublicFileStore;
+
 /**
  * Gestion du bandeau d'un site
  * @author yannick
@@ -277,7 +279,7 @@ class Ccsd_Website_Header
         foreach ($this->_logos as $logoid => $logo) {
             //Logo image
             if (isset($logo['type']) && $logo['type'] == self::LOGO_IMG && isset($files[$logoid]['name']['img']) && $files[$logoid]['name']['img'] != '') {
-                $this->_logos[$logoid]['img'] = Ccsd_File::renameFile($files[$logoid]['name']['img'], $this->_publicDir);
+                $this->_logos[$logoid]['img'] = PublicFileStore::uniqueSanitizedName((string)$files[$logoid]['name']['img'], (string)$this->_publicDir);
             }
         }
 

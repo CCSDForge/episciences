@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\User\UserPhotoHelper;
+
 class Episciences_User extends Ccsd_User_Models_User
 {
     public const STR_AFFILIATIONS = 'affiliations';
@@ -1612,25 +1614,25 @@ class Episciences_User extends Ccsd_User_Models_User
             }
         }
 
-        if (Ccsd_File::canConvertImg($photoFileName) !== true) {
+        if (!UserPhotoHelper::isSupportedImage($photoFileName)) {
             throw new Exception(htmlspecialchars($photoFileName) . " : Création de miniature : ce type de fichier n'est pas accepté.");
         }
 
         $userPhotoPath .= '/';
 
-        $resThumb = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_THUMB, self::IMG_SIZE_THUMB, self::IMG_PREFIX_THUMB . $identifier);
+        $resThumb = UserPhotoHelper::convertToJpeg($photoFileName, $userPhotoPath, self::IMG_SIZE_THUMB, self::IMG_SIZE_THUMB, self::IMG_PREFIX_THUMB . $identifier);
 
-        if (!$resThumb) {
+        if ($resThumb === null) {
             throw new Exception("Échec de création de la taille IMG_SIZE_THUMB.");
         }
 
-        $resUser = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_NORMAL, self::IMG_SIZE_NORMAL, self::IMG_PREFIX_NORMAL . $identifier);
-        if (!$resUser) {
+        $resUser = UserPhotoHelper::convertToJpeg($photoFileName, $userPhotoPath, self::IMG_SIZE_NORMAL, self::IMG_SIZE_NORMAL, self::IMG_PREFIX_NORMAL . $identifier);
+        if ($resUser === null) {
             throw new Exception("Échec de création de la taille IMG_SIZE_NORMAL.");
         }
 
-        $resLarge = Ccsd_File::convertImg($photoFileName, $userPhotoPath, self::IMG_SIZE_LARGE, self::IMG_SIZE_LARGE, self::IMG_PREFIX_LARGE . $identifier);
-        if (!$resLarge) {
+        $resLarge = UserPhotoHelper::convertToJpeg($photoFileName, $userPhotoPath, self::IMG_SIZE_LARGE, self::IMG_SIZE_LARGE, self::IMG_PREFIX_LARGE . $identifier);
+        if ($resLarge === null) {
             throw new Exception("Échec de création de la taille IMG_SIZE_LARGE.");
         }
 
