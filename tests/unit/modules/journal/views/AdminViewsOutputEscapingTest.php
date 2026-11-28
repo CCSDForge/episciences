@@ -90,7 +90,7 @@ final class AdminViewsOutputEscapingTest extends TestCase
         self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $html);
     }
 
-    private function newVersionLink(?string $zIdentifier): string
+    private function newVersionLink(): string
     {
         $request = new \Zend_Controller_Request_HttpTestCase();
         $request->setControllerName('paper');
@@ -108,7 +108,6 @@ final class AdminViewsOutputEscapingTest extends TestCase
             $view->review = $this->createMock(\Episciences_Review::class);
             $view->current_demand = ['PCID' => 12];
             $view->isAllowedToAnswerRevisionRequest = true;
-            $view->zIdentifier = $zIdentifier;
             $view->doNotDisplayContactChoice = true;
 
             return $view->render('partials/answer_revision_request_form.phtml');
@@ -121,18 +120,9 @@ final class AdminViewsOutputEscapingTest extends TestCase
         }
     }
 
-    public function testNewVersionLinkEncodesTheZIdentifier(): void
+    public function testNewVersionLinkTargetsTheRevisionRequest(): void
     {
-        $html = $this->newVersionLink('x"><img src=x onerror=alert(1)>&a=b');
-
-        self::assertStringNotContainsString('<img', $html);
-        self::assertStringContainsString('href="/paper/newversion?id=12&amp;z-identifier=x%22%3E%3Cimg', $html);
-        self::assertStringNotContainsString('&a=b', $html, 'an ampersand in the identifier must not add a parameter');
-    }
-
-    public function testNewVersionLinkWithoutZIdentifier(): void
-    {
-        self::assertStringContainsString('href="/paper/newversion?id=12"', $this->newVersionLink(null));
+        self::assertStringContainsString('href="/paper/newversion?id=12"', $this->newVersionLink());
     }
 
     // ------------------------------------------------------------------

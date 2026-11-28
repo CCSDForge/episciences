@@ -300,17 +300,19 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
      * @param Episciences_Paper[] $versions
      * @param Episciences_Paper|RuntimeException|false|null $version the version of the docId: by default one of
      *                                                               the paper, false when it is not found
+     * @param array<string, mixed> $journalSettings
      * @return array{bool, list<int>} access granted, paper ids looked up
      */
     private function runHandleCheck(
         array $versions,
         int $docId,
         int $paperId,
-        Episciences_Paper|RuntimeException|false|null $version = null
+        Episciences_Paper|RuntimeException|false|null $version = null,
+        array $journalSettings = []
     ): array
     {
         $journal = $this->createMock(Episciences_Review::class);
-        $journal->method('getSettings')->willReturn([]);
+        $journal->method('getSettings')->willReturn($journalSettings);
 
         if ($version === null) {
             $version = $this->versionOfDocId(self::PAPERID, $docId);
@@ -398,7 +400,13 @@ final class FileControllerTemporaryVersionFileTest extends TestCase
         // Allowed to manage the papers of the journal, but encapsulated and not assigned to this one
         $this->logInAs([Episciences_Acl::ROLE_EDITOR]);
 
-        [$allowed] = $this->runHandleCheck([$this->version()], 15, self::PAPERID);
+        [$allowed] = $this->runHandleCheck(
+            [$this->version()],
+            15,
+            self::PAPERID,
+            null,
+            [Episciences_Review::SETTING_ENCAPSULATE_EDITORS => '1']
+        );
 
         self::assertFalse($allowed);
     }

@@ -27,7 +27,7 @@ Episciences has received funding from:
 
 Episciences runs on Docker and depends on [CCSDForge/episciences-infrastructure](https://github.com/CCSDForge/episciences-infrastructure) for its shared services (MySQL 8.4 databases, Apache Solr, Traefik reverse proxy, Mailpit, phpMyAdmin, and the `epi-network` Docker network).
 
-- **Start `episciences-infrastructure` first** (`make up`, `make solr-setup`, and `make db-import` on first init) to provide the database engines, search index, and `epi-network`.
+- **Start `episciences-infrastructure` first** (`make up`, `make db-import` for shared auxiliary DBs, and `make solr-setup` on first init) to provide the database engines, search index, and `epi-network`.
 - **Then set up this repository** (`make dev-setup`), which starts the application containers (`httpd`, `php-fpm`, Messenger workers) and loads the `episciences` schema and dev dataset (`src/mysql/docker/episciences/dev-episciences.sql`) matching your current branch.
 
 See the [Developer Setup Guide](./docs/dev-setup.md) for the full onboarding walkthrough.
@@ -49,6 +49,7 @@ See the [Developer Setup Guide](./docs/dev-setup.md) for the full onboarding wal
 | [Paper Comment Types](./docs/paper-comment-types.md) | Structured comments and lifecycle event types in `Episciences_CommentsManager` |
 | [Log Event Types](./docs/log-event-types.md) | All log event codes tracked by `Episciences_Paper_Logger` |
 | [Adding a Submission Repository](./docs/adding-a-new-repository.md) | Guide to integrating external repositories (arXiv, HAL, Zenodo, etc.) |
+| [Linked Data Relationships](./docs/linked-data-relationships.md) | Stored relation vocabulary of the linked data and its mapping to DataCite, Scholix, Crossref, OpenAIRE and HAL TEI |
 | [Bibliographic Reference Extraction](./docs/biblioref-extraction.md) | Architecture, lifecycle, and operational usage of the Biblioref system |
 | [Messenger & Async Queues](./docs/messenger-and-queues.md) | Symfony Messenger architecture, Doctrine DBAL transport, retries, and worker daemons |
 | [Next.js Cache Revalidation](./docs/next-revalidation.md) | On-demand ISR cache invalidation architecture and messenger transport |

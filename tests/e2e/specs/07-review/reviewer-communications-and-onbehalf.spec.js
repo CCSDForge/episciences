@@ -65,7 +65,7 @@ test.describe('Reviewer on-behalf rating, communications and dashboard', () => {
             await openPaperManagement(adminPage, docid);
             const activeReviewer = adminPage.locator('#active-invitations .reviewer', { hasText: REVIEWER_NAME });
             await activeReviewer.locator('.popover-link').click();
-            await adminPage.locator(`.popover .context-menu a[href^="/paper/rating?id=${docid}"]`).click();
+            await adminPage.locator(`.popover .context-menu a[href*="/paper/rating?id=${docid}"]`).click();
 
             await expect(adminPage).toHaveURL(new RegExp(`paper/rating\\?id=${docid}`));
             await expect(adminPage.locator('h2 .alert-warning')).toBeVisible();
@@ -81,7 +81,7 @@ test.describe('Reviewer on-behalf rating, communications and dashboard', () => {
             // Completed review exposes the reopen action in the reviewer context menu
             await adminPage.locator('#active-invitations .reviewer', { hasText: REVIEWER_NAME }).locator('.popover-link').click();
             await expect(
-                adminPage.locator(`.popover .context-menu a[href^="/administratepaper/refreshrating/id/${docid}"]`)
+                adminPage.locator(`.popover .context-menu a[href*="/administratepaper/refreshrating/id/${docid}"]`)
             ).toBeVisible();
         });
     });

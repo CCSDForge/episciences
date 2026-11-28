@@ -10,7 +10,7 @@ use Zend_Controller_Response_HttpTestCase;
 
 /**
  * Journal FeedController: the portal-style /feed URLs are permanently redirected
- * to the journal papers feed.
+ * to the journal papers feed of the same format.
  */
 final class FeedControllerTest extends TestCase
 {
@@ -20,24 +20,24 @@ final class FeedControllerTest extends TestCase
     }
 
     /**
-     * @return array<string, array{string}>
+     * @return array<string, array{string, string}>
      */
     public static function actionProvider(): array
     {
         return [
-            '/feed' => ['indexAction'],
-            '/feed/rss' => ['rssAction'],
-            '/feed/atom' => ['atomAction'],
+            '/feed' => ['indexAction', '/rss/papers'],
+            '/feed/rss' => ['rssAction', '/rss/papers'],
+            '/feed/atom' => ['atomAction', '/rss/atom'],
         ];
     }
 
     /**
      * @dataProvider actionProvider
      */
-    public function testActionPermanentlyRedirectsToJournalPapersFeed(string $action): void
+    public function testActionPermanentlyRedirectsToJournalPapersFeedOfTheSameFormat(string $action, string $location): void
     {
         self::assertFalse(defined('PREFIX_URL'), 'this case covers deployments without URL prefix');
-        self::assertSame([301, '/rss/papers'], $this->dispatch($action));
+        self::assertSame([301, $location], $this->dispatch($action));
     }
 
     /**

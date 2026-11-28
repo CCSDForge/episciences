@@ -3,15 +3,16 @@
 use Episciences\DataSet;
 use Episciences\Files\File;
 use Episciences\Files\Uploader;
+use Episciences\Hal\HalTeiSource;
 use Episciences\Paper\DataDescriptor;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\LinkedDataNotStoredException;
 use Episciences\Paper\PartiallyStoredException;
 use Episciences\Paper\Record\TitleNormalizer;
+use Episciences\Paper\RelationshipMapper;
 use Episciences\Repositories\HAL\TeiLinkedDataParser;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Submit\SubmittedRecord;
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
@@ -34,8 +35,6 @@ class Episciences_Submit
     protected $_db = null;
     public const POSTED_VOLUME_KEY = 'volumes';
     public const POSTED_SECTION_KEY = 'sections';
-    public const HAL_API_TIMEOUT = 10;
-    public const HAL_API_CONNECT_TIMEOUT = 5;
     /**
      * Key of a saveDoc() result: set when a step of the processing that follows the save failed
      * (files, linked data, authors or enrichment, see processSavedPaper())
@@ -92,15 +91,13 @@ class Episciences_Submit
 
     /**
      * @param array $settings
-     * @param array|null $defaults
-     * @param bool $isFromZSubmit
      * @return Ccsd_Form
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
 
-    public static function getForm(array $settings = [], ?array $defaults = [], bool $isFromZSubmit = false): \Ccsd_Form
+    public static function getForm(array $settings = []): \Ccsd_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $review = Episciences_ReviewsManager::find(RVID);
@@ -132,11 +129,6 @@ class Episciences_Submit
             'style' => 'width:auto; text-align:center;',
         ];
 
-        if ($isFromZSubmit) {
-            $repIdElementOptions['disabled'] = true;
-            $docIdElementOptions['disabled'] = true;
-        }
-
         // Select: repositories
         $subform->addElement('select', 'repoId', $repIdElementOptions);
 
@@ -145,19 +137,13 @@ class Episciences_Submit
         // Champ texte : identifiant du document
         $subform->addElement('text', 'docId', $docIdElementOptions);
 
-        $isRequiredVersionField = !isset($defaults['repoId']) || Episciences_Repositories::isVersionRequired((int)$defaults['repoId']);
-
         // Champ texte : version du document
-
-        if ($isRequiredVersionField) {
-            $subform->addElement('text', 'version', [
-                'label' => 'Version',
-                'required' => false,
-                'description' => $translator->translate("Saisir la version du document (nombre uniquement)."),
-                'value' => '',
-                'style' => 'width:17%;']);
-
-        }
+        $subform->addElement('text', 'version', [
+            'label' => 'Version',
+            'required' => false,
+            'description' => $translator->translate("Saisir la version du document (nombre uniquement)."),
+            'value' => '',
+            'style' => 'width:17%;']);
 
         // Bouton : Rechercher
         $subform->addElement('button', 'getPaper', [
@@ -474,11 +460,6 @@ class Episciences_Submit
         self::addSubmitDocGroup($form, $group);
 
 
-        if ($defaults) {
-            $form->setDefaults($defaults);
-        }
-
-
         return $form;
     }
 
@@ -617,10 +598,6 @@ class Episciences_Submit
     {
         $translator = Zend_Registry::get('Zend_Translate');
         $defaults = self::fetchNewVersionFormDefaultValues($paper);
-
-        if (array_key_exists('zIdentifier', $settings)) {
-            $defaults['docId'] = $settings['zIdentifier'];
-        }
 
         $isNewVersionOf = array_key_exists('newVersionOf', $settings);
 
@@ -1902,17 +1879,19 @@ class Episciences_Submit
         $this->processCoverLetterAndDataDescriptor($paper, $data);
         $this->saveAllAuthorSuggestions($data, $result);
 
-        $recipients = $this->handleNotifications($paper, $data);
-        $this->sendNotifications($paper, $recipients, $data);
-        $this->logPaperAction($paper, $data);
-
-        // Enrichments
-        // The paper is saved and notified: a failure to delete the data it replaces is reported, not thrown
+        // The paper is saved: a failure to delete the data it replaces is reported, not thrown.
+        // Run before the notifications, so that a failed e-mail does not leave the replaced version behind
         $cleanedUp = self::runPostSaveStep(
             'cleanupOldData',
             $paper,
             fn() => $this->cleanupOldData($paper, $data)
         );
+
+        $recipients = $this->handleNotifications($paper, $data);
+        $this->sendNotifications($paper, $recipients, $data);
+        $this->logPaperAction($paper, $data);
+
+        // Enrichments
 
         $authorsStored = true;
         if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {
@@ -2005,6 +1984,10 @@ class Episciences_Submit
             return;
         }
 
+        // The backup copy of the main document is keyed on the DOCID: it holds the replaced version.
+        // First, as it never throws: a failed database deletion below does not leave it behind
+        Episciences_Paper_DocumentBackup::deleteForPaper($oldDocId, (int)$paper->getRvid());
+
         Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($oldDocId, $paper->getRepoid());
         Episciences_Paper_FilesManager::deleteByDocId($oldDocId);
     }
@@ -2044,11 +2027,12 @@ class Episciences_Submit
 
     /**
      * Repository processing of a saved paper: files, linked data, then HAL datasets / SWHID.
-     * The files are loaded from the repository.
+     * The files are loaded from the repository; the HAL datasets are read from the TEI of the paper
+     * version, served by the OAI-PMH server of its repository.
      *
      * @param Episciences_Paper|DataSet $paper
      * @return bool false when a step failed: the files or the linked data of the paper may be missing
-     *              (an HTTP failure of the HAL datasets request is only reported, see datasetsProcessing())
+     *              (a failure to read the HAL TEI is only reported, see datasetsProcessing())
      */
     public static function processRepositoryHooks(Episciences_Paper|DataSet $paper): bool
     {
@@ -2089,11 +2073,12 @@ class Episciences_Submit
             },
         ];
 
+        // HAL linked data: the TEI is read from the OAI-PMH server of the repository, not from its API
         if (
             !Episciences_Repositories::handlesOwnEnrichment($repoId) &&
-            Episciences_Repositories::getApiUrl($repoId) !== ''
+            Episciences_Repositories::isFromHalRepository($repoId)
         ) {
-            // datasetsProcessing() only handles the HTTP and JSON errors, not the database ones
+            // datasetsProcessing() only handles the HTTP errors, not the database ones
             $steps['datasetsProcessing'] = static fn() => self::datasetsProcessing($paper);
         }
 
@@ -2925,37 +2910,36 @@ class Episciences_Submit
     }
 
     /**
-     * Update the paper linked data from the HAL TEI (search API): related works and SWHID
+     * Update the paper linked data from the HAL TEI of the paper version: related works and SWHID
      * @param Episciences_Paper $paper
-     * @param Client|null $client HTTP client (injected by the tests)
+     * @param bool $refreshTei read the TEI from HAL again instead of the cached one, so that the linked data
+     *                         edited on HAL without a new version are seen (update of the paper record);
+     *                         when HAL does not return it, the TEI cached before, if any, is read
+     * @param HalTeiSource|null $source document version to read, when it differs from the paper version
+     *                                  (update of the record to the version of the archive); null: the paper version
      * @return int
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function datasetsProcessing(Episciences_Paper $paper, ?Client $client = null): int
+    public static function datasetsProcessing(Episciences_Paper $paper, bool $refreshTei = false, ?HalTeiSource $source = null): int
     {
-        try {
-
-            if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
-                $client ??= new Client([
-                    'timeout' => self::HAL_API_TIMEOUT,
-                    'connect_timeout' => self::HAL_API_CONNECT_TIMEOUT,
-                ]);
-                // The TEI holds the related works with their relation and resource types (<relatedItem>)
-                // and the SWHID (<idno type="swhid">), which the search fields do not all give.
-                // No version filter: the HAL search index only holds the latest version of a document
-                $url = Episciences_Repositories::getApiUrl($paper->getRepoid())
-                    . '/search/?q=halId_s:' . urlencode((string)$paper->getIdentifier())
-                    . '&wt=xml-tei';
-                $tei = $client->get($url)->getBody()->getContents();
-                // A TEI without the document (unreadable, empty search result) yields no linked data
-                return self::processDatasets($paper, TeiLinkedDataParser::parse($tei) ?? []);
-            }
-
-        } catch (GuzzleException $e) {
-            trigger_error($e->getMessage());
+        if (!Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
+            return 0;
         }
 
-        return 0;
+        // The TEI holds the related works with their relation and resource types (<relatedItem>)
+        // and the SWHID (<idno type="swhid">), which the search fields do not all give.
+        // A failed request is reported by the TEI cache manager.
+        // 0 = latest version, as for the publication date (PublicationDateResolver)
+        $source ??= HalTeiSource::ofPaper($paper);
 
+        if ($refreshTei) {
+            Episciences_Hal_TeiCacheManager::refresh($source);
+        }
+
+        $tei = Episciences_Hal_TeiCacheManager::fetchAndGet($source);
+
+        // A TEI without the document (unreadable, unavailable) yields no linked data
+        return self::processDatasets($paper, TeiLinkedDataParser::parse($tei) ?? []);
     }
 
     /**
@@ -3437,17 +3421,17 @@ class Episciences_Submit
                         continue;
                     }
 
-                    // Outside the DataCite shaped repositories, the relation is one of the linked data vocabulary ("references" otherwise)
-                    $entryOptions['relationship'] = $isDataCiteShaped
-                        ? ($datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE)
-                        : TeiLinkedDataParser::relationship(is_string($datasets['relation'] ?? null) ? $datasets['relation'] : '');
+                    // DataCite relation types are stored in the linked data vocabulary ("references" when unknown)
+                    $entryOptions['relationship'] = RelationshipMapper::fromDataCite(
+                        is_string($datasets['relation'] ?? null) ? $datasets['relation'] : ''
+                    );
                 }
 
                 try {
                     $affectedRows += self::storeLinkedIdentifier(
                         $docId,
                         $value,
-                        (string)($datasets['resource_type'] ?? ''),
+                        is_string($datasets['resource_type'] ?? null) ? $datasets['resource_type'] : '',
                         $entryOptions,
                         $noProcessed,
                         $failures
