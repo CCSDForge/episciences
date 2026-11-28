@@ -16,7 +16,7 @@ final class Episciences_Mail_TemplateTest extends TestCase
 {
     protected function setUp(): void
     {
-        // setLocale() → Tools::getLanguages() → Ccsd_Locale::getLanguage() → Zend_Registry::get('Zend_Locale')
+        // setLocale() → Tools::getLanguages() → Episciences\Locale::getLanguageNames() → Zend_Registry::get('Zend_Locale')
         if (!\Zend_Registry::isRegistered('Zend_Locale')) {
             \Zend_Registry::set('Zend_Locale', new \Zend_Locale('en'));
         }
