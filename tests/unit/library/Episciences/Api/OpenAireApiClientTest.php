@@ -581,7 +581,7 @@ class OpenAireApiClientTest extends TestCase
         $aaiClient  = new Client(['handler' => HandlerStack::create(new MockHandler([
             new Response(200, [], json_encode(['access_token' => 'refreshed-token', 'expires_in' => 3600])),
         ]))]);
-        $tokenProvider = new OpenAireTokenProvider($aaiClient, $tokenCache, new NullLogger(), 'id', 'secret');
+        $tokenProvider = new OpenAireTokenProvider($aaiClient, $tokenCache, new NullLogger(), 'id', 'secret', 'https://aai.example.org/token');
 
         $client = $this->makeBiModeClient($guzzle, $tokenProvider);
         $result = $client->fetchPublication('10.1234/expired-token', 1);
@@ -611,7 +611,7 @@ class OpenAireApiClientTest extends TestCase
         $aaiClient = new Client(['handler' => HandlerStack::create(new MockHandler([
             new Response(200, [], json_encode(['access_token' => 'still-rejected-token', 'expires_in' => 3600])),
         ]))]);
-        $tokenProvider = new OpenAireTokenProvider($aaiClient, $tokenCache, new NullLogger(), 'id', 'secret');
+        $tokenProvider = new OpenAireTokenProvider($aaiClient, $tokenCache, new NullLogger(), 'id', 'secret', 'https://aai.example.org/token');
 
         $client = $this->makeBiModeClient($guzzle, $tokenProvider);
         $result = $client->fetchPublication('10.1234/still-unauthorized', 1);
@@ -634,7 +634,7 @@ class OpenAireApiClientTest extends TestCase
 
         // AAI itself fails on the refresh attempt -> getAccessToken() returns null.
         $aaiClient     = new Client(['handler' => HandlerStack::create(new MockHandler([new Response(500, [], 'error')]))]);
-        $tokenProvider = new OpenAireTokenProvider($aaiClient, $tokenCache, new NullLogger(), 'id', 'secret');
+        $tokenProvider = new OpenAireTokenProvider($aaiClient, $tokenCache, new NullLogger(), 'id', 'secret', 'https://aai.example.org/token');
 
         $client = $this->makeBiModeClient($guzzle, $tokenProvider);
         $result = $client->fetchPublication('10.1234/refresh-fails', 1);
@@ -852,7 +852,8 @@ class OpenAireApiClientTest extends TestCase
             $cache,
             new NullLogger(),
             'client-id',
-            'client-secret'
+            'client-secret',
+            'https://aai.example.org/token'
         );
     }
 

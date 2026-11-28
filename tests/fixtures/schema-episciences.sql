@@ -724,7 +724,8 @@ CREATE TABLE `license_spdx` (
   `code` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
   `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `recommended` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`code`)
+  PRIMARY KEY (`code`),
+  KEY `recommended` (`recommended`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mailing_list_roles`;
@@ -823,6 +824,7 @@ CREATE TABLE `news` (
   `content` json DEFAULT NULL,
   `link` json DEFAULT NULL,
   `visibility` json NOT NULL,
+  `visibility_enum` enum('public','private') COLLATE utf8mb4_unicode_ci DEFAULT 'public',
   PRIMARY KEY (`id`),
   KEY `uid` (`uid`),
   KEY `code` (`code`)
@@ -840,6 +842,7 @@ CREATE TABLE `pages` (
   `title` json NOT NULL COMMENT 'Page title',
   `content` json NOT NULL,
   `visibility` json NOT NULL,
+  `visibility_set` set('public','member','editor','chief_editor','administrator','secretary','webmaster','guest_editor') DEFAULT 'public',
   `page_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Page code',
   PRIMARY KEY (`id`),
   KEY `uid` (`uid`),

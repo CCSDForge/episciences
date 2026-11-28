@@ -307,5 +307,40 @@ class StatsControllerChartsTest extends TestCase
         $this->assertSame(['MEMBER', 'AUTHOR', 'EDITOR'], $users['labels']);
         $this->assertSame([203, 81, 5], $users['datasets'][0]['data']);
         $this->assertSame(strtoupper(StatsController::CHART_LABELS['users']), $users['datasets'][0]['label']);
+        $this->assertSame([], $users['csvFooterRows']);
+    }
+
+    public function testBuildUsersChartData_TotalGiven_ExportedApartFromTheRoles(): void
+    {
+        $users = StatsController::buildUsersChartData(
+            ['author' => ['nbUsers' => 81], 'member' => ['nbUsers' => 203]],
+            static fn(string $key) => $key,
+            230
+        );
+
+        $this->assertSame(
+            [["Nombre total d'utilisateurs (Un utilisateur peut avoir plusieurs rôles.)", 230]],
+            $users['csvFooterRows']
+        );
+        $this->assertSame([203, 81], $users['datasets'][0]['data']);
+    }
+
+    public function testChartLabels_JournalWithImportedPapers_SubmissionsMentionTheImports(): void
+    {
+        $this->assertSame(StatsController::CHART_LABELS, StatsController::chartLabels(true));
+        $this->assertSame('Soumissions (hors imports)', StatsController::chartLabels(true)['submitted']);
+    }
+
+    public function testChartLabels_JournalWithoutImportedPapers_SubmissionsWithoutMentionOfTheImports(): void
+    {
+        $labels = StatsController::chartLabels(false);
+
+        $this->assertSame('Soumissions', $labels['submitted']);
+        // the other series and their order (which gives their colour) are unchanged
+        $this->assertSame(array_keys(StatsController::CHART_LABELS), array_keys($labels));
+        $this->assertSame(
+            array_diff_key(StatsController::CHART_LABELS, ['submitted' => true]),
+            array_diff_key($labels, ['submitted' => true])
+        );
     }
 }

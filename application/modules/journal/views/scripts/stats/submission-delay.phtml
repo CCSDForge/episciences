@@ -11,6 +11,15 @@
     <div>
         <h3 class="stat-section-title"><?= $this->translate('Délai') ?></h3>
 
+        <?php // how the delays are computed by the API, from the delay of each article ?>
+        <div class="help-block stat-formula">
+            <p><?= $this->escape($this->translate("De la première soumission à la dernière acceptation (ou à la publication), pour chaque article non importé ; par année : l'année de l'acceptation (ou de la publication).")) ?></p>
+            <ul>
+                <li><?= $this->escape($this->translate("Moyenne : somme des délais ÷ nombre d'articles ; sensible aux délais très longs.")) ?></li>
+                <li><?= $this->escape($this->translate('Médiane : la moitié des articles a un délai inférieur ou égal ; peu sensible aux délais très longs.')) ?></li>
+            </ul>
+        </div>
+
         <?php // client-side (no page reload) selector: only the chosen column (moyenne or médiane) is shown at a time; the median is selected by default ?>
         <?php // hidden without JavaScript (both columns are then shown): shown by public/js/stats/submissions.js ?>
         <div class="stat-delay-mode" role="group" hidden

@@ -1,8 +1,11 @@
 <?php
 use Episciences\Security\AccessLog;
 use Episciences\Upload\SafeFileName;
+use Episciences\Http\PublicAddressGuard;
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\HandlerStack;
 use Monolog\Logger;
 
 
@@ -164,7 +167,9 @@ class DefaultController extends Zend_Controller_Action
     /**
      * The logged user handles the paper for the journal: secretaries and administrators, the editors and copy
      * editors assigned to the paper, the editors and copy editors of a journal that does not restrict them to
-     * their assigned papers. An encapsulation setting the journal never saved counts as restrictive.
+     * their assigned papers. Only a non-empty encapsulation setting (e.g. '1') restricts them, matching
+     * PaperController and Episciences_Auth::isAllowedToListOnlyAssignedPapers() (legacy journals may have '' or
+     * no row stored for unchecked checkboxes).
      *
      * @param array<string, mixed> $journalSettings
      * @throws Zend_Db_Statement_Exception
@@ -184,8 +189,8 @@ class DefaultController extends Zend_Controller_Action
     protected static function isEditorialStaffOfEveryPaper(array $journalSettings): bool
     {
         return Episciences_Auth::isSecretary() ||
-            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS] ?? null) === '0' && Episciences_Auth::isEditor()) ||
-            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS] ?? null) === '0' && Episciences_Auth::isCopyEditor());
+            (empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]) && Episciences_Auth::isEditor()) ||
+            (empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS]) && Episciences_Auth::isCopyEditor());
     }
 
     protected function redirectWithFlashMessageIfPaperIsRemovedOrDeleted(Episciences_Paper $paper, bool $forceRedirection = true): void
@@ -304,22 +309,13 @@ class DefaultController extends Zend_Controller_Action
         $paperDocBackup = new Episciences_Paper_DocumentBackup($paper->getDocid(), \Episciences_ReviewsManager::findByRvid($paper->getRvid())->getCode());
         $hasDocumentBackupFile = $paperDocBackup->hasDocumentBackupFile();
 
-        $clientHeaders = [
-            'headers' =>
-                [
-                    'User-Agent' => DOMAIN,
-                    'connect_timeout' => 10,
-                    'timeout' => 20
-                ]
-        ];
-
         Episciences_Tools::mbstringBinarySafeEncoding();
 
-        $client = new Client($clientHeaders);
+        $client = $this->createDocumentHttpClient();
         $saveCopy = false;
 
         try {
-            $res = $client->get($url);
+            $res = $client->request('GET', $url);
             $headers = $res->getHeaders();
             $mainDocumentContent = $res->getBody()->getContents();
 
@@ -336,7 +332,7 @@ class DefaultController extends Zend_Controller_Action
 
             }
 
-        } catch (GuzzleHttp\Exception\RequestException $e) {
+        } catch (GuzzleException $e) {
 
             // we failed to get content via http, try a local backup
             if ($hasDocumentBackupFile) {
@@ -368,6 +364,34 @@ class DefaultController extends Zend_Controller_Action
 
     }
 
+
+    /**
+     * HTTP client fetching the main document from its repository: HTTP(S) only,
+     * public addresses only (every redirect included), bounded connect and transfer times.
+     * The overall timeout leaves room for large PDFs on slow repositories, while the
+     * low-speed limit drops a stalled transfer before it holds a PHP worker until the timeout.
+     * cURL also counts the wait for the first byte in the low-speed window: some repositories
+     * (Zenodo's /content endpoint) take tens of seconds to start sending a file.
+     *
+     * @param callable|null $handler transport handler, the cURL one by default
+     */
+    protected function createDocumentHttpClient(?callable $handler = null): ClientInterface
+    {
+        $stack = HandlerStack::create($handler);
+        $stack->push((new PublicAddressGuard())->middleware(), 'public_address_guard');
+
+        return new Client([
+            'handler' => $stack,
+            'headers' => ['User-Agent' => DOMAIN],
+            'connect_timeout' => 10,
+            'timeout' => 240,
+            'allow_redirects' => ['max' => 5, 'protocols' => ['http', 'https']],
+            'curl' => [
+                CURLOPT_LOW_SPEED_LIMIT => 1024, // bytes per second
+                CURLOPT_LOW_SPEED_TIME => 120,
+            ],
+        ]);
+    }
 
     protected function renderFormErrors(Zend_Form $form = null): void{
 

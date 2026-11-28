@@ -1,8 +1,9 @@
 <?php
 
+use Episciences\Hal\HalTeiSource;
+use Episciences\Paper\Record\TitleNormalizer;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Psr\Log\LogLevel;
 
 class Episciences_PapersManager
@@ -377,7 +378,7 @@ class Episciences_PapersManager
 
         $select = $db->select()
             ->from(['a' => T_ASSIGNMENTS], $columns)
-            ->join(['b' => self::getAssignedPapersForSelectedRoleQuery($uid, $roleId)], 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', [])
+            ->join(['b' => self::getAssignedPapersForSelectedRoleQuery($uid, $roleId)], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper');
 
         if (is_array($roleId)) {
@@ -422,7 +423,9 @@ class Episciences_PapersManager
     }
 
     /**
-     * get assigned papers docids for each selected editor
+     * The latest assignment of each selected user, for each role and each paper (highest ID: two assignments can have the
+     * same date). Not the latest assignment of the paper: an editor assigned before another one is still an editor of it.
+     * Temporary users are left out; fetchLastPaperAssignmentForSelectedRoleQuery() only keeps the rows found here.
      * @param array $uid
      * @param string | string[] $roleId
      * @return Zend_Db_Select
@@ -431,7 +434,7 @@ class Episciences_PapersManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
-            ->from(T_ASSIGNMENTS, ['ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper');
 
         if (is_array($roleId)) {
@@ -446,7 +449,11 @@ class Episciences_PapersManager
             $select->where('UID IN (?)', $uid);
         }
 
-        $select->group('ITEMID');
+        // Accounts only (the selected users and the search by name are accounts): the UID of a temporary user is the ID
+        // of its T_TMP_USER row, which can be the UID of an account.
+        $select->where('TMP_USER = ?', 0);
+
+        $select->group(['ITEMID', 'UID', 'ROLEID']);
         return $select;
     }
 
@@ -476,17 +483,19 @@ class Episciences_PapersManager
     private static function allPapersAssignedToRole(string $roleId = 'editor'): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        // the latest assignment of each user to each paper (highest ID: two assignments can have the same date);
+        // a temporary user's ID can be equal to a user's UID: TMP_USER keeps them apart
         $subQuery = $db->select()
-            ->from(T_ASSIGNMENTS, ['ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', $roleId)
             ->where('RVID = ?', RVID)
-            ->group(['ITEMID', 'UID']);
+            ->group(['ITEMID', 'UID', 'TMP_USER']);
 
         return $db->select()
             ->distinct()
             ->from(['a' => T_ASSIGNMENTS], ['DOCID' => 'ITEMID'])
-            ->join(['b' => $subQuery], 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', [])
+            ->join(['b' => $subQuery], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', $roleId)
             ->where('RVID = ?', RVID)
@@ -1106,12 +1115,13 @@ class Episciences_PapersManager
     {
         $db = Zend_Db_Table::getDefaultAdapter();
 
-        $subMaxDate = $db?->select()
+        // the latest row of each invitation: an answer or a cancellation inserts a row with the same AID, possibly
+        // in the same second as the previous one, so the latest row is the one with the highest ID, not the latest date
+        $subLatest = $db?->select()
             ->from(
                 T_USER_INVITATIONS,
                 [
-                    'AID',
-                    'max_date' => 'MAX(SENDING_DATE)'
+                    'latest_id' => new Zend_Db_Expr('MAX(ID)')
                 ]
             )
             ->group('AID');
@@ -1122,8 +1132,8 @@ class Episciences_PapersManager
                 ['ID', 'AID', 'STATUS', 'SENDING_DATE', 'SENDER_UID', 'EXPIRATION_DATE']
             )
             ->join(
-                ['t2' => $subMaxDate],
-                't1.AID = t2.AID AND t1.SENDING_DATE = t2.max_date',
+                ['t2' => $subLatest],
+                't1.ID = t2.latest_id',
                 []
             );
 
@@ -1175,8 +1185,9 @@ class Episciences_PapersManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         //recuperation des relecteurs classiques
+        // the latest assignment of each reviewer (highest ID: two assignments can have the same date)
         $subquery = $db->select()
-            ->from(['z' => T_ASSIGNMENTS], ['z.UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(['z' => T_ASSIGNMENTS], ['z.UID', 'LAST_ID' => new Zend_Db_Expr('MAX(z.ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('ROLEID = ?', 'reviewer')
@@ -1191,7 +1202,7 @@ class Episciences_PapersManager
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinLeft(['u' => T_USERS], 'a.UID = u.UID', ['LANGUEID', 'SCREEN_NAME'])
             //->joinUsing(T_USERS, 'UID', array('LANGUEID', 'SCREEN_NAME'))
-            ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subquery], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('TMP_USER = ?', 0)
@@ -1201,13 +1212,14 @@ class Episciences_PapersManager
 
         //recuperation des relecteurs qui n'ont pas encore de compte
         if ($status === Episciences_User_Assignment::STATUS_PENDING || (is_array($status) && in_array(Episciences_User_Assignment::STATUS_PENDING, $status, true))) {
+            // the latest row of each invitation (highest ID: two rows can have the same date)
             $subquery2 = $db->select()
-                ->from(T_USER_INVITATIONS, ['AID', 'latest' => 'MAX(SENDING_DATE)'])
+                ->from(T_USER_INVITATIONS, ['latest_id' => new Zend_Db_Expr('MAX(ID)')])
                 ->group('AID');
 
             $subquery1 = $db->select()
                 ->from(['answer' => $subquery2], ['i.AID'])
-                ->joinInner(['i' => T_USER_INVITATIONS], 'i.AID = answer.AID AND i.SENDING_DATE = answer.latest', [])
+                ->joinInner(['i' => T_USER_INVITATIONS], 'i.ID = answer.latest_id', [])
                 ->where('STATUS = ?', 'pending');
 
             $select = $db->select()
@@ -1593,8 +1605,9 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        // the latest assignment of each user (highest ID: two assignments can have the same date)
         $subQuery = $db->select()
-            ->from(T_ASSIGNMENTS, ['UID', 'MAX(`WHEN`) AS WHEN'])
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('ROLEID = ?', $role)
@@ -1603,7 +1616,7 @@ class Episciences_PapersManager
         return $db->select()
             ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN'])
             ->joinUsing(T_USERS, 'UID', ['LANGUEID', 'SCREEN_NAME'])
-            ->join(['b' => $subQuery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN`')
+            ->join(['b' => $subQuery], 'a.ID = b.LAST_ID', [])
             ->where('ITEM = ?', 'paper')
             ->where('ITEMID = ?', $docId)
             ->where('STATUS != ?', Episciences_User_Assignment::STATUS_INACTIVE)
@@ -3267,19 +3280,30 @@ class Episciences_PapersManager
     /**
      * Updates a paper from its repository: its record and version, then its files, linked data, enrichment,
      * authors, licence and HAL / OpenAIRE data.
+     * When anything changed, PAPERS.DOCUMENT is rebuilt (step "jsonDocument").
      * Once the record is loaded, each step runs on its own: a failure is reported as a warning
      * (Episciences_Submit::runPostSaveStep()) and does not stop the following steps, nor the update of the record.
      *
      * @param Episciences_Paper $paper
      * @param list<string>|null $failedSteps receives the names of the steps that failed
      * @param-out list<string> $failedSteps
+     * @param bool $refreshHalTei HAL papers: read the TEI from HAL again instead of the cached one,
+     *                            so that metadata edited on HAL without a new version (fundings, affiliations) are seen;
+     *                            when HAL does not return it, the step "halData" fails
+     * @param bool $refreshJsonDocument rebuild PAPERS.DOCUMENT when anything changed; false for the callers
+     *                                  that rebuild it themselves right after
      * @return int number of affected rows
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Exception the record could not be loaded from the repository, or not saved
      */
 
-    public static function updateRecordData(Episciences_Paper $paper, ?array &$failedSteps = null): int
+    public static function updateRecordData(
+        Episciences_Paper $paper,
+        ?array &$failedSteps = null,
+        bool $refreshHalTei = false,
+        bool $refreshJsonDocument = true
+    ): int
     {
         $failedSteps = [];
         $docId = $paper->getDocId();
@@ -3297,6 +3321,11 @@ class Episciences_PapersManager
 
         $context = self::initializeContext($params);
         $recordData = self::fetchRecordData($context); // as well as updating the version from the original archive
+
+        // before the linked data, licence, authors and funding steps, which all read the TEI of this version
+        $halTeiRefreshFailed = $refreshHalTei
+            && Episciences_Repositories::isFromHalRepository((int)$context['repoId'])
+            && !Episciences_Hal_TeiCacheManager::refresh(self::halTeiSourceOf($context));
         $record = self::cleanRecord($recordData['record'], $context['repoId']);
         $enrichment = $recordData['enrichment'];
         // The record already loaded, if any: the files and the linked data hooks do not load it again
@@ -3304,18 +3333,46 @@ class Episciences_PapersManager
 
         $affectedRows = Episciences_Submit::runPostSaveSteps($paper, [
             'hookFilesProcessing' => static fn(): int => self::updateRecordDataProcessFilesHook($context, $enrichment, $response),
-            'linkedData' => static fn(): int => self::processLinkedDataOrDatasets($paper, $context, $response),
+            // HAL linked data: the TEI read again from HAL, unless it was just refreshed above
+            'linkedData' => static fn(): int => self::processLinkedDataOrDatasets($paper, $context, $response, !$refreshHalTei),
             'enrichmentProcess' => static fn(): int => Episciences_Submit::storeEnrichmentOrFail($paper, $enrichment),
             'verifyExistOrInsertAuthors' => static fn(): int => Episciences_Paper_Authors_Repository::verifyExistOrInsertOrFail(
                 $context['docId'], $context['paperId']
             ),
             'licence' => static fn(): int => self::processLicence($context, 0),
-            'halData' => static fn(): int => self::processHalData($context),
+            'halData' => static fn(): int => self::processHalData($context, $halTeiRefreshFailed),
             'openAireData' => static fn(): int => self::processOpenAireData($context),
         ], $failedSteps);
 
         $affectedRows += $db?->update(T_PAPERS, ['RECORD' => $record, 'VERSION' => $context['version']], ['DOCID = ?' => $context['docId']]);
+
+        if ($refreshJsonDocument && $affectedRows > 0) {
+            self::refreshJsonDocumentAfterRecordUpdate((int)$context['docId'], $failedSteps);
+        }
+
         return $affectedRows;
+    }
+
+    /**
+     * PAPERS.DOCUMENT is built from the record and from its satellite tables (authors, fundings, licence, ...)
+     * that updateRecordData() has just written: rebuild it, so that the API does not keep serving the former data.
+     * A failure is reported like the other steps: the record itself is updated.
+     *
+     * @param list<string> $failedSteps
+     * @param-out list<string> $failedSteps
+     */
+    private static function refreshJsonDocumentAfterRecordUpdate(int $docId, array &$failedSteps): void
+    {
+        try {
+            $refreshed = self::updateJsonDocumentData($docId);
+        } catch (Throwable $e) {
+            trigger_error(sprintf('DOCUMENT refresh failed for docid %d: %s: %s', $docId, $e::class, $e->getMessage()), E_USER_WARNING);
+            $refreshed = false;
+        }
+
+        if (!$refreshed) {
+            $failedSteps[] = 'jsonDocument';
+        }
     }
 
     private static function initializeContext(array $params): array
@@ -3395,6 +3452,10 @@ class Episciences_PapersManager
             return $record;
         }
 
+        // Before the default namespace is stripped below, while the record is still well-formed XML:
+        // some repositories (e.g. arXiv, HAL) accept line breaks in titles, stored on a single line
+        $record = TitleNormalizer::normalize($record);
+
         $record = preg_replace('#xmlns="(.*)"#', '', $record);
 
         if ($repoId === (int)Episciences_Repositories::CWI_REPO_ID) {
@@ -3413,12 +3474,13 @@ class Episciences_PapersManager
      * @param Episciences_Paper $paper
      * @param array<string, mixed> $context
      * @param array<string, mixed> $response repository record already loaded by fetchRecordData(), if any
+     * @param bool $refreshHalTei HAL papers: read the TEI from HAL again (see Episciences_Submit::datasetsProcessing())
      * @return int number of rows affected by this step
      * @throws Exception the linked data could not be loaded or stored
      */
 
     private static function processLinkedDataOrDatasets(
-        Episciences_Paper $paper, array $context, array $response = []
+        Episciences_Paper $paper, array $context, array $response = [], bool $refreshHalTei = false
     ): int
     {
         if (Episciences_Repositories::handlesOwnEnrichment((int)$context['repoId'])) {
@@ -3436,7 +3498,18 @@ class Episciences_PapersManager
             return (int)($hookData['affectedRows'] ?? 0);
         }
 
-        return Episciences_Submit::datasetsProcessing($paper);
+        // the version the record is updated to, which may be newer than the paper version (fetchRecordData())
+        return Episciences_Submit::datasetsProcessing($paper, $refreshHalTei, self::halTeiSourceOf($context));
+    }
+
+    /**
+     * HAL document version the record is updated to: the TEI refreshed and read by updateRecordData()
+     *
+     * @param array<string, mixed> $context
+     */
+    private static function halTeiSourceOf(array $context): HalTeiSource
+    {
+        return new HalTeiSource((int)$context['repoId'], (string)$context['identifier'], (int)$context['version']);
     }
 
     /**
@@ -3456,13 +3529,19 @@ class Episciences_PapersManager
      * HAL papers: authors from the HAL TEI and HAL funding
      *
      * @param array<string, mixed> $context
+     * @param bool $teiRefreshFailed the TEI was to be read again from HAL, which did not return it
      * @return int number of rows affected by this step
      */
 
-    private static function processHalData(array $context): int
+    private static function processHalData(array $context, bool $teiRefreshFailed = false): int
     {
         if ((string)$context['repoId'] !== Episciences_Repositories::HAL_REPO_ID) {
             return 0;
+        }
+
+        if ($teiRefreshFailed) {
+            // the cached TEI, if any, may hide the metadata edited on HAL: the user is asked to try again
+            throw new RuntimeException(sprintf('HAL TEI of %s (version %s) could not be read again from HAL', $context['identifier'], $context['version']));
         }
 
         // Not caught: the step reports an unexpected payload or a cache failure
@@ -4314,7 +4393,11 @@ class Episciences_PapersManager
                 'language' => $language,
                 'article_type' => "Research Article",
                 'keywords' => $allKeywords,
-                'fundings' => Episciences_Paper_ProjectsManager::getProjectWithDuplicateRemoved($paper->getPaperid()),
+                // contents of the citation_funder_source meta tags, one per funding naming its funder
+                'fundings' => array_map(
+                    static fn(\Episciences\Paper\Funding\FundingReference $reference): string => (string)$reference->toCitationFunderSource(),
+                    \Episciences\Paper\Funding\FundingReferenceFactory::withFunder($paper->getFundingReferences())
+                ),
 //                'abstract' => $abstract,
 
             ],
@@ -4797,6 +4880,12 @@ class Episciences_PapersManager
         try {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
             $toJson = $paper->toJson();
+
+            // Keep the stored document rather than wiping it when generation fails
+            if ($toJson === null) {
+                return false;
+            }
+
             $str = sprintf('UPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', $db->quote($toJson), $docId);
             $db->query($str)->closeCursor();
         } catch (Zend_Db_Statement_Exception $e) {
@@ -4806,8 +4895,7 @@ class Episciences_PapersManager
 
         // invalidate the getJsonV2 metadata cache entry (up to CACHE_EXPIRE_METADATA_PUBLISHED = 31 days)
         // so callers going through Episciences_Paper::get('json', 2) don't keep serving the stale DOCUMENT
-        (new FilesystemAdapter(Episciences_Paper::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA))
-            ->deleteItem($paper->getPaperid() . '-getJsonV2');
+        Episciences_Paper::deleteMetadataCache((int)$paper->getPaperid(), 'getJsonV2');
 
         return true;
     }
@@ -4825,21 +4913,8 @@ class Episciences_PapersManager
     private static function updateRecordDataHal(int $paperId, array|string $identifier, float $version, int $affectedRows): int
     {
         $affectedRows += Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB(Episciences_Repositories::HAL_REPO_ID, $paperId, $identifier, $version);
-        //FUNDING
-        $arrayIdEuAnr = Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($identifier, $version);
-        $decodeHalIdsResp = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
-        $globalArrayJson = [];
-        if (!empty($decodeHalIdsResp['response']['docs'])) {
-            $globalArrayJson = Episciences_Paper_ProjectsManager::FormatFundingANREuToArray($decodeHalIdsResp['response']['docs'], $identifier, $globalArrayJson);
-        }
-        $mergeArrayANREU = [];
-        if (!empty($globalArrayJson)) {
-            foreach ($globalArrayJson as $globalPreJson) {
-                $mergeArrayANREU[] = $globalPreJson[0];
-            }
-            $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::HAL_REPO_ID);
-            $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
-        }
+        //FUNDING, from the TEI the author enrichment above has just fetched and cached
+        $affectedRows += Episciences_Paper_ProjectsManager::enrichHalFundingFromTei($paperId, (string) $identifier, (int) $version);
         return $affectedRows;
     }
 

@@ -42,7 +42,7 @@ ALTER TABLE news
     ADD COLUMN visibility_enum ENUM('public', 'private') DEFAULT 'public'
 AFTER visibility;
 
--- PAGES: Add SET column
+-- PAGES: Add visibility_set column
 -- ---------------------
 -- Pages can be visible to multiple user roles simultaneously.
 -- SET allows storing multiple values in a single column (e.g., 'editor,chief_editor').
@@ -118,29 +118,29 @@ WHERE JSON_VALID(visibility);
 
 -- 3.1: Visual inspection of NEWS migration
 -- Compare JSON values with their ENUM equivalents
-SELECT id, visibility AS json_value, visibility_enum AS enum_value
-FROM news LIMIT 20;
+-- SELECT id, visibility AS json_value, visibility_enum AS enum_value
+-- FROM news LIMIT 20;
 
 -- 3.2: Visual inspection of PAGES migration
 -- Compare JSON values with their SET equivalents
-SELECT id, visibility AS json_value, visibility_set AS set_value
-FROM pages LIMIT 50;
+-- SELECT id, visibility AS json_value, visibility_set AS set_value
+-- FROM pages LIMIT 50;
 
 -- 3.3: Check for NULL values in new columns
 -- Both queries should return 0 (no NULL values after migration)
-SELECT 'news_null_count' AS check_name, COUNT(*) AS count
-FROM news WHERE visibility_enum IS NULL;
+-- SELECT 'news_null_count' AS check_name, COUNT(*) AS count
+-- FROM news WHERE visibility_enum IS NULL;
 
-SELECT 'pages_null_count' AS check_name, COUNT(*) AS count
-FROM pages WHERE visibility_set IS NULL;
+-- SELECT 'pages_null_count' AS check_name, COUNT(*) AS count
+-- FROM pages WHERE visibility_set IS NULL;
 
 -- 3.4: Verify all SET values are valid
 -- This should return 0 rows (no invalid role names)
-SELECT id, visibility_set
-FROM pages
-WHERE visibility_set = ''
-  AND visibility IS NOT NULL
-  AND visibility != '[]';
+-- SELECT id, visibility_set
+-- FROM pages
+-- WHERE visibility_set = ''
+--   AND visibility IS NOT NULL
+--   AND visibility != '[]';
 
 -- ============================================================================
 -- PHASE 4: Cleanup (FINAL STEP - Only after dual-write code is removed)
@@ -221,5 +221,5 @@ WHERE visibility_set = ''
 -- ============================================================================
 
 -- Drop the old JSON columns only
-ALTER TABLE news DROP COLUMN visibility;
-ALTER TABLE pages DROP COLUMN visibility;
+-- ALTER TABLE news DROP COLUMN visibility;
+-- ALTER TABLE pages DROP COLUMN visibility;

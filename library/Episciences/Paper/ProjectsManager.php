@@ -6,7 +6,6 @@ declare(strict_types=1);
  * Thin facade preserving 100% backward compatibility with all call-sites.
  * All business logic has been moved to dedicated classes:
  *   - Episciences_Paper_Projects_Repository     (DB)
- *   - Episciences_Paper_Projects_HalApiClient   (HTTP)
  *   - Episciences_Paper_Projects_EnrichmentService (orchestration)
  *   - Episciences_Paper_Projects_ViewFormatter  (HTML)
  */
@@ -108,48 +107,17 @@ class Episciences_Paper_ProjectsManager
         );
     }
 
-    public static function formatEuHalResp(array $respEuHAl): array
-    {
-        return Episciences_Paper_Projects_EnrichmentService::formatEuHalResp($respEuHAl);
-    }
-
-    public static function formatAnrHalResp(array $respAnrHAl): array
-    {
-        return Episciences_Paper_Projects_EnrichmentService::formatAnrHalResp($respAnrHAl);
-    }
-
     // -------------------------------------------------------------------------
-    // HAL API (kept for external callers)
+    // HAL (document TEI)
     // -------------------------------------------------------------------------
-
-    public static function CallHAlApiForIdEuAndAnrFunding(string $identifier, int $version): string
-    {
-        return Episciences_Paper_Projects_HalApiClient::fetchProjectIds($identifier, $version);
-    }
-
-    public static function CallHAlApiForEuroProject(int $halDocId): string
-    {
-        return Episciences_Paper_Projects_HalApiClient::fetchEuropeanProject($halDocId);
-    }
-
-    public static function CallHAlApiForAnrProject(int $halDocId): string
-    {
-        return Episciences_Paper_Projects_HalApiClient::fetchAnrProject($halDocId);
-    }
 
     /**
      * @throws JsonException
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function FormatFundingANREuToArray(
-        array  $rawArray,
-        string $identifier,
-        array  $globalArrayJson
-    ): array {
-        return Episciences_Paper_Projects_EnrichmentService::resolveHalProjectIds(
-            $rawArray,
-            $identifier,
-            $globalArrayJson
-        );
+    public static function enrichHalFundingFromTei(int $paperId, string $identifier, int $version): int
+    {
+        return Episciences_Paper_Projects_EnrichmentService::enrichHalFundingFromTei($paperId, $identifier, $version);
     }
 
     // -------------------------------------------------------------------------

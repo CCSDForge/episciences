@@ -8,6 +8,10 @@ class Ccsd_Error extends Exception
     public const ID_DOES_NOT_EXIST_CODE = 'idDoesNotExist';
     public const DEFAULT_PREFIX_CODE = 'The operation ended with this error: <strong><small>[%s]</small></strong>.';
     public const ARXIV_VERSION_DOES_NOT_EXIST_CODE = 'arXivVersionDoesNotExist';
+    public const REPOSITORY_TIMEOUT_CODE = 'repositoryTimeout';
+    public const REPOSITORY_UNAVAILABLE_CODE = 'repositoryUnavailable';
+    /** Type of the errors raised by Ccsd_Tools::curlSourceGetContents() */
+    public const CURL_ERROR_TYPE = 'CURL_ERROR';
     protected $_type;
 
     /**
@@ -28,6 +32,11 @@ class Ccsd_Error extends Exception
 
         parent::__construct($this->getMessage(), $this->getCode());
 
+    }
+
+    public function getType(): string
+    {
+        return (string)$this->_type;
     }
 
     /**
@@ -61,7 +70,7 @@ class Ccsd_Error extends Exception
                 $message = 'The metadata format is not supported by this repository.';
                 break;
             case self::ID_DOES_NOT_EXIST_CODE :
-                $message = "To submit your document, please make sure it is online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).";
+                $message = "To submit your document, please make sure it is online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (for example %3\$s for a document submitted in %2\$s).";
                 break;
             case 'noRecordsMatch' :
                 $message = 'The combination of the given values results in an empty list.';
@@ -76,7 +85,13 @@ class Ccsd_Error extends Exception
                 $message = 'You can not submit an empty record: you must first modify the deposit on the open archive to attach the PDF file of your article without formatting.';
                 break;
             case self::ARXIV_VERSION_DOES_NOT_EXIST_CODE :
-                $message = "This version of the document does not exist or is not online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).";
+                $message = "This version of the document does not exist or is not online in the open archive. In the event of difficulties, please contact the support at %s by indicating the document identifier (for example %3\$s for a document submitted in %2\$s).";
+                break;
+            case self::REPOSITORY_TIMEOUT_CODE :
+                $message = "The open archive %s did not respond in time. Please try again in a few moments. If the problem persists, please contact the support at %s.";
+                break;
+            case self::REPOSITORY_UNAVAILABLE_CODE :
+                $message = "The open archive %s is temporarily unavailable. Please try again in a few moments. If the problem persists, please contact the support at %s.";
                 break;
             case 'hookIsNotOpenAccessRight':
             case 'hookUnboundVersions':
@@ -87,7 +102,7 @@ class Ccsd_Error extends Exception
 
                 $message = self::DEFAULT_PREFIX_CODE;
                 $message .= ' ';
-                $message .= "Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (example of an identifier for a document submitted in %s: %s).";
+                $message .= "Please try again. In the event of difficulties, please contact the support at %s by indicating the document identifier (for example %4\$s for a document submitted in %3\$s).";
         }
 
         return $message;

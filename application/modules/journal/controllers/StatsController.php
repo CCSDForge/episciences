@@ -3,6 +3,7 @@
 use Episciences\Api\DelegatedTokenClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\NullLogger;
 
@@ -212,27 +213,12 @@ class StatsController extends Zend_Controller_Action
                 return;
             }
 
-            $evaluationQuery = self::getEvaluationQuery($yearQuery, $startStatsAfterDate);
-            $evaluations = null;
+            $evaluations = $this->loadEvaluations(self::getEvaluationQuery($yearQuery, $startStatsAfterDate), $token, $logger);
 
-            // the reviews counted by the figures (journal administrators only)
-            if ($token !== null && self::canSeePapers()) {
-                try {
-                    // an unusable answer falls back to the public figures as well
-                    $evaluations = $this->getEvaluations(array_merge($evaluationQuery, [self::WITH_PAPERS_PARAM => 'true']), $token) ?: null;
-                } catch (GuzzleException|JsonException $e) {
-                    // falls back to the figures without the reviews
-                    $logger?->warning(sprintf('Statistics of %s: the reviews are not available: %s', RVCODE, $e->getMessage()));
-                }
-            }
-
-            try {
-                // the figures of the evaluation are public: no token
-                $evaluations ??= $this->getEvaluations($evaluationQuery, null);
-                $this->processEvaluationStats($evaluations, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
-            } catch (GuzzleException|JsonException $e) {
+            if ($evaluations === null) {
                 $this->view->errorMessage = $errorMessage;
-                $logger?->warning($e->getMessage());
+            } else {
+                $this->processEvaluationStats($evaluations, $reviewsRequested, $reviewsReceived, $medianReviewsNumber);
             }
         }
 
@@ -263,7 +249,7 @@ class StatsController extends Zend_Controller_Action
 
         // Figure 1 > At a glance
 
-        // all(Sub.., Pub.., Acce..., Aru..., Oth... ) : Imported articles are not included
+        // the submissions include the imported papers (nbImported); the published, accepted, refused and other ones do not
         $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS] ?? null;
         $allPublications = $dashboard['value'][self::NB_PUBLISHED] ?? null;
         $allAcceptations = $dashboard['value'][self::NB_ACCEPTED];
@@ -333,11 +319,16 @@ class StatsController extends Zend_Controller_Action
         $this->view->chart3Title = !$yearQuery ?
             $this->view->translate('Répartition des soumissions par année et par archive') :
             $this->view->translate('Répartition des soumissions par archive');
+        // imported papers of every year: on the page of a year, the API only counts the imported papers of that year
+        $importedByYearAndRepo = $this->getImportedByYearAndRepo($startStatsAfterDate, $logger);
         $charts = self::buildChartsData(
             $details,
             $yearCategories,
-            $this->getImportedByYearAndRepo($startStatsAfterDate, $logger),
-            array_map(fn(string $label) => $this->view->translate($label), self::CHART_LABELS)
+            $importedByYearAndRepo,
+            array_map(
+                fn(string $label) => $this->view->translate($label),
+                self::chartLabels((int)$totalImported > 0 || $importedByYearAndRepo !== [])
+            )
         );
 
         // titles of the delays chart, following the selector "moyenne" / "médiane" of the delay table
@@ -354,7 +345,11 @@ class StatsController extends Zend_Controller_Action
 
         // Users: not available by year, the database does not allow to get this information
         if ($isAvailableUsersStats) {
-            $charts['users'] = self::buildUsersChartData($details[self::NB_USERS] ?? [], fn(string $role) => $this->view->translate($role));
+            $charts['users'] = self::buildUsersChartData(
+                $details[self::NB_USERS] ?? [],
+                fn(string $role) => $this->view->translate($role),
+                (int)$dashboard['value'][self::NB_USERS]
+            );
             $this->view->chart5Title = $this->view->translate("Le nombre d'utilisateurs par rôles");
             $this->view->allUsers = $dashboard['value'][self::NB_USERS];
         }
@@ -454,7 +449,7 @@ class StatsController extends Zend_Controller_Action
             [$t('Évaluations demandées'), $view->reviewsRequested],
             [$t('Évaluations reçues'), $view->reviewsReceived],
             [$t("Nombre médian d'évaluations par article évalué"), $view->medianReviewsNumber],
-            [$t("Nombre total d'utilisateurs"), $view->isAvailableUsersStats ? $view->allUsers : null],
+            // the total of the users is exported with the chart of the users, in its own panel
         ]);
     }
 
@@ -580,6 +575,22 @@ class StatsController extends Zend_Controller_Action
     }
 
     /**
+     * Series of the charts (to be translated): the submissions only mention the imports when the journal has imported papers
+     * @param bool $hasImportedPapers
+     * @return array<string, string>
+     */
+    public static function chartLabels(bool $hasImportedPapers): array
+    {
+        $labels = self::CHART_LABELS;
+
+        if (!$hasImportedPapers) {
+            $labels['submitted'] = 'Soumissions';
+        }
+
+        return $labels;
+    }
+
+    /**
      * Unit of a delay given by the API (DAY, WEEK…) in words, to be translated
      * @param string|null $unit
      * @return string
@@ -597,11 +608,14 @@ class StatsController extends Zend_Controller_Action
 
     /**
      * Users by role, sorted from the largest number (the root role is left out)
+     * The total of the users, if given, ends the CSV export of the chart: as a user can have several roles,
+     * it is not the sum of the roles, so its label says it.
      * @param array $usersDetails role => ['nbUsers' => n]
      * @param callable $translate translation of a role
-     * @return array{labels: string[], datasets: array}
+     * @param int|null $total total number of users (distinct users)
+     * @return array{labels: string[], datasets: array, csvFooterRows: array<int, array{0: string, 1: int}>}
      */
-    public static function buildUsersChartData(array $usersDetails, callable $translate): array
+    public static function buildUsersChartData(array $usersDetails, callable $translate, ?int $total = null): array
     {
         unset($usersDetails[Episciences_Acl::ROLE_ROOT]);
 
@@ -616,6 +630,10 @@ class StatsController extends Zend_Controller_Action
         return [
             'labels' => array_column($users, 0),
             'datasets' => [['label' => (string)$translate(self::CHART_LABELS['users']), 'data' => array_column($users, 1)]],
+            'csvFooterRows' => $total === null ? [] : [[
+                $translate("Nombre total d'utilisateurs") . ' (' . $translate('Un utilisateur peut avoir plusieurs rôles.') . ')',
+                $total,
+            ]],
         ];
     }
 
@@ -793,6 +811,10 @@ class StatsController extends Zend_Controller_Action
             $paperIds = array_column($papers, 'PAPERID');
             $logDates = [];
 
+            // the submission date of a submission: the one of its first version, as the API counts it (by DOCID: a
+            // refused paper submitted again is listed twice, with the same PAPERID; a listed version may be obsolete)
+            $firstSubmissionDates = in_array(self::COLUMN_SUBMISSION, $columns, true) ? self::getFirstSubmissionDates($paperIds) : [];
+
             // the dates read in the history of the papers: only those of the columns of the figure
             foreach (self::COLUMN_LOG_STATUSES as $column => $statuses) {
                 if (in_array($column, $columns, true)) {
@@ -804,11 +826,76 @@ class StatsController extends Zend_Controller_Action
                 $row['withxsl'] = false;
                 $paperId = (int)$row['PAPERID'];
                 $dates = array_map(static fn(array $datesByPaper) => $datesByPaper[$paperId] ?? null, $logDates);
+                $dates[self::COLUMN_SUBMISSION] = $firstSubmissionDates[(int)$row['DOCID']] ?? null;
                 $rows[] = self::formatPaperRow(new Episciences_Paper($row), $columns, $dates);
             }
         }
 
         return $rows;
+    }
+
+    /**
+     * Date of the first submission of each submission, by the DOCID of each of its versions: the oldest
+     * SUBMISSION_DATE of its versions, as the API counts the submissions (PapersRepository::getSubmissions()).
+     * A submission is the chain of the versions of a paper, by DOCID, up to its first non-obsolete version: a refused
+     * paper submitted again is a new submission, dated by its new versions. The new versions of a paper do not always
+     * keep the date of its first version (old data): the listed version can be dated after the year of the figure.
+     * The obsolete versions are dated too: a listed version can become obsolete when a new version is submitted.
+     * @param array<mixed> $paperIds
+     * @return array<int, string> DOCID of each version => date of the first version of its submission
+     */
+    public static function getFirstSubmissionDates(array $paperIds): array
+    {
+        $paperIds = array_values(array_unique(array_filter(array_map('intval', $paperIds), static fn(int $paperId) => $paperId > 0)));
+
+        if (!$paperIds) {
+            return [];
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPERS, ['DOCID', 'PAPERID', 'STATUS', 'SUBMISSION_DATE'])
+            ->where('RVID = ?', RVID)
+            ->where('PAPERID IN (?)', $paperIds)
+            ->order(['PAPERID', 'DOCID']);
+
+        $dates = [];
+        $submissions = []; // the current submission of each paper: its versions and their oldest date
+
+        foreach ($db->fetchAll($select) as $version) {
+            $paperId = (int)$version['PAPERID'];
+            $date = (string)$version['SUBMISSION_DATE'];
+            $submission = $submissions[$paperId] ?? ['docIds' => [], 'date' => null];
+            $submission['docIds'][] = (int)$version['DOCID'];
+
+            if ($date !== '' && ($submission['date'] === null || $date < $submission['date'])) {
+                $submission['date'] = $date;
+            }
+
+            $submissions[$paperId] = $submission;
+
+            // a non-obsolete version ends the submission
+            if ((int)$version['STATUS'] !== Episciences_Paper::STATUS_OBSOLETE) {
+                $dates += self::datesOfSubmission($submission);
+                unset($submissions[$paperId]);
+            }
+        }
+
+        // the submissions without non-obsolete version
+        foreach ($submissions as $submission) {
+            $dates += self::datesOfSubmission($submission);
+        }
+
+        return $dates;
+    }
+
+    /**
+     * @param array{docIds: int[], date: ?string} $submission
+     * @return array<int, string> DOCID of each version of the submission => date of its first version
+     */
+    private static function datesOfSubmission(array $submission): array
+    {
+        return $submission['date'] === null ? [] : array_fill_keys($submission['docIds'], $submission['date']);
     }
 
     /**
@@ -856,7 +943,7 @@ class StatsController extends Zend_Controller_Action
     /**
      * @param Episciences_Paper $paper
      * @param string[] $columns date columns (COLUMN_*) of the figure: only these dates are returned
-     * @param array<string, ?string> $logDates dates read in the history of the paper, by column (refusal, acceptance)
+     * @param array<string, ?string> $logDates dates read apart, by column: in the history of the paper (refusal, acceptance), the first submission
      * @return array<string, mixed> docid, paperid, title, status, statusLabel, statusGroup, imported, and the dates of the columns
      */
     public static function formatPaperRow(Episciences_Paper $paper, array $columns = self::DEFAULT_COLUMNS, array $logDates = []): array
@@ -882,7 +969,8 @@ class StatsController extends Zend_Controller_Action
         ];
 
         $dates = [
-            self::COLUMN_SUBMISSION => $paper->getSubmission_date(),
+            // the first submission of the submission (see getFirstSubmissionDates()), otherwise the date of the version
+            self::COLUMN_SUBMISSION => $logDates[self::COLUMN_SUBMISSION] ?? $paper->getSubmission_date(),
             self::COLUMN_REFUSAL => $logDates[self::COLUMN_REFUSAL] ?? null,
             self::COLUMN_ACCEPTANCE => $logDates[self::COLUMN_ACCEPTANCE] ?? null,
             self::COLUMN_PUBLICATION => $paper->getPublication_date(),
@@ -1212,6 +1300,69 @@ class StatsController extends Zend_Controller_Action
         }
 
         return $query;
+    }
+
+    /**
+     * The evaluation statistics of the journal, with the reviews they count for the journal administrators
+     * @param array<string, int|string> $evaluationQuery see getEvaluationQuery()
+     * @param string|null $token the delegated token (see getDelegatedToken())
+     * @param Monolog\Logger|null $logger
+     * @return array<mixed>|null null: not available
+     */
+    private function loadEvaluations(array $evaluationQuery, ?string $token, ?Monolog\Logger $logger): ?array
+    {
+        // the reviews counted by the figures (journal administrators only)
+        if ($token !== null && self::canSeePapers()) {
+            try {
+                // an unusable answer falls back to the public figures as well
+                $evaluations = $this->getEvaluations(array_merge($evaluationQuery, [self::WITH_PAPERS_PARAM => 'true']), $token);
+
+                if ($evaluations !== []) {
+                    return $evaluations;
+                }
+            } catch (GuzzleException|JsonException $e) {
+                if (self::isRefusedQuery($e)) {
+                    // the same query without the reviews would be refused as well
+                    return self::noEvaluation($e, $logger);
+                }
+
+                // falls back to the figures without the reviews
+                $logger?->warning(sprintf('Statistics of %s: the reviews are not available: %s', RVCODE, $e->getMessage()));
+            }
+        }
+
+        try {
+            // the figures of the evaluation are public: no token
+            return $this->getEvaluations($evaluationQuery, null);
+        } catch (GuzzleException|JsonException $e) {
+            if (self::isRefusedQuery($e)) {
+                return self::noEvaluation($e, $logger);
+            }
+
+            $logger?->warning(sprintf('Statistics of %s: the evaluation is not available: %s', RVCODE, $e->getMessage()));
+
+            return null;
+        }
+    }
+
+    /**
+     * Whether the API refused the query (422), e.g. a year without any paper for the evaluation statistics:
+     * no figure, and not an error
+     */
+    public static function isRefusedQuery(Throwable $e): bool
+    {
+        return $e instanceof RequestException && $e->getResponse()?->getStatusCode() === 422;
+    }
+
+    /**
+     * No evaluation figure for a refused query (see isRefusedQuery())
+     * @return array{}
+     */
+    private static function noEvaluation(Throwable $e, ?Monolog\Logger $logger): array
+    {
+        $logger?->notice(sprintf('Statistics of %s: no evaluation figure for this query: %s', RVCODE, $e->getMessage()));
+
+        return [];
     }
 
     /**

@@ -44,22 +44,27 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // the figures of the page (CSV)
-    const figuresButton = document.querySelector('.stats-export-figures');
+    // the figures of the page (CSV), at the bottom of their panel as the export of the charts
+    const figuresContainer = document.querySelector('.stat-figures-data');
 
     if (
-        figuresButton &&
+        figuresContainer &&
         typeof statsFiguresFromView !== 'undefined' &&
-        typeof downloadCsv === 'function'
+        Array.isArray(statsFiguresFromView) &&
+        statsFiguresFromView.length > 0 &&
+        typeof createCsvButton === 'function'
     ) {
-        figuresButton.addEventListener('click', function () {
-            downloadCsv(
-                statCsvFileName([statsExportName(), statTranslate('chiffres')]),
-                [[statTranslate('Indicateur'), statTranslate('Valeur')]].concat(
-                    statsFiguresFromView
-                )
-            );
-        });
+        figuresContainer.appendChild(
+            createCsvButton(statTranslate('Télécharger (CSV)'), () => ({
+                fileName: statCsvFileName([
+                    statsExportName(),
+                    statTranslate('chiffres'),
+                ]),
+                rows: [
+                    [statTranslate('Indicateur'), statTranslate('Valeur')],
+                ].concat(statsFiguresFromView),
+            }))
+        );
     }
 });
 

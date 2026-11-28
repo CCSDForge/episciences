@@ -98,6 +98,8 @@ class Episciences_Paper_XmlExportManager
 
         $view->journal = $journal;
         $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts');
+        // the export templates render their partials (e.g. fundref.phtml) by bare name, as in Export::getCrossref()
+        $view->addScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts/export');
         $view->addHelperPath('Episciences/View/Helper', 'Episciences_View_Helper');
         $output = $view->render(self::FORMATS_EXPORT_MAP[$format] ?? self::FORMATS_EXPORT_MAP[self::DATACITE_FORMAT]);
         return self::displayXml($output);

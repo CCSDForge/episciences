@@ -8,13 +8,14 @@ use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Episciences\Paper\WriteFailure;
+use Episciences\Hal\HalTeiSource;
 
 class Episciences_Paper_LicenceManager
 {
     public const ONE_MONTH = 3600 * 24 * 31;
-    const ARXIV_DOI_PREFIX = '10.48550/arxiv.';
-    const ZENODO_DOI_PREFIX = '10.5281/zenodo.';
-    const DATACITE_DOI_API = 'https://api.datacite.org/dois/';
+    const ARXIV_DOI_PREFIX = Episciences_Repositories_Common::ARXIV_DOI_PREFIX;
+    const ZENODO_DOI_PREFIX = Episciences_Repositories_Common::ZENODO_DOI_PREFIX;
+    const DATACITE_DOI_API = Episciences_Repositories_Common::DATACITE_DOI_API;
 
     /**
      * @param string|int $repoId
@@ -92,7 +93,7 @@ class Episciences_Paper_LicenceManager
      */
     public static function getLicenceFromTeiHal(string $identifier, int $version): string
     {
-        $cacheTeiHal = Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version);
+        $cacheTeiHal = Episciences_Hal_TeiCacheManager::fetchAndGet(HalTeiSource::hal($identifier, $version));
         $xmlString = simplexml_load_string($cacheTeiHal);
         $licence = '';
         if (isset($xmlString->text->body->listBibl->biblFull->publicationStmt->availability->licence, $xmlString->text->body->listBibl->biblFull->publicationStmt->availability->licence->attributes()->target)) {

@@ -15,7 +15,8 @@ use Zend_Controller_Response_HttpTestCase;
 
 /**
  * PaperController::isAllowedToWriteTemporaryVersion(): recording a temporary version (form and save) follows the
- * rule of the files it is uploaded with (see DocumentFilePolicy::isTemporaryVersionFileWritable()). The logged user
+ * rule of the files it is uploaded with (see DocumentFilePolicy::isTemporaryVersionFileWritable()), for the paper's
+ * owner and the editorial staff: not for the co-authors. The logged user
  * is a real identity with roles; the journal and the conflict of interest answer, read from the database, are
  * stubbed.
  */
@@ -51,12 +52,14 @@ final class PaperControllerTemporaryVersionAccessTest extends TestCase
     }
 
     /**
-     * @param array{author?: bool, assigned?: bool} $state
+     * @param array{owner?: bool, coAuthor?: bool, assigned?: bool} $state
      */
     private function paper(array $state = []): Episciences_Paper
     {
         $paper = $this->createMock(Episciences_Paper::class);
-        $paper->method('isOwnerOrCoAuthor')->willReturn($state['author'] ?? false);
+        $paper->method('isOwner')->willReturn($state['owner'] ?? false);
+        $paper->method('isCoauthor')->willReturn($state['coAuthor'] ?? false);
+        $paper->method('isOwnerOrCoAuthor')->willReturn(($state['owner'] ?? false) || ($state['coAuthor'] ?? false));
         $paper->method('isAssignedEditorOrCopyEditor')->willReturn($state['assigned'] ?? false);
 
         return $paper;
@@ -100,12 +103,22 @@ final class PaperControllerTemporaryVersionAccessTest extends TestCase
         return $controller->check($paper);
     }
 
-    public function testAuthorIsAllowedWithoutLookingUpTheJournal(): void
+    public function testOwnerIsAllowedWithoutLookingUpTheJournal(): void
     {
         $this->logInAs();
 
-        self::assertTrue($this->isAllowed($this->paper(['author' => true])));
+        self::assertTrue($this->isAllowed($this->paper(['owner' => true])));
         self::assertSame(0, self::$journalLookups);
+    }
+
+    /**
+     * The co-authors are informed of the paper and read it, without acting on it.
+     */
+    public function testCoAuthorIsRefused(): void
+    {
+        $this->logInAs([Episciences_Acl::ROLE_AUTHOR]);
+
+        self::assertFalse($this->isAllowed($this->paper(['coAuthor' => true])));
     }
 
     public function testSecretaryIsAllowed(): void

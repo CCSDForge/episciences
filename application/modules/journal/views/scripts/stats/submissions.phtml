@@ -2,10 +2,17 @@
 $isYear = isset($this->year);
 $acceptedNoYetPublishedTooltipInfo = "Cela inclut les versions acceptées (mise en forme ou non)";
 $acceptedTooltipInfo = "Cela inclut les articles qui ont déjà été publiés";
-$refusedTooltipInfo = "La revue peut rejeter plusieurs fois le même article. Dans ce cas, un seul rejet est comptabilisé par article.";
+// counted by submission by the API: a refused paper that the journal accepts to receive again is a new submission
+$refusedTooltipInfo = "Un seul rejet est comptabilisé par soumission. Un article refusé puis soumis à nouveau compte comme une nouvelle soumission.";
 $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
-$baseMessage = "La somme du nombre total d’articles acceptés et du nombre total d’articles refusés";
-$rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :'), $this->translate("le total des articles concernés par le taux X"), $this->translate(' :'), $this->translate($baseMessage));
+// how the rates are computed by the API: X / (accepted + refused) x 100, X being the accepted, refused or published articles
+$rateFormula = 'Taux = articles concernés ÷ (articles acceptés + articles refusés) × 100';
+$rateNotes = [
+        "Taux d'acceptation + taux de refus = 100 %.",
+        "Le taux de publication a la même base : il ne dépasse pas le taux d'acceptation.",
+        'Ne comptent pas : les articles en attente de décision et les articles importés.',
+        "Par année : l'année de la décision (acceptation, refus ou publication), pas de la soumission.",
+];
 
 ?>
 <div class="panel panel-default collapsable">
@@ -59,10 +66,11 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
 
                         <?php endif ?>
 
-                        <?php if ($this->imported > 1) : ?>
+                        <?php if ($this->imported > 0) : ?>
+                            <?php // the articles and the submissions above count the imported papers, the figures below do not ?>
                             <li class="stat-note">
                                 <span class="fas fa-info-circle fa-sm" aria-hidden="true"></span>
-                                <?= $this->translate("Les articles importés ne sont pas inclus") ?>
+                                <?= $this->escape($this->translate("Les articles importés ne sont pas inclus dans les indicateurs ci-dessous")) ?>
                             </li>
 
                         <?php endif; ?>
@@ -81,6 +89,14 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
 
 
                         <?php if ($this->allAcceptations) : ?>
+
+                            <?php if ($isYear):
+                                // by year, the API counts the decisions taken in the year, as for the refused articles
+                                $acceptedTooltipInfo = $this->translate("Cela inclut les articles qui ont été soumis antérieurement et acceptés cette année.")
+                                        . ' ' .
+                                        $this->translate($acceptedTooltipInfo);
+                                ?>
+                            <?php endif; ?>
 
                             <?= $this->partial('stats/stat-item.phtml', [
                                     'itemLabel' => 'articles acceptés',
@@ -147,6 +163,28 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                         </ul>
                         </li>
 
+                        <?php // accepted papers waiting for publication: next to the statuses, before the derived figures (rates, delays) ?>
+                        <?php if ($this->acceptedNotYetPublished) : ?>
+
+                            <h3 class="stat-section-title"><?= $this->translate('En cours de publication') ?></h3>
+
+                            <ul class="list-unstyled stat-tiles">
+                            <?= $this->partial('stats/stat-item.phtml', [
+                                    'itemLabel' => [
+                                            'articles acceptés',
+                                            'clarification' => 'non encore publiés'
+                                    ],
+                                    'itemValue' => $this->acceptedNotYetPublished,
+                                    'help' => [
+                                            'message' => $acceptedNoYetPublishedTooltipInfo,
+                                            'isTooltip' => true
+                                    ],
+                                    'paperList' => $this->paperLists[StatsController::NB_ACCEPTED_NOT_YET_PUBLISHED] ?? null
+                            ]) ?>
+                            </ul>
+
+                        <?php endif; ?>
+
                         <?php if ($isYear) : ?>
 
                             <h3 class="stat-section-title"><?= $this->translate('Soumis la même année') ?></h3>
@@ -174,7 +212,14 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                         <div class="rate">
 
                             <h3 class="stat-section-title"><?= $this->translate('Taux') ?></h3>
-                            <p class="help-block stat-formula"><?= $this->translate($rateFormulaInfo) ?></p>
+                            <div class="help-block stat-formula">
+                                <p><?= $this->escape($this->translate($rateFormula)) ?></p>
+                                <ul>
+                                    <?php foreach ($rateNotes as $rateNote): ?>
+                                        <li><?= $this->escape($this->translate($rateNote)) ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
 
                             <?php // rates: meters, read at a glance and comparable (instead of a two-slice doughnut) ?>
                             <ul class="list-unstyled stat-meters">
@@ -199,32 +244,13 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
 
                         <?= $this->render('stats/submission-delay.phtml') ?>
 
-                        <?php if ($this->acceptedNotYetPublished) : ?>
-
-                            <h3 class="stat-section-title"><?= $this->translate('En cours de publication') ?></h3>
-
-                            <ul class="list-unstyled stat-tiles">
-                            <?= $this->partial('stats/stat-item.phtml', [
-                                    'itemLabel' => [
-                                            'articles acceptés',
-                                            'clarification' => 'non encore publiés'
-                                    ],
-                                    'itemValue' => $this->acceptedNotYetPublished,
-                                    'help' => [
-                                            'message' => $acceptedNoYetPublishedTooltipInfo,
-                                            'isTooltip' => true
-                                    ],
-                                    'paperList' => $this->paperLists[StatsController::NB_ACCEPTED_NOT_YET_PUBLISHED] ?? null
-                            ]) ?>
-                            </ul>
-
-                        <?php endif; ?>
-
                     </ul>
                 </div>
             </div>
             <?= $this->render('stats/evaluations.phtml') ?>
         </div>
+        <?php // the CSV export of the figures, placed as the export of the charts; added by public/js/stats/submissions.js ?>
+        <div class="stat-chart-data stat-figures-data"></div>
     </div>
 </div>
 

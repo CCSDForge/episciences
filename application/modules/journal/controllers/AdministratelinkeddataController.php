@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Paper\RelationshipMapper;
+
 class AdministratelinkeddataController extends Zend_Controller_Action
 {
     public function addldAction(){
@@ -17,8 +19,12 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         $inputTypeLd = filter_var(trim($this->getRequest()->getPost('typeld') ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $rawValueLd = str_replace(' ','',trim($this->getRequest()->getPost('valueld')));
         $paperId = (string)$paper->getPaperid();
-        $relationship = htmlspecialchars(trim($this->getRequest()->getPost('relationship')), ENT_QUOTES, 'UTF-8');
-        
+        $relationship = RelationshipMapper::toCrossref((string)$this->getRequest()->getPost('relationship'));
+        if ($relationship === null) {
+            $this->rejectUnknownRelationship();
+            return;
+        }
+
         // Validate the format first with raw input, then sanitize for storage
         $typeLd = Episciences_Tools::checkValueType($rawValueLd);
         if ($typeLd === false) {
@@ -193,6 +199,12 @@ class AdministratelinkeddataController extends Zend_Controller_Action
     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Suppression de la donnée liée bien prise en compte');
     }
 
+    private function rejectUnknownRelationship(): void
+    {
+        echo json_encode([false], JSON_THROW_ON_ERROR);
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Type de relation non reconnu');
+    }
+
     private function denyLinkedDataChange(): void
     {
         if (ob_get_level() > 0) {
@@ -286,7 +298,11 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         }
 
         // Sanitize all input parameters
-        $relationship = htmlspecialchars(trim($request->getPost('relationship') ?? ''), ENT_QUOTES, 'UTF-8');
+        $relationship = RelationshipMapper::toCrossref((string)$request->getPost('relationship'));
+        if ($relationship === null) {
+            $this->rejectUnknownRelationship();
+            return;
+        }
         $typeLd = filter_var(trim($request->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
         $valueLd = htmlspecialchars(trim($request->getPost('valueLd')), ENT_QUOTES, 'UTF-8');
         $docId = $paper->getDocid();

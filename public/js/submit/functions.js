@@ -19,10 +19,10 @@ $(function () {
     let $searchDocVersion = $('#' + subform + '-version');
     let $searchPaperPassword = $('#' + subform + '-paperPassword');
     let $searchRequiredPwd = $('#' + subform + '-h_requiredPwd');
-    let $fileDescriptor = $("#file_data_descriptor");
-    let $isRequiredDescriptor = $("#file_data_descriptor_is_required");
-    let $coverLetterFile = $("#file_comment_author");
-    let $coverLetterRequirement = $("#cover_letter_requirement");
+    let $fileDescriptor = $('#file_data_descriptor');
+    let $isRequiredDescriptor = $('#file_data_descriptor_is_required');
+    let $coverLetterFile = $('#file_comment_author');
+    let $coverLetterRequirement = $('#cover_letter_requirement');
 
     // if it is a modal, disable submit button
     disableModalSubmitButton();
@@ -46,7 +46,6 @@ $(function () {
     $secondDisclaimersDisclaimer.on('change', function () {
         activateDeactivateSubmitButton();
     });
-
 
     $fileDescriptor.on('change', function () {
         activateDeactivateSubmitButton();
@@ -206,11 +205,12 @@ $(function () {
         let message = '';
 
         if (result['status'] === 0) {
-            // document not found: display an error
-            message =
-                '<div class="panel panel-danger"><div class="panel-body">' +
-                result['error'] +
-                '</div></div>';
+            // document not found or not submittable: display an error
+            message = resultAlert(
+                'danger',
+                translate('Erreur'),
+                '<p>' + result['error'] + '</p>'
+            );
         } else {
             toggleDD('file_data_descriptor', result['ddOptions']);
 
@@ -335,18 +335,22 @@ $(function () {
                         }
                     }
 
-                    message =
-                        '<div id="result_message" class="panel panel-danger">';
-                    message += '<div class="panel-body red">';
-                    message += '<span class="badge">';
-                    message += htmlEntities(newVersionErrors.oldIdentifier);
-                    message += '</span>';
-                    message += '<br>';
-                    message += '<strong>';
-                    message += newVersionErrors.message;
-                    message += '</strong>';
-                    message += '</div>';
-                    message += '</div>';
+                    // a replacement is a choice offered to the author, not an error
+                    message = resultAlert(
+                        newVersionErrors.canBeReplaced ? 'warning' : 'danger',
+                        translate(
+                            'Le document %s a déjà été soumis à la revue.'
+                        ).replace(
+                            '%s',
+                            // a function: the identifier is inserted as is ("$&" is not a pattern)
+                            () =>
+                                '<code>' +
+                                htmlEntities(newVersionErrors.oldIdentifier) +
+                                '</code>'
+                        ),
+                        newVersionErrors.message,
+                        'result_message'
+                    );
                 }
                 $submit_form.fadeOut();
             } else {
@@ -381,23 +385,51 @@ $(function () {
         $search_button.toggleClass('disabled');
     }
 
+    /**
+     * Alert box of the search result
+     * @param {string} level 'danger' or 'warning'
+     * @param {string} heading HTML, already escaped
+     * @param {string} body HTML, already escaped
+     * @param {string|null} id
+     * @returns {string}
+     */
+    function resultAlert(level, heading, body, id = null) {
+        const icon =
+            level === 'danger' ? 'fa-exclamation-circle' : 'fa-info-circle';
+        return (
+            '<div' +
+            (id ? ' id="' + id + '"' : '') +
+            ' class="alert alert-' +
+            level +
+            '" role="' +
+            (level === 'danger' ? 'alert' : 'status') +
+            '">' +
+            '<p><span class="fas ' +
+            icon +
+            '" aria-hidden="true"></span> <strong>' +
+            heading +
+            '</strong></p>' +
+            body +
+            '</div>'
+        );
+    }
+
     // display an error if document not found
     function fail(response = null) {
-        let genericMessage =
-            '<div class="panel panel-danger"><div class="panel-body">' +
+        let body =
+            '<p>' +
             translate(
                 "Une erreur s'est produite pendant la récupération des informations. Parfois l'archive ouverte ne répond pas assez vite. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue."
             ) +
-            '</div></div>';
+            '</p>';
 
         let responseText = response && response.responseText;
 
-        let message = responseText
-            ? genericMessage +
-              '<div class="panel panel-danger"><div class="panel-body"><pre>' +
-              escapeHtml(responseText) +
-              '</pre></div></div>'
-            : genericMessage;
+        if (responseText) {
+            body += '<pre>' + escapeHtml(responseText) + '</pre>';
+        }
+
+        let message = resultAlert('danger', translate('Erreur'), body);
 
         $result_container.html(message);
         $search_button.prop('disabled', false);
@@ -477,13 +509,11 @@ $(function () {
      * @returns {boolean}
      */
     function isFormValid() {
-
         // Sections check
         if (
             $sectionsElement.is(':visible') &&
             $sectionsElement.find('label').hasClass('required') &&
             $sections.val() === '0'
-
         ) {
             return false;
         }
@@ -494,10 +524,7 @@ $(function () {
             $suggestEditorsElement.find('label').hasClass('required')
         ) {
             const suggestedEditors = $suggest_editors.val();
-            if (
-                suggestedEditors === '0' ||
-                null === suggestedEditors
-            ) {
+            if (suggestedEditors === '0' || null === suggestedEditors) {
                 return false;
             }
         }
@@ -515,7 +542,8 @@ $(function () {
             $coverLetterRequirement.length > 0 &&
             $coverLetterRequirement.val() === '2'
         ) {
-            const hasFile = $coverLetterFile.length > 0 && $coverLetterFile.val() !== '';
+            const hasFile =
+                $coverLetterFile.length > 0 && $coverLetterFile.val() !== '';
             if (!hasFile) {
                 return false;
             }
@@ -525,7 +553,8 @@ $(function () {
         return !(
             $isRequiredDescriptor.length > 0 &&
             $isRequiredDescriptor.val() === 'true' &&
-            $fileDescriptor.val() === '');
+            $fileDescriptor.val() === ''
+        );
     }
 
     /**

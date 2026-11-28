@@ -16,13 +16,16 @@ use ReflectionMethod;
  * Bugs documented/fixed:
  *   B1 — hookApiRecords(): array_key_first(null) crash when 'messages' key absent.
  *          Fixed: $response['messages'][array_key_first($response['messages'] ?? [])] ?? []
- *   B2 — referencesProcess(): off-by-one — count($sn) always 1 (or number of keys
- *          in current author element), so '; ' was appended after the last author too.
- *          Fixed: count($sn) → count($stringName).
+ *   B2 — referencesProcess(): references are no longer rebuilt from their tagged parts
+ *          (authors, title, pages, ...), which lost or broke data: the formatted text of
+ *          each citation is kept as is, with its DOI.
  *   B3 — extractLicenseFromString(): explode(', ', $string)[1] crashes with undefined
  *          offset when string has no ', '. Fixed: guard with isset($parts[1]) check.
  *   B4 — ORCID regex '#^http(s*)://orcid.org/#' matches 'httpssss://orcid.org/'.
  *          Fixed: '#^https?://orcid.org/#'
+ *   B5 — authors, affiliations, keywords, licence and types were read from the JATS converted to an
+ *          array (json_encode()), where a single <contrib>, <aff> or <kwd> is not a list: a single
+ *          author made the submission fail. They are now read from the XML document.
  *
  * @covers Episciences_Repositories_BioMedRxiv
  * @covers Episciences_Repositories_BioRxiv_Hooks
@@ -78,72 +81,6 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
     }
 
     // =========================================================================
-    // Bug B2 — referencesProcess: no trailing '; ' after last author
-    // =========================================================================
-
-    /**
-     * Before the fix, count($sn) counted the keys of the current author element
-     * (e.g. ['surname' => 'Smith', 'given-names' => 'John'] → count = 2, always >= 1),
-     * so '; ' was appended after every author including the last one.
-     * After the fix, count($stringName) counts the total number of authors, and
-     * the condition $index < count($stringName) - 1 correctly skips the separator
-     * on the last iteration.
-     */
-    public function testReferencesProcessNoTrailingSeparator(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        // Two-author reference: separator should appear only between them.
-        $references = [
-            [
-                'citation' => [
-                    'string-name' => [
-                        ['surname' => 'Smith', 'given-names' => 'John'],
-                        ['surname' => 'Doe', 'given-names' => 'Jane'],
-                    ],
-                ],
-            ],
-        ];
-
-        // referencesProcess takes $citations by reference — use invokeArgs with a reference.
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations]);
-
-        // The authorsStr must not end with '; '.
-        // Use substr check since assertStringNotEndsWith is not available in PHPUnit 9.5.
-        if (!empty($citations)) {
-            $authorsStr = $citations[0]['authorsStr'] ?? '';
-            self::assertNotSame('; ', substr($authorsStr, -2),
-                'authorsStr must not have a trailing "; " after the last author');
-        } else {
-            // No citations produced — formatReferences filtered them out; that is
-            // acceptable but we still verify the separator logic directly.
-            $authorStr = '';
-            $stringName = [
-                ['surname' => 'Smith', 'given-names' => 'John'],
-                ['surname' => 'Doe',   'given-names' => 'Jane'],
-            ];
-            foreach ($stringName as $index => $sn) {
-                if (!isset($sn['surname']) && !isset($sn['given-names'])) {
-                    continue;
-                }
-                $authorStr .= $sn['surname'] ?? '';
-                if (isset($sn['given-names'])) {
-                    $authorStr .= ', ' . $sn['given-names'];
-                }
-                // Fixed condition: $index < count($stringName) - 1
-                if ($index < count($stringName) - 1) {
-                    $authorStr .= '; ';
-                }
-            }
-            self::assertNotSame('; ', substr($authorStr, -2),
-                'Last author must not be followed by "; "');
-            self::assertStringContainsString('; ', $authorStr); // separator exists between authors
-        }
-    }
-
-    // =========================================================================
     // Bug B3 — extractLicenseFromString: no crash when no ', ' in string
     // =========================================================================
 
@@ -172,68 +109,6 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
 
         self::assertIsString($result);
         self::assertStringStartsWith('https://creativecommons.org', $result);
-    }
-
-    // =========================================================================
-    // cleanRepairKeywords
-    // =========================================================================
-
-    public function testCleanRepairKeywordsScalar(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'cleanRepairKeywords');
-        $method->setAccessible(true);
-
-        // cleanRepairKeywords takes $keywords by reference — use invokeArgs.
-        $keywords = ['keyword1', 'keyword2'];
-        $method->invokeArgs(null, [&$keywords]);
-
-        self::assertSame(['keyword1', 'keyword2'], $keywords);
-    }
-
-    public function testCleanRepairKeywordsArray(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'cleanRepairKeywords');
-        $method->setAccessible(true);
-
-        // bioRxiv pattern: ['italic' => 'Cebus'] should become 'Cebus'
-        $keywords = [['italic' => 'Cebus']];
-        $method->invokeArgs(null, [&$keywords]);
-
-        self::assertSame(['Cebus'], $keywords);
-    }
-
-    // =========================================================================
-    // typeProcess
-    // =========================================================================
-
-    public function testTypeProcessScalar(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'typeProcess');
-        $method->setAccessible(true);
-
-        // typeProcess takes $type by reference — use invokeArgs.
-        $rawTypes = ['subject' => 'Biology'];
-        $type = [];
-        $method->invokeArgs(null, [$rawTypes, &$type]);
-
-        self::assertNotEmpty($type);
-        self::assertContains('Biology', $type);
-    }
-
-    public function testTypeProcessArray(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'typeProcess');
-        $method->setAccessible(true);
-
-        $rawTypes = [
-            ['subject' => 'New Results', 'subj-group-type' => 'heading'],
-        ];
-        $type = [];
-        $method->invokeArgs(null, [$rawTypes, &$type]);
-
-        self::assertNotEmpty($type);
-        self::assertContains('New Results', $type);
-        self::assertContains('heading', $type);
     }
 
     // =========================================================================
@@ -353,228 +228,6 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
     }
 
     // =========================================================================
-    // referencesProcess() — single author (no separator), page range
-    // =========================================================================
-
-    /**
-     * Single author: no '; ' separator must appear at all.
-     */
-    public function testReferencesProcessSingleAuthorNoSeparator(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        $references = [[
-            'citation' => [
-                'string-name' => [
-                    ['surname' => 'Solo', 'given-names' => 'Han'],
-                ],
-            ],
-        ]];
-
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations]);
-
-        if (!empty($citations)) {
-            $raw = $citations[0]['raw_reference'] ?? '';
-            self::assertStringNotContainsString('; ', $raw);
-        } else {
-            // formatReferences returned [] — verify the author string directly
-            $authorStr = '';
-            $sn = [['surname' => 'Solo', 'given-names' => 'Han']];
-            foreach ($sn as $index => $author) {
-                $authorStr .= $author['surname'];
-                if (isset($author['given-names'])) {
-                    $authorStr .= ', ' . $author['given-names'];
-                }
-                if ($index < count($sn) - 1) {
-                    $authorStr .= '; ';
-                }
-            }
-            self::assertStringNotContainsString('; ', $authorStr);
-        }
-    }
-
-    /**
-     * fpage and lpage are concatenated as "fpage-lpage" in the citation.
-     */
-    public function testReferencesProcessPageRange(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        $references = [[
-            'citation' => [
-                'article-title' => 'Title',
-                'fpage'         => '10',
-                'lpage'         => '20',
-                'string-name'   => [],
-            ],
-        ]];
-
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations]);
-
-        if (!empty($citations)) {
-            self::assertStringContainsString('10-20', $citations[0]['raw_reference']);
-        }
-        // If formatReferences returned [] (missing required fields), still pass — page logic is correct.
-    }
-
-    /**
-     * When the citation has only fpage (no lpage), the page is just fpage.
-     */
-    public function testReferencesProcessFpageOnly(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        $references = [[
-            'citation' => [
-                'article-title' => 'Title',
-                'fpage'         => '42',
-                'string-name'   => [],
-            ],
-        ]];
-
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations]);
-
-        if (!empty($citations)) {
-            self::assertStringContainsString('42', $citations[0]['raw_reference']);
-            self::assertStringNotContainsString('42-', $citations[0]['raw_reference']);
-        }
-    }
-
-    /**
-     * chapter-title is used as title when article-title is absent.
-     */
-    public function testReferencesProcessChapterTitleFallback(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        $references = [[
-            'citation' => [
-                'chapter-title' => 'Chapter One',
-                'string-name'   => [],
-            ],
-        ]];
-
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations]);
-
-        if (!empty($citations)) {
-            self::assertStringContainsString('Chapter One', $citations[0]['raw_reference']);
-        }
-    }
-
-    /**
-     * Empty references array produces no citations.
-     */
-    public function testReferencesProcessEmpty(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-
-        $citations = [];
-        $method->invokeArgs(null, [[], &$citations]);
-
-        self::assertSame([], $citations);
-    }
-
-    // =========================================================================
-    // typeProcess() edge cases
-    // =========================================================================
-
-    public function testTypeProcessEmpty(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'typeProcess');
-        $method->setAccessible(true);
-
-        $type = [];
-        $method->invokeArgs(null, [[], &$type]);
-
-        self::assertSame([], $type);
-    }
-
-    // =========================================================================
-    // articleMetaProcess() — private, tested via ReflectionMethod
-    // =========================================================================
-
-    /**
-     * permissions block with a CC licence string populates $strLicense.
-     */
-    public function testArticleMetaProcessPermissions(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'articleMetaProcess');
-        $method->setAccessible(true);
-
-        $articleMeta = [
-            'permissions' => [
-                'license' => ['p' => 'This work is licensed under a, CC BY 4.0 International'],
-            ],
-        ];
-
-        $strLicense   = '';
-        $contributors = [];
-        $institutions = [];
-        $keyWords     = [];
-
-        $method->invokeArgs(null, [$articleMeta, &$strLicense, &$contributors, &$institutions, &$keyWords]);
-
-        self::assertNotEmpty($strLicense);
-        self::assertStringContainsString('creativecommons', $strLicense);
-    }
-
-    /**
-     * kwd-group block populates $keyWords.
-     */
-    public function testArticleMetaProcessKeywords(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'articleMetaProcess');
-        $method->setAccessible(true);
-
-        $articleMeta = [
-            'kwd-group' => [
-                'kwd' => ['evolution', 'genetics'],
-            ],
-        ];
-
-        $strLicense   = '';
-        $contributors = [];
-        $institutions = [];
-        $keyWords     = [];
-
-        $method->invokeArgs(null, [$articleMeta, &$strLicense, &$contributors, &$institutions, &$keyWords]);
-
-        self::assertContains('evolution', $keyWords);
-        self::assertContains('genetics', $keyWords);
-    }
-
-    /**
-     * An unrecognised top-level key is ignored — no output populated.
-     */
-    public function testArticleMetaProcessIgnoresUnknownKeys(): void
-    {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'articleMetaProcess');
-        $method->setAccessible(true);
-
-        $articleMeta = ['unknown-key' => ['some' => 'data']];
-
-        $strLicense   = '';
-        $contributors = [];
-        $institutions = [];
-        $keyWords     = [];
-
-        $method->invokeArgs(null, [$articleMeta, &$strLicense, &$contributors, &$institutions, &$keyWords]);
-
-        self::assertSame('', $strLicense);
-        self::assertSame([], $contributors);
-        self::assertSame([], $keyWords);
-    }
-
-    // =========================================================================
     // getRequestedVersionFromCollection() — edge cases
     // =========================================================================
 
@@ -600,77 +253,355 @@ final class Episciences_Repositories_BioMedRxivTest extends TestCase
         self::assertSame([], $result);
     }
 
-    // -------------------------------------------------------------------------
-    // referencesProcess() — citation whose authors are not tagged
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // JATS article-meta: authors, affiliations, keywords, licence, types
+    // =========================================================================
 
-    private const JATS_PLAIN_TEXT_CITATION = <<<XML
-<article><back><ref-list>
-<ref id="c1"><label>1.</label><citation publication-type="journal"><string-name><surname>Smith</surname><given-names>J.</given-names></string-name> (<year>2020</year>). <article-title>Tagged title</article-title>. <source>J. Test</source>.</citation></ref>
-<ref id="c2"><label>2.</label><citation publication-type="journal">Dos Santos, N. T. O., <etal>et al.</etal> (<year>2017</year>). <article-title>Plain text authors</article-title>. <source>J. Bodyw.</source>, <volume>21</volume>(<issue>1</issue>), <fpage>74</fpage>–<lpage>80</lpage>.</citation></ref>
-</ref-list></back></article>
-XML;
-
-    /**
-     * @return array{0: array, 1: string[]}
-     */
-    private static function decodeJats(string $xml): array
+    private static function jats(string $articleMeta): \SimpleXMLElement
     {
-        $doc = simplexml_load_string($xml);
-        $decoded = json_decode(json_encode($doc), true);
+        $xml = '<article xmlns:hwp="http://schema.highwire.org/Journal" xmlns:xlink="http://www.w3.org/1999/xlink">'
+            . '<front><article-meta>' . $articleMeta . '</article-meta></front></article>';
 
-        $extract = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'extractRawCitations');
-        $extract->setAccessible(true);
-
-        return [$decoded['back']['ref-list']['ref'], $extract->invoke(null, $doc)];
+        return simplexml_load_string($xml);
     }
 
-    public function testReferencesProcessKeepsFullTextOfPlainTextCitation(): void
+    private static function callPrivate(string $method, \SimpleXMLElement $doc): mixed
     {
-        [$references, $rawCitations] = self::decodeJats(self::JATS_PLAIN_TEXT_CITATION);
+        $reflection = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, $method);
+        $reflection->setAccessible(true);
 
-        // Precondition: json_encode() turns the untagged citation into a truncated string
-        self::assertIsString($references[1]['citation']);
+        return $reflection->invoke(null, $doc);
+    }
 
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations, $rawCitations]);
+    /**
+     * A single <contrib> made the submission fail (bioRxiv 10.1101/2025.08.07.669028).
+     */
+    public function testContributorsProcessSingleAuthor(): void
+    {
+        $doc = self::jats(
+            '<contrib-group><contrib contrib-type="author" corresp="yes">'
+            . '<contrib-id contrib-id-type="orcid">http://orcid.org/0000-0001-8887-2548</contrib-id>'
+            . '<name><surname>Hase</surname><given-names>Kazuko</given-names></name>'
+            . '<xref ref-type="aff" rid="a1">1</xref><xref ref-type="aff" rid="a2">2</xref><xref ref-type="corresp" rid="cor1">*</xref>'
+            . '</contrib>'
+            . '<aff id="a1"><label>1</label><institution>Tohoku University</institution>, Sendai, <country>Japan</country></aff>'
+            . '<aff id="a2"><label>2</label><institution>SOKENDAI</institution>, Hayama, <country>Japan</country></aff>'
+            . '</contrib-group>'
+        );
 
-        self::assertCount(2, $citations);
-        self::assertStringContainsString('Tagged title', $citations[0]['raw_reference']);
+        self::assertSame([[
+            'degrees' => '',
+            'fullname' => 'Kazuko Hase',
+            'family' => 'Hase',
+            'given' => 'Kazuko',
+            'email' => '',
+            'orcid' => '0000-0001-8887-2548',
+            'affiliation' => [['name' => 'Tohoku University, Japan'], ['name' => 'SOKENDAI, Japan']],
+        ]], self::callPrivate('contributorsProcess', $doc));
+    }
+
+    /**
+     * A single <aff> was named "Array, 1, ..."; affiliations are linked by id, whatever their label ("a", "b"...).
+     */
+    public function testContributorsProcessSingleAffiliationWithLetterLabel(): void
+    {
+        $doc = self::jats(
+            '<contrib-group>'
+            . '<contrib contrib-type="author"><name><surname>Doe</surname><given-names>Jane</given-names></name><xref ref-type="aff" rid="a1">a</xref></contrib>'
+            . '<contrib contrib-type="author"><name><surname>Roe</surname><given-names>Rick</given-names></name><xref ref-type="aff" rid="a1">a</xref></contrib>'
+            . '<aff id="a1"><label>a</label><institution>The Salk Institute</institution></aff>'
+            . '</contrib-group>'
+        );
+
+        $contributors = self::callPrivate('contributorsProcess', $doc);
+
+        self::assertCount(2, $contributors);
+        self::assertSame([['name' => 'The Salk Institute']], $contributors[0]['affiliation']);
+        self::assertSame([['name' => 'The Salk Institute']], $contributors[1]['affiliation']);
+    }
+
+    /**
+     * Several <institution> elements were named "Array, Array"; an untagged affiliation keeps its text.
+     */
+    public function testContributorsProcessAffiliationNames(): void
+    {
+        $doc = self::jats(
+            '<contrib-group>'
+            . '<contrib contrib-type="author"><name><surname>Doe</surname><given-names>Jane</given-names></name>'
+            . '<xref ref-type="aff" rid="a1">1</xref><xref ref-type="aff" rid="a2">2</xref></contrib>'
+            . '<aff id="a1"><label>1</label><institution>Baylor College of Medicine</institution>, Houston, '
+            . '<institution>Fudan University</institution>, <country>USA</country></aff>'
+            . '<aff id="a2"><label>2</label>Lab of Things, Paris, France</aff>'
+            . '</contrib-group>'
+        );
+
         self::assertSame(
-            'Dos Santos, N. T. O., et al. (2017). Plain text authors. J. Bodyw., 21(1), 74–80.',
-            $citations[1]['raw_reference']
+            [['name' => 'Baylor College of Medicine, Fudan University, USA'], ['name' => 'Lab of Things, Paris, France']],
+            self::callPrivate('contributorsProcess', $doc)[0]['affiliation']
         );
     }
 
-    public function testReferencesProcessPlainTextCitationWithoutRawCitations(): void
+    /**
+     * A group author has no <name>: it was stored with an empty name.
+     */
+    public function testContributorsProcessGroupAuthorAndNamelessContributor(): void
     {
-        $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
-        $method->setAccessible(true);
-        $citations = [];
-        $method->invokeArgs(null, [[['citation' => ' Some text. ']], &$citations]);
+        $doc = self::jats(
+            '<contrib-group>'
+            . '<contrib contrib-type="author"><collab>Days of our Mice Consortium</collab></contrib>'
+            . '<contrib contrib-type="author"><xref ref-type="aff" rid="a1">1</xref></contrib>'
+            . '</contrib-group>'
+        );
 
-        self::assertSame([['raw_reference' => 'Some text.']], $citations);
+        self::assertSame([[
+            'degrees' => '',
+            'fullname' => 'Days of our Mice Consortium',
+            'family' => 'Days of our Mice Consortium',
+            'given' => '',
+            'email' => '',
+        ]], self::callPrivate('contributorsProcess', $doc));
     }
 
-    public function testReferencesProcessSingleRef(): void
+    public function testContributorsProcessNoContributor(): void
     {
-        $xml = '<article><back><ref-list><ref id="c1"><citation><string-name><surname>Smith</surname>'
-            . '<given-names>J.</given-names></string-name> <article-title>Only one</article-title></citation></ref>'
-            . '</ref-list></back></article>';
-        [$references, $rawCitations] = self::decodeJats($xml);
+        self::assertSame([], self::callPrivate('contributorsProcess', self::jats('')));
+    }
 
-        // Precondition: a single <ref> is decoded as the ref itself, not a list
-        self::assertArrayHasKey('citation', $references);
+    /**
+     * A single <kwd> was not a list; inline markup was dropped ("r/<italic>K</italic>-selection").
+     */
+    public function testKeywordsProcess(): void
+    {
+        self::assertSame(['tadpole'], self::callPrivate('keywordsProcess', self::jats('<kwd-group><kwd>tadpole</kwd></kwd-group>')));
 
+        $doc = self::jats(
+            '<kwd-group><title>Key words</title><kwd><italic>Millepora</italic></kwd><kwd>r/<italic>K</italic>-selection</kwd><kwd> </kwd></kwd-group>'
+            . '<kwd-group><kwd>ecology</kwd><kwd>r/K-selection</kwd></kwd-group>'
+        );
+
+        self::assertSame(['Millepora', 'r/K-selection', 'ecology'], self::callPrivate('keywordsProcess', $doc));
+        self::assertSame([], self::callPrivate('keywordsProcess', self::jats('')));
+    }
+
+    public function testLicenseProcess(): void
+    {
+        $doc = self::jats(
+            '<permissions><license license-type="creative-commons"><p>This pre-print is available under a Creative Commons License '
+            . '(Attribution-NonCommercial 4.0 International), CC BY-NC 4.0, as described at '
+            . '<ext-link ext-link-type="uri">http://creativecommons.org/licenses/by-nc/4.0/</ext-link></p></license></permissions>'
+        );
+
+        self::assertSame('https://creativecommons.org/licenses/by-nc/4.0', self::callPrivate('licenseProcess', $doc));
+        self::assertSame('', self::callPrivate('licenseProcess', self::jats('')));
+    }
+
+    /**
+     * An id typed as ORCID wins over an untyped id; an untyped id is an ORCID only in the ORCID format.
+     */
+    public function testContributorsProcessOrcid(): void
+    {
+        $contrib = static fn(string $ids): string => '<contrib contrib-type="author"><name><surname>Doe</surname><given-names>Jane</given-names></name>' . $ids . '</contrib>';
+
+        $doc = self::jats(
+            '<contrib-group>'
+            . $contrib('<contrib-id>local-42</contrib-id><contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-1825-009x</contrib-id>')
+            . $contrib('<contrib-id>http://orcid.org/0000-0001-8887-2548</contrib-id>')
+            . $contrib('<contrib-id>local-42</contrib-id><contrib-id contrib-id-type="other">0000-0001-8887-2548</contrib-id>')
+            . '</contrib-group>'
+        );
+
+        $contributors = self::callPrivate('contributorsProcess', $doc);
+
+        self::assertSame('0000-0002-1825-009X', $contributors[0]['orcid']);
+        self::assertSame('0000-0001-8887-2548', $contributors[1]['orcid']);
+        self::assertArrayNotHasKey('orcid', $contributors[2]);
+    }
+
+    /**
+     * The Creative Commons grant may follow a copyright notice in another paragraph.
+     */
+    public function testLicenseProcessReadsEveryParagraph(): void
+    {
+        $doc = self::jats(
+            '<permissions><license><p>Copyright the authors.</p>'
+            . '<p>This pre-print is available under a Creative Commons License (Attribution 4.0 International), CC BY 4.0, as described at http://creativecommons.org/licenses/by/4.0/</p>'
+            . '</license></permissions>'
+        );
+
+        self::assertSame('https://creativecommons.org/licenses/by/4.0', self::callPrivate('licenseProcess', $doc));
+
+        $allRightsReserved = self::jats('<permissions><license><p> </p><p>All rights reserved.</p></license></permissions>');
+
+        self::assertSame('[CC_NO] All rights reserved.', self::callPrivate('licenseProcess', $allRightsReserved));
+    }
+
+    /**
+     * Version selection, JATS enrichment and Dublin Core, from a local JATS file:
+     * keywords are published even when they are the only metadata of the JATS.
+     */
+    public function testJatsEnrichmentReachesTheDublinCore(): void
+    {
+        $jatsFile = tempnam(sys_get_temp_dir(), 'jats');
+        self::assertIsString($jatsFile);
+
+        try {
+            file_put_contents($jatsFile, '<article><front><article-meta><kwd-group>'
+                . '<kwd>r/<italic>K</italic>-selection</kwd><kwd>ecology</kwd></kwd-group></article-meta></front></article>');
+
+            $version = self::callStatic('getRequestedVersionFromCollection', [[
+                ['version' => '1', 'doi' => '10.1101/abc', 'server' => 'bioRxiv', 'category' => 'ecology', 'jatsxml' => $jatsFile],
+                ['version' => '2', 'doi' => '10.1101/abc', 'server' => 'bioRxiv', 'category' => 'ecology'],
+            ], 1]);
+
+            self::assertSame(['r/K-selection', 'ecology'], $version['enrichment']['kwd']);
+
+            $dublinCore = self::callStatic('toDublinCore', [$version]);
+
+            self::assertStringContainsString('<dc:subject>r/K-selection</dc:subject>', $dublinCore);
+            self::assertStringContainsString('<dc:identifier>https://www.bioRxiv.org/content/10.1101/abc</dc:identifier>', $dublinCore);
+        } finally {
+            unlink($jatsFile);
+        }
+    }
+
+    /**
+     * @param array<int, mixed> $args
+     */
+    private static function callStatic(string $method, array $args): mixed
+    {
+        $reflection = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, $method);
+        $reflection->setAccessible(true);
+
+        return $reflection->invokeArgs(null, $args);
+    }
+
+    /**
+     * The subject area ("hwp-journal-coll") is not a type: medRxiv got "hwp-journal-coll" as its type.
+     */
+    public function testTypeProcess(): void
+    {
+        $bioRxiv = self::jats(
+            '<article-categories>'
+            . '<subj-group subj-group-type="author-type"><subject>Regular Article</subject></subj-group>'
+            . '<subj-group subj-group-type="heading"><subject>New Results</subject></subj-group>'
+            . '<subj-group subj-group-type="hwp-journal-coll"><subject>Ecology</subject></subj-group>'
+            . '</article-categories>'
+        );
+
+        self::assertSame(['Regular Article', 'New Results'], self::callPrivate('typeProcess', $bioRxiv));
+
+        $medRxiv = self::jats(
+            '<article-categories><subj-group subj-group-type="hwp-journal-coll"><subject>Sports Medicine</subject></subj-group></article-categories>'
+        );
+
+        self::assertSame([], self::callPrivate('typeProcess', $medRxiv));
+    }
+
+    // =========================================================================
+    // referencesProcess(): formatted text of each citation, with its DOI
+    // =========================================================================
+
+    /**
+     * @return array<int, array{raw_reference: string, doi?: string}>
+     */
+    private static function processReferences(string $refList): array
+    {
         $method = new ReflectionMethod(Episciences_Repositories_BioMedRxiv::class, 'referencesProcess');
         $method->setAccessible(true);
-        $citations = [];
-        $method->invokeArgs(null, [$references, &$citations, $rawCitations]);
 
-        self::assertCount(1, $citations);
-        self::assertStringContainsString('Only one', $citations[0]['raw_reference']);
+        $xml = '<article xmlns:hw="org.highwire.hpp"><back><ref-list>' . $refList . '</ref-list></back></article>';
+
+        return $method->invoke(null, simplexml_load_string($xml));
+    }
+
+    public function testReferencesProcessKeepsFormattedTextAndDoi(): void
+    {
+        $citations = self::processReferences(
+            '<ref id="c1"><label>1.</label><citation publication-type="journal">'
+            . '<string-name><surname>Altman</surname>, <given-names>D. G.</given-names></string-name>, &amp; '
+            . '<string-name><surname>Royston</surname>, <given-names>P</given-names></string-name>. (<year>2006</year>). '
+            . '<article-title>The cost of dichotomising continuous variables</article-title>. <source>BMJ</source>, '
+            . '<volume>332</volume>(<issue>7549</issue>), <fpage>1080</fpage>. '
+            . '<pub-id pub-id-type="doi">10.1136/bmj.332.7549.1080</pub-id></citation></ref>'
+        );
+
+        self::assertSame([[
+            'raw_reference' => 'Altman, D. G., & Royston, P. (2006). The cost of dichotomising continuous variables. BMJ, 332(7549), 1080. 10.1136/bmj.332.7549.1080',
+            'doi' => '10.1136/bmj.332.7549.1080',
+        ]], $citations);
+    }
+
+    /**
+     * Authors not tagged: the citation starts with plain text (made the submission fail).
+     */
+    public function testReferencesProcessPlainTextAuthors(): void
+    {
+        $citations = self::processReferences(
+            '<ref id="c19"><label>19.</label><citation publication-type="journal">Dos Santos, N. T. O., '
+            . '<etal>et al.</etal> (<year>2017</year>). <article-title>Plain text authors</article-title>. '
+            . '<source>J. Bodyw.</source>, <volume>21</volume>(<issue>1</issue>), <fpage>74</fpage>–<lpage>80</lpage>.</citation></ref>'
+        );
+
+        self::assertSame(
+            [['raw_reference' => 'Dos Santos, N. T. O., et al. (2017). Plain text authors. J. Bodyw., 21(1), 74–80.']],
+            $citations
+        );
+    }
+
+    /**
+     * Title made of several inline elements (made the submission fail), single author, untagged collaboration.
+     */
+    public function testReferencesProcessInlineMarkupAndSingleAuthor(): void
+    {
+        $citations = self::processReferences(
+            '<ref id="c1"><citation><string-name><surname>Smith</surname> <given-names>J</given-names></string-name> '
+            . '(<year>2020</year>) <article-title><italic>E. coli</italic> and <italic>B. subtilis</italic> growth</article-title>. '
+            . '<source><italic>Nature</italic></source></citation></ref>'
+            . '<ref id="c2"><citation><collab>The Consortium</collab> (<year>2021</year>) <article-title>Report</article-title></citation></ref>'
+        );
+
+        self::assertSame([
+            ['raw_reference' => 'Smith J (2020) E. coli and B. subtilis growth. Nature'],
+            ['raw_reference' => 'The Consortium (2021) Report'],
+        ], $citations);
+    }
+
+    public function testReferencesProcessWhitespaceIsNormalized(): void
+    {
+        $citations = self::processReferences(
+            "<ref id=\"c1\"><citation>\n  <string-name><surname>Doe</surname>\n  <given-names>J</given-names></string-name>\n  Title\n</citation></ref>"
+        );
+
+        self::assertSame([['raw_reference' => 'Doe J Title']], $citations);
+    }
+
+    public function testReferencesProcessSkipsEmptyCitations(): void
+    {
+        self::assertSame([], self::processReferences('<ref id="c1"><label>1.</label><citation> </citation></ref>'));
+        self::assertSame([], self::processReferences(''));
+    }
+
+    public function testReferencesProcessMixedCitation(): void
+    {
+        $citations = self::processReferences(
+            '<ref id="c1"><mixed-citation>Doe J. Title. <pub-id pub-id-type="pmid">123</pub-id></mixed-citation></ref>'
+        );
+
+        self::assertSame([['raw_reference' => 'Doe J. Title. 123']], $citations);
+    }
+
+    /**
+     * <element-citation> has no punctuation between its fields: its text would read "SmithJ2020Title".
+     */
+    public function testReferencesProcessIgnoresElementCitation(): void
+    {
+        $citations = self::processReferences(
+            '<ref id="c1"><element-citation><person-group><string-name><surname>Smith</surname>'
+            . '<given-names>J</given-names></string-name></person-group><year>2020</year>'
+            . '<article-title>Title</article-title></element-citation></ref>'
+            . '<ref id="c2"><citation>Doe J (2021) Kept.</citation></ref>'
+        );
+
+        self::assertSame([['raw_reference' => 'Doe J (2021) Kept.']], $citations);
     }
 }

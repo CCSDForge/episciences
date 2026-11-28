@@ -7,11 +7,9 @@
     "SOLR_LOG_PATH": "/var/www/htdocs/logs/",
     "EXCEPTIONS_LOG_PATH": "/var/www/htdocs/logs/",
     "HAL_API": "https://halapi.example.org",
-    "SECRET_KEY": "four random common words",
     "AUTH_TYPE": "DB",
     "USER_AGENT": "Episciences - contact@example.org",
     "API_URL": "https://api-dev.episciences.org/api/",
-    "API_SECRET_KEY": "four random common words",
     "API_STATS_DELEGATION_SECRET": "",
     "USE_NEW_FRONT" : true,
     "AUTH_ADAPTER_NAME": "MYSQL",
@@ -20,6 +18,7 @@
       "ENABLE" : true,
       "SSL_VERIFY": false
     },
+    "ARXIV_DATACITE_FALLBACK": true,
     "SUPPORT": "support@example.org",
     "CONTACT": "contact@example.org",
     "IGNORED_EMAILS_WHEN_INVITING_REVIEWER":  [
@@ -134,13 +133,13 @@
     "PLUS_API_TOKEN": "four random common words"
   },
   "OPENAIRE": {
-    "AUTH_URL": "https://aai.openaire.eu/oidc/token",
+    "AUTH_URL": "https://aai.openaire.eu/auth/realms/openaire/protocol/openid-connect/token",
     "API_URL": "https://api.openaire.eu/graph/v3/research-products",
     "CLIENT_ID": "",
     "CLIENT_SECRET": ""
   },
   "SCHOLEXPLORER": {
-    "AUTH_URL": "https://aai.openaire.eu/oidc/token",
+    "AUTH_URL": "https://aai.openaire.eu/auth/realms/openaire/protocol/openid-connect/token",
     "API_URL": "https://api.scholexplorer.openaire.eu/v3/Links",
     "CLIENT_ID": "",
     "CLIENT_SECRET": ""

@@ -18,13 +18,13 @@ SQL_DUMP_DIR := ~/tmp
 
 # MySQL Connection Commands
 MYSQL_CONNECT_EPISCIENCES := mysql -u $(DB_USER) -p$(DB_PASS) -h $(DB_HOST) -P $(DB_PORT_EPISCIENCES) episciences
-MYSQL_CONNECT_INDEXING := mysql -u $(DB_USER) -p$(DB_PASS) -h $(DB_HOST) -P $(DB_PORT_INDEXING) solr_index_queue  
+MYSQL_CONNECT_INDEXING := mysql -u $(DB_USER) -p$(DB_PASS) -h $(DB_HOST) -P $(DB_PORT_INDEXING) solr_index
 MYSQL_CONNECT_AUTH := mysql -u $(DB_USER) -p$(DB_PASS) -h $(DB_HOST) -P $(DB_PORT_AUTH) cas_users
 
-# Volume Names
-VOLUME_MYSQL_EPISCIENCES := episciences-mysql-db-episciences
-VOLUME_MYSQL_INDEXING := episciences-mysql-db-indexing
-VOLUME_MYSQL_AUTH := episciences-mysql-db-auth
+# Volume Names (managed by episciences-infrastructure)
+VOLUME_MYSQL_EPISCIENCES := infra-system_mysql-db-episciences
+VOLUME_MYSQL_INDEXING := infra-system_mysql-db-indexing
+VOLUME_MYSQL_AUTH := infra-system_mysql-db-auth
 
 # Development Datasets
 DEV_SQL_EPISCIENCES := src/mysql/docker/episciences/dev-episciences.sql

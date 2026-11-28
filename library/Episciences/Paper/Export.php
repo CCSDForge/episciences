@@ -37,7 +37,6 @@ use Zend_View;
 class Export
 {
     const MODULES_JOURNAL_VIEWS_SCRIPTS_EXPORT = '/modules/journal/views/scripts/export/';
-    public const FUNDER_NAME = 'funderName';
 
     public static function getCrossref(Episciences_Paper $paper, bool $forOai = false): string
     {

@@ -117,6 +117,8 @@ class Episciences_Reviewer extends Episciences_User
         $params = ['item' => Episciences_User_Assignment::ITEM_PAPER,
             'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
             'uid' => $this->getUid(),
+            // a reviewer has an account: a temporary reviewer id is not a UID, both can be equal
+            'tmp_user' => 0,
             'status' => [
                 Episciences_User_Assignment::STATUS_ACTIVE,
                 Episciences_User_Assignment::STATUS_PENDING]];
@@ -528,8 +530,11 @@ class Episciences_Reviewer extends Episciences_User
 
         $subquery = $this->_db
             ->select()
-            ->from(T_ASSIGNMENTS, ['ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            // the latest assignment to each paper (highest ID: two assignments can have the same date)
+            ->from(T_ASSIGNMENTS, ['LAST_ID' => new Zend_Db_Expr('MAX(ID)')])
             ->where('UID = ? ', $this->getUid())
+            // a reviewer has an account: a temporary reviewer id is not a UID, both can be equal
+            ->where('TMP_USER = ?', 0)
             ->where('ITEM = ?', 'paper')
             ->where('ROLEID = ?', 'reviewer')
             ->where('RVID = ?', RVID)
@@ -555,12 +560,12 @@ class Episciences_Reviewer extends Episciences_User
 
         return $this->_db->select()
             ->from(['a' => T_ASSIGNMENTS], ['ITEMID', 'STATUS', 'WHEN'])
-            ->join(['b' => $subquery], 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', [])
+            ->join(['b' => $subquery], 'a.ID = b.LAST_ID', [])
             ->joinLeft(['i' => T_USER_INVITATIONS], 'i.ID = a.INVITATION_ID', [])
-            // The subquery only narrows down ITEMID and WHEN. Without repeating them here, any
-            // assignment sharing that paper id and that timestamp would match -- including another
-            // user's, another role's, or a volume assignment whose id collides with a paper id.
+            // The join on the assignment ID already restricts UID / ITEM / ROLEID / RVID: they are
+            // repeated here as a safeguard, so that the query never lists another user's assignment.
             ->where('a.UID = ?', $this->getUid())
+            ->where('a.TMP_USER = ?', 0)
             ->where('a.ITEM = ?', 'paper')
             ->where('a.ROLEID = ?', 'reviewer')
             ->where('a.RVID = ?', RVID)
