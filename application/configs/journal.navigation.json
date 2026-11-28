@@ -120,22 +120,6 @@
     "privilege": "chief_editor,administrator,editor,webmaster,secretary",
     "pages": [
       {
-        "label": "Utilisateurs",
-        "controller": "administrate",
-        "action": "users",
-        "resource": "administrate-users",
-        "privilege": "chief_editor,administrator,editor,secretary",
-        "pages": [
-          {
-            "label": "Liste",
-            "controller": "user",
-            "action": "list",
-            "resource": "user-list",
-            "privilege": "chief_editor,administrator,editor,secretary"
-          }
-        ]
-      },
-      {
         "label": "Revue",
         "controller": "administrate",
         "action": "review",
@@ -261,6 +245,13 @@
                 "privilege": "chief_editor,administrator,editor,guest_editor,copyeditor,secretary"
               }
             ]
+          },
+          {
+            "label": "Utilisateurs",
+            "controller": "user",
+            "action": "list",
+            "resource": "user-list",
+            "privilege": "chief_editor,administrator,editor,secretary"
           }
         ]
       },

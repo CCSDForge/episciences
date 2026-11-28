@@ -650,7 +650,7 @@ class Episciences_CommentsManager
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getCopyEditingReplyForms($comments, Episciences_Paper $paper, $zIdentifier = null): false|array
+    public static function getCopyEditingReplyForms($comments, Episciences_Paper $paper): false|array
     {
 
         $forms = [];
@@ -668,10 +668,6 @@ class Episciences_CommentsManager
             if (in_array($commentType, self::$_copyEditingFinalVersionRequest, true)) {// load form
 
                 $options = ['newVersionOf' => $paper->getDocid(), 'commentType' => $comment['TYPE']];
-
-                if ($zIdentifier) {
-                    $options['zIdentifier'] = $zIdentifier;
-                }
 
                 $form = Episciences_Submit::getNewVersionForm($paper, $options);
                 $form->addElement('hidden', 'copyEditingNewVersion'); // distinguer la nouvelle version suite à une demande de révision de celle de travail éditorial

@@ -9,7 +9,7 @@ use DOMElement;
 use DOMXPath;
 
 /**
- * Reads the fundings of a HAL document from its TEI (HAL search API, wt=xml-tei),
+ * Reads the fundings of a HAL document from its TEI (OAI-PMH server of its repository, metadataPrefix=xml-tei),
  * the same TEI the author enrichment already fetches and caches.
  *
  *  - <funder ref="#projanr-…"/> / <funder ref="#projeurop-…"/> point to the projects

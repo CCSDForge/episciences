@@ -196,7 +196,7 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
     private function givenHalTeiAndRow(string $tei, array $halRow): Zend_Db_Adapter_Abstract&MockObject
     {
         $teiCache = new ArrayAdapter(0, false);
-        $teiCache->save($teiCache->getItem('hal-tei-' . self::HAL_ID . '.xml')->set($tei));
+        $teiCache->save($teiCache->getItem('hal-tei-' . Episciences_Repositories::HAL_REPO_ID . '-' . self::HAL_ID . '.xml')->set($tei));
         Episciences_Hal_TeiCacheManager::setCachePool($teiCache);
 
         $this->projectsCache = new ArrayAdapter(0, false);

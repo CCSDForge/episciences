@@ -8,14 +8,16 @@ use InvalidArgumentException;
 
 class QueueMessage
 {
-    private ?int $id;
-    private ?string $rvcode;
-    private ?array $message;
-    private ?int $timeout;
-    private ?int $created_at;
-    private ?int $processed;
-    private ?int $updated_at;
-    private string $type;
+    // Defaults: a message built with some of its fields only (Episciences_Paper::postPaperStatus() sets no
+    // timeout) must not fail when the other ones are read (QueueMessageManager::add(), toArray())
+    private ?int $id = null;
+    private ?string $rvcode = null;
+    private ?array $message = null;
+    private ?int $timeout = null;
+    private ?int $created_at = null;
+    private ?int $processed = null;
+    private ?int $updated_at = null;
+    private ?string $type = null;
 
     public function __construct(array $options = null)
     {

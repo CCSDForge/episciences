@@ -167,7 +167,9 @@ class DefaultController extends Zend_Controller_Action
     /**
      * The logged user handles the paper for the journal: secretaries and administrators, the editors and copy
      * editors assigned to the paper, the editors and copy editors of a journal that does not restrict them to
-     * their assigned papers. An encapsulation setting the journal never saved counts as restrictive.
+     * their assigned papers. Only a non-empty encapsulation setting (e.g. '1') restricts them, matching
+     * PaperController and Episciences_Auth::isAllowedToListOnlyAssignedPapers() (legacy journals may have '' or
+     * no row stored for unchecked checkboxes).
      *
      * @param array<string, mixed> $journalSettings
      * @throws Zend_Db_Statement_Exception
@@ -187,8 +189,8 @@ class DefaultController extends Zend_Controller_Action
     protected static function isEditorialStaffOfEveryPaper(array $journalSettings): bool
     {
         return Episciences_Auth::isSecretary() ||
-            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS] ?? null) === '0' && Episciences_Auth::isEditor()) ||
-            (($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS] ?? null) === '0' && Episciences_Auth::isCopyEditor());
+            (empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]) && Episciences_Auth::isEditor()) ||
+            (empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS]) && Episciences_Auth::isCopyEditor());
     }
 
     protected function redirectWithFlashMessageIfPaperIsRemovedOrDeleted(Episciences_Paper $paper, bool $forceRedirection = true): void
@@ -200,63 +202,6 @@ class DefaultController extends Zend_Controller_Action
                 $this->redirect('/'); // redirect and immediately exit
             }
         }
-    }
-
-
-    /**
-     * @param array|null $allowedRepositories
-     * @param array $options
-     * @return string
-     * @throws Zend_Exception
-     */
-    protected function getZSubmitUrl(array $allowedRepositories = null, array $options = []): string
-    {
-
-        $zSubmitUrl = EPISCIENCES_Z_SUBMIT['URL'];
-
-        if (empty($allowedRepositories)) {
-            $settings = Zend_Registry::get('reviewSettings');
-            $allowedRepositories = Episciences_Submit::getRepositoriesLabels($settings);
-        }
-
-        if (array_key_exists(Episciences_Repositories::ZENODO_REPO_ID, $allowedRepositories)) {
-
-            try {
-                $zSubmitUrl .= '/' . Episciences_Tools::getLocale();
-
-            } catch (Zend_Exception $e) {
-                trigger_error($e->getMessage());
-            }
-
-            $zSubmitUrl .= '/deposit';
-
-            if (array_key_exists('newVersion', $options)) {
-
-                $zSubmitUrl .= '/newversionfromepisciences';
-
-                if (isset($options['epi-docid'])) {
-                    $zSubmitUrl .= '?epi-docid=' . $options['epi-docid'];
-                }
-
-                if (isset($options['epi-rvcode'])) {
-                    $zSubmitUrl .= '&epi-rvcode=' . $options['epi-rvcode'];
-                }
-
-                if (isset($options['epi-cdoi'])) {
-
-                    $epiCDoi = Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID) . '/' . mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)) . '.';
-                    $epiCDoi .= $options['epi-cdoi'];
-                    $zSubmitUrl .= '&epi-cdoi=' . $epiCDoi;
-                }
-
-                return $zSubmitUrl;
-
-            }
-            $zSubmitUrl .= '?epi-rvcode=' . RVCODE;
-        }
-
-        return $zSubmitUrl;
-
     }
 
     /**

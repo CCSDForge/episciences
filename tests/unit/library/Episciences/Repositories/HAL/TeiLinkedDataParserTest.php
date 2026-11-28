@@ -98,7 +98,10 @@ XML;
             'reviews' => ['Reviews', 'isReviewOf'],
             'cites' => ['Cites', 'references'],
             'cited by' => ['IsCitedBy', 'isReferencedBy'],
-            'unknown' => ['IsObsoletedBy', 'references'],
+            'source of' => ['IsSourceOf', 'hasDerivation'],
+            'obsoleted by' => ['IsObsoletedBy', 'isReplacedBy'],
+            'no equivalent' => ['HasMetadata', 'references'],
+            'unknown' => ['IsWhatever', 'references'],
             'empty' => ['', 'references'],
         ];
     }
@@ -115,5 +118,12 @@ XML;
         self::assertSame('software', TeiLinkedDataParser::resourceType('http://purl.org/coar/resource_type/c_5ce6'));
         self::assertSame('publication', TeiLinkedDataParser::resourceType('http://purl.org/coar/resource_type/c_6501'));
         self::assertSame('publication', TeiLinkedDataParser::resourceType(''));
+    }
+
+    public function testResourceTypeAcceptsHttpsAndSurroundingSpaces(): void
+    {
+        self::assertSame('dataset', TeiLinkedDataParser::resourceType('https://purl.org/coar/resource_type/c_ddb1'));
+        self::assertSame('software', TeiLinkedDataParser::resourceType("  http://purl.org/coar/resource_type/c_5ce6\n"));
+        self::assertSame('publication', TeiLinkedDataParser::resourceType('https://example.org/purl.org/coar/resource_type/c_ddb1'));
     }
 }

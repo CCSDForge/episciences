@@ -8,15 +8,9 @@
     "EXCEPTIONS_LOG_PATH": "/logs/mail/path/",
     "SOLR_LOG_PATH": "/logs/file/path/",
     "HAL_API": "https://api.example.org/",
-    "SECRET_KEY": "YourSecretAuthKey",
     "API_URL": "https://host:8000/api/",
-    "API_SECRET_KEY": "YourSecretAuthKey",
     "API_STATS_DELEGATION_SECRET": "",
     "USER_AGENT": "yourUserAgent",
-    "Z_SUBMIT": {
-      "URL": "https://zsubmit-env.domain.org",
-      "STATUS": 0
-    },
     "BIBLIOREF": {
       "URL":"https://epiextract-env.domain.org",
       "ENABLE" : false,

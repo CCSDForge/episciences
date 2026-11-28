@@ -5,28 +5,29 @@ declare(strict_types=1);
 /**
  * Journal sites expose their feed under /rss (see RssController); /feed only exists on the portal.
  * Clients guessing /feed on a journal site (feed readers, crawlers) are permanently redirected
- * to the journal papers feed instead of hitting a 404 that floods the application log.
+ * to the journal papers feed of the same format instead of hitting a 404 that floods the application log.
  */
 class FeedController extends Zend_Controller_Action
 {
     public const JOURNAL_FEED_PATH = 'rss/papers';
+    public const JOURNAL_ATOM_FEED_PATH = 'rss/atom';
 
     public function indexAction(): void
     {
-        $this->redirectToJournalFeed();
+        $this->redirectToJournalFeed(self::JOURNAL_FEED_PATH);
     }
 
     public function rssAction(): void
     {
-        $this->redirectToJournalFeed();
+        $this->redirectToJournalFeed(self::JOURNAL_FEED_PATH);
     }
 
     public function atomAction(): void
     {
-        $this->redirectToJournalFeed();
+        $this->redirectToJournalFeed(self::JOURNAL_ATOM_FEED_PATH);
     }
 
-    private function redirectToJournalFeed(): void
+    private function redirectToJournalFeed(string $path): void
     {
         /** @var Zend_Controller_Action_Helper_Redirector $redirector */
         $redirector = $this->_helper->getHelper('Redirector');
@@ -35,6 +36,6 @@ class FeedController extends Zend_Controller_Action
         $prefix = defined('PREFIX_URL') ? (string) constant('PREFIX_URL') : '/';
 
         // No exit: the ViewRenderer skips rendering on a redirect response.
-        $redirector->setCode(301)->setExit(false)->gotoUrl($prefix . self::JOURNAL_FEED_PATH);
+        $redirector->setCode(301)->setExit(false)->gotoUrl($prefix . $path);
     }
 }
