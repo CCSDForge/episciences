@@ -20,6 +20,6 @@ class Ccsd_Db_Adapter
      */
     public static function getAdapter()
     {
-        return Ccsd_Db::factory('Pdo_Mysql', self::$_params);
+        return Zend_Db::factory('Pdo_Mysql', self::$_params);
     }
 }
