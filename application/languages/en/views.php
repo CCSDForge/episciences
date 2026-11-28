@@ -1004,7 +1004,6 @@ return array(
     "Déconnexion du serveur d'authentification du" => 'Logging out from',
     "Déconnexion réussie" => 'You\'ve been successfully logged out',
     "Échec de la déconnexion" => 'Logging out failed',
-    "Vous avez été redirigé vers cette page, votre compte sur cette application ne semble pas être le bon !" => "You've been redirected to this page, your account on this application does not seem to be the right one!",
     'Profil non identifié !' => 'Profile not identified!',
     'Actuellement connecté en tant que :' => 'Currently connected as:',
 
