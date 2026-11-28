@@ -31,76 +31,80 @@ $(function () {
     $volumes.find('option:first').css('font-weight', 'bold');
     $volumes.find('option:not(:first)').css('padding-left', '15px');
 
-    $sectionsElement.on('change', function () {
+    const ns = '.epiSubmitForm';
+
+    $sectionsElement.off(ns).on('change' + ns, function () {
         activateDeactivateSubmitButton();
     });
 
-    $suggestEditorsElement.on('change', function () {
+    $suggestEditorsElement.off(ns).on('change' + ns, function () {
         activateDeactivateSubmitButton();
     });
 
-    $firstDisclaimersDisclaimer.on('change', function () {
+    $firstDisclaimersDisclaimer.off(ns).on('change' + ns, function () {
         activateDeactivateSubmitButton();
     });
 
-    $secondDisclaimersDisclaimer.on('change', function () {
+    $secondDisclaimersDisclaimer.off(ns).on('change' + ns, function () {
         activateDeactivateSubmitButton();
     });
 
-    $fileDescriptor.on('change', function () {
+    $fileDescriptor.off(ns).on('change' + ns, function () {
         activateDeactivateSubmitButton();
     });
 
-    $coverLetterFile.on('change', function () {
+    $coverLetterFile.off(ns).on('change' + ns, function () {
         activateDeactivateSubmitButton();
     });
 
-    $search_button.on('click', function () {
+    $search_button.off(ns).on('click' + ns, function () {
         doSearching();
     });
 
-    $cancel_button.click(function () {
+    $cancel_button.off(ns).on('click' + ns, function () {
         showSearchForm();
     });
 
     // special volume access code
-    $specialIssuesAccessCode.on('input propertychange', function () {
-        let access_code = $(this).val();
-        let button = $('#submit-code');
-        if (access_code.trim() !== '') {
-            button.html('<img src="/img/loading.gif" />');
-            let request = $.ajax({
-                type: 'POST',
-                url: '/submit/accesscode/',
-                data: { code: access_code },
-            });
+    $specialIssuesAccessCode
+        .off(ns)
+        .on('input' + ns + ' propertychange' + ns, function () {
+            let access_code = $(this).val();
+            let button = $('#submit-code');
+            if (access_code.trim() !== '') {
+                button.html('<img src="/img/loading.gif" />');
+                let request = $.ajax({
+                    type: 'POST',
+                    url: '/submit/accesscode/',
+                    data: { code: access_code },
+                });
 
-            request.done(function (result) {
-                if (result.status === 1) {
-                    button.html(
-                        '<span class="glyphicon glyphicon-ok green"></span>'
-                    );
-                    valid_code(result);
-                } else {
-                    if ($specialIssuesAccessCode.val() !== '') {
+                request.done(function (result) {
+                    if (result.status === 1) {
                         button.html(
-                            '<span class="glyphicon glyphicon-remove red"></span>'
+                            '<span class="glyphicon glyphicon-ok green"></span>'
                         );
+                        valid_code(result);
+                    } else {
+                        if ($specialIssuesAccessCode.val() !== '') {
+                            button.html(
+                                '<span class="glyphicon glyphicon-remove red"></span>'
+                            );
+                        }
+                        resetVolumesElement(result);
+                        resetSuggestEditorsElement(result);
                     }
-                    resetVolumesElement(result);
-                    resetSuggestEditorsElement(result);
-                }
-            });
+                });
 
-            request.fail(function () {
-                button.html(
-                    '<span class="glyphicon glyphicon-remove red"></span>'
-                );
-            });
-        } else {
-            button.html('');
-        }
-    });
+                request.fail(function () {
+                    button.html(
+                        '<span class="glyphicon glyphicon-remove red"></span>'
+                    );
+                });
+            } else {
+                button.html('');
+            }
+        });
 
     function valid_code(data) {
         // create volume selection menu
