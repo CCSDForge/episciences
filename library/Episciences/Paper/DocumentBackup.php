@@ -189,6 +189,12 @@ class Episciences_Paper_DocumentBackup
             return true;
         }
 
+        // Deleted meanwhile by a concurrent request: there is no backup copy left
+        clearstatcache(true, $mainFilePathName);
+        if (!file_exists($mainFilePathName)) {
+            return true;
+        }
+
         \Episciences\AppRegistry::getMonoLogger()?->warning(
             'The backup copy of the document could not be deleted.',
             [

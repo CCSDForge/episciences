@@ -1984,11 +1984,12 @@ class Episciences_Submit
             return;
         }
 
+        // The backup copy of the main document is keyed on the DOCID: it holds the replaced version.
+        // First, as it never throws: a failed database deletion below does not leave it behind
+        Episciences_Paper_DocumentBackup::deleteForPaper($oldDocId, (int)$paper->getRvid());
+
         Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($oldDocId, $paper->getRepoid());
         Episciences_Paper_FilesManager::deleteByDocId($oldDocId);
-
-        // The backup copy of the main document is keyed on the DOCID: it holds the replaced version
-        Episciences_Paper_DocumentBackup::deleteForPaper($oldDocId, (int)$paper->getRvid());
     }
 
     /**

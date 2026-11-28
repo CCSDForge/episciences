@@ -131,6 +131,17 @@ final class DefaultControllerDocumentBackupTest extends TestCase
         self::assertSame(self::PDF, $content);
         self::assertFalse($this->backup?->hasDocumentBackupFile());
     }
+
+    public function testCopyOfANewerVersionSavedWhileFetchingIsNotOverwritten(): void
+    {
+        $this->fetch(function (): void {
+            // The new version is saved and another request keeps its copy before this fetch ends
+            $this->db?->update(T_PAPERS, ['VERSION' => 2], ['DOCID = ?' => $this->docId]);
+            $this->backup?->saveDocumentBackupFile('%PDF-1.4 newer version');
+        });
+
+        self::assertSame('%PDF-1.4 newer version', $this->backup?->getDocumentBackupFile());
+    }
 }
 
 /**

@@ -354,11 +354,13 @@ class DefaultController extends Zend_Controller_Action
             $saveCopy &&
             !$hasDocumentBackupFile &&
             !empty($mainDocumentContent) &&
+            // Checked before the write, so that a newer version's copy is not overwritten with the fetched one
+            $this->isStoredVersion($paper) &&
             $paperDocBackup->saveDocumentBackupFile($mainDocumentContent) &&
             !$this->isStoredVersion($paper)
         ) {
             // A new version was saved on the same DOCID while the document was fetched: the copy holds the previous
-            // one. Checked after the write, so that the deletion done when saving the new version cannot be missed
+            // one. Checked again after the write, so that a deletion done during the write cannot be missed
             $paperDocBackup->deleteDocumentBackupFile();
         }
 
