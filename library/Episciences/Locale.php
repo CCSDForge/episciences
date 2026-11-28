@@ -15,6 +15,12 @@ use Zend_Registry;
 final class Locale
 {
     /**
+     * Languages always listed first, in this order, ahead of the alphabetical remainder
+     * (callers such as Episciences_Review::getDefaultLanguage() rely on this order).
+     */
+    private const array TOP_LANGUAGES =['en', 'fr', 'de', 'it', 'es'];
+
+    /**
      * Returns the localized name of a language from its ISO 639 code.
      *
      * @param string $code language code (e.g. 'fr', 'en')
@@ -37,7 +43,8 @@ final class Locale
     }
 
     /**
-     * Returns all localized language names keyed by ISO 639 code.
+     * Returns all localized language names keyed by ISO 639 code: the TOP_LANGUAGES first,
+     * in that order, then the others sorted by name.
      *
      * @param string|null $displayLocale locale of the returned names; null = current application locale
      * @return array<string, string>
@@ -47,10 +54,16 @@ final class Locale
         $displayLocale ??= self::getCurrentLanguage();
 
         try {
-            return Languages::getNames($displayLocale);
+            $names = Languages::getNames($displayLocale);
         } catch (MissingResourceException) {
-            return Languages::getNames('en');
+            $names = Languages::getNames('en');
         }
+
+        // array_replace() keeps the key order of its first argument (TOP_LANGUAGES order)
+        // and appends the remaining keys in their original (alphabetical by name) order
+        $topKeys = array_intersect_key(array_flip(self::TOP_LANGUAGES), $names);
+
+        return array_replace($topKeys, $names);
     }
 
     /**
