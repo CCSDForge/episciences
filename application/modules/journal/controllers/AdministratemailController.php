@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\AppRegistry;
 use Episciences\Mail\RecipientSuggestions;
 use Episciences\Security\AccessLog;
 
@@ -493,7 +494,7 @@ class AdministratemailController extends Zend_Controller_Action
                         ['id' => $mail->getId(), 'mail' => $mail->toArray()]
                     );
                 } catch (Exception $e) {
-                    Ccsd_Log::message($e->getMessage(), false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . RVCODE . '.mail');
+                    AppRegistry::getMonoLogger()?->warning($e->getMessage(), ['rvcode' => RVCODE, 'context' => 'mail']);
                 }
 
             } else {

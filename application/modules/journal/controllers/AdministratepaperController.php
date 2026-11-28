@@ -4508,7 +4508,7 @@ class AdministratepaperController extends PaperDefaultController
                     }
 
                 } catch (Exception $e) {
-                    Ccsd_Log::message($e->getMessage(), false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . RVCODE . 'exceptions.log');
+                    AppRegistry::getMonoLogger()?->warning($e->getMessage(), ['rvcode' => RVCODE]);
                 }
 
             }
