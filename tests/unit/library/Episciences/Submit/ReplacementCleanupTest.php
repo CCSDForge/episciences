@@ -28,6 +28,9 @@ final class ReplacementCleanupTest extends TestCase
     /** @var Episciences_Paper_DocumentBackup[] */
     private array $backups = [];
 
+    /** @var string[] directories created by the test */
+    private array $createdDirs = [];
+
     protected function setUp(): void
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -41,8 +44,15 @@ final class ReplacementCleanupTest extends TestCase
     {
         foreach ($this->backups as $backup) {
             $backup->deleteDocumentBackupFile();
-            @rmdir($backup->getPath());
-            @rmdir(dirname($backup->getPath()));
+        }
+
+        // Deepest first: two backups of the test can share files/ and {rvcode}/
+        usort($this->createdDirs, static fn(string $a, string $b): int => strlen($b) <=> strlen($a));
+
+        foreach ($this->createdDirs as $dir) {
+            if (is_dir($dir)) {
+                rmdir($dir);
+            }
         }
 
         if ($this->docIds !== []) {
@@ -88,9 +98,22 @@ final class ReplacementCleanupTest extends TestCase
 
         $backup = new Episciences_Paper_DocumentBackup($docId, (string)$journal->getCode());
         $this->backups[] = $backup;
+        $this->recordDirsToCreate(rtrim($backup->getPath(), '/'), 4);
         self::assertTrue($backup->saveDocumentBackupFile('%PDF-1.4 previous version'));
 
         return $backup;
+    }
+
+    /**
+     * Records the missing directories among $dir and its parents (documents/, {docid}/, files/, {rvcode}/),
+     * so that tearDown() leaves the data/ tree as it was.
+     */
+    private function recordDirsToCreate(string $dir, int $levels): void
+    {
+        for ($i = 0; $i < $levels && !is_dir($dir); $i++) {
+            $this->createdDirs[] = $dir;
+            $dir = dirname($dir);
+        }
     }
 
     private function countFiles(int $docId): int
