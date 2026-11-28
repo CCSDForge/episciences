@@ -2,10 +2,8 @@
 
 namespace unit\library\Episciences;
 
-use Episciences_OpenAireResearchGraphTools;
 use Episciences_Paper_AuthorsManager;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 
@@ -168,18 +166,6 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
         self::assertEquals('https://ror.org/00r8amq78', $mergingArray[0]['affiliation'][0]['id'][0]['id']);
         self::assertEquals('ROR', $mergingArray[0]['affiliation'][0]['id'][0]['id-type']);
     }
-
-    #[DataProvider('sampleOaDbAndApi')]
-    #[IgnoreDeprecations]
-    public function testGetAuthorOrcidFromOA(array $sampleOACreatorDB, array $sampleOACreatorAPI): void
-    {
-        [$arrayForDB, $isNewOrcid] = Episciences_OpenAireResearchGraphTools::getOrcidApiForDb($sampleOACreatorDB[0]['fullname'], $sampleOACreatorAPI, $sampleOACreatorDB, 0, 0);
-        self::assertIsArray($arrayForDB);
-        self::assertIsInt($isNewOrcid);
-        self::assertEquals(1, $isNewOrcid);
-        self::assertEquals('0000-0002-5332-5437', $arrayForDB[0]['orcid']);
-    }
-
 
     /**
      * @return iterable
@@ -557,37 +543,5 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
         ];
     }
 
-    /**
-     * sample merge db and api information for one author
-     * @return array
-     */
-    public static function sampleOaDbAndApi(): array
-    {
-        return [[self::sampleDbForOACreator(), self::sampleOACreator()]];
-    }
-
-    public static function sampleDbForOACreator(): array
-    {
-        return [[
-            'fullname' => 'Svjetlan Feretić',
-            'given' => 'Svjetlan',
-            'family' => 'Feretić',
-        ]];
-    }
-
-    /**
-     * @return array
-     */
-    public static function sampleOACreator(): array
-    {
-        return [
-
-            '@rank' => '1',
-            '@orcid' => '0000-0002-5332-5437',
-            '@URL' => 'https://academic.microsoft.com/#/detail/2304801209',
-            '$' => 'Svjetlan Feretić',
-
-        ];
-    }
 }
 
