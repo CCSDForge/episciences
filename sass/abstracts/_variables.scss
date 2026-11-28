@@ -37,6 +37,11 @@ $spinach-green: #175732;
 $burnt-orange: #CC5500;
 $olive-green: #708D23;
 $blue-duck: #048B9A;
+// Role tags: darker shades keeping a 4.5:1 contrast with a white text (see components/_user-role-colors.scss)
+$role-chief-editor-bg: #d83b00;
+$role-editor-bg: #b05f00;
+$role-webmaster-bg: #008824;
+$role-dark-text: #2c2c2c;
 
 // layout
 $navbar-fixed-height: 51px; // navbar-fixed-top: 50px + 1px border

@@ -90,7 +90,8 @@ tests/e2e/
 │   ├── 09-revisions/          minor revision with a new version, major revision answered as is
 │   ├── 10-publication/        publication in a volume, copy editing by the author
 │   ├── 11-journal-configuration/ rating grid lifecycle, journal settings
-│   └── 12-conflict-of-interest/ declaration of conflicts of interest (one test per E2E_COI mode)
+│   ├── 12-conflict-of-interest/ declaration of conflicts of interest (one test per E2E_COI mode)
+│   └── 12-mail-recipients/    recipients search of the mail forms, anonymity of the reviewers in the status modals
 ├── fixtures/
 │   ├── e2e-fixtures.js        logged-in page per role (authorPage, reviewerPage, refereePage, editorPage,
 │   │                          secretaryPage, adminPage) and the mailpit client

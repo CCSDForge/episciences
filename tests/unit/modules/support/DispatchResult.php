@@ -14,7 +14,9 @@ final class DispatchResult
     public function __construct(
         public readonly Zend_Controller_Response_HttpTestCase $response,
         public readonly string $output,
-        public readonly bool $stopped
+        public readonly bool $stopped,
+        /** View of the controller: what the action gave to its script, which is not rendered */
+        public readonly ?\Zend_View_Interface $view = null
     ) {
     }
 

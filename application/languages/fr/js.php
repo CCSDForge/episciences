@@ -13,6 +13,9 @@ return [
     'week' => 'semaine(s)',
     'month' => 'mois',
 
+    // Mail recipients: French name of the Bcc field
+    "Bcc" => "Cci",
+
     // Roles
     'guest' => 'Invité',
     'member' => 'Membre',
@@ -62,4 +65,7 @@ return [
 
     // Activity timeline filters
     'activity_timeline_events_shown' => 'événement(s) affiché(s)',
+
+    // Roles
+    "copyeditor" => "Préparateur de copie",
 ];

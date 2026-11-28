@@ -10,82 +10,96 @@ use PHPUnit\Framework\TestCase;
 
 final class RecipientSuggestionsTest extends TestCase
 {
-    public function testSuggestionsAreKeyedByUid(): void
+    public function testRowIsConvertedToTheCommonFormat(): void
     {
-        $suggestions = RecipientSuggestions::fromUsers([
-            self::user(12, 'Ada', 'Lovelace', 'ALovelace', 'ada@example.org'),
-            self::user(34, 'Alan', 'Turing', 'aturing', 'alan@example.org'),
+        $suggestion = RecipientSuggestions::fromRow([
+            'UID' => '12',
+            'SCREEN_NAME' => 'ALovelace',
+            'FIRSTNAME' => 'ada',
+            'LASTNAME' => 'lovelace',
+            'USERNAME' => 'ALovelace',
+            'EMAIL' => 'ada@example.org',
+            'ROLES' => 'chief_editor,member',
         ]);
 
-        self::assertSame([12, 34], array_keys($suggestions));
-        self::assertSame(
-            [
-                'uid' => 12,
-                'fullname' => 'Ada Lovelace',
-                'username' => 'ALovelace',
-                'mail' => 'ada@example.org',
-                'label' => 'Ada Lovelace (alovelace) <ada@example.org>',
-                'htmlLabel' => '<span class="ep-ac-name">Ada Lovelace <span class="darkgrey">(alovelace)</span></span>'
-                    . '<span class="ep-ac-email">ada@example.org</span>',
-            ],
-            $suggestions[12]
-        );
+        self::assertSame([
+            'uid' => 12,
+            'fullname' => 'Ada Lovelace',
+            'username' => 'ALovelace',
+            'mail' => 'ada@example.org',
+            'roles' => ['chief_editor'],
+            'group' => RecipientSuggestions::GROUP_STAFF,
+            'paperRole' => null,
+        ], $suggestion);
     }
 
     /**
-     * htmlLabel is appended as HTML to the autocomplete list: every user value is escaped.
+     * Values are rendered as text by the scripts: they are never HTML-encoded here
      */
-    public function testHtmlLabelEscapesTheUserValues(): void
+    public function testValuesAreRaw(): void
     {
-        $suggestion = RecipientSuggestions::fromUsers([
-            self::user(1, '<img src=x onerror=alert(1)>', 'Doe', 'j"doe', "o'brien&co@example.org"),
-        ])[1];
+        $suggestion = RecipientSuggestions::fromRow(['UID' => 1, 'LASTNAME' => 'Curie & <b>co</b>', 'EMAIL' => 'a"b@example.org']);
 
-        self::assertStringNotContainsString('<img', $suggestion['htmlLabel']);
-        self::assertStringContainsString('&lt;img ', $suggestion['htmlLabel']);
-        self::assertStringContainsString('(j&quot;doe)', $suggestion['htmlLabel']);
-        self::assertStringContainsString('o&#039;brien&amp;co@example.org', $suggestion['htmlLabel']);
+        self::assertStringContainsString('&', $suggestion['fullname']);
+        self::assertStringNotContainsString('&amp;', $suggestion['fullname']);
+        self::assertSame('a"b@example.org', $suggestion['mail']);
+    }
+
+    public function testScreenNameIsUsedWithoutFirstAndLastName(): void
+    {
+        $suggestion = RecipientSuggestions::fromRow(['UID' => 1, 'SCREEN_NAME' => 'Ada', 'FIRSTNAME' => '', 'LASTNAME' => '']);
+
+        self::assertSame('Ada', $suggestion['fullname']);
     }
 
     /**
-     * label is matched as text and JSON-encoded, never inserted as HTML: it stays unescaped.
+     * @return array<string, array{string, ?string, string}>
      */
-    public function testLabelIsPlainText(): void
+    public static function suggestionGroups(): array
     {
-        $suggestion = RecipientSuggestions::fromUsers([self::user(1, 'Jean & Marie', 'Curie', 'jmc', 'jmc@example.org')])[1];
-
-        self::assertSame('Jean & Marie Curie (jmc) <jmc@example.org>', $suggestion['label']);
+        return [
+            'participant of the paper' => ['reviewer', 'reviewer', RecipientSuggestions::GROUP_PAPER],
+            'editorial staff' => ['editor,reviewer', null, RecipientSuggestions::GROUP_STAFF],
+            'other user' => ['author,reviewer', null, RecipientSuggestions::GROUP_OTHER],
+            'no role in the journal' => ['', null, RecipientSuggestions::GROUP_OTHER],
+        ];
     }
 
     /**
-     * The label is rendered inside a link: block elements would break the list.
+     * @dataProvider suggestionGroups
      */
-    public function testHtmlLabelUsesInlineElementsOnly(): void
+    public function testGroupOfTheSuggestion(string $roles, ?string $paperRole, string $group): void
     {
-        $suggestion = RecipientSuggestions::fromUsers([self::user(1, 'Ada', 'Lovelace', 'ada', 'ada@example.org')])[1];
-
-        self::assertStringNotContainsString('<div', $suggestion['htmlLabel']);
+        self::assertSame($group, RecipientSuggestions::fromRow(['UID' => 1, 'ROLES' => $roles], $paperRole)['group']);
     }
 
-    public function testIncompleteUserGivesEmptyValues(): void
+    public function testKnownUser(): void
     {
-        $suggestion = RecipientSuggestions::fromUsers([new Episciences_User(['UID' => 5])])[5];
+        $user = new Episciences_User(['UID' => 5]);
+        $user->setFirstname('Alan')->setLastname('Turing')->setUsername('aturing')->setEmail('alan@example.org')->setScreenName('Alan T.');
 
-        self::assertSame('', $suggestion['username']);
-        self::assertSame('', $suggestion['mail']);
-        self::assertStringContainsString('<span class="ep-ac-email"></span>', $suggestion['htmlLabel']);
+        self::assertSame([
+            'uid' => 5,
+            'fullname' => 'Alan Turing',
+            'screen_name' => 'Alan T.',
+            'username' => 'aturing',
+            'mail' => 'alan@example.org',
+        ], RecipientSuggestions::fromUser($user));
     }
 
-    public function testNoUserGivesNoSuggestion(): void
+    public function testScriptJsonCannotCloseTheScriptBlock(): void
     {
-        self::assertSame([], RecipientSuggestions::fromUsers([]));
+        $json = RecipientSuggestions::toScriptJson(['fullname' => "</script><script>alert(1)</script>", 'mail' => "a'b@example.org"]);
+
+        self::assertStringNotContainsString('</script>', $json);
+        self::assertStringNotContainsString("'", $json);
+        self::assertSame("</script><script>alert(1)</script>", json_decode($json, true, 512, JSON_THROW_ON_ERROR)['fullname']);
     }
 
-    private static function user(int $uid, string $firstname, string $lastname, string $username, string $email): Episciences_User
+    public function testSenderIsNullWhenNotLoggedIn(): void
     {
-        $user = new Episciences_User(['UID' => $uid]);
-        $user->setFirstname($firstname)->setLastname($lastname)->setUsername($username)->setEmail($email);
+        \Zend_Auth::getInstance()->clearIdentity();
 
-        return $user;
+        self::assertSame('null', RecipientSuggestions::senderJson());
     }
 }
