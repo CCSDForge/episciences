@@ -17,6 +17,14 @@ return [
     "user_lost_password_tpl_name" => "Lost password",
     "user_lost_password_mail_subject" => "%%REVIEW_CODE%% - Password reset request",
 
+    // User import (journal:import-users): account to activate
+    "user_imported_account_tpl_name" => "Account created by an import",
+    "user_imported_account_mail_subject" => "%%REVIEW_CODE%% - Activate your account",
+
+    // User import (journal:import-users): existing account added to the journal
+    "user_added_to_journal_tpl_name" => "Added to the journal by an import",
+    "user_added_to_journal_mail_subject" => "%%REVIEW_CODE%% - Welcome to the journal team",
+
 
     // PAPER - SOUMISSION D'UN ARTICLE ***********************************************************************************************************
     "paper_submission_tpl_group" => "Paper - submission",

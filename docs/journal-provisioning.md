@@ -89,7 +89,13 @@ php scripts/console.php journal:create \
   --admin-uid=1 --reset-doi --no-interaction
 
 php scripts/console.php journal:seed-demo --rvcode=sandbox1 --uid=1
+
+php scripts/console.php journal:import-users --rvcode=sandbox1 --csv=scripts/importSamples/sample-users.csv --no-mail
 ```
+
+`journal:create` needs an existing account for `--admin-uid`. To add the journal team (and create
+the missing accounts), use `journal:import-users` (see
+[`docs/console-commands.md`](console-commands.md#journalimport-users)).
 
 `journal:seed-demo` (see [`docs/console-commands.md`](console-commands.md#journalseed-demo))
 injects a small set of real, fixed submissions (submitted/accepted/published) across a few

@@ -94,6 +94,8 @@ return array(
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF] => "volume's bibliographical reference",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_TMP_PAPER_URL] => "link to the article's temporary version management page",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK] => "account activation link",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_RECIPIENT_ROLES] => "roles of the recipient in the journal (e.g.: Editor, Reviewer)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_LINK_VALIDITY] => "validity of the link, in days (e.g.: 14)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_UPDATED_DEADLINE] => "new review deadline",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_EDITORS] => "all editors assigned to the volume of the article (e.g. Hartman Rodney, Daniel Bryan, Walls John)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_ID] => "volume ID",
@@ -111,6 +113,12 @@ return array(
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_LOGIN][Episciences_Mail_TemplatesManager::DESCRIPTION] => "login ID reminder",
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_LOST_LOGIN][Episciences_Mail_TemplatesManager::RECIPIENT] => "user who forgot his/her login",
+
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_IMPORTED_ACCOUNT][Episciences_Mail_TemplatesManager::DESCRIPTION] => "account created by an import: link to choose the password and activate the account",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_IMPORTED_ACCOUNT][Episciences_Mail_TemplatesManager::RECIPIENT] => "person added to the journal by an import, whose account is not activated yet",
+
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_ADDED_TO_JOURNAL][Episciences_Mail_TemplatesManager::DESCRIPTION] => "added to the journal by an import, with the roles given",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_ADDED_TO_JOURNAL][Episciences_Mail_TemplatesManager::RECIPIENT] => "person added to the journal by an import, whose account already exists",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_TMP_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of acceptance of article's temporary version",
 

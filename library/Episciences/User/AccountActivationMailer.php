@@ -44,18 +44,31 @@ final class AccountActivationMailer
      * Activation link that asks to choose the password first: the account may have been created by someone else with
      * this address, whose password must not work once the account is active
      *
+     * @param string $templateType mail template of the link
+     * @param array<string, string> $extraTags additional tags of the template
      * @return bool false when the e-mail could not be sent
      * @throws \Zend_Db_Exception when the token cannot be saved
      */
-    public function sendWithPasswordChoice(Episciences_User $user): bool
+    public function sendWithPasswordChoice(
+        Episciences_User $user,
+        string $templateType = Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION,
+        array $extraTags = []
+    ): bool
     {
-        return $this->sendLink($user, TokenPurpose::ACCOUNT_SETUP, 'resetpassword');
+        return $this->sendLink($user, TokenPurpose::ACCOUNT_SETUP, 'resetpassword', $templateType, $extraTags);
     }
 
     /**
+     * @param array<string, string> $extraTags
      * @throws \Zend_Db_Exception when the token cannot be saved
      */
-    private function sendLink(Episciences_User $user, TokenPurpose $purpose, string $action): bool
+    private function sendLink(
+        Episciences_User $user,
+        TokenPurpose $purpose,
+        string $action,
+        string $templateType = Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION,
+        array $extraTags = []
+    ): bool
     {
         $token = $this->tokens->issue((int)$user->getUid(), (string)$user->getEmail(), $purpose);
 
@@ -71,10 +84,10 @@ final class AccountActivationMailer
             // code (Episciences_Mail's constructor runs before this array is merged).
             Episciences_Mail_Tags::TAG_REVIEW_NAME => RVNAME,
             Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK => $tokenUrl,
-        ];
+        ] + $extraTags;
 
         try {
-            return Episciences_Mail_Send::sendMailFromReview($user, Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION, $tags);
+            return Episciences_Mail_Send::sendMailFromReview($user, $templateType, $tags);
         } catch (Zend_Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
             return false;

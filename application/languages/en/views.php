@@ -1025,9 +1025,9 @@ return array(
     "Choisissez le mot de passe de votre compte pour l'activer." => 'Choose the password of your account to activate it.',
     "Activer mon compte" => 'Activate my account',
     "Votre compte est activé : vous pouvez vous connecter avec ce mot de passe." => 'Your account is activated: you can sign in with this password.',
-    "Le jeton que vous avez fourni n'existe pas ou n'est plus valide" => "This token doesn't exist or is not valid",
-    "Vous pouvez en demander un nouveau grâce au lien ci-dessous" => 'You can ask a new one with the following link',
-    "Réinitialiser mon mot de passe" => "Reset my password",
+    "Ce lien n'est plus valide" => 'This link is no longer valid',
+    'Il a peut-être expiré ou déjà été utilisé. Demandez un nouveau lien : il vous sera envoyé par e-mail.' => 'It may have expired or already been used. Request a new link: it will be sent to you by e-mail.',
+    'Demander un nouveau lien' => 'Request a new link',
     "Votre mot de passe a bien été changé" => 'Your password has been successfully changed',
 
     // User list / Utilisateurs

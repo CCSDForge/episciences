@@ -10,6 +10,9 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_USER_REGISTRATION = 'user_registration';
     public const TYPE_USER_LOST_PASSWORD = 'user_lost_password';
     public const TYPE_USER_LOST_LOGIN = 'user_lost_login';
+    // journal:import-users
+    public const TYPE_USER_IMPORTED_ACCOUNT = 'user_imported_account';
+    public const TYPE_USER_ADDED_TO_JOURNAL = 'user_added_to_journal';
     public const TYPE_PAPER_ACCEPTED_TMP_VERSION = 'paper_accepted_tmp_version';
     public const TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY = 'paper_accepted_tmp_version_managers_copy';
     public const TYPE_PAPER_ACCEPTED = 'paper_accepted';
@@ -997,6 +1000,26 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
         Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK
     ];
+    /** @see \Episciences\User\Import\UserImportMailer::sendAccountSetup() */
+    public const user_imported_account_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_ROLES,
+        Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK,
+        Episciences_Mail_Tags::TAG_LINK_VALIDITY,
+    ];
+
+    /** @see \Episciences\User\Import\UserImportMailer::sendAddedToJournal() */
+    public const user_added_to_journal_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_ROLES,
+    ];
+
     public const user_registration_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
@@ -1635,6 +1658,8 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_USER_REGISTRATION => [self::DESCRIPTION => "confirmation et de validation d'un nouveau compte", self::RECIPIENT => "l'utilisateur qui vient de se créer un compte"],
         self::TYPE_USER_LOST_PASSWORD => [self::DESCRIPTION => 'réinitialisation de mot de passe', self::RECIPIENT => "l'utilisateur qui a oublié son mot de passe"],
         self::TYPE_USER_LOST_LOGIN => [self::DESCRIPTION => "rappel de l'identifiant de connexion", self::RECIPIENT => "l'utilisateur qui a oublié ses identifiants"],
+        self::TYPE_USER_IMPORTED_ACCOUNT => [self::DESCRIPTION => "compte créé par un import : lien pour choisir le mot de passe et activer le compte", self::RECIPIENT => "la personne ajoutée à la revue par un import, dont le compte n'est pas encore activé"],
+        self::TYPE_USER_ADDED_TO_JOURNAL => [self::DESCRIPTION => "ajout à la revue par un import, avec les rôles attribués", self::RECIPIENT => "la personne ajoutée à la revue par un import, dont le compte existe déjà"],
         self::TYPE_PAPER_ACCEPTED_TMP_VERSION => [self::DESCRIPTION => "confirmation de l'acceptation de la version temporaire de l'article", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY => [self::DESCRIPTION => "notification informant le comité éditorial de l'acceptation de la version temporaire de l'article", self::RECIPIENT => self::MANAGERS_RECEP_EXP],
         self::TYPE_PAPER_ACCEPTED => [self::DESCRIPTION => "confirmation de l'acceptation de l'article", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
@@ -1821,6 +1846,8 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_USER_LOST_LOGIN,
         self::TYPE_USER_LOST_PASSWORD,
         self::TYPE_USER_REGISTRATION,
+        self::TYPE_USER_IMPORTED_ACCOUNT,
+        self::TYPE_USER_ADDED_TO_JOURNAL,
         self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY,
         self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION,
         self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION,
@@ -2189,6 +2216,8 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_USER_LOST_LOGIN => self::user_lost_login_tags,
             self::TYPE_USER_LOST_PASSWORD => self::user_lost_password_tags,
             self::TYPE_USER_REGISTRATION => self::user_registration_tags,
+            self::TYPE_USER_IMPORTED_ACCOUNT => self::user_imported_account_tags,
+            self::TYPE_USER_ADDED_TO_JOURNAL => self::user_added_to_journal_tags,
             self::TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY => self::paper_abandon_publication_author_copy_tags,
             self::TYPE_PAPER_ABANDON_PUBLICATION_BY_AUTHOR_AUTHOR_COPY => self::paper_abandon_publication_author_copy_tags,
             self::TYPE_PAPER_ABANDON_PUBLICATION_EDITOR_COPY => self::paper_abandon_publication_editor_copy_tags,

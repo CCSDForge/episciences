@@ -293,6 +293,30 @@ class Ccsd_User_Models_UserMapper {
     }
 
     /**
+     * Account to reuse for the given email: the most recently modified valid account (VALID = 1), otherwise the most
+     * recently modified account not activated yet (VALID = 0), whatever the application it was created in.
+     * Accounts with any other status are ignored.
+     *
+     * @return array{UID: int, VALID: int}|null
+     * @throws Exception
+     */
+    public function findMostRecentByEmail(string $email): ?array
+    {
+        $select = $this->getDbTable()->select()
+            ->from($this->getDbTable(), ['UID', 'VALID'])
+            ->where('EMAIL = ?', $email)
+            ->where('VALID IN (?)', [0, 1])
+            ->order('VALID DESC')
+            ->order('TIME_MODIFIED DESC')
+            ->order('UID DESC')
+            ->limit(1);
+
+        $row = $this->getDbTable()->fetchRow($select);
+
+        return $row ? ['UID' => (int)$row['UID'], 'VALID' => (int)$row['VALID']] : null;
+    }
+
+    /**
      * UID of the most recently created account not activated yet (VALID = 0) using the given email,
      * whatever the application it was created in.
      */
