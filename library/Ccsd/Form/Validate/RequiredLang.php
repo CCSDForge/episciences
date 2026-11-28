@@ -222,7 +222,7 @@ class Ccsd_Form_Validate_RequiredLang extends Zend_Validate_Abstract
 
         if (!empty ($missing)) {
             $this->_error(self::REQUIRED_LANG, implode(', ', array_map(
-                static fn(string $v): string => Ccsd_Locale::getLanguageName($v),
+                static fn(string $v): string => \Episciences\Locale::getLanguageName($v),
                 $missing
             )));
             return false;

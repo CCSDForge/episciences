@@ -322,7 +322,7 @@ class Episciences_Tools
     public static function getLanguages(): array
     {
         $languages = (Zend_Registry::isRegistered('languages')) ? Zend_Registry::get('languages') : [];
-        return array_intersect_key(Ccsd_Locale::getLanguage(), array_flip($languages));
+        return array_intersect_key(\Episciences\Locale::getLanguageNames(), array_flip($languages));
     }
 
     /**
