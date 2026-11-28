@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\AppRegistry;
 use Episciences\Files\UploadedFileToken;
 use Episciences\Files\Uploader;
 use Episciences\Paper\Files\DocumentFilePolicy;
@@ -3949,7 +3950,7 @@ class PaperController extends PaperDefaultController
 
             } catch (Zend_Exception $e) {
                 $logAction = false;
-                Ccsd_Log::message($e->getMessage(), false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . RVCODE . '.publication-process');
+                AppRegistry::getMonoLogger()?->warning($e->getMessage(), ['rvcode' => RVCODE, 'context' => 'publication-process']);
             }
 
             if (!$logAction) {

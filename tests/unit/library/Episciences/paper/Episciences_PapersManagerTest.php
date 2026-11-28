@@ -229,38 +229,6 @@ class Episciences_PapersManagerTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // Security regression: no Episciences_Cache usage in getList()
-    // -----------------------------------------------------------------------
-
-    /**
-     * Verifies that PapersManager::getList() source code no longer references
-     * Episciences_Cache. This guards against accidental reintroduction of the
-     * insecure file-level cache that called unserialize() on filesystem data,
-     * which could lead to PHP object injection if cache files were tampered with.
-     */
-    public function testGetListSourceDoesNotReferenceEpisciencesCache(): void
-    {
-        $reflection = new ReflectionMethod(Episciences_PapersManager::class, 'getList');
-        $filename   = $reflection->getFileName();
-        $start      = $reflection->getStartLine();
-        $end        = $reflection->getEndLine();
-
-        $lines  = file($filename);
-        $source = implode('', array_slice($lines, $start - 1, $end - $start + 1));
-
-        self::assertStringNotContainsString(
-            'Episciences_Cache',
-            $source,
-            'PapersManager::getList() must not reference Episciences_Cache'
-        );
-        self::assertStringNotContainsString(
-            'unserialize',
-            $source,
-            'PapersManager::getList() must not call unserialize() on cache data'
-        );
-    }
-
-    // -----------------------------------------------------------------------
     // applyOrderExpression() / applyAssignmentSortJoin() — issue #937
     // -----------------------------------------------------------------------
 

@@ -207,10 +207,9 @@ final class WebsiteCloner
             return;
         }
 
-        // WEBSITE_HEADER.img is expected to be a bare file name; reject anything that isn't,
-        // since Ccsd_File::renameFile() (which produced it on the template journal) does not
-        // itself forbid path separators — a stray one here would let the concatenation below
-        // escape the journal's public/ directory.
+        // WEBSITE_HEADER.img is expected to be a bare file name; reject anything that isn't:
+        // values stored by the former Ccsd_File::renameFile() could keep path separators, and
+        // a stray one here would let the concatenation below escape the journal's public/ directory.
         $safeName = basename($filename);
         if ($safeName === '' || $safeName !== $filename) {
             return;

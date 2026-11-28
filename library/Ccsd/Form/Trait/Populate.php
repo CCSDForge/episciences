@@ -77,7 +77,7 @@ trait Ccsd_Form_Trait_Populate {
                      return $translator->translate($v);
                  }
                  // Language codes are resolved from CLDR (Symfony Intl); other values are kept as is
-                 return is_string($v) ? Ccsd_Locale::getLanguageName($v) : $v;
+                 return is_string($v) ? \Episciences\Locale::getLanguageName($v) : $v;
 
              }, $this->_data);
          }

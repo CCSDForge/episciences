@@ -676,7 +676,6 @@ class Ccsd_Form_Element_Thesaurus extends Zend_Form_Element_Xhtml implements Ccs
      * @uses Hal_Settings::getDomainsInter()
      * @uses Hal_Settings::getTypdocsSelect()
      * @uses Hal_Settings::getLicencesTradCodes()
-     * @uses Ccsd_Locale::getLanguage()
      * @uses Hal_Referentiels_Metadata::getValues()
      */
     private function get ($str = "")

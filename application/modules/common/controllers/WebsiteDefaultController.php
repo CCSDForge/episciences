@@ -183,7 +183,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
                 preg_match('/[^a-z0-9_\.-\/\\\\]/i', $_FILES['file']['name'], $matches);
 
-                $renamedFile = Ccsd_File::renameFile(PublicFileStore::storedName((string)$_FILES['file']['name']), $dir, !$isOverwritten);
+                $renamedFile = PublicFileStore::uniqueSanitizedName(PublicFileStore::storedName((string)$_FILES['file']['name']), $dir, !$isOverwritten);
 
                 copy($_FILES['file']['tmp_name'], $dir . $renamedFile);
 

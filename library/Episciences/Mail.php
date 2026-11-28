@@ -226,7 +226,7 @@ class Episciences_Mail extends Zend_Mail
             $this->write($debug);
         } catch (Exception $e) {
             $message = $e->getCode() . ' - ' . $e->getMessage() . ' - ' . Zend_Json::encode($this->buildFailureDetails());
-            Ccsd_Log::message($message, false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . $rvCode . '.mail');
+            AppRegistry::getMonoLogger()?->warning($message, ['rvcode' => $rvCode, 'context' => 'mail']);
             return false;
         }
 
@@ -236,7 +236,7 @@ class Episciences_Mail extends Zend_Mail
                 $this->setId($id);
             }
         } catch (Exception $e) {
-            Ccsd_Log::message($e->getMessage(), false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . RVCODE . '.mail');
+            AppRegistry::getMonoLogger()?->warning($e->getMessage(), ['rvcode' => RVCODE, 'context' => 'mail']);
             throw $e;
         }
 

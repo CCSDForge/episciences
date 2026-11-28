@@ -14,7 +14,7 @@ abstract class Script {
      *  implement setOptions
      *  process array of options if specified at __construct.
      * improve log:
-     *  use Ccsd_Log ? Zend_Log ?
+     *  use Monolog (AppRegistry::getMonoLogger())
      *  if no log file is defined, create "ScriptName.log" at startup
      *  rotate log files
      *  implement setLogFile & getLogFile
