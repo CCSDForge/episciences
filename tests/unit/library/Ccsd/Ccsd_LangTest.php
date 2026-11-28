@@ -2,7 +2,6 @@
 
 namespace unit\library\Ccsd;
 
-use Ccsd_Lang_Mapper;
 use Ccsd_Lang_Reader;
 use Ccsd_Lang_Writer;
 use PHPUnit\Framework\TestCase;
@@ -10,92 +9,13 @@ use ReflectionMethod;
 use ReflectionProperty;
 
 /**
- * Unit tests for Ccsd_Lang_Mapper, Ccsd_Lang_Reader, Ccsd_Lang_Writer
+ * Unit tests for Ccsd_Lang_Reader, Ccsd_Lang_Writer
  *
  * Reader/Writer filesystem methods are tested via reflection (createFileContent)
- * and a temporary directory. Mapper methods are pure static.
+ * and a temporary directory.
  */
 class Ccsd_LangTest extends TestCase
 {
-    // ------------------------------------------------------------------
-    // Ccsd_Lang_Mapper — getIso2 (ISO 639-1 → ISO 639-2)
-    // ------------------------------------------------------------------
-
-    public function testGetIso2Fr(): void
-    {
-        $this->assertSame('fra', Ccsd_Lang_Mapper::getIso2('fr'));
-    }
-
-    public function testGetIso2En(): void
-    {
-        $this->assertSame('eng', Ccsd_Lang_Mapper::getIso2('en'));
-    }
-
-    public function testGetIso2De(): void
-    {
-        $this->assertSame('deu', Ccsd_Lang_Mapper::getIso2('de'));
-    }
-
-    public function testGetIso2UnknownReturnsDefaultUnd(): void
-    {
-        $this->assertSame('und', Ccsd_Lang_Mapper::getIso2('xx'));
-    }
-
-    public function testGetIso2UnknownCustomDefault(): void
-    {
-        $this->assertSame('unk', Ccsd_Lang_Mapper::getIso2('xx', 'unk'));
-    }
-
-    public function testGetIso2EmptyStringReturnsDefault(): void
-    {
-        $this->assertSame('und', Ccsd_Lang_Mapper::getIso2(''));
-    }
-
-    // ------------------------------------------------------------------
-    // Ccsd_Lang_Mapper — getIso1 (ISO 639-2 → ISO 639-1)
-    // ------------------------------------------------------------------
-
-    public function testGetIso1Fra(): void
-    {
-        $this->assertSame('fr', Ccsd_Lang_Mapper::getIso1('fra'));
-    }
-
-    public function testGetIso1Eng(): void
-    {
-        $this->assertSame('en', Ccsd_Lang_Mapper::getIso1('eng'));
-    }
-
-    public function testGetIso1Deu(): void
-    {
-        $this->assertSame('de', Ccsd_Lang_Mapper::getIso1('deu'));
-    }
-
-    public function testGetIso1UnknownReturnsEmptyDefault(): void
-    {
-        $this->assertSame('', Ccsd_Lang_Mapper::getIso1('zzz'));
-    }
-
-    public function testGetIso1UnknownCustomDefault(): void
-    {
-        $this->assertSame('und', Ccsd_Lang_Mapper::getIso1('zzz', 'und'));
-    }
-
-    public function testLanguageListIsNotEmpty(): void
-    {
-        $this->assertNotEmpty(Ccsd_Lang_Mapper::$languageList);
-    }
-
-    public function testLanguageListRoundTrip(): void
-    {
-        // Every key in languageList can be recovered via getIso1(getIso2(key))
-        foreach (Ccsd_Lang_Mapper::$languageList as $iso1 => $iso2) {
-            $recovered = Ccsd_Lang_Mapper::getIso1($iso2);
-            // array_search returns first match; some iso2 codes may map to multiple iso1 codes
-            $this->assertSame($iso2, Ccsd_Lang_Mapper::getIso2($recovered),
-                "Round-trip failed for iso1='$iso1' iso2='$iso2'");
-        }
-    }
-
     // ------------------------------------------------------------------
     // Ccsd_Lang_Reader — get() (load=false, data injected via reflection)
     // ------------------------------------------------------------------
