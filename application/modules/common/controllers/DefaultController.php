@@ -353,10 +353,15 @@ class DefaultController extends Zend_Controller_Action
         if (
             $saveCopy &&
             !$hasDocumentBackupFile &&
-            !empty($mainDocumentContent)
+            !empty($mainDocumentContent) &&
+            // Checked before the write, so that a newer version's copy is not overwritten with the fetched one
+            $this->isStoredVersion($paper) &&
+            $paperDocBackup->saveDocumentBackupFile($mainDocumentContent) &&
+            !$this->isStoredVersion($paper)
         ) {
-            $paperDocBackup->saveDocumentBackupFile($mainDocumentContent);
-
+            // A new version was saved on the same DOCID while the document was fetched: the copy holds the previous
+            // one. Checked again after the write, so that a deletion done during the write cannot be missed
+            $paperDocBackup->deleteDocumentBackupFile();
         }
 
 
@@ -364,6 +369,19 @@ class DefaultController extends Zend_Controller_Action
 
     }
 
+
+    /**
+     * Whether the version of the paper is still the stored one (the backup copy is keyed on the DOCID only).
+     */
+    protected function isStoredVersion(Episciences_Paper $paper): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $storedVersion = $db->fetchOne(
+            $db->select()->from(T_PAPERS, ['VERSION'])->where('DOCID = ?', $paper->getDocid())
+        );
+
+        return $storedVersion !== false && (float)$storedVersion === $paper->getVersion();
+    }
 
     /**
      * HTTP client fetching the main document from its repository: HTTP(S) only,

@@ -576,6 +576,9 @@ class InboxNotifications extends AbstractScript
         $context->setWhen($paper->getWhen());
         $context->save();
 
+        // The backup copy of the main document is keyed on the DOCID: it holds the previous version
+        Episciences_Paper_DocumentBackup::deleteForPaper((int)$context->getDocid(), (int)$context->getRvid());
+
         $this->logAction($context, $logDetails, self::VERSION_UPDATE);
 
         Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId(

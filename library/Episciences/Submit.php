@@ -1879,17 +1879,19 @@ class Episciences_Submit
         $this->processCoverLetterAndDataDescriptor($paper, $data);
         $this->saveAllAuthorSuggestions($data, $result);
 
-        $recipients = $this->handleNotifications($paper, $data);
-        $this->sendNotifications($paper, $recipients, $data);
-        $this->logPaperAction($paper, $data);
-
-        // Enrichments
-        // The paper is saved and notified: a failure to delete the data it replaces is reported, not thrown
+        // The paper is saved: a failure to delete the data it replaces is reported, not thrown.
+        // Run before the notifications, so that a failed e-mail does not leave the replaced version behind
         $cleanedUp = self::runPostSaveStep(
             'cleanupOldData',
             $paper,
             fn() => $this->cleanupOldData($paper, $data)
         );
+
+        $recipients = $this->handleNotifications($paper, $data);
+        $this->sendNotifications($paper, $recipients, $data);
+        $this->logPaperAction($paper, $data);
+
+        // Enrichments
 
         $authorsStored = true;
         if (!isset($enrichment[Episciences_Repositories_Common::CONTRIB_ENRICHMENT])) {
@@ -1981,6 +1983,10 @@ class Episciences_Submit
         if ($oldDocId !== (int)$paper->getDocid()) {
             return;
         }
+
+        // The backup copy of the main document is keyed on the DOCID: it holds the replaced version.
+        // First, as it never throws: a failed database deletion below does not leave it behind
+        Episciences_Paper_DocumentBackup::deleteForPaper($oldDocId, (int)$paper->getRvid());
 
         Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($oldDocId, $paper->getRepoid());
         Episciences_Paper_FilesManager::deleteByDocId($oldDocId);

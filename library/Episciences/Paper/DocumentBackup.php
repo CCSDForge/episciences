@@ -174,5 +174,60 @@ class Episciences_Paper_DocumentBackup
         return (file_exists($mainFilePathName)) && (is_readable($mainFilePathName));
     }
 
+    /**
+     * Removes the backup copy, which is keyed on the DOCID only: to be called when the document
+     * of a DOCID changes (paper replaced in place by a new version).
+     *
+     * @return bool true when there is no backup copy left
+     */
+    public function deleteDocumentBackupFile(): bool
+    {
+        $mainFilePathName = $this->getPathFileName();
+
+        // The failure is logged below with its reason, not raised as a PHP warning as well
+        if (!file_exists($mainFilePathName) || @unlink($mainFilePathName)) {
+            return true;
+        }
+
+        // Deleted meanwhile by a concurrent request: there is no backup copy left
+        clearstatcache(true, $mainFilePathName);
+        if (!file_exists($mainFilePathName)) {
+            return true;
+        }
+
+        \Episciences\AppRegistry::getMonoLogger()?->warning(
+            'The backup copy of the document could not be deleted.',
+            [
+                'docid' => $this->getDocid(),
+                'path' => $mainFilePathName,
+                'reason' => error_get_last()['message'] ?? 'unknown',
+            ]
+        );
+
+        return false;
+    }
+
+    /**
+     * Removes the backup copy of a DOCID whose document changed (new version saved on the same DOCID):
+     * submission replaced in place, version posted by the editorial team, COAR Notify in-place update.
+     *
+     * @return bool true when there is no backup copy left
+     */
+    public static function deleteForPaper(int $docId, int $rvId): bool
+    {
+        $journal = \Episciences_ReviewsManager::findByRvid($rvId);
+
+        if (!$journal) {
+            \Episciences\AppRegistry::getMonoLogger()?->warning(
+                'The backup copy of the document was not deleted: the journal was not found.',
+                ['docid' => $docId, 'rvid' => $rvId]
+            );
+
+            return false;
+        }
+
+        return (new self($docId, (string)$journal->getCode()))->deleteDocumentBackupFile();
+    }
+
 
 }

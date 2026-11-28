@@ -5291,6 +5291,8 @@ class AdministratepaperController extends PaperDefaultController
             }
 
             if ($paper->save()) {
+                // The backup copy of the main document is keyed on the DOCID: it holds the previous version
+                Episciences_Paper_DocumentBackup::deleteForPaper((int)$paper->getDocid(), (int)$paper->getRvid());
                 $paper->log(Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED, Episciences_Auth::getUid(), ['user' => Episciences_Auth::getUser()->toArray(), 'version' => ['old' => $currentVersion, 'new' => $latestPostedVersion]]);
                 if ($isReadyToPublish && $paper->getStatus() !== $currentStatus) {
                     $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
