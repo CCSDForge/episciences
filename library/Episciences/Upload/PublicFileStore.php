@@ -50,14 +50,16 @@ final class PublicFileStore
     }
 
     /**
-     * Sanitize a file name to ASCII-safe characters and optionally append a numeric suffix
-     * to avoid overwriting an existing file in the target directory.
+     * Sanitize a file name to ASCII-safe characters (path separators included, so the result
+     * is a bare file name) and optionally append a numeric suffix to avoid overwriting an
+     * existing file in the target directory.
      */
     public static function uniqueSanitizedName(string $name, string $directory = '', bool $avoidCollision = true): string
     {
         $sanitized = (new UnicodeString($name))->ascii()->toString();
         $sanitized = preg_replace('/  +/', ' ', $sanitized) ?? $sanitized;
-        $sanitized = preg_replace('/[^a-z0-9_.\-\/\\\\]/i', '_', $sanitized) ?? $sanitized;
+        // Path separators are replaced too: the result is always a bare file name
+        $sanitized = preg_replace('/[^a-z0-9_.\-]/i', '_', $sanitized) ?? $sanitized;
         $sanitized = preg_replace('/\.\.+/', '.', $sanitized) ?? $sanitized;
         $sanitized = preg_replace('/__+/', '_', $sanitized) ?? $sanitized;
 

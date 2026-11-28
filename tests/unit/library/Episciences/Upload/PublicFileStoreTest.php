@@ -161,6 +161,13 @@ final class PublicFileStoreTest extends TestCase
         self::assertSame('file_double.pdf', PublicFileStore::uniqueSanitizedName('file__double.pdf', '', false));
     }
 
+    public function testUniqueSanitizedNameReturnsABareFileName(): void
+    {
+        self::assertSame('._._etc_x.png', PublicFileStore::uniqueSanitizedName('../../etc/x.png', '', false));
+        self::assertSame('._._a.png', PublicFileStore::uniqueSanitizedName('..\\..\\a.png', '', false));
+        self::assertSame('_abs_x.png', PublicFileStore::uniqueSanitizedName('/abs/x.png', '', false));
+    }
+
     public function testUniqueSanitizedNameAvoidsCollisionWhenEnabled(): void
     {
         file_put_contents($this->uploads . '/report.pdf', '1');
